@@ -1,0 +1,555 @@
+/* 
+  BACKUP POINT - Before updating common list wrapper styles
+  Date: Current
+  Changes: Updating common list wrapper and table styles to incorporate application reports list styling
+  Revert: Remove changes from line 218 onwards and restore original list-wrapper styles
+*/
+
+/* Button Styles */
+.primary_btn {
+  grid-column: 1 / -1;
+  width: 100%;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 0.8rem 0;
+  border: none;
+  border-radius: 0.6rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-top: 1.5rem;
+}
+
+.primary_btn:hover {
+  background: var(--color-primary-dark);
+}
+
+.primary_btn:disabled {
+  background-color: var(--color-text-light);
+  cursor: not-allowed;
+}
+
+/* Common Form Wrapper Box including headings also*/
+.form-wrapper {
+  max-width: var(--max-width, 1200px);
+  width: 100%;
+  margin: 30px auto 3rem;
+  padding: 2rem;
+  background: var(--color-background);
+  border-radius: var(--border-radius);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+  border: 1px solid var(--color-border);
+}
+/* Box for form */
+.form-wrapper .form-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+/* Form Grid Layouts */
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.form-grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.form-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+.form-grid-dynamic {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--spacing-md);
+  width: 100%;
+}
+
+/* You can increase the number of columns by adding more grid-template-columns */
+
+/* Form Actions */
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--spacing-lg);
+  gap: var(--spacing-md);
+}
+
+/* Form Styles */
+.form-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  background-color: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.form-label {
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-primary);
+}
+
+.form-input {
+  padding: var(--spacing-sm);
+  border: 1px solid var(--color-text-light);
+  border-radius: var(--border-radius-md);
+  font-size: var(--font-size-md);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+/* Status Messages */
+.status-message {
+  padding: var(--spacing-md);
+  border-radius: var(--border-radius-md);
+  margin-bottom: var(--spacing-md);
+}
+
+.status-message--success {
+  background-color: var(--color-success);
+  color: white;
+}
+
+.status-message--error {
+  background-color: var(--color-error);
+  color: white;
+}
+
+/* Typography */
+.primary-heading {
+  color: var(--color-primary);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: var(--spacing-lg);
+}
+
+.section-heading {
+  color: var(--color-text-primary);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  margin-bottom: var(--spacing-md);
+}
+
+/* Form Section Headings */
+.form-section-heading {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin: var(--spacing-lg) 0 var(--spacing-md) 0;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
+}
+
+/* Responsive Design for Form Wrapper */
+@media (max-width: 768px) {
+  .form-wrapper {
+    margin: 20px 15px 2rem;
+    padding: 1.5rem;
+  }
+  
+  .form-grid,
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4,
+  .form-grid-dynamic {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .form-wrapper {
+    margin: auto;
+    padding: 0.5rem 0.25rem;
+    box-sizing: border-box;
+    width: 90vw;
+    margin-top: 2.5rem;
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+  .form-content {
+    padding: 0;
+    margin: 0;
+  }
+  .form-grid,
+  .form-grid-2,
+  .form-grid-3,
+  .form-grid-4,
+  .form-grid-dynamic {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-xs);
+    min-width: 0;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+}
+
+/* Common List Wrapper - Updated with Application Reports List Styling */
+.list-wrapper {
+  max-width: 1400px;
+  margin: 2rem;
+  padding: 2.5rem;
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+  max-height: calc(100vh - 84px);
+  overflow-y: auto;
+}
+
+.list-wrapper .list-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  width: 100%;
+  padding-bottom: 0;
+}
+
+/* List Header - Enhanced with Application Reports List Styling */
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: var(--spacing-md);
+}
+
+.list-header .header-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* List Filters - New addition from Application Reports List */
+.list-filters {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.list-filters .form-input {
+  width: 200px;
+}
+
+/* Ensure button and filters are properly aligned in web view */
+.list-header .primary_btn {
+  align-self: flex-end;
+}
+
+/* Table Container - Enhanced */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+  margin-top: var(--spacing-md);
+  border-radius: var(--border-radius);
+  border: 1px solid var(--color-border);
+}
+
+/* Common Table Styles - Updated with Application Reports List Styling */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--color-bg-primary);
+  font-size: var(--font-size-sm);
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.data-table th {
+  background: var(--color-bg-secondary);
+  padding: var(--spacing-sm);
+  text-align: left;
+  /* font-weight: var(--font-weight-semibold); */
+  color: var(--color-text-primary);
+  border-bottom: 1px solid var(--table-border, #e5e7eb);
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.data-table td {
+  padding: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-bg-tertiary);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.data-table tr:hover {
+  background: var(--color-bg-secondary);
+  transition: background-color 0.2s ease;
+}
+
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Table Actions Column */
+.table-actions {
+  text-align: center;
+  width: 80px;
+}
+
+/* Responsive Table Classes */
+.hide-on-mobile {
+  display: table-cell;
+}
+
+.show-on-mobile {
+  display: none;
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: var(--spacing-xl);
+  color: var(--color-text-secondary);
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+  opacity: 0.5;
+}
+
+.empty-state-text {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-sm);
+}
+
+.empty-state-subtext {
+  color: var(--color-text-secondary);
+  margin-top: var(--spacing-sm);
+}
+
+/* Mobile Card View - New addition from Application Reports List */
+.list-cards {
+  display: none;
+}
+
+.list-card {
+  background: white;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.list-card-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+.list-card-status,
+.list-card-budget {
+  margin: 4px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+/* Responsive Design for List Wrapper - Updated */
+@media (max-width: 1200px) {
+  .list-wrapper {
+    max-width: calc(100% - 25%);
+    padding: 2rem 1.2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .list-wrapper {
+    margin: 1rem;
+    padding: 1rem;
+  }
+
+  .list-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1rem;
+  }
+
+  .list-filters {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.5rem;
+  }
+
+  .list-filters .form-input {
+    width: 100%;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 12px 8px;
+  }
+
+  .action-buttons {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .list-wrapper {
+    margin: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 10px 6px;
+  }
+}
+
+/* Common View Styles */
+.view-wrapper {
+  max-width: var(--max-width, 1200px);
+  margin: 0 auto;
+  padding: 80px 20px 20px;
+  overflow-x: hidden;
+}
+
+.view-content {
+  background: var(--color-background);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-lg);
+  box-shadow: 0 2px 16px rgba(0,0,0,0.07);
+}
+
+.view-section {
+  margin-bottom: var(--spacing-lg);
+}
+
+.view-section:last-child {
+  margin-bottom: 0;
+}
+
+.view-section-title {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-md) 0;
+  padding-bottom: var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.view-grid-dynamic {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+}
+
+.view-item {
+  display: flex;
+  align-items: center;
+  padding: var(--spacing-md);
+  background: var(--color-background-secondary);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  gap: var(--spacing-md);
+}
+
+.view-item-label {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.view-item-label::after {
+  content: ":";
+}
+
+.view-item-value {
+  font-weight: 600;
+  color: var(--color-text);
+  font-size: var(--font-size-md);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .view-wrapper {
+    padding: 80px 15px 15px;
+  }
+
+  .view-content {
+    padding: var(--spacing-md);
+  }
+
+  .view-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .view-grid-dynamic {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .view-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .view-wrapper {
+    padding: 80px 10px 10px;
+  }
+
+  .view-content {
+    padding: var(--spacing-sm);
+  }
+
+  .view-grid-dynamic {
+    grid-template-columns: 1fr;
+  }
+} 
