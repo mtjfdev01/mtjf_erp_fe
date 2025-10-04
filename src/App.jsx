@@ -87,6 +87,8 @@ import UpdateTarget from './components/program/targets/reports/update';
 import ViewTarget from './components/program/targets/reports/view';
 import AdminApplicationsList from './components/admin/hr/career/applications/list';
 import AdminApplicationView from './components/admin/hr/career/applications/view';
+import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
+import { DonorsList, RegisterDonor, ViewDonor } from './components/dms';
 
 const App = () => {
   return (<React.Fragment>
@@ -109,7 +111,8 @@ const App = () => {
                                 <Route path="/program" element={<Program />} />
                                 <Route path="/accounts_and_finance" element={<AccountsAndFinance />} />
                                 <Route path="/admin" element={<AdminDashboard />} />
-                                
+                                <Route path="/fund_raising" element={<OnlineDonationsList />} /> 
+
                                 {/* User Management Routes */}
                                 <Route path="/admin/users" element={<UserList />} />
                                 <Route path="/admin/users/create" element={<CreateUser />} />
@@ -215,6 +218,16 @@ const App = () => {
                                 {/* HR */}
                                 <Route path="/hr/career/applications/list" element={<AdminApplicationsList />} />
                                 <Route path="/hr/career/applications/view/:id" element={<AdminApplicationView />} />
+
+                                {/* Donations Routes */}
+                                <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
+                                <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
+
+                                {/* Donors Routes */}
+                                <Route path="/donors/list" element={<DonorsList />} /> 
+                                <Route path="/donors/view/:id" element={<ViewDonor />} />
+                                <Route path="/donors/add" element={<RegisterDonor />} />
+                                {/* <Route path="/donors/update/:id" element={<UpdateDonor />} /> */}
                               </Routes>
                             </main>
                           </div>

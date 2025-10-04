@@ -14,7 +14,7 @@ const Pagination = ({
   sortOrder = 'DESC',
   sortOptions = []
 }) => {
-  const pageSizeOptions = [10, 15, 20, 30];
+  const pageSizeOptions = [10, 15, 20, 30, { value: 0, label: 'View All' }];
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {
@@ -31,6 +31,7 @@ const Pagination = ({
   const handleSortChange = (field, order) => {
     onSortChange(field, order);
   };
+
 
   const getPageNumbers = () => {
     const pages = [];
@@ -70,11 +71,19 @@ const Pagination = ({
   const startItem = (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
+  // Calculate display text based on viewing mode
+  const getDisplayText = () => {
+    if (pageSize === -1) {
+      return `Showing all ${totalItems} items`;
+    }
+    return `Showing ${startItem} to ${endItem} of ${totalItems} items`;
+  };
+
   return (
     <div className="pagination-container">
       <div className="pagination-info">
         <span className="pagination-text">
-          Showing {startItem} to {endItem} of {totalItems} items
+          {getDisplayText()}
         </span>
       </div>
 
@@ -88,14 +97,18 @@ const Pagination = ({
             onChange={(e) => handlePageSizeChange(Number(e.target.value))}
             className="page-size-select"
           >
-            {pageSizeOptions.map(size => (
-              <option key={size} value={size}>{size}</option>
-            ))}
+            {pageSizeOptions.map(option => {
+              const value = typeof option === 'object' ? option.value : option;
+              const label = typeof option === 'object' ? option.label : option;
+              return (
+                <option key={value} value={value}>{label}</option>
+              );
+            })}
           </select>
         </div>
 
-        {/* Sort Options */}
-        {sortOptions.length > 0 && (
+        {/* Sort Options - Only show when not viewing all */}
+        {sortOptions.length > 0 && pageSize !== -1 && (
           <div className="sort-selector">
             <label htmlFor="sortField">Sort by:</label>
             <select
@@ -120,8 +133,10 @@ const Pagination = ({
           </div>
         )}
 
-        {/* Pagination Navigation */}
-        <div className="pagination-navigation">
+
+        {/* Pagination Navigation - Only show when not viewing all */}
+        {pageSize !== -1 && (
+          <div className="pagination-navigation">
           <button
             className="pagination-btn"
             onClick={() => handlePageChange(1)}
@@ -171,6 +186,7 @@ const Pagination = ({
             <FiChevronsRight />
           </button>
         </div>
+        )}
       </div>
     </div>
   );

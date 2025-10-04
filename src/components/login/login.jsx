@@ -61,6 +61,10 @@ const Login = () => {
             console.log('Redirecting to admin');
             navigate('/admin', { replace: true });
             break;
+          case 'fund_raising':
+            console.log('Redirecting to fund_raising');
+            navigate('/fund_raising', { replace: true });
+            break;
           default:
             console.error('Invalid department:', userData.department);
             setError('Invalid department');

@@ -1,0 +1,243 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import axiosInstance from '../../../../utils/axios';
+import Navbar from '../../../Navbar';
+import PageHeader from '../../../common/PageHeader';
+import Card from '../../../common/Card';
+import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit, FiTrash2 } from 'react-icons/fi';
+
+const ViewDonor = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const [donor, setDonor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchDonor();
+  }, [id]);
+
+  const fetchDonor = async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/donors/${id}`);
+      if (response.data.success) {
+        setDonor(response.data.data);
+      } else {
+        setError('Failed to fetch donor details');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch donor details');
+      console.error('Error fetching donor:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleBack = () => {
+    navigate('/dms/donors/list');
+  };
+
+  const handleEdit = () => {
+    navigate(`/dms/donors/edit/${id}`);
+  };
+
+  const getDonorTypeIcon = (type) => {
+    return type === 'csr' ? <BsFillBuildingsFill /> : <FiUser />;
+  };
+
+  const getDonorTypeLabel = (type) => {
+    return type === 'csr' ? 'CSR Donor (Corporate)' : 'Individual Donor';
+  };
+
+  const getDonorTypeClass = (type) => {
+    return type === 'csr' ? 'donor-type--csr' : 'donor-type--individual';
+  };
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="list-wrapper">
+          <div className="loading-container">
+            <div className="loading-spinner"></div>
+            <p>Loading donor details...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <Navbar />
+        <div className="list-wrapper">
+          <div className="error-container">
+            <div className="status-message status-message--error">
+              {error}
+            </div>
+            <button className="primary_btn" onClick={handleBack}>
+              Back to Donors List
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (!donor) {
+    return (
+      <>
+        <Navbar />
+        <div className="list-wrapper">
+          <div className="error-container">
+            <div className="status-message status-message--error">
+              Donor not found
+            </div>
+            <button className="primary_btn" onClick={handleBack}>
+              Back to Donors List
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <Navbar />
+      <div className="list-wrapper">
+        <PageHeader 
+          title="Donor Details" 
+          onBack={handleBack}
+          showAdd={true}
+          onAddClick={handleEdit}
+          addButtonText="Edit Donor"
+        />
+        
+        <div className="list-content">
+          {/* Donor Type and Basic Info */}
+          <div className="card-grid">
+            <Card
+              title="Donor Type"
+              data={{
+                type: (
+                  <div className={`donor-type ${getDonorTypeClass(donor.donor_type)}`}>
+                    {getDonorTypeIcon(donor.donor_type)}
+                    <span>{getDonorTypeLabel(donor.donor_type)}</span>
+                  </div>
+                )
+              }}
+            />
+            
+            <Card
+              title="Registration Date"
+              data={{
+                date: new Date(donor.created_at).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })
+              }}
+            />
+          </div>
+
+          {/* Personal/Company Information */}
+          <div className="card-grid">
+            <Card
+              title={donor.donor_type === 'csr' ? 'Company Information' : 'Personal Information'}
+              data={{
+                name: donor.name,
+                ...(donor.donor_type === 'csr' && donor.company_name && {
+                  'Company Name': donor.company_name
+                }),
+                ...(donor.donor_type === 'csr' && donor.company_registration && {
+                  'Registration Number': donor.company_registration
+                }),
+                ...(donor.donor_type === 'csr' && donor.contact_person && {
+                  'Contact Person': donor.contact_person
+                }),
+                ...(donor.donor_type === 'csr' && donor.designation && {
+                  'Designation': donor.designation
+                }),
+                ...(donor.donor_type === 'individual' && donor.first_name && {
+                  'First Name': donor.first_name
+                }),
+                ...(donor.donor_type === 'individual' && donor.last_name && {
+                  'Last Name': donor.last_name
+                })
+              }}
+            />
+          </div>
+
+          {/* Contact Information */}
+          <div className="card-grid">
+            <Card
+              title="Contact Information"
+              data={{
+                email: donor.email,
+                phone: donor.phone,
+                ...(donor.donor_type === 'csr' && donor.company_email && {
+                  'Company Email': donor.company_email
+                }),
+                ...(donor.donor_type === 'csr' && donor.company_phone && {
+                  'Company Phone': donor.company_phone
+                })
+              }}
+            />
+          </div>
+
+          {/* Address Information */}
+          <div className="card-grid">
+            <Card
+              title="Address Information"
+              data={{
+                address: donor.address || 'Not provided',
+                city: donor.city || 'Not provided',
+                country: donor.country || 'Not provided',
+                'Postal Code': donor.postal_code || 'Not provided',
+                ...(donor.donor_type === 'csr' && donor.company_address && {
+                  'Company Address': donor.company_address
+                })
+              }}
+            />
+          </div>
+
+          {/* Additional Information */}
+          {donor.notes && (
+            <div className="card-grid">
+              <Card
+                title="Additional Information"
+                data={{
+                  notes: donor.notes
+                }}
+              />
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="form-actions" style={{ marginTop: '30px' }}>
+            <button 
+              className="primary_btn" 
+              onClick={handleEdit}
+            >
+              <FiEdit style={{ marginRight: '8px' }} />
+              Edit Donor
+            </button>
+            
+            <button 
+              className="secondary_btn" 
+              onClick={handleBack}
+              style={{ marginLeft: '10px' }}
+            >
+              Back to List
+            </button>
+          </div>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default ViewDonor;
