@@ -120,34 +120,19 @@ const ViewDonor = () => {
           {/* Donor Type and Basic Info */}
           <div className="card-grid">
             <Card
-              title="Donor Type"
+              title="Registration Date"
               data={{
                 type: (
                   <div className={`donor-type ${getDonorTypeClass(donor.donor_type)}`}>
                     {getDonorTypeIcon(donor.donor_type)}
                     <span>{getDonorTypeLabel(donor.donor_type)}</span>
                   </div>
-                )
-              }}
-            />
-            
-            <Card
-              title="Registration Date"
-              data={{
+                ),
                 date: new Date(donor.created_at).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
-                })
-              }}
-            />
-          </div>
-
-          {/* Personal/Company Information */}
-          <div className="card-grid">
-            <Card
-              title={donor.donor_type === 'csr' ? 'Company Information' : 'Personal Information'}
-              data={{
+                }),
                 name: donor.name,
                 ...(donor.donor_type === 'csr' && donor.company_name && {
                   'Company Name': donor.company_name
@@ -166,16 +151,7 @@ const ViewDonor = () => {
                 }),
                 ...(donor.donor_type === 'individual' && donor.last_name && {
                   'Last Name': donor.last_name
-                })
-              }}
-            />
-          </div>
-
-          {/* Contact Information */}
-          <div className="card-grid">
-            <Card
-              title="Contact Information"
-              data={{
+                }),
                 email: donor.email,
                 phone: donor.phone,
                 ...(donor.donor_type === 'csr' && donor.company_email && {
@@ -226,13 +202,6 @@ const ViewDonor = () => {
               Edit Donor
             </button>
             
-            <button 
-              className="secondary_btn" 
-              onClick={handleBack}
-              style={{ marginLeft: '10px' }}
-            >
-              Back to List
-            </button>
           </div>
         </div>
       </div>

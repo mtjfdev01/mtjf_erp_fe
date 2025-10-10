@@ -566,20 +566,20 @@
 }
 
 .status-pending {
-  background-color: #fff3cd;
-  color: #856404;
+  background-color: #fccf3a;
+  color: white;
   border: 1px solid #ffeaa7;
 }
 
 .status-completed {
-  background-color: #d4edda;
-  color: #155724;
+  background-color: #0feb42;
+  color: white;
   border: 1px solid #c3e6cb;
 }
 
 .status-failed {
-  background-color: #f8d7da;
-  color: #721c24;
+  background-color: #f10a1d;
+  color: white;
   border: 1px solid #f5c6cb;
 }
 
@@ -590,8 +590,8 @@
 }
 
 .status-registered {
-  background-color: #cce5ff;
-  color: #004085;
+  background-color: #077af5;
+  color: white;
   border: 1px solid #b3d7ff;
 }
 

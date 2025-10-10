@@ -11,6 +11,7 @@ import { DownloadCSV } from '../../../../common/download';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../../common/filters';
 import { ClearButton } from '../../../../common/filters/index';
 import { SearchButton } from '../../../../common/filters/index';
+import HybridDropdown from '../../../../common/HybridDropdown';
 
 import { FiEye, FiTrash2, FiDollarSign } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -42,7 +43,9 @@ const OnlineDonationsList = () => {
     donation_method: '',
     date: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    amount: '',
+    price_operator: ''
   });
 
   // Applied filters - Actually sent to API
@@ -53,7 +56,9 @@ const OnlineDonationsList = () => {
     donation_method: '',
     date: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    amount: '',
+    price_operator: ''
   });
 
   // Universal filter change handler - Updates temporary filters only
@@ -88,7 +93,9 @@ const OnlineDonationsList = () => {
       donation_method: '',
       date: '',
       start_date: '',
-      end_date: ''
+      end_date: '',
+      amount: '',
+      price_operator: ''
     };
     
     // Check if filters are already empty
@@ -109,15 +116,42 @@ const OnlineDonationsList = () => {
   const fetchDonations = async () => {
     try {
       setLoading(true);
-      const params = {
-        page: currentPage,
-        pageSize: pageSize,
-        sortField: sortField,
-        sortOrder: sortOrder,
-        ...appliedFilters // Spread all applied filters into params
+      
+      // Prepare filter payload
+      const filterPayload = {
+        pagination: {
+          page: currentPage,
+          pageSize: pageSize,
+          sortField: sortField,
+          sortOrder: sortOrder
+        },
+        filters: {
+          // Basic filters
+          search: appliedFilters.search,
+          status: appliedFilters.status,
+          donation_type: appliedFilters.donation_type,
+          donation_method: appliedFilters.donation_method,
+          
+          // Date filters
+          date: appliedFilters.date,
+          start_date: appliedFilters.start_date,
+          end_date: appliedFilters.end_date,
+          
+          // Future filters can be easily added here
+          // amount_range: { min: 1000, max: 50000 },
+          // donor_categories: ['premium', 'regular'],
+          // payment_status: ['completed', 'pending'],
+          // locations: ['karachi', 'lahore', 'islamabad']
+        },
+        hybrid_filters:[ {
+          value: appliedFilters.amount,
+          operator: appliedFilters.price_operator,
+          column: 'amount',
+        }
+      ]
       };
       
-      const response = await axiosInstance.get('/donations', { params }); 
+      const response = await axiosInstance.post('/donations/search', filterPayload); 
       if (response.data.success) {
         setDonations(response.data.data || []);
         setTotalItems(response.data.pagination?.total || 0);
@@ -239,6 +273,28 @@ const OnlineDonationsList = () => {
   const donationMethodOptions = [
     { value: 'meezan', label: 'Meezan Bank' },
     { value: 'blinq', label: 'Blinq' }
+  ];
+
+  const priceRangeOptions = [
+    { value: '', label: 'Any Amount' },
+    { value: '1000', label: '1,000' },
+    { value: '5000', label: '5,000' },
+    { value: '10000', label: '10,000' },
+    { value: '25000', label: '25,000' },
+    { value: '50000', label: '50,000' },
+    { value: '100000', label: '100,000' },
+    { value: '250000', label: '250,000' },
+    { value: '500000', label: '500,000' },
+    { value: '1000000', label: '1,000,000' }
+  ];
+
+  const priceOperatorOptions = [
+    { value: '', label: 'Select Operator' },
+    { value: '>', label: 'Greater than' },
+    { value: '<', label: 'Less than' },
+    { value: '=', label: 'Equal to' },
+    { value: '>=', label: 'Greater than or equal' },
+    { value: '<=', label: 'Less than or equal' }
   ];
 
   // CSV Download Configuration
@@ -376,6 +432,24 @@ const OnlineDonationsList = () => {
               label="Date Range"
               filters={tempFilters}
               onFilterChange={handleFilterChange}
+            />
+            
+            <HybridDropdown
+              label="Amount"
+              placeholder="Type or select amount..."
+              options={priceRangeOptions}
+              value={tempFilters.amount}
+              onChange={(value) => handleFilterChange('amount', value)}
+              allowCustom={true}
+            />
+            
+            <HybridDropdown
+              label="Amount Operator"
+              placeholder="Type or select operator..."
+              options={priceOperatorOptions}
+              value={tempFilters.price_operator}
+              onChange={(value) => handleFilterChange('price_operator', value)}
+              allowCustom={true}
             />
             
             {/* Filter Action Buttons */}

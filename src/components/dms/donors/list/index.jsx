@@ -168,7 +168,7 @@ const DonorsList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#2196f3',
-      onClick: () => navigate(`/dms/donors/view/${donor.id}`),
+      onClick: () => navigate(`/dms/donors/view/${donor.id}`),  
       visible: true
     },
     {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiShield } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
@@ -12,44 +12,15 @@ import FormTextarea from '../../../common/FormTextarea';
 import UserPermissions from '../UserPermissions';
 import './CreateUser.css';
 import { toast } from 'react-toastify';
-
-const departments = [
-  { value: 'store', label: 'Store' },
-  { value: 'procurements', label: 'Procurement' },
-  { value: 'accounts_and_finance', label: 'Accounts & Finance' },
-  { value: 'program', label: 'Program' },
-  { value: 'it', label: 'IT' },
-  { value: 'marketing', label: 'Marketing' },
-  { value: 'audio_video', label: 'Audio Video' },
-  { value: 'fund_raising', label: 'Fund Raising' }
-];
-
-const bloodGroups = [
-  { value: 'A+', label: 'A+' },
-  { value: 'A-', label: 'A-' },
-  { value: 'B+', label: 'B+' },
-  { value: 'B-', label: 'B-' },
-  { value: 'AB+', label: 'AB+' },
-  { value: 'AB-', label: 'AB-' },
-  { value: 'O+', label: 'O+' },
-  { value: 'O-', label: 'O-' }
-];
-
-const roles = [
-  { value: 'user', label: 'User' },
-  { value: 'assistant_manager', label: 'Assistant Manager' },
-  { value: 'manager', label: 'Manager' }
-];
-
-const genders = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' }
-];
+import { departmentRoles, defaultRoles, departments, bloodGroups, genders } from '../../../../utils/user';
 
 
 const CreateUser = () => {
   const navigate = useNavigate();
+  
+  // State for available roles based on selected department
+  const [availableRoles, setAvailableRoles] = useState(defaultRoles);
+  
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
@@ -58,7 +29,7 @@ const CreateUser = () => {
     dob: '',
     address: '',
     cnic: '',
-    role: roles[0].value,
+    role: defaultRoles[0].value,
     department: departments[0].value,
     gender: genders[0].value,
     joining_date: '',
@@ -76,6 +47,33 @@ const CreateUser = () => {
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (error) setError('');
+  };
+
+  // Initialize roles based on default department on mount
+  useEffect(() => {
+    const initialDepartment = form.department;
+    const rolesForDepartment = departmentRoles[initialDepartment] || defaultRoles;
+    setAvailableRoles(rolesForDepartment);
+    // Set initial role to first available role for the department
+    setForm(prev => ({ ...prev, role: rolesForDepartment[0].value }));
+  }, []); // Empty dependency array - run only on mount
+
+  // Handle department change and update available roles
+  const handleDepartmentChange = (e) => {
+    const selectedDepartment = e.target.value;
+    
+    // Get department-specific roles or use default roles
+    const rolesForDepartment = departmentRoles[selectedDepartment] || defaultRoles;
+    setAvailableRoles(rolesForDepartment);
+    
+    // Update form with new department and reset role to first available
+    setForm({ 
+      ...form, 
+      department: selectedDepartment,
+      role: rolesForDepartment[0].value 
+    });
+    
     if (error) setError('');
   };
 
@@ -319,7 +317,7 @@ const CreateUser = () => {
                 label="Department"
                 value={form.department}
                 options={departments}
-                onChange={handleChange}
+                onChange={handleDepartmentChange}
                 required
               />
 
@@ -327,7 +325,7 @@ const CreateUser = () => {
                 name="role"
                 label="Role"
                 value={form.role}
-                options={roles}
+                options={availableRoles}
                 onChange={handleChange}
                 required
               />

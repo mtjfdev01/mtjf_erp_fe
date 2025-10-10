@@ -121,7 +121,6 @@ const UserView = () => {
         <div className="user-view-content">
           <div className="user-info-grid">
             <div className="user-info-section">
-              <h3 className="section-heading">Personal Information</h3>
               <div className="info-row">
                 <span className="info-label">Full Name:</span>
                 <span className="info-value">{user.firstName} {user.lastName}</span>
@@ -149,7 +148,6 @@ const UserView = () => {
             </div>
 
             <div className="user-info-section">
-              <h3 className="section-heading">Professional Information</h3>
               <div className="info-row">
                 <span className="info-label">Department:</span>
                 <span className="info-value">{formatDepartment(user.department)}</span>
@@ -165,7 +163,6 @@ const UserView = () => {
             </div>
 
             <div className="user-info-section">
-              <h3 className="section-heading">Additional Information</h3>
               <div className="info-row">
                 <span className="info-label">CNIC Number:</span>
                 <span className="info-value">{user.cnicNumber || 'N/A'}</span>

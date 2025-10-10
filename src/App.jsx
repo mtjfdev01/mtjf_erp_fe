@@ -89,10 +89,11 @@ import AdminApplicationsList from './components/admin/hr/career/applications/lis
 import AdminApplicationView from './components/admin/hr/career/applications/view';
 import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
 import { DonorsList, RegisterDonor, ViewDonor } from './components/dms';
+import AddDonation from './components/donations/online_donations/add';
 
 const App = () => {
   return (<React.Fragment>
-            <Router>
+            <Router> 
               <AuthProvider>
                 <div className="app-container">
                   {/* Sidebar - only show on protected routes */}
@@ -222,11 +223,11 @@ const App = () => {
                                 {/* Donations Routes */}
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
-
+                                <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
                                 {/* Donors Routes */}
-                                <Route path="/donors/list" element={<DonorsList />} /> 
-                                <Route path="/donors/view/:id" element={<ViewDonor />} />
-                                <Route path="/donors/add" element={<RegisterDonor />} />
+                                <Route path="/dms/donors/list" element={<DonorsList />} /> 
+                                <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
+                                <Route path="/dms/donors/add" element={<RegisterDonor />} />
                                 {/* <Route path="/donors/update/:id" element={<UpdateDonor />} /> */}
                               </Routes>
                             </main>

@@ -134,6 +134,36 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    fund_raising: {
+      label: 'Fund Raising',
+      submodules: {
+        donations: {
+          label: 'Donations',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        donation_box: {
+          label: 'Donation Box',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        donors: {
+          label: 'Donors',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        dashboard: {
+          label: 'Dashboard',
+          actions: ['view']
+        }
+      }
+    },
+    it: {
+      label: 'IT',
+      submodules: {
+        reports: {
+          label: 'Reports',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        }
+      }
+    },
     permissions: {
       label: 'Permissions',
       submodules: {
@@ -405,7 +435,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
               <div className="super-admin-section">
                 <div className="super-admin-header">
                   <label className="super-admin-checkbox">
-                                          <input
+                      <input
                         type="checkbox"
                         checked= {user?.permissions?.permissions?.super_admin || false}
                         onChange={(e) => handleSuperAdminToggle(e.target.checked)}

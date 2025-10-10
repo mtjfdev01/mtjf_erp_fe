@@ -5,6 +5,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
+import HybridDropdown from '../../../common/HybridDropdown';
 import Navbar from '../../../Navbar';
 // import '../../Store.css';
 
@@ -90,7 +91,7 @@ const RegisterDonor = () => {
       await axiosInstance.post('/donors/register', donorData);
 
       // Redirect to donors list after successful registration
-      navigate('/donors/list');
+      navigate('/dms/donors/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to register donor. Please try again.');
       console.error('Error registering donor:', err);
