@@ -70,7 +70,7 @@ const UserList = () => {
     {
       key: 'search',
       type: 'text',
-      placeholder: isSearchPending ? 'Searching... (3s delay)' : 'Search users... (3s delay)',
+      placeholder: isSearchPending ? 'Searching... ' : 'Search users... ',
       value: searchInput, // Use searchInput for immediate UI updates
       width: '250px'
     },

@@ -90,6 +90,11 @@ import AdminApplicationView from './components/admin/hr/career/applications/view
 import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
 import { DonorsList, RegisterDonor, ViewDonor } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
+import AddDonationBox from './components/dms/donation_box/add';
+import DonationBoxList from './components/dms/donation_box/list';
+import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
+import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
+import FundRaising from './components/dms/fund_raising';
 
 const App = () => {
   return (<React.Fragment>
@@ -112,7 +117,6 @@ const App = () => {
                                 <Route path="/program" element={<Program />} />
                                 <Route path="/accounts_and_finance" element={<AccountsAndFinance />} />
                                 <Route path="/admin" element={<AdminDashboard />} />
-                                <Route path="/fund_raising" element={<OnlineDonationsList />} /> 
 
                                 {/* User Management Routes */}
                                 <Route path="/admin/users" element={<UserList />} />
@@ -219,11 +223,20 @@ const App = () => {
                                 {/* HR */}
                                 <Route path="/hr/career/applications/list" element={<AdminApplicationsList />} />
                                 <Route path="/hr/career/applications/view/:id" element={<AdminApplicationView />} />
+                                
+                                {/* Fund Raising Welcome */}
+                                <Route path="/fund_raising" element={<FundRaising />} /> 
+                                {/* DMS Section Routes */}
+                                <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
+                                <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
+                                <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
+                                <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
 
                                 {/* Donations Routes */}
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
+                                
                                 {/* Donors Routes */}
                                 <Route path="/dms/donors/list" element={<DonorsList />} /> 
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />

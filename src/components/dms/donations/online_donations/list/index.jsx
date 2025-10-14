@@ -12,6 +12,7 @@ import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../..
 import { ClearButton } from '../../../../common/filters/index';
 import { SearchButton } from '../../../../common/filters/index';
 import HybridDropdown from '../../../../common/HybridDropdown';
+import SearchableDropdown from '../../../../common/SearchableDropdown';
 
 import { FiEye, FiTrash2, FiDollarSign } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -26,6 +27,7 @@ const OnlineDonationsList = () => {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
+  const [selectedDonor, setSelectedDonor] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,7 +47,8 @@ const OnlineDonationsList = () => {
     start_date: '',
     end_date: '',
     amount: '',
-    price_operator: ''
+    price_operator: '',
+    donor_id: ''
   });
 
   // Applied filters - Actually sent to API
@@ -58,7 +61,8 @@ const OnlineDonationsList = () => {
     start_date: '',
     end_date: '',
     amount: '',
-    price_operator: ''
+    price_operator: '',
+    donor_id: ''
   });
 
   // Universal filter change handler - Updates temporary filters only
@@ -66,6 +70,24 @@ const OnlineDonationsList = () => {
     setTempFilters(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  // Handle donor selection for filtering
+  const handleDonorSelect = (donor) => {
+    setSelectedDonor(donor);
+    setTempFilters(prev => ({
+      ...prev,
+      donor_id: donor.id
+    }));
+  };
+
+  // Handle donor clear
+  const handleDonorClear = () => {
+    setSelectedDonor(null);
+    setTempFilters(prev => ({
+      ...prev,
+      donor_id: ''
     }));
   };
 
@@ -95,8 +117,12 @@ const OnlineDonationsList = () => {
       start_date: '',
       end_date: '',
       amount: '',
-      price_operator: ''
+      price_operator: '',
+      donor_id: ''
     };
+    
+    // Also clear selected donor
+    setSelectedDonor(null);
     
     // Check if filters are already empty
     const filtersAreEmpty = JSON.stringify(appliedFilters) === JSON.stringify(emptyFilters);
@@ -136,6 +162,9 @@ const OnlineDonationsList = () => {
           date: appliedFilters.date,
           start_date: appliedFilters.start_date,
           end_date: appliedFilters.end_date,
+          
+          // Donor filter
+          donor_id: appliedFilters.donor_id,
           
           // Future filters can be easily added here
           // amount_range: { min: 1000, max: 50000 },
@@ -272,7 +301,8 @@ const OnlineDonationsList = () => {
 
   const donationMethodOptions = [
     { value: 'meezan', label: 'Meezan Bank' },
-    { value: 'blinq', label: 'Blinq' }
+    { value: 'blinq', label: 'Blinq' },
+    { value: 'payfast', label: 'Payfast' }
   ];
 
   const priceRangeOptions = [
@@ -419,6 +449,25 @@ const OnlineDonationsList = () => {
               placeholder="All Methods"
             />
             
+            <HybridDropdown
+              label="Amount"
+              placeholder="Type or select amount..."
+              options={priceRangeOptions}
+              value={tempFilters.amount}
+              onChange={(value) => handleFilterChange('amount', value)}
+              allowCustom={true}
+            />
+            
+            {/* Custom plus specified options */}
+            <HybridDropdown
+              label="Amount Operator"
+              placeholder="Type or select operator..."
+              options={priceOperatorOptions}
+              value={tempFilters.price_operator}
+              onChange={(value) => handleFilterChange('price_operator', value)}
+              allowCustom={true}
+            />
+            
             <DateFilter
               filterKey="date"
               label="Specific Date"
@@ -434,22 +483,36 @@ const OnlineDonationsList = () => {
               onFilterChange={handleFilterChange}
             />
             
-            <HybridDropdown
-              label="Amount"
-              placeholder="Type or select amount..."
-              options={priceRangeOptions}
-              value={tempFilters.amount}
-              onChange={(value) => handleFilterChange('amount', value)}
-              allowCustom={true}
-            />
-            
-            <HybridDropdown
-              label="Amount Operator"
-              placeholder="Type or select operator..."
-              options={priceOperatorOptions}
-              value={tempFilters.price_operator}
-              onChange={(value) => handleFilterChange('price_operator', value)}
-              allowCustom={true}
+            <SearchableDropdown
+              label="Filter by Donor"
+              placeholder="Search donors..."
+              apiEndpoint="/donors"
+              onSelect={handleDonorSelect}
+              onClear={handleDonorClear}
+              value={selectedDonor}
+              displayKey="name"
+              debounceDelay={500}
+              minSearchLength={2}
+              allowResearch={true}
+              renderOption={(donor, index) => (
+                <div 
+                  key={donor.id}
+                  className="searchable-dropdown__option"
+                  onClick={() => handleDonorSelect(donor)}
+                  style={{ 
+                    padding: '12px',
+                    borderBottom: index < donor.length - 1 ? '1px solid #eee' : 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                    {donor.name || `${donor.first_name} ${donor.last_name}`}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {donor.email} • {donor.phone}
+                  </div>
+                </div>
+              )}
             />
             
             {/* Filter Action Buttons */}

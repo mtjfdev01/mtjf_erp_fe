@@ -1,7 +1,10 @@
 /* Searchable Dropdown Styles */
 .searchable-dropdown {
   position: relative;
-  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
   margin-bottom: var(--spacing-md, 1rem);
 }
 
@@ -177,6 +180,10 @@
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
+  .searchable-dropdown {
+    min-width: 100%;
+  }
+  
   .searchable-dropdown__dropdown {
     max-height: 250px;
   }

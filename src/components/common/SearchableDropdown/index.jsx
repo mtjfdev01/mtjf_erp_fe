@@ -16,7 +16,7 @@ import './styles.css';
  * @param {string} searchParamName - Name of the search query parameter (default: 'search')
  * @param {Function} onSelect - Callback when an item is selected (receives selected item)
  * @param {Function} renderOption - Custom render function for dropdown options
- * @param {string} displayKey - Key to display in the input after selection (default: 'name')
+ * @param {string} displayKey - Key to display in the input after selection (default: 'name'). Falls back to 'name' property if displayKey doesn't exist.
  * @param {number} debounceDelay - Delay in ms before triggering search (default: 500)
  * @param {number} minSearchLength - Minimum characters before search (default: 2)
  * @param {string} loadingText - Text to show while loading (default: 'Searching...')
@@ -208,25 +208,30 @@ const SearchableDropdown = ({
   }, [value, displayKey]);
 
   // Default render function for options
-  const defaultRenderOption = (item, index) => (
-    <div 
-      key={item.id || index}
-      className={`searchable-dropdown__option ${
-        highlightedIndex === index ? 'searchable-dropdown__option--highlighted' : ''
-      }`}
-      onClick={() => handleSelect(item)}
-      onMouseEnter={() => setHighlightedIndex(index)}
-    >
-      <div className="searchable-dropdown__option-name">
-        {item[displayKey] || item.name || 'Unnamed'}
-      </div>
-      {item.email && (
-        <div className="searchable-dropdown__option-secondary">
-          {item.email}
+  const defaultRenderOption = (item, index) => {
+    // Use displayKey first, then fallback to 'name', then 'Unnamed'
+    const displayValue = item[displayKey] || item.name || 'Unnamed';
+    
+    return (
+      <div 
+        key={item.id || index}
+        className={`searchable-dropdown__option ${
+          highlightedIndex === index ? 'searchable-dropdown__option--highlighted' : ''
+        }`}
+        onClick={() => handleSelect(item)}
+        onMouseEnter={() => setHighlightedIndex(index)}
+      >
+        <div className="searchable-dropdown__option-name">
+          {displayValue}
         </div>
-      )}
-    </div>
-  );
+        {item.email && (
+          <div className="searchable-dropdown__option-secondary">
+            {item.email}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderOptionFunc = renderOption || defaultRenderOption;
 

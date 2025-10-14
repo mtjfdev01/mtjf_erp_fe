@@ -108,6 +108,114 @@ const adminDepartmentItems = () => [
     subItems: [
       { label: 'Admin Dashboard', path: '/admin', type: 'list' }
     ]
+  },
+  {
+    label: 'Program',
+    path: '/program',
+    type: 'list',
+    subItems: [
+      { label: 'Program Dashboard', path: '/program', type: 'list' },
+      {label: "Application Reports", path: "/program/applications_reports", type: "list"},
+      {label: "Ration Report", path: "/program/ration_report/list", type: "list"},
+      {label: "marriage_gifts", path: "/program/marriage_gifts/reports/list", type: "list"},
+      {label: "financial_assistance", path: "/program/financial_assistance/reports/list", type: "list"},
+      {label: "sewing_machine", path: "/program/sewing_machine/reports/list", type: "list"},
+      {label: "wheel_chair_or_crutches", path: "/program/wheel_chair_or_crutches/reports/list", type: "list"},
+      {label: "water", path: "/program/water/reports/list", type: "list"},
+      {label: "kasb", path: "/program/kasb/reports/list", type: "list"},
+      {label: "kasb_training", path: "/program/kasb-training/reports", type: "list"},
+      {label: "education", path: "/program/education/reports/list", type: "list"},
+      {label: "tree_plantation", path: "/program/tree_plantation/reports/list", type: "list"},
+      {label: "area_ration", path: "/program/area_ration/reports/list", type: "list"},
+      {label: "targets", path: "/program/targets/reports/list", type: "list"} 
+    ]
+  },
+  {
+    label: 'Store',
+    path: '/store',
+    type: 'list',
+    subItems: [
+      {label: "store_reports", path: "/store/reports/list", type: "list"}
+    ]
+  },
+  {
+    label: 'Fund Raising',
+    path: '/fund_raising',
+    type: 'list',
+    subItems: [ 
+      {label: "donations", path: "/donations/online_donations/list", type: "list"},
+      {label: "donation_box", path: "/dms/donation_box/list", type: "list"},
+      {label: "donation_box_donations", path: "/dms/donation-box-donations/list", type: "list"},
+      {label: "donors", path: "/dms/donors/list", type: "list"} 
+    ]
+  },
+  {
+    label: 'Procurements',
+    path: '/procurements',
+    type: 'list',
+    subItems: [
+      {label: "procurements_reports", path: "/procurements/reports/list", type: "list"}
+    ]
+  },
+  {
+    label: 'Accounts & Finance',
+    path: '/accounts_and_finance',
+    type: 'list',
+    subItems: [
+      {label: "accounts_and_finance_reports", path: "/accounts_and_finance/reports/list", type: "list"}
+    ]
+  },
+  {
+    label: 'IT',
+    path: '/it',
+    type: 'list',
+    subItems: [
+      {label: "it_reports", path: "/it/reports/list", type: "list"}
+    ]
+  },
+  {
+    label: 'Marketing',
+    path: '/marketing',
+    type: 'list',
+    subItems: [
+      {label: "marketing_reports", path: "/marketing/reports/list", type: "list"}
+    ]
+  },
+  {
+    label: 'Audio Video',
+    path: '/audio_video',
+    type: 'list',
+    subItems: [
+      {label: "audio_video_reports", path: "/audio_video/reports/list", type: "list"}
+    ]
+  }
+];
+
+const fundRaisingDepartmentItems = (isUser = false) => [
+  {
+    label: 'Donations',
+    path: '/donations/online_donations/list',
+    type: 'list'
+  },
+  {
+    label: 'Donation Box',
+    path: '/dms/donation_box/list',
+    type: 'list'
+  },
+  {
+    label: 'Donation Box Donations',
+    path: '/dms/donation-box-donations/list',
+    type: 'list'
+  },
+  {
+    label: 'Donors',
+    path: '/dms/donors/list',
+    type: 'list'
+  },
+  {
+    label: 'Dashboard',
+    path: '/fund_raising',
+    type: 'list'
   }
 ];
 
@@ -125,7 +233,7 @@ const departmentConfigs = {
     items: storeDepartmentItems(isUser)
   }),
   
-  procurements: (isUser = false) => ({
+  procurements: (isUser = alse) => ({
     id: 'procurements',
     label: 'Procurements Department',
     items: procurementsDepartmentItems(isUser)
@@ -141,6 +249,11 @@ const departmentConfigs = {
     id: 'admin',
     label: 'Admin Panel',
     items: adminDepartmentItems()
+  }),
+  fund_raising: (isUser = false) => ({
+    id: 'fund_raising',
+    label: 'Fund Raising',
+    items: fundRaisingDepartmentItems(isUser)
   })
 };
 
@@ -159,7 +272,8 @@ export const getSidebarConfig = (user) => {
       departmentConfigs.store(false),
       departmentConfigs.procurements(false),
       departmentConfigs.accounts_and_finance(false),
-      departmentConfigs.admin()
+      departmentConfigs.admin(),
+      departmentConfigs.fund_raising(false)
     ];
   }
 
