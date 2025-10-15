@@ -383,7 +383,8 @@ const OnlineDonationsList = () => {
           <PageHeader 
             title="Online Donations" 
             showBackButton={false} 
-            showAdd={false}
+            showAdd={true}
+            addPath=''
           />
           <div className="loading">Loading...</div>
         </div>
@@ -398,7 +399,8 @@ const OnlineDonationsList = () => {
         <PageHeader 
           title="Online Donations" 
           showBackButton={false} 
-          showAdd={false}
+          showAdd={true}
+          addPath='/donations/online_donations/add'
         />
         
         <div className="list-content">

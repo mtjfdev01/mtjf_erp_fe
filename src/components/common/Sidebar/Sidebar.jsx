@@ -12,7 +12,7 @@ const Sidebar = () => {
   const [activeItem, setActiveItem] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
 
   useEffect(() => {
     setActiveItem(location.pathname);
@@ -36,7 +36,16 @@ const Sidebar = () => {
     setMobileOpen(false);
   };
 
-  const sidebarConfig = getSidebarConfig(user);
+  const sidebarConfig = getSidebarConfig(user, permissions);
+
+  // Debug logging (remove in production)
+  useEffect(() => {
+    if (user && permissions) {
+      console.log('Sidebar - User:', user);
+      console.log('Sidebar - Permissions:', permissions);
+      console.log('Sidebar - Config:', sidebarConfig);
+    }
+  }, [user, permissions, sidebarConfig]);
 
   return (
     <>

@@ -15,7 +15,9 @@ import './styles.css';
  * @param {object} apiParams - Additional params to send with API request
  * @param {string} searchParamName - Name of the search query parameter (default: 'search')
  * @param {Function} onSelect - Callback when an item is selected (receives selected item)
- * @param {Function} renderOption - Custom render function for dropdown options
+ * @param {Function} renderOption - Custom render function for dropdown options (receives item, index). 
+ *                                   Component automatically wraps it with key, onClick, and onMouseEnter handlers.
+ *                                   Just return the content you want to display (use Fragment or div).
  * @param {string} displayKey - Key to display in the input after selection (default: 'name'). Falls back to 'name' property if displayKey doesn't exist.
  * @param {number} debounceDelay - Delay in ms before triggering search (default: 500)
  * @param {number} minSearchLength - Minimum characters before search (default: 2)
@@ -114,6 +116,7 @@ const SearchableDropdown = ({
 
   // Handle item selection
   const handleSelect = (item) => {
+    console.log("wqeeerwrwre13213", item);
     setSelectedItem(item);
     setSearchTerm(item[displayKey] || '');
     setIsOpen(false);
@@ -285,7 +288,25 @@ const SearchableDropdown = ({
             </div>
           ) : results.length > 0 ? (
             <div className="searchable-dropdown__results">
-              {results.map((item, index) => renderOptionFunc(item, index))}
+              {results.map((item, index) => {
+                // If custom render is provided, wrap it with necessary handlers
+                if (renderOption) {
+                  return (
+                    <div
+                      key={item.id || index}
+                      className={`searchable-dropdown__option ${
+                        highlightedIndex === index ? 'searchable-dropdown__option--highlighted' : ''
+                      }`}
+                      onClick={() => handleSelect(item)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                    >
+                      {renderOption(item, index)}
+                    </div>
+                  );
+                }
+                // Use default render
+                return defaultRenderOption(item, index);
+              })}
             </div>
           ) : (
             <div className="searchable-dropdown__message searchable-dropdown__message--empty">

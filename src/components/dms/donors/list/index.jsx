@@ -235,8 +235,7 @@ const DonorsList = () => {
           title="Registered Donors" 
           showBackButton={false} 
           showAdd={true}
-          onAddClick={() => navigate('/dms/donors/register')}
-          addButtonText="Register Donor"
+          addPath='/dms/donors/add'
         />
         
         <div className="list-content">

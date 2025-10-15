@@ -43,9 +43,9 @@ const AddDonationBoxDonation = () => {
   };
 
   // Custom render function for donation box options
-  // Note: onClick and onMouseEnter are handled by SearchableDropdown internally
+  // Note: SearchableDropdown wraps this with key, onClick, and onMouseEnter
   const renderDonationBoxOption = (box) => (
-    <div className="searchable-dropdown__option">
+    <>
       <div style={{ fontWeight: '600', color: '#333' }}>
         Box ID: {box.box_id_no}
       </div>
@@ -55,7 +55,7 @@ const AddDonationBoxDonation = () => {
       <div style={{ fontSize: '0.85em', color: '#999' }}>
         {box.city}, {box.region} • {box.box_type}
       </div>
-    </div>
+    </>
   );
 
   const handleSubmit = async (e) => {
@@ -85,7 +85,7 @@ const AddDonationBoxDonation = () => {
         collection_date: form.collection_date
       };
 
-      await axiosInstance.post('/donation-box-donations', donationData);
+      await axiosInstance.post('/donation-box-donation', donationData); 
 
       // Redirect to donations list after successful creation
       navigate('/dms/donation-box-donations/list');
@@ -120,7 +120,7 @@ const AddDonationBoxDonation = () => {
           {/* Donation Box Selection */}
           <div className="form-section">
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Donation Box Information</h3>
-            <div className="form-grid-2">
+            <div className="form-grid-2"> 
               <SearchableDropdown
                 label="Search Donation Box"
                 placeholder="Type Box ID or Shopkeeper name..."
@@ -138,7 +138,7 @@ const AddDonationBoxDonation = () => {
                 allowResearch={true}
               />
 
-              {form.donation_box && (
+              {/* {form.donation_box && (
                 <div style={{ 
                   padding: '15px', 
                   backgroundColor: '#f0f9ff', 
@@ -156,7 +156,7 @@ const AddDonationBoxDonation = () => {
                     <div><strong>Box Type:</strong> {form.donation_box.box_type}</div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
 

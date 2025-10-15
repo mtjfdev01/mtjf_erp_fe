@@ -306,11 +306,11 @@ const DonationBoxDonationsList = () => {
         <Navbar />
         <div className="list-wrapper">
           <PageHeader 
-            title={getPageTitle()} 
+            title = 'Donation Box Collections'  
             showBackButton={!!donationBoxId} 
             backPath={getBackPath()}
             showAdd={true}
-            onAdd={() => navigate('/dms/donation-box-donations/add')}
+            addPath='/dms/donation-box-donations/add'
           />
           <div className="loading">Loading...</div>
         </div>
@@ -323,11 +323,11 @@ const DonationBoxDonationsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader 
-          title={getPageTitle()} 
-          showBackButton={!!donationBoxId} 
-          backPath={getBackPath()}
-          showAdd={true}
-          onAdd={() => navigate('/dms/donation-box-donations/add')}
+            title = 'Donation Box Collections'  
+            showBackButton={!!donationBoxId} 
+            backPath={getBackPath()}
+            showAdd={true}
+            addPath='/dms/donation-box-donations/add'
         />
         
         <div className="list-content">

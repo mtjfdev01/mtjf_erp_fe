@@ -1,70 +1,84 @@
 // Sidebar configuration for different user roles and departments
+import { canViewModule, isSuperAdmin } from '../../../utils/permissions';
 
 const programDepartmentItems = (isUser = false) => [
   {
     label: 'Applications Reports',
     path: '/program/applications_reports',
-    type: 'list'
+    type: 'list',
+    module: 'applications_reports'
   },
   {
     label: 'Ration Reports',
     path: '/program/ration_report/list',
-    type: 'list'
+    type: 'list',
+    module: 'ration_reports'
   },
   {
     label: 'Marriage Gifts',
     path: '/program/marriage_gifts/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'marriage_gifts'
   },
   {
     label: 'Financial Assistance',
     path: '/program/financial_assistance/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'financial_assistance'
   },
   {
     label: 'Sewing Machine',
     path: '/program/sewing_machine/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'sewing_machine'
   },
   {
     label: 'Wheel Chair/Crutches',
     path: '/program/wheel_chair_or_crutches/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'wheel_chair_or_crutches'
   },
   {
     label: 'Water Reports',
     path: '/program/water/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'water'
   },
   {
     label: 'Kasb Reports',
     path: '/program/kasb/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'kasb'
   },
   {
     label: 'Kasb Training Reports',
     path: '/program/kasb-training/reports',
-    type: 'list'
+    type: 'list',
+    module: 'kasb_training'
   },
   {
     label: 'Education Reports',
     path: '/program/education/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'education'
   },
   {
     label: 'Tree Plantation Reports',
     path: '/program/tree_plantation/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'tree_plantation'
   },
   {
     label: 'Area Ration Reports',
     path: '/program/area_ration/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'area_ration'
   },
   {
     label: 'Targets',
     path: '/program/targets/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'targets'
   }
 ];
 
@@ -72,7 +86,8 @@ const storeDepartmentItems = (isUser = false) => [
   {
     label: 'Reports',
     path: '/store/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'reports'
   }
 ];
 
@@ -80,7 +95,8 @@ const procurementsDepartmentItems = (isUser = false) => [
   {
     label: 'Reports',
     path: '/procurements/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'reports'
   }
 ];
 
@@ -88,7 +104,8 @@ const accountsFinanceDepartmentItems = (isUser = false) => [
   {
     label: 'Reports',
     path: '/accounts_and_finance/reports/list',
-    type: 'list'
+    type: 'list',
+    module: 'reports'
   }
 ];
 
@@ -195,27 +212,32 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   {
     label: 'Donations',
     path: '/donations/online_donations/list',
-    type: 'list'
+    type: 'list',
+    module: 'donations'
   },
   {
     label: 'Donation Box',
     path: '/dms/donation_box/list',
-    type: 'list'
+    type: 'list',
+    module: 'donation_box'
   },
   {
     label: 'Donation Box Donations',
     path: '/dms/donation-box-donations/list',
-    type: 'list'
+    type: 'list',
+    module: 'donation_box_donations'
   },
   {
     label: 'Donors',
     path: '/dms/donors/list',
-    type: 'list'
+    type: 'list',
+    module: 'donors'
   },
   {
     label: 'Dashboard',
     path: '/fund_raising',
-    type: 'list'
+    type: 'list',
+    module: 'dashboard'
   }
 ];
 
@@ -233,7 +255,7 @@ const departmentConfigs = {
     items: storeDepartmentItems(isUser)
   }),
   
-  procurements: (isUser = alse) => ({
+  procurements: (isUser = false) => ({
     id: 'procurements',
     label: 'Procurements Department',
     items: procurementsDepartmentItems(isUser)
@@ -256,17 +278,34 @@ const departmentConfigs = {
     items: fundRaisingDepartmentItems(isUser)
   })
 };
+ 
+// Filter items based on user permissions
+const filterItemsByPermissions = (items, permissions, department) => {
+  if (!permissions || !department) {
+    return items; // Return all items if no permissions (fallback)
+  }
 
-// Get sidebar configuration based on user role and department
-export const getSidebarConfig = (user) => {
+  return items.filter(item => {
+    // If item has no module, show it (for backward compatibility)
+    if (!item.module) {
+      return true;
+    }
+
+    // Check if user has permission to view this module
+    return canViewModule(permissions, department, item.module);
+  });
+};
+
+// Get sidebar configuration based on user role, department, and permissions
+export const getSidebarConfig = (user, permissions = null) => {
   if (!user) return [];
 
-  const isSuperAdmin = user.role === 'super_admin';
-  const isAdmin = user.role === 'admin';
+  const isSuperAdminRole = user.role === 'super_admin';
+  const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
 
-  // Super admin sees all departments
-  if (isSuperAdmin) {
+  // Super admin sees all departments (check both role and permission)
+  if (isSuperAdminRole || isSuperAdminPermission) {
     return [
       departmentConfigs.program(false),
       departmentConfigs.store(false),
@@ -282,7 +321,18 @@ export const getSidebarConfig = (user) => {
   const departmentConfig = departmentConfigs[userDepartment];
   
   if (departmentConfig) {
-    return [departmentConfig(isUser)];
+    const config = departmentConfig(isUser);
+    
+    // Filter items based on permissions if available
+    if (permissions && userDepartment) {
+      return [{
+        ...config,
+        items: filterItemsByPermissions(config.items, permissions, userDepartment)
+      }];
+    }
+    
+    // Fallback to role-based if no permissions
+    return [config];
   }
 
   return [];

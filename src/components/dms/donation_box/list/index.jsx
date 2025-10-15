@@ -360,7 +360,7 @@ const DonationBoxList = () => {
             title="Donation Boxes" 
             showBackButton={false} 
             showAdd={true}
-            onAdd={() => navigate('/dms/donation-boxes/add')}
+            addPath='/dms/donation-boxes/add'
           />
           <div className="loading">Loading...</div>
         </div>
@@ -376,7 +376,7 @@ const DonationBoxList = () => {
           title="Donation Boxes" 
           showBackButton={false} 
           showAdd={true}
-          onAdd={() => navigate('/dms/donation-boxes/add')}
+          addPath='/dms/donation_box/add'
         />
         
         <div className="list-content">

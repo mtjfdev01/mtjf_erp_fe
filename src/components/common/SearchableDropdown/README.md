@@ -6,12 +6,13 @@ A reusable, custom-built searchable dropdown component with debouncing for effic
 
 ✅ **Debounced Search** - Reduces API calls with configurable delay  
 ✅ **Keyboard Navigation** - Arrow keys, Enter, and Escape support  
-✅ **Custom Rendering** - Full control over option display  
+✅ **Custom Rendering** - Full control over option display (automatically wrapped with handlers)  
 ✅ **Loading States** - Built-in loading indicator  
 ✅ **Clear Selection** - Easy-to-use clear button  
 ✅ **Click Outside** - Closes dropdown when clicking outside  
 ✅ **Responsive** - Works on mobile and desktop  
 ✅ **Accessible** - Proper ARIA labels and keyboard support  
+✅ **Smart Wrapping** - Custom renders are automatically wrapped with key, onClick, and hover handlers  
 
 ## Installation
 
@@ -84,19 +85,41 @@ const handleUserSearch = async (searchTerm) => {
 
 ### Custom Option Rendering
 
+**Important:** The component automatically wraps your custom render with `key`, `onClick`, and `onMouseEnter` handlers. Just return the content you want to display.
+
 ```jsx
-<SearchableDropdown
-  label="Select User"
-  onSearch={handleSearch}
-  onSelect={setSelectedUser}
-  renderOption={(user, index) => (
-    <div className="custom-option" key={user.id}>
-      <div className="user-name">{user.first_name} {user.last_name}</div>
-      <div className="user-email">{user.email}</div>
-      <div className="user-role">{user.role} • {user.department}</div>
+// ✅ Correct - Return content only (Fragment or div)
+const renderDonationBoxOption = (box) => (
+  <>
+    <div style={{ fontWeight: '600', color: '#333' }}>
+      Box ID: {box.box_id_no}
     </div>
-  )}
+    <div style={{ fontSize: '0.9em', color: '#666' }}>
+      {box.shop_name} - {box.shopkeeper || 'N/A'}
+    </div>
+    <div style={{ fontSize: '0.85em', color: '#999' }}>
+      {box.city}, {box.region} • {box.box_type}
+    </div>
+  </>
+);
+
+<SearchableDropdown
+  label="Search Donation Box"
+  apiEndpoint="/donation-box"
+  onSelect={handleDonationBoxSelect}
+  renderOption={renderDonationBoxOption}
+  displayKey="box_id_no"
 />
+
+// ❌ Wrong - Don't add your own wrapper with key/onClick
+const renderWrong = (box) => (
+  <div 
+    key={box.id}  // ❌ Component adds this automatically
+    onClick={() => handleSelect(box)}  // ❌ Component adds this
+  >
+    ...
+  </div>
+);
 ```
 
 ### With Clear Callback
