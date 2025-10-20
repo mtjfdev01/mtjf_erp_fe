@@ -114,6 +114,7 @@ const adminDepartmentItems = () => [
     label: 'User Management',
     path: '/admin/users',
     type: 'list',
+    module: 'user_management'
     // subItems: [
     //   { label: 'View All Users', path: '/admin/users', type: 'list' },
     // ]
@@ -122,6 +123,7 @@ const adminDepartmentItems = () => [
     label: 'Dashboard',
     path: '/admin',
     type: 'list',
+    module: 'admin_dashboard',
     subItems: [
       { label: 'Admin Dashboard', path: '/admin', type: 'list' }
     ]
@@ -130,6 +132,7 @@ const adminDepartmentItems = () => [
     label: 'Program',
     path: '/program',
     type: 'list',
+    module: 'program_admin',
     subItems: [
       { label: 'Program Dashboard', path: '/program', type: 'list' },
       {label: "Application Reports", path: "/program/applications_reports", type: "list"},
@@ -151,6 +154,7 @@ const adminDepartmentItems = () => [
     label: 'Store',
     path: '/store',
     type: 'list',
+    module: 'store_admin',
     subItems: [
       {label: "store_reports", path: "/store/reports/list", type: "list"}
     ]
@@ -159,6 +163,7 @@ const adminDepartmentItems = () => [
     label: 'Fund Raising',
     path: '/fund_raising',
     type: 'list',
+    module: 'fund_raising_admin',
     subItems: [ 
       {label: "donations", path: "/donations/online_donations/list", type: "list"},
       {label: "donation_box", path: "/dms/donation_box/list", type: "list"},
@@ -170,6 +175,7 @@ const adminDepartmentItems = () => [
     label: 'Procurements',
     path: '/procurements',
     type: 'list',
+    module: 'procurements_admin',
     subItems: [
       {label: "procurements_reports", path: "/procurements/reports/list", type: "list"}
     ]
@@ -178,6 +184,7 @@ const adminDepartmentItems = () => [
     label: 'Accounts & Finance',
     path: '/accounts_and_finance',
     type: 'list',
+    module: 'accounts_finance_admin',
     subItems: [
       {label: "accounts_and_finance_reports", path: "/accounts_and_finance/reports/list", type: "list"}
     ]
@@ -186,6 +193,7 @@ const adminDepartmentItems = () => [
     label: 'IT',
     path: '/it',
     type: 'list',
+    module: 'it_admin',
     subItems: [
       {label: "it_reports", path: "/it/reports/list", type: "list"}
     ]
@@ -194,6 +202,7 @@ const adminDepartmentItems = () => [
     label: 'Marketing',
     path: '/marketing',
     type: 'list',
+    module: 'marketing_admin',
     subItems: [
       {label: "marketing_reports", path: "/marketing/reports/list", type: "list"}
     ]
@@ -202,6 +211,7 @@ const adminDepartmentItems = () => [
     label: 'Audio Video',
     path: '/audio_video',
     type: 'list',
+    module: 'audio_video_admin',
     subItems: [
       {label: "audio_video_reports", path: "/audio_video/reports/list", type: "list"}
     ]

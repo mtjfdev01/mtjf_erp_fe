@@ -14,6 +14,7 @@ import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import { InKindItemsProvider } from './context/InKindItemsContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
 import UserView from './components/admin/user/UserView';
 import ApplicationReportsList from './components/program/applications_report/application_reports_list';
@@ -95,11 +96,16 @@ import DonationBoxList from './components/dms/donation_box/list';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import FundRaising from './components/dms/fund_raising';
+import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
+import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
+import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
+import ViewInKindItem from './components/dms/in_kind/in_kind_items/view';
 
 const App = () => {
   return (<React.Fragment>
             <Router> 
               <AuthProvider>
+                <InKindItemsProvider>
                 <div className="app-container">
                   {/* Sidebar - only show on protected routes */}
                   <Routes>
@@ -242,6 +248,11 @@ const App = () => {
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
                                 {/* <Route path="/donors/update/:id" element={<UpdateDonor />} /> */}
+                                {/* In-Kind Items Routes */}
+                                <Route path="/dms/in-kind-items/list" element={<InKindItemsList />} />
+                                <Route path="/dms/in-kind-items/add" element={<AddInKindItem />} />
+                                <Route path="/dms/in-kind-items/edit/:id" element={<EditInKindItem />} />
+                                <Route path="/dms/in-kind-items/view/:id" element={<ViewInKindItem />} />
                               </Routes>
                             </main>
                           </div>
@@ -249,7 +260,8 @@ const App = () => {
                     />
                   </Routes>
                 </div>
-              </AuthProvider>
+              </InKindItemsProvider>
+            </AuthProvider>
             </Router>
             <ToastContainer />
           </React.Fragment>

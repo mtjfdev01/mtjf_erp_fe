@@ -8,9 +8,14 @@ import HybridDropdown from '../../../common/HybridDropdown';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { donation_collection_centers } from '../../../../utils/dms';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { useInKindItems } from '../../../../context/InKindItemsContext';
+import ReloadButton from '../../../common/buttons/reload';
 
 const AddDonation = () => {
   const navigate = useNavigate();
+  const { inKindItems, refetchInKindItems } = useInKindItems();
+  console.log("inKindItems", inKindItems);
   const [form, setForm] = useState({
     // Donor information (will come from selected donor)
     donor_id: '',
@@ -28,21 +33,29 @@ const AddDonation = () => {
     // Payment method specific fields
     cheque_number: '',
     bank_name: '',
-    in_kind_item_name: '',
-    in_kind_quantity: '',
+    
+    // In-kind donation fields (array of items)
+        in_kind_items: [
+          {
+            name: '',
+            description: '',
+            category: '',
+            condition: 'good',
+            quantity: 1,
+            estimated_value: '',
+            brand: '',
+            model: '',
+            size: '',
+            color: '',
+            collection_date: new Date().toISOString().split('T')[0],
+            collection_location: '',
+            notes: ''
+          }
+        ],
     
     // Project information
     project_id: '',
-    project_name: '',
-    
-    // Item details (optional)
-    item_name: '',
-    item_description: '',
-    item_price: '',
-    
-    // Payment details
-    orderId: '',
-    recurrence_id: ''
+    project_name: ''
   });
   
   const [selectedDonor, setSelectedDonor] = useState(null);
@@ -72,6 +85,70 @@ const AddDonation = () => {
     });
   };
 
+  // Handle adding new in-kind item
+  const addInKindItem = () => {
+    const newItem = {
+      name: '',
+      item_code: '',
+      description: '',
+      category: '',
+      condition: 'good',
+      quantity: 1,
+      estimated_value: '',
+      brand: '',
+      model: '',
+      size: '',
+      color: '',
+      collection_date: new Date().toISOString().split('T')[0],
+      collection_location: '',
+      notes: ''
+    };
+    
+    setForm({
+      ...form,
+      in_kind_items: [...form.in_kind_items, newItem]
+    });
+  };
+
+  // Handle removing in-kind item
+  const removeInKindItem = (index) => {
+    if (form.in_kind_items.length > 1) {
+      const updatedItems = form.in_kind_items.filter((_, i) => i !== index);
+      setForm({
+        ...form,
+        in_kind_items: updatedItems
+      });
+    }
+  };
+
+  // Handle in-kind item field change
+  const handleInKindItemChange = (index, field, value) => {
+    const updatedItems = form.in_kind_items.map((item, i) => {
+      if (i === index) {
+        // If changing the name field, find the selected item and populate its data
+        if (field === 'name') {
+          const selectedItem = inKindItems.find(inkindItem => inkindItem.name === value);
+          if (selectedItem) {
+            return {
+              ...item,
+              name: selectedItem.name,
+              description: selectedItem.description || item.description,
+              category: selectedItem.category || item.category,
+              // Don't override estimated_value, let user keep their input
+              estimated_value: item.estimated_value
+            };
+          }
+        }
+        return { ...item, [field]: value };
+      }
+      return item;
+    });
+    setForm({
+      ...form,
+      in_kind_items: updatedItems
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -97,16 +174,26 @@ const AddDonation = () => {
         status: form.status,
         project_id: form.project_id || null,
         project_name: form.project_name,
-        item_name: form.item_name,
-        item_description: form.item_description,
-        item_price: form.item_price ? parseFloat(form.item_price) : null,
-        orderId: form.orderId,
-        recurrence_id: form.recurrence_id,
         // Payment method specific fields
         cheque_number: form.cheque_number || null,
         bank_name: form.bank_name || null,
-        in_kind_item_name: form.in_kind_item_name || null,
-        in_kind_quantity: form.in_kind_quantity ? parseInt(form.in_kind_quantity) : null
+        
+        // In-kind donation fields
+        in_kind_items: form.in_kind_items.map(item => ({
+          name: item.name || null,
+          description: item.description || null,
+          category: item.category || null,
+          condition: item.condition || null,
+          quantity: item.quantity ? parseInt(item.quantity) : null,
+          estimated_value: item.estimated_value ? parseFloat(item.estimated_value) : null,
+          brand: item.brand || null,
+          model: item.model || null,
+          size: item.size || null,
+          color: item.color || null,
+          collection_date: item.collection_date || null,
+          collection_location: item.collection_location || null,
+          notes: item.notes || null
+        }))
       };
 
       await axiosInstance.post('/donations', donationData);
@@ -177,6 +264,29 @@ const AddDonation = () => {
     { value: 'soneri_bank', label: 'Soneri Bank' },
     { value: 'silk_bank', label: 'Silk Bank' },
     { value: 'other', label: 'Other Bank' }
+  ];
+
+  // In-kind donation category options
+  const inKindCategoryOptions = [
+    { value: 'clothing', label: 'Clothing' },
+    { value: 'food', label: 'Food' },
+    { value: 'medical', label: 'Medical' },
+    { value: 'educational', label: 'Educational' },
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'furniture', label: 'Furniture' },
+    { value: 'books', label: 'Books' },
+    { value: 'toys', label: 'Toys' },
+    { value: 'household', label: 'Household' },
+    { value: 'other', label: 'Other' }
+  ];
+
+  // In-kind donation condition options
+  const inKindConditionOptions = [
+    { value: 'new', label: 'New' },
+    { value: 'like_new', label: 'Like New' },
+    { value: 'good', label: 'Good' },
+    { value: 'fair', label: 'Fair' },
+    { value: 'poor', label: 'Poor' }
   ];
 
   // Check if cheque is selected as payment method
@@ -307,8 +417,24 @@ const AddDonation = () => {
                     cheque_number: method === 'cheque' ? form.cheque_number : '',
                     bank_name: method === 'cheque' ? form.bank_name : '',
                     // Reset in kind fields if not in kind
-                    in_kind_item_name: method === 'in_kind' ? form.in_kind_item_name : '',
-                    in_kind_quantity: method === 'in_kind' ? form.in_kind_quantity : ''
+                    in_kind_items: method === 'in_kind' ? form.in_kind_items : [
+                      {
+                        name: '',
+                        item_code: '',
+                        description: '',
+                        category: '',
+                        condition: 'good',
+                        quantity: 1,
+                        estimated_value: '',
+                        brand: '',
+                        model: '',
+                        size: '',
+                        color: '',
+                        collection_date: new Date().toISOString().split('T')[0],
+                        collection_location: '',
+                        notes: ''
+                      }
+                    ]
                   });
                 }}
                 options={donationMethodOptions}
@@ -342,26 +468,9 @@ const AddDonation = () => {
               {/* In Kind Fields - Only show if in kind is selected */}
               {isInKindSelected && (
                 <>
-                  <FormInput
-                    label="Item Name"
-                    type="text"
-                    name="in_kind_item_name"
-                    value={form.in_kind_item_name}
-                    onChange={handleChange}
-                    required
-                    placeholder="e.g., Clothes, Food items, Books"
-                  />
+                  <div className="form-section">
 
-                  <FormInput
-                    label="Quantity"
-                    type="number"
-                    name="in_kind_quantity"
-                    value={form.in_kind_quantity}
-                    onChange={handleChange}
-                    required
-                    placeholder="Enter quantity"
-                    min="1"
-                  />
+                  </div>
                 </>
               )}
 
@@ -411,6 +520,225 @@ const AddDonation = () => {
             </div>
           </div>
 
+           {/* In Kind Details - Only show if in kind is selected */}
+           {isInKindSelected && (
+             <div className='form-section'>
+               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                 <h3 style={{ color: '#2563eb', borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem', margin: 0 }}>
+                   In-Kind Donation Details
+                 </h3>
+               </div>
+
+               {form.in_kind_items.map((item, index) => (
+                 <div key={index} style={{ 
+                   marginBottom: '2rem', 
+                   padding: '1.5rem', 
+                   border: '1px solid #e5e7eb', 
+                   borderRadius: '8px',
+                   backgroundColor: '#f9fafb'
+                 }}>
+                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                     <h4 style={{ margin: 0, color: '#374151', fontSize: '16px' }}>
+                       Item {index + 1}
+                     </h4>
+                     <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                       <button
+                         type="button"
+                         onClick={addInKindItem}
+                         style={{
+                           display: 'flex',
+                           alignItems: 'center',
+                           gap: '4px',
+                           padding: '6px 12px',
+                           backgroundColor: '#10b981',
+                           color: 'white',
+                           border: 'none',
+                           borderRadius: '4px',
+                           cursor: 'pointer',
+                           fontSize: '12px'
+                         }}
+                       >
+                         <FiPlus size={14} />
+                         Add Item
+                       </button>
+                       {form.in_kind_items.length > 1 && (
+                         <button
+                           type="button"
+                           onClick={() => removeInKindItem(index)}
+                           style={{
+                             display: 'flex',
+                             alignItems: 'center',
+                             gap: '4px',
+                             padding: '6px 12px',
+                             backgroundColor: '#ef4444',
+                             color: 'white',
+                             border: 'none',
+                             borderRadius: '4px',
+                             cursor: 'pointer',
+                             fontSize: '12px'
+                           }}
+                         >
+                           <FiTrash2 size={14} />
+                           Remove
+                         </button>
+                       )}
+                     </div>
+                   </div>
+
+                   <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
+                     <div style={{ display: 'flex', gap: '8px', alignItems: 'end' }}>
+                       <div style={{ flex: 1 }}>
+                         <FormSelect
+                           label="Item Name"
+                           name={`name_${index}`}
+                           value={item.name}
+                           onChange={(e) => handleInKindItemChange(index, 'name', e.target.value)}
+                           options={[
+                             { value: '', label: 'Select item name...' },
+                             ...inKindItems.map(item => ({
+                               value: item.name,
+                               label: item.name
+                             }))
+                           ]}
+                           required
+                         />
+                       </div>
+                       <ReloadButton 
+                         contextRefetch={refetchInKindItems}
+                         className="reload-btn--small"
+                       />
+                     </div>
+                   </div>
+
+                   <FormInput
+                     label="Description"
+                     type="textarea"
+                     name={`description_${index}`}
+                     value={item.description}
+                     onChange={(e) => handleInKindItemChange(index, 'description', e.target.value)}
+                     placeholder="Detailed description of the item(s)"
+                     rows="3"
+                     style={{ marginBottom: '1rem' }}
+                   />
+
+                   <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
+                     <FormSelect
+                       label="Category"
+                       name={`category_${index}`}
+                       value={item.category}
+                       onChange={(e) => handleInKindItemChange(index, 'category', e.target.value)}
+                       options={inKindCategoryOptions}
+                       required
+                       placeholder="Select category"
+                     />
+
+                     <FormSelect
+                       label="Condition"
+                       name={`condition_${index}`}
+                       value={item.condition}
+                       onChange={(e) => handleInKindItemChange(index, 'condition', e.target.value)}
+                       options={inKindConditionOptions}
+                       required
+                     />
+                   </div>
+
+                   <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
+                     <FormInput
+                       label="Quantity"
+                       type="number"
+                       name={`quantity_${index}`}
+                       value={item.quantity}
+                       onChange={(e) => handleInKindItemChange(index, 'quantity', e.target.value)}
+                       required
+                       placeholder="Enter quantity"
+                       min="1"
+                     />
+
+                     <FormInput
+                       label="Estimated Value (PKR)"
+                       type="number"
+                       name={`estimated_value_${index}`}
+                       value={item.estimated_value}
+                       onChange={(e) => handleInKindItemChange(index, 'estimated_value', e.target.value)}
+                       placeholder="Estimated market value"
+                       step="0.01"
+                       min="0"
+                     />
+                   </div>
+
+                   <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
+                     <FormInput
+                       label="Brand"
+                       type="text"
+                       name={`brand_${index}`}
+                       value={item.brand}
+                       onChange={(e) => handleInKindItemChange(index, 'brand', e.target.value)}
+                       placeholder="Brand name (if applicable)"
+                     />
+
+                     <FormInput
+                       label="Model"
+                       type="text"
+                       name={`model_${index}`}
+                       value={item.model}
+                       onChange={(e) => handleInKindItemChange(index, 'model', e.target.value)}
+                       placeholder="Model number (if applicable)"
+                     />
+                   </div>
+
+                   <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
+                     <FormInput
+                       label="Size"
+                       type="text"
+                       name={`size_${index}`}
+                       value={item.size}
+                       onChange={(e) => handleInKindItemChange(index, 'size', e.target.value)}
+                       placeholder="Size (if applicable)"
+                     />
+
+                     <FormInput
+                       label="Color"
+                       type="text"
+                       name={`color_${index}`}
+                       value={item.color}
+                       onChange={(e) => handleInKindItemChange(index, 'color', e.target.value)}
+                       placeholder="Color (if applicable)"
+                     />
+                   </div>
+
+                   <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
+                     <FormInput
+                       label="Collection Date"
+                       type="date"
+                       name={`collection_date_${index}`}
+                       value={item.collection_date}
+                       onChange={(e) => handleInKindItemChange(index, 'collection_date', e.target.value)}
+                       required
+                     />
+
+                     <FormInput
+                       label="Collection Location"
+                       type="text"
+                       name={`collection_location_${index}`}
+                       value={item.collection_location}
+                       onChange={(e) => handleInKindItemChange(index, 'collection_location', e.target.value)}
+                       placeholder="Where was it collected from?"
+                     />
+                   </div>
+
+                   <FormInput
+                     label="Notes"
+                     type="textarea"
+                     name={`notes_${index}`}
+                     value={item.notes}
+                     onChange={(e) => handleInKindItemChange(index, 'notes', e.target.value)}
+                     placeholder="Any additional notes about the item(s)"
+                     rows="2"
+                   />
+                 </div>
+               ))}
+             </div>
+           )}
           {/* Project Information */}
           <div className="form-section">
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Project Information (Optional)</h3>
@@ -435,51 +763,8 @@ const AddDonation = () => {
             </div>
           </div>
 
-          {/* Item Details - Only show when In Kind is selected */}
-          {isInKindSelected && (
-          <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Item Details (Required)</h3>
-            <div className="form-grid-2">
-              <FormInput
-                label="Item Name"
-                type="text"
-                name="item_name"
-                value={form.item_name}
-                onChange={handleChange}
-                placeholder="e.g., Food Package, Medical Aid"
-                required
-              />
-
-              <FormInput
-                label="Item Price"
-                type="number"
-                name="item_price"
-                value={form.item_price}
-                onChange={handleChange}
-                placeholder="0.00"
-                step="0.01"
-                min="0"
-                required
-              />
-
-              <div style={{ gridColumn: '1 / -1' }}>
-                <FormInput
-                  label="Item Description"
-                  type="textarea"
-                  name="item_description"
-                  value={form.item_description}
-                  onChange={handleChange}
-                  placeholder="Describe the item..."
-                  rows="3"
-                  required
-                />
-              </div>
-            </div>
-          </div>
-          )}
-
           {/* Payment Details */}
-          <div className="form-section">
+          {/* <div className="form-section">
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Payment Details (Optional)</h3>
             <div className="form-grid-2">
               <FormInput
@@ -500,7 +785,7 @@ const AddDonation = () => {
                 placeholder="For recurring donations"
               />
             </div>
-          </div>
+          </div> */}
 
           <div className="form-actions">
             <button 

@@ -84,7 +84,7 @@ const Table = ({
           </tr>
         </thead>
         <tbody>
-          {data.map((row, rowIndex) => (
+          {data?.data.map((row, rowIndex) => (
             <tr 
               key={row.id || rowIndex}
               onClick={onRowClick ? () => onRowClick(row) : undefined}

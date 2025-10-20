@@ -21,15 +21,15 @@ axiosInstance.interceptors.request.use(
       config.headers['Access-Control-Allow-Credentials'] = 'true';
     }
     
-    // Log the request details
-    console.log('Making request:', {
-      url: config.url,
-      method: config.method,
-      baseURL: config.baseURL,
-      headers: config.headers,
-      withCredentials: config.withCredentials,
-      origin: window.location.origin
-    });
+    // // Log the request details
+    // console.log('Making request:', {
+    //   url: config.url,
+    //   method: config.method,
+    //   baseURL: config.baseURL,
+    //   headers: config.headers,
+    //   withCredentials: config.withCredentials,
+    //   origin: window.location.origin
+    // });
     
     return config;
   },

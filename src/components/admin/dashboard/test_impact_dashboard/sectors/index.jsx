@@ -3,7 +3,6 @@ import BarChart from "../bar_chart";
 import { IoIosMan } from "react-icons/io";
 import { programs_list } from "../../../../../utils/program/index";
 import axiosInstance from "../../../../../utils/axios";
-console.log(programs_list);
 const data = [
   { label: "Food Security", targeted: 11700000, reached: 12700000, percent: "108%", icon: <IoIosMan size={20}/> },
   { label: "Community Services", targeted: 9770000, reached: 8390000, percent: "85%", icon: <IoIosMan size={20} /> },

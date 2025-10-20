@@ -3,7 +3,7 @@ import SidebarItem from './SidebarItem';
 import './Sidebar.css';
 
 const SidebarGroup = ({ group, collapsed, activeItem, onItemClick }) => {
-  const [expanded, setExpanded] = useState(true);
+  const [expanded, setExpanded] = useState(false);
 
   const isActiveGroup = group.items.some(item => 
     activeItem.startsWith(item.path) || 

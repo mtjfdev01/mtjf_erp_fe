@@ -3,13 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
-// import Navbar from '../../../../../Navbar';
-
-
-// import PageHeader from '../../../../../common/PageHeader';
-import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
-
+import Navbar from '../../../../Navbar';
 const ViewOnlineDonation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -17,6 +12,7 @@ const ViewOnlineDonation = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  console.log("donation", donation);
   useEffect(() => {
     fetchDonation();
   }, [id]);
@@ -25,7 +21,7 @@ const ViewOnlineDonation = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get(`/donations/${id}`);
-      
+      console.log("ASDadadasdadsada9ijrwef09dej2q0439jef", response)
       if (response.data.success) {
         setDonation(response.data.data);
         setError('');
@@ -67,7 +63,7 @@ const ViewOnlineDonation = () => {
       <>
         <Navbar />
         <div className="view-wrapper">
-          <PageHeader 
+          <PageHeader
             title="View Online Donation"
             showBackButton={true}
             backPath="/donations/online_donations/list"
@@ -84,7 +80,7 @@ const ViewOnlineDonation = () => {
         <Navbar />
         <div className="view-wrapper">
           <PageHeader 
-            title="View Online Donation"
+            title="View Online Donation 123"
             showBackButton={true}
             backPath="/donations/online_donations/list"
           />
@@ -161,6 +157,14 @@ const ViewOnlineDonation = () => {
                   <span className="view-item-value">{donation.orderId}</span>
                 </div>
               )}
+              {donation.status === 'failed' && donation.err_msg && (
+                <div className="view-item view-item--full">
+                  <span className="view-item-label">Error Message</span>
+                  <span className="view-item-value" style={{ color: '#dc2626', fontWeight: '500' }}>
+                    {donation.err_msg}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -169,54 +173,121 @@ const ViewOnlineDonation = () => {
             <div className="view-grid">
               <div className="view-item">
                 <span className="view-item-label">Name</span>
-                <span className="view-item-value">{donation.donor_name || 'Anonymous'}</span>
+                <span className="view-item-value">{donation?.donor?.name || 'Anonymous'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Email</span>
-                <span className="view-item-value">{donation.donor_email || '-'}</span>
+                <span className="view-item-value">{donation?.donor?.email || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Phone</span>
-                <span className="view-item-value">{donation.donor_phone || '-'}</span>
+                <span className="view-item-value">{donation?.donor?.phone || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Country</span>
-                <span className="view-item-value">{donation.country || '-'}</span>
+                <span className="view-item-value">{donation?.donor?.country || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">City</span>
-                <span className="view-item-value">{donation.city || '-'}</span>
+                <span className="view-item-value">{donation?.donor?.city || '-'}</span>
               </div>
               {donation.address && (
                 <div className="view-item view-item--full">
                   <span className="view-item-label">Address</span>
-                  <span className="view-item-value">{donation.address}</span>
+                  <span className="view-item-value">{donation?.donor?.address}</span>
                 </div>
               )}
             </div>
           </div>
 
-          {donation.item_name && (
+          {donation.in_kind_items && donation.in_kind_items.length > 0 && (
             <div className="view-section">
-              <h3 className="view-section-title">Item Details</h3>
-              <div className="view-grid">
-                <div className="view-item">
-                  <span className="view-item-label">Item Name</span>
-                  <span className="view-item-value">{donation.item_name}</span>
+              <h3 className="view-section-title">In-Kind Donation Details</h3>
+              {donation.in_kind_items.map((item, index) => (
+                <div key={index} style={{ 
+                  marginBottom: '1.5rem', 
+                  padding: '1rem', 
+                  border: '1px solid #e5e7eb', 
+                  borderRadius: '8px',
+                  backgroundColor: '#f9fafb'
+                }}>
+                  <h4 style={{ margin: '0 0 1rem 0', color: '#374151', fontSize: '16px' }}>
+                    Item {index + 1}
+                  </h4>
+                  <div className="view-grid">
+                    <div className="view-item">
+                      <span className="view-item-label">Item Name</span>
+                      <span className="view-item-value">{item.name || '-'}</span>
+                    </div>
+                    <div className="view-item">
+                      <span className="view-item-label">Category</span>
+                      <span className="view-item-value">{item.category || '-'}</span>
+                    </div>
+                    <div className="view-item">
+                      <span className="view-item-label">Condition</span>
+                      <span className="view-item-value">{item.condition || '-'}</span>
+                    </div>
+                    <div className="view-item">
+                      <span className="view-item-label">Quantity</span>
+                      <span className="view-item-value">{item.quantity || '-'}</span>
+                    </div>
+                    {item.estimated_value && (
+                      <div className="view-item">
+                        <span className="view-item-label">Estimated Value</span>
+                        <span className="view-item-value">{formatAmount(item.estimated_value, donation.currency)}</span>
+                      </div>
+                    )}
+                    {item.brand && (
+                      <div className="view-item">
+                        <span className="view-item-label">Brand</span>
+                        <span className="view-item-value">{item.brand}</span>
+                      </div>
+                    )}
+                    {item.model && (
+                      <div className="view-item">
+                        <span className="view-item-label">Model</span>
+                        <span className="view-item-value">{item.model}</span>
+                      </div>
+                    )}
+                    {item.size && (
+                      <div className="view-item">
+                        <span className="view-item-label">Size</span>
+                        <span className="view-item-value">{item.size}</span>
+                      </div>
+                    )}
+                    {item.color && (
+                      <div className="view-item">
+                        <span className="view-item-label">Color</span>
+                        <span className="view-item-value">{item.color}</span>
+                      </div>
+                    )}
+                    {item.collection_date && (
+                      <div className="view-item">
+                        <span className="view-item-label">Collection Date</span>
+                        <span className="view-item-value">{formatDate(item.collection_date)}</span>
+                      </div>
+                    )}
+                    {item.collection_location && (
+                      <div className="view-item">
+                        <span className="view-item-label">Collection Location</span>
+                        <span className="view-item-value">{item.collection_location}</span>
+                      </div>
+                    )}
+                    {item.description && (
+                      <div className="view-item view-item--full">
+                        <span className="view-item-label">Description</span>
+                        <span className="view-item-value">{item.description}</span>
+                      </div>
+                    )}
+                    {item.notes && (
+                      <div className="view-item view-item--full">
+                        <span className="view-item-label">Notes</span>
+                        <span className="view-item-value">{item.notes}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {donation.item_price && (
-                  <div className="view-item">
-                    <span className="view-item-label">Item Price</span>
-                    <span className="view-item-value">{formatAmount(donation.item_price, donation.currency)}</span>
-                  </div>
-                )}
-                {donation.item_description && (
-                  <div className="view-item view-item--full">
-                    <span className="view-item-label">Description</span>
-                    <span className="view-item-value">{donation.item_description}</span>
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
           )}
 
