@@ -26,7 +26,7 @@ const AddDonation = () => {
     date: new Date().toISOString().split('T')[0], // Current date
     donation_type: 'general',
     donation_method: 'cash',
-    donation_source: '',
+    source: '',
     collection_center: '',
     status: 'pending',
     
@@ -169,7 +169,7 @@ const AddDonation = () => {
         date: form.date,
         donation_type: form.donation_type,
         donation_method: form.donation_method,
-        donation_source: form.donation_source,
+        source: form.source,
         collection_center: form.collection_center || null,
         status: form.status,
         project_id: form.project_id || null,
@@ -296,7 +296,7 @@ const AddDonation = () => {
   const isInKindSelected = form.donation_method === 'in_kind';
   
   // Check if collection center is selected as donation source
-  const isCollectionCenter = form.donation_source === 'collection_center';
+  const isCollectionCenter = form.source === 'collection_center';
 
   return (
     <>
@@ -496,10 +496,10 @@ const AddDonation = () => {
                   { value: 'collection_center', label: 'Collection Center' },
                   { value: 'collection_box', label: 'Collection Box' }
                 ]}
-                value={form.donation_source}
+                value={form.source}
                 onChange={(value) => setForm({ 
                   ...form, 
-                  donation_source: value,
+                  source: value,
                   // Reset collection center when source changes
                   collection_center: value === 'collection_center' ? form.collection_center : ''
                 })}

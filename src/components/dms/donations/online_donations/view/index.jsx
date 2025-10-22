@@ -11,6 +11,7 @@ const ViewOnlineDonation = () => {
   const [donation, setDonation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [totalDonationAmount, setTotalDonationAmount] = useState(0);
 
   console.log("donation", donation);
   useEffect(() => {

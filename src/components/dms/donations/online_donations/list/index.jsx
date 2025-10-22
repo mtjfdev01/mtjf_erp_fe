@@ -28,6 +28,7 @@ const OnlineDonationsList = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
+  const [totalDonationAmount, setTotalDonationAmount] = useState(0);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -180,11 +181,16 @@ const OnlineDonationsList = () => {
       ]
       };
       
+      //  adding endpoint for testing 
+      // const test  = await axiosInstance.get('/payfast');
+      // console.log("test", test.data?.data);
+      // return;
       const response = await axiosInstance.post('/donations/search', filterPayload); 
       if (response.data.success) {
         setDonations(response.data.data || []);
         setTotalItems(response.data.pagination?.total || 0);
         setTotalPages(response.data.pagination?.totalPages || 1);
+        setTotalDonationAmount(response.data.totalDonationAmount || 0);
       } else {
         setError('Failed to fetch donations');
       }
@@ -557,7 +563,7 @@ const OnlineDonationsList = () => {
                   <tr key={donation.id}>
                     <td>
                       <div className="donor-info">
-                        <div className="donor-name">{donation.donor_name || 'Anonymous'}</div>
+                        <div className="donor-name">{donation?.donor.name || 'Anonymous'}</div>
                         {donation.item_name && (
                           <div className="donor-item hide-on-mobile">{donation.item_name}</div>
                         )}
@@ -585,8 +591,8 @@ const OnlineDonationsList = () => {
                         {donation.donation_method?.toUpperCase() || 'N/A'}
                       </span>
                     </td>
-                    <td className="hide-on-mobile">{donation.donor_email || '-'}</td>
-                    <td className="hide-on-mobile">{donation.donor_phone || '-'}</td>
+                    <td className="hide-on-mobile">{donation?.donor?.email || '-'}</td>
+                    <td className="hide-on-mobile">{donation?.donor?.phone || '-'}</td>
                     <td>{getStatusBadge(donation.status)}</td>
                     <td>{formatDate(donation.date || donation.created_at)}</td>
                     {/* <td className="table-actions">
@@ -598,7 +604,33 @@ const OnlineDonationsList = () => {
             </table>
           </div>
           
-          <div className="list-header">
+          <div className="list-header" style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            marginTop: '20px',
+            padding: '15px 0'
+          }}>
+            <div className="total-amount-display" style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              padding: '12px 20px',
+              backgroundColor: '#f8f9fa',
+              borderRadius: '8px',
+              border: '1px solid #e9ecef'
+            }}>
+              {/* <FiDollarSign style={{ fontSize: '20px', color: '#28a745' }} /> */}
+              <div>
+                <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '2px' }}>
+                  Total Donation Amount
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#28a745' }}>
+                  PKR {totalDonationAmount.toLocaleString()}
+                </div>
+              </div>
+            </div>
+            
             <DownloadCSV
               data={prepareCSVData()}
               filename={getCSVFilename()}
@@ -636,7 +668,7 @@ const OnlineDonationsList = () => {
       
       <ConfirmationModal
         isOpen={showDeleteModal}
-        text={`Are you sure you want to delete the donation from ${donationToDelete?.donor_name || 'Anonymous'}?`}
+        text={`Are you sure you want to delete the donation from ${donationToDelete?.donor?.name || 'Anonymous'}?`}
         delete={true}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}

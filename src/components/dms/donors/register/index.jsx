@@ -33,9 +33,11 @@ const RegisterDonor = () => {
     city: '',
     country: 'Pakistan',
     postal_code: '',
+    cnic: '',
     notes: ''
   });
   const [assignedUser, setAssignedUser] = useState(null);
+  const [referrerUser, setReferrerUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -54,6 +56,16 @@ const RegisterDonor = () => {
     setAssignedUser(null);
   };
 
+  // Handle referrer selection
+  const handleReferrerSelect = (user) => {
+    setReferrerUser(user);
+  };
+
+  // Handle referrer clear
+  const handleReferrerClear = () => {
+    setReferrerUser(null);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -69,14 +81,17 @@ const RegisterDonor = () => {
         city: form.city,
         country: form.country,
         postal_code: form.postal_code,
+        cnic: form.cnic,
         notes: form.notes,
-        assigned_user_id: assignedUser?.id || null
+        assigned_user_id: assignedUser?.id || null,
+        referrer_user_id: referrerUser?.id || null
       };
 
       if (form.donor_type === 'individual') {
         donorData.name = `${form.first_name} ${form.last_name}`.trim();
         donorData.first_name = form.first_name;
         donorData.last_name = form.last_name;
+        donorData.cnic = form.cnic;
       } else {
         donorData.name = form.company_name;
         donorData.company_name = form.company_name;
@@ -88,6 +103,7 @@ const RegisterDonor = () => {
         donorData.company_email = form.company_email;
       }
 
+      console.log("donorData", donorData);
       await axiosInstance.post('/donors/register', donorData);
 
       // Redirect to donors list after successful registration
@@ -207,6 +223,14 @@ const RegisterDonor = () => {
                 value={form.postal_code}
                 onChange={handleChange}
             />
+            <FormInput
+                label="CNIC"
+                type="text"
+                name="cnic"
+                value={form.cnic}
+                onChange={handleChange}
+                required
+            />
             </div>
             </div>
             </>
@@ -233,8 +257,6 @@ const RegisterDonor = () => {
                     onChange={handleChange}
                     placeholder="e.g., 123456789"
                   />
-                  
-
                   
                 </div>
             </div>      
@@ -340,6 +362,46 @@ const RegisterDonor = () => {
                     key={user.id}
                     className="searchable-dropdown__option"
                     onClick={() => handleUserSelect(user)}
+                    style={{ 
+                      padding: '12px',
+                      borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                      {user.first_name} {user.last_name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {user.email}
+                    </div>
+                    {user.department && (
+                      <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+                        {user.department} • {user.role || 'User'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              />
+            </div>
+
+            {/* Referrer User */}
+            <div className="form-section">
+              <SearchableDropdown
+                label="Referrer (Optional)"
+                placeholder="Search users by name or email..."
+                apiEndpoint="/users"
+                onSelect={handleReferrerSelect}
+                onClear={handleReferrerClear}
+                value={referrerUser}
+                displayKey="first_name"
+                debounceDelay={500}
+                minSearchLength={2}
+                allowResearch={true}
+                renderOption={(user, index) => (
+                  <div 
+                    key={user.id}
+                    className="searchable-dropdown__option"
+                    onClick={() => handleReferrerSelect(user)}
                     style={{ 
                       padding: '12px',
                       borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
