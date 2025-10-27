@@ -15,6 +15,8 @@ const FormSelect = ({
   showDefaultOption = false,
   defaultOptionText = null,
 }) => {
+  let defaultValue = '';
+  // Don't override value when options are empty
   return (
     <div className={`form-group ${className}`}>
       <label className="form-label">
@@ -30,7 +32,7 @@ const FormSelect = ({
         required={required}
       >
         {showDefaultOption && (
-          <option value="">
+          <option value={defaultValue}>
             {defaultOptionText || `Select ${label}`}
           </option>
         )}

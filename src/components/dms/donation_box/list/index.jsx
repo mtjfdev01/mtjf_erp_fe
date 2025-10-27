@@ -229,7 +229,7 @@ const DonationBoxList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#4CAF50',
-      onClick: () => navigate(`/donation-boxes/view/${donationBox.id}`),
+      onClick: () => navigate(`/dms/donation_box/view/${donationBox.id}`),
       visible: true
     },
     {
@@ -510,7 +510,7 @@ const DonationBoxList = () => {
                       <div className="shop-info">
                         <div className="shop-name">{box.shop_name}</div>
                         {box.route && (
-                          <div className="shop-route hide-on-mobile">Route: {box.route}</div>
+                          <div className="shop-route hide-on-mobile">Route: {box.route?.name}</div>
                         )}
                       </div>
                     </td>

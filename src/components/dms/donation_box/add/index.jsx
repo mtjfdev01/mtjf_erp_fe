@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
+import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import HybridDropdown from '../../../common/HybridDropdown';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -12,13 +13,15 @@ const AddDonationBox = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     // Box identification
-    box_id_no: '',
     key_no: '',
     
     // Location information
+    country: 'Pakistan', // Default to Pakistan
     region: '',
     city: '',
-    frd_officer_reference: '',
+    city_id: '', // City ID for payload
+    route_id: '', // This will be the final selected route ID
+    assigned_user_ids: [], // Array of user IDs for multiple assignments
     
     // Shop details
     shop_name: '',
@@ -36,9 +39,116 @@ const AddDonationBox = () => {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
+  // State for cascading dropdowns
+  const [regions, setRegions] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [routes, setRoutes] = useState([]);
+  const [assignedUsers, setAssignedUsers] = useState([]); // Array of user objects for display
+  const [loadingRegions, setLoadingRegions] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
+  const [loadingRoutes, setLoadingRoutes] = useState(false);
+
+  // Load regions for Pakistan on component mount
+  useEffect(() => {
+    fetchRegions('Pakistan');
+  }, []);
+
+  // Fetch regions for a country
+  const fetchRegions = async (country) => {
+    try {
+      setLoadingRegions(true);
+      const response = await axiosInstance.get(`/regions?country_id=1`);
+      if (response.data.success) {
+        setRegions(response.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching regions:', err);
+      setError('Failed to load regions');
+    } finally {
+      setLoadingRegions(false);
+    }
+  };
+
+  // Fetch cities for a region
+  const fetchCities = async (region) => {
+    try {
+      console.log("region", region);
+      setLoadingCities(true);
+      const response = await axiosInstance.get(`/cities?region_id=${region}`);
+      if (response.data.success) {
+        setCities(response.data.data || []);
+      }
+    } catch (err) {
+      console.error('Error fetching cities:', err);
+      setError('Failed to load cities');
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
+  // Fetch routes for a city
+  const fetchRoutes = async (city) => {
+    try {
+      setLoadingRoutes(true);
+      const response = await axiosInstance.get(`/routes?city_id=${city}`);
+      console.log('Routes API response:', response.data);
+      if (response.data.success) {
+        const routesData = response.data.data || [];
+        console.log('Routes data:', routesData);
+        setRoutes(routesData);
+        
+        // If there's only one route, auto-select it
+        if (routesData.length === 1) {
+          console.log('Auto-selecting single route:', routesData[0]);
+          setForm(prev => ({ ...prev, route_id: routesData[0].id }));
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching routes:', err);
+      setError('Failed to load routes');
+    } finally {
+      setLoadingRoutes(false);
+    }
+  };
+
+
+  // Handle multiple user selection for assigned users
+  const handleAssignedUsersSelect = (selectedUsers) => {
+    setAssignedUsers(selectedUsers);
+    const userIds = selectedUsers.map(user => user.id);
+    setForm(prev => ({ ...prev, assigned_user_ids: userIds }));
+  };
+
+  // Handle clear all assigned users
+  const handleAssignedUsersClear = () => {
+    setAssignedUsers([]);
+    setForm(prev => ({ ...prev, assigned_user_ids: [] }));
+  };
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    console.log(`Form field changed: ${name} = ${value}`);
+    setForm({ ...form, [name]: value });
+    
+    // Handle cascading dropdowns
+    if (name === 'region') {
+      setForm(prev => ({ ...prev, city: '', city_id: '', route_id: '' }));
+      setCities([]);
+      setRoutes([]);
+      if (value) {
+        fetchCities(value);
+      }
+    } else if (name === 'city') {
+      setForm(prev => ({ ...prev, city_id: value, route_id: '' }));
+      setRoutes([]);
+      if (value) {
+        fetchRoutes(value);
+      }
+    } else if (name === 'route_id') {
+      console.log('Route selected:', value);
+    }
+    
     if (error) setError('');
   };
 
@@ -47,20 +157,12 @@ const AddDonationBox = () => {
     setIsSubmitting(true);
     
     try {
-      // Validate required fields
-    //   if (!form.box_id_no || !form.shop_name || !form.region || !form.city) {
-    //     setError('Please fill in all required fields (Box ID, Shop Name, Region, City)');
-    //     setIsSubmitting(false);
-    //     return;
-    //   }
-
       // Prepare donation box data
       const donationBoxData = {
-        box_id_no: form.box_id_no,
         key_no: form.key_no || null,
-        region: form.region,
-        city: form.city,
-        frd_officer_reference: form.frd_officer_reference || null,
+        city_id: form.city_id, // City ID for payload
+        route_id: form.route_id, // Route ID for payload
+        assigned_user_ids: form.assigned_user_ids || [], // Array of user IDs for multiple assignments
         shop_name: form.shop_name,
         shopkeeper: form.shopkeeper || null,
         cell_no: form.cell_no || null,
@@ -72,10 +174,14 @@ const AddDonationBox = () => {
         collection_frequency: form.collection_frequency
       };
 
+      console.log('Submitting donation box data:', donationBoxData);
+      console.log('Assigned users:', assignedUsers);
+      console.log('Assigned user IDs:', form.assigned_user_ids);
+
       await axiosInstance.post('donation-box', donationBoxData);
 
       // Redirect to donation boxes list after successful creation
-      navigate('/dms/donation-boxes/list');
+      navigate('/dms/donation_box/list'); 
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add donation box. Please try again.');
       console.error('Error adding donation box:', err);
@@ -85,34 +191,12 @@ const AddDonationBox = () => {
   };
 
   const handleBack = () => {
-    navigate('/dms/donation-boxes/list');
+    navigate('/dms/donation_box/list');
   };
 
-  // Dropdown options
-  const regionOptions = [
-    { value: 'karachi', label: 'Karachi' },
-    { value: 'lahore', label: 'Lahore' },
-    { value: 'islamabad', label: 'Islamabad' },
-    { value: 'rawalpindi', label: 'Rawalpindi' },
-    { value: 'faisalabad', label: 'Faisalabad' },
-    { value: 'multan', label: 'Multan' },
-    { value: 'peshawar', label: 'Peshawar' },
-    { value: 'quetta', label: 'Quetta' },
-    { value: 'hyderabad', label: 'Hyderabad' },
-    { value: 'sukkur', label: 'Sukkur' }
-  ];
-
-  const cityOptions = [
-    { value: 'karachi', label: 'Karachi' },
-    { value: 'lahore', label: 'Lahore' },
-    { value: 'islamabad', label: 'Islamabad' },
-    { value: 'rawalpindi', label: 'Rawalpindi' },
-    { value: 'faisalabad', label: 'Faisalabad' },
-    { value: 'multan', label: 'Multan' },
-    { value: 'peshawar', label: 'Peshawar' },
-    { value: 'quetta', label: 'Quetta' },
-    { value: 'hyderabad', label: 'Hyderabad' },
-    { value: 'sukkur', label: 'Sukkur' }
+  // Country options (default to Pakistan)
+  const countryOptions = [
+    { value: 'Pakistan', label: 'Pakistan' }
   ];
 
   const boxTypeOptions = [
@@ -140,14 +224,6 @@ const AddDonationBox = () => {
     { value: 'yearly', label: 'Yearly' }
   ];
 
-  const frdOfficerOptions = [
-    { value: 'faisal_maqbool', label: 'Faisal Maqbool' },
-    { value: 'ahmed_khan', label: 'Ahmed Khan' },
-    { value: 'sara_ahmed', label: 'Sara Ahmed' },
-    { value: 'muhammad_ali', label: 'Muhammad Ali' },
-    { value: 'fatima_raza', label: 'Fatima Raza' },
-    { value: 'hassan_malik', label: 'Hassan Malik' }
-  ];
 
   // Common landmarks/marketplaces based on the data
   const landmarkOptions = [
@@ -183,15 +259,6 @@ const AddDonationBox = () => {
           <div className="form-section">
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Box Identification</h3>
             <div className="form-grid-2">
-              <FormInput
-                label="Box ID Number"
-                type="text"
-                name="box_id_no"
-                value={form.box_id_no}
-                onChange={handleChange}
-                required
-                placeholder="e.g., 140, 201, 202"
-              />
 
               <FormInput
                 label="Key Number"
@@ -203,18 +270,52 @@ const AddDonationBox = () => {
               />
             </div>
           </div>
+          {/* Box Configuration */}
+          <div className="form-section">
+            <div className="form-grid-2">
+              <FormSelect
+                label="Box Type"
+                name="box_type"
+                value={form.box_type}
+                onChange={handleChange}
+                options={boxTypeOptions}
+                required
+              />
+
+              <FormSelect
+                label="Collection Frequency"
+                name="collection_frequency"
+                value={form.collection_frequency}
+                onChange={handleChange}
+                options={collectionFrequencyOptions}
+                required
+              />
+            </div>
+          </div>
 
           {/* Location Information */}
           <div className="form-section">
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Location Information</h3>
             <div className="form-grid-2">
               <FormSelect
+                label="Country"
+                name="country"
+                value={form.country}
+                onChange={handleChange}
+                options={countryOptions}
+                required
+                disabled={true} // Fixed to Pakistan
+              />
+
+              <FormSelect
                 label="Region"
                 name="region"
                 value={form.region}
                 onChange={handleChange}
-                options={regionOptions}
+                options={regions.map(region => ({ value: region.id, label: region.name }))}
                 required
+                disabled={loadingRegions}
+                placeholder={loadingRegions ? "Loading regions..." : "Select region"}
               />
 
               <FormSelect
@@ -222,17 +323,22 @@ const AddDonationBox = () => {
                 name="city"
                 value={form.city}
                 onChange={handleChange}
-                options={cityOptions}
+                options={cities.map(city => ({ value: city.id, label: city.name }))}
                 required
+                disabled={loadingCities || !form.region}
+                placeholder={loadingCities ? "Loading cities..." : !form.region ? "Select region first" : "Select city"}
               />
 
-              <HybridDropdown
-                label="FRD Officer Reference"
-                placeholder="Type or select officer..."
-                options={frdOfficerOptions}
-                value={form.frd_officer_reference}
-                onChange={(value) => setForm({ ...form, frd_officer_reference: value })}
-                allowCustom={true}
+              <FormSelect
+                label="Route"
+                name="route_id"
+                value={form.route_id}
+                onChange={handleChange}
+                options={routes.map(route => ({ value: route.id, label: route.name }))}
+                required
+                disabled={loadingRoutes || !form.city}
+                showDefaultOption={true}
+                defaultOptionText={loadingRoutes ? "Loading routes..." : !form.city ? "Select city first" : "Select route"}
               />
 
               <HybridDropdown
@@ -243,6 +349,46 @@ const AddDonationBox = () => {
                 onChange={(value) => setForm({ ...form, landmark_marketplace: value })}
                 allowCustom={true}
               />
+
+              <SearchableMultiSelect
+                label="Assigned Users"
+                placeholder="Search and select multiple users..."
+                apiEndpoint="/users"
+                onSelect={handleAssignedUsersSelect}
+                onClear={handleAssignedUsersClear}
+                value={assignedUsers}
+                displayKey="first_name"
+                valueKey="id"
+                debounceDelay={500}
+                minSearchLength={2}
+                renderOption={(user, index) => (
+                  <div style={{ padding: '8px' }}>
+                    <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                      {user.first_name} {user.last_name}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {user.email}
+                    </div>
+                    {user.department && (
+                      <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+                        {user.department} • {user.role || 'User'}
+                      </div>
+                    )}
+                  </div>
+                )}
+              />
+              
+              {/* Show selected users count */}
+              {assignedUsers.length > 0 && (
+                <div style={{ 
+                  marginTop: '8px', 
+                  fontSize: '14px', 
+                  color: '#28a745',
+                  fontWeight: '500'
+                }}>
+                  ✓ {assignedUsers.length} user{assignedUsers.length !== 1 ? 's' : ''} selected
+                </div>
+              )}
             </div>
           </div>
 
@@ -278,56 +424,6 @@ const AddDonationBox = () => {
                 placeholder="e.g., 0317-2841827"
               />
 
-              <FormInput
-                label="Route"
-                type="text"
-                name="route"
-                value={form.route}
-                onChange={handleChange}
-                placeholder="Route information"
-              />
-            </div>
-          </div>
-
-          {/* Box Configuration */}
-          <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Box Configuration</h3>
-            <div className="form-grid-2">
-              <FormSelect
-                label="Box Type"
-                name="box_type"
-                value={form.box_type}
-                onChange={handleChange}
-                options={boxTypeOptions}
-                required
-              />
-
-              <FormInput
-                label="Active Since"
-                type="date"
-                name="active_since"
-                value={form.active_since}
-                onChange={handleChange}
-                required
-              />
-
-              <FormSelect
-                label="Status"
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                options={statusOptions}
-                required
-              />
-
-              <FormSelect
-                label="Collection Frequency"
-                name="collection_frequency"
-                value={form.collection_frequency}
-                onChange={handleChange}
-                options={collectionFrequencyOptions}
-                required
-              />
             </div>
           </div>
 

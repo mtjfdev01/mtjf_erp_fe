@@ -1,6 +1,7 @@
 .form-group {
   display: flex;
   flex-direction: column;
+  width: auto !important;
   gap: var(--spacing-xs);
 }
 

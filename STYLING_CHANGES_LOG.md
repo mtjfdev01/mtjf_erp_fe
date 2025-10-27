@@ -99,7 +99,7 @@ If you need to revert to the original styling:
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
   max-height: calc(100vh - 84px);
-  overflow-y: auto;
+  /* overflow-y: auto; */
 }
 
 .list-wrapper .list-content {

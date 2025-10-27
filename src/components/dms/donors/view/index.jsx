@@ -5,6 +5,7 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Card from '../../../common/Card';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit, FiTrash2 } from 'react-icons/fi';
+import { BsFillBuildingsFill } from "react-icons/bs";
 
 const ViewDonor = () => {
   const navigate = useNavigate();
@@ -40,6 +41,10 @@ const ViewDonor = () => {
 
   const handleEdit = () => {
     navigate(`/dms/donors/edit/${id}`);
+  };
+
+  const handleViewDonations = () => {
+    navigate(`/donations/online_donations/list?donor_id=${id}`);
   };
 
   const getDonorTypeIcon = (type) => {
@@ -202,6 +207,16 @@ const ViewDonor = () => {
               Edit Donor
             </button>
             
+            <button 
+              className="primary_btn" 
+              onClick={handleViewDonations}
+              style={{ 
+                backgroundColor: '#10b981',
+                marginLeft: '10px'
+              }}
+            >
+              View Donations
+            </button>
           </div>
         </div>
       </div>

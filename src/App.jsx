@@ -93,8 +93,10 @@ import { DonorsList, RegisterDonor, ViewDonor } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
+import ViewDonationBox from './components/dms/donation_box/view';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
+import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
 import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
@@ -235,9 +237,14 @@ const App = () => {
                                 {/* DMS Section Routes */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
+                                <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
                                 <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
-
+                                <Route path="/dms/donation-box-donations/list/:id" element={<DonationBoxDonationsList />} />
+                                <Route path="/dms/donation-box-donations/view/:id" element={<ViewDonationBoxDonation />} />
+                            
+                                <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
+                                
                                 {/* Donations Routes */}
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />

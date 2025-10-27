@@ -47,13 +47,13 @@ const AddDonationBoxDonation = () => {
   const renderDonationBoxOption = (box) => (
     <>
       <div style={{ fontWeight: '600', color: '#333' }}>
-        Box ID: {box.box_id_no}
+        Key: {box?.key_no}
       </div>
       <div style={{ fontSize: '0.9em', color: '#666' }}>
-        {box.shop_name} - {box.shopkeeper || 'N/A'}
+        {box?.shop_name} - {box?.shopkeeper || 'N/A'}
       </div>
       <div style={{ fontSize: '0.85em', color: '#999' }}>
-        {box.city}, {box.region} • {box.box_type}
+        {box?.route?.cities?.find(city => city.id === box.city_id)?.name}, {box?.route?.region?.name} • {box?.box_type}
       </div>
     </>
   );
@@ -123,13 +123,13 @@ const AddDonationBoxDonation = () => {
             <div className="form-grid-2"> 
               <SearchableDropdown
                 label="Search Donation Box"
-                placeholder="Type Box ID or Shopkeeper name..."
+                placeholder="Type Box Key Number or Shopkeeper name..."
                 apiEndpoint="/donation-box"
                 searchParamName="search"
                 onSelect={handleDonationBoxSelect}
                 onClear={handleClearDonationBox}
                 renderOption={renderDonationBoxOption}
-                displayKey="box_id_no"
+                displayKey="key_no"
                 value={form.donation_box}
                 name="donation_box"
                 required

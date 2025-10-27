@@ -226,7 +226,7 @@ const DonationBoxDonationsList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#4CAF50',
-      onClick: () => navigate(`/dms/donation-box-donations/view/${donation.id}`),
+      onClick: () => navigate(`/dms/donation-box-donations/view/${donation.id}`, { state: { donation } }),
       visible: true
     },
     {
@@ -241,7 +241,6 @@ const DonationBoxDonationsList = () => {
   const sortOptions = [
     { value: 'collection_date', label: 'Collection Date' },
     { value: 'collection_amount', label: 'Amount' },
-    { value: 'created_at', label: 'Created Date' }
   ];
 
   // CSV Download Configuration
@@ -253,7 +252,6 @@ const DonationBoxDonationsList = () => {
     { key: 'location', label: 'Location' },
     { key: 'collection_amount', label: 'Collection Amount' },
     { key: 'collection_date', label: 'Collection Date' },
-    { key: 'created_at', label: 'Created Date' }
   ];
 
   // Prepare CSV data with formatted values
@@ -277,19 +275,6 @@ const DonationBoxDonationsList = () => {
       return `donation-box-${donationBoxInfo.box_id_no}-collections-${today}`;
     }
     return `donation-box-collections-${today}`;
-  };
-
-  // Calculate total collection amount
-  const getTotalCollectionAmount = () => {
-    return donations.reduce((sum, donation) => sum + (parseFloat(donation.collection_amount) || 0), 0);
-  };
-
-  // Get page title based on context
-  const getPageTitle = () => {
-    if (donationBoxId && donationBoxInfo) {
-      return `Collections: Box ${donationBoxInfo.box_id_no} - ${donationBoxInfo.shop_name}`;
-    }
-    return 'Donation Box Collections';
   };
 
   // Get back path based on context
@@ -334,7 +319,7 @@ const DonationBoxDonationsList = () => {
           {error && <div className="status-message status-message--error">{error}</div>}
           
           {/* Donation Box Info Card (only when filtering by specific box) */}
-          {donationBoxId && donationBoxInfo && (
+          {/* {donationBoxId && donationBoxInfo && (
             <div style={{ 
               padding: '20px', 
               backgroundColor: '#f0f9ff', 
@@ -348,8 +333,8 @@ const DonationBoxDonationsList = () => {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
                 <div>
-                  <div style={{ fontSize: '0.85em', color: '#666' }}>Box ID</div>
-                  <div style={{ fontWeight: '600', color: '#333' }}>{donationBoxInfo.box_id_no}</div>
+                  <div style={{ fontSize: '0.85em', color: '#666' }}>Key</div>
+                  <div style={{ fontWeight: '600', color: '#333' }}>{donationBoxInfo.key_no}</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '0.85em', color: '#666' }}>Shop Name</div>
@@ -369,43 +354,7 @@ const DonationBoxDonationsList = () => {
                 </div>
               </div>
             </div>
-          )}
-          
-          {/* Summary Dashboard Cards */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: '20px', 
-            marginBottom: '20px' 
-          }}>
-            <div style={{ 
-              padding: '20px', 
-              backgroundColor: '#f0f9ff', 
-              borderRadius: '8px',
-              border: '1px solid #bae6fd'
-            }}>
-              <div style={{ fontSize: '0.9em', color: '#0369a1', marginBottom: '8px' }}>
-                Total Collections
-              </div>
-              <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#0c4a6e' }}>
-                {totalItems}
-              </div>
-            </div>
-            
-            <div style={{ 
-              padding: '20px', 
-              backgroundColor: '#f0fdf4', 
-              borderRadius: '8px',
-              border: '1px solid #bbf7d0'
-            }}>
-              <div style={{ fontSize: '0.9em', color: '#15803d', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <FiTrendingUp /> Total Amount Collected
-              </div>
-              <div style={{ fontSize: '1.8em', fontWeight: '700', color: '#14532d' }}>
-                {formatAmount(getTotalCollectionAmount())}
-              </div>
-            </div>
-          </div>
+          )} */}
           
           {/* Filters Section */}
           <div className="filters-section" style={{ 
@@ -422,7 +371,7 @@ const DonationBoxDonationsList = () => {
               label="Search"
               filters={tempFilters}
               onFilterChange={handleFilterChange}
-              placeholder="Search by box ID, shop name..."
+              placeholder="Search by key number, shopkeeper name..."
             />
             
             <FormInput
@@ -432,7 +381,6 @@ const DonationBoxDonationsList = () => {
               value={tempFilters.min_amount}
               onChange={handleFormFilterChange}
               placeholder="Min amount"
-              step="0.01"
               min="0"
             />
             
@@ -443,7 +391,6 @@ const DonationBoxDonationsList = () => {
               value={tempFilters.max_amount}
               onChange={handleFormFilterChange}
               placeholder="Max amount"
-              step="0.01"
               min="0"
             />
             
@@ -489,10 +436,10 @@ const DonationBoxDonationsList = () => {
                   <th>Collection ID</th>
                   {!donationBoxId && <th>Donation Box</th>}
                   {!donationBoxId && <th>Shop Details</th>}
-                  {!donationBoxId && <th>Location</th>}
+                  {/* {!donationBoxId && <th>Location</th>} */}
                   <th>Collection Amount</th>
                   <th>Collection Date</th>
-                  <th className="hide-on-mobile">Created Date</th>
+                  <th>Collected By</th>
                   <th className="table-actions">Actions</th>
                 </tr>
               </thead>
@@ -509,7 +456,7 @@ const DonationBoxDonationsList = () => {
                         <div className="box-info">
                           <div style={{ fontWeight: '600', color: '#333' }}>
                             <FiBox style={{ display: 'inline', marginRight: '5px' }} />
-                            Box ID: {donation.donation_box?.box_id_no || 'N/A'}
+                            Key: {donation.donation_box?.key_no || 'N/A'}
                           </div>
                           {donation.donation_box?.box_type && (
                             <div style={{ fontSize: '0.85em', color: '#666', marginTop: '3px' }}>
@@ -533,29 +480,29 @@ const DonationBoxDonationsList = () => {
                         </div>
                       </td>
                     )}
-                    {!donationBoxId && (
+                    {/* {!donationBoxId && (
                       <td>
                         <div className="location-info">
                           {donation.donation_box ? (
                             <>
                               <div style={{ color: '#333' }}>
-                                {donation.donation_box.city}
+                                {donation.donation_box?.route?.cities?.find(city => city.id === donation.donation_box.city_id)?.name}
                               </div>
                               <div style={{ fontSize: '0.85em', color: '#666', marginTop: '3px' }}>
-                                {donation.donation_box.region}
+                                {donation.donation_box?.route?.region?.name}
                               </div>
                             </>
                           ) : '-'}
                         </div>
                       </td>
-                    )}
+                    )} */}
                     <td>
                       <div style={{ 
                         fontWeight: '700', 
                         color: '#15803d',
                         fontSize: '1.05em'
                       }}>
-                        <FiDollarSign style={{ display: 'inline', marginRight: '3px' }} />
+                        {/* <FiDollarSign style={{ display: 'inline', marginRight: '3px' }} /> */}
                         {formatAmount(donation.collection_amount)}
                       </div>
                     </td>
@@ -565,8 +512,10 @@ const DonationBoxDonationsList = () => {
                         {formatDate(donation.collection_date)}
                       </div>
                     </td>
-                    <td className="hide-on-mobile">
-                      {formatDate(donation.created_at)}
+                    <td>
+                      <div style={{ fontWeight: '600', color: '#333' }}>
+                        {donation.collected_by?.first_name + ' ' + donation.collected_by?.last_name || 'N/A'}
+                      </div>
                     </td>
                     <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(donation)} />

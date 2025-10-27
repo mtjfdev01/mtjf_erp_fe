@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
+import { FiDollarSign } from 'react-icons/fi';
 
 const ViewDonationBox = () => {
   const { id } = useParams();
@@ -10,7 +11,6 @@ const ViewDonationBox = () => {
   const [donationBox, setDonationBox] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
   useEffect(() => {
     fetchDonationBox();
   }, [id]);
@@ -19,7 +19,7 @@ const ViewDonationBox = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get(`/donation-box/${id}`);
-      
+      console.log("response", response);
       if (response.data.success) {
         setDonationBox(response.data.data);
         setError('');
@@ -75,7 +75,7 @@ const ViewDonationBox = () => {
           <PageHeader 
             title="View Donation Box"
             showBackButton={true}
-            backPath="/donation-boxes/list"
+            backPath="/dms/donation_box/list"
           />
           <div className="loading">Loading...</div>
         </div>
@@ -91,7 +91,7 @@ const ViewDonationBox = () => {
           <PageHeader 
             title="View Donation Box"
             showBackButton={true}
-            backPath="/donation-boxes/list"
+            backPath="/dms/donation_box/list"
           />
           <div className="view-content">
             <div className="status-message status-message--error">{error}</div>
@@ -109,7 +109,7 @@ const ViewDonationBox = () => {
           <PageHeader 
             title="View Donation Box"
             showBackButton={true}
-            backPath="/donation-boxes/list"
+            backPath="/dms/donation_box/list"
           />
           <div className="view-content">
             <div className="status-message status-message--error">Donation box not found</div>
@@ -126,7 +126,7 @@ const ViewDonationBox = () => {
         <PageHeader 
           title="View Donation Box"
           showBackButton={true}
-          backPath="/donation-boxes/list"
+          backPath="/dms/donation_box/list"
         />
         <div className="view-content">
           <div className="view-section">
@@ -160,15 +160,15 @@ const ViewDonationBox = () => {
             <div className="view-grid">
               <div className="view-item">
                 <span className="view-item-label">Region</span>
-                <span className="view-item-value">{donationBox.region || '-'}</span>
+                <span className="view-item-value">{donationBox?.route?.region?.name || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">City</span>
-                <span className="view-item-value">{donationBox.city || '-'}</span>
+                <span className="view-item-value">{donationBox?.route?.cities?.find(city => city.id === donationBox.city_id)?.name || '-'}</span>
               </div>
               <div className="view-item">
-                <span className="view-item-label">FRD Officer</span>
-                <span className="view-item-value">{donationBox.frd_officer_reference || '-'}</span>
+                <span className="view-item-label">FRD Officers</span>
+                <span className="view-item-value">{donationBox.assignedUsers?.map(user => user.first_name + ' ' + user.last_name).join(', ') || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Landmark/Marketplace</span>
@@ -176,7 +176,7 @@ const ViewDonationBox = () => {
               </div>
               <div className="view-item">
                 <span className="view-item-label">Route</span>
-                <span className="view-item-value">{donationBox.route || '-'}</span>
+                <span className="view-item-value">{donationBox?.route?.name || '-'}</span>
               </div>
             </div>
           </div>
@@ -196,12 +196,6 @@ const ViewDonationBox = () => {
                 <span className="view-item-label">Cell Number</span>
                 <span className="view-item-value">{donationBox.cell_no || '-'}</span>
               </div>
-              {donationBox.route && (
-                <div className="view-item view-item--full">
-                  <span className="view-item-label">Route Information</span>
-                  <span className="view-item-value">{donationBox.route}</span>
-                </div>
-              )}
             </div>
           </div>
 
@@ -222,6 +216,28 @@ const ViewDonationBox = () => {
               </div>
             </div>
           </div>
+
+          {/* View Collections Button */}
+            <button
+              onClick={() => navigate(`/dms/donation-box-donations/list/${id}`)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                backgroundColor: '#10b981',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              View Collections 
+            </button>
         </div>
       </div>
     </>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
@@ -22,6 +22,9 @@ import ConfirmationModal from '../../../../common/ConfirmationModal';
 
 const OnlineDonationsList = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlDonorId = searchParams.get('donor_id'); // Get donor_id from URL query param
+  
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -66,6 +69,22 @@ const OnlineDonationsList = () => {
     donor_id: ''
   });
 
+  // Initialize donor_id from URL on mount
+  useEffect(() => {
+    if (urlDonorId) {
+      // Set donor_id from URL query param
+      setTempFilters(prev => ({
+        ...prev,
+        donor_id: urlDonorId
+      }));
+      setAppliedFilters(prev => ({
+        ...prev,
+        donor_id: urlDonorId
+      }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlDonorId]);
+
   // Universal filter change handler - Updates temporary filters only
   const handleFilterChange = (key, value) => {
     setTempFilters(prev => ({
@@ -97,9 +116,15 @@ const OnlineDonationsList = () => {
     // Check if filters have changed
     const filtersChanged = JSON.stringify(appliedFilters) !== JSON.stringify(tempFilters);
     
+    // Always include donor_id from URL if present
+    const filtersToApply = { ...tempFilters };
+    if (urlDonorId) {
+      filtersToApply.donor_id = urlDonorId;
+    }
+    
     if (filtersChanged) {
       // If filters changed, apply them
-      setAppliedFilters(tempFilters);
+      setAppliedFilters(filtersToApply);
       setCurrentPage(1);
     } else {
       // If filters haven't changed, force refresh by calling fetchDonations
@@ -144,6 +169,9 @@ const OnlineDonationsList = () => {
     try {
       setLoading(true);
       
+      // Always include donor_id from URL if present
+      const donorIdForFilter = urlDonorId || appliedFilters.donor_id;
+      
       // Prepare filter payload
       const filterPayload = {
         pagination: {
@@ -164,8 +192,8 @@ const OnlineDonationsList = () => {
           start_date: appliedFilters.start_date,
           end_date: appliedFilters.end_date,
           
-          // Donor filter
-          donor_id: appliedFilters.donor_id,
+          // Donor filter - always use URL donor_id if present
+          donor_id: donorIdForFilter,
           
           // Future filters can be easily added here
           // amount_range: { min: 1000, max: 50000 },
@@ -422,13 +450,16 @@ const OnlineDonationsList = () => {
             backgroundColor: '#f9fafb',
             borderRadius: '8px'
           }}>
-            <SearchFilter
-              filterKey="search"
-              label="Search"
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="Search by donor name, email, phone..."
-            />
+            {/* Only show Search filter if not filtered via URL query param */}
+            {!urlDonorId && (
+              <SearchFilter
+                filterKey="search"
+                label="Search"
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="Search by donor name, email, phone..."
+              />
+            )}
             
             <DropdownFilter
               filterKey="status"
@@ -491,37 +522,40 @@ const OnlineDonationsList = () => {
               onFilterChange={handleFilterChange}
             />
             
-            <SearchableDropdown
-              label="Filter by Donor"
-              placeholder="Search donors..."
-              apiEndpoint="/donors"
-              onSelect={handleDonorSelect}
-              onClear={handleDonorClear}
-              value={selectedDonor}
-              displayKey="name"
-              debounceDelay={500}
-              minSearchLength={2}
-              allowResearch={true}
-              renderOption={(donor, index) => (
-                <div 
-                  key={donor.id}
-                  className="searchable-dropdown__option"
-                  onClick={() => handleDonorSelect(donor)}
-                  style={{ 
-                    padding: '12px',
-                    borderBottom: index < donor.length - 1 ? '1px solid #eee' : 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                    {donor.name || `${donor.first_name} ${donor.last_name}`}
+            {/* Only show Filter by Donor dropdown if not filtered via URL query param */}
+            {!urlDonorId && (
+              <SearchableDropdown
+                label="Filter by Donor"
+                placeholder="Search donors..."
+                apiEndpoint="/donors"
+                onSelect={handleDonorSelect}
+                onClear={handleDonorClear}
+                value={selectedDonor}
+                displayKey="name"
+                debounceDelay={500}
+                minSearchLength={2}
+                allowResearch={true}
+                renderOption={(donor, index) => (
+                  <div 
+                    key={donor.id}
+                    className="searchable-dropdown__option"
+                    onClick={() => handleDonorSelect(donor)}
+                    style={{ 
+                      padding: '12px',
+                      borderBottom: index < donor.length - 1 ? '1px solid #eee' : 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                      {donor.name || `${donor.first_name} ${donor.last_name}`}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {donor.email} • {donor.phone}
+                    </div>
                   </div>
-                  <div style={{ fontSize: '12px', color: '#666' }}>
-                    {donor.email} • {donor.phone}
-                  </div>
-                </div>
-              )}
-            />
+                )}
+              />
+            )}
             
             {/* Filter Action Buttons */}
             <div style={{ 
@@ -563,7 +597,7 @@ const OnlineDonationsList = () => {
                   <tr key={donation.id}>
                     <td>
                       <div className="donor-info">
-                        <div className="donor-name">{donation?.donor.name || 'Anonymous'}</div>
+                        <div className="donor-name">{donation?.donor?.name || 'Anonymous'}</div>
                         {donation.item_name && (
                           <div className="donor-item hide-on-mobile">{donation.item_name}</div>
                         )}
