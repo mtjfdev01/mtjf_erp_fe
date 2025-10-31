@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../utils/axios';
+import axiosInstance, { setAuthContextHandlingInitialLoad } from '../utils/axios';
 
 const AuthContext = createContext(null);
 
@@ -13,6 +13,9 @@ export const AuthProvider = ({ children }) => {
   const lastAuthCheckRef = useRef(null); // Track last successful auth check time
 
   const checkAuth = async () => {
+    // Mark that AuthContext is handling initial load to prevent axios interceptor from redirecting
+    setAuthContextHandlingInitialLoad(true);
+    
     try {
       // First check localStorage
       const storedUser = localStorage.getItem('user_data');
@@ -53,7 +56,10 @@ export const AuthProvider = ({ children }) => {
           
           // Only redirect if it's an auth error and we're not already on login page
           if (isAuthError && window.location.pathname !== '/') {
-            navigate('/');
+            // Use a small delay to allow state to settle
+            setTimeout(() => {
+              navigate('/', { replace: true });
+            }, 100);
           }
         }
       } else {
@@ -68,6 +74,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('user_permissions');
     } finally {
       setLoading(false);
+      // Mark that initial load is complete - allow axios interceptor to handle future errors
+      setTimeout(() => {
+        setAuthContextHandlingInitialLoad(false);
+      }, 500);
     }
   };
 

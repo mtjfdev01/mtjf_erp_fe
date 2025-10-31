@@ -42,6 +42,7 @@ axiosInstance.interceptors.request.use(
 // Track redirect state to prevent multiple redirects
 let redirectingToLogin = false;
 let initialLoadComplete = false;
+let authContextHandlingInitialLoad = false;
 
 // Mark initial load as complete after a delay to allow AuthContext to handle initial auth checks
 // This prevents premature redirects during page refresh
@@ -53,12 +54,18 @@ if (typeof window !== 'undefined') {
     // If on login page, mark as complete immediately
     initialLoadComplete = true;
   } else {
-    // Otherwise, wait for initial auth check to complete
+    // Wait longer for initial auth check to complete (5 seconds)
+    // This gives AuthContext enough time to handle the initial check
     setTimeout(() => {
       initialLoadComplete = true;
-    }, 3000);
+    }, 5000);
   }
 }
+
+// Export function to mark that AuthContext is handling initial load
+export const setAuthContextHandlingInitialLoad = (handling) => {
+  authContextHandlingInitialLoad = handling;
+};
 
 // Add a response interceptor to handle errors
 axiosInstance.interceptors.response.use(
@@ -86,7 +93,8 @@ axiosInstance.interceptors.response.use(
       
       // Handle 401 Unauthorized - always treat as session expired (except during initial load)
       if (status === 401) {
-        if (initialLoadComplete && !isLoginPage && !redirectingToLogin) {
+        // Only redirect if initial load is complete AND AuthContext is not handling it
+        if (initialLoadComplete && !authContextHandlingInitialLoad && !isLoginPage && !redirectingToLogin) {
           console.warn('Session expired (401 Unauthorized). Clearing auth data and redirecting to login.');
           redirectingToLogin = true;
           
@@ -105,9 +113,13 @@ axiosInstance.interceptors.response.use(
       
       // Handle 404 NOT_FOUND - only redirect after initial load and if not on login page
       if (status === 404 || errorCode === 'NOT_FOUND') {
-        // During initial load (first 3 seconds) or if already on login page, 
-        // let AuthContext handle the error gracefully without redirecting
-        if (initialLoadComplete && !isLoginPage && !redirectingToLogin) {
+        // During initial load or if AuthContext is handling it, let AuthContext manage the redirect
+        // Only redirect if:
+        // 1. Initial load is complete (5 seconds passed)
+        // 2. AuthContext is NOT handling initial load
+        // 3. Not already on login page
+        // 4. Not already redirecting
+        if (initialLoadComplete && !authContextHandlingInitialLoad && !isLoginPage && !redirectingToLogin) {
           console.warn('Session expired (404 NOT_FOUND). Clearing auth data and redirecting to login.');
           redirectingToLogin = true;
           
