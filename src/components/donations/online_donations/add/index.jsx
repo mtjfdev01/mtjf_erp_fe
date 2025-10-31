@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
@@ -15,6 +15,8 @@ import ReloadButton from '../../../common/buttons/reload';
 const AddDonation = () => {
   const navigate = useNavigate();
   const { inKindItems, refetchInKindItems } = useInKindItems();
+  const [searchParams] = useSearchParams();
+  const donorIdFromUrl = searchParams.get('donor_id');
   console.log("inKindItems", inKindItems);
   const [form, setForm] = useState({
     // Donor information (will come from selected donor)
@@ -199,7 +201,12 @@ const AddDonation = () => {
       await axiosInstance.post('/donations', donationData);
 
       // Redirect to donations list after successful creation
-      navigate('/donations/online_donations/list');
+      if (donorIdFromUrl) {
+        navigate(`/donations/online_donations/list?donor_id=${donorIdFromUrl}`);
+      }
+      else {
+        navigate('/donations/online_donations/list');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add donation. Please try again.');
       console.error('Error adding donation:', err);
@@ -209,7 +216,11 @@ const AddDonation = () => {
   };
 
   const handleBack = () => {
-    navigate('/donations/online_donations/list');
+    if (donorIdFromUrl) {
+      navigate(`/donations/online_donations/list?donor_id=${donorIdFromUrl}`);
+    } else {
+      navigate('/donations/online_donations/list');
+    }
   };
 
   // Dropdown options
@@ -298,6 +309,26 @@ const AddDonation = () => {
   // Check if collection center is selected as donation source
   const isCollectionCenter = form.source === 'collection_center';
 
+  // Fetch donor by donor_id from URL param only once
+  useEffect(() => {
+    if (donorIdFromUrl && !selectedDonor) {
+      async function fetchDonor() {
+        try {
+          const response = await axiosInstance.get(`/donors/${donorIdFromUrl}`);
+          if (response.data.success) {
+            setSelectedDonor(response.data.data);
+            setForm(prev => ({ ...prev, donor_id: response.data.data.id }));
+          }
+        } catch (err) {
+          console.error('Failed to fetch donor by id from URL:', err);
+        }
+      }
+      fetchDonor();
+    }
+    // eslint-disable-next-line
+  }, [donorIdFromUrl, selectedDonor]);
+
+
   return (
     <>
       <Navbar />
@@ -314,6 +345,9 @@ const AddDonation = () => {
         )}
 
         <form onSubmit={handleSubmit} className="form">
+          {/* if the donor_id exists in the url, then show the donor  */}
+          
+
           {/* Donor Selection */}
           <div className="form-section">
             <SearchableDropdown

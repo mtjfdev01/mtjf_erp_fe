@@ -52,7 +52,14 @@ const OnlineDonationsList = () => {
     end_date: '',
     amount: '',
     price_operator: '',
-    donor_id: ''
+    donor_id: '',
+    donor_search: '',
+    orderId: '',
+    relationsFilters:{
+      donor:{
+        search: '',
+      }
+    }
   });
 
   // Applied filters - Actually sent to API
@@ -66,7 +73,12 @@ const OnlineDonationsList = () => {
     end_date: '',
     amount: '',
     price_operator: '',
-    donor_id: ''
+    donor_id: '',
+    donor_search: '',
+    orderId: '',
+    relationsFilters: {
+      donor: {}
+    }
   });
 
   // Initialize donor_id from URL on mount
@@ -90,6 +102,35 @@ const OnlineDonationsList = () => {
     setTempFilters(prev => ({
       ...prev,
       [key]: value
+    }));
+  };
+
+  // Relational filters change handler - Updates nested relation filters in temporary filters
+  const handleRelationalFilterChange = (relationKey, relationColumn, value) => {
+    setTempFilters(prev => ({
+      ...prev,
+      relationsFilters: {
+        ...(prev.relationsFilters || {}),
+        [relationKey]: {
+          ...(prev.relationsFilters?.[relationKey] || {}),
+          [relationColumn]: value
+        }
+      }
+    }));
+  };
+
+  // Specific handler to keep Search input controlled while updating relationsFilters
+  const handleDonorSearchChange = (value) => {
+    setTempFilters(prev => ({
+      ...prev,
+      donor_search: value,
+      relationsFilters: {
+        ...(prev.relationsFilters || {}),
+        donor: {
+          ...(prev.relationsFilters?.donor || {}),
+          search: value
+        }
+      }
     }));
   };
 
@@ -144,7 +185,10 @@ const OnlineDonationsList = () => {
       end_date: '',
       amount: '',
       price_operator: '',
-      donor_id: ''
+      donor_id: '',
+      donor_search: '',
+      orderId: '',
+      relationsFilters: {}
     };
     
     // Also clear selected donor
@@ -171,6 +215,8 @@ const OnlineDonationsList = () => {
       
       // Always include donor_id from URL if present
       const donorIdForFilter = urlDonorId || appliedFilters.donor_id;
+      // Use relationsFilters directly from applied filters
+      const relationsFiltersPayload = appliedFilters.relationsFilters || {};
       
       // Prepare filter payload
       const filterPayload = {
@@ -186,6 +232,7 @@ const OnlineDonationsList = () => {
           status: appliedFilters.status,
           donation_type: appliedFilters.donation_type,
           donation_method: appliedFilters.donation_method,
+          orderId: appliedFilters.orderId,
           
           // Date filters
           date: appliedFilters.date,
@@ -201,6 +248,7 @@ const OnlineDonationsList = () => {
           // payment_status: ['completed', 'pending'],
           // locations: ['karachi', 'lahore', 'islamabad']
         },
+        relationsFilters: relationsFiltersPayload,
         hybrid_filters:[ {
           value: appliedFilters.amount,
           operator: appliedFilters.price_operator,
@@ -432,7 +480,8 @@ const OnlineDonationsList = () => {
       <div className="list-wrapper">
         <PageHeader 
           title="Online Donations" 
-          showBackButton={false} 
+          showBackButton={urlDonorId ? true :false} 
+          backPath={urlDonorId ? `/dms/donors/view/${urlDonorId}` : null}
           showAdd={true}
           addPath='/donations/online_donations/add'
         />
@@ -453,10 +502,10 @@ const OnlineDonationsList = () => {
             {/* Only show Search filter if not filtered via URL query param */}
             {!urlDonorId && (
               <SearchFilter
-                filterKey="search"
+                filterKey="donor_search"
                 label="Search"
                 filters={tempFilters}
-                onFilterChange={handleFilterChange}
+                onFilterChange={(key, value) => handleDonorSearchChange(value)}
                 placeholder="Search by donor name, email, phone..."
               />
             )}
@@ -513,6 +562,15 @@ const OnlineDonationsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
             />
+
+            {/* Transaction ID filter */}
+            <SearchFilter
+              filterKey="orderId"
+              label="Transaction ID"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Enter transaction ID..."
+            />
             
             <DateRangeFilter
               startKey="start_date"
@@ -563,7 +621,8 @@ const OnlineDonationsList = () => {
               gap: '10px', 
               alignItems: 'flex-end',
               marginTop: '20px',
-              width: '100%'
+              width: '100%',
+              flexWrap: 'wrap'
             }}>
               <SearchButton
                 onClick={handleApplyFilters}
@@ -577,13 +636,14 @@ const OnlineDonationsList = () => {
             </div>
           </div>
           
-          <div className="table-container">
+          <div className="table-container"> 
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Donor Name</th>
+                  <th>Donor </th>
                   <th>Amount</th>
                   <th>Type</th>
+                  <th>Project</th>
                   <th>Method</th>
                   <th className="hide-on-mobile">Email</th>
                   <th className="hide-on-mobile">Phone</th>
@@ -618,6 +678,11 @@ const OnlineDonationsList = () => {
                         {donation.donation_type === 'zakat' ? 'Zakat' : 
                          donation.donation_type === 'sadqa' ? 'Sadqa' : 
                          donation.donation_type || 'General'}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="donation-project">
+                        {donation.project_name || 'N/A'}
                       </span>
                     </td>
                     <td>
@@ -665,14 +730,14 @@ const OnlineDonationsList = () => {
               </div>
             </div>
             
-            <DownloadCSV
+            {/* <DownloadCSV
               data={prepareCSVData()}
               filename={getCSVFilename()}
               columns={csvColumns}
               buttonText="Export to CSV"
               onDownloadStart={() => console.log('Downloading donations CSV...')}
               onDownloadComplete={() => console.log('Download complete!')}
-            />
+            /> */}
           </div>
           
           {totalItems > 0 && (

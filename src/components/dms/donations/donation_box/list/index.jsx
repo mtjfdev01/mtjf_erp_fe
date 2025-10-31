@@ -280,7 +280,7 @@ const DonationBoxDonationsList = () => {
   // Get back path based on context
   const getBackPath = () => {
     if (donationBoxId) {
-      return `/donation-boxes/view/${donationBoxId}`;
+      return `/dms/donation_box/view/${donationBoxId}`;
     }
     return null;
   };
@@ -433,9 +433,9 @@ const DonationBoxDonationsList = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Collection ID</th>
-                  {!donationBoxId && <th>Donation Box</th>}
-                  {!donationBoxId && <th>Shop Details</th>}
+                  <th>ID</th>
+                  {!donationBoxId && <th> Box</th>}
+                  {!donationBoxId && <th>Shop</th>}
                   {/* {!donationBoxId && <th>Location</th>} */}
                   <th>Collection Amount</th>
                   <th>Collection Date</th>
@@ -526,7 +526,7 @@ const DonationBoxDonationsList = () => {
             </table>
           </div>
           
-          <div className="list-header">
+          {/* <div className="list-header">
             <DownloadCSV
               data={prepareCSVData()}
               filename={getCSVFilename()}
@@ -535,7 +535,7 @@ const DonationBoxDonationsList = () => {
               onDownloadStart={() => console.log('Downloading donation box collections CSV...')}
               onDownloadComplete={() => console.log('Download complete!')}
             />
-          </div>
+          </div> */}
           
           {totalItems > 0 && (
             <Pagination

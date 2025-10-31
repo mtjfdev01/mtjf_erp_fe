@@ -146,6 +146,10 @@
   margin-bottom: var(--spacing-xs);
 }
 
+.sidebar-item:hover {
+   cursor: pointer;
+}
+
 .sidebar-item-header {
   padding: 0.7rem 1.5rem;
   border-radius: 0.5rem;
@@ -291,8 +295,8 @@
 .mobile-hamburger {
   display: none;
   position: fixed;
-  top: 1rem;
-  left: 1rem;
+  top: 3.3rem;
+  right: 1rem;
   z-index: 1001;
   background: var(--color-primary);
   border: none;

@@ -22,7 +22,7 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-brand">
-          <h2>Department Daily Report</h2>
+          <h2>MTJ Foundation Operations Report</h2>
         </div>
         <div className="navbar-actions">
           <button onClick={handleLogout} className="logout-button">

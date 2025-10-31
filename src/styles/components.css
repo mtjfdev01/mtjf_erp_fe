@@ -227,7 +227,7 @@
 .list-wrapper {
   max-width: 1400px;
   margin: 2rem;
-  padding: 2.5rem;
+  padding-top: 2.5rem;
   background: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   box-shadow: var(--shadow-md);
@@ -283,6 +283,7 @@
   margin-top: var(--spacing-md);
   border-radius: var(--border-radius);
   border: 1px solid var(--color-border);
+  /* display: none; */ 
 }
 
 /* Common Table Styles - Updated with Application Reports List Styling */
@@ -393,14 +394,14 @@
 @media (max-width: 1200px) {
   .list-wrapper {
     max-width: calc(100% - 25%);
-    padding: 2rem 1.2rem;
+    padding-top: 2rem ;
   }
 }
 
 @media (max-width: 768px) {
   .list-wrapper {
     margin: 1rem;
-    padding: 1rem;
+    padding-top: 1rem;
   }
 
   .list-header {
@@ -431,17 +432,41 @@
   .action-buttons {
     display: none;
   }
+
+  /* Show only first 4 columns on mobile */
+  .data-table th:nth-child(n+5),
+  .data-table td:nth-child(n+5) {
+    display: none;
+  }
+
+  /* Each visible column should be 25% max-width on mobile */
+  .data-table th:nth-child(-n+4),
+  .data-table td:nth-child(-n+4) {
+    max-width: 20%;
+  }
 }
 
 @media (max-width: 480px) {
   .list-wrapper {
     margin: 0.5rem;
-    padding: 0.5rem;
+    padding-top: 0.5rem;
   }
 
   .data-table th,
   .data-table td {
     padding: 10px 6px;
+  }
+
+  /* Show only first 4 columns on mobile */
+  .data-table th:nth-child(n+4),
+  .data-table td:nth-child(n+4) {
+    display: none;
+  }
+
+  /* Each visible column should be 25% max-width on mobile */
+  .data-table th:nth-child(-n+4),
+  .data-table td:nth-child(-n+4) {
+    max-width: 20%;
   }
 }
 

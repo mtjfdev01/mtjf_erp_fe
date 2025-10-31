@@ -47,6 +47,10 @@ const ViewDonor = () => {
     navigate(`/donations/online_donations/list?donor_id=${id}`);
   };
 
+  const handleAddDonation = () => {
+    navigate(`/donations/online_donations/add?donor_id=${id}`);
+  };
+
   const getDonorTypeIcon = (type) => {
     return type === 'csr' ? <BsFillBuildingsFill /> : <FiUser />;
   };
@@ -216,6 +220,17 @@ const ViewDonor = () => {
               }}
             >
               View Donations
+            </button>
+
+            <button 
+              className="primary_btn" 
+              onClick={handleAddDonation}
+              style={{ 
+                backgroundColor: '#10b981',
+                marginLeft: '10px'
+              }}
+            >
+              Add Donation
             </button>
           </div>
         </div>

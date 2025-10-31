@@ -138,7 +138,6 @@ const ViewDonationBoxDonation = () => {
           {/* Collection Information Section */}
           <div className="view-section">
             <h3 className="view-section-title">
-              <FiDollarSign style={{ display: 'inline', marginRight: '8px' }} />
               Collection Information
             </h3>
             <div className="view-grid">

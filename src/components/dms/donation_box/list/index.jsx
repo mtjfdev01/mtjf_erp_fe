@@ -536,7 +536,7 @@ const DonationBoxList = () => {
             </table>
           </div>
           
-          <div className="list-header">
+          {/* <div className="list-header">
             <DownloadCSV
               data={prepareCSVData()}
               filename={getCSVFilename()}
@@ -545,7 +545,7 @@ const DonationBoxList = () => {
               onDownloadStart={() => console.log('Downloading donation boxes CSV...')}
               onDownloadComplete={() => console.log('Download complete!')}
             />
-          </div>
+          </div> */}
           
           {totalItems > 0 && (
             <Pagination
