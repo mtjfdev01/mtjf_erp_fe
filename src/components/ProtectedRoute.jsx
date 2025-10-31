@@ -1,13 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import axiosInstance from '../utils/axios';
 
 const ProtectedRoute = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
 
   // Helper function to check if user has access to current route
   const hasRouteAccess = (userData, currentPath) => {
@@ -44,47 +43,30 @@ const ProtectedRoute = ({ children }) => {
   };
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        // First check if we have user data in context
-        if (user) {
-          const currentPath = location.pathname;
-          
-          if (hasRouteAccess(user, currentPath)) {
-            setAuthenticated(true);
-          } else {
-            console.error('Unauthorized access to route:', currentPath);
-            setAuthenticated(false);
-          }
-          setLoading(false);
-          return;
-        }
+    // Wait for AuthContext to finish loading before checking route access
+    if (authLoading) {
+      setLoading(true);
+      return;
+    }
 
-        // If no user in context, verify with backend
-        const response = await axiosInstance.get('/auth/me');
-        if (response.data.user) {
-          const userData = response.data.user;
-          const currentPath = location.pathname;
+    // If AuthContext has finished loading and there's no user, user is not authenticated
+    if (!user) {
+      setAuthenticated(false);
+      setLoading(false);
+      return;
+    }
 
-          if (hasRouteAccess(userData, currentPath)) {
-            setAuthenticated(true);
-          } else {
-            console.error('Unauthorized access to route:', currentPath);
-            setAuthenticated(false);
-          }
-        } else {
-          setAuthenticated(false);
-        }
-      } catch (error) {
-        console.error('Authentication check failed:', error);
-        setAuthenticated(false);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    checkAuth();
-  }, [location, user]);
+    // Check route access based on user data from AuthContext
+    const currentPath = location.pathname;
+    if (hasRouteAccess(user, currentPath)) {
+      setAuthenticated(true);
+    } else {
+      console.error('Unauthorized access to route:', currentPath);
+      setAuthenticated(false);
+    }
+    
+    setLoading(false);
+  }, [location, user, authLoading]);
 
   if (loading) {
     return <div>Loading...</div>;

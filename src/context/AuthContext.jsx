@@ -73,10 +73,18 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAuth();
+  }, []); // Only run once on mount
+
+  // Separate effect for visibility/focus handlers - using refs to avoid re-creating handlers
+  useEffect(() => {
+    let timeoutId = null;
     
     // Handle visibility change - re-check auth when user returns to tab
     const handleVisibilityChange = async () => {
-      if (!document.hidden && user && !isCheckingRef.current) {
+      // Get current user from localStorage to avoid dependency on state
+      const currentUser = localStorage.getItem('user_data');
+      
+      if (!document.hidden && currentUser && !isCheckingRef.current) {
         // Only check if enough time has passed since last check (12 hours)
         // This prevents excessive API calls while still catching expired sessions
         const twelveHours = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
@@ -89,103 +97,64 @@ export const AuthProvider = ({ children }) => {
           return;
         }
         
-        isCheckingRef.current = true;
-        try {
-          // User has returned to the tab and we have a user, verify session is still valid
-          const response = await axiosInstance.get('/auth/me');
-          if (response.data.user) {
-            // Session is valid, update user data
-            setUser(response.data.user);
-            localStorage.setItem('user_data', JSON.stringify(response.data.user));
-            lastAuthCheckRef.current = Date.now(); // Update last check time
-            
-            if (response.data.permissions) {
-              setPermissions(response.data.permissions);
-              localStorage.setItem('user_permissions', JSON.stringify(response.data.permissions));
+        // Clear any pending timeout
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+        
+        // Debounce the check - wait 2 seconds after visibility change
+        timeoutId = setTimeout(async () => {
+          if (isCheckingRef.current) return;
+          
+          isCheckingRef.current = true;
+          try {
+            // User has returned to the tab and we have a user, verify session is still valid
+            const response = await axiosInstance.get('/auth/me');
+            if (response.data.user) {
+              // Session is valid, update user data
+              setUser(response.data.user);
+              localStorage.setItem('user_data', JSON.stringify(response.data.user));
+              lastAuthCheckRef.current = Date.now(); // Update last check time
+              
+              if (response.data.permissions) {
+                setPermissions(response.data.permissions);
+                localStorage.setItem('user_permissions', JSON.stringify(response.data.permissions));
+              }
+            } else {
+              // Session expired, clear and redirect
+              setUser(null);
+              setPermissions(null);
+              localStorage.removeItem('user_data');
+              localStorage.removeItem('user_permissions');
+              lastAuthCheckRef.current = null;
+              navigate('/');
             }
-          } else {
-            // Session expired, clear and redirect
+          } catch (error) {
+            // Session expired or error occurred - the axios interceptor will handle redirect
+            // Just clear local state here to prevent showing stale data
+            console.warn('Session verification failed on visibility change:', error);
             setUser(null);
             setPermissions(null);
             localStorage.removeItem('user_data');
             localStorage.removeItem('user_permissions');
             lastAuthCheckRef.current = null;
-            navigate('/');
+            // Don't navigate here - axios interceptor will handle it
+          } finally {
+            // Reset flag after a delay to allow for debouncing
+            setTimeout(() => {
+              isCheckingRef.current = false;
+            }, 1000);
           }
-        } catch (error) {
-          // Session expired or error occurred - the axios interceptor will handle redirect
-          // Just clear local state here to prevent showing stale data
-          console.warn('Session verification failed on visibility change:', error);
-          setUser(null);
-          setPermissions(null);
-          localStorage.removeItem('user_data');
-          localStorage.removeItem('user_permissions');
-          lastAuthCheckRef.current = null;
-          // Don't navigate here - axios interceptor will handle it
-        } finally {
-          // Reset flag after a delay to allow for debouncing
-          setTimeout(() => {
-            isCheckingRef.current = false;
-          }, 1000);
-        }
+        }, 2000); // Wait 2 seconds before checking
       }
     };
     
     // Handle focus event - check auth when window regains focus
-    const handleFocus = async () => {
-      if (user && !isCheckingRef.current) {
-        // Only check if enough time has passed since last check (12 hours)
-        // This prevents excessive API calls while still catching expired sessions
-        const twelveHours = 12 * 60 * 60 * 1000; // 12 hours in milliseconds
-        const timeSinceLastCheck = lastAuthCheckRef.current 
-          ? Date.now() - lastAuthCheckRef.current 
-          : Infinity;
-        
-        // Skip check if we checked recently (within 12 hours)
-        if (timeSinceLastCheck < twelveHours) {
-          return;
-        }
-        
-        isCheckingRef.current = true;
-        try {
-          // User has focused the window and we have a user, verify session is still valid
-          const response = await axiosInstance.get('/auth/me');
-          if (response.data.user) {
-            // Session is valid, update user data
-            setUser(response.data.user);
-            localStorage.setItem('user_data', JSON.stringify(response.data.user));
-            lastAuthCheckRef.current = Date.now(); // Update last check time
-            
-            if (response.data.permissions) {
-              setPermissions(response.data.permissions);
-              localStorage.setItem('user_permissions', JSON.stringify(response.data.permissions));
-            }
-          } else {
-            // Session expired, clear and redirect
-            setUser(null);
-            setPermissions(null);
-            localStorage.removeItem('user_data');
-            localStorage.removeItem('user_permissions');
-            lastAuthCheckRef.current = null;
-            navigate('/');
-          }
-        } catch (error) {
-          // Session expired or error occurred - the axios interceptor will handle redirect
-          // Just clear local state here to prevent showing stale data
-          console.warn('Session verification failed on focus:', error);
-          setUser(null);
-          setPermissions(null);
-          localStorage.removeItem('user_data');
-          localStorage.removeItem('user_permissions');
-          lastAuthCheckRef.current = null;
-          // Don't navigate here - axios interceptor will handle it
-        } finally {
-          // Reset flag after a delay to allow for debouncing
-          setTimeout(() => {
-            isCheckingRef.current = false;
-          }, 1000);
-        }
-      }
+    // Note: We're disabling this as it can conflict with visibility change
+    // The visibility change handler is sufficient
+    const handleFocus = () => {
+      // Disabled to prevent excessive calls - visibility change is enough
+      // Focus events fire too frequently
     };
     
     // Add event listeners
@@ -194,10 +163,13 @@ export const AuthProvider = ({ children }) => {
     
     // Cleanup event listeners on unmount
     return () => {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [user, navigate]);
+  }, [navigate]); // Only depend on navigate, not user
 
   const login = async (credentials) => {
     try {

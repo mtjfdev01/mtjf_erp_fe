@@ -39,6 +39,27 @@ axiosInstance.interceptors.request.use(
   }
 );
 
+// Track redirect state to prevent multiple redirects
+let redirectingToLogin = false;
+let initialLoadComplete = false;
+
+// Mark initial load as complete after a delay to allow AuthContext to handle initial auth checks
+// This prevents premature redirects during page refresh
+if (typeof window !== 'undefined') {
+  // Check if we're already on login page
+  const isLoginPage = window.location.pathname === '/';
+  
+  if (isLoginPage) {
+    // If on login page, mark as complete immediately
+    initialLoadComplete = true;
+  } else {
+    // Otherwise, wait for initial auth check to complete
+    setTimeout(() => {
+      initialLoadComplete = true;
+    }, 3000);
+  }
+}
+
 // Add a response interceptor to handle errors
 axiosInstance.interceptors.response.use(
   (response) => {
@@ -49,56 +70,83 @@ axiosInstance.interceptors.response.use(
     if (error.response) {
       const status = error.response.status;
       const errorCode = error.response.data?.code || error.response.data?.error;
+      const url = error.config?.url || '';
       
-      // Handle 401 Unauthorized or 404 NOT_FOUND (session expired)
-      if (status === 401 || status === 404 || errorCode === 'NOT_FOUND') {
-        // Only handle auth-related endpoints to avoid interfering with legitimate 404s
-        const authEndpoints = ['/auth/me', '/auth/logout', '/auth/refresh'];
-        const isAuthEndpoint = authEndpoints.some(endpoint => 
-          error.config?.url?.includes(endpoint)
-        );
-        
-        // If it's an auth endpoint or we're getting a NOT_FOUND error, handle session expiration
-        if (isAuthEndpoint || errorCode === 'NOT_FOUND' || status === 401) {
-          console.warn('Session expired or unauthorized. Clearing auth data and redirecting to login.');
+      // Only handle auth-related endpoints for 404/401 errors
+      const authEndpoints = ['/auth/me', '/auth/logout', '/auth/refresh'];
+      const isAuthEndpoint = authEndpoints.some(endpoint => url.includes(endpoint));
+      
+      // Skip handling if it's not an auth endpoint
+      if (!isAuthEndpoint) {
+        return Promise.reject(error);
+      }
+      
+      // Check if we're on login page
+      const isLoginPage = window.location?.pathname === '/';
+      
+      // Handle 401 Unauthorized - always treat as session expired (except during initial load)
+      if (status === 401) {
+        if (initialLoadComplete && !isLoginPage && !redirectingToLogin) {
+          console.warn('Session expired (401 Unauthorized). Clearing auth data and redirecting to login.');
+          redirectingToLogin = true;
           
           // Clear authentication data
           localStorage.removeItem('user_data');
           localStorage.removeItem('user_permissions');
           
-          // Redirect to login page if not already there
-          if (window.location.pathname !== '/') {
-            // Use a small delay to ensure localStorage is cleared
-            setTimeout(() => {
-              window.location.href = '/';
-            }, 100);
-          }
-          
-          // Return a rejected promise with a clear error message
-          return Promise.reject(new Error('Session expired. Please login again.'));
+          // Use a small delay to ensure localStorage is cleared
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 100);
         }
+        
+        return Promise.reject(new Error('Session expired. Please login again.'));
+      }
+      
+      // Handle 404 NOT_FOUND - only redirect after initial load and if not on login page
+      if (status === 404 || errorCode === 'NOT_FOUND') {
+        // During initial load (first 3 seconds) or if already on login page, 
+        // let AuthContext handle the error gracefully without redirecting
+        if (initialLoadComplete && !isLoginPage && !redirectingToLogin) {
+          console.warn('Session expired (404 NOT_FOUND). Clearing auth data and redirecting to login.');
+          redirectingToLogin = true;
+          
+          // Clear authentication data
+          localStorage.removeItem('user_data');
+          localStorage.removeItem('user_permissions');
+          
+          // Use a small delay to ensure localStorage is cleared
+          setTimeout(() => {
+            window.location.href = '/';
+          }, 100);
+        }
+        
+        // Always reject, but let AuthContext handle the initial load case
+        return Promise.reject(error);
       }
     }
     
-    // Log other errors for debugging
-    console.error('Response error:', {
-      message: error.message,
-      code: error.code,
-      response: error.response ? {
-        status: error.response.status,
-        statusText: error.response.statusText,
-        headers: error.response.headers,
-        data: error.response.data
-      } : 'No response',
-      config: {
-        url: error.config?.url,
-        method: error.config?.method,
-        baseURL: error.config?.baseURL,
-        headers: error.config?.headers,
-        withCredentials: error.config?.withCredentials,
-        origin: window.location.origin
-      }
-    });
+    // Log other errors for debugging (but only if not already handled)
+    if (!error.response || (error.response.status !== 401 && error.response.status !== 404)) {
+      console.error('Response error:', {
+        message: error.message,
+        code: error.code,
+        response: error.response ? {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          headers: error.response.headers,
+          data: error.response.data
+        } : 'No response',
+        config: {
+          url: error.config?.url,
+          method: error.config?.method,
+          baseURL: error.config?.baseURL,
+          headers: error.config?.headers,
+          withCredentials: error.config?.withCredentials,
+          origin: window.location.origin
+        }
+      });
+    }
     
     return Promise.reject(error);
   }
