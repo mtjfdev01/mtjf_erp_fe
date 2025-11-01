@@ -67,36 +67,53 @@
 .searchable-multi-select__tag {
   display: inline-flex;
   align-items: center;
-  background-color: #e3f2fd;
-  color: #1976d2;
-  padding: 4px 8px;
+  background-color: #007bff;
+  color: #ffffff;
+  padding: 4px 10px;
   border-radius: 16px;
   font-size: 12px;
   font-weight: 500;
-  margin-right: 4px;
-  margin-bottom: 2px;
+  margin-right: 6px;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  pointer-events: auto;
+}
+
+.searchable-multi-select__tag-text {
+  margin-right: 6px;
+  white-space: nowrap;
 }
 
 .searchable-multi-select__tag-remove {
-  background: none;
+  background: rgba(255, 255, 255, 0.3);
   border: none;
-  color: #1976d2;
-  font-size: 16px;
+  color: #ffffff;
+  font-size: 14px;
   font-weight: bold;
-  margin-left: 4px;
   cursor: pointer;
   padding: 0;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  transition: background-color 0.2s ease;
+  transition: all 0.2s ease;
+  line-height: 1;
+  flex-shrink: 0;
 }
 
 .searchable-multi-select__tag-remove:hover {
-  background-color: rgba(25, 118, 210, 0.1);
+  background-color: rgba(255, 255, 255, 0.5);
+  transform: scale(1.1);
+}
+
+.searchable-multi-select__tag-remove:active {
+  transform: scale(0.95);
+  background-color: rgba(255, 255, 255, 0.7);
 }
 
 .searchable-multi-select__actions {
@@ -148,6 +165,14 @@
   padding: 8px 12px;
   font-size: 14px;
   z-index: 1;
+  pointer-events: auto;
+}
+
+/* Ensure tags are clickable above the input */
+.searchable-multi-select__value {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
 }
 
 .searchable-multi-select__search-input:focus {
@@ -193,6 +218,13 @@
 
 .searchable-multi-select__option--selected {
   background-color: #e3f2fd;
+  border-left: 3px solid #007bff;
+}
+
+.searchable-multi-select__option--selected .searchable-multi-select__option-text,
+.searchable-multi-select__option--selected .searchable-multi-select__custom-option {
+  color: #0056b3;
+  font-weight: 500;
 }
 
 .searchable-multi-select__checkbox {
@@ -279,5 +311,25 @@
   
   .searchable-multi-select__option--selected {
     background-color: #2b6cb0;
+    border-left-color: #63b3ed;
+  }
+
+  .searchable-multi-select__option--selected .searchable-multi-select__option-text,
+  .searchable-multi-select__option--selected .searchable-multi-select__custom-option {
+    color: #e2e8f0;
+  }
+
+  .searchable-multi-select__tag {
+    background-color: #4299e1;
+    color: #ffffff;
+  }
+
+  .searchable-multi-select__tag-remove {
+    background: rgba(255, 255, 255, 0.3);
+    color: #ffffff;
+  }
+
+  .searchable-multi-select__tag-remove:hover {
+    background-color: rgba(255, 255, 255, 0.5);
   }
 }

@@ -312,7 +312,7 @@ const DonationBoxDonationsList = () => {
             showBackButton={!!donationBoxId} 
             backPath={getBackPath()}
             showAdd={true}
-            addPath='/dms/donation-box-donations/add'
+            addPath= {donationBoxId ? `/dms/donation-box-donations/add/${donationBoxId}` : '/dms/donation-box-donations/add'}
         />
         
         <div className="list-content">

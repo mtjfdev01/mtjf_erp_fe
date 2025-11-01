@@ -133,24 +133,46 @@ const SearchableMultiSelect = ({
     
     setSelectedItems(newSelectedItems);
     
+    // Clear search term after selection to allow easy searching for more items
+    setSearchTerm('');
+    setSearchResults([]);
+    
     if (onSelect) {
       onSelect(newSelectedItems);
+    }
+    
+    // Keep dropdown open to allow searching for more items
+    if (allowResearch && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
     }
   };
 
   // Handle clear all selections
   const handleClearAll = () => {
     setSelectedItems([]);
+    setSearchTerm('');
+    setSearchResults([]);
     if (onSelect) {
       onSelect([]);
     }
     if (onClear) {
       onClear();
     }
+    // Focus input after clearing
+    if (allowResearch && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    }
   };
 
   // Handle remove individual item
-  const handleRemoveItem = (itemToRemove) => {
+  const handleRemoveItem = (e, itemToRemove) => {
+    e.preventDefault();
+    e.stopPropagation(); // Prevent dropdown from opening/closing
+    
     const newSelectedItems = selectedItems.filter(item => item[valueKey] !== itemToRemove[valueKey]);
     setSelectedItems(newSelectedItems);
     
@@ -227,15 +249,14 @@ const SearchableMultiSelect = ({
     
     return selectedItems.map((item, index) => (
       <span key={item[valueKey] || index} className="searchable-multi-select__tag">
-        {item[displayKey]}
+        <span className="searchable-multi-select__tag-text">{item[displayKey]}</span>
         <button
           type="button"
           className="searchable-multi-select__tag-remove"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleRemoveItem(item);
-          }}
+          onClick={(e) => handleRemoveItem(e, item)}
+          onMouseDown={(e) => e.preventDefault()} // Prevent input focus
           title="Remove"
+          aria-label={`Remove ${item[displayKey]}`}
         >
           ×
         </button>
@@ -283,7 +304,7 @@ const SearchableMultiSelect = ({
             ref={inputRef}
             type="text"
             className="searchable-multi-select__search-input"
-            placeholder="Type to search..."
+            // placeholder={selectedItems.length > 0 ? "Search for more..." : "Type to search..."}
             value={searchTerm}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
@@ -291,6 +312,9 @@ const SearchableMultiSelect = ({
             onBlur={handleInputBlur}
             disabled={disabled}
             autoComplete="off"
+            style={{
+              paddingLeft: selectedItems.length > 0 ? '4px' : '12px'
+            }}
           />
         )}
       </div>

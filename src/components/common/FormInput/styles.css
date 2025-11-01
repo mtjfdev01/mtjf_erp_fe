@@ -30,7 +30,7 @@
   /* font-weight: lighter; */
   background: var(--color-bg-primary);
   transition: all 0.2s ease;
-  min-height: 80px;
+  /* min-height: 80px; */
 }
 
 @media (max-width: 768px) {

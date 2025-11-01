@@ -239,6 +239,7 @@ const App = () => {
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
                                 <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
+                                <Route path="/dms/donation-box-donations/add/:id" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/list/:id" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/view/:id" element={<ViewDonationBoxDonation />} />

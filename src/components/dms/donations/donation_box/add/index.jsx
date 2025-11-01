@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import FormInput from '../../../../common/FormInput';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
@@ -7,16 +7,18 @@ import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 
 const AddDonationBoxDonation = () => {
+  const { id } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState({
     donation_box_id: '',
-    donation_box: null, // Will store the selected donation box object
+    donation_box: id ?? null, // Will store the selected donation box object
     collection_amount: '',
     collection_date: new Date().toISOString().split('T')[0]
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [donationBox, setDonationBox] = useState(null);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -87,8 +89,8 @@ const AddDonationBoxDonation = () => {
 
       await axiosInstance.post('/donation-box-donation', donationData); 
 
-      // Redirect to donations list after successful creation
-      navigate('/dms/donation-box-donations/list');
+      // Redirect to donations list after successful creation 
+      navigate(`/dms/donation-box-donations/list/${form?.donation_box_id}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to add donation. Please try again.');
       console.error('Error adding donation:', err);
@@ -100,6 +102,27 @@ const AddDonationBoxDonation = () => {
   const handleBack = () => {
     navigate('/dms/donation-box-donations/list');
   };
+
+  const fetchDonationBox = async (id) => {
+    try {
+      const response = await axiosInstance.get(`/donation-box/${id}`);
+      if (response.data.success) {
+        setDonationBox(response.data.data);
+        setForm({...form, donation_box_id: response.data.data.id});
+      }
+    }
+    catch (err) {
+      console.error('Error fetching donation box:', err);
+      setError('Failed to fetch donation box');
+      setDonationBox(null);
+    }
+  };
+useEffect(()=>{},[id])
+  useEffect(() => {
+    if (id) {
+      fetchDonationBox(id);
+    }
+  }, [id]);
 
   return (
     <>
@@ -118,7 +141,7 @@ const AddDonationBoxDonation = () => {
 
         <form onSubmit={handleSubmit} className="form">
           {/* Donation Box Selection */}
-          <div className="form-section">
+          {!id ?<> <div className="form-section">
             <h3 style={{ marginBottom: '15px', color: '#333' }}>Donation Box Information</h3>
             <div className="form-grid-2"> 
               <SearchableDropdown
@@ -159,6 +182,10 @@ const AddDonationBoxDonation = () => {
               )} */}
             </div>
           </div>
+          </> : <>
+          <h3>Add Donation for:  <small style={{color:"green"}}>{donationBox?.key_no} </small></h3>
+          </>
+          }
 
           {/* Collection Details */}
           <div className="form-section">

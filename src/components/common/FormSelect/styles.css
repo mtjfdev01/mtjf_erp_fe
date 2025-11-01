@@ -35,7 +35,7 @@
   background-position: right var(--spacing-sm) center;
   background-size: 1em;
   padding-right: calc(var(--spacing-md) * 2);
-  min-height: 80px;
+  /* min-height: 80px; */
 }
 @media (max-width: 768px) {
   .form-input {
