@@ -172,7 +172,7 @@ const CreateUser = () => {
         dob: '',
         address: '',
         cnic: '',
-        role: roles[0].value,
+        role: defaultRoles[0].value,
         department: departments[0].value,
         gender: genders[0].value,
         joining_date: '',

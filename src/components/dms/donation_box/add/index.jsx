@@ -351,14 +351,15 @@ const AddDonationBox = () => {
               />
 
               <SearchableMultiSelect
-                label="Assigned Users"
-                placeholder="Search and select multiple users..."
-                apiEndpoint="/users"
+                label="Assign Collectors"
+                // placeholder="Search and select multiple users..."
+                apiEndpoint="/users/options?department=fund_raising"
                 onSelect={handleAssignedUsersSelect}
                 onClear={handleAssignedUsersClear}
                 value={assignedUsers}
                 displayKey="first_name"
                 valueKey="id"
+                allowResearch={true}
                 debounceDelay={500}
                 minSearchLength={2}
                 renderOption={(user, index) => (

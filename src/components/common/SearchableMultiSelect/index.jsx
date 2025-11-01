@@ -33,7 +33,7 @@ import './styles.css';
  */
 const SearchableMultiSelect = ({
   label,
-  placeholder = 'Type to search and select...',
+  placeholder = '',
   onSearch,
   apiEndpoint,
   apiParams = {},
