@@ -88,6 +88,9 @@ import UpdateTarget from './components/program/targets/reports/update';
 import ViewTarget from './components/program/targets/reports/view';
 import AdminApplicationsList from './components/admin/hr/career/applications/list';
 import AdminApplicationView from './components/admin/hr/career/applications/view';
+import JobsList from './components/admin/hr/careers/jobs/list';
+import AddJob from './components/admin/hr/careers/jobs/add';
+import ViewJob from './components/admin/hr/careers/jobs/view';
 import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
 import { DonorsList, RegisterDonor, ViewDonor } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
@@ -231,6 +234,11 @@ const App = () => {
                                 {/* HR */}
                                 <Route path="/hr/career/applications/list" element={<AdminApplicationsList />} />
                                 <Route path="/hr/career/applications/view/:id" element={<AdminApplicationView />} />
+                                
+                                {/* Jobs Routes */}
+                                <Route path="/hr/careers/jobs/list" element={<JobsList />} />
+                                <Route path="/hr/careers/jobs/add" element={<AddJob />} />
+                                <Route path="/hr/careers/jobs/view/:id" element={<ViewJob />} />
                                 
                                 {/* Fund Raising Welcome */}
                                 <Route path="/fund_raising" element={<FundRaising />} /> 

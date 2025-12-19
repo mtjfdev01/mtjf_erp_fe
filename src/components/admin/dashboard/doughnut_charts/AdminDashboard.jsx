@@ -19,6 +19,7 @@ import Organizations from '../test_impact_dashboard/organizations';
 import Sectors from '../test_impact_dashboard/sectors';
 import AllocationsSummary from '../impact_dashboard';
 import PeopleSummary from '../people_summary';
+import LineChart from '../../../common/charts/line_chart';
     
 // doughnutChartRef = store, procurements, aaccounts_and_finance 
 // programsDoughnutChartRef  = programs module 
@@ -51,6 +52,7 @@ const AdminDashboard = () => {
   const [selectedDepartmentDetails, setSelectedDepartmentDetails] = useState(null);
   const [selectedDepartmentTitle, setSelectedDepartmentTitle] = useState('');
   const [selectedProgramTitle, setSelectedProgramTitle] = useState('');
+  const [donationSummary, setDonationSummary] = useState(null);
 
   // Helper to get date range for API
   const getDateRangeForDuration = (durationValue) => {
@@ -276,7 +278,7 @@ const AdminDashboard = () => {
   }
 
   // Helper to map data for line chart
-  function getLineChartData(departmentData) {
+async   function getLineChartData(departmentData) {
     // TODO: User should extract and format the line chart data as needed
     // Example fallback to static data:
     return departmentData && departmentData.lineChart ? departmentData.lineChart : {
@@ -291,10 +293,26 @@ const AdminDashboard = () => {
       }]
     };
   }
+const fetchDonationsSummary = async () => {
+  try {
+    const response = await axiosInstance.get('/donations-summary?duration=year&year=2025');
+    setDonationSummary(response.data?.data?.data?.chart);
+  } catch (error) {
+    console.log(error.message);
+  }
+}
+useEffect(() => {
+  fetchDonationsSummary();
+}, []);
 
   // API call when filters change
   useEffect(() => {
     const fetchDepartmentData = async () => {
+      console.log("asdouhweohgfouhrbgfoeruobguooerubgouerb");
+      const response = await axiosInstance.get('/donations-summary?duration=year&year=2025');
+      const data = response.data;
+      console.log("data 1234567890", data?.data?.chart);
+
       setLoading(true);
       setError(null);
       try {
@@ -480,6 +498,23 @@ const AdminDashboard = () => {
             <h2> Performance Overview <small style={{fontSize: '12px', color: 'gray'}}>Upcomming....</small></h2>
             <div>
               <canvas ref={lineChartRef}></canvas>
+            </div>
+          </div>
+
+          <div className="chart">
+            <h2> Donations Summary <small style={{fontSize: '12px', color: 'gray'}}>Upcomming....</small></h2>
+            <div>
+              <LineChart 
+                data={donationSummary}
+                title="Donations Summary"
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                }}
+                height={300}
+                showDownload={false}
+                downloadFileName="donations-summary"
+              />
             </div>
           </div>
 

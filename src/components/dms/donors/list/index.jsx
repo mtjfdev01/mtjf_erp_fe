@@ -268,7 +268,7 @@ const DonorsList = () => {
               placeholder="All Types"
             />
             
-            <DateFilter
+            {/* <DateFilter
               filterKey="date"
               label="Registration Date"
               filters={tempFilters}
@@ -281,7 +281,7 @@ const DonorsList = () => {
               label="Date Range"
               filters={tempFilters}
               onFilterChange={handleFilterChange}
-            />
+            /> */}
             
             {/* Filter Action Buttons */}
             <div style={{ 

@@ -703,4 +703,45 @@
 /* View Item Full Width */
 .view-item--full {
   grid-column: 1 / -1;
+}
+
+/* Job Department Badge Styles */
+.job-dept-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.job-dept-it {
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.job-dept-marketing {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+  border: 1px solid #e1bee7;
+}
+
+.job-dept-design {
+  background-color: #fff3e0;
+  color: #f57c00;
+  border: 1px solid #ffe0b2;
+}
+
+.job-dept-operations {
+  background-color: #e8f5e9;
+  color: #388e3c;
+  border: 1px solid #c8e6c9;
+}
+
+.job-dept-standard {
+  background-color: #f5f5f5;
+  color: #616161;
+  border: 1px solid #e0e0e0;
 } 
