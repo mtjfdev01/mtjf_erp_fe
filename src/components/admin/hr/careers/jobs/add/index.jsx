@@ -110,10 +110,18 @@ const AddJob = () => {
   };
 
   const departmentOptions = [
-    { value: 'IT', label: 'IT' },
-    { value: 'Marketing', label: 'Marketing' },
-    { value: 'Design', label: 'Design' },
-    { value: 'Operations', label: 'Operations' }
+    { value: 'it', label: 'IT' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'operations', label: 'Operations' },
+    { value: 'store', label: 'Store' },
+    { value: 'procurements', label: 'Procurement' },
+    { value: 'accounts_and_finance', label: 'Accounts & Finance' },
+    { value: 'program', label: 'Program' },
+    { value: 'audio_video', label: 'Audio Video' },
+    { value: 'fund_raising', label: 'Fund Raising' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'hr', label: 'HR' },
+    { value: 'audit', label: 'Audit' }
   ];
 
   const typeOptions = [
