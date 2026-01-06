@@ -25,6 +25,9 @@
   color: #0d6efd;
 }
 
+.navbar-actions {
+  display: flex;
+}
 .logout-button {
   padding: 8px 20px;
   background-color: #0d6efd;

@@ -99,10 +99,18 @@ const DownloadCSV = ({
     // Create CSV header row
     const csvHeaders = headers.map(header => escapeCSVValue(header)).join(',');
 
+    // Helper function to get nested value using dot notation (e.g., 'donor.name')
+    const getNestedValue = (obj, path) => {
+      return path.split('.').reduce((current, prop) => {
+        return current && current[prop] !== undefined ? current[prop] : null;
+      }, obj);
+    };
+
     // Create CSV data rows
     const csvRows = data.map(row => {
       return keys.map(key => {
-        const value = row[key];
+        // Support nested keys with dot notation (e.g., 'donor.name')
+        const value = key.includes('.') ? getNestedValue(row, key) : row[key];
         const formattedValue = formatValue(value);
         return escapeCSVValue(formattedValue);
       }).join(',');

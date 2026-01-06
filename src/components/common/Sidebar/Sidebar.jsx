@@ -41,9 +41,9 @@ const Sidebar = () => {
   // Debug logging (remove in production)
   useEffect(() => {
     if (user && permissions) {
-      console.log('Sidebar - User:', user);
-      console.log('Sidebar - Permissions:', permissions);
-      console.log('Sidebar - Config:', sidebarConfig);
+      // console.log('Sidebar - User:', user);
+      // console.log('Sidebar - Permissions:', permissions);
+      // console.log('Sidebar - Config:', sidebarConfig);
     }
   }, [user, permissions, sidebarConfig]);
 
@@ -94,7 +94,7 @@ const Sidebar = () => {
             <div className="user-info">
               <div className="user-name">{user.name || user.email}</div>
               <div className="user-role">Role: {user.role}</div>
-              <div className="user-department">Dep: {user.department}</div>
+              <div className="user-department">Dep: {user.department}</div> 
             </div>
           )}
         </div>

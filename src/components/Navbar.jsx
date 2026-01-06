@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
+import NotificationBell from './common/NotificationBell';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -25,6 +26,7 @@ const Navbar = () => {
           <h2>MTJ Foundation Operations Report</h2>
         </div>
         <div className="navbar-actions">
+          <NotificationBell />
           <button onClick={handleLogout} className="logout-button">
             Logout
           </button>

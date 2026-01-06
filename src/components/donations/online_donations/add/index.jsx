@@ -17,7 +17,7 @@ const AddDonation = () => {
   const { inKindItems, refetchInKindItems } = useInKindItems();
   const [searchParams] = useSearchParams();
   const donorIdFromUrl = searchParams.get('donor_id');
-  console.log("inKindItems", inKindItems);
+  // console.log("inKindItems", inKindItems);
   const [form, setForm] = useState({
     // Donor information (will come from selected donor)
     donor_id: '',

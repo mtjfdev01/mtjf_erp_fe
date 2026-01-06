@@ -3,9 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
-// import Navbar from '../../../../../Navbar';
-// import ActionMenu from '../../../../../common/ActionMenu';
-// import ConfirmationModal from '../../../../../common/ConfirmationModal';
+// import { truncate } from '../../../../../utils/functions/column_function';
 import Pagination from '../../../../common/Pagination';
 import { DownloadCSV } from '../../../../common/download';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../../common/filters';
@@ -412,9 +410,9 @@ const OnlineDonationsList = () => {
   // CSV Download Configuration
   const csvColumns = [
     { key: 'id', label: 'ID' },
-    { key: 'donor_name', label: 'Donor Name' },
-    { key: 'donor_email', label: 'Email' },
-    { key: 'donor_phone', label: 'Phone' },
+    { key: 'name', label: 'Donor Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
     { key: 'amount', label: 'Amount' },
     { key: 'currency', label: 'Currency' },
     { key: 'donation_type', label: 'Type' },
@@ -430,25 +428,37 @@ const OnlineDonationsList = () => {
 
   // Prepare CSV data with formatted values
   const prepareCSVData = () => {
-    return donations.map(donation => ({
-      ...donation,
-      donor_name: donation.donor_name || 'Anonymous',
-      donor_email: donation.donor_email || '-',
-      donor_phone: donation.donor_phone || '-',
-      amount: donation.amount ? parseFloat(donation.amount) : 0,
-      currency: donation.currency || 'PKR',
-      donation_type: donation.donation_type === 'zakat' ? 'Zakat' : 
-      donation.donation_type === 'sadqa' ? 'Sadqa' : 
-      donation.donation_type || 'General',
-      donation_method: donation.donation_method?.toUpperCase() || 'N/A',
-      status: donation.status || 'pending',
-      item_name: donation.item_name || '-',
-      country: donation.country || '-',
-      city: donation.city || '-',
-      orderId: donation.orderId || '-',
-      date: donation.date ? new Date(donation.date).toLocaleDateString() : '-',
-      created_at: donation.created_at ? new Date(donation.created_at).toLocaleDateString() : '-'
-    }));
+    return donations.map(donation => {
+      // Extract donor information from nested object
+      const donorName = donation.donor?.name || donation.donor_name || 'Anonymous';
+      const donorEmail = donation.donor?.email || donation.donor_email || '-';
+      const donorPhone = donation.donor?.phone || donation.donor_phone || '-';
+      
+      return {
+        ...donation,
+        // Flatten donor data for CSV
+        name: donorName,
+        email: donorEmail,
+        phone: donorPhone,
+        // Keep original fields for backward compatibility
+        donor_name: donorName,
+        donor_email: donorEmail,
+        donor_phone: donorPhone,
+        amount: donation.amount ? parseFloat(donation.amount) : 0,
+        currency: donation.currency || 'PKR',
+        donation_type: donation.donation_type === 'zakat' ? 'Zakat' : 
+        donation.donation_type === 'sadqa' ? 'Sadqa' : 
+        donation.donation_type || 'General',
+        donation_method: donation.donation_method?.toUpperCase() || 'N/A',
+        status: donation.status || 'pending',
+        item_name: donation.item_name || '-',
+        country: donation.country || '-',
+        city: donation.city || '-',
+        orderId: donation.orderId || '-',
+        date: donation.date ? new Date(donation.date).toLocaleDateString() : '-',
+        created_at: donation.created_at ? new Date(donation.created_at).toLocaleDateString() : '-'
+      };
+    });
   };
 
   // Generate filename with current date
@@ -657,9 +667,9 @@ const OnlineDonationsList = () => {
                   <tr key={donation.id}>
                     <td>
                       <div className="donor-info">
-                        <div className="donor-name">{donation?.donor?.name || 'Anonymous'}</div>
+                        <div className="donor-name">{donation?.donor?.name?.slice(0, 15) + '...' || 'Anonymous'}</div>
                         {donation.item_name && (
-                          <div className="donor-item hide-on-mobile">{donation.item_name}</div>
+                          <div className="donor-item hide-on-mobile">{donation.item_name?.slice(0, 15) + '...'}</div>
                         )}
                       </div>
                     </td>
@@ -690,8 +700,8 @@ const OnlineDonationsList = () => {
                         {donation.donation_method?.toUpperCase() || 'N/A'}
                       </span>
                     </td>
-                    <td className="hide-on-mobile">{donation?.donor?.email || '-'}</td>
-                    <td className="hide-on-mobile">{donation?.donor?.phone || '-'}</td>
+                    <td className="hide-on-mobile">{donation?.donor?.email?.slice(0, 15) + '...' || '-'}</td>
+                    <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td>
                     <td>{getStatusBadge(donation.status)}</td>
                     <td>{formatDate(donation.date || donation.created_at)}</td>
                     {/* <td className="table-actions">

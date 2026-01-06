@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }) => {
           setPermissions(null);
           localStorage.removeItem('user_data');
           localStorage.removeItem('user_permissions');
+          localStorage.removeItem('jwt_token');
           
           // Only redirect if it's an auth error and we're not already on login page
           if (isAuthError && window.location.pathname !== '/') {
@@ -136,6 +137,7 @@ export const AuthProvider = ({ children }) => {
               setPermissions(null);
               localStorage.removeItem('user_data');
               localStorage.removeItem('user_permissions');
+              localStorage.removeItem('jwt_token');
               lastAuthCheckRef.current = null;
               navigate('/');
             }
@@ -147,6 +149,7 @@ export const AuthProvider = ({ children }) => {
             setPermissions(null);
             localStorage.removeItem('user_data');
             localStorage.removeItem('user_permissions');
+            localStorage.removeItem('jwt_token');
             lastAuthCheckRef.current = null;
             // Don't navigate here - axios interceptor will handle it
           } finally {
@@ -193,6 +196,11 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('user_data', JSON.stringify(response.data.user));
         lastAuthCheckRef.current = Date.now(); // Track login time
         
+        // Store JWT token for WebSocket connection
+        if (response.data.token) {
+          localStorage.setItem('jwt_token', response.data.token);
+        }
+        
         // Store permissions if available
         if (response.data.permissions) {
           console.log('Setting permissions:', response.data.permissions);
@@ -237,6 +245,7 @@ export const AuthProvider = ({ children }) => {
       setPermissions(null);
       localStorage.removeItem('user_data');
       localStorage.removeItem('user_permissions');
+      localStorage.removeItem('jwt_token');
       lastAuthCheckRef.current = null; // Clear last check time
       // Force a page reload to clear any remaining state
       window.location.href = '/';
@@ -247,6 +256,7 @@ export const AuthProvider = ({ children }) => {
       setPermissions(null);
       localStorage.removeItem('user_data');
       localStorage.removeItem('user_permissions');
+      localStorage.removeItem('jwt_token');
       lastAuthCheckRef.current = null; // Clear last check time
       window.location.href = '/';
     }

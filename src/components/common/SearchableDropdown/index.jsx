@@ -116,7 +116,7 @@ const SearchableDropdown = ({
 
   // Handle item selection
   const handleSelect = (item) => {
-    console.log("wqeeerwrwre13213", item);
+    // console.log("wqeeerwrwre13213", item);
     setSelectedItem(item);
     setSearchTerm(item[displayKey] || '');
     setIsOpen(false);

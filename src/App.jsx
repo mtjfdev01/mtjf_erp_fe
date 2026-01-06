@@ -15,6 +15,7 @@ import UserList from './components/admin/user/UserList';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { InKindItemsProvider } from './context/InKindItemsContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
 import UserView from './components/admin/user/UserView';
 import ApplicationReportsList from './components/program/applications_report/application_reports_list';
@@ -110,6 +111,7 @@ const App = () => {
   return (<React.Fragment>
             <Router> 
               <AuthProvider>
+                <NotificationProvider>
                 <InKindItemsProvider>
                 <div className="app-container">
                   {/* Sidebar - only show on protected routes */}
@@ -277,6 +279,7 @@ const App = () => {
                   </Routes>
                 </div>
               </InKindItemsProvider>
+              </NotificationProvider>
             </AuthProvider>
             </Router>
             <ToastContainer />

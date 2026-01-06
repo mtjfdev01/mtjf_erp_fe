@@ -101,6 +101,7 @@ axiosInstance.interceptors.response.use(
           // Clear authentication data
           localStorage.removeItem('user_data');
           localStorage.removeItem('user_permissions');
+          localStorage.removeItem('jwt_token');
           
           // Use a small delay to ensure localStorage is cleared
           setTimeout(() => {
@@ -126,6 +127,7 @@ axiosInstance.interceptors.response.use(
           // Clear authentication data
           localStorage.removeItem('user_data');
           localStorage.removeItem('user_permissions');
+          localStorage.removeItem('jwt_token');
           
           // Use a small delay to ensure localStorage is cleared
           setTimeout(() => {
