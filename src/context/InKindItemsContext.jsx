@@ -18,7 +18,7 @@ export const InKindItemsProvider = ({ children }) => {
       
       if (response.data.success) {
         console.log("response.data.data", response.data.data);
-        setInKindItems(response.data.data?.data || []);
+        setInKindItems(response?.data?.data?.data || []);
       } else {
         setError('Failed to fetch in-kind items');
       }

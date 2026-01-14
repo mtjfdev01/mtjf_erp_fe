@@ -198,7 +198,13 @@ const DonorsList = () => {
   // Filter options
   const donorTypeOptions = [
     { value: 'individual', label: 'Individual' },
-    { value: 'csr', label: 'CSR (Corporate)' }
+    { value: 'csr', label: 'CSR (Corporate)' },
+  ];
+
+  // 
+  const donationTypeOptions = [
+    { value: 'one_time_donor', label: 'One Time Donor' },
+    { value: 'recurring_donor', label: 'Recurring Donor' }
   ];
 
   const getDonorTypeIcon = (type) => {
@@ -268,6 +274,14 @@ const DonorsList = () => {
               placeholder="All Types"
             />
             
+            <DropdownFilter
+              filterKey="donation_type"
+              label="Donation Type"
+              data={donationTypeOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All Donation Types"
+            />
             {/* <DateFilter
               filterKey="date"
               label="Registration Date"

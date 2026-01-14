@@ -12,6 +12,11 @@ const ViewOnlineDonation = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
+  const [sendingThanksEmail, setSendingThanksEmail] = useState(false);
+  const [sendingThanksWhatsApp, setSendingThanksWhatsApp] = useState(false);
+  const [sendingLinkEmail, setSendingLinkEmail] = useState(false);
+  const [sendingLinkWhatsApp, setSendingLinkWhatsApp] = useState(false);
+  const [messageStatus, setMessageStatus] = useState({ type: '', message: '' });
 
   console.log("donation", donation);
   useEffect(() => {
@@ -57,6 +62,134 @@ const ViewOnlineDonation = () => {
     
     const statusInfo = statusMap[status] || { class: 'status-pending', text: status };
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
+  };
+
+  const sendThanksEmail = async () => {
+    if (!id) return;
+    
+    setSendingThanksEmail(true);
+    setMessageStatus({ type: '', message: '' });
+    
+    try {
+      const response = await axiosInstance.post(`/communication/donation/${id}/thanks?emailOnly=true`);
+      
+      if (response.data.success && response.data.data.results.email.sent) {
+        setMessageStatus({
+          type: 'success',
+          message: 'Thank you email sent successfully!',
+        });
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.data?.results?.email?.error || 'Failed to send thank you email',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to send thank you email. Please try again.',
+      });
+      console.error('Error sending thanks email:', err);
+    } finally {
+      setSendingThanksEmail(false);
+    }
+  };
+
+  const sendThanksWhatsApp = async () => {
+    if (!id) return;
+    
+    setSendingThanksWhatsApp(true);
+    setMessageStatus({ type: '', message: '' });
+    
+    try {
+      const response = await axiosInstance.post(`/communication/donation/${id}/thanks?whatsappOnly=true`);
+      
+      if (response.data.success && response.data.data.results.whatsapp.sent) {
+        setMessageStatus({
+          type: 'success',
+          message: 'Thank you WhatsApp message sent successfully!',
+        });
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.data?.results?.whatsapp?.error || 'Failed to send thank you WhatsApp',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to send thank you WhatsApp. Please try again.',
+      });
+      console.error('Error sending thanks WhatsApp:', err);
+    } finally {
+      setSendingThanksWhatsApp(false);
+    }
+  };
+
+  const sendLinkEmail = async () => {
+    if (!id) return;
+    
+    setSendingLinkEmail(true);
+    setMessageStatus({ type: '', message: '' });
+    
+    try {
+      const response = await axiosInstance.post(`/communication/donation/${id}/link?emailOnly=true`);
+      
+      if (response.data.success && response.data.data.results.email.sent) {
+        setMessageStatus({
+          type: 'success',
+          message: 'Donation link email sent successfully!',
+        });
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.data?.results?.email?.error || 'Failed to send donation link email',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to send donation link email. Please try again.',
+      });
+      console.error('Error sending link email:', err);
+    } finally {
+      setSendingLinkEmail(false);
+    }
+  };
+
+  const sendLinkWhatsApp = async () => {
+    if (!id) return;
+    
+    setSendingLinkWhatsApp(true);
+    setMessageStatus({ type: '', message: '' });
+    
+    try {
+      const response = await axiosInstance.post(`/communication/donation/${id}/link?whatsappOnly=true`);
+      
+      if (response.data.success && response.data.data.results.whatsapp.sent) {
+        setMessageStatus({
+          type: 'success',
+          message: 'Donation link WhatsApp message sent successfully!',
+        });
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.data?.results?.whatsapp?.error || 'Failed to send donation link WhatsApp',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to send donation link WhatsApp. Please try again.',
+      });
+      console.error('Error sending link WhatsApp:', err);
+    } finally {
+      setSendingLinkWhatsApp(false);
+    }
   };
 
   if (loading) {
@@ -113,7 +246,7 @@ const ViewOnlineDonation = () => {
 
   return (
     <>
-      <Navbar />
+      <Navbar /> 
       <div className="view-wrapper">
         <PageHeader 
           title="View Online Donation"
@@ -310,6 +443,168 @@ const ViewOnlineDonation = () => {
                 </div>
               )}
             </div>
+          </div>
+                    {/* Communication Actions Section */}
+                    <div className="view-section" style={{ 
+            backgroundColor: '#f9fafb', 
+            border: '1px solid #e5e7eb', 
+            borderRadius: '8px',
+            padding: '1.5rem',
+            marginBottom: '1.5rem'
+          }}>
+            <h3 className="view-section-title" style={{ marginBottom: '1rem' }}>
+              Communication Actions
+            </h3>
+            
+            {messageStatus.message && (
+              <div 
+                className={`status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
+                style={{ 
+                  marginBottom: '1rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '6px'
+                }}
+              >
+                {messageStatus.message}
+              </div>
+            )}
+            
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '1rem'
+            }}>
+              {/* Send Thanks Email */}
+              <button
+                onClick={sendThanksEmail}
+                disabled={sendingThanksEmail || !donation?.donor?.email}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: sendingThanksEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: sendingThanksEmail || !donation?.donor?.email ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!sendingThanksEmail && donation?.donor?.email) {
+                    e.target.style.backgroundColor = '#059669';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!sendingThanksEmail && donation?.donor?.email) {
+                    e.target.style.backgroundColor = '#10b981';
+                  }
+                }}
+              >
+                {sendingThanksEmail ? 'Sending...' : '📧 Send Thanks Email'}
+              </button>
+              
+              {/* Send Thanks WhatsApp */}
+              <button
+                onClick={sendThanksWhatsApp}
+                disabled={sendingThanksWhatsApp || !donation?.donor?.phone}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#25d366',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: sendingThanksWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: sendingThanksWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!sendingThanksWhatsApp && donation?.donor?.phone) {
+                    e.target.style.backgroundColor = '#20ba5a';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!sendingThanksWhatsApp && donation?.donor?.phone) {
+                    e.target.style.backgroundColor = '#25d366';
+                  }
+                }}
+              >
+                {sendingThanksWhatsApp ? 'Sending...' : '💬 Send Thanks WhatsApp'}
+              </button>
+              
+              {/* Send Link Email */}
+              <button
+                onClick={sendLinkEmail}
+                disabled={sendingLinkEmail || !donation?.donor?.email}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: sendingLinkEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: sendingLinkEmail || !donation?.donor?.email ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!sendingLinkEmail && donation?.donor?.email) {
+                    e.target.style.backgroundColor = '#2563eb';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!sendingLinkEmail && donation?.donor?.email) {
+                    e.target.style.backgroundColor = '#3b82f6';
+                  }
+                }}
+              >
+                {sendingLinkEmail ? 'Sending...' : '📧 Send Payment Link Email'}
+              </button>
+              
+              {/* Send Link WhatsApp */}
+              <button
+                onClick={sendLinkWhatsApp}
+                disabled={sendingLinkWhatsApp || !donation?.donor?.phone}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#25d366',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: sendingLinkWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: sendingLinkWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!sendingLinkWhatsApp && donation?.donor?.phone) {
+                    e.target.style.backgroundColor = '#20ba5a';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!sendingLinkWhatsApp && donation?.donor?.phone) {
+                    e.target.style.backgroundColor = '#25d366';
+                  }
+                }}
+              >
+                {sendingLinkWhatsApp ? 'Sending...' : '💬 Send Payment Link WhatsApp'}
+              </button>
+            </div>
+            
+            {(!donation?.donor?.email && !donation?.donor?.phone) && (
+              <p style={{ 
+                marginTop: '0.75rem', 
+                fontSize: '13px', 
+                color: '#6b7280',
+                fontStyle: 'italic'
+              }}>
+                ⚠️ Donor email and/or phone number are required to send messages.
+              </p>
+            )}
           </div>
         </div>
       </div>

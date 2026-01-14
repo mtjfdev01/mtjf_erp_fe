@@ -90,14 +90,14 @@
 .list-wrapper {
   min-height: calc(100vh - 64px);
   background: var(--bg-color);
-  padding: 1rem;
+  /* padding: 1rem; */
   margin-top: 64px;
 }
 
 .list-content {
-  max-width: 1200px;
+  /* max-width: 1200px; */
   margin: 0 auto;
-  padding: 2rem;
+  /* padding: 2rem; */
   background: #fff;
   border-radius: 1rem;
   box-shadow: 0 2px 12px rgba(0,0,0,0.08);

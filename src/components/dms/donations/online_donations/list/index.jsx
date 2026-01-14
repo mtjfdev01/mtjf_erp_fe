@@ -17,6 +17,7 @@ import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
+import MultiSelect from '../../../../common/MultiSelect';
 
 const OnlineDonationsList = () => {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ const OnlineDonationsList = () => {
     start_date: '',
     end_date: '',
     amount: '',
+    ref: [],
     price_operator: '',
     donor_id: '',
     donor_search: '',
@@ -70,6 +72,7 @@ const OnlineDonationsList = () => {
     start_date: '',
     end_date: '',
     amount: '',
+    ref: [],
     price_operator: '',
     donor_id: '',
     donor_search: '',
@@ -155,6 +158,8 @@ const OnlineDonationsList = () => {
     // Check if filters have changed
     const filtersChanged = JSON.stringify(appliedFilters) !== JSON.stringify(tempFilters);
     
+    console.log("Temp filters", tempFilters);
+    // return;
     // Always include donor_id from URL if present
     const filtersToApply = { ...tempFilters };
     if (urlDonorId) {
@@ -246,6 +251,16 @@ const OnlineDonationsList = () => {
           // payment_status: ['completed', 'pending'],
           // locations: ['karachi', 'lahore', 'islamabad']
         },
+          //multiselect filters like key will col name and value will be in a array and we will use IN operator in Backend 
+          // 1 ref filter
+          multiselectFilters: () => {
+           if(appliedFilters.ref && appliedFilters.ref.length > 0) {
+            return {
+              ref: appliedFilters.ref,
+              }
+            }
+            return {};
+          },
         relationsFilters: relationsFiltersPayload,
         hybrid_filters:[ {
           value: appliedFilters.amount,
@@ -254,6 +269,10 @@ const OnlineDonationsList = () => {
         }
       ]
       };
+
+
+      console.log("filterPayload", filterPayload);
+      // return;
       
       //  adding endpoint for testing 
       // const test  = await axiosInstance.get('/payfast');
@@ -346,13 +365,13 @@ const OnlineDonationsList = () => {
       onClick: () => navigate(`/donations/online_donations/view/${donation.id}`),
       visible: true
     },
-    {
-      icon: <FiTrash2 />,
-      label: 'Delete',
-      color: '#f44336',
-      onClick: () => handleDeleteClick(donation),
-      visible: true
-    }
+    // {
+    //   icon: <FiTrash2 />,
+    //   label: 'Delete',
+    //   color: '#f44336',
+    //   onClick: () => handleDeleteClick(donation),
+    //   visible: true
+    // }
   ];
 
   const sortOptions = [
@@ -373,6 +392,12 @@ const OnlineDonationsList = () => {
     { value: 'registered', label: 'Registered' }
   ];
 
+  // for ref/campaign tracking
+  const campaignOptions = [
+    { value: '', label: 'Any Ref' },
+    { value: 'MTJ-1234567890', label: 'MTJ-1234567890' },
+    { value: 'MTJ-1234567891', label: 'MTJ-1234567891' },
+  ];
   const donationTypeOptions = [
     { value: 'zakat', label: 'Zakat' },
     { value: 'sadqa', label: 'Sadqa' },
@@ -528,6 +553,26 @@ const OnlineDonationsList = () => {
               onFilterChange={handleFilterChange}
               placeholder="All Status"
             />
+
+            {/* <DropdownFilter
+              filterKey="ref"
+              label="Ref/Campaign"
+              data={campaignOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="GeneraAll Campaigns"
+            /> */}
+
+            {/* i want multiselect filter for campaign options */}
+            {/* <MultiSelect
+              name="ref"
+              label="Ref/Campaign"
+              options={campaignOptions}
+              value={tempFilters.ref}
+              onChange={(value) => handleFilterChange('ref', value)} // value is an array of selected values
+              placeholder="Select Campaigns"
+            /> */}
+            
             
             <DropdownFilter
               filterKey="donation_type"
@@ -652,14 +697,14 @@ const OnlineDonationsList = () => {
                 <tr>
                   <th>Donor </th>
                   <th>Amount</th>
-                  <th>Type</th>
+                  {/* <th>Type</th> */}
                   <th>Project</th>
                   <th>Method</th>
                   <th className="hide-on-mobile">Email</th>
-                  <th className="hide-on-mobile">Phone</th>
+                  {/* <th className="hide-on-mobile">Phone</th> */}
                   <th>Status</th>
                   <th>Date</th>
-                  {/* <th className="table-actions">Actions</th> */}
+                  <th className="table-actions">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -683,13 +728,13 @@ const OnlineDonationsList = () => {
                         )}
                       </div>
                     </td>
-                    <td>
+                    {/* <td>
                       <span className="donation-type">
                         {donation.donation_type === 'zakat' ? 'Zakat' : 
                          donation.donation_type === 'sadqa' ? 'Sadqa' : 
                          donation.donation_type || 'General'}
                       </span>
-                    </td>
+                    </td> */}
                     <td>
                       <span className="donation-project">
                         {donation.project_name || 'N/A'}
@@ -701,12 +746,12 @@ const OnlineDonationsList = () => {
                       </span>
                     </td>
                     <td className="hide-on-mobile">{donation?.donor?.email?.slice(0, 15) + '...' || '-'}</td>
-                    <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td>
+                    {/* <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td> */}
                     <td>{getStatusBadge(donation.status)}</td>
                     <td>{formatDate(donation.date || donation.created_at)}</td>
-                    {/* <td className="table-actions">
+                    <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(donation)} />
-                    </td> */}
+                    </td>
                   </tr>
                 ))}
               </tbody>

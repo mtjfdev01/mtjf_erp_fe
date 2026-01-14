@@ -225,7 +225,7 @@
 
 /* Common List Wrapper - Updated with Application Reports List Styling */
 .list-wrapper {
-  max-width: 1400px;
+  /* max-width: 1400px; */
   margin: 2rem;
   padding-top: 2.5rem;
   background: var(--color-bg-primary);
@@ -393,7 +393,7 @@
 /* Responsive Design for List Wrapper - Updated */
 @media (max-width: 1200px) {
   .list-wrapper {
-    max-width: calc(100% - 25%);
+    /* max-width: calc(100% - 25%); */
     padding-top: 2rem ;
   }
 }

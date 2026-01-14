@@ -302,7 +302,7 @@ const fetchDonationsSummary = async () => {
   }
 }
 useEffect(() => {
-  fetchDonationsSummary();
+  // fetchDonationsSummary();
 }, []);
 
   // API call when filters change
@@ -344,7 +344,7 @@ useEffect(() => {
         setLoading(false);
       }
     };
-    fetchDepartmentData();
+    // fetchDepartmentData();
   }, [filters]);
 
   // Chart update effect
