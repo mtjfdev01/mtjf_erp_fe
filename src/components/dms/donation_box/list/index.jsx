@@ -383,7 +383,7 @@ const DonationBoxList = () => {
           {error && <div className="status-message status-message--error">{error}</div>}
           
           {/* Filters Section */}
-          <div className="filters-section" style={{ 
+          {/* <div className="filters-section" style={{ 
             display: 'flex', 
             gap: '20px', 
             flexWrap: 'wrap', 
@@ -460,7 +460,6 @@ const DonationBoxList = () => {
               onFilterChange={handleFilterChange}
             />
             
-            {/* Filter Action Buttons */}
             <div style={{ 
               display: 'flex', 
               gap: '10px', 
@@ -478,7 +477,7 @@ const DonationBoxList = () => {
                 text="Clear"
               />
             </div>
-          </div>
+          </div> */}
           
           <div className="table-container">
             <table className="data-table">

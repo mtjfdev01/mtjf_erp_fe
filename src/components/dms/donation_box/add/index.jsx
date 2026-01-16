@@ -341,14 +341,14 @@ const AddDonationBox = () => {
                 defaultOptionText={loadingRoutes ? "Loading routes..." : !form.city ? "Select city first" : "Select route"}
               />
 
-              <HybridDropdown
+              {/* <HybridDropdown
                 label="Landmark / Marketplace"
                 placeholder="Type or select landmark..."
                 options={landmarkOptions}
                 value={form.landmark_marketplace}
                 onChange={(value) => setForm({ ...form, landmark_marketplace: value })}
                 allowCustom={true}
-              />
+              /> */}
 
               <SearchableMultiSelect
                 label="Assign Collectors"

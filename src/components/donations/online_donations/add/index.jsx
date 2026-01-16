@@ -39,6 +39,7 @@ const AddDonation = () => {
     // In-kind donation fields (array of items)
         in_kind_items: [
           {
+            id: null,
             name: '',
             description: '',
             category: '',
@@ -63,6 +64,7 @@ const AddDonation = () => {
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -90,6 +92,7 @@ const AddDonation = () => {
   // Handle adding new in-kind item
   const addInKindItem = () => {
     const newItem = {
+      id: null,
       name: '',
       item_code: '',
       description: '',
@@ -133,6 +136,7 @@ const AddDonation = () => {
           if (selectedItem) {
             return {
               ...item,
+              id: selectedItem.id,
               name: selectedItem.name,
               description: selectedItem.description || item.description,
               category: selectedItem.category || item.category,
@@ -181,9 +185,9 @@ const AddDonation = () => {
         bank_name: form.bank_name || null,
         
         // In-kind donation fields
-        in_kind_items: form.in_kind_items.map(item => ({
+        in_kind_items: form.in_kind_items.map(item => ({ 
           name: item.name || null,
-          description: item.description || null,
+          description: item.description || null, 
           category: item.category || null,
           condition: item.condition || null,
           quantity: item.quantity ? parseInt(item.quantity) : null,
@@ -234,13 +238,8 @@ const AddDonation = () => {
 
   const donationMethodOptions = [
     { value: 'cash', label: 'Cash' },
-    { value: 'bank_transfer', label: 'Bank Transfer' },
-    { value: 'meezan', label: 'Meezan Bank' },
-    { value: 'blinq', label: 'Blinq' },
-    { value: 'credit_card', label: 'Credit Card' },
     { value: 'cheque', label: 'Cheque' },
     { value: 'in_kind', label: 'In Kind' },
-    { value: 'online', label: 'Online Payment' }
   ];
 
   const statusOptions = [
@@ -496,15 +495,6 @@ const AddDonation = () => {
                     options={bankOptions}
                     required
                   />
-                </>
-              )}
-
-              {/* In Kind Fields - Only show if in kind is selected */}
-              {isInKindSelected && (
-                <>
-                  <div className="form-section">
-
-                  </div>
                 </>
               )}
 

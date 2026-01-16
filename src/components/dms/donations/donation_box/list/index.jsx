@@ -357,7 +357,7 @@ const DonationBoxDonationsList = () => {
           )} */}
           
           {/* Filters Section */}
-          <div className="filters-section" style={{ 
+          {/* <div className="filters-section" style={{ 
             display: 'flex', 
             gap: '20px', 
             flexWrap: 'wrap', 
@@ -409,7 +409,6 @@ const DonationBoxDonationsList = () => {
               onFilterChange={handleFilterChange}
             />
             
-            {/* Filter Action Buttons */}
             <div style={{ 
               display: 'flex', 
               gap: '10px', 
@@ -428,7 +427,7 @@ const DonationBoxDonationsList = () => {
               />
             </div>
           </div>
-          
+           */}
           <div className="table-container">
             <table className="data-table">
               <thead>

@@ -271,7 +271,7 @@ const ViewDonationBoxDonation = () => {
           )}
 
           {/* System Information Section */}
-          <div className="view-section">
+          {/* <div className="view-section">
             <h3 className="view-section-title">System Information</h3>
             <div className="view-grid">
               <div className="view-item">
@@ -287,7 +287,7 @@ const ViewDonationBoxDonation = () => {
                 <span className="view-item-value">{donation.id}</span>
               </div>
             </div>
-          </div>
+          </div> */}
 
           {/* Action Buttons */}
           <div style={{ 

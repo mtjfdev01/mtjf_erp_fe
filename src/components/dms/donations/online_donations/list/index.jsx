@@ -253,14 +253,14 @@ const OnlineDonationsList = () => {
         },
           //multiselect filters like key will col name and value will be in a array and we will use IN operator in Backend 
           // 1 ref filter
-          multiselectFilters: () => {
+          multiselectFilters: (() => {
            if(appliedFilters.ref && appliedFilters.ref.length > 0) {
             return {
               ref: appliedFilters.ref,
               }
             }
             return {};
-          },
+          })(),
         relationsFilters: relationsFiltersPayload,
         hybrid_filters:[ {
           value: appliedFilters.amount,
@@ -394,7 +394,6 @@ const OnlineDonationsList = () => {
 
   // for ref/campaign tracking
   const campaignOptions = [
-    { value: '', label: 'Any Ref' },
     { value: 'MTJ-1234567890', label: 'MTJ-1234567890' },
     { value: 'MTJ-1234567891', label: 'MTJ-1234567891' },
   ];
@@ -498,7 +497,7 @@ const OnlineDonationsList = () => {
         <Navbar />
         <div className="list-wrapper">
           <PageHeader 
-            title="Online Donations" 
+            title="Donations Listing" 
             showBackButton={false} 
             showAdd={true}
             addPath=''
@@ -514,7 +513,7 @@ const OnlineDonationsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader 
-          title="Online Donations" 
+          title="Donations Listing" 
           showBackButton={urlDonorId ? true :false} 
           backPath={urlDonorId ? `/dms/donors/view/${urlDonorId}` : null}
           showAdd={true}
@@ -564,14 +563,14 @@ const OnlineDonationsList = () => {
             /> */}
 
             {/* i want multiselect filter for campaign options */}
-            {/* <MultiSelect
+            <MultiSelect
               name="ref"
               label="Ref/Campaign"
               options={campaignOptions}
               value={tempFilters.ref}
               onChange={(value) => handleFilterChange('ref', value)} // value is an array of selected values
               placeholder="Select Campaigns"
-            /> */}
+            />
             
             
             <DropdownFilter
@@ -592,24 +591,24 @@ const OnlineDonationsList = () => {
               placeholder="All Methods"
             />
             
-            <HybridDropdown
+            {/* <HybridDropdown
               label="Amount"
               placeholder="Type or select amount..."
               options={priceRangeOptions}
               value={tempFilters.amount}
               onChange={(value) => handleFilterChange('amount', value)}
               allowCustom={true}
-            />
+            /> */}
             
             {/* Custom plus specified options */}
-            <HybridDropdown
+            {/* <HybridDropdown
               label="Amount Operator"
               placeholder="Type or select operator..."
               options={priceOperatorOptions}
               value={tempFilters.price_operator}
               onChange={(value) => handleFilterChange('price_operator', value)}
               allowCustom={true}
-            />
+            /> */}
             
             <DateFilter
               filterKey="date"

@@ -17,8 +17,9 @@ const ViewOnlineDonation = () => {
   const [sendingLinkEmail, setSendingLinkEmail] = useState(false);
   const [sendingLinkWhatsApp, setSendingLinkWhatsApp] = useState(false);
   const [messageStatus, setMessageStatus] = useState({ type: '', message: '' });
+  const [markingCompleted, setMarkingCompleted] = useState(false);
+  const [markingFailed, setMarkingFailed] = useState(false);
 
-  console.log("donation", donation);
   useEffect(() => {
     fetchDonation();
   }, [id]);
@@ -135,7 +136,7 @@ const ViewOnlineDonation = () => {
     setMessageStatus({ type: '', message: '' });
     
     try {
-      const response = await axiosInstance.post(`/communication/donation/${id}/link?emailOnly=true`);
+      const response = await axiosInstance.post(`/communication/donation/${id}/link?emailOnly=true`); 
       
       if (response.data.success && response.data.data.results.email.sent) {
         setMessageStatus({
@@ -189,6 +190,80 @@ const ViewOnlineDonation = () => {
       console.error('Error sending link WhatsApp:', err);
     } finally {
       setSendingLinkWhatsApp(false);
+    }
+  };
+
+  const markAsCompleted = async () => {
+    if (!id) return;
+    
+    setMarkingCompleted(true);
+    setMessageStatus({ type: '', message: '' });
+    
+    try {
+      const response = await axiosInstance.post(`/donations/status-action`, { 
+        donation_id: parseInt(id), 
+        status: 'completed' 
+      });
+      
+      if (response.data.success) {
+        setMessageStatus({
+          type: 'success',
+          message: response.data.message || 'Donation marked as completed successfully!',
+        });
+        // Refresh donation data
+        await fetchDonation();
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.message || 'Failed to mark donation as completed',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to mark donation as completed. Please try again.',
+      });
+      console.error('Error marking donation as completed:', err);
+    } finally {
+      setMarkingCompleted(false);
+    }
+  };
+
+  const markAsFailed = async () => {
+    if (!id) return;
+    
+    setMarkingFailed(true);
+    setMessageStatus({ type: '', message: '' });
+    
+    try {
+      const response = await axiosInstance.post(`/donations/status-action`, { 
+        donation_id: parseInt(id), 
+        status: 'failed' 
+      });
+      
+      if (response.data.success) {
+        setMessageStatus({
+          type: 'success',
+          message: response.data.message || 'Donation marked as failed successfully!',
+        });
+        // Refresh donation data
+        await fetchDonation();
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.message || 'Failed to mark donation as failed',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to mark donation as failed. Please try again.',
+      });
+      console.error('Error marking donation as failed:', err);
+    } finally {
+      setMarkingFailed(false);
     }
   };
 
@@ -259,7 +334,7 @@ const ViewOnlineDonation = () => {
             <div className="view-grid">
               <div className="view-item">
                 <span className="view-item-label">Donation ID</span>
-                <span className="view-item-value">DON-{donation.id}</span>
+                <span className="view-item-value">MTJF-D-{donation.id}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Status</span>
@@ -285,6 +360,12 @@ const ViewOnlineDonation = () => {
                 <span className="view-item-label">Payment Method</span>
                 <span className="view-item-value">{donation.donation_method?.toUpperCase() || 'N/A'}</span>
               </div>
+              { donation?.donation_method && donation.donation_method == "cheque" &&( 
+              <div className="view-item">
+                <span className="view-item-label">Cheque Number</span>
+                <span className="view-item-value">{donation.cheque_number || 'N/A'}</span>
+              </div>
+              )}
               {donation.orderId && (
                 <div className="view-item">
                   <span className="view-item-label">Order ID</span>
@@ -351,7 +432,7 @@ const ViewOnlineDonation = () => {
                   <div className="view-grid">
                     <div className="view-item">
                       <span className="view-item-label">Item Name</span>
-                      <span className="view-item-value">{item.name || '-'}</span>
+                      <span className="view-item-value">{item.item_name || '-'}</span>
                     </div>
                     <div className="view-item">
                       <span className="view-item-label">Category</span>
@@ -425,7 +506,7 @@ const ViewOnlineDonation = () => {
             </div>
           )}
 
-          <div className="view-section">
+          {/* <div className="view-section">
             <h3 className="view-section-title">System Information</h3>
             <div className="view-grid">
               <div className="view-item">
@@ -443,9 +524,9 @@ const ViewOnlineDonation = () => {
                 </div>
               )}
             </div>
-          </div>
-                    {/* Communication Actions Section */}
-                    <div className="view-section" style={{ 
+          </div> */}
+          {/* Communication Actions Section */}
+          <div className="view-section" style={{ 
             backgroundColor: '#f9fafb', 
             border: '1px solid #e5e7eb', 
             borderRadius: '8px',
@@ -605,6 +686,77 @@ const ViewOnlineDonation = () => {
                 ⚠️ Donor email and/or phone number are required to send messages.
               </p>
             )}
+
+            {/* Status Actions Section */}
+            <h3 className="view-section-title" style={{ marginTop: '2rem', marginBottom: '1rem' }}>
+              Status Actions
+            </h3>
+            
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+              gap: '1rem'
+            }}>
+              {/* Mark As Completed */}
+              <button
+                onClick={markAsCompleted}
+                disabled={markingCompleted || donation?.status === 'completed'}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#10b981',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: markingCompleted || donation?.status === 'completed' ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: markingCompleted || donation?.status === 'completed' ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!markingCompleted && donation?.status !== 'completed') {
+                    e.target.style.backgroundColor = '#059669';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!markingCompleted && donation?.status !== 'completed') {
+                    e.target.style.backgroundColor = '#10b981';
+                  }
+                }}
+              >
+                {markingCompleted ? 'Updating...' : '✅ Mark As Completed'} 
+              </button>
+              
+              {/* Mark As Failed */}
+              <button
+                onClick={markAsFailed}
+                disabled={markingFailed || donation?.status === 'failed'}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  backgroundColor: '#ef4444',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: markingFailed || donation?.status === 'failed' ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  opacity: markingFailed || donation?.status === 'failed' ? 0.6 : 1,
+                  transition: 'all 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  if (!markingFailed && donation?.status !== 'failed') {
+                    e.target.style.backgroundColor = '#dc2626';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!markingFailed && donation?.status !== 'failed') {
+                    e.target.style.backgroundColor = '#ef4444';
+                  }
+                }}
+              >
+                {markingFailed ? 'Updating...' : '❌ Mark As Failed'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
