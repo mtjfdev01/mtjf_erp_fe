@@ -35,7 +35,9 @@ const DonorsList = () => {
     city: '',
     date: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    multi_time_donors: null,
+    recurring: null
   });
 
   // Applied filters - Actually sent to API
@@ -45,11 +47,34 @@ const DonorsList = () => {
     city: '',
     date: '',
     start_date: '',
-    end_date: ''
+    end_date: '',
+    multi_time_donors: null,
+    recurring: null
   });
 
   // Universal filter change handler - Updates temporary filters only
   const handleFilterChange = (key, value) => {
+    // Normalize boolean dropdown values
+    if (key === 'multi_time_donors') {
+      // DropdownFilter provides string values; store boolean when selected, null when "All"
+      if (value === '' || value === null || value === undefined) {
+        value = null;
+      } else if (value === 'true' || value === true) {
+        value = true;
+      } else if (value === 'false' || value === false) {
+        value = false;
+      }
+    }
+    if (key === 'recurring') {
+      // DropdownFilter provides string values; store boolean when selected, null when "All"
+      if (value === '' || value === null || value === undefined) {
+        value = null;
+      } else if (value === 'true' || value === true) {
+        value = true;
+      } else if (value === 'false' || value === false) {
+        value = false;
+      }
+    }
     setTempFilters(prev => ({
       ...prev,
       [key]: value
@@ -79,7 +104,9 @@ const DonorsList = () => {
       city: '',
       date: '',
       start_date: '',
-      end_date: ''
+      end_date: '',
+      multi_time_donors: null,
+      recurring: null
     };
     
     // Check if filters are already empty
@@ -107,6 +134,14 @@ const DonorsList = () => {
         sortOrder: sortOrder,
         ...appliedFilters
       };
+
+      // Don't send multi_time_donors when it's not selected
+      if (params.multi_time_donors === null || params.multi_time_donors === undefined) {
+        delete params.multi_time_donors;
+      }
+      if (params.recurring === null || params.recurring === undefined) {
+        delete params.recurring;
+      }
       
       const response = await axiosInstance.get('/donors', { params }); 
       if (response.data.success) {
@@ -207,6 +242,16 @@ const DonorsList = () => {
     { value: 'recurring_donor', label: 'Recurring Donor' }
   ];
 
+  const multiTimeDonorsOptions = [
+    { value: 'true', label: 'Yes' },
+    { value: 'false', label: 'No' },
+  ];
+
+  const recurringOptions = [
+    { value: 'true', label: 'Yes' },
+    { value: 'false', label: 'No' },
+  ];
+
   const getDonorTypeIcon = (type) => {
     return type === 'csr' ? <BsFillBuildingsFill /> : <FiUser />;
   };
@@ -282,6 +327,25 @@ const DonorsList = () => {
               onFilterChange={handleFilterChange}
               placeholder="All Donation Types"
             />
+            
+            <DropdownFilter
+              filterKey="multi_time_donors"
+              label="Multi-Time Donors"
+              data={multiTimeDonorsOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All"
+            />
+                        {/* recurring donors */}
+            <DropdownFilter
+              filterKey="recurring"
+              label="Recurring Donors"
+              data={recurringOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All"
+            />
+               
             {/* <DateFilter
               filterKey="date"
               label="Registration Date"

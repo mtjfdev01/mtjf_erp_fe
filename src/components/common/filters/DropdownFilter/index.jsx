@@ -45,7 +45,10 @@ const DropdownFilter = ({
   };
 
   // Get the current value from the filters object
-  const currentValue = filters[filterKey] || '';
+  const rawValue = filters ? filters[filterKey] : undefined;
+  // Important: allow boolean false / 0 to be represented instead of being treated as empty
+  const currentValue =
+    rawValue === undefined || rawValue === null ? '' : String(rawValue);
 
   // Normalize data to array of objects
   const normalizedData = data.map(item => {
@@ -73,7 +76,7 @@ const DropdownFilter = ({
         >
           <option value="">{placeholder}</option>
           {normalizedData.map((option, index) => (
-            <option key={`${option.value}-${index}`} value={option.value}>
+            <option key={`${String(option.value)}-${index}`} value={String(option.value)}>
               {option.label}
             </option>
           ))}

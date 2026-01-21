@@ -12,7 +12,7 @@ import { SearchButton } from '../../../../common/filters/index';
 import HybridDropdown from '../../../../common/HybridDropdown';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 
-import { FiEye, FiTrash2, FiDollarSign } from 'react-icons/fi';
+import { FiEye, FiTrash2, FiDollarSign, FiFileText, FiDownload } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
@@ -31,6 +31,16 @@ const OnlineDonationsList = () => {
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
+  
+  // Report generation state
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [reportMessage, setReportMessage] = useState({ type: '', text: '' });
+  const [showCustomReportModal, setShowCustomReportModal] = useState(false);
+  const [customReportDates, setCustomReportDates] = useState({
+    startDate: '',
+    endDate: '',
+    type: 'daily'
+  });
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -335,6 +345,142 @@ const OnlineDonationsList = () => {
     setDonationToDelete(null);
   };
 
+  // Report generation handlers
+  const handleGenerateDailyReport = async () => {
+    try {
+      setGeneratingReport(true);
+      setReportMessage({ type: '', text: '' });
+      
+      const response = await axiosInstance.post('/donations-report/daily', {});
+      
+      if (response.data.success) {
+        setReportMessage({ 
+          type: 'success', 
+          text: 'Daily report generated and sent successfully via email!' 
+        });
+        // Clear message after 5 seconds
+        setTimeout(() => setReportMessage({ type: '', text: '' }), 5000);
+      } else {
+        setReportMessage({ 
+          type: 'error', 
+          text: response.data.message || 'Failed to generate daily report' 
+        });
+      }
+    } catch (err) {
+      setReportMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Failed to generate daily report' 
+      });
+      console.error('Error generating daily report:', err);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleGenerateWeeklyReport = async () => {
+    try {
+      setGeneratingReport(true);
+      setReportMessage({ type: '', text: '' });
+      
+      const response = await axiosInstance.post('/donations-report/weekly', {});
+      
+      if (response.data.success) {
+        setReportMessage({ 
+          type: 'success', 
+          text: 'Weekly report generated and sent successfully via email!' 
+        });
+        setTimeout(() => setReportMessage({ type: '', text: '' }), 5000);
+      } else {
+        setReportMessage({ 
+          type: 'error', 
+          text: response.data.message || 'Failed to generate weekly report' 
+        });
+      }
+    } catch (err) {
+      setReportMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Failed to generate weekly report' 
+      });
+      console.error('Error generating weekly report:', err);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleGenerateMonthlyReport = async () => {
+    try {
+      setGeneratingReport(true);
+      setReportMessage({ type: '', text: '' });
+      
+      const response = await axiosInstance.post('/donations-report/monthly', {});
+      
+      if (response.data.success) {
+        setReportMessage({ 
+          type: 'success', 
+          text: 'Monthly report generated and sent successfully via email!' 
+        });
+        setTimeout(() => setReportMessage({ type: '', text: '' }), 5000);
+      } else {
+        setReportMessage({ 
+          type: 'error', 
+          text: response.data.message || 'Failed to generate monthly report' 
+        });
+      }
+    } catch (err) {
+      setReportMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Failed to generate monthly report' 
+      });
+      console.error('Error generating monthly report:', err);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleGenerateCustomReport = async () => {
+    if (!customReportDates.startDate || !customReportDates.endDate) {
+      setReportMessage({ 
+        type: 'error', 
+        text: 'Please select both start and end dates' 
+      });
+      return;
+    }
+
+    try {
+      setGeneratingReport(true);
+      setReportMessage({ type: '', text: '' });
+      
+      const response = await axiosInstance.post('/donations-report/custom', {
+        startDate: customReportDates.startDate,
+        endDate: customReportDates.endDate,
+        type: customReportDates.type
+      });
+      
+      if (response.data.success) {
+        setReportMessage({ 
+          type: 'success', 
+          text: 'Custom report generated and sent successfully via email!' 
+        });
+        setShowCustomReportModal(false);
+        setCustomReportDates({ startDate: '', endDate: '', type: 'daily' });
+        setTimeout(() => setReportMessage({ type: '', text: '' }), 5000);
+      } else {
+        setReportMessage({ 
+          type: 'error', 
+          text: response.data.message || 'Failed to generate custom report' 
+        });
+      }
+    } catch (err) {
+      setReportMessage({ 
+        type: 'error', 
+        text: err.response?.data?.message || 'Failed to generate custom report' 
+      });
+      console.error('Error generating custom report:', err);
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
   };
@@ -523,12 +669,124 @@ const OnlineDonationsList = () => {
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
           
+          {/* Report Generation Section */}
+          <div style={{
+            display: 'flex',
+            gap: '10px',
+            padding: '15px 20px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            alignItems: 'center',
+            flexWrap: 'wrap'
+          }}>
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '8px',
+              marginRight: 'auto'
+            }}>
+              <FiFileText style={{ fontSize: '18px', color: '#2c5aa0' }} />
+              <span style={{ fontWeight: '600', color: '#2c5aa0' }}>Generate Reports:</span>
+            </div>
+            
+            <button
+              onClick={handleGenerateDailyReport}
+              disabled={generatingReport}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#28a745',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: generatingReport ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: generatingReport ? 0.6 : 1
+              }}
+            >
+              {generatingReport ? 'Generating...' : 'Daily Report'}
+            </button>
+            
+            <button
+              onClick={handleGenerateWeeklyReport}
+              disabled={generatingReport}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#17a2b8',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: generatingReport ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: generatingReport ? 0.6 : 1
+              }}
+            >
+              {generatingReport ? 'Generating...' : 'Weekly Report'}
+            </button>
+            
+            <button
+              onClick={handleGenerateMonthlyReport}
+              disabled={generatingReport}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#6f42c1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: generatingReport ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: generatingReport ? 0.6 : 1
+              }}
+            >
+              {generatingReport ? 'Generating...' : 'Monthly Report'}
+            </button>
+            
+            <button
+              onClick={() => setShowCustomReportModal(true)}
+              disabled={generatingReport}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: '#fd7e14',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: generatingReport ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                opacity: generatingReport ? 0.6 : 1
+              }}
+            >
+              <FiDownload /> Custom Report
+            </button>
+          </div>
+
+          {/* Report Message */}
+          {reportMessage.text && (
+            <div className={`status-message status-message--${reportMessage.type}`} style={{ marginBottom: '15px' }}>
+              {reportMessage.text}
+            </div>
+          )}
+          
           {/* Filters Section */}
           <div className="filters-section" style={{ 
             display: 'flex', 
             gap: '20px', 
             flexWrap: 'wrap', 
-            marginBottom: '20px',
             padding: '20px',
             backgroundColor: '#f9fafb',
             borderRadius: '8px'
@@ -689,7 +947,15 @@ const OnlineDonationsList = () => {
               />
             </div>
           </div>
-          
+                        {/* <FiDollarSign style={{ fontSize: '20px', color: '#28a745' }} /> */}
+           <div style={{marginLeft: '10px'}}>
+                <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '2px' , marginLeft: '10px'}}>
+                  Total Donation Amount
+                </div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#28a745' }}>
+                  PKR {totalDonationAmount.toLocaleString()}
+                </div>
+              </div>
           <div className="table-container"> 
             <table className="data-table">
               <thead>
@@ -773,15 +1039,7 @@ const OnlineDonationsList = () => {
               borderRadius: '8px',
               border: '1px solid #e9ecef'
             }}>
-              {/* <FiDollarSign style={{ fontSize: '20px', color: '#28a745' }} /> */}
-              <div>
-                <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '2px' }}>
-                  Total Donation Amount
-                </div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#28a745' }}>
-                  PKR {totalDonationAmount.toLocaleString()}
-                </div>
-              </div>
+
             </div>
             
             <DownloadCSV
@@ -826,6 +1084,128 @@ const OnlineDonationsList = () => {
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
       />
+
+      {/* Custom Report Modal */}
+      {showCustomReportModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: 'white',
+            padding: '30px',
+            borderRadius: '8px',
+            width: '90%',
+            maxWidth: '500px',
+            boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          }}>
+            <h2 style={{ marginTop: 0, marginBottom: '20px', color: '#2c5aa0' }}>
+              Generate Custom Report
+            </h2>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={customReportDates.startDate}
+                onChange={(e) => setCustomReportDates(prev => ({ ...prev, startDate: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                End Date
+              </label>
+              <input
+                type="date"
+                value={customReportDates.endDate}
+                onChange={(e) => setCustomReportDates(prev => ({ ...prev, endDate: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              />
+            </div>
+            
+            <div style={{ marginBottom: '20px' }}>
+              <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>
+                Report Type
+              </label>
+              <select
+                value={customReportDates.type}
+                onChange={(e) => setCustomReportDates(prev => ({ ...prev, type: e.target.value }))}
+                style={{
+                  width: '100%',
+                  padding: '8px',
+                  border: '1px solid #ddd',
+                  borderRadius: '4px',
+                  fontSize: '14px'
+                }}
+              >
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowCustomReportModal(false);
+                  setCustomReportDates({ startDate: '', endDate: '', type: 'daily' });
+                }}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#6c757d',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleGenerateCustomReport}
+                disabled={generatingReport}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: generatingReport ? 'not-allowed' : 'pointer',
+                  fontSize: '14px',
+                  opacity: generatingReport ? 0.6 : 1
+                }}
+              >
+                {generatingReport ? 'Generating...' : 'Generate Report'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };
