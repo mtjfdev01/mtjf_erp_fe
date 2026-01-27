@@ -106,6 +106,7 @@ import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
 import ViewInKindItem from './components/dms/in_kind/in_kind_items/view';
+import DonationReports from './components/dms/reports/create';
 
 const App = () => {
   return (<React.Fragment>
@@ -271,6 +272,9 @@ const App = () => {
                                 <Route path="/dms/in-kind-items/add" element={<AddInKindItem />} />
                                 <Route path="/dms/in-kind-items/edit/:id" element={<EditInKindItem />} />
                                 <Route path="/dms/in-kind-items/view/:id" element={<ViewInKindItem />} />
+
+                                {/* Donation Emails Route */}
+                                <Route path="/dms/reports/create" element={<DonationReports />} />
                               </Routes>
                             </main>
                           </div>

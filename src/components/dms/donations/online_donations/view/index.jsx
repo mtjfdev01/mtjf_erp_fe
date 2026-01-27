@@ -5,6 +5,7 @@ import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
+import FormInput from '../../../../common/FormInput';
 const ViewOnlineDonation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -19,10 +20,17 @@ const ViewOnlineDonation = () => {
   const [messageStatus, setMessageStatus] = useState({ type: '', message: '' });
   const [markingCompleted, setMarkingCompleted] = useState(false);
   const [markingFailed, setMarkingFailed] = useState(false);
+  const [note, setNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [noteStatus, setNoteStatus] = useState({ type: '', message: '' });
 
   useEffect(() => {
     fetchDonation();
   }, [id]);
+
+  useEffect(() => {
+    setNote(donation?.note || '');
+  }, [donation?.note]);
 
   const fetchDonation = async () => {
     try {
@@ -45,6 +53,26 @@ const ViewOnlineDonation = () => {
   
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
+  };
+
+  const saveNote = async () => {
+    if (!id) return;
+    setSavingNote(true);
+    setNoteStatus({ type: '', message: '' });
+    try {
+      const response = await axiosInstance.patch(`/donations/${id}/note`, { note });
+      if (response.data.success) {
+        setDonation(response.data.data);
+        setNoteStatus({ type: 'success', message: 'Note saved successfully.' });
+        setTimeout(() => setNoteStatus({ type: '', message: '' }), 4000);
+      } else {
+        setNoteStatus({ type: 'error', message: response.data.message || 'Failed to save note.' });
+      }
+    } catch (err) {
+      setNoteStatus({ type: 'error', message: err.response?.data?.message || 'Failed to save note. Please try again.' });
+    } finally {
+      setSavingNote(false);
+    }
   };
   
   const formatAmount = (amount, currency = 'PKR') => {
@@ -380,6 +408,42 @@ const ViewOnlineDonation = () => {
                   </span>
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="view-section">
+            <h3 className="view-section-title">Internal Note :</h3>
+            {noteStatus.message && (
+              <div
+                className={`status-message ${noteStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
+                style={{
+                  marginBottom: '1rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '6px'
+                }}
+              >
+                {noteStatus.message}
+              </div>
+            )}
+
+            <FormInput
+              name="note"
+              type="text"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Add an internal note for this donation..."
+              // rows={4}
+            />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+              <button
+                type="button"
+                className="primary_btn"
+                onClick={saveNote}
+                disabled={savingNote}
+              >
+                {savingNote ? 'Saving...' : 'Save Note'}
+              </button>
             </div>
           </div>
 

@@ -243,6 +243,12 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'donors'
   },
+  // {
+  //   label: 'Reports',
+  //   path: '/dms/reports/create',
+  //   type: 'create',
+  //   module: 'reports'
+  // },
   {
     label: 'Dashboard',
     path: '/fund_raising',

@@ -11,6 +11,7 @@ import { ClearButton } from '../../../../common/filters/index';
 import { SearchButton } from '../../../../common/filters/index';
 import HybridDropdown from '../../../../common/HybridDropdown';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
+import { getDate, getTime } from '../../../../../utils/functions';
 
 import { FiEye, FiTrash2, FiDollarSign, FiFileText, FiDownload } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -481,9 +482,7 @@ const OnlineDonationsList = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
-  };
+  const formatDate = (dateString) => getDate(dateString);
 
   const formatAmount = (amount, currency = 'PKR') => {
     if (!amount) return '0';
@@ -669,111 +668,7 @@ const OnlineDonationsList = () => {
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
           
-          {/* Report Generation Section */}
-          <div style={{
-            display: 'flex',
-            gap: '10px',
-            padding: '15px 20px',
-            backgroundColor: '#f8f9fa',
-            borderRadius: '8px',
-            marginBottom: '20px',
-            alignItems: 'center',
-            flexWrap: 'wrap'
-          }}>
-            <div style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '8px',
-              marginRight: 'auto'
-            }}>
-              <FiFileText style={{ fontSize: '18px', color: '#2c5aa0' }} />
-              <span style={{ fontWeight: '600', color: '#2c5aa0' }}>Generate Reports:</span>
-            </div>
-            
-            <button
-              onClick={handleGenerateDailyReport}
-              disabled={generatingReport}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#28a745',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: generatingReport ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: generatingReport ? 0.6 : 1
-              }}
-            >
-              {generatingReport ? 'Generating...' : 'Daily Report'}
-            </button>
-            
-            <button
-              onClick={handleGenerateWeeklyReport}
-              disabled={generatingReport}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#17a2b8',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: generatingReport ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: generatingReport ? 0.6 : 1
-              }}
-            >
-              {generatingReport ? 'Generating...' : 'Weekly Report'}
-            </button>
-            
-            <button
-              onClick={handleGenerateMonthlyReport}
-              disabled={generatingReport}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#6f42c1',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: generatingReport ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: generatingReport ? 0.6 : 1
-              }}
-            >
-              {generatingReport ? 'Generating...' : 'Monthly Report'}
-            </button>
-            
-            <button
-              onClick={() => setShowCustomReportModal(true)}
-              disabled={generatingReport}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: '#fd7e14',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: generatingReport ? 'not-allowed' : 'pointer',
-                fontSize: '14px',
-                fontWeight: '500',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                opacity: generatingReport ? 0.6 : 1
-              }}
-            >
-              <FiDownload /> Custom Report
-            </button>
-          </div>
+
 
           {/* Report Message */}
           {reportMessage.text && (
@@ -969,6 +864,7 @@ const OnlineDonationsList = () => {
                   {/* <th className="hide-on-mobile">Phone</th> */}
                   <th>Status</th>
                   <th>Date</th>
+                  <th>Time</th>
                   <th className="table-actions">Actions</th>
                 </tr>
               </thead>
@@ -1014,6 +910,7 @@ const OnlineDonationsList = () => {
                     {/* <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td> */}
                     <td>{getStatusBadge(donation.status)}</td>
                     <td>{formatDate(donation.date || donation.created_at)}</td>
+                    <td>{getTime(donation.created_at)}</td>
                     <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(donation)} />
                     </td>

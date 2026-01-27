@@ -140,6 +140,73 @@ export const getModulePermissions = (permissions, department, module) => {
   };
 };
 
+/**
+ * Check if a user has a specific permission using dot-notation path
+ * Supports both nested paths (e.g., 'fund_raising.donations.create') and top-level permissions (e.g., 'super_admin')
+ * @param {Object} permissions - User permissions object
+ * @param {string} permissionPath - Permission path in dot-notation format (e.g., 'fund_raising.donations.create' or 'super_admin')
+ * @returns {boolean} - Whether user has the permission
+ */
+export const hasPermissionByPath = (permissions, permissionPath) => {
+  if (!permissions || !permissionPath) {
+    return false;
+  }
+
+  // Handle top-level boolean permissions (e.g., 'super_admin')
+  if (permissionPath in permissions && typeof permissions[permissionPath] === 'boolean') {
+    return permissions[permissionPath] === true;
+  }
+
+  // Handle dot-notation paths (e.g., 'fund_raising.donations.create')
+  const pathParts = permissionPath.split('.');
+  let current = permissions;
+
+  for (const part of pathParts) {
+    if (current === null || current === undefined || typeof current !== 'object') {
+      return false;
+    }
+    current = current[part];
+  }
+
+  // Check if the final value is true
+  return current === true;
+};
+
+/**
+ * Check if user has ANY of the required permissions (OR logic)
+ * Matches the backend PermissionsGuard behavior
+ * @param {Object} permissions - User permissions object from AuthContext
+ * @param {string|string[]} requiredPermissions - Single permission string or array of permission strings
+ * @returns {boolean} - Whether user has at least one of the required permissions
+ * 
+ * @example
+ * // Single permission
+ * hasAnyPermission(permissions, 'fund_raising.donations.create')
+ * 
+ * @example
+ * // Multiple permissions (OR logic - returns true if user has ANY)
+ * hasAnyPermission(permissions, ['fund_raising.donations.create', 'super_admin', 'fund_raising_manager'])
+ */
+export const hasAnyPermission = (permissions, requiredPermissions) => {
+  if (!permissions || !requiredPermissions) {
+    return false;
+  }
+
+  // Normalize to array
+  const permissionsArray = Array.isArray(requiredPermissions) 
+    ? requiredPermissions 
+    : [requiredPermissions];
+
+  // Check if user has ANY of the required permissions
+  for (const permission of permissionsArray) {
+    if (hasPermissionByPath(permissions, permission)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
 export default {
   hasPermission,
   hasModuleAccess,
@@ -147,5 +214,17 @@ export default {
   canViewModule,
   isSuperAdmin,
   getAccessibleModules,
-  getModulePermissions
+  getModulePermissions,
+  hasPermissionByPath,
+  hasAnyPermission
 };
+
+  // // Single permission
+  // const canCreate = hasAnyPermission('fund_raising.donations.create');
+
+  // // Multiple permissions (OR logic - returns true if user has ANY)
+  // const canAccess = hasAnyPermission([
+  //   'fund_raising.donations.create',
+  //   'super_admin',
+  //   'fund_raising_manager'
+  // ]);

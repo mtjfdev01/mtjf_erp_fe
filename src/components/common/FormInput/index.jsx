@@ -14,17 +14,30 @@ const FormInput = ({
   return (
     <div className="form-group">
       {label && <label htmlFor={name} className="form-label">{label}</label>}
-      <input
-        type={type}
-        id={name}
-        name={name}
-        className="form-input"
-        value={value}
-        onChange={onChange}
-        required={required}
-        placeholder={placeholder}
-        {...rest}
-      />
+      {type === 'textarea' ? (
+        <textarea
+          id={name}
+          name={name}
+          className="form-input"
+          value={value}
+          onChange={onChange}
+          required={required}
+          placeholder={placeholder}
+          {...rest}
+        />
+      ) : (
+        <input
+          type={type}
+          id={name}
+          name={name}
+          className="form-input"
+          value={value}
+          onChange={onChange}
+          required={required}
+          placeholder={placeholder}
+          {...rest}
+        />
+      )}
     </div>
   );
 };

@@ -262,8 +262,64 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+   * Check if user has ANY of the required permissions (OR logic)
+   * Matches the backend PermissionsGuard behavior
+   * @param {string|string[]} requiredPermissions - Single permission string or array of permission strings
+   * @returns {boolean} - Whether user has at least one of the required permissions
+   * 
+   * @example
+   * // Single permission
+   * hasAnyPermission('fund_raising.donations.create')
+   * 
+   * @example
+   * // Multiple permissions (OR logic - returns true if user has ANY)
+   * hasAnyPermission(['fund_raising.donations.create', 'super_admin', 'fund_raising_manager'])
+   */
+  const hasAnyPermission = (requiredPermissions) => {
+    if (!permissions || !requiredPermissions) {
+      return false;
+    }
+
+    // Normalize to array
+    const permissionsArray = Array.isArray(requiredPermissions) 
+      ? requiredPermissions 
+      : [requiredPermissions];
+
+    // Helper function to check a single permission path
+    const hasPermissionByPath = (permissionPath) => {
+      // Handle top-level boolean permissions (e.g., 'super_admin')
+      if (permissionPath in permissions && typeof permissions[permissionPath] === 'boolean') {
+        return permissions[permissionPath] === true;
+      }
+
+      // Handle dot-notation paths (e.g., 'fund_raising.donations.create')
+      const pathParts = permissionPath.split('.');
+      let current = permissions;
+
+      for (const part of pathParts) {
+        if (current === null || current === undefined || typeof current !== 'object') {
+          return false;
+        }
+        current = current[part];
+      }
+
+      // Check if the final value is true
+      return current === true;
+    };
+
+    // Check if user has ANY of the required permissions
+    for (const permission of permissionsArray) {
+      if (hasPermissionByPath(permission)) {
+        return true;
+      }
+    }
+
+    return false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, permissions, loading, login, logout, checkAuth }}>
+    <AuthContext.Provider value={{ user, permissions, loading, login, logout, checkAuth, hasAnyPermission }}>
       {children}
     </AuthContext.Provider>
   );
