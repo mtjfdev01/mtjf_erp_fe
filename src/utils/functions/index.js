@@ -69,7 +69,7 @@ export function getTime(ts) {
   // Add 5 hours to the date object for Pakistan timezone (UTC+5)
   // Using the approach: setHours(getHours() + 5) as specified
   const pakistanDate = new Date(d);
-  pakistanDate.setHours(pakistanDate.getHours() + 5);
+  pakistanDate.setHours(pakistanDate.getHours());
 
   // Format using Pakistan locale
   return pakistanDate.toLocaleTimeString("en-PK", {
