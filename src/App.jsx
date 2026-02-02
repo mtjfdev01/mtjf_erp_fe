@@ -93,7 +93,7 @@ import JobsList from './components/admin/hr/careers/jobs/list/index';
 import AddJob from './components/admin/hr/careers/jobs/add/index';
 import ViewJob from './components/admin/hr/careers/jobs/view/index';
 import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
-import { DonorsList, RegisterDonor, ViewDonor } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
@@ -107,6 +107,14 @@ import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
 import ViewInKindItem from './components/dms/in_kind/in_kind_items/view';
 import DonationReports from './components/dms/reports/create';
+import CountriesList from './components/dms/geographic/countries/list';
+import AddCountry from './components/dms/geographic/countries/add';
+import RegionsList from './components/dms/geographic/regions/list';
+import AddRegion from './components/dms/geographic/regions/add';
+import CitiesList from './components/dms/geographic/cities/list';
+import AddCity from './components/dms/geographic/cities/add';
+import RoutesList from './components/dms/geographic/routes/list';
+import AddRoute from './components/dms/geographic/routes/add';
 
 const App = () => {
   return (<React.Fragment>
@@ -275,6 +283,36 @@ const App = () => {
 
                                 {/* Donation Emails Route */}
                                 <Route path="/dms/reports/create" element={<DonationReports />} />
+
+                                {/* Geographic (Countries → Regions → Cities → Routes) */}
+                                <Route path="/dms/geographic/countries/list" element={<CountriesList />} />
+                                <Route path="/dms/geographic/countries/add" element={<AddCountry />} />
+                                <Route path="/dms/geographic/regions/list" element={<RegionsList />} />
+                                <Route path="/dms/geographic/regions/add" element={<AddRegion />} />
+                                <Route path="/dms/geographic/cities/list" element={<CitiesList />} />
+                                <Route path="/dms/geographic/cities/add" element={<AddCity />} />
+                                <Route path="/dms/geographic/routes/list" element={<RoutesList />} />
+                                <Route path="/dms/geographic/routes/add" element={<AddRoute />} />
+
+                                {/* Surveys */}
+                                <Route path="/dms/surveys/list" element={<SurveysList />} />
+                                <Route path="/dms/surveys/add" element={<AddSurvey />} />
+                                <Route path="/dms/surveys/view/:id" element={<ViewSurvey />} />
+                                <Route path="/dms/surveys/edit/:id" element={<EditSurvey />} />
+                                <Route path="/dms/surveys/fill/:id" element={<FillSurvey />} />
+                                <Route path="/dms/surveys/report/:id" element={<SurveyReport />} />
+
+                                {/* Events */}
+                                <Route path="/dms/events/list" element={<EventsList />} />
+                                <Route path="/dms/events/add" element={<AddEvent />} />
+                                <Route path="/dms/events/view/:id" element={<ViewEvent />} />
+                                <Route path="/dms/events/edit/:id" element={<EditEvent />} />
+
+                                {/* Campaigns */}
+                                <Route path="/dms/campaigns/list" element={<CampaignsList />} />
+                                <Route path="/dms/campaigns/add" element={<AddCampaign />} />
+                                <Route path="/dms/campaigns/view/:id" element={<ViewCampaign />} />
+                                <Route path="/dms/campaigns/edit/:id" element={<EditCampaign />} />
                               </Routes>
                             </main>
                           </div>

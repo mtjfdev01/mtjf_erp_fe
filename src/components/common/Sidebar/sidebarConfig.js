@@ -168,7 +168,22 @@ const adminDepartmentItems = () => [
       {label: "donations", path: "/donations/online_donations/list", type: "list"},
       {label: "donation_box", path: "/dms/donation_box/list", type: "list"},
       {label: "donation_box_donations", path: "/dms/donation-box-donations/list", type: "list"},
-      {label: "donors", path: "/dms/donors/list", type: "list"} 
+      {label: "donors", path: "/dms/donors/list", type: "list"},
+      {label: "surveys", path: "/dms/surveys/list", type: "list"},
+      {label: "events", path: "/dms/events/list", type: "list"},
+      {label: "campaigns", path: "/dms/campaigns/list", type: "list"}
+    ]
+  },
+  {
+    label: 'Geographic',
+    path: '/dms/geographic/countries/list',
+    type: 'list',
+    module: 'geographic_admin',
+    subItems: [
+      { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list' },
+      { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list' },
+      { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list' },
+      { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list' }
     ]
   },
   {
@@ -218,6 +233,13 @@ const adminDepartmentItems = () => [
   }
 ];
 
+const geographicItems = (isUser = false) => [
+  { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list', module: 'geographic_countries' },
+  { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list', module: 'geographic_regions' },
+  { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list', module: 'geographic_cities' },
+  { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list', module: 'geographic_routes' }
+];
+
 const fundRaisingDepartmentItems = (isUser = false) => [
   {
     label: 'Donations',
@@ -242,6 +264,24 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     path: '/dms/donors/list',
     type: 'list',
     module: 'donors'
+  },
+  {
+    label: 'Surveys',
+    path: '/dms/surveys/list',
+    type: 'list',
+    module: 'surveys'
+  },
+  {
+    label: 'Events',
+    path: '/dms/events/list',
+    type: 'list',
+    module: 'events'
+  },
+  {
+    label: 'Campaigns',
+    path: '/dms/campaigns/list',
+    type: 'list',
+    module: 'campaigns'
   },
   // {
   //   label: 'Reports',
@@ -292,6 +332,11 @@ const departmentConfigs = {
     id: 'fund_raising',
     label: 'Fund Raising',
     items: fundRaisingDepartmentItems(isUser)
+  }),
+  geographic: (isUser = false) => ({
+    id: 'geographic',
+    label: 'Geographic',
+    items: geographicItems(isUser)
   })
 };
  
@@ -328,7 +373,8 @@ export const getSidebarConfig = (user, permissions = null) => {
       departmentConfigs.procurements(false),
       departmentConfigs.accounts_and_finance(false),
       departmentConfigs.admin(),
-      departmentConfigs.fund_raising(false)
+      departmentConfigs.fund_raising(false),
+      departmentConfigs.geographic(false)
     ];
   }
 

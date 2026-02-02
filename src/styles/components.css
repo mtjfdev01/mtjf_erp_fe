@@ -620,6 +620,24 @@
   border: 1px solid #b3d7ff;
 }
 
+.status-badge--draft {
+  background-color: #6c757d;
+  color: white;
+  border: 1px solid #adb5bd;
+}
+
+.status-badge--active {
+  background-color: #28a745;
+  color: white;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge--closed {
+  background-color: #6c757d;
+  color: white;
+  border: 1px solid #dee2e6;
+}
+
 /* Donor Info Styles */
 .donor-info {
   display: flex;

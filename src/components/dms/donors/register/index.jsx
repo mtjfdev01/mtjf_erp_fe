@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiSearch } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
@@ -40,10 +41,13 @@ const RegisterDonor = () => {
   const [referrerUser, setReferrerUser] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [checkingDonor, setCheckingDonor] = useState(false);
+  const [donorSearchMessage, setDonorSearchMessage] = useState('');
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError('');
+    if (donorSearchMessage && (e.target.name === 'email' || e.target.name === 'phone')) setDonorSearchMessage('');
   };
 
   // Handle user selection
@@ -120,6 +124,32 @@ const RegisterDonor = () => {
     navigate('/dms');
   };
 
+  const handleCheckDonorExists = async () => {
+    const email = form.email?.trim();
+    const phone = form.phone?.trim();
+    if (!email && !phone) {
+      setDonorSearchMessage('Enter email or phone to search for an existing donor.');
+      return;
+    }
+    setDonorSearchMessage('');
+    setCheckingDonor(true);
+    try {
+      const params = {};
+      if (email) params.email = email;
+      if (phone) params.phone = phone;
+      const res = await axiosInstance.get('/donors/lookup', { params });
+      if (res.data.success && res.data.data) {
+        navigate(`/dms/donors/view/${res.data.data.id}`);
+      } else {
+        setDonorSearchMessage('No existing donor found for this email/phone.');
+      }
+    } catch (err) {
+      setDonorSearchMessage(err.response?.data?.message || 'Could not check for existing donor.');
+    } finally {
+      setCheckingDonor(false);
+    }
+  };
+
   const donorTypeOptions = [
     { value: 'individual', label: 'Individual Donor' },
     { value: 'csr', label: 'CSR Donor (Corporate)' }
@@ -153,6 +183,44 @@ const RegisterDonor = () => {
               />
             </div>
 
+            {/* Email & Phone - first */}
+            <div className="form-section">
+              <div className="form-grid-2">
+                <FormInput
+                  label="Email"
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+                <FormInput
+                  label="Phone"
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+              <div className="form-section" style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className="primary_btn"
+                  onClick={handleCheckDonorExists}
+                  disabled={checkingDonor}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
+                  title="Check if a donor with this email or phone already exists"
+                >
+                  <FiSearch size={18} />
+                  {checkingDonor ? 'Checking...' : 'Check existing donor'}
+                </button>
+                {donorSearchMessage && (
+                  <span style={{ color: '#6b7280', fontSize: '14px' }}>{donorSearchMessage}</span>
+                )}
+              </div>
+            </div>
+
             {/* Individual Donor Fields */}
             {form.donor_type === 'individual' && ( <>
               <div className="form-section">
@@ -182,14 +250,6 @@ const RegisterDonor = () => {
             <div className="form-section">
 
             <div className="form-grid-2">
-            <FormInput
-                    label="Email"
-                    type="text"
-                    name="email"
-                    value={form.email}
-                    onChange={handleChange}
-                    required
-                  />
             <FormInput
                 label="Address"
                 type="text"
@@ -309,30 +369,14 @@ const RegisterDonor = () => {
                   onChange={handleChange}
                   required
                 />
-                <FormInput
-                   label="Email"
-                   type="email"
-                   name="email"
-                   value={form.email}
-                   onChange={handleChange}
-                   required
-                />
                 </div>
                 </div>
             </>)}
 
-             {/* Contact Information */}
+             {/* Password */}
              <div className="form-section">
                <div className="form-grid-2">
                  <FormInput
-                   label="Phone"
-                   type="tel"
-                   name="phone"
-                   value={form.phone}
-                   onChange={handleChange}
-                   required
-                 />
-                                 <FormInput
                   label="Password"
                   type="password"
                   name="password"
