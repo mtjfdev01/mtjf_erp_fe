@@ -1,0 +1,64 @@
+.cumulative-chart-container {
+  width: 100%;
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-family: 'Poppins', sans-serif;
+}
+
+.cumulative-chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  position: relative;
+}
+
+.cumulative-chart-title {
+  margin: 0;
+  font-size: 1.5em;
+  word-wrap: break-word;
+  color: #333;
+  flex: 1;
+}
+
+.cumulative-chart-download-btn {
+  position: absolute;
+  top: 0;
+  right: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  color: #666;
+  font-size: 20px;
+  transition: color 0.2s ease;
+  z-index: 10;
+}
+
+.cumulative-chart-download-btn:hover {
+  color: #333;
+}
+
+.cumulative-chart-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.cumulative-chart-error {
+  padding: 40px;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .cumulative-chart-container {
+    padding: 15px;
+  }
+  .cumulative-chart-title {
+    font-size: 1.2em;
+  }
+}
