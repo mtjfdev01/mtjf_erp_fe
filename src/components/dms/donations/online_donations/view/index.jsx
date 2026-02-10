@@ -23,6 +23,8 @@ const ViewOnlineDonation = () => {
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [noteStatus, setNoteStatus] = useState({ type: '', message: '' });
+  const [fetchingProviderStatus, setFetchingProviderStatus] = useState(false);
+  const [providerStatusData, setProviderStatusData] = useState(null);
 
   useEffect(() => {
     fetchDonation();
@@ -294,6 +296,54 @@ const ViewOnlineDonation = () => {
       setMarkingFailed(false);
     }
   };
+
+  const fetchProviderStatus = async () => {
+    if (!id) return;
+
+    setFetchingProviderStatus(true);
+    setProviderStatusData(null);
+    setMessageStatus({ type: '', message: '' });
+
+    try {
+      const response = await axiosInstance.get(`/donations/${id}/provider-status`);
+
+      if (response.data.success) {
+        setProviderStatusData(response.data.data);
+
+        // If DB was updated, refresh the donation data so the page reflects the new status
+        if (response.data.data?.dbUpdated) {
+          await fetchDonation();
+          setMessageStatus({
+            type: 'success',
+            message: `Status synced from ${response.data.data.provider?.toUpperCase()}: updated to "${response.data.data.donationStatus}"`,
+          });
+        } else {
+          setMessageStatus({
+            type: 'success',
+            message: `Status retrieved from ${response.data.data.provider?.toUpperCase()} successfully.`,
+          });
+        }
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 8000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.message || 'Failed to get provider status',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to get provider status. Please try again.',
+      });
+      console.error('Error fetching provider status:', err);
+    } finally {
+      setFetchingProviderStatus(false);
+    }
+  };
+
+  // Check if donation method supports provider status check
+  const supportsProviderStatus = donation?.donation_method &&
+    ['payfast', 'meezan', 'blinq', 'stripe', 'stripe_embed'].includes(donation.donation_method.toLowerCase());
 
   if (loading) {
     return (
@@ -761,6 +811,38 @@ const ViewOnlineDonation = () => {
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: '1rem'
             }}>
+              {/* Get Provider Status */}
+              {supportsProviderStatus && (
+                <button
+                  onClick={fetchProviderStatus}
+                  disabled={fetchingProviderStatus}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#6366f1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: fetchingProviderStatus ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    opacity: fetchingProviderStatus ? 0.6 : 1,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!fetchingProviderStatus) {
+                      e.target.style.backgroundColor = '#4f46e5';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!fetchingProviderStatus) {
+                      e.target.style.backgroundColor = '#6366f1';
+                    }
+                  }}
+                >
+                  {fetchingProviderStatus ? 'Checking...' : `🔄 Get Status from ${donation?.donation_method?.toUpperCase()}`}
+                </button>
+              )}
+
               {/* Mark As Completed */}
               <button
                 onClick={markAsCompleted}
@@ -821,6 +903,73 @@ const ViewOnlineDonation = () => {
                 {markingFailed ? 'Updating...' : '❌ Mark As Failed'}
               </button>
             </div>
+
+            {/* Provider Status Response */}
+            {providerStatusData && (
+              <div style={{
+                marginTop: '1.5rem',
+                padding: '1rem 1.25rem',
+                backgroundColor: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: '8px',
+              }}>
+                <h4 style={{ margin: '0 0 0.75rem 0', color: '#0369a1', fontSize: '15px' }}>
+                  Provider Response ({providerStatusData.provider?.toUpperCase()})
+                </h4>
+
+                <div className="view-grid" style={{ gap: '0.5rem 1rem' }}>
+                  <div className="view-item">
+                    <span className="view-item-label">Provider Status Code</span>
+                    <span className="view-item-value" style={{ fontFamily: 'monospace', fontWeight: 600 }}>
+                      {providerStatusData.providerStatus || '-'}
+                    </span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">Mapped Donation Status</span>
+                    <span className="view-item-value">
+                      {getStatusBadge(providerStatusData.donationStatus)}
+                    </span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">DB Updated</span>
+                    <span className="view-item-value" style={{
+                      color: providerStatusData.dbUpdated ? '#059669' : '#6b7280',
+                      fontWeight: 500
+                    }}>
+                      {providerStatusData.dbUpdated ? 'Yes - status synced' : 'No - already in sync'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Show provider-specific details */}
+                {providerStatusData.details && Object.keys(providerStatusData.details).length > 0 && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#0369a1', display: 'block', marginBottom: '0.5rem' }}>
+                      Details:
+                    </span>
+                    <div style={{
+                      backgroundColor: '#ffffff',
+                      border: '1px solid #e0f2fe',
+                      borderRadius: '6px',
+                      padding: '0.75rem',
+                      fontSize: '13px',
+                      fontFamily: 'monospace',
+                      lineHeight: '1.6',
+                      overflowX: 'auto',
+                    }}>
+                      {Object.entries(providerStatusData.details)
+                        .filter(([, value]) => value !== null && value !== undefined && value !== '')
+                        .map(([key, value]) => (
+                          <div key={key} style={{ display: 'flex', gap: '0.5rem' }}>
+                            <span style={{ color: '#6b7280', minWidth: '180px' }}>{key}:</span>
+                            <span style={{ color: '#111827', fontWeight: 500 }}>{String(value)}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
