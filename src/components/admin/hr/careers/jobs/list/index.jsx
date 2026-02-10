@@ -195,13 +195,13 @@ const JobsList = () => {
       onClick: () => navigate(`/hr/careers/jobs/view/${job.id}`),
       visible: true
     },
-    {
-      icon: <FiEdit />,
-      label: 'Edit',
-      color: '#2563eb',
-      onClick: () => navigate(`/hr/careers/jobs/edit/${job.id}`),
-      visible: true
-    },
+    // {
+    //   icon: <FiEdit />,
+    //   label: 'Edit',
+    //   color: '#2563eb',
+    //   onClick: () => navigate(`/hr/careers/jobs/edit/${job.id}`),
+    //   visible: true
+    // },
     {
       icon: <FiTrash2 />,
       label: 'Delete',
