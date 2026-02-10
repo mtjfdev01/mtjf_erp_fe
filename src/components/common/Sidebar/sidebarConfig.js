@@ -230,6 +230,31 @@ const adminDepartmentItems = () => [
     subItems: [
       {label: "audio_video_reports", path: "/audio_video/reports/list", type: "list"}
     ]
+  },
+  {
+    label: 'HR',
+    path: '/hr/careers/jobs/list',
+    type: 'list',
+    module: 'hr_admin',
+    subItems: [
+      { label: 'Jobs', path: '/hr/careers/jobs/list', type: 'list' },
+      { label: 'Applications', path: '/hr/career/applications/list', type: 'list' }
+    ]
+  }
+];
+
+const hrDepartmentItems = (isUser = false) => [
+  {
+    label: 'Jobs',
+    path: '/hr/careers/jobs/list',
+    type: 'list',
+    module: 'jobs'
+  },
+  {
+    label: 'Applications',
+    path: '/hr/career/applications/list',
+    type: 'list',
+    module: 'applications'
   }
 ];
 
@@ -337,6 +362,11 @@ const departmentConfigs = {
     id: 'geographic',
     label: 'Geographic',
     items: geographicItems(isUser)
+  }),
+  hr: (isUser = false) => ({
+    id: 'hr',
+    label: 'HR',
+    items: hrDepartmentItems(isUser)
   })
 };
  
@@ -374,7 +404,8 @@ export const getSidebarConfig = (user, permissions = null) => {
       departmentConfigs.accounts_and_finance(false),
       departmentConfigs.admin(),
       departmentConfigs.fund_raising(false),
-      departmentConfigs.geographic(false)
+      departmentConfigs.geographic(false),
+      departmentConfigs.hr(false)
     ];
   }
 

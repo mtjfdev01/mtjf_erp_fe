@@ -1,0 +1,24 @@
+.fundraising-charts-demo {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.fundraising-charts-demo__cards {
+  width: 100%;
+}
+
+.fundraising-charts-demo__chart {
+  width: 100%;
+}
+
+@media (min-width: 900px) {
+  .fundraising-charts-demo {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: start;
+  }
+}

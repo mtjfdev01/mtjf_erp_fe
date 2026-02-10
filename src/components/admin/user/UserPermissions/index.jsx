@@ -172,6 +172,19 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    hr: {
+      label: 'HR',
+      submodules: {
+        jobs: {
+          label: 'Jobs',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        applications: {
+          label: 'Applications',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        }
+      }
+    },
     permissions: {
       label: 'Permissions',
       submodules: {

@@ -102,6 +102,7 @@ import AddDonationBoxDonation from './components/dms/donations/donation_box/add'
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
+import FundraisingChartsDemo from './components/common/charts/fundraising_demo';
 import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
@@ -249,10 +250,11 @@ const App = () => {
                                 {/* Jobs Routes */}
                                 <Route path="/hr/careers/jobs/list" element={<JobsList />} />
                                 <Route path="/hr/careers/jobs/add" element={<AddJob />} />
-                                <Route path="/hr/careers/jobs/view/:id" element={<ViewJob />} />
+                                <Route path="/hr/careers/jobs/view/:id" element={<ViewJob />} /> 
                                 
                                 {/* Fund Raising Welcome */}
-                                <Route path="/fund_raising" element={<FundRaising />} /> 
+                                <Route path="/fund_raising" element={<FundRaising />} />
+                                <Route path="/fund_raising/charts" element={<FundraisingChartsDemo />} /> 
                                 {/* DMS Section Routes */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />

@@ -1,6 +1,7 @@
 import React from 'react';
 import Sidebar from '../common/Sidebar/Sidebar';
 import Welcome from '../common/welcome/Welcome';
+import FundraisingDashboard from '../common/charts/fundraising_dashboard';
 import '../store/Store.css';
 import Navbar from '../Navbar';
 
@@ -9,10 +10,11 @@ const FundRaising = () => {
     <>
       <Navbar />
       <Sidebar />
-      <Welcome 
-        title="Fund Raising Management" 
-        message="Welcome to the Fund Raising Management module. Use the sidebar to access Fund Raising reports and manage daily activities."
+      <Welcome
+        title="Fund Raising Management"
+        message="Overview of fundraising performance: totals, donors, and trends."
       />
+      <FundraisingDashboard months={12} />
     </>
   );
 };

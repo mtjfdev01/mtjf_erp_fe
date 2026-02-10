@@ -74,7 +74,8 @@ export const departmentRoles = {
     { value: 'it', label: 'IT' },
     { value: 'marketing', label: 'Marketing' },
     { value: 'audio_video', label: 'Audio Video' },
-    { value: 'fund_raising', label: 'Fund Raising' }
+    { value: 'fund_raising', label: 'Fund Raising' },
+    { value: 'hr', label: 'HR' }
   ];
   
   export const bloodGroups = [
