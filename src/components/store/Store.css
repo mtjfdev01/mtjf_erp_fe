@@ -1,6 +1,6 @@
 /* Module Layout Styles */
 .module-wrapper {
-  min-height: calc(100vh - 64px);
+  /* min-height: calc(100vh - 64px); */
   background: var(--bg-color);
   padding: 1rem;
   margin-top: 64px;
@@ -435,7 +435,6 @@
 }
 
 @media (max-width: 768px) {
-  .module-wrapper,
   .form-wrapper,
   .list-wrapper,
   .view-wrapper {
@@ -492,7 +491,6 @@
   .list-wrapper,
   .view-wrapper {
     margin-top: 50px;
-    min-height: calc(100vh - 50px);
   }
 
   .module-content,

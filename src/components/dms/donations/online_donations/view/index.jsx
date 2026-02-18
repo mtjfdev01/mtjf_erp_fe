@@ -343,7 +343,7 @@ const ViewOnlineDonation = () => {
 
   // Check if donation method supports provider status check
   const supportsProviderStatus = donation?.donation_method &&
-    ['payfast', 'meezan', 'blinq', 'stripe', 'stripe_embed'].includes(donation.donation_method.toLowerCase());
+    ['meezan'].includes(donation.donation_method.toLowerCase());
 
   if (loading) {
     return (

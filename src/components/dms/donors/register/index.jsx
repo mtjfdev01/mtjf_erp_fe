@@ -33,6 +33,7 @@ const RegisterDonor = () => {
     address: '',
     city: '',
     country: 'Pakistan',
+    source: 'fund_raising',
     postal_code: '',
     cnic: '',
     notes: ''
@@ -88,7 +89,8 @@ const RegisterDonor = () => {
         cnic: form.cnic,
         notes: form.notes,
         assigned_user_id: assignedUser?.id || null,
-        referrer_user_id: referrerUser?.id || null
+        referrer_user_id: referrerUser?.id || null,
+        source: form.source
       };
 
       if (form.donor_type === 'individual') {

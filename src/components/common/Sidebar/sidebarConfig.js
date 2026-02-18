@@ -169,6 +169,7 @@ const adminDepartmentItems = () => [
       {label: "donation_box", path: "/dms/donation_box/list", type: "list"},
       {label: "donation_box_donations", path: "/dms/donation-box-donations/list", type: "list"},
       {label: "donors", path: "/dms/donors/list", type: "list"},
+      {label: "volunteers", path: "/dms/volunteers/list", type: "list"},
       {label: "surveys", path: "/dms/surveys/list", type: "list"},
       {label: "events", path: "/dms/events/list", type: "list"},
       {label: "campaigns", path: "/dms/campaigns/list", type: "list"}
@@ -182,6 +183,8 @@ const adminDepartmentItems = () => [
     subItems: [
       { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list' },
       { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list' },
+      { label: 'Districts', path: '/dms/geographic/districts/list', type: 'list' },
+      { label: 'Tehsils', path: '/dms/geographic/tehsils/list', type: 'list' },
       { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list' },
       { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list' }
     ]
@@ -261,16 +264,24 @@ const hrDepartmentItems = (isUser = false) => [
 const geographicItems = (isUser = false) => [
   { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list', module: 'geographic_countries' },
   { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list', module: 'geographic_regions' },
+  { label: 'Districts', path: '/dms/geographic/districts/list', type: 'list', module: 'geographic_districts' },
+  { label: 'Tehsils', path: '/dms/geographic/tehsils/list', type: 'list', module: 'geographic_tehsils' },
   { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list', module: 'geographic_cities' },
   { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list', module: 'geographic_routes' }
 ];
 
 const fundRaisingDepartmentItems = (isUser = false) => [
   {
-    label: 'Donations',
+    label: 'Online Donations',
     path: '/donations/online_donations/list',
     type: 'list',
-    module: 'donations'
+    module: 'online_donations'
+  },
+  {
+    label: 'Offline Donations',
+    path: '/donations/offline_donations/list',
+    type: 'list',
+    module: 'offline_donations'
   },
   {
     label: 'Donation Box',
@@ -285,10 +296,22 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'donation_box_donations'
   },
   {
-    label: 'Donors',
-    path: '/dms/donors/list',
+    label: 'Online Donors',
+    path: '/dms/donors/online/list',
     type: 'list',
-    module: 'donors'
+    module: 'online_donors'
+  },
+  {
+    label: 'Offline Donors',
+    path: '/dms/donors/offline/list',
+    type: 'list',
+    module: 'offline_donors'
+  },
+  {
+    label: 'Volunteers',
+    path: '/dms/volunteers/list',
+    type: 'list',
+    module: 'volunteers'
   },
   {
     label: 'Surveys',

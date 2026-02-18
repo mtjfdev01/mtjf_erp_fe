@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FiShield } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
@@ -9,6 +9,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import MultiSelect from '../../../common/MultiSelect';
 import UserPermissions from '../UserPermissions';
 import { toast } from 'react-toastify';
 import './UpdateUser.css';
@@ -45,6 +46,23 @@ const UpdateUser = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
 
+  // Geographic assignment states
+  const [assignedCountries, setAssignedCountries] = useState([]);
+  const [assignedRegions, setAssignedRegions] = useState([]);
+  const [assignedDistricts, setAssignedDistricts] = useState([]);
+  const [assignedTehsils, setAssignedTehsils] = useState([]);
+  const [assignedCities, setAssignedCities] = useState([]);
+
+  // Geographic options lists
+  const [countriesList, setCountriesList] = useState([]);
+  const [regionsList, setRegionsList] = useState([]);
+  const [districtsList, setDistrictsList] = useState([]);
+  const [tehsilsList, setTehsilsList] = useState([]);
+  const [citiesList, setCitiesList] = useState([]);
+
+  // Flag to track initial load so cascading effects don't reset saved selections
+  const initialLoadDone = useRef(false);
+
   const departments = [
     { value: 'store', label: 'Store' },
     { value: 'procurement', label: 'Procurement' },
@@ -79,6 +97,126 @@ const UpdateUser = () => {
     { value: 'other', label: 'Other' }
   ];
 
+  const isFundRaising = form.department === 'fund_raising';
+
+  // Fetch countries on mount
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const res = await axiosInstance.get('/countries');
+        const data = res.data?.data || res.data || [];
+        setCountriesList(data.map(c => ({ value: c.id, label: c.name })));
+      } catch (err) {
+        console.error('Error fetching countries:', err);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  // Fetch regions when selected countries change
+  useEffect(() => {
+    if (!assignedCountries.length) {
+      setRegionsList([]);
+      if (initialLoadDone.current) setAssignedRegions([]);
+      return;
+    }
+    const fetchRegions = async () => {
+      try {
+        const promises = assignedCountries.map(cId =>
+          axiosInstance.get(`/regions?country_id=${cId}`)
+        );
+        const responses = await Promise.all(promises);
+        const allRegions = responses.flatMap(r => r.data?.data || r.data || []);
+        const unique = [...new Map(allRegions.map(item => [item.id, item])).values()];
+        setRegionsList(unique.map(r => ({ value: r.id, label: r.name })));
+        if (initialLoadDone.current) {
+          setAssignedRegions(prev => prev.filter(rId => unique.some(r => r.id === rId)));
+        }
+      } catch (err) {
+        console.error('Error fetching regions:', err);
+      }
+    };
+    fetchRegions();
+  }, [assignedCountries]);
+
+  // Fetch districts when selected regions change
+  useEffect(() => {
+    if (!assignedRegions.length) {
+      setDistrictsList([]);
+      if (initialLoadDone.current) setAssignedDistricts([]);
+      return;
+    }
+    const fetchDistricts = async () => {
+      try {
+        const promises = assignedRegions.map(rId =>
+          axiosInstance.get(`/districts?region_id=${rId}`)
+        );
+        const responses = await Promise.all(promises);
+        const allDistricts = responses.flatMap(r => r.data?.data || r.data || []);
+        const unique = [...new Map(allDistricts.map(item => [item.id, item])).values()];
+        setDistrictsList(unique.map(d => ({ value: d.id, label: d.name })));
+        if (initialLoadDone.current) {
+          setAssignedDistricts(prev => prev.filter(dId => unique.some(d => d.id === dId)));
+        }
+      } catch (err) {
+        console.error('Error fetching districts:', err);
+      }
+    };
+    fetchDistricts();
+  }, [assignedRegions]);
+
+  // Fetch tehsils when selected districts change
+  useEffect(() => {
+    if (!assignedDistricts.length) {
+      setTehsilsList([]);
+      if (initialLoadDone.current) setAssignedTehsils([]);
+      return;
+    }
+    const fetchTehsils = async () => {
+      try {
+        const promises = assignedDistricts.map(dId =>
+          axiosInstance.get(`/tehsils?district_id=${dId}`)
+        );
+        const responses = await Promise.all(promises);
+        const allTehsils = responses.flatMap(r => r.data?.data || r.data || []);
+        const unique = [...new Map(allTehsils.map(item => [item.id, item])).values()];
+        setTehsilsList(unique.map(t => ({ value: t.id, label: t.name })));
+        if (initialLoadDone.current) {
+          setAssignedTehsils(prev => prev.filter(tId => unique.some(t => t.id === tId)));
+        }
+      } catch (err) {
+        console.error('Error fetching tehsils:', err);
+      }
+    };
+    fetchTehsils();
+  }, [assignedDistricts]);
+
+  // Fetch cities when selected tehsils change
+  useEffect(() => {
+    if (!assignedTehsils.length) {
+      setCitiesList([]);
+      if (initialLoadDone.current) setAssignedCities([]);
+      return;
+    }
+    const fetchCities = async () => {
+      try {
+        const promises = assignedTehsils.map(tId =>
+          axiosInstance.get(`/cities?tehsil_id=${tId}`)
+        );
+        const responses = await Promise.all(promises);
+        const allCities = responses.flatMap(r => r.data?.data || r.data || []);
+        const unique = [...new Map(allCities.map(item => [item.id, item])).values()];
+        setCitiesList(unique.map(c => ({ value: c.id, label: c.name })));
+        if (initialLoadDone.current) {
+          setAssignedCities(prev => prev.filter(cId => unique.some(c => c.id === cId)));
+        }
+      } catch (err) {
+        console.error('Error fetching cities:', err);
+      }
+    };
+    fetchCities();
+  }, [assignedTehsils]);
+
   useEffect(() => {
     fetchUser();
   }, [id]);
@@ -86,6 +224,7 @@ const UpdateUser = () => {
   const fetchUser = async () => {
     try {
       setLoading(true);
+      initialLoadDone.current = false;
       console.log('Fetching user with ID:', id);
       const response = await axiosInstance.get(`/users/${id}`);
       const userData = response.data;
@@ -106,6 +245,19 @@ const UpdateUser = () => {
         emergency_contact: userData.emergency_contact || '',
         blood_group: userData.blood_group || '',
       });
+
+      // Load geographic assignments from saved user data
+      if (userData.assigned_countries) setAssignedCountries(userData.assigned_countries);
+      if (userData.assigned_regions) setAssignedRegions(userData.assigned_regions);
+      if (userData.assigned_districts) setAssignedDistricts(userData.assigned_districts);
+      if (userData.assigned_tehsils) setAssignedTehsils(userData.assigned_tehsils);
+      if (userData.assigned_cities) setAssignedCities(userData.assigned_cities);
+
+      // Mark initial load as done after a short delay so cascading effects stabilize
+      setTimeout(() => {
+        initialLoadDone.current = true;
+      }, 2000);
+
       console.log('Form data set:', form);
     } catch (err) {
       console.error('Error fetching user:', err);
@@ -122,7 +274,18 @@ const UpdateUser = () => {
   };
 
   const handleChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    
+    // Reset geographic assignments when department changes away from fund_raising
+    if (name === 'department' && value !== 'fund_raising') {
+      setAssignedCountries([]);
+      setAssignedRegions([]);
+      setAssignedDistricts([]);
+      setAssignedTehsils([]);
+      setAssignedCities([]);
+    }
+    
     if (error) setError('');
   };
 
@@ -235,8 +398,26 @@ const UpdateUser = () => {
 
     setIsSubmitting(true);
     try {
-      console.log('Submitting form data:', form);
-      const response = await axiosInstance.patch(`/users/${id}`, form);
+      const payload = { ...form };
+
+      // Include geographic assignments for fund_raising department
+      if (form.department === 'fund_raising') {
+        payload.assigned_countries = assignedCountries.length ? assignedCountries : null;
+        payload.assigned_regions = assignedRegions.length ? assignedRegions : null;
+        payload.assigned_districts = assignedDistricts.length ? assignedDistricts : null;
+        payload.assigned_tehsils = assignedTehsils.length ? assignedTehsils : null;
+        payload.assigned_cities = assignedCities.length ? assignedCities : null;
+      } else {
+        // Clear geographic assignments if department is not fund_raising
+        payload.assigned_countries = null;
+        payload.assigned_regions = null;
+        payload.assigned_districts = null;
+        payload.assigned_tehsils = null;
+        payload.assigned_cities = null;
+      }
+
+      console.log('Submitting form data:', payload);
+      const response = await axiosInstance.patch(`/users/${id}`, payload);
       console.log('Update response:', response.data);
 
       setSubmitted(true);
@@ -416,6 +597,62 @@ const UpdateUser = () => {
               onChange={handleChange}
               required
             />
+
+            {/* Geographic Assignment Section - Only for Fund Raising */}
+            {isFundRaising && (
+              <div className="geographic-assignment-section" style={{ marginTop: '20px', padding: '16px', border: '1px solid var(--border-color, #e0e0e0)', borderRadius: '8px', background: 'var(--card-bg, #fafbfc)' }}>
+                <h3 style={{ marginBottom: '12px', fontSize: '16px', fontWeight: '600' }}>Geographic Assignment</h3>
+                <p style={{ marginBottom: '16px', fontSize: '13px', color: 'var(--text-secondary, #666)' }}>
+                  Assign geographic areas to this fund raising user. Selections cascade — choosing a country loads its regions, and so on.
+                </p>
+                <div className="form-grid">
+                  <MultiSelect
+                    name="assigned_countries"
+                    label="Countries"
+                    options={countriesList}
+                    value={assignedCountries}
+                    onChange={setAssignedCountries}
+                    placeholder="Select countries..."
+                  />
+                  <MultiSelect
+                    name="assigned_regions"
+                    label="Regions"
+                    options={regionsList}
+                    value={assignedRegions}
+                    onChange={setAssignedRegions}
+                    placeholder={assignedCountries.length ? 'Select regions...' : 'Select a country first'}
+                    disabled={!assignedCountries.length}
+                  />
+                  <MultiSelect
+                    name="assigned_districts"
+                    label="Districts"
+                    options={districtsList}
+                    value={assignedDistricts}
+                    onChange={setAssignedDistricts}
+                    placeholder={assignedRegions.length ? 'Select districts...' : 'Select a region first'}
+                    disabled={!assignedRegions.length}
+                  />
+                  <MultiSelect
+                    name="assigned_tehsils"
+                    label="Tehsils"
+                    options={tehsilsList}
+                    value={assignedTehsils}
+                    onChange={setAssignedTehsils}
+                    placeholder={assignedDistricts.length ? 'Select tehsils...' : 'Select a district first'}
+                    disabled={!assignedDistricts.length}
+                  />
+                  <MultiSelect
+                    name="assigned_cities"
+                    label="Cities"
+                    options={citiesList}
+                    value={assignedCities}
+                    onChange={setAssignedCities}
+                    placeholder={assignedTehsils.length ? 'Select cities...' : 'Select a tehsil first'}
+                    disabled={!assignedTehsils.length}
+                  />
+                </div>
+              </div>
+            )}
 
             <div className="form-actions">
               <button

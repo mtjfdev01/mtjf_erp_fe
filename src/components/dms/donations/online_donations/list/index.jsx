@@ -12,6 +12,7 @@ import { SearchButton } from '../../../../common/filters/index';
 import HybridDropdown from '../../../../common/HybridDropdown';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
+import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 
 import { FiEye, FiTrash2, FiDollarSign, FiFileText, FiDownload } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -43,38 +44,21 @@ const OnlineDonationsList = () => {
     type: 'daily'
   });
   
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  // Pagination state — persisted so it survives navigation
+  const [paginationState, setPaginationState] = usePersistedFilters(
+    'donations-online-list:pagination',
+    { currentPage: 1, pageSize: 10, sortField: 'created_at', sortOrder: 'DESC' }
+  );
+  const { currentPage, pageSize, sortField, sortOrder } = paginationState;
+  const setCurrentPage = (v) => setPaginationState(prev => ({ ...prev, currentPage: typeof v === 'function' ? v(prev.currentPage) : v }));
+  const setPageSize = (v) => setPaginationState(prev => ({ ...prev, pageSize: v, currentPage: 1 }));
+  const setSortField = (v) => setPaginationState(prev => ({ ...prev, sortField: v, currentPage: 1 }));
+  const setSortOrder = (v) => setPaginationState(prev => ({ ...prev, sortOrder: v, currentPage: 1 }));
+
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortField, setSortField] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState('DESC');
 
-  // Filter state - Temporary filters (not applied until search button is clicked)
-  const [tempFilters, setTempFilters] = useState({
-    search: '',
-    status: '',
-    donation_type: '',
-    donation_method: '',
-    date: '',
-    start_date: '',
-    end_date: '',
-    amount: '',
-    ref: [],
-    price_operator: '',
-    donor_id: '',
-    donor_search: '',
-    orderId: '',
-    relationsFilters:{
-      donor:{
-        search: '',
-      }
-    }
-  });
-
-  // Applied filters - Actually sent to API
-  const [appliedFilters, setAppliedFilters] = useState({
+  const EMPTY_FILTERS = {
     search: '',
     status: '',
     donation_type: '',
@@ -89,9 +73,19 @@ const OnlineDonationsList = () => {
     donor_search: '',
     orderId: '',
     relationsFilters: {
-      donor: {}
+      donor: {
+        search: '',
+      }
     }
-  });
+  };
+
+  // Filter state - persisted across navigation via sessionStorage
+  const [tempFilters, setTempFilters, clearTempFilters] = usePersistedFilters(
+    'donations-online-list:temp', EMPTY_FILTERS
+  );
+  const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
+    'donations-online-list:applied', EMPTY_FILTERS
+  );
 
   // Initialize donor_id from URL on mount
   useEffect(() => {
@@ -189,34 +183,10 @@ const OnlineDonationsList = () => {
 
   // Clear filters - Triggered by Clear button
   const handleClearFilters = () => {
-    const emptyFilters = {
-      search: '',
-      status: '',
-      donation_type: '',
-      donation_method: '',
-      date: '',
-      start_date: '',
-      end_date: '',
-      amount: '',
-      price_operator: '',
-      donor_id: '',
-      donor_search: '',
-      orderId: '',
-      relationsFilters: {}
-    };
-    
-    // Also clear selected donor
     setSelectedDonor(null);
-    
-    // Check if filters are already empty
-    const filtersAreEmpty = JSON.stringify(appliedFilters) === JSON.stringify(emptyFilters);
-    
-    if (!filtersAreEmpty) {
-      // Only clear and call API if there are active filters
-      setTempFilters(emptyFilters);
-      setAppliedFilters(emptyFilters);
-      setCurrentPage(1);
-    }
+    clearTempFilters();
+    clearAppliedFilters();
+    setCurrentPage(1);
   };
 
   useEffect(() => {
@@ -312,13 +282,10 @@ const OnlineDonationsList = () => {
 
   const handlePageSizeChange = (newPageSize) => {
     setPageSize(newPageSize);
-    setCurrentPage(1); // Reset to first page when changing page size
   };
 
   const handleSortChange = (field, order) => {
-    setSortField(field);
-    setSortOrder(order);
-    setCurrentPage(1); // Reset to first page when sorting
+    setPaginationState(prev => ({ ...prev, sortField: field, sortOrder: order, currentPage: 1 }));
   };
 
   const handleDeleteClick = (donation) => {

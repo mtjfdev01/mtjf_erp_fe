@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance, { setAuthContextHandlingInitialLoad } from '../utils/axios';
+import { clearAllPersistedFilters } from '../hooks/usePersistedFilters';
 
 const AuthContext = createContext(null);
 
@@ -237,28 +238,25 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    const cleanupAndRedirect = () => {
+      setUser(null);
+      setPermissions(null);
+      localStorage.removeItem('user_data');
+      localStorage.removeItem('user_permissions');
+      localStorage.removeItem('jwt_token');
+      lastAuthCheckRef.current = null;
+      clearAllPersistedFilters();
+      window.location.href = '/';
+    };
+
     try {
       console.log('Attempting logout...');
       await axiosInstance.post('/auth/logout');
       console.log('Logout successful, clearing user data');
-      setUser(null);
-      setPermissions(null);
-      localStorage.removeItem('user_data');
-      localStorage.removeItem('user_permissions');
-      localStorage.removeItem('jwt_token');
-      lastAuthCheckRef.current = null; // Clear last check time
-      // Force a page reload to clear any remaining state
-      window.location.href = '/';
+      cleanupAndRedirect();
     } catch (error) {
       console.error('Logout error:', error);
-      // Even if the server request fails, clear local state
-      setUser(null);
-      setPermissions(null);
-      localStorage.removeItem('user_data');
-      localStorage.removeItem('user_permissions');
-      localStorage.removeItem('jwt_token');
-      lastAuthCheckRef.current = null; // Clear last check time
-      window.location.href = '/';
+      cleanupAndRedirect();
     }
   };
 

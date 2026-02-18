@@ -93,7 +93,7 @@ import JobsList from './components/admin/hr/careers/jobs/list/index';
 import AddJob from './components/admin/hr/careers/jobs/add/index';
 import ViewJob from './components/admin/hr/careers/jobs/view/index';
 import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
-import { DonorsList, RegisterDonor, ViewDonor, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
@@ -112,6 +112,10 @@ import CountriesList from './components/dms/geographic/countries/list';
 import AddCountry from './components/dms/geographic/countries/add';
 import RegionsList from './components/dms/geographic/regions/list';
 import AddRegion from './components/dms/geographic/regions/add';
+import DistrictsList from './components/dms/geographic/districts/list';
+import AddDistrict from './components/dms/geographic/districts/add';
+import TehsilsList from './components/dms/geographic/tehsils/list';
+import AddTehsil from './components/dms/geographic/tehsils/add';
 import CitiesList from './components/dms/geographic/cities/list';
 import AddCity from './components/dms/geographic/cities/add';
 import RoutesList from './components/dms/geographic/routes/list';
@@ -276,6 +280,12 @@ const App = () => {
                                 <Route path="/dms/donors/list" element={<DonorsList />} /> 
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
+
+                                {/* Volunteers Routes */}
+                                <Route path="/dms/volunteers/list" element={<VolunteersList />} />
+                                <Route path="/dms/volunteers/view/:id" element={<ViewVolunteer />} />
+                                <Route path="/dms/volunteers/add" element={<RegisterVolunteer />} />
+                                <Route path="/dms/volunteers/edit/:id" element={<EditVolunteer />} />
                                 {/* <Route path="/donors/update/:id" element={<UpdateDonor />} /> */}
                                 {/* In-Kind Items Routes */}
                                 <Route path="/dms/in-kind-items/list" element={<InKindItemsList />} />
@@ -286,11 +296,15 @@ const App = () => {
                                 {/* Donation Emails Route */}
                                 <Route path="/dms/reports/create" element={<DonationReports />} />
 
-                                {/* Geographic (Countries → Regions → Cities → Routes) */}
+                                {/* Geographic (Countries → Regions → Districts → Tehsils → Cities → Routes) */}
                                 <Route path="/dms/geographic/countries/list" element={<CountriesList />} />
                                 <Route path="/dms/geographic/countries/add" element={<AddCountry />} />
                                 <Route path="/dms/geographic/regions/list" element={<RegionsList />} />
                                 <Route path="/dms/geographic/regions/add" element={<AddRegion />} />
+                                <Route path="/dms/geographic/districts/list" element={<DistrictsList />} />
+                                <Route path="/dms/geographic/districts/add" element={<AddDistrict />} />
+                                <Route path="/dms/geographic/tehsils/list" element={<TehsilsList />} />
+                                <Route path="/dms/geographic/tehsils/add" element={<AddTehsil />} />
                                 <Route path="/dms/geographic/cities/list" element={<CitiesList />} />
                                 <Route path="/dms/geographic/cities/add" element={<AddCity />} />
                                 <Route path="/dms/geographic/routes/list" element={<RoutesList />} />

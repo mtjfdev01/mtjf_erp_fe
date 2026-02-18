@@ -137,8 +137,12 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     fund_raising: {
       label: 'Fund Raising',
       submodules: {
-        donations: {
-          label: 'Donations',
+        online_donations: {
+          label: 'Online Donations',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        offline_donations: {
+          label: 'Offline Donations',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
         donation_box: {
@@ -149,8 +153,12 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Donation Box Donations',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
-        donors: {
-          label: 'Donors',
+        online_donors: {
+          label: 'Online Donors',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        offline_donors: {
+          label: 'Offline Donors',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
         // donations_report: {
@@ -181,6 +189,35 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         applications: {
           label: 'Applications',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        }
+      }
+    },
+    geographic: {
+      label: 'Geographic',
+      submodules: {
+        countries: {
+          label: 'Countries',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        regions: {
+          label: 'Regions',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        districts: {
+          label: 'Districts',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        tehsils: {
+          label: 'Tehsils',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        cities: {
+          label: 'Cities',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        routes: {
+          label: 'Routes',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         }
       }

@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import axiosInstance from '../../../../utils/axios';
+import usePersistedFilters from '../../../../hooks/usePersistedFilters';
 import FundraisingCards from '../fundraising_cards';
 import CumulativeChart from '../cumulative_chart';
 import RaisedEachMonthChart from '../raised_each_month_chart';
+import { DropdownFilter, DateFilter, DateRangeFilter } from '../../filters';
+import { SearchButton, ClearButton } from '../../filters/index';
+import MultiSelect from '../../MultiSelect';
 import {
   DUMMY_CARDS,
   DUMMY_CUMULATIVE,
@@ -12,9 +16,34 @@ import '../fundraising_demo/index.css';
 
 const DEFAULT_MONTHS = 12;
 
-/**
- * Maps API fundraising-overview response to chart data shapes.
- */
+const EMPTY_FILTERS = {
+  donation_type: '',
+  donation_method: '',
+  ref: [],
+  date: '',
+  start_date: '',
+  end_date: '',
+};
+
+const donationTypeOptions = [
+  { value: 'zakat', label: 'Zakat' },
+  { value: 'sadqa', label: 'Sadqa' },
+  { value: 'general', label: 'General' },
+];
+
+const donationMethodOptions = [
+  { value: 'meezan', label: 'Meezan Bank' },
+  { value: 'blinq', label: 'Blinq' },
+  { value: 'payfast', label: 'Payfast' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'stripe_embed', label: 'Stripe Embed' },
+];
+
+const campaignOptions = [
+  { value: 'MTJ-1234567890', label: 'MTJ-1234567890' },
+  { value: 'MTJ-1234567891', label: 'MTJ-1234567891' },
+];
+
 function mapApiToCharts(apiData) {
   if (!apiData?.cumulative?.length && !apiData?.raised_per_month?.length) {
     return {
@@ -36,7 +65,7 @@ function mapApiToCharts(apiData) {
       { label: 'Corporate', data: raised.map((r) => Number(r.corporate ?? 0)) },
       { label: 'Donation box', data: raised.map((r) => Number(r.donation_box ?? 0)) },
       { label: 'Campaigns', data: raised.map((r) => Number(r.campaigns ?? 0)) },
-    ].filter((ds) => ds.data.some((v) => v > 0)), // only show datasets with data
+    ].filter((ds) => ds.data.some((v) => v > 0)),
   };
   if (raisedEachMonth.datasets.length === 0) {
     raisedEachMonth.datasets = DUMMY_RAISED_EACH_MONTH.datasets;
@@ -44,10 +73,6 @@ function mapApiToCharts(apiData) {
   return { cumulative, raisedEachMonth };
 }
 
-/**
- * Fundraising dashboard: fetches from GET /dashboard/fundraising-overview,
- * renders cards + cumulative + raised each month. Falls back to dummy data on error.
- */
 const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -55,12 +80,39 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   const [cumulativeData, setCumulativeData] = useState(DUMMY_CUMULATIVE);
   const [raisedEachMonthData, setRaisedEachMonthData] = useState(DUMMY_RAISED_EACH_MONTH);
 
+  const [tempFilters, setTempFilters] = usePersistedFilters('fundraising-dashboard:temp', EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters('fundraising-dashboard:applied', EMPTY_FILTERS);
+
+  const handleFilterChange = (key, value) => {
+    setTempFilters((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleApplyFilters = () => {
+    setAppliedFilters({ ...tempFilters });
+  };
+
+  const handleClearFilters = () => {
+    setTempFilters(EMPTY_FILTERS);
+    clearAppliedFilters();
+  };
+
+  const apiParams = useMemo(() => {
+    const params = { months };
+    if (appliedFilters.donation_type) params.donation_type = appliedFilters.donation_type;
+    if (appliedFilters.donation_method) params.donation_method = appliedFilters.donation_method;
+    if (appliedFilters.ref?.length) params.ref = appliedFilters.ref.join(',');
+    if (appliedFilters.date) params.date = appliedFilters.date;
+    if (appliedFilters.start_date) params.start_date = appliedFilters.start_date;
+    if (appliedFilters.end_date) params.end_date = appliedFilters.end_date;
+    return params;
+  }, [months, appliedFilters]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
     axiosInstance
-      .get('/dashboard/fundraising-overview', { params: { months } })
+      .get('/dashboard/fundraising-overview', { params: apiParams })
       .then((res) => {
         if (cancelled) return;
         const raw = res?.data?.data;
@@ -83,36 +135,89 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [months]);
-
-  if (loading) {
-    return (
-      <div className="fundraising-charts-demo" style={{ padding: 24, textAlign: 'center' }}>
-        Loading fundraising data…
-      </div>
-    );
-  }
+  }, [apiParams]);
 
   return (
     <div className="fundraising-charts-demo">
+      {/* Filters Section */}
+      <div style={{
+        display: 'flex',
+        gap: 16,
+        flexWrap: 'wrap',
+        padding: 16,
+        backgroundColor: '#f9fafb',
+        borderRadius: 8,
+        marginBottom: 16,
+        alignItems: 'flex-end',
+      }}>
+        <DropdownFilter
+          filterKey="donation_type"
+          label="Donation Type"
+          data={donationTypeOptions}
+          filters={tempFilters}
+          onFilterChange={handleFilterChange}
+          placeholder="All Types"
+        />
+        <DropdownFilter
+          filterKey="donation_method"
+          label="Payment Method"
+          data={donationMethodOptions}
+          filters={tempFilters}
+          onFilterChange={handleFilterChange}
+          placeholder="All Methods"
+        />
+        <MultiSelect
+          name="ref"
+          label="Ref/Campaign"
+          options={campaignOptions}
+          value={tempFilters.ref}
+          onChange={(value) => handleFilterChange('ref', value)}
+          placeholder="Select Campaigns"
+        />
+        <DateFilter
+          filterKey="date"
+          label="Specific Date"
+          filters={tempFilters}
+          onFilterChange={handleFilterChange}
+        />
+        <DateRangeFilter
+          startKey="start_date"
+          endKey="end_date"
+          label="Date Range"
+          filters={tempFilters}
+          onFilterChange={handleFilterChange}
+        />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+          <SearchButton onClick={handleApplyFilters} text="Apply" loading={loading} />
+          <ClearButton onClick={handleClearFilters} text="Clear" />
+        </div>
+      </div>
+
       {error && (
         <div style={{ marginBottom: 12, padding: 8, background: '#fef3cd', borderRadius: 4 }}>
           {error} (showing sample data)
         </div>
       )}
-      <div className="fundraising-charts-demo__cards">
-        <FundraisingCards cards={cards} title="Fundraising overview" />
-      </div>
-      <div className="fundraising-charts-demo__chart">
-        <CumulativeChart title="Cumulative" data={cumulativeData} height={280} />
-      </div>
-      <div className="fundraising-charts-demo__chart">
-        <RaisedEachMonthChart
-          title="Raised each month"
-          data={raisedEachMonthData}
-          height={320}
-        />
-      </div>
+
+      {loading ? (
+        <div style={{ padding: 24, textAlign: 'center' }}>Loading fundraising data…</div>
+      ) : (
+        <>
+          <div className="fundraising-charts-demo__cards">
+            <FundraisingCards cards={cards} title="Fundraising overview" />
+          </div>
+          <div className="fundraising-charts-demo__chart">
+            <CumulativeChart title="Cumulative" data={cumulativeData} height={280} />
+          </div>
+          <div className="fundraising-charts-demo__chart">
+            <RaisedEachMonthChart
+              title="Raised each month"
+              data={raisedEachMonthData}
+              height={320}
+            />
+          </div>
+        </>
+      )}
     </div>
   );
 };
