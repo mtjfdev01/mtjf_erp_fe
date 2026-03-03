@@ -8,7 +8,7 @@ import FormTextarea from '../../../common/FormTextarea';
 import {
   QUICK_ACTION_LABEL_MAP,
 } from './taskStatusConfig';
-import SearchableMultiSelect from '../../../common/searchablemultiselect';
+import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 
 const QuickActionModal = ({
   isOpen,
