@@ -488,7 +488,7 @@ const CreateUser = () => {
                 type="date"
                 value={form.joining_date}
                 onChange={handleChange}
-                required
+                // required
               />
 
               <FormInput
@@ -497,7 +497,7 @@ const CreateUser = () => {
                 type="tel"
                 value={form.emergency_contact}
                 onChange={handleChange}
-                required
+                // required
               />
             </div>
 
@@ -506,7 +506,7 @@ const CreateUser = () => {
               label="Address"
               value={form.address}
               onChange={handleChange}
-              required
+              // required
             />
 
             {/* Geographic Assignment Section - Only for Fund Raising */}

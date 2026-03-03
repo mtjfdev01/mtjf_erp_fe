@@ -906,14 +906,14 @@ const OnlineDonationsList = () => {
 
             </div>
             
-            <DownloadCSV
+            {/* <DownloadCSV
               data={prepareCSVData()}
               filename={getCSVFilename()}
               columns={csvColumns}
               buttonText="Export to CSV"
               onDownloadStart={() => console.log('Downloading donations CSV...')}
               onDownloadComplete={() => console.log('Download complete!')}
-            />
+            /> */}
           </div>
           
           {totalItems > 0 && (

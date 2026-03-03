@@ -228,3 +228,55 @@ export default {
   //   'super_admin',
   //   'fund_raising_manager'
   // ]);
+
+  
+export const getTaskPermissions = (permissions, department, userRole) => {
+  const role = String(userRole || '').toLowerCase();
+  const isAdminRole = role === 'super_admin' || role === 'admin';
+  const isDeptHeadRole = role === 'dept_head';
+  const isManagerRole = role === 'manager';
+  const deptKey = department && permissions?.[department]?.tasks ? department : null;
+  const modulePermissions = (deptKey ? permissions?.[deptKey]?.tasks : null) 
+    || permissions?.admin?.tasks 
+    || permissions?.tasks 
+    || {};
+  const reports = modulePermissions?.reports || {};
+  const actions =
+    reports && Object.keys(reports).length > 0 ? reports : modulePermissions;
+  let scope = 'self';
+  if (reports.view_all === true) {
+    scope = 'org';
+  } else if (reports.view_dept === true) {
+    scope = 'department';
+  } else if (reports.view_team === true) {
+    scope = 'team';
+  } else if (reports.view_own === true) {
+    scope = 'self';
+  }
+  const canViewBase = actions.view === true;
+  const canViewReports =
+    reports.view_all === true ||
+    reports.view_dept === true ||
+    reports.view_team === true ||
+    reports.view_own === true;
+  const canUpdate =
+    actions.update === true || permissions?.super_admin === true;
+  const canEditCompleted =
+    actions.edit_completed === true ||
+    actions.update === true ||
+    permissions?.super_admin === true;
+  const canApproveBase =
+    actions.approve === true || permissions?.super_admin === true;
+  const canApproveByRole = isAdminRole || isDeptHeadRole || isManagerRole;
+  return {
+    canView: canViewBase || canViewReports || permissions?.super_admin === true,
+    canCreate: actions.create === true || permissions?.super_admin === true,
+    canUpdate,
+    canDelete: actions.delete === true || permissions?.super_admin === true,
+    canAssign: actions.assign === true || permissions?.super_admin === true,
+    canApprove: canApproveBase || canApproveByRole,
+    canComplete: actions.complete === true || permissions?.super_admin === true,
+    canEditCompleted,
+    reportScope: scope
+  };
+};

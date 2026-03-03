@@ -120,7 +120,12 @@ import CitiesList from './components/dms/geographic/cities/list';
 import AddCity from './components/dms/geographic/cities/add';
 import RoutesList from './components/dms/geographic/routes/list';
 import AddRoute from './components/dms/geographic/routes/add';
-
+import TasksList from './components/admin/tasks/list';
+import AddTask from './components/admin/tasks/add';
+import UpdateTask from './components/admin/tasks/update';
+import ViewTask from './components/admin/tasks/view';
+import TaskReports from './components/admin/tasks/reports';
+import TaskReceipt from './components/admin/tasks/taskrecipt';
 const App = () => {
   return (<React.Fragment>
             <Router> 
@@ -329,6 +334,36 @@ const App = () => {
                                 <Route path="/dms/campaigns/add" element={<AddCampaign />} />
                                 <Route path="/dms/campaigns/view/:id" element={<ViewCampaign />} />
                                 <Route path="/dms/campaigns/edit/:id" element={<EditCampaign />} />
+
+                                       {/* Tasks (Admin) */}
+                                <Route path="/admin/tasks/list" element={<TasksList />} />
+                                <Route path="/admin/tasks/add" element={<AddTask />} />
+                                <Route path="/admin/tasks/update/:id" element={<UpdateTask />} />
+                                <Route path="/admin/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/admin/tasks/reports" element={<TaskReports />} />
+                                <Route path="/admin/tasks/receipt/:id" element={<TaskReceipt />} />
+                                
+                                {/* Tasks (Departmental Views) */}
+                                <Route path="/program/tasks/list" element={<TasksList />} />
+                                <Route path="/program/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/program/tasks/reports" element={<TaskReports />} />
+                                
+                                <Route path="/store/tasks/list" element={<TasksList />} />
+                                <Route path="/store/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/store/tasks/reports" element={<TaskReports />} />
+                                
+                                <Route path="/procurements/tasks/list" element={<TasksList />} />
+                                <Route path="/procurements/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/procurements/tasks/reports" element={<TaskReports />} />
+                                
+                                <Route path="/accounts_and_finance/tasks/list" element={<TasksList />} />
+                                <Route path="/accounts_and_finance/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/accounts_and_finance/tasks/reports" element={<TaskReports />} />
+                                
+                                <Route path="/fund_raising/tasks/list" element={<TasksList />} />
+                                <Route path="/fund_raising/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/fund_raising/tasks/reports" element={<TaskReports />} />
+
                               </Routes>
                             </main>
                           </div>

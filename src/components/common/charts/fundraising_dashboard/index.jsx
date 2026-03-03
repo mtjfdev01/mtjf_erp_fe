@@ -12,7 +12,10 @@ import {
   DUMMY_CUMULATIVE,
   DUMMY_RAISED_EACH_MONTH,
 } from '../fundraising_demo';
+import { projectCards } from '../../../../utils/variables';
 import '../fundraising_demo/index.css';
+
+const projectOptions = projectCards.map((p) => ({ value: p.id, label: p.title }));
 
 const DEFAULT_MONTHS = 12;
 
@@ -20,6 +23,7 @@ const EMPTY_FILTERS = {
   donation_type: '',
   donation_method: '',
   ref: [],
+  projects: [],
   date: '',
   start_date: '',
   end_date: '',
@@ -79,7 +83,6 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   const [cards, setCards] = useState(DUMMY_CARDS);
   const [cumulativeData, setCumulativeData] = useState(DUMMY_CUMULATIVE);
   const [raisedEachMonthData, setRaisedEachMonthData] = useState(DUMMY_RAISED_EACH_MONTH);
-
   const [tempFilters, setTempFilters] = usePersistedFilters('fundraising-dashboard:temp', EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters('fundraising-dashboard:applied', EMPTY_FILTERS);
 
@@ -101,6 +104,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
     if (appliedFilters.donation_type) params.donation_type = appliedFilters.donation_type;
     if (appliedFilters.donation_method) params.donation_method = appliedFilters.donation_method;
     if (appliedFilters.ref?.length) params.ref = appliedFilters.ref.join(',');
+    if (appliedFilters.projects?.length) params.projects = appliedFilters.projects.join(',');
     if (appliedFilters.date) params.date = appliedFilters.date;
     if (appliedFilters.start_date) params.start_date = appliedFilters.start_date;
     if (appliedFilters.end_date) params.end_date = appliedFilters.end_date;
@@ -140,16 +144,8 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   return (
     <div className="fundraising-charts-demo">
       {/* Filters Section */}
-      <div style={{
-        display: 'flex',
-        gap: 16,
-        flexWrap: 'wrap',
-        padding: 16,
-        backgroundColor: '#f9fafb',
-        borderRadius: 8,
-        marginBottom: 16,
-        alignItems: 'flex-end',
-      }}>
+      {error ? <></>: 
+      <div className="fundraising-charts-demo__filters">
         <DropdownFilter
           filterKey="donation_type"
           label="Donation Type"
@@ -174,6 +170,14 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
           onChange={(value) => handleFilterChange('ref', value)}
           placeholder="Select Campaigns"
         />
+        <MultiSelect
+          name="projects"
+          label="Projects"
+          options={projectOptions}
+          value={tempFilters.projects}
+          onChange={(value) => handleFilterChange('projects', value)}
+          placeholder="Select Projects"
+        />
         <DateFilter
           filterKey="date"
           label="Specific Date"
@@ -187,28 +191,31 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
           filters={tempFilters}
           onFilterChange={handleFilterChange}
         />
-        <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+        <div className="fundraising-filters__actions" style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
           <SearchButton onClick={handleApplyFilters} text="Apply" loading={loading} />
           <ClearButton onClick={handleClearFilters} text="Clear" />
         </div>
       </div>
-
-      {error && (
-        <div style={{ marginBottom: 12, padding: 8, background: '#fef3cd', borderRadius: 4 }}>
-          {error} (showing sample data)
-        </div>
-      )}
+}
 
       {loading ? (
-        <div style={{ padding: 24, textAlign: 'center' }}>Loading fundraising data…</div>
-      ) : (
+        <div className="fundraising-charts-demo__loading">
+          Loading fundraising data…
+        </div>
+        ) : !error ? (
         <>
           <div className="fundraising-charts-demo__cards">
             <FundraisingCards cards={cards} title="Fundraising overview" />
           </div>
+
           <div className="fundraising-charts-demo__chart">
-            <CumulativeChart title="Cumulative" data={cumulativeData} height={280} />
+            <CumulativeChart
+              title="Cumulative"
+              data={cumulativeData}
+              height={280}
+            />
           </div>
+
           <div className="fundraising-charts-demo__chart">
             <RaisedEachMonthChart
               title="Raised each month"
@@ -217,7 +224,11 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
             />
           </div>
         </>
-      )}
+        ) : (
+        <div className="fundraising-charts-demo__error">
+          Failed to load fundraising data.
+        </div>
+        )}
     </div>
   );
 };

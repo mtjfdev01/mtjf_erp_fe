@@ -3,6 +3,16 @@ import { canViewModule, isSuperAdmin } from '../../../utils/permissions';
 
 const programDepartmentItems = (isUser = false) => [
   {
+    label: 'Tasks',
+    path: '/program/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems: [
+      { label: 'Tasks List', path: '/program/tasks/list', type: 'list' },
+      { label: 'Tasks Dashboard', path: '/program/tasks/reports', type: 'list' }
+    ]
+  },
+  {
     label: 'Applications Reports',
     path: '/program/applications_reports',
     type: 'list',
@@ -84,6 +94,16 @@ const programDepartmentItems = (isUser = false) => [
 
 const storeDepartmentItems = (isUser = false) => [
   {
+    label: 'Tasking',
+    path: '/store/tasks/list',
+    type: 'list',
+    module: 'tasking',
+    subItems:[
+      {label:'Tasking List',path:'/store/tasks/list',type:'list',module:'tasking'},
+      {label:'Tasking Dashboard',path:'/store/tasks/reports',type:'list',module:'tasking'}
+    ]
+  },
+  {
     label: 'Reports',
     path: '/store/reports/list',
     type: 'list',
@@ -93,6 +113,16 @@ const storeDepartmentItems = (isUser = false) => [
 
 const procurementsDepartmentItems = (isUser = false) => [
   {
+    label: 'Tasks',
+    path: '/procurements/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems:[
+      {label:'Tasks List',path:'/procurements/tasks/list',type:'list',module:'tasks'},
+      {label:'Tasks Dashboard',path:'/procurements/tasks/reports',type:'list',module:'tasks'}
+    ]
+  },
+  {
     label: 'Reports',
     path: '/procurements/reports/list',
     type: 'list',
@@ -101,6 +131,16 @@ const procurementsDepartmentItems = (isUser = false) => [
 ];
 
 const accountsFinanceDepartmentItems = (isUser = false) => [
+  {
+    label: 'Tasks',
+    path: '/accounts_and_finance/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems:[
+      {label:'Tasks List',path:'/accounts_and_finance/tasks/list',type:'list',module:'tasks'},
+      {label:'Tasks Dashboard',path:'/accounts_and_finance/tasks/reports',type:'list',module:'tasks'}
+    ]
+  },
   {
     label: 'Reports',
     path: '/accounts_and_finance/reports/list',
@@ -284,18 +324,6 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'offline_donations'
   },
   {
-    label: 'Donation Box',
-    path: '/dms/donation_box/list',
-    type: 'list',
-    module: 'donation_box'
-  },
-  {
-    label: 'Donation Box Donations',
-    path: '/dms/donation-box-donations/list',
-    type: 'list',
-    module: 'donation_box_donations'
-  },
-  {
     label: 'Online Donors',
     path: '/dms/donors/online/list',
     type: 'list',
@@ -306,6 +334,18 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     path: '/dms/donors/offline/list',
     type: 'list',
     module: 'offline_donors'
+  },
+  {
+    label: 'Donation Box',
+    path: '/dms/donation_box/list',
+    type: 'list',
+    module: 'donation_box'
+  },
+  {
+    label: 'Donation Box Donations',
+    path: '/dms/donation-box-donations/list',
+    type: 'list',
+    module: 'donation_box_donations'
   },
   {
     label: 'Volunteers',
@@ -338,8 +378,37 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   //   module: 'reports'
   // },
   {
+    label: 'Tasks',
+    path: '/fund_raising/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems: [
+      { label: 'Tasks List', path: '/fund_raising/tasks/list', type: 'list' },
+      { label: 'Tasks Dashboard', path: '/fund_raising/tasks/reports', type: 'list' }
+    ]
+  },
+  {
     label: 'Dashboard',
     path: '/fund_raising',
+    type: 'list',
+    module: 'dashboard'
+  }
+];
+
+const taskingItems = (isUser = false) => [
+  {
+    label: 'Tasks',
+    path: '/tasking/tasks/list',
+    type: 'list',
+    module: 'tasking',
+    subItems: [
+      { label: 'Tasks List', path: '/tasking/tasks/list', type: 'list' },
+      { label: 'Tasks Dashboard', path: '/tasking/tasks/reports', type: 'list' }
+    ]
+  },
+  {
+    label: 'Dashboard',
+    path: '/tasking/dashboard',
     type: 'list',
     module: 'dashboard'
   }
@@ -390,6 +459,11 @@ const departmentConfigs = {
     id: 'hr',
     label: 'HR',
     items: hrDepartmentItems(isUser)
+  }),
+  tasking: (isUser = false) => ({
+    id: 'tasking',
+    label: 'Tasking',
+    items: taskingItems(isUser)
   })
 };
  
@@ -420,6 +494,24 @@ export const getSidebarConfig = (user, permissions = null) => {
 
   // Super admin sees all departments (check both role and permission)
   if (isSuperAdminRole || isSuperAdminPermission) {
+    const tasksGroup = {
+      id: 'tasks_global',
+      label: 'Tasks',
+      items: [
+        {
+          label: 'All Tasks',
+          path: '/admin/tasks/list',
+          type: 'list',
+          module: 'tasks'
+        },
+        {
+          label: 'Tasks Reports',
+          path: '/admin/tasks/reports',
+          type: 'list',
+          module: 'tasks'
+        }
+      ]
+    };
     return [
       departmentConfigs.program(false),
       departmentConfigs.store(false),
@@ -428,7 +520,8 @@ export const getSidebarConfig = (user, permissions = null) => {
       departmentConfigs.admin(),
       departmentConfigs.fund_raising(false),
       departmentConfigs.geographic(false),
-      departmentConfigs.hr(false)
+      departmentConfigs.hr(false),
+      tasksGroup
     ];
   }
 

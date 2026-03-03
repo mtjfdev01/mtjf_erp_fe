@@ -230,7 +230,20 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           actions: ['create','list_view', 'view', 'update', 'delete']
         }
       }
-    }
+    },
+    tasking: {
+      label: 'Tasking',
+      submodules: {
+        tasks: {
+          label: 'Tasks',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        dashboard: {
+          label: 'Dashboard',
+          actions: ['view']
+        }
+      }
+    },
   };
 
   // Action labels
