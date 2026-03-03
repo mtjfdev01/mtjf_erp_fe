@@ -285,7 +285,9 @@ const App = () => {
                                 <Route path="/dms/donors/list" element={<DonorsList />} /> 
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
+                                <Route path="/dms/donors/online/list" element={<DonorsList />} /> 
 
+                                
                                 {/* Volunteers Routes */}
                                 <Route path="/dms/volunteers/list" element={<VolunteersList />} />
                                 <Route path="/dms/volunteers/view/:id" element={<ViewVolunteer />} />
