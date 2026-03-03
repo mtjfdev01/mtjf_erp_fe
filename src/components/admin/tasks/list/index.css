@@ -1,0 +1,354 @@
+.tasks-group-row td {
+  padding: 0.8rem 0.8rem;
+  background: transparent;
+  border-bottom: none;
+}
+
+.tasks-group-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tasks-group-label--mine {
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+.tasks-group-label--other {
+  background: #f3f4f6;
+  color: #4b5563;
+  border: 1px solid #e5e7eb;
+}
+
+.tasks-list-filters-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 1rem;
+  margin: 1rem;
+  flex-wrap: wrap;
+}
+
+.data-filters.tasks-list-filters {
+  margin-bottom: 0;
+  flex: 1;
+}
+
+.tasks-list-filters-row .secondary {
+  margin-left: auto;
+}
+
+.tasks-approval-banner {
+  margin: 0 1rem 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 0.25rem;
+}
+
+.tasks-approval-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.6rem 0.9rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fef3c7, #fffbeb);
+  border: 1px solid #f97316;
+  box-shadow: 0 8px 18px rgba(251, 191, 36, 0.35);
+  cursor: pointer;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.05s ease;
+ }
+
+.tasks-approval-pill:hover {
+  background: linear-gradient(135deg, #fde68a, #fffbeb);
+  box-shadow: 0 10px 22px rgba(251, 191, 36, 0.45);
+  transform: translateY(-1px);
+}
+
+.tasks-approval-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #53B048;
+}
+
+.tasks-approval-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.person-badge {
+  display: inline-block;
+  padding: 4px 6px;
+  border-radius: 4px;
+  background-color: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+  font-size: 0.75rem;
+}
+
+.tasks-approval-count {
+  font-size: 0.8rem;
+  color: #30AEE3;
+  border: 1px solid #53B048;
+  padding: 0.3rem 0.6rem;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+.tasks-approval-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tasks-approval-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.7rem;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #fefce8, #fffbeb);
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.tasks-approval-item:hover {
+  background: linear-gradient(90deg, #fde68a, #fffbeb);
+}
+
+.tasks-approval-title {
+  font-size: 0.85rem;
+  color: #78350f;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tasks-approval-item-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tasks-approval-sub {
+  font-size: 0.70rem;
+  color: #6b7280;
+}
+
+.tasks-approval-meta {
+  font-size: 0.78rem;
+  color: #1d4ed8;
+  margin-left: 0.75rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background-color: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.tasks-bulk-bar {
+  margin: 0 1rem 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.tasks-bulk-count {
+  font-size: 0.9rem;
+  color: #374151;
+  font-weight: 500;
+}
+
+.tasks-bulk-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tasks-bulk-button {
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.tasks-bulk-button:hover:not(:disabled) {
+  background-color: #eff6ff;
+}
+
+.tasks-bulk-clear {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  border: none;
+  background: transparent;
+  font-size: 0.8rem;
+  color: #6b7280;
+  cursor: pointer;
+}
+
+.tasks-status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tasks-quick-status select {
+  width: 100%;
+  padding: 0.2rem 0.35rem;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.78rem;
+}
+
+.tasks-due-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.tasks-assignee-trigger {
+  position: relative;
+  display: inline-block;
+}
+
+.tasks-assignee-popover {
+  position: absolute;
+  bottom: 110%;
+  left: 0;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-bg-tertiary);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+  padding: 8px;
+  z-index: 10;
+  min-width: 220px;
+}
+
+.tasks-assignee-empty {
+  font-size: 0.9rem;
+  color: #555555;
+}
+
+.tasks-assignee-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tasks-assignee-list-item {
+  margin-bottom: 6px;
+}
+
+.tasks-assignee-name {
+  font-weight: 500;
+}
+
+.tasks-assignee-department {
+  color: #666666;
+}
+
+.reassign-modal-content {
+  max-width: 520px;
+}
+
+.reassign-user-option {
+  padding: 8px;
+}
+
+.reassign-user-name {
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.reassign-user-email {
+  font-size: 12px;
+  color: #666666;
+}
+
+.reassign-user-meta {
+  font-size: 11px;
+  color: #999999;
+  margin-top: 2px;
+}
+
+.reassign-modal-cancel {
+  background-color: #df0a0a;
+  color: #ffffff;
+  margin-right: 6px;
+  padding: 5px 10px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: none;
+}
+
+.status-pending {
+  background-color: #fccf3a;
+  color: white;
+  border: 1px solid #ffeaa7;
+}
+
+.status-completed {
+  background-color: #0feb42;
+  color: white;
+  border: 1px solid #c3e6cb;
+}
+
+.status-approved {
+  background-color: #61C0AA;
+  color: white;
+  border: 1px solid #c3e6cb;
+}
+
+.status-failed {
+  background-color: #f10a1d;
+  color: white;
+  border: 1px solid #f5c6cb;
+}
+
+.status-cancelled {
+  background-color: #f10a1d;
+  color: #6c757d;
+  border: 1px solid #dee2e6;
+}
+
+.status-registered {
+  background-color: #077af5;
+  color: white;
+  border: 1px solid #b3d7ff;
+}
+
+.status-closed {
+  background-color: #E88073;
+  color: white;
+  border: 1px solid #c3e6cb;
+}
+
+.status-pink {
+  background-color: #A281C7;
+  color: white;
+  border: 1px solid #ffc0d3;
+}
