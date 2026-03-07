@@ -35,6 +35,8 @@ const AddDonation = () => {
     // Payment method specific fields
     cheque_number: '',
     bank_name: '',
+    bank: '',
+    transaction_id: '',
     
     // In-kind donation fields (array of items)
         in_kind_items: [
@@ -183,6 +185,8 @@ const AddDonation = () => {
         // Payment method specific fields
         cheque_number: form.cheque_number || null,
         bank_name: form.bank_name || null,
+        bank: form.bank || null,
+        transaction_id: form.transaction_id || null,
         
         // In-kind donation fields
         in_kind_items: form.in_kind_items.map(item => ({ 
@@ -260,6 +264,24 @@ const AddDonation = () => {
   ];
 
   const bankOptions = [
+    { value: 'habib_bank', label: 'Habib Bank Limited (HBL)' },
+    { value: 'mcb', label: 'Muslim Commercial Bank (MCB)' },
+    { value: 'ubl', label: 'United Bank Limited (UBL)' },
+    { value: 'allied_bank', label: 'Allied Bank Limited (ABL)' },
+    { value: 'meezan_bank', label: 'Meezan Bank' },
+    { value: 'national_bank', label: 'National Bank of Pakistan (NBP)' },
+    { value: 'standard_chartered', label: 'Standard Chartered Bank' },
+    { value: 'bank_alfalah', label: 'Bank Alfalah' },
+    { value: 'faysal_bank', label: 'Faysal Bank' },
+    { value: 'askari_bank', label: 'Askari Bank' },
+    { value: 'js_bank', label: 'JS Bank' },
+    { value: 'soneri_bank', label: 'Soneri Bank' },
+    { value: 'silk_bank', label: 'Silk Bank' },
+    { value: 'other', label: 'Other Bank' }
+  ];
+
+  const bankNameOptions = [
+    { value: '', label: 'Select bank (optional)' },
     { value: 'habib_bank', label: 'Habib Bank Limited (HBL)' },
     { value: 'mcb', label: 'Muslim Commercial Bank (MCB)' },
     { value: 'ubl', label: 'United Bank Limited (UBL)' },
@@ -513,12 +535,13 @@ const AddDonation = () => {
                 options={[
                   { value: 'website', label: 'Website' },
                   { value: 'mobile_app', label: 'Mobile App' },
+                  { value: 'collection_center', label: 'Collection Center' },
                   { value: 'home_collection', label: 'Home Collection' },
                   { value: 'email_campaign', label: 'Email Campaign' },
                   { value: 'event', label: 'Event' },
                   { value: 'referral', label: 'Referral' },
-                  { value: 'collection_center', label: 'Collection Center' },
-                  { value: 'collection_box', label: 'Collection Box' }
+                  { value: 'collection_box', label: 'Collection Box' },
+                  {value:'bank', label:'Bank'}
                 ]}
                 value={form.source}
                 onChange={(value) => setForm({ 
@@ -541,6 +564,23 @@ const AddDonation = () => {
                   allowCustom={true}
                 />
               )}
+
+              <FormSelect
+                label="Bank (Optional)"
+                name="bank"
+                value={form.bank}
+                onChange={handleChange}
+                options={bankNameOptions}
+              />
+
+              <FormInput
+                label="Transaction ID (Optional)"
+                type="text"
+                name="transaction_id"
+                value={form.transaction_id}
+                onChange={handleChange}
+                placeholder="Enter transaction reference ID"
+              />
             </div>
           </div>
 

@@ -65,6 +65,22 @@ const Login = () => {
             console.log('Redirecting to fund_raising');
             navigate('/fund_raising', { replace: true });
             break;
+            case 'it':
+            console.log('Redirecting to it');
+            navigate('/it', { replace: true });
+            break;
+          case 'hr':
+            console.log('Redirecting to hr');
+            navigate('/hr', { replace: true });
+            break;
+          case 'marketing':
+            console.log('Redirecting to marketing');
+            navigate('/marketing', { replace: true });
+            break;
+          case 'audio_video':
+            console.log('Redirecting to audio_video');
+            navigate('/audio_video', { replace: true });
+            break;
           default:
             console.error('Invalid department:', userData.department);
             setError('Invalid department');

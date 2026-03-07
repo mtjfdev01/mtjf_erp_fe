@@ -16,27 +16,27 @@ const PeopleSummary = () => {
   const groups = [
     {
       label: "WOMEN",
-      targeted: 14.5,
-      reached: 15.4,
-      percent: 105,
+      targeted: "",
+      reached: "",
+      percent: "",
     },
     {
       label: "MEN",
-      targeted: 11.9,
-      reached: 10.6,
-      percent: 89,
+      targeted: "",
+      reached: "",
+      percent: "",
     },
     {
       label: "GIRLS",
-      targeted: 9.48,
-      reached: 9.98,
-      percent: 105,
+      targeted: "",
+      reached: "",
+      percent: "",
     },
     {
       label: "BOYS",
-      targeted: 8.78,
-      reached: 9.33,
-      percent: 106,
+      targeted: "",
+      reached: "",
+      percent: "",
     },
   ];
 
@@ -74,14 +74,14 @@ const PeopleSummary = () => {
       <div style={{ position: "relative" }}>
         <div className="people-header">
           <div className="col">
-            <h2 className="orange">44.7M</h2>
+            <h2 className="orange">{""}</h2>
             <div className="people-targeted">
               <p>People Targeted</p>
               <div className="orange"><TbTargetArrow size={20} /></div>
             </div>
           </div>
           <div className="col">
-            <h2 className="blue">45.3M <span className="small">(101%)</span></h2>
+            <h2 className="blue"> <span className="small"></span></h2>
             <p>People Reached</p>
             <div className="blue"><IoIosCloudDone size={20} /></div>
           </div>

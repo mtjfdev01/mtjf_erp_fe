@@ -102,7 +102,6 @@ import AddDonationBoxDonation from './components/dms/donations/donation_box/add'
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
-import FundraisingChartsDemo from './components/common/charts/fundraising_demo';
 import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
@@ -263,7 +262,6 @@ const App = () => {
                                 
                                 {/* Fund Raising Welcome */}
                                 <Route path="/fund_raising" element={<FundRaising />} />
-                                <Route path="/fund_raising/charts" element={<FundraisingChartsDemo />} /> 
                                 {/* DMS Section Routes */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
@@ -278,11 +276,13 @@ const App = () => {
                                 
                                 {/* Donations Routes */}
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
+                                <Route path="/donations/offline_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
                                 
                                 {/* Donors Routes */}
-                                <Route path="/dms/donors/list" element={<DonorsList />} /> 
+                                <Route path="/dms/donors/online/list" element={<DonorsList />} />
+                                <Route path="/dms/donors/offline/list" element={<DonorsList />} />  
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
                                 <Route path="/dms/donors/online/list" element={<DonorsList />} /> 
@@ -337,7 +337,7 @@ const App = () => {
                                 <Route path="/dms/campaigns/view/:id" element={<ViewCampaign />} />
                                 <Route path="/dms/campaigns/edit/:id" element={<EditCampaign />} />
 
-                                       {/* Tasks (Admin) */}
+                                {/* Tasks (Admin) */}
                                 <Route path="/admin/tasks/list" element={<TasksList />} />
                                 <Route path="/admin/tasks/add" element={<AddTask />} />
                                 <Route path="/admin/tasks/update/:id" element={<UpdateTask />} />
@@ -366,6 +366,22 @@ const App = () => {
                                 <Route path="/fund_raising/tasks/view/:id" element={<ViewTask />} />
                                 <Route path="/fund_raising/tasks/reports" element={<TaskReports />} />
 
+                                <Route path="/it/tasks/list" element={<TasksList />} />
+                                <Route path="/it/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/it/tasks/reports" element={<TaskReports />} />
+                                
+                                
+                                <Route path="/hr/tasks/list" element={<TasksList />} />
+                                <Route path="/hr/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/hr/tasks/reports" element={<TaskReports />} />
+
+                                <Route path="/marketing/tasks/list" element={<TasksList />} />
+                                <Route path="/marketing/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/marketing/tasks/reports" element={<TaskReports />} />
+
+                                <Route path="/audio_video/tasks/list" element={<TasksList />} />
+                                <Route path="/audio_video/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/audio_video/tasks/reports" element={<TaskReports />} />
                               </Routes>
                             </main>
                           </div>

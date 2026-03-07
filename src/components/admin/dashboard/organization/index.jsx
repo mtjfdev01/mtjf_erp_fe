@@ -6,27 +6,27 @@ import { toPng } from "html-to-image";
 const data = [
   {
     label: "International NGO",
-    targeted: "23.4M",
-    reached: "22.1M",
-    percent: "94%",
+    targeted: "",
+    reached: "",
+    percent: "",
   },
   {
     label: "National NGO",
-    targeted: "15.6M",
-    reached: "15.4M",
-    percent: "98%",
+    targeted: "",
+      reached: "",
+    percent: "",
   },
   {
     label: "UN Agency",
-    targeted: "5.71M",
-    reached: "7.76M",
-    percent: "135%",
+    targeted: "",
+    reached: "",
+    percent: "",
   },
   {
     label: "Others",
-    targeted: "33.5k",
-    reached: "56k",
-    percent: "167%",
+    targeted: "",
+    reached: "",
+    percent: "",
   },
 ];
 

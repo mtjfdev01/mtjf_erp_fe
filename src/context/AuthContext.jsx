@@ -231,7 +231,12 @@ export const AuthProvider = ({ children }) => {
       'store': '/store',
       'procurements': '/procurements',
       'accounts_and_finance': '/accounts_and_finance',
-      'admin': '/admin'
+      'admin': '/admin',
+      'fund_raising': '/fund_raising',
+      'it': '/it',
+      'hr': '/hr',
+      'marketing': '/marketing',
+      'audio_video': '/audio_video',
     };
     
     return departmentPaths[department] || '/program'; // Default fallback

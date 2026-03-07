@@ -11,15 +11,15 @@ const AllocationsSummary = () => {
   const chartRef = useRef(null);
 
   const data = [
-    { year: 2024, allocations: "$133M", project: 'Food Security', partners: 159 },
-    { year: 2021, allocations: "$5.42M", project: 'Community Services', partners: 5 },
-    { year: 2023, allocations: "$432M", project: 'Education', partners: 467 },
-    { year: 2022, allocations: "$35M", project: 'Water & Clean Water', partners: 31 },
-    { year: 2020, allocations: "$2.74M", project: 'KASB', partners: 1 },
-    { year: 2018, allocations: "$480k", project: 'Green Initiative', partners: 1 },
-    { year: 2018, allocations: "$480k", project: 'Widows and Orphans Care Program', partners: 1 },
-    { year: 2018, allocations: "$480k", project: 'Livelihood Support Program', partners: 1 },
-    { year: 2018, allocations: "$480k", project: 'Disaster Management', partners: 1 },
+    { year: "", allocations: "", project: 'Food Security', partners: "" },
+    { year: "", allocations: "", project: 'Community Services', partners: "" },
+    { year: "", allocations: "", project: 'Education', partners: "" },
+    { year: "", allocations: "", project: 'Water & Clean Water', partners: "" },
+    { year: "", allocations: "", project: 'KASB', partners: "" },
+    { year: "", allocations: "", project: 'Green Initiative', partners: "" },
+    { year: "", allocations: "", project: 'Widows and Orphans Care Program', partners: "" },
+    { year: "", allocations: "", project: 'Livelihood Support Program', partners: "" },
+    { year: "", allocations: "", project: 'Disaster Management', partners: "" },
   ];
 
   const handleDownload = async () => {

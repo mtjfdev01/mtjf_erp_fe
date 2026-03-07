@@ -1,6 +1,77 @@
 // Sidebar configuration for different user roles and departments
 import { canViewModule, isSuperAdmin } from '../../../utils/permissions';
 
+const TASK_MODULE_KEYS = new Set(['tasks', 'tasking']);
+
+const TASK_ROUTE_MAP = {
+  admin: { label: 'Admin Tasks', basePath: '/admin/tasks' },
+  program: { label: 'Program Tasks', basePath: '/program/tasks' },
+  store: { label: 'Store Tasks', basePath: '/store/tasks' },
+  procurements: { label: 'Procurements Tasks', basePath: '/procurements/tasks' },
+  accounts_and_finance: { label: 'Accounts & Finance Tasks', basePath: '/accounts_and_finance/tasks' },
+  fund_raising: { label: 'Fund Raising Tasks', basePath: '/fund_raising/tasks' },
+  it: { label: 'IT Tasks', basePath: '/it/tasks' },
+  hr: { label: 'HR Tasks', basePath: '/hr/tasks' },
+  marketing: { label: 'Marketing Tasks', basePath: '/marketing/tasks' },
+  audio_video: { label: 'Audio Video Tasks', basePath: '/audio_video/tasks' },
+};
+
+const hasTaskAccessForDepartment = (permissions, departmentKey) => (
+  canViewModule(permissions, departmentKey, 'tasks') ||
+  canViewModule(permissions, departmentKey, 'tasking')
+);
+
+const hasGlobalTaskingAccess = (permissions) => (
+  permissions?.tasks?.view === true ||
+  permissions?.tasks?.list_view === true ||
+  permissions?.tasking?.tasks?.view === true ||
+  permissions?.tasking?.tasks?.list_view === true
+);
+
+const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
+  const taskItems = Object.entries(TASK_ROUTE_MAP)
+    .filter(([departmentKey]) => includeAll || hasTaskAccessForDepartment(permissions, departmentKey))
+    .map(([departmentKey, routeConfig]) => ({
+      label: routeConfig.label,
+      path: `${routeConfig.basePath}/list`,
+      type: 'list',
+      module: 'tasks',
+      subItems: [
+        { label: 'Tasks List', path: `${routeConfig.basePath}/list`, type: 'list' },
+        { label: 'Tasks Dashboard', path: `${routeConfig.basePath}/reports`, type: 'list' },
+      ],
+      meta: { department: departmentKey },
+    }));
+
+  // Fallback for users with generic tasking permission but no explicit department task flags.
+  if (!includeAll && taskItems.length === 0 && hasGlobalTaskingAccess(permissions) && user?.department) {
+    const fallbackRoute = TASK_ROUTE_MAP[user.department];
+    if (fallbackRoute) {
+      taskItems.push({
+        label: fallbackRoute.label,
+        path: `${fallbackRoute.basePath}/list`,
+        type: 'list',
+        module: 'tasks',
+        subItems: [
+          { label: 'Tasks List', path: `${fallbackRoute.basePath}/list`, type: 'list' },
+          { label: 'Tasks Dashboard', path: `${fallbackRoute.basePath}/reports`, type: 'list' },
+        ],
+        meta: { department: user.department },
+      });
+    }
+  }
+
+  if (taskItems.length === 0) {
+    return null;
+  }
+
+  return {
+    id: 'tasking_global',
+    label: 'Tasking',
+    items: taskItems,
+  };
+};
+
 const programDepartmentItems = (isUser = false) => [
   {
     label: 'Tasks',
@@ -298,6 +369,26 @@ const hrDepartmentItems = (isUser = false) => [
     path: '/hr/career/applications/list',
     type: 'list',
     module: 'applications'
+  },
+  {
+    label: 'Tasks',
+    path: '/hr/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems: [
+      { label: 'Tasks List', path: '/hr/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasks Dashboard', path: '/hr/tasks/reports', type: 'list', module: 'tasks' }
+    ]
+  },
+  {
+    label: 'Complaints',
+    path: '/hr/complaints/list',
+    type: 'list',
+    module: 'complaints',
+    subItems: [
+      { label: 'Complaints List', path: '/hr/complaints/list', type: 'list', module: 'complaints' },
+      { label: 'Complaints Dashboard', path: '/hr/complaints/reports', type: 'list', module: 'complaints' }
+    ]
   }
 ];
 
@@ -312,17 +403,17 @@ const geographicItems = (isUser = false) => [
 
 const fundRaisingDepartmentItems = (isUser = false) => [
   {
-    label: 'Online Donations',
+    label: 'Donations',
     path: '/donations/online_donations/list',
     type: 'list',
     module: 'online_donations'
   },
-  {
-    label: 'Offline Donations',
-    path: '/donations/offline_donations/list',
-    type: 'list',
-    module: 'offline_donations'
-  },
+  // {
+  //   label: 'Offline Donations',
+  //   path: '/donations/offline_donations/list',
+  //   type: 'list',
+  //   module: 'offline_donations'
+  // },
   {
     label: 'Online Donors',
     path: '/dms/donors/online/list',
@@ -397,22 +488,91 @@ const fundRaisingDepartmentItems = (isUser = false) => [
 
 const taskingItems = (isUser = false) => [
   {
-    label: 'Tasks',
+    label: 'Tasks List',
     path: '/tasking/tasks/list',
     type: 'list',
-    module: 'tasking',
+    module: 'tasks'
+  },
+  {
+    label: 'Tasks Dashboard',
+    path: '/tasking/tasks/reports',
+    type: 'list',
+    module: 'tasks'
+  },
+];
+
+// IT department menu
+const itDepartmentItems = () => [
+  {
+    label: 'Tasks',
+    path: '/it/tasks/list',
+    type: 'list',
+    module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/tasking/tasks/list', type: 'list' },
-      { label: 'Tasks Dashboard', path: '/tasking/tasks/reports', type: 'list' }
+      { label: 'Tasks List', path: '/it/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasks Dashboard', path: '/it/tasks/reports', type: 'list', module: 'tasks' }
     ]
   },
   {
-    label: 'Dashboard',
-    path: '/tasking/dashboard',
+    label: 'Complaints',
+    path: '/it/complaints/list',
     type: 'list',
-    module: 'dashboard'
+    module: 'complaints',
+    subItems: [
+      { label: 'Complaints List', path: '/it/complaints/list', type: 'list', module: 'complaints' },
+      { label: 'Complaints Dashboard', path: '/it/complaints/reports', type: 'list', module: 'complaints' }
+    ]
   }
 ];
+
+// Marketing department menu
+const marketingDepartmentItems = () => [
+  {
+    label: 'Tasks',
+    path: '/marketing/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems: [
+      { label: 'Tasks List', path: '/marketing/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasks Dashboard', path: '/marketing/tasks/reports', type: 'list', module: 'tasks' }
+    ]
+  },
+  {
+    label: 'Complaints',
+    path: '/marketing/complaints/list',
+    type: 'list',
+    module: 'complaints',
+    subItems: [
+      { label: 'Complaints List', path: '/marketing/complaints/list', type: 'list', module: 'complaints' },
+      { label: 'Complaints Dashboard', path: '/marketing/complaints/reports', type: 'list', module: 'complaints' }
+    ]
+  }
+];
+
+// Audio Video department menu
+const audioVideoDepartmentItems = () => [
+  {
+    label: 'Tasks',
+    path: '/audio_video/tasks/list',
+    type: 'list',
+    module: 'tasks',
+    subItems: [
+      { label: 'Tasks List', path: '/audio_video/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasks Dashboard', path: '/audio_video/tasks/reports', type: 'list', module: 'tasks' }
+    ]
+  },
+  {
+    label: 'Complaints',
+    path: '/audio_video/complaints/list',
+    type: 'list',
+    module: 'complaints',
+    subItems: [
+      { label: 'Complaints List', path: '/audio_video/complaints/list', type: 'list', module: 'complaints' },
+      { label: 'Complaints Dashboard', path: '/audio_video/complaints/reports', type: 'list', module: 'complaints' }
+    ]
+  }
+];
+
 
 // Department configurations
 const departmentConfigs = {
@@ -464,7 +624,17 @@ const departmentConfigs = {
     id: 'tasking',
     label: 'Tasking',
     items: taskingItems(isUser)
-  })
+  }),
+  it: (isUser = false) => ({
+    id: 'it',
+    label: 'IT',
+    items: itDepartmentItems(isUser)
+  }),
+  marketing: (isUser = false) => ({
+    id: 'marketing',
+    label: 'Marketing',
+    items: marketingDepartmentItems(isUser)
+  }),
 };
  
 // Filter items based on user permissions
@@ -474,6 +644,11 @@ const filterItemsByPermissions = (items, permissions, department) => {
   }
 
   return items.filter(item => {
+    // Tasks are shown from a dedicated global Tasking section only.
+    if (item.module && TASK_MODULE_KEYS.has(item.module)) {
+      return false;
+    }
+
     // If item has no module, show it (for backward compatibility)
     if (!item.module) {
       return true;
@@ -494,24 +669,7 @@ export const getSidebarConfig = (user, permissions = null) => {
 
   // Super admin sees all departments (check both role and permission)
   if (isSuperAdminRole || isSuperAdminPermission) {
-    const tasksGroup = {
-      id: 'tasks_global',
-      label: 'Tasks',
-      items: [
-        {
-          label: 'All Tasks',
-          path: '/admin/tasks/list',
-          type: 'list',
-          module: 'tasks'
-        },
-        {
-          label: 'Tasks Reports',
-          path: '/admin/tasks/reports',
-          type: 'list',
-          module: 'tasks'
-        }
-      ]
-    };
+    const unifiedTaskingGroup = buildUnifiedTaskingGroup(user, permissions, true);
     return [
       departmentConfigs.program(false),
       departmentConfigs.store(false),
@@ -521,30 +679,35 @@ export const getSidebarConfig = (user, permissions = null) => {
       departmentConfigs.fund_raising(false),
       departmentConfigs.geographic(false),
       departmentConfigs.hr(false),
-      tasksGroup
+      ...(unifiedTaskingGroup ? [unifiedTaskingGroup] : [])
     ];
   }
 
-  // Regular users and admins see only their department
-  const userDepartment = user.department;
-  const departmentConfig = departmentConfigs[userDepartment];
-  
-  if (departmentConfig) {
-    const config = departmentConfig(isUser);
-    
-    // Filter items based on permissions if available
-    if (permissions && userDepartment) {
-      return [{
+  // For non-super-admin users, sidebar is derived from permission map only.
+  if (!permissions) return [];
+
+  const sections = Object.keys(departmentConfigs)
+    .map((departmentKey) => {
+      const config = departmentConfigs[departmentKey](isUser);
+      const filteredItems = filterItemsByPermissions(
+        config.items,
+        permissions,
+        departmentKey,
+      );
+
+      return {
         ...config,
-        items: filterItemsByPermissions(config.items, permissions, userDepartment)
-      }];
-    }
-    
-    // Fallback to role-based if no permissions
-    return [config];
+        items: filteredItems,
+      };
+    })
+    .filter((section) => section.items.length > 0);
+
+  const unifiedTaskingGroup = buildUnifiedTaskingGroup(user, permissions, false);
+  if (unifiedTaskingGroup) {
+    sections.push(unifiedTaskingGroup);
   }
 
-  return [];
+  return sections;
 };
 
 export default getSidebarConfig; 

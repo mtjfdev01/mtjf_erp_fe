@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
@@ -23,8 +23,11 @@ import MultiSelect from '../../../../common/MultiSelect';
 
 const OnlineDonationsList = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
   const urlDonorId = searchParams.get('donor_id'); // Get donor_id from URL query param
+  const isOnlineRoute = location.pathname.includes('/donations/online_donations');
+  const isOfflineRoute = location.pathname.includes('/donations/offline_donations');
   
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -63,6 +66,7 @@ const OnlineDonationsList = () => {
     status: '',
     donation_type: '',
     donation_method: '',
+    donation_source: '',
     date: '',
     start_date: '',
     end_date: '',
@@ -216,6 +220,7 @@ const OnlineDonationsList = () => {
           status: appliedFilters.status,
           donation_type: appliedFilters.donation_type,
           donation_method: appliedFilters.donation_method,
+          donation_source: appliedFilters.donation_source,
           orderId: appliedFilters.orderId,
           
           // Date filters
@@ -521,6 +526,18 @@ const OnlineDonationsList = () => {
     { value: 'payfast', label: 'Payfast' }
   ];
 
+  const donationSourceOptions = [
+    { value: 'website', label: 'Website' },
+    { value: 'mobile_app', label: 'Mobile App' },
+    { value: 'collection_center', label: 'Collection Center' },
+    { value: 'home_collection', label: 'Home Collection' },
+    { value: 'email_campaign', label: 'Email Campaign' },
+    { value: 'event', label: 'Event' },
+    { value: 'referral', label: 'Referral' },
+    { value: 'collection_box', label: 'Collection Box' },
+    {value:'bank', label:'Bank'}
+  ];
+
   const priceRangeOptions = [
     { value: '', label: 'Any Amount' },
     { value: '1000', label: '1,000' },
@@ -709,6 +726,15 @@ const OnlineDonationsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All Methods"
+            />
+
+            <DropdownFilter
+              filterKey="donation_source"
+              label="Donation Source"
+              data={donationSourceOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All Sources"
             />
             
             {/* <HybridDropdown

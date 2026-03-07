@@ -4,16 +4,11 @@ import usePersistedFilters from '../../../../hooks/usePersistedFilters';
 import FundraisingCards from '../fundraising_cards';
 import CumulativeChart from '../cumulative_chart';
 import RaisedEachMonthChart from '../raised_each_month_chart';
-import { DropdownFilter, DateFilter, DateRangeFilter } from '../../filters';
+import { DropdownFilter, DateFilter, DateRangeFilter, SearchFilter } from '../../filters';
 import { SearchButton, ClearButton } from '../../filters/index';
 import MultiSelect from '../../MultiSelect';
-import {
-  DUMMY_CARDS,
-  DUMMY_CUMULATIVE,
-  DUMMY_RAISED_EACH_MONTH,
-} from '../fundraising_demo';
 import { projectCards } from '../../../../utils/variables';
-import '../fundraising_demo/index.css';
+import './styles.css';
 
 const projectOptions = projectCards.map((p) => ({ value: p.id, label: p.title }));
 
@@ -22,7 +17,7 @@ const DEFAULT_MONTHS = 12;
 const EMPTY_FILTERS = {
   donation_type: '',
   donation_method: '',
-  ref: [],
+  ref: '',
   projects: [],
   date: '',
   start_date: '',
@@ -36,6 +31,11 @@ const donationTypeOptions = [
 ];
 
 const donationMethodOptions = [
+  { value: 'cash', label: 'Cash' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'in_kind', label: 'In Kind' },
+  { value: 'bank_transfer', label: 'Bank Transfer' },
+  { value: 'online', label: 'Online (Manual)' },
   { value: 'meezan', label: 'Meezan Bank' },
   { value: 'blinq', label: 'Blinq' },
   { value: 'payfast', label: 'Payfast' },
@@ -43,16 +43,11 @@ const donationMethodOptions = [
   { value: 'stripe_embed', label: 'Stripe Embed' },
 ];
 
-const campaignOptions = [
-  { value: 'MTJ-1234567890', label: 'MTJ-1234567890' },
-  { value: 'MTJ-1234567891', label: 'MTJ-1234567891' },
-];
-
 function mapApiToCharts(apiData) {
   if (!apiData?.cumulative?.length && !apiData?.raised_per_month?.length) {
     return {
-      cumulative: DUMMY_CUMULATIVE,
-      raisedEachMonth: DUMMY_RAISED_EACH_MONTH,
+      cumulative: { labels: [], values: [] },
+      raisedEachMonth: { labels: [], datasets: [] },
     };
   }
   const cumulative = {
@@ -71,18 +66,16 @@ function mapApiToCharts(apiData) {
       { label: 'Campaigns', data: raised.map((r) => Number(r.campaigns ?? 0)) },
     ].filter((ds) => ds.data.some((v) => v > 0)),
   };
-  if (raisedEachMonth.datasets.length === 0) {
-    raisedEachMonth.datasets = DUMMY_RAISED_EACH_MONTH.datasets;
-  }
   return { cumulative, raisedEachMonth };
 }
 
 const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [cards, setCards] = useState(DUMMY_CARDS);
-  const [cumulativeData, setCumulativeData] = useState(DUMMY_CUMULATIVE);
-  const [raisedEachMonthData, setRaisedEachMonthData] = useState(DUMMY_RAISED_EACH_MONTH);
+  const [isForbidden, setIsForbidden] = useState(false);
+  const [cards, setCards] = useState(null);
+  const [cumulativeData, setCumulativeData] = useState({ labels: [], values: [] });
+  const [raisedEachMonthData, setRaisedEachMonthData] = useState({ labels: [], datasets: [] });
   const [tempFilters, setTempFilters] = usePersistedFilters('fundraising-dashboard:temp', EMPTY_FILTERS);
   const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters('fundraising-dashboard:applied', EMPTY_FILTERS);
 
@@ -103,7 +96,13 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
     const params = { months };
     if (appliedFilters.donation_type) params.donation_type = appliedFilters.donation_type;
     if (appliedFilters.donation_method) params.donation_method = appliedFilters.donation_method;
-    if (appliedFilters.ref?.length) params.ref = appliedFilters.ref.join(',');
+    if (typeof appliedFilters.ref === 'string' && appliedFilters.ref.trim()) {
+      params.ref = appliedFilters.ref
+        .split(',')
+        .map((v) => v.trim())
+        .filter(Boolean)
+        .join(',');
+    }
     if (appliedFilters.projects?.length) params.projects = appliedFilters.projects.join(',');
     if (appliedFilters.date) params.date = appliedFilters.date;
     if (appliedFilters.start_date) params.start_date = appliedFilters.start_date;
@@ -115,6 +114,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setIsForbidden(false);
     axiosInstance
       .get('/dashboard/fundraising-overview', { params: apiParams })
       .then((res) => {
@@ -129,10 +129,14 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
       })
       .catch((err) => {
         if (!cancelled) {
+          const statusCode = err?.response?.status;
+          if (statusCode === 401 || statusCode === 403) {
+            setIsForbidden(true);
+          }
           setError(err?.response?.data?.message || err?.message || 'Failed to load fundraising data');
-          setCards(DUMMY_CARDS);
-          setCumulativeData(DUMMY_CUMULATIVE);
-          setRaisedEachMonthData(DUMMY_RAISED_EACH_MONTH);
+          setCards(null);
+          setCumulativeData({ labels: [], values: [] });
+          setRaisedEachMonthData({ labels: [], datasets: [] });
         }
       })
       .finally(() => {
@@ -144,7 +148,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   return (
     <div className="fundraising-charts-demo">
       {/* Filters Section */}
-      {error ? <></>: 
+      {!isForbidden &&
       <div className="fundraising-charts-demo__filters">
         <DropdownFilter
           filterKey="donation_type"
@@ -162,13 +166,12 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
           onFilterChange={handleFilterChange}
           placeholder="All Methods"
         />
-        <MultiSelect
-          name="ref"
+        <SearchFilter
+          filterKey="ref"
           label="Ref/Campaign"
-          options={campaignOptions}
-          value={tempFilters.ref}
-          onChange={(value) => handleFilterChange('ref', value)}
-          placeholder="Select Campaigns"
+          filters={tempFilters}
+          onFilterChange={handleFilterChange}
+          placeholder="Comma-separated refs (e.g. MTJ-123,MTJ-456)"
         />
         <MultiSelect
           name="projects"
@@ -226,7 +229,9 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
         </>
         ) : (
         <div className="fundraising-charts-demo__error">
-          Failed to load fundraising data.
+          {isForbidden
+            ? 'You do not have permission to view fundraising dashboard.'
+            : (error || 'Failed to load fundraising data.')}
         </div>
         )}
     </div>
