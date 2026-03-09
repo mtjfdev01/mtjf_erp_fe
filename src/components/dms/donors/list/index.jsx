@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
+import { useAuth } from '../../../../context/AuthContext';
 import Navbar from '../../../Navbar'; 
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
@@ -8,12 +9,14 @@ import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import { DownloadCSV } from '../../../common/download';
 import { FiEye, FiEdit, FiTrash2, FiUser } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
 
 const DonorsList = () => {
   const navigate = useNavigate();
+  const { permissions } = useAuth();
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -94,6 +97,34 @@ const DonorsList = () => {
       // If filters haven't changed, force refresh by calling fetchDonors
       fetchDonors();
     }
+  };
+
+  const canExportCsv = useMemo(() => {
+    if (!permissions) return false;
+    return permissions.super_admin === true || permissions.fund_raising?.online_donors?.csv_xport === true;
+  }, [permissions]);
+
+  const csvColumns = [
+    { key: 'donor_type', label: 'Type' },
+    { key: 'name', label: 'Name' },
+    { key: 'company_name', label: 'Company' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'city', label: 'City' },
+    { key: 'created_at', label: 'Registration Date' }
+  ];
+
+  const prepareCSVData = () => {
+    return donors.map(donor => ({
+      ...donor,
+      donor_type: getDonorTypeLabel(donor.donor_type),
+      created_at: new Date(donor.created_at).toLocaleDateString()
+    }));
+  };
+
+  const getCSVFilename = () => {
+    const today = new Date().toISOString().split('T')[0];
+    return `donors-export-${today}`;
   };
 
   // Clear filters - Triggered by Clear button
@@ -336,7 +367,7 @@ const DonorsList = () => {
               onFilterChange={handleFilterChange}
               placeholder="All"
             />
-                        {/* recurring donors */}
+            
             <DropdownFilter
               filterKey="recurring"
               label="Recurring Donors"
@@ -378,6 +409,15 @@ const DonorsList = () => {
                 onClick={handleClearFilters}
                 text="Clear"
               />
+              {canExportCsv && (
+                <DownloadCSV
+                  data={prepareCSVData()}
+                  filename={getCSVFilename()}
+                  columns={csvColumns}
+                  buttonText="Download as CSV"
+                  disabled={loading || donors.length === 0}
+                />
+              )}
             </div>
           </div>
           

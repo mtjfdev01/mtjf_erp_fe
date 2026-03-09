@@ -155,8 +155,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         online_donors: {
           label: 'Online Donors',
-          actions: ['create','list_view', 'view', 'update', 'delete']
-        },
+          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']        },
         offline_donors: {
           label: 'Offline Donors',
           actions: ['create','list_view', 'view', 'update', 'delete']
@@ -255,6 +254,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     delete: 'Delete',
     send:'Send',
     receive:'Receive',
+    csv_xport:'CSV Export',
   };
 
   const initializePermissions = () => {
