@@ -139,7 +139,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       submodules: {
         online_donations: {
           label: 'Online Donations',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
         },
         offline_donations: {
           label: 'Offline Donations',
@@ -155,7 +155,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         online_donors: {
           label: 'Online Donors',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
         },
         offline_donors: {
           label: 'Offline Donors',
@@ -255,6 +255,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     delete: 'Delete',
     send:'Send',
     receive:'Receive',
+    csv_xport:'CSV Export',
   };
 
   const initializePermissions = () => {

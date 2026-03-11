@@ -91,7 +91,7 @@ export const isStatusActionAvailable = (action, context) => {
   const isAssignee = context.isAssignee === true;
   const sameDeptOrOrg = isSameDeptOrOrg(context);
   const workflowRaw = String(context.workflowType || '').toUpperCase();
-   const currentStatusRaw = String(context.currentStatus || '').toLowerCase();
+  const currentStatusRaw = String(context.currentStatus || '').toLowerCase();
   const approverIdsRaw = context.approvalRequiredUserIds;
   const approverIds = Array.isArray(approverIdsRaw)
     ? approverIdsRaw
@@ -144,16 +144,22 @@ export const isStatusActionAvailable = (action, context) => {
         sameDeptOrOrg
       );
     case 'CLOSE':
+      const isCreator = context.currentUserId != null && context.createdByUserId != null && Number(context.currentUserId) === Number(context.createdByUserId);
+      const isReporter = context.currentUserId != null && context.reportedById != null && Number(context.currentUserId) === Number(context.reportedById);
+      const isCreatorOrReporter = isCreator || isReporter;
+
       if (workflowRaw === 'APPROVAL_REQUIRED') {
         if (allApprovalsCompleted && isConfiguredApprover) {
-          return sameDeptOrOrg;
+          // If the approver is also the creator/reporter, they can close
+          return isCreatorOrReporter && sameDeptOrOrg;
         }
-        return (perms.canApprove === true || isAdminRole) && sameDeptOrOrg;
+        // If not the last approver acting, only creator/reporter can close (if they have approve perms)
+        return (perms.canApprove === true || isAdminRole) && isCreatorOrReporter && sameDeptOrOrg;
       }
       if (isAdminRole) {
         return true;
       }
-      return perms.canUpdate && sameDeptOrOrg;
+      return perms.canUpdate && isCreatorOrReporter && sameDeptOrOrg;
     case 'SUBMIT_APPROVAL':
       return isAssignee && (perms.canUpdate || perms.canView) && !isAdminRole;
     case 'APPROVE':

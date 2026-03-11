@@ -74,13 +74,13 @@ const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
 
 const programDepartmentItems = (isUser = false) => [
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/program/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/program/tasks/list', type: 'list' },
-      { label: 'Tasks Dashboard', path: '/program/tasks/reports', type: 'list' }
+      { label: 'Tasking List', path: '/program/tasks/list', type: 'list' },
+      { label: 'Tasking Dashboard', path: '/program/tasks/reports', type: 'list' }
     ]
   },
   {
@@ -184,13 +184,13 @@ const storeDepartmentItems = (isUser = false) => [
 
 const procurementsDepartmentItems = (isUser = false) => [
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/procurements/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems:[
-      {label:'Tasks List',path:'/procurements/tasks/list',type:'list',module:'tasks'},
-      {label:'Tasks Dashboard',path:'/procurements/tasks/reports',type:'list',module:'tasks'}
+      {label:'Tasking List',path:'/procurements/tasks/list',type:'list',module:'tasks'},
+      {label:'Tasking Dashboard',path:'/procurements/tasks/reports',type:'list',module:'tasks'}
     ]
   },
   {
@@ -203,13 +203,13 @@ const procurementsDepartmentItems = (isUser = false) => [
 
 const accountsFinanceDepartmentItems = (isUser = false) => [
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/accounts_and_finance/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems:[
-      {label:'Tasks List',path:'/accounts_and_finance/tasks/list',type:'list',module:'tasks'},
-      {label:'Tasks Dashboard',path:'/accounts_and_finance/tasks/reports',type:'list',module:'tasks'}
+      {label:'Tasking List',path:'/accounts_and_finance/tasks/list',type:'list',module:'tasks'},
+      {label:'Tasking Dashboard',path:'/accounts_and_finance/tasks/reports',type:'list',module:'tasks'}
     ]
   },
   {
@@ -371,13 +371,13 @@ const hrDepartmentItems = (isUser = false) => [
     module: 'applications'
   },
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/hr/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/hr/tasks/list', type: 'list', module: 'tasks' },
-      { label: 'Tasks Dashboard', path: '/hr/tasks/reports', type: 'list', module: 'tasks' }
+      { label: 'Tasking List', path: '/hr/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasking Dashboard', path: '/hr/tasks/reports', type: 'list', module: 'tasks' }
     ]
   },
   {
@@ -469,13 +469,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   //   module: 'reports'
   // },
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/fund_raising/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/fund_raising/tasks/list', type: 'list' },
-      { label: 'Tasks Dashboard', path: '/fund_raising/tasks/reports', type: 'list' }
+      { label: 'Tasking List', path: '/fund_raising/tasks/list', type: 'list' },
+      { label: 'Tasking Dashboard', path: '/fund_raising/tasks/reports', type: 'list' }
     ]
   },
   {
@@ -488,13 +488,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
 
 const taskingItems = (isUser = false) => [
   {
-    label: 'Tasks List',
+    label: 'Tasking List',
     path: '/tasking/tasks/list',
     type: 'list',
     module: 'tasks'
   },
   {
-    label: 'Tasks Dashboard',
+    label: 'Tasking Dashboard',
     path: '/tasking/tasks/reports',
     type: 'list',
     module: 'tasks'
@@ -504,13 +504,13 @@ const taskingItems = (isUser = false) => [
 // IT department menu
 const itDepartmentItems = () => [
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/it/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/it/tasks/list', type: 'list', module: 'tasks' },
-      { label: 'Tasks Dashboard', path: '/it/tasks/reports', type: 'list', module: 'tasks' }
+      { label: 'Tasking List', path: '/it/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasking Dashboard', path: '/it/tasks/reports', type: 'list', module: 'tasks' }
     ]
   },
   {
@@ -528,13 +528,13 @@ const itDepartmentItems = () => [
 // Marketing department menu
 const marketingDepartmentItems = () => [
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/marketing/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/marketing/tasks/list', type: 'list', module: 'tasks' },
-      { label: 'Tasks Dashboard', path: '/marketing/tasks/reports', type: 'list', module: 'tasks' }
+      { label: 'Tasking List', path: '/marketing/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasking Dashboard', path: '/marketing/tasks/reports', type: 'list', module: 'tasks' }
     ]
   },
   {
@@ -552,13 +552,13 @@ const marketingDepartmentItems = () => [
 // Audio Video department menu
 const audioVideoDepartmentItems = () => [
   {
-    label: 'Tasks',
+    label: 'Tasking',
     path: '/audio_video/tasks/list',
     type: 'list',
     module: 'tasks',
     subItems: [
-      { label: 'Tasks List', path: '/audio_video/tasks/list', type: 'list', module: 'tasks' },
-      { label: 'Tasks Dashboard', path: '/audio_video/tasks/reports', type: 'list', module: 'tasks' }
+      { label: 'Tasking List', path: '/audio_video/tasks/list', type: 'list', module: 'tasks' },
+      { label: 'Tasking Dashboard', path: '/audio_video/tasks/reports', type: 'list', module: 'tasks' }
     ]
   },
   {

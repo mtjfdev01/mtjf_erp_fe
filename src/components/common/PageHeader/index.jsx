@@ -14,7 +14,9 @@ const PageHeader = ({
   showEdit = false,
   editPath = '',
   showAdd = false,
-  addPath = ''
+  addPath = '',
+  addDisabled = false,
+  addTitle = 'Add new'
 }) => {
   const navigate = useNavigate();
 
@@ -55,9 +57,10 @@ const PageHeader = ({
         <h1 className="page-title">{title}</h1>
         {showAdd && addPath && (
           <button 
-            className="back-button"
+            className={`back-button ${addDisabled ? 'disabled' : ''}`}
             onClick={handleAddClick}
-            title="Add new"
+            title={addTitle}
+            disabled={addDisabled}
           >
             <MdAdd />
           </button>

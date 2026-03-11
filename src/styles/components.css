@@ -433,10 +433,16 @@
     display: none;
   }
 
-  /* Show only first 4 columns on mobile */
-  .data-table th:nth-child(n+5),
-  .data-table td:nth-child(n+5) {
+  /* Show only necessary columns on mobile, ensure Actions (last child) is often visible */
+  .data-table th:nth-child(n+5):not(.table-actions):not(:last-child),
+  .data-table td:nth-child(n+5):not(.table-actions):not(:last-child) {
     display: none;
+  }
+
+  /* Ensure actions column is visible if it has the class */
+  .data-table th.table-actions,
+  .data-table td.table-actions {
+    display: table-cell !important;
   }
 
   /* Each visible column should be 25% max-width on mobile */
@@ -457,16 +463,10 @@
     padding: 10px 6px;
   }
 
-  /* Show only first 4 columns on mobile */
-  .data-table th:nth-child(n+4),
-  .data-table td:nth-child(n+4) {
+  /* Show only first 3 columns and Actions on very small screens */
+  .data-table th:nth-child(n+4):not(.table-actions):not(:last-child),
+  .data-table td:nth-child(n+4):not(.table-actions):not(:last-child) {
     display: none;
-  }
-
-  /* Each visible column should be 25% max-width on mobile */
-  .data-table th:nth-child(-n+4),
-  .data-table td:nth-child(-n+4) {
-    max-width: 20%;
   }
 }
 

@@ -226,7 +226,7 @@ const QuickActionModal = ({
                 label="New project"
                 value={formState.project}
                 onChange={(e) => handleChange('project', e.target.value)}
-                placeholder="Enter project name or ID"
+                placeholder="Enter project name"
               />
             )}
             {/* {showTags && (

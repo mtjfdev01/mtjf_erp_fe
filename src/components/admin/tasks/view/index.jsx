@@ -462,16 +462,31 @@ const ViewTask = () => {
   };
 
   const handleStatusUpdated = async (updated) => {
-    if (updated) {
+    if (updated && Array.isArray(updated.activities)) {
       setTask(updated);
     } else {
-      const action = statusModalAction;
-      const nextStatus = STATUS_TRANSITION_MAP[action];
-      if (nextStatus) {
-        setTask((prev) => ({
-          ...prev,
-          status: nextStatus,
-        }));
+      // If we don't have full data with activities, re-fetch the entire task
+      try {
+        const res = await axiosInstance.get(`/tasks/${id}`);
+        const fullTask = res.data?.data;
+        if (fullTask) {
+          setTask(fullTask);
+        }
+      } catch (e) {
+        console.error('Failed to re-fetch task after status update', e);
+        // Fallback to manual status update if fetch fails
+        if (updated) {
+          setTask(updated);
+        } else {
+          const action = statusModalAction;
+          const nextStatus = STATUS_TRANSITION_MAP[action];
+          if (nextStatus) {
+            setTask((prev) => ({
+              ...prev,
+              status: nextStatus,
+            }));
+          }
+        }
       }
     }
     try {
@@ -588,54 +603,69 @@ const ViewTask = () => {
 
   const dueInfo = getDueInfo(task?.due_date, task?.status);
 
-  const reassignmentActivities = Array.isArray(task?.activities)
-    ? [...task.activities]
-        .filter((a) => a && a.action === 'reassigned')
-        .sort((a, b) => {
-          const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return ad - bd;
-        })
-    : [];
+  const reassignmentActivities = useMemo(() => {
+    if (!task || !Array.isArray(task.activities)) return [];
+    return [...task.activities]
+      .filter((a) => a && a.action === 'reassigned')
+      .sort((a, b) => {
+        const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return ad - bd;
+      });
+  }, [task?.activities]);
 
-  const progressActivities = Array.isArray(task?.activities)
-    ? [...task.activities]
-        .filter((a) => {
-          if (!a) return false;
-          const action = String(a.action || '').toLowerCase();
-          if (
-            action === 'progress_updated' ||
-            action === 'progress_update' ||
-            action === 'update_progress' ||
-            action.includes('progress')
-          ) {
-            return true;
-          }
-          const details =
-            a && a.details && typeof a.details === 'object' ? a.details : {};
-          if (details && details.progress != null) {
-            return true;
-          }
-          const detailsText =
-            typeof a.details === 'string'
-              ? a.details
-              : typeof details.notes === 'string'
-              ? details.notes
-              : '';
-          if (
-            detailsText &&
-            detailsText.toLowerCase().includes('checklist items completed')
-          ) {
-            return true;
-          }
-          return false;
-        })
-        .sort((a, b) => {
-          const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return bd - ad;
-        })
-    : [];
+  const progressActivities = useMemo(() => {
+    if (!task || !Array.isArray(task.activities)) return [];
+
+    const allProgressActivities = [...task.activities]
+      .filter((a) => {
+        if (!a) return false;
+        const action = String(a.action || '').toLowerCase();
+        if (
+          action === 'progress_updated' ||
+          action === 'progress_update' ||
+          action === 'update_progress' ||
+          action.includes('progress')
+        ) {
+          return true;
+        }
+        const details =
+          a && a.details && typeof a.details === 'object' ? a.details : {};
+        if (details && details.progress != null) {
+          return true;
+        }
+        const detailsText =
+          typeof a.details === 'string'
+            ? a.details
+            : typeof details.notes === 'string'
+            ? details.notes
+            : '';
+        if (
+          detailsText &&
+          detailsText.toLowerCase().includes('checklist items completed')
+        ) {
+          return true;
+        }
+        return false;
+      })
+      .sort((a, b) => {
+        const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return bd - ad;
+      });
+
+    // Find the index of the most recent reset event
+    const lastResetIndex = allProgressActivities.findIndex(
+      (a) => a.details?.notes?.includes('Progress reset')
+    );
+
+    // If a reset was found, truncate the history to that point
+    if (lastResetIndex !== -1) {
+      return allProgressActivities.slice(0, lastResetIndex + 1);
+    }
+
+    return allProgressActivities;
+  }, [task?.activities]);
 
   useEffect(() => {
     if (
@@ -821,6 +851,8 @@ const ViewTask = () => {
                   userRole={user?.role}
                   isAssignee={isCurrentUserAssignee}
                   currentUserId={user?.id}
+                  createdByUserId={task.created_by_id}
+                  reportedById={task.reported_by_id}
                   approvalRequiredUserIds={task.approval_required_user_ids}
                   approvalsMeta={approvalState?.approvals_meta}
                   currentUserHasActedOnApproval={currentUserHasActedOnApproval}

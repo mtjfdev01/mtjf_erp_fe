@@ -199,16 +199,15 @@ const TasksList = () => {
   const approvalRequestsForUser = useMemo(() => {
     if (!currentUserId) return [];
     if (!Array.isArray(myApprovals) || myApprovals.length === 0) return [];
-    const taskById = new Map(
-      tasks.map((t) => [Number(t.id), t]),
-    );
+    
     const results = [];
     myApprovals.forEach((approval) => {
       const taskIdNum = Number(approval.task_id);
       if (!Number.isInteger(taskIdNum)) {
         return;
       }
-      const task = taskById.get(taskIdNum);
+      // Use the task object attached directly to the approval record
+      const task = approval.task;
       if (!task) {
         return;
       }
@@ -784,8 +783,9 @@ const TasksList = () => {
                   <th>Task Title</th>
                   <th className="hide-on-mobile">Department</th>
                   <th>Assignees</th>
-                  <th>Priority</th>
+                  <th className="hide-on-mobile">Priority</th>
                   <th className="hide-on-mobile">Status</th>
+                  <th className="hide-on-mobile">Start Date</th>
                   <th className="hide-on-mobile">Due Date</th>
                   <th className="table-actions">Actions</th>
                 </tr>
@@ -843,7 +843,7 @@ const TasksList = () => {
                             )}
                           </div>
                         </td>
-                        <td>{capitalize(t.priority)}</td>
+                        <td className="hide-on-mobile">{capitalize(t.priority)}</td>
                         <td className="hide-on-mobile">
                           <div className="tasks-status-cell">
                             {getStatusBadge(t.status)}
@@ -867,6 +867,7 @@ const TasksList = () => {
                             )}
                           </div>
                         </td>
+                        <td className="hide-on-mobile">{formatDate(t.start_date)}</td>
                         <td className="hide-on-mobile">
                           <div className="tasks-due-cell">
                             <div>{formatDate(t.due_date)}</div>
@@ -942,7 +943,7 @@ const TasksList = () => {
                             )}
                           </div>
                         </td>
-                        <td>{capitalize(t.priority)}</td>
+                        <td className="hide-on-mobile">{capitalize(t.priority)}</td>
                         <td className="hide-on-mobile">
                           <div className="tasks-status-cell">
                             {getStatusBadge(t.status)}
@@ -966,6 +967,7 @@ const TasksList = () => {
                             )}
                           </div>
                         </td>
+                        <td className="hide-on-mobile">{formatDate(t.start_date)}</td>
                         <td className="hide-on-mobile">
                           <div className="tasks-due-cell">
                             <div>{formatDate(t.due_date)}</div>
@@ -1060,7 +1062,7 @@ const TasksList = () => {
                   </button>
                   <button
                     type="button"
-                    className="primary-button"
+                    className="reassign-modal-confirm"
                     onClick={handleReassignSubmit}
                     disabled={reassignSaving}
                   >

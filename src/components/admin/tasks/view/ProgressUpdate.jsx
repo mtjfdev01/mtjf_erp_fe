@@ -46,7 +46,7 @@ const ProgressUpdate = ({
     const nextProgress =
       total > 0 ? Math.round((completedCount / total) * 100) : 0;
     setProgress(nextProgress);
-  }, [normalizedLines]);
+  }, [normalizedLines, currentProgress]);
 
   const clampedProgress = Math.max(0, Math.min(100, progress));
   const progressBucket =

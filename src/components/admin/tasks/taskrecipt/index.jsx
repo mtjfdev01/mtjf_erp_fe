@@ -194,7 +194,6 @@ const TaskReceipt = () => {
       <Navbar />
       <div className="view-wrapper">
         <PageHeader
-          title={task.title || 'Task receipt'}
           showBackButton={true}
           backPath={`/admin/tasks/view/${task.id}`}
         />
@@ -205,10 +204,7 @@ const TaskReceipt = () => {
                 <div className="receipt-title">
                   <div className="receipt-logo">📋</div>
                   <div>
-                    <h1>MTJ Foundation Task Receipt</h1>
-                    <div className="subtitle">
-                      Official Task Documentation & Tracking
-                    </div>
+                    <h1>{task.title || 'Task receipt'}</h1>
                   </div>
                 </div>
                 <div className="task-id">{formatTaskId(task)}</div>

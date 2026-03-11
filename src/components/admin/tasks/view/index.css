@@ -72,6 +72,13 @@
   row-gap: 1.75rem;
 }
 
+@media (max-width: 640px) {
+  .view-section--timeline .view-grid {
+    grid-template-columns: 1fr;
+    row-gap: 1rem;
+  }
+}
+
 .view-section--timeline .view-item {
   padding: 0;
   background: transparent;
@@ -183,7 +190,7 @@
   padding: 4px 12px;
   border-radius: 999px;
   border: none;
-  background-color: #16a34a;
+  background-color: #2e7b4a;
   color: #ffffff;
   font-weight: 600;
   font-size: 0.82rem;
@@ -324,22 +331,90 @@
 }
 
 @media (max-width: 768px) {
+  .task-action-bar {
+    display: none;
+  }
+  
+  .task-action-fab {
+    display: flex;
+  }
+  
+  .task-action-fab-menu {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) {
   .receipt-header {
     flex-direction: column;
     gap: 15px;
     text-align: center;
+    padding: 20px;
+  }
+
+  .receipt-title {
+    flex-direction: column;
   }
 
   .status-banner {
     flex-direction: column;
     gap: 10px;
     text-align: center;
+    padding: 15px 20px;
+  }
+
+  .receipt-body {
+    padding: 20px;
   }
 
   .receipt-footer .metadata {
     flex-direction: column;
     gap: 4px;
     align-items: center;
+  }
+
+  .task-action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .task-action-bar-primary {
+    justify-content: center;
+  }
+
+  .task-action-bar-secondary {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .task-action-quick-menu {
+    right: auto;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 480px) {
+  .receipt-title h1 {
+    font-size: 1.25rem;
+  }
+  
+  .task-action-bar-primary {
+    flex-direction: column;
+  }
+  
+  .task-action-button {
+    width: 100%;
+  }
+  
+  .view-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .view-item-label::after {
+    display: none;
   }
 }
 
@@ -870,7 +945,8 @@
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
-  width: 35rem
+  width: 100%;
+  max-width: 35rem;
 }
 
 .task-progress-header {
