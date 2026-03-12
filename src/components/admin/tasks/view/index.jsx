@@ -617,55 +617,63 @@ const ViewTask = () => {
   const progressActivities = useMemo(() => {
     if (!task || !Array.isArray(task.activities)) return [];
 
-    const allProgressActivities = [...task.activities]
-      .filter((a) => {
-        if (!a) return false;
-        const action = String(a.action || '').toLowerCase();
-        if (
-          action === 'progress_updated' ||
-          action === 'progress_update' ||
-          action === 'update_progress' ||
-          action.includes('progress')
-        ) {
-          return true;
-        }
-        const details =
-          a && a.details && typeof a.details === 'object' ? a.details : {};
-        if (details && details.progress != null) {
-          return true;
-        }
-        const detailsText =
-          typeof a.details === 'string'
-            ? a.details
-            : typeof details.notes === 'string'
-            ? details.notes
-            : '';
-        if (
-          detailsText &&
-          detailsText.toLowerCase().includes('checklist items completed')
-        ) {
-          return true;
-        }
-        return false;
-      })
-      .sort((a, b) => {
-        const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
-        const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
-        return bd - ad;
-      });
+    const currentTaskProgress = Number(task.progress) || 0;
 
-    // Find the index of the most recent reset event
-    const lastResetIndex = allProgressActivities.findIndex(
-      (a) => a.details?.notes?.includes('Progress reset')
-    );
+    // 1. Filter and identify progress-related activities
+    const progressRelated = task.activities.filter((a) => {
+      if (!a) return false;
+      const action = String(a.action || '').toLowerCase();
+      const details = a.details && typeof a.details === 'object' ? a.details : {};
+      
+      const isProgressAction = 
+        action === 'progress_updated' || 
+        action === 'progress_update' || 
+        action === 'update_progress' || 
+        action.includes('progress');
 
-    // If a reset was found, truncate the history to that point
-    if (lastResetIndex !== -1) {
-      return allProgressActivities.slice(0, lastResetIndex + 1);
-    }
+      const hasProgressValue = details && details.progress != null;
+      const notesMatch = typeof details.notes === 'string' && 
+        details.notes.toLowerCase().includes('checklist items completed');
 
-    return allProgressActivities;
-  }, [task?.activities]);
+      return isProgressAction || hasProgressValue || notesMatch;
+    });
+
+    // 2. Apply business rules:
+    // - Only show entries whose progress is <= current task progress (hides history when unchecking)
+    // - Only show the most recent entry for each unique progress level (removes duplicates from toggling)
+    // - Always keep "reset" entries
+    const uniqueProgressMap = new Map();
+    const resets = [];
+
+    progressRelated.forEach((a) => {
+      const details = a.details || {};
+      const progValue = Number(details.progress);
+      const isReset = String(details.notes || '').toLowerCase().includes('reset');
+
+      if (isReset) {
+        resets.push(a);
+        return;
+      }
+
+      // Rule: Hide entries higher than current progress
+      if (progValue > currentTaskProgress) return;
+
+      // Rule: Keep only the latest entry for this progress level
+      const existing = uniqueProgressMap.get(progValue);
+      if (!existing || (Number(a.id) > Number(existing.id))) {
+        uniqueProgressMap.set(progValue, a);
+      }
+    });
+
+    const result = [...Array.from(uniqueProgressMap.values()), ...resets];
+
+    // 3. Sort by ID descending (latest first)
+    return result.sort((a, b) => {
+      const aid = Number(a.id) || 0;
+      const bid = Number(b.id) || 0;
+      return bid - aid;
+    });
+  }, [task?.activities, task?.progress]);
 
   useEffect(() => {
     if (
