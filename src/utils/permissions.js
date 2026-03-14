@@ -235,14 +235,18 @@ export const getTaskPermissions = (permissions, department, userRole) => {
   const isAdminRole = role === 'super_admin' || role === 'admin';
   const isDeptHeadRole = role === 'dept_head';
   const isManagerRole = role === 'manager';
+  const isTeamLeadRole = role === 'team_lead';
+
   const deptKey = department && permissions?.[department]?.tasks ? department : null;
   const modulePermissions = (deptKey ? permissions?.[deptKey]?.tasks : null) 
     || permissions?.admin?.tasks 
+    || permissions?.tasking?.tasks 
     || permissions?.tasks 
     || {};
   const reports = modulePermissions?.reports || {};
   const actions =
     reports && Object.keys(reports).length > 0 ? reports : modulePermissions;
+  
   let scope = 'self';
   if (reports.view_all === true) {
     scope = 'org';
@@ -252,7 +256,17 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     scope = 'team';
   } else if (reports.view_own === true) {
     scope = 'self';
+  } else {
+    // Fallback based on role if no explicit scope is defined in reports
+    if (isAdminRole) {
+      scope = 'org';
+    } else if ((isManagerRole || isDeptHeadRole) && department) {
+      scope = 'department';
+    } else if (isTeamLeadRole) {
+      scope = 'team';
+    }
   }
+
   const canViewBase = actions.view === true;
   const canViewReports =
     reports.view_all === true ||

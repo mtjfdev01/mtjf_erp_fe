@@ -38,6 +38,20 @@
   transform: translateX(-1px);
 }
 
+.back-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-bg-tertiary);
+  color: var(--color-text-tertiary);
+  pointer-events: none;
+}
+
+.back-button.disabled:hover {
+  transform: none;
+  border-color: var(--color-bg-tertiary);
+}
+
 .page-title {
   margin: 0;
   font-size: var(--font-size-xl);

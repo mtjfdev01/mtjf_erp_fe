@@ -244,7 +244,10 @@ const AddTask = () => {
           procurements: '/procurements/tasks/view',
           accounts_and_finance: '/accounts_and_finance/tasks/view',
           fund_raising: '/fund_raising/tasks/view',
-          admin: '/admin/tasks/view'
+          admin: '/admin/tasks/view',
+          it: '/it/tasks/view',
+          hr: '/hr/tasks/view',
+          marketing: '/marketing/tasks/view',
         }[dept] || '/admin/tasks/view';
         navigate(`${viewBase}/${createdTaskId}`);
       }

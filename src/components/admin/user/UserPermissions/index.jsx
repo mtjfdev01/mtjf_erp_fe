@@ -139,7 +139,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       submodules: {
         online_donations: {
           label: 'Online Donations',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
         },
         offline_donations: {
           label: 'Offline Donations',

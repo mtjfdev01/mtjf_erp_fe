@@ -462,16 +462,31 @@ const ViewTask = () => {
   };
 
   const handleStatusUpdated = async (updated) => {
-    if (updated) {
+    if (updated && Array.isArray(updated.activities)) {
       setTask(updated);
     } else {
-      const action = statusModalAction;
-      const nextStatus = STATUS_TRANSITION_MAP[action];
-      if (nextStatus) {
-        setTask((prev) => ({
-          ...prev,
-          status: nextStatus,
-        }));
+      // If we don't have full data with activities, re-fetch the entire task
+      try {
+        const res = await axiosInstance.get(`/tasks/${id}`);
+        const fullTask = res.data?.data;
+        if (fullTask) {
+          setTask(fullTask);
+        }
+      } catch (e) {
+        console.error('Failed to re-fetch task after status update', e);
+        // Fallback to manual status update if fetch fails
+        if (updated) {
+          setTask(updated);
+        } else {
+          const action = statusModalAction;
+          const nextStatus = STATUS_TRANSITION_MAP[action];
+          if (nextStatus) {
+            setTask((prev) => ({
+              ...prev,
+              status: nextStatus,
+            }));
+          }
+        }
       }
     }
     try {
@@ -588,54 +603,77 @@ const ViewTask = () => {
 
   const dueInfo = getDueInfo(task?.due_date, task?.status);
 
-  const reassignmentActivities = Array.isArray(task?.activities)
-    ? [...task.activities]
-        .filter((a) => a && a.action === 'reassigned')
-        .sort((a, b) => {
-          const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return ad - bd;
-        })
-    : [];
+  const reassignmentActivities = useMemo(() => {
+    if (!task || !Array.isArray(task.activities)) return [];
+    return [...task.activities]
+      .filter((a) => a && a.action === 'reassigned')
+      .sort((a, b) => {
+        const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return ad - bd;
+      });
+  }, [task?.activities]);
 
-  const progressActivities = Array.isArray(task?.activities)
-    ? [...task.activities]
-        .filter((a) => {
-          if (!a) return false;
-          const action = String(a.action || '').toLowerCase();
-          if (
-            action === 'progress_updated' ||
-            action === 'progress_update' ||
-            action === 'update_progress' ||
-            action.includes('progress')
-          ) {
-            return true;
-          }
-          const details =
-            a && a.details && typeof a.details === 'object' ? a.details : {};
-          if (details && details.progress != null) {
-            return true;
-          }
-          const detailsText =
-            typeof a.details === 'string'
-              ? a.details
-              : typeof details.notes === 'string'
-              ? details.notes
-              : '';
-          if (
-            detailsText &&
-            detailsText.toLowerCase().includes('checklist items completed')
-          ) {
-            return true;
-          }
-          return false;
-        })
-        .sort((a, b) => {
-          const ad = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const bd = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return bd - ad;
-        })
-    : [];
+  const progressActivities = useMemo(() => {
+    if (!task || !Array.isArray(task.activities)) return [];
+
+    const currentTaskProgress = Number(task.progress) || 0;
+
+    // 1. Filter and identify progress-related activities
+    const progressRelated = task.activities.filter((a) => {
+      if (!a) return false;
+      const action = String(a.action || '').toLowerCase();
+      const details = a.details && typeof a.details === 'object' ? a.details : {};
+      
+      const isProgressAction = 
+        action === 'progress_updated' || 
+        action === 'progress_update' || 
+        action === 'update_progress' || 
+        action.includes('progress');
+
+      const hasProgressValue = details && details.progress != null;
+      const notesMatch = typeof details.notes === 'string' && 
+        details.notes.toLowerCase().includes('checklist items completed');
+
+      return isProgressAction || hasProgressValue || notesMatch;
+    });
+
+    // 2. Apply business rules:
+    // - Only show entries whose progress is <= current task progress (hides history when unchecking)
+    // - Only show the most recent entry for each unique progress level (removes duplicates from toggling)
+    // - Always keep "reset" entries
+    const uniqueProgressMap = new Map();
+    const resets = [];
+
+    progressRelated.forEach((a) => {
+      const details = a.details || {};
+      const progValue = Number(details.progress);
+      const isReset = String(details.notes || '').toLowerCase().includes('reset');
+
+      if (isReset) {
+        resets.push(a);
+        return;
+      }
+
+      // Rule: Hide entries higher than current progress
+      if (progValue > currentTaskProgress) return;
+
+      // Rule: Keep only the latest entry for this progress level
+      const existing = uniqueProgressMap.get(progValue);
+      if (!existing || (Number(a.id) > Number(existing.id))) {
+        uniqueProgressMap.set(progValue, a);
+      }
+    });
+
+    const result = [...Array.from(uniqueProgressMap.values()), ...resets];
+
+    // 3. Sort by ID descending (latest first)
+    return result.sort((a, b) => {
+      const aid = Number(a.id) || 0;
+      const bid = Number(b.id) || 0;
+      return bid - aid;
+    });
+  }, [task?.activities, task?.progress]);
 
   useEffect(() => {
     if (
@@ -821,6 +859,8 @@ const ViewTask = () => {
                   userRole={user?.role}
                   isAssignee={isCurrentUserAssignee}
                   currentUserId={user?.id}
+                  createdByUserId={task.created_by_id}
+                  reportedById={task.reported_by_id}
                   approvalRequiredUserIds={task.approval_required_user_ids}
                   approvalsMeta={approvalState?.approvals_meta}
                   currentUserHasActedOnApproval={currentUserHasActedOnApproval}
