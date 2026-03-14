@@ -3,6 +3,14 @@
   background: transparent;
   border-bottom: none;
 }
+.tasks-row--overdue {
+  background-color: #fff1f2 !important;
+}
+
+.tasks-row--overdue:hover {
+  background-color: #ffe4e6 !important;
+}
+
 .reassign-modal-confirm {
   padding: 0.6rem 1.2rem;
   background-color: #30AEE3;

@@ -278,7 +278,7 @@ const TaskReports = () => {
       try {
         const range = getDateRangeForDuration(duration);
         const department = selectedDepartment || undefined;
-        
+
         let statsDepartment;
         if (rolePerms.scope === 'org') {
           statsDepartment = department;
@@ -373,8 +373,8 @@ const TaskReports = () => {
   useEffect(() => {
     const palette = (n) => {
       const base = [
-        '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
-        '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf'
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
       ];
       const colors = [];
       for (let i = 0; i < n; i++) {
@@ -500,9 +500,53 @@ const TaskReports = () => {
         <PageHeader title="Tasks Dashboard" showBackButton={true} />
         <div className="task-dashboard-shell">
           <div className="task-dashboard-layout">
+            <div className="task-dashboard-filters">
+              <div className="task-filter-group">
+                <span className="task-filter-label">Duration</span>
+                <select
+                  className="task-filter-select"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                >
+                  <option value="today">Today</option>
+                  <option value="this_week">This Week</option>
+                  <option value="this_month">This Month</option>
+                  <option value="this_year">This Year</option>
+                  <option value="last_month">Last Month</option>
+                  <option value="last_year">Last Year</option>
+                </select>
+              </div>
+              {rolePerms.scope === 'org' && (
+                <div className="task-filter-group">
+                  <span className="task-filter-label">Department</span>
+                  <select
+                    className="task-filter-select"
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                  >
+                    <option value="">All</option>
+                    {Array.isArray(departments) &&
+                      departments.map((d) => (
+                        <option key={d} value={d}>
+                          {String(d)
+                            .split('_')
+                            .map((w) => w[0].toUpperCase() + w.slice(1))
+                            .join(' ')}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+              <div className="task-dashboard-header-bottom">
+                <div className="task-dashboard-duration">
+                  <span className="task-duration-pill">
+                    Duration: {durationLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
             <div className="task-dashboard-header">
               <div className="task-dashboard-header-bar">
-                <div className="task-dashboard-header-bar-title">Tasks Dashboard</div>
                 <div className="task-dashboard-header-bar-time">{formattedCurrentTime}</div>
               </div>
               <div className="task-dashboard-header-top">
@@ -548,54 +592,7 @@ const TaskReports = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="task-dashboard-header-bottom">
-                <div className="task-dashboard-duration">
-                  <span className="task-duration-pill">
-                    Duration: {durationLabel}
-                  </span>
-                </div>
-                <div className="task-dashboard-filters">
-                  <div className="task-filter-group">
-                    <span className="task-filter-label">Duration</span>
-                    <select
-                      className="task-filter-select"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                    >
-                      <option value="today">Today</option>
-                      <option value="this_week">This Week</option>
-                      <option value="this_month">This Month</option>
-                      <option value="this_year">This Year</option>
-                      <option value="last_month">Last Month</option>
-                      <option value="last_year">Last Year</option>
-                    </select>
-                  </div>
-                  {rolePerms.scope === 'org' && (
-                    <div className="task-filter-group">
-                      <span className="task-filter-label">Department</span>
-                      <select
-                        className="task-filter-select"
-                        value={selectedDepartment}
-                        onChange={(e) => setSelectedDepartment(e.target.value)}
-                      >
-                        <option value="">All</option>
-                        {Array.isArray(departments) &&
-                          departments.map((d) => (
-                            <option key={d} value={d}>
-                              {String(d)
-                                .split('_')
-                                .map((w) => w[0].toUpperCase() + w.slice(1))
-                                .join(' ')}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
-
             <div className="task-dashboard-main">
               <div className="task-dashboard-column">
                 <div className="task-dashboard-bottom-left">
@@ -604,12 +601,6 @@ const TaskReports = () => {
                       <h2 className="task-card-title">Status Overview</h2>
                     </div>
                     <div className="task-status-grid">
-                      {/* <div className="task-status-card task-status-card--success">
-                        <div className="task-status-label">Draft</div>
-                        <div className="task-status-value">
-                          {statsSummary.draft}/{statsSummary.total}
-                        </div>
-                      </div> */}
                       <div className="task-status-card task-status-card--danger">
                         <div className="task-status-label">Open</div>
                         <div className="task-status-value">

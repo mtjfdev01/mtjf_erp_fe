@@ -125,7 +125,18 @@ const TasksList = () => {
     const path = location.pathname || '';
     const segs = path.split('/').filter(Boolean);
     const first = segs[0] || '';
-    const known = new Set(['program','store','procurements','accounts_and_finance','fund_raising','admin']);
+    const known = new Set([
+      'program',
+      'store',
+      'procurements',
+      'accounts_and_finance',
+      'fund_raising',
+      'admin',
+      'it',
+      'hr',
+      'marketing',
+      'audio_video'
+    ]);
     return known.has(first) ? first : '';
   }, [location.pathname]);
 
@@ -253,15 +264,18 @@ const TasksList = () => {
       setError('');
       try {
         const scopedFilters = { ...filters };
-        const hasUserDeptFilter = !!scopedFilters.department;
-        if (!hasUserDeptFilter) {
-          if (taskPerms.reportScope === 'org') {
-          } else if (currentDeptFromPath) {
-            scopedFilters.department = currentDeptFromPath;
-          } else if (taskPerms.reportScope === 'department' || taskPerms.reportScope === 'team') {
+        
+        // Strictly enforce the department from the URL path (e.g., /store/tasks/list)
+        // This ensures that when a user clicks 'Store Tasks', they ONLY see store tasks.
+        if (currentDeptFromPath) {
+          scopedFilters.department = currentDeptFromPath;
+        } else if (!scopedFilters.department) {
+          // Fallback logic for general task views
+          if (taskPerms.reportScope === 'department' || taskPerms.reportScope === 'team') {
             scopedFilters.department = user?.department || '';
           }
         }
+        
         const payload = {
           pagination: { page: currentPage, pageSize, sortField, sortOrder },
           filters: scopedFilters
@@ -295,6 +309,16 @@ const TasksList = () => {
 
   const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : '-');
   const capitalize = (s) => s ? s.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') : '';
+
+  const isTaskOverdue = (task) => {
+    if (!task || !task.due_date) return false;
+    const due = new Date(task.due_date);
+    if (Number.isNaN(due.getTime())) return false;
+    const now = new Date();
+    const status = String(task.status || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled'].includes(status)) return false;
+    return now > due;
+  };
 
   const getDueInfo = (rawDate, statusRaw) => {
     if (!rawDate) return null;
@@ -801,7 +825,7 @@ const TasksList = () => {
                       </td>
                     </tr>
                     {myTasks.map((t) => (
-                      <tr key={t.id}>
+                      <tr key={t.id} className={isTaskOverdue(t) ? 'tasks-row--overdue' : ''}>
                         <td>
                           <input
                             type="checkbox"
@@ -901,7 +925,7 @@ const TasksList = () => {
                       </tr>
                     )}
                     {otherTasks.map((t) => (
-                      <tr key={t.id}>
+                      <tr key={t.id} className={isTaskOverdue(t) ? 'tasks-row--overdue' : ''}>
                         <td>
                           <input
                             type="checkbox"
