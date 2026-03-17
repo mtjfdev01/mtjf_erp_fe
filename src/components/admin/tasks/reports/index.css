@@ -570,9 +570,11 @@
   .task-dashboard-bottom-left {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .task-dashboard-title{
+
+  .task-dashboard-title {
     font-size: clamp(1.1rem, 4vw, 1.5rem);
   }
+
 }
 
 @media (max-width: 640px) {
@@ -605,6 +607,11 @@
   .task-card-chart--compact {
     height: 180px;
   }
+
+  .task-dashboard-shell {
+    margin: 0.5rem;
+    padding: 0.75rem;
+  }
 }
 
 @media (max-width: 480px) {
@@ -614,13 +621,16 @@
     gap: 0.5rem;
     font-size: 0.75rem;
   }
+
   .task-dashboard-title {
     font-size: 1.1rem !important;
   }
+
   .task-stat-card {
     min-height: 80px;
     padding: 0.75rem;
   }
+
   .task-stat-value {
     font-size: 1.1rem;
   }
@@ -630,12 +640,16 @@
   .task-dashboard-cards {
     grid-template-columns: 1fr;
   }
-  .task-status-grid, .task-priority-grid {
+
+  .task-status-grid,
+  .task-priority-grid {
     grid-template-columns: 1fr;
   }
+
   .task-card-chart {
     height: 220px;
   }
+
   .task-dashboard-shell {
     margin: 0.5rem;
     padding: 0.75rem;

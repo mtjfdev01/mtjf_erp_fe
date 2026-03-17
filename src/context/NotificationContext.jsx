@@ -7,7 +7,7 @@ import { playNotificationSound, enableNotificationSound, disableNotificationSoun
 const NotificationContext = createContext(null);
 
 export const NotificationProvider = ({ children }) => {
-  const { user } = useAuth();
+  const { user, permissions } = useAuth();
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -233,11 +233,27 @@ export const NotificationProvider = ({ children }) => {
 
   // Load initial data
   useEffect(() => {
-    if (user?.id) {
+    // Helper to check permission safely
+    const hasAccess = () => {
+      if (!user?.id) return false;
+      if (permissions?.super_admin) return true;
+      
+      // Check notifications.list_view
+      const path = 'notifications.list_view';
+      const parts = path.split('.');
+      let current = permissions;
+      for (const part of parts) {
+        if (!current || typeof current !== 'object') return false;
+        current = current[part];
+      }
+      return current === true;
+    };
+
+    if (hasAccess()) {
       fetchNotifications();
       fetchUnreadCount();
     }
-  }, [user, fetchNotifications, fetchUnreadCount]);
+  }, [user, permissions, fetchNotifications, fetchUnreadCount]);
 
   // Initialize sound preference on mount
   useEffect(() => {

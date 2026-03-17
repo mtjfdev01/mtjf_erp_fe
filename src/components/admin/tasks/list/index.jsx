@@ -117,10 +117,6 @@ const TasksList = () => {
     }
   ];
 
-  const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
-    [permissions, user?.department, user?.role],
-  );
   const currentDeptFromPath = useMemo(() => {
     const path = location.pathname || '';
     const segs = path.split('/').filter(Boolean);
@@ -140,6 +136,11 @@ const TasksList = () => {
     return known.has(first) ? first : '';
   }, [location.pathname]);
 
+  const taskPerms = useMemo(
+    () => getTaskPermissions(permissions || {}, currentDeptFromPath || user?.department, user?.role),
+    [permissions, user?.department, user?.role, currentDeptFromPath],
+  );
+
   const hoverText = (action) => {
     if (action === 'create' && !taskPerms.canCreate) return 'You do not have permission to create tasks';
     if (action === 'view' && !taskPerms.canView) return 'You do not have permission to view tasks';
@@ -157,6 +158,8 @@ const TasksList = () => {
   const isTaskAssignedToCurrentUser = useCallback(
     (task) => {
       if (!currentUserId || !task) return false;
+      
+      // Check if assigned
       const ids = Array.isArray(task.assigned_user_ids) ? task.assigned_user_ids : [];
       const metaIds = Array.isArray(task.assigned_users_meta)
         ? task.assigned_users_meta.map((m) => m?.user_id)
@@ -170,17 +173,15 @@ const TasksList = () => {
   );
 
   const myTasks = useMemo(
-    () => tasks.filter((t) => isTaskAssignedToCurrentUser(t)),
+    () => Array.isArray(tasks) ? tasks.filter((t) => isTaskAssignedToCurrentUser(t)) : [],
     [tasks, isTaskAssignedToCurrentUser]
   );
 
-  const otherTasks = useMemo(
-    () => {
-      if (!currentUserId) return tasks;
-      return tasks.filter((t) => !isTaskAssignedToCurrentUser(t));
-    },
-    [tasks, isTaskAssignedToCurrentUser, currentUserId]
-  );
+  const otherTasks = useMemo(() => {
+    if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
+    // Show all other tasks that are visible to the user (created by, reported by, department view, etc.)
+    return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t)) : [];
+  }, [tasks, isTaskAssignedToCurrentUser, currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -274,6 +275,12 @@ const TasksList = () => {
           if (taskPerms.reportScope === 'department' || taskPerms.reportScope === 'team') {
             scopedFilters.department = user?.department || '';
           }
+        }
+        
+        // If we are in a specific department view, force the filter to that department
+        // This overrides any other department filter that might be set
+        if (currentDeptFromPath) {
+          scopedFilters.department = currentDeptFromPath;
         }
         
         const payload = {
@@ -820,7 +827,7 @@ const TasksList = () => {
                     <tr className="tasks-group-row">
                       <td colSpan={8}>
                         <span className="tasks-group-label tasks-group-label--mine">
-                          Tasks assigned to you
+                          TASKS ASSIGNED TO YOU
                         </span>
                       </td>
                     </tr>
@@ -919,7 +926,7 @@ const TasksList = () => {
                       <tr className="tasks-group-row">
                         <td colSpan={8}>
                           <span className="tasks-group-label tasks-group-label--other">
-                            Other tasks
+                            OTHER TASKS
                           </span>
                         </td>
                       </tr>
