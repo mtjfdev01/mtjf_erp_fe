@@ -72,9 +72,28 @@ const TaskReports = () => {
   const [taskAggregates, setTaskAggregates] = useState({ users: [], projects: [], avgCompletionDays: null });
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  const currentDeptFromPath = useMemo(() => {
+    const path = location.pathname || '';
+    const segs = path.split('/').filter(Boolean);
+    const first = segs[0] || '';
+    const known = new Set([
+      'program',
+      'store',
+      'procurements',
+      'accounts_and_finance',
+      'fund_raising',
+      'admin',
+      'it',
+      'hr',
+      'marketing',
+      'audio_video'
+    ]);
+    return known.has(first) ? first : '';
+  }, [location.pathname]);
+
   const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
-    [permissions, user?.department, user?.role],
+    () => getTaskPermissions(permissions || {}, currentDeptFromPath || user?.department, user?.role),
+    [permissions, user?.department, user?.role, currentDeptFromPath],
   );
   const rolePerms = useMemo(() => {
     return {
@@ -277,10 +296,15 @@ const TaskReports = () => {
       setTaskStatsError(null);
       try {
         const range = getDateRangeForDuration(duration);
-        const department = selectedDepartment || undefined;
+        
+        // If we are in a specific department dashboard (e.g. /it/tasks/reports),
+        // we should always filter by that department.
+        const department = currentDeptFromPath || selectedDepartment || undefined;
 
         let statsDepartment;
-        if (rolePerms.scope === 'org') {
+        if (currentDeptFromPath) {
+          statsDepartment = currentDeptFromPath;
+        } else if (rolePerms.scope === 'org') {
           statsDepartment = department;
         } else if (rolePerms.scope === 'department' || rolePerms.scope === 'team') {
           statsDepartment = user?.department;
@@ -302,7 +326,9 @@ const TaskReports = () => {
           filters: {}
         };
 
-        if (rolePerms.scope === 'org') {
+        if (currentDeptFromPath) {
+          scopedFilters.filters.department = currentDeptFromPath;
+        } else if (rolePerms.scope === 'org') {
           if (department) {
             scopedFilters.filters.department = department;
           }
