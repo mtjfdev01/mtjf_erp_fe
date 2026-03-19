@@ -359,7 +359,7 @@ const ViewTask = () => {
 
   const isCurrentUserAssignee =
     user && assignedUsers && assignedUsers.some((u) => Number(u.id) === Number(user.id));
-  const canEditMovChecklist = canView && isCurrentUserAssignee;
+  const canEditMovChecklist = canView && isCurrentUserAssignee && statusLower !== 'closed';
   const canChangeStatusInline =
     canView &&
     isCurrentUserAssignee &&
