@@ -323,72 +323,20 @@ const TaskReports = () => {
         const statsData = statsRes.data?.data || statsRes.data;
         setTaskStats(statsData || null);
 
-        const scopedFilters = {
-          pagination: { page: 1, pageSize: 500, sortField: 'created_at', sortOrder: 'DESC' },
-          filters: {}
+        // Fetch user-wise and project-wise aggregates from the reports endpoint
+        const reportsParams = {
+          start_date: range.from,
+          end_date: range.to,
+          department: statsDepartment
         };
+        const reportsRes = await axiosInstance.get('/tasks/reports', { params: reportsParams });
+        const reportsData = reportsRes.data?.data || reportsRes.data;
 
-        if (currentDeptFromPath) {
-          scopedFilters.filters.department = currentDeptFromPath;
-        } else if (rolePerms.scope === 'org') {
-          if (department) {
-            scopedFilters.filters.department = department;
-          }
-        } else if (rolePerms.scope === 'department' || rolePerms.scope === 'team') {
-          scopedFilters.filters.department = user?.department;
-        } else {
-          scopedFilters.filters.department = user?.department;
-        }
-        const listRes = await axiosInstance.post('/tasks/search', scopedFilters);
-        const rawList = listRes.data?.data || [];
-
-        const fromDate = new Date(range.from);
-        const toDate = new Date(range.to);
-        const list = rawList.filter((t) => {
-          const baseDateValue = t?.completed_date || t?.created_at || t?.start_date;
-          if (!baseDateValue) return false;
-          const baseDate = new Date(baseDateValue);
-          if (Number.isNaN(baseDate.getTime())) return false;
-          return baseDate >= fromDate && baseDate <= toDate;
+        setTaskAggregates({
+          users: reportsData?.users || [],
+          projects: reportsData?.projects || [],
+          avgCompletionDays: reportsData?.avgCompletionDays || null
         });
-
-        const userCountsMap = {};
-        const projectCountsMap = {};
-        let totalDays = 0;
-        let completedCount = 0;
-        list.forEach(t => {
-          if (Array.isArray(t.assigned_users_meta) && t.assigned_users_meta.length > 0) {
-            t.assigned_users_meta.forEach((m) => {
-              if (!m || m.user_id == null) return;
-              const userKey = String(m.user_id);
-              userCountsMap[userKey] = (userCountsMap[userKey] || 0) + 1;
-            });
-          } else if (Array.isArray(t.assigned_user_ids) && t.assigned_user_ids.length > 0) {
-            t.assigned_user_ids.forEach((id) => {
-              const userKey = String(id);
-              userCountsMap[userKey] = (userCountsMap[userKey] || 0) + 1;
-            });
-          } else {
-            const userKey = 'Unassigned';
-            userCountsMap[userKey] = (userCountsMap[userKey] || 0) + 1;
-          }
-          const projectKey = t?.project_name || 'No Project';
-          projectCountsMap[projectKey] = (projectCountsMap[projectKey] || 0) + 1;
-          if (t?.start_date && t?.completed_date) {
-            const start = new Date(t.start_date);
-            const completed = new Date(t.completed_date);
-            const diffMs = completed.getTime() - start.getTime();
-            const days = diffMs / (1000 * 60 * 60 * 24);
-            if (!isNaN(days) && days >= 0) {
-              totalDays += days;
-              completedCount += 1;
-            }
-          }
-        });
-        const users = Object.entries(userCountsMap).map(([label, count]) => ({ label, count }));
-        const projects = Object.entries(projectCountsMap).map(([label, count]) => ({ label, count }));
-        const avgCompletionDays = completedCount > 0 ? +(totalDays / completedCount).toFixed(2) : null;
-        setTaskAggregates({ users, projects, avgCompletionDays });
       } catch (e) {
         setTaskStatsError(e.response?.data?.message || e.message || 'Failed to fetch task reports');
       } finally {

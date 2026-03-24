@@ -285,7 +285,8 @@ const TasksList = () => {
         
         const payload = {
           pagination: { page: currentPage, pageSize, sortField, sortOrder },
-          filters: scopedFilters
+          filters: scopedFilters,
+          strictDepartment: !!currentDeptFromPath // Set to true if department comes from path (sidebar link)
         };
         const res = await axiosInstance.post('/tasks/search', payload);
         const list = res.data.data || [];
