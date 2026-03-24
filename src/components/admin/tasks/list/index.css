@@ -114,7 +114,7 @@
   padding: 0.6rem 0.9rem;
   border-radius: 14px;
   background: linear-gradient(135deg, #fef3c7, #fffbeb);
-  border: 1px solid #f97316;
+  border: 1px solid #06bbe1;
   box-shadow: 0 8px 18px rgba(251, 191, 36, 0.35);
   cursor: pointer;
   transition: background-color 0.15s ease, box-shadow 0.15s ease,
@@ -155,7 +155,8 @@
 
 .tasks-approval-count {
   font-size: 0.8rem;
-  color: #30AEE3;
+  background-color: #30AEE3;
+  color: #ffffff;
   border: 1px solid #53B048;
   padding: 0.3rem 0.6rem;
   border-radius: 8px;
