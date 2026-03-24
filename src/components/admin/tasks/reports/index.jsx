@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { Chart, registerables } from 'chart.js';
@@ -63,6 +64,7 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
 
 const TaskReports = () => {
   const { user, permissions } = useAuth();
+  const location = useLocation();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -394,7 +396,7 @@ const TaskReports = () => {
       }
     };
     fetchTaskReports();
-  }, [duration, selectedDepartment, rolePerms.scope, user?.department, user?.id]);
+  }, [duration, selectedDepartment, rolePerms.scope, user?.department, user?.id, currentDeptFromPath]);
 
   useEffect(() => {
     const palette = (n) => {
@@ -542,7 +544,7 @@ const TaskReports = () => {
                   <option value="last_year">Last Year</option>
                 </select>
               </div>
-              {rolePerms.scope === 'org' && (
+              {rolePerms.scope === 'org' && !currentDeptFromPath && (
                 <div className="task-filter-group">
                   <span className="task-filter-label">Department</span>
                   <select
