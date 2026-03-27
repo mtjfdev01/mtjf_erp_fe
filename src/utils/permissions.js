@@ -234,8 +234,11 @@ export const getTaskPermissions = (permissions, department, userRole) => {
   const role = String(userRole || '').toLowerCase();
   const isAdminRole = role === 'super_admin' || role === 'admin';
   const isDeptHeadRole = role === 'dept_head';
-  const isManagerRole = role === 'manager';
-  const isTeamLeadRole = role === 'team_lead';
+  const isManagerRole = role === 'manager' || role === 'assistant_manager';
+  const isTeamLeadRole = role === 'team_lead' || role === 'coordinator';
+  const isStaffRole = role === 'staff' || role === 'officer' || role === 'support' || role === 'analyst' || role === 'developer' || role === 'it_support' || role === 'user';
+  const isFieldOfficerRole = role === 'field_officer';
+  const isVolunteerRole = role === 'volunteer';
 
   const deptKey = department && permissions?.[department]?.tasks ? department : null;
   const modulePermissions = (deptKey ? permissions?.[deptKey]?.tasks : null) 
@@ -244,8 +247,11 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     || permissions?.tasks 
     || {};
   const reports = modulePermissions?.reports || {};
-  const actions =
-    reports && Object.keys(reports).length > 0 ? reports : modulePermissions;
+  // actions should combine base module permissions and report permissions
+  const actions = {
+    ...modulePermissions,
+    ...reports
+  };
   
   let scope = 'self';
   if (reports.view_all === true) {
@@ -260,14 +266,16 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     // Fallback based on role if no explicit scope is defined in reports
     if (isAdminRole) {
       scope = 'org';
-    } else if ((isManagerRole || isDeptHeadRole) && department) {
+    } else if (isDeptHeadRole) {
       scope = 'department';
-    } else if (isTeamLeadRole) {
+    } else if (isManagerRole || isTeamLeadRole) {
       scope = 'team';
+    } else if (isStaffRole || isFieldOfficerRole || isVolunteerRole) {
+      scope = 'self';
     }
   }
 
-  const canViewBase = actions.view === true;
+  const canViewBase = actions.view === true || actions.list_view === true;
   const canViewReports =
     reports.view_all === true ||
     reports.view_dept === true ||
@@ -281,7 +289,7 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     permissions?.super_admin === true;
   const canApproveBase =
     actions.approve === true || permissions?.super_admin === true;
-  const canApproveByRole = isAdminRole || isDeptHeadRole || isManagerRole;
+  const canApproveByRole = isAdminRole || isDeptHeadRole || isManagerRole || isTeamLeadRole;
   return {
     canView: canViewBase || canViewReports || permissions?.super_admin === true,
     canCreate: actions.create === true || permissions?.super_admin === true,

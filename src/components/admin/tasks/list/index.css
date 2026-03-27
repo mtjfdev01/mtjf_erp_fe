@@ -3,6 +3,14 @@
   background: transparent;
   border-bottom: none;
 }
+.tasks-row--overdue {
+  background-color: #fff1f2 !important;
+}
+
+.tasks-row--overdue:hover {
+  background-color: #ffe4e6 !important;
+}
+
 .reassign-modal-confirm {
   padding: 0.6rem 1.2rem;
   background-color: #30AEE3;
@@ -17,11 +25,11 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.7rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  letter-spacing: 0.03em;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
@@ -106,7 +114,7 @@
   padding: 0.6rem 0.9rem;
   border-radius: 14px;
   background: linear-gradient(135deg, #fef3c7, #fffbeb);
-  border: 1px solid #f97316;
+  border: 1px solid #06bbe1;
   box-shadow: 0 8px 18px rgba(251, 191, 36, 0.35);
   cursor: pointer;
   transition: background-color 0.15s ease, box-shadow 0.15s ease,
@@ -147,7 +155,8 @@
 
 .tasks-approval-count {
   font-size: 0.8rem;
-  color: #30AEE3;
+  background-color: #30AEE3;
+  color: #ffffff;
   border: 1px solid #53B048;
   padding: 0.3rem 0.6rem;
   border-radius: 8px;

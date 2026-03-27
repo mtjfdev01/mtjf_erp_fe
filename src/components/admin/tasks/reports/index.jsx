@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { Chart, registerables } from 'chart.js';
@@ -63,6 +64,7 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
 
 const TaskReports = () => {
   const { user, permissions } = useAuth();
+  const location = useLocation();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
   const [selectedDepartment, setSelectedDepartment] = useState('');
@@ -72,9 +74,28 @@ const TaskReports = () => {
   const [taskAggregates, setTaskAggregates] = useState({ users: [], projects: [], avgCompletionDays: null });
   const [currentTime, setCurrentTime] = useState(new Date());
 
+  const currentDeptFromPath = useMemo(() => {
+    const path = location.pathname || '';
+    const segs = path.split('/').filter(Boolean);
+    const first = segs[0] || '';
+    const known = new Set([
+      'program',
+      'store',
+      'procurements',
+      'accounts_and_finance',
+      'fund_raising',
+      'admin',
+      'it',
+      'hr',
+      'marketing',
+      'audio_video'
+    ]);
+    return known.has(first) ? first : '';
+  }, [location.pathname]);
+
   const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
-    [permissions, user?.department, user?.role],
+    () => getTaskPermissions(permissions || {}, currentDeptFromPath || user?.department, user?.role),
+    [permissions, user?.department, user?.role, currentDeptFromPath],
   );
   const rolePerms = useMemo(() => {
     return {
@@ -277,10 +298,15 @@ const TaskReports = () => {
       setTaskStatsError(null);
       try {
         const range = getDateRangeForDuration(duration);
-        const department = selectedDepartment || undefined;
         
+        // If we are in a specific department dashboard (e.g. /it/tasks/reports),
+        // we should always filter by that department.
+        const department = currentDeptFromPath || selectedDepartment || undefined;
+
         let statsDepartment;
-        if (rolePerms.scope === 'org') {
+        if (currentDeptFromPath) {
+          statsDepartment = currentDeptFromPath;
+        } else if (rolePerms.scope === 'org') {
           statsDepartment = department;
         } else if (rolePerms.scope === 'department' || rolePerms.scope === 'team') {
           statsDepartment = user?.department;
@@ -297,70 +323,20 @@ const TaskReports = () => {
         const statsData = statsRes.data?.data || statsRes.data;
         setTaskStats(statsData || null);
 
-        const scopedFilters = {
-          pagination: { page: 1, pageSize: 500, sortField: 'created_at', sortOrder: 'DESC' },
-          filters: {}
+        // Fetch user-wise and project-wise aggregates from the reports endpoint
+        const reportsParams = {
+          start_date: range.from,
+          end_date: range.to,
+          department: statsDepartment
         };
+        const reportsRes = await axiosInstance.get('/tasks/reports', { params: reportsParams });
+        const reportsData = reportsRes.data?.data || reportsRes.data;
 
-        if (rolePerms.scope === 'org') {
-          if (department) {
-            scopedFilters.filters.department = department;
-          }
-        } else if (rolePerms.scope === 'department' || rolePerms.scope === 'team') {
-          scopedFilters.filters.department = user?.department;
-        } else {
-          scopedFilters.filters.department = user?.department;
-        }
-        const listRes = await axiosInstance.post('/tasks/search', scopedFilters);
-        const rawList = listRes.data?.data || [];
-
-        const fromDate = new Date(range.from);
-        const toDate = new Date(range.to);
-        const list = rawList.filter((t) => {
-          const baseDateValue = t?.completed_date || t?.created_at || t?.start_date;
-          if (!baseDateValue) return false;
-          const baseDate = new Date(baseDateValue);
-          if (Number.isNaN(baseDate.getTime())) return false;
-          return baseDate >= fromDate && baseDate <= toDate;
+        setTaskAggregates({
+          users: reportsData?.users || [],
+          projects: reportsData?.projects || [],
+          avgCompletionDays: reportsData?.avgCompletionDays || null
         });
-
-        const userCountsMap = {};
-        const projectCountsMap = {};
-        let totalDays = 0;
-        let completedCount = 0;
-        list.forEach(t => {
-          if (Array.isArray(t.assigned_users_meta) && t.assigned_users_meta.length > 0) {
-            t.assigned_users_meta.forEach((m) => {
-              if (!m || m.user_id == null) return;
-              const userKey = String(m.user_id);
-              userCountsMap[userKey] = (userCountsMap[userKey] || 0) + 1;
-            });
-          } else if (Array.isArray(t.assigned_user_ids) && t.assigned_user_ids.length > 0) {
-            t.assigned_user_ids.forEach((id) => {
-              const userKey = String(id);
-              userCountsMap[userKey] = (userCountsMap[userKey] || 0) + 1;
-            });
-          } else {
-            const userKey = 'Unassigned';
-            userCountsMap[userKey] = (userCountsMap[userKey] || 0) + 1;
-          }
-          const projectKey = t?.project_name || 'No Project';
-          projectCountsMap[projectKey] = (projectCountsMap[projectKey] || 0) + 1;
-          if (t?.start_date && t?.completed_date) {
-            const start = new Date(t.start_date);
-            const completed = new Date(t.completed_date);
-            const diffMs = completed.getTime() - start.getTime();
-            const days = diffMs / (1000 * 60 * 60 * 24);
-            if (!isNaN(days) && days >= 0) {
-              totalDays += days;
-              completedCount += 1;
-            }
-          }
-        });
-        const users = Object.entries(userCountsMap).map(([label, count]) => ({ label, count }));
-        const projects = Object.entries(projectCountsMap).map(([label, count]) => ({ label, count }));
-        const avgCompletionDays = completedCount > 0 ? +(totalDays / completedCount).toFixed(2) : null;
-        setTaskAggregates({ users, projects, avgCompletionDays });
       } catch (e) {
         setTaskStatsError(e.response?.data?.message || e.message || 'Failed to fetch task reports');
       } finally {
@@ -368,13 +344,13 @@ const TaskReports = () => {
       }
     };
     fetchTaskReports();
-  }, [duration, selectedDepartment, rolePerms.scope, user?.department, user?.id]);
+  }, [duration, selectedDepartment, rolePerms.scope, user?.department, user?.id, currentDeptFromPath]);
 
   useEffect(() => {
     const palette = (n) => {
       const base = [
-        '#1f77b4','#ff7f0e','#2ca02c','#d62728','#9467bd',
-        '#8c564b','#e377c2','#7f7f7f','#bcbd22','#17becf'
+        '#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
+        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'
       ];
       const colors = [];
       for (let i = 0; i < n; i++) {
@@ -500,9 +476,53 @@ const TaskReports = () => {
         <PageHeader title="Tasks Dashboard" showBackButton={true} />
         <div className="task-dashboard-shell">
           <div className="task-dashboard-layout">
+            <div className="task-dashboard-filters">
+              <div className="task-filter-group">
+                <span className="task-filter-label">Duration</span>
+                <select
+                  className="task-filter-select"
+                  value={duration}
+                  onChange={(e) => setDuration(e.target.value)}
+                >
+                  <option value="today">Today</option>
+                  <option value="this_week">This Week</option>
+                  <option value="this_month">This Month</option>
+                  <option value="this_year">This Year</option>
+                  <option value="last_month">Last Month</option>
+                  <option value="last_year">Last Year</option>
+                </select>
+              </div>
+              {rolePerms.scope === 'org' && !currentDeptFromPath && (
+                <div className="task-filter-group">
+                  <span className="task-filter-label">Department</span>
+                  <select
+                    className="task-filter-select"
+                    value={selectedDepartment}
+                    onChange={(e) => setSelectedDepartment(e.target.value)}
+                  >
+                    <option value="">All</option>
+                    {Array.isArray(departments) &&
+                      departments.map((d) => (
+                        <option key={d} value={d}>
+                          {String(d)
+                            .split('_')
+                            .map((w) => w[0].toUpperCase() + w.slice(1))
+                            .join(' ')}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+              <div className="task-dashboard-header-bottom">
+                <div className="task-dashboard-duration">
+                  <span className="task-duration-pill">
+                    Duration: {durationLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
             <div className="task-dashboard-header">
               <div className="task-dashboard-header-bar">
-                <div className="task-dashboard-header-bar-title">Tasks Dashboard</div>
                 <div className="task-dashboard-header-bar-time">{formattedCurrentTime}</div>
               </div>
               <div className="task-dashboard-header-top">
@@ -548,54 +568,7 @@ const TaskReports = () => {
                   </div>
                 </div>
               </div>
-
-              <div className="task-dashboard-header-bottom">
-                <div className="task-dashboard-duration">
-                  <span className="task-duration-pill">
-                    Duration: {durationLabel}
-                  </span>
-                </div>
-                <div className="task-dashboard-filters">
-                  <div className="task-filter-group">
-                    <span className="task-filter-label">Duration</span>
-                    <select
-                      className="task-filter-select"
-                      value={duration}
-                      onChange={(e) => setDuration(e.target.value)}
-                    >
-                      <option value="today">Today</option>
-                      <option value="this_week">This Week</option>
-                      <option value="this_month">This Month</option>
-                      <option value="this_year">This Year</option>
-                      <option value="last_month">Last Month</option>
-                      <option value="last_year">Last Year</option>
-                    </select>
-                  </div>
-                  {rolePerms.scope === 'org' && (
-                    <div className="task-filter-group">
-                      <span className="task-filter-label">Department</span>
-                      <select
-                        className="task-filter-select"
-                        value={selectedDepartment}
-                        onChange={(e) => setSelectedDepartment(e.target.value)}
-                      >
-                        <option value="">All</option>
-                        {Array.isArray(departments) &&
-                          departments.map((d) => (
-                            <option key={d} value={d}>
-                              {String(d)
-                                .split('_')
-                                .map((w) => w[0].toUpperCase() + w.slice(1))
-                                .join(' ')}
-                            </option>
-                          ))}
-                      </select>
-                    </div>
-                  )}
-                </div>
-              </div>
             </div>
-
             <div className="task-dashboard-main">
               <div className="task-dashboard-column">
                 <div className="task-dashboard-bottom-left">
@@ -604,12 +577,6 @@ const TaskReports = () => {
                       <h2 className="task-card-title">Status Overview</h2>
                     </div>
                     <div className="task-status-grid">
-                      {/* <div className="task-status-card task-status-card--success">
-                        <div className="task-status-label">Draft</div>
-                        <div className="task-status-value">
-                          {statsSummary.draft}/{statsSummary.total}
-                        </div>
-                      </div> */}
                       <div className="task-status-card task-status-card--danger">
                         <div className="task-status-label">Open</div>
                         <div className="task-status-value">

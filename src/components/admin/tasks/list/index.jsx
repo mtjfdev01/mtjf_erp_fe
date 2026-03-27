@@ -117,17 +117,29 @@ const TasksList = () => {
     }
   ];
 
-  const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
-    [permissions, user?.department, user?.role],
-  );
   const currentDeptFromPath = useMemo(() => {
     const path = location.pathname || '';
     const segs = path.split('/').filter(Boolean);
     const first = segs[0] || '';
-    const known = new Set(['program','store','procurements','accounts_and_finance','fund_raising','admin']);
+    const known = new Set([
+      'program',
+      'store',
+      'procurements',
+      'accounts_and_finance',
+      'fund_raising',
+      'admin',
+      'it',
+      'hr',
+      'marketing',
+      'audio_video'
+    ]);
     return known.has(first) ? first : '';
   }, [location.pathname]);
+
+  const taskPerms = useMemo(
+    () => getTaskPermissions(permissions || {}, currentDeptFromPath || user?.department, user?.role),
+    [permissions, user?.department, user?.role, currentDeptFromPath],
+  );
 
   const hoverText = (action) => {
     if (action === 'create' && !taskPerms.canCreate) return 'You do not have permission to create tasks';
@@ -146,6 +158,8 @@ const TasksList = () => {
   const isTaskAssignedToCurrentUser = useCallback(
     (task) => {
       if (!currentUserId || !task) return false;
+      
+      // Check if assigned
       const ids = Array.isArray(task.assigned_user_ids) ? task.assigned_user_ids : [];
       const metaIds = Array.isArray(task.assigned_users_meta)
         ? task.assigned_users_meta.map((m) => m?.user_id)
@@ -159,17 +173,15 @@ const TasksList = () => {
   );
 
   const myTasks = useMemo(
-    () => tasks.filter((t) => isTaskAssignedToCurrentUser(t)),
+    () => Array.isArray(tasks) ? tasks.filter((t) => isTaskAssignedToCurrentUser(t)) : [],
     [tasks, isTaskAssignedToCurrentUser]
   );
 
-  const otherTasks = useMemo(
-    () => {
-      if (!currentUserId) return tasks;
-      return tasks.filter((t) => !isTaskAssignedToCurrentUser(t));
-    },
-    [tasks, isTaskAssignedToCurrentUser, currentUserId]
-  );
+  const otherTasks = useMemo(() => {
+    if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
+    // Show all other tasks that are visible to the user (created by, reported by, department view, etc.)
+    return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t)) : [];
+  }, [tasks, isTaskAssignedToCurrentUser, currentUserId]);
 
   useEffect(() => {
     if (!currentUserId) {
@@ -253,18 +265,28 @@ const TasksList = () => {
       setError('');
       try {
         const scopedFilters = { ...filters };
-        const hasUserDeptFilter = !!scopedFilters.department;
-        if (!hasUserDeptFilter) {
-          if (taskPerms.reportScope === 'org') {
-          } else if (currentDeptFromPath) {
-            scopedFilters.department = currentDeptFromPath;
-          } else if (taskPerms.reportScope === 'department' || taskPerms.reportScope === 'team') {
+        
+        // Strictly enforce the department from the URL path (e.g., /store/tasks/list)
+        // This ensures that when a user clicks 'Store Tasks', they ONLY see store tasks.
+        if (currentDeptFromPath) {
+          scopedFilters.department = currentDeptFromPath;
+        } else if (!scopedFilters.department) {
+          // Fallback logic for general task views
+          if (taskPerms.reportScope === 'department' || taskPerms.reportScope === 'team') {
             scopedFilters.department = user?.department || '';
           }
         }
+        
+        // If we are in a specific department view, force the filter to that department
+        // This overrides any other department filter that might be set
+        if (currentDeptFromPath) {
+          scopedFilters.department = currentDeptFromPath;
+        }
+        
         const payload = {
           pagination: { page: currentPage, pageSize, sortField, sortOrder },
-          filters: scopedFilters
+          filters: scopedFilters,
+          strictDepartment: !!currentDeptFromPath // Set to true if department comes from path (sidebar link)
         };
         const res = await axiosInstance.post('/tasks/search', payload);
         const list = res.data.data || [];
@@ -295,6 +317,16 @@ const TasksList = () => {
 
   const formatDate = (d) => (d ? new Date(d).toLocaleDateString() : '-');
   const capitalize = (s) => s ? s.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') : '';
+
+  const isTaskOverdue = (task) => {
+    if (!task || !task.due_date) return false;
+    const due = new Date(task.due_date);
+    if (Number.isNaN(due.getTime())) return false;
+    const now = new Date();
+    const status = String(task.status || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled'].includes(status)) return false;
+    return now > due;
+  };
 
   const getDueInfo = (rawDate, statusRaw) => {
     if (!rawDate) return null;
@@ -796,12 +828,12 @@ const TasksList = () => {
                     <tr className="tasks-group-row">
                       <td colSpan={8}>
                         <span className="tasks-group-label tasks-group-label--mine">
-                          Tasks assigned to you
+                          TASKS ASSIGNED TO YOU
                         </span>
                       </td>
                     </tr>
                     {myTasks.map((t) => (
-                      <tr key={t.id}>
+                      <tr key={t.id} className={isTaskOverdue(t) ? 'tasks-row--overdue' : ''}>
                         <td>
                           <input
                             type="checkbox"
@@ -895,13 +927,13 @@ const TasksList = () => {
                       <tr className="tasks-group-row">
                         <td colSpan={8}>
                           <span className="tasks-group-label tasks-group-label--other">
-                            Other tasks
+                            OTHER TASKS
                           </span>
                         </td>
                       </tr>
                     )}
                     {otherTasks.map((t) => (
-                      <tr key={t.id}>
+                      <tr key={t.id} className={isTaskOverdue(t) ? 'tasks-row--overdue' : ''}>
                         <td>
                           <input
                             type="checkbox"
