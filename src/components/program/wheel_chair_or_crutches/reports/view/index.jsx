@@ -4,34 +4,56 @@ import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
+import axiosInstance from '../../../../../utils/axios';
 
 const ViewWheelChairOrCrutchesReport = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [report, setReport] = useState(null);
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(true);
 
-    // Mock data fetching
     useEffect(() => {
-        const fetchReport = () => {
-            const mockReports = [
-                {
-                  id: 1,
-                  date: '2024-07-01',
-                  distributions: [
-                    { id: 1, type: 'Wheel Chair', gender: 'Male', vulnerabilities: { 'Orphans': 5, 'Divorced': 3, 'Disable': 2, 'Indegent': 4 } },
-                    { id: 2, type: 'Crutches', gender: 'Female', vulnerabilities: { 'Orphans': 2, 'Divorced': 1, 'Disable': 1, 'Indegent': 3 } }
-                  ]
-                },
-            ];
-            const reportToView = mockReports.find(r => r.id === parseInt(id));
-            if (reportToView) {
-                setReport(reportToView);
-            } else {
-                setError("Report not found");
+        const fetchReport = async () => {
+            try {
+                setLoading(true);
+                setError('');
+
+                // Get single record by id (gives date)
+                const response = await axiosInstance.get(`/program/wheel_chair_or_crutches/reports/${id}`);
+                if (!response.data?.success) {
+                    setError(response.data?.message || 'Report not found');
+                    setReport(null);
+                    return;
+                }
+
+                const single = response.data.data;
+                const date = single?.date instanceof Date
+                    ? single.date.toISOString().split('T')[0]
+                    : new Date(single?.date).toISOString().split('T')[0];
+
+                // Get full grouped report by date (distributions)
+                const dateResponse = await axiosInstance.get(`/program/wheel_chair_or_crutches/reports/date/${date}`);
+                if (!dateResponse.data?.success) {
+                    setError(dateResponse.data?.message || 'Failed to fetch report details');
+                    setReport(null);
+                    return;
+                }
+
+                setReport({
+                    id: single.id,
+                    date,
+                    distributions: dateResponse.data.data?.distributions || [],
+                });
+            } catch (err) {
+                setError(err.response?.data?.message || 'Failed to fetch report data. Please try again.');
+                setReport(null);
+            } finally {
+                setLoading(false);
             }
         };
-        fetchReport();
+
+        if (id) fetchReport();
     }, [id]);
     
     const formatDate = (dateString) => {
@@ -61,6 +83,10 @@ const ViewWheelChairOrCrutchesReport = () => {
         );
     }
     
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
     if (!report) {
         return <div>Loading...</div>;
     }

@@ -52,7 +52,7 @@ const UpdateApplicationReport = () => {
     const updatedApplications = [...applications];
     const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
     if (numericFields.includes(field)) {
-      updatedApplications[index][field] = parseInt(value) || 0;
+      updatedApplications[index][field] = value === '' ? '' : parseInt(value, 10) || 0;
     } else {
       updatedApplications[index][field] = value;
     }
@@ -117,7 +117,16 @@ const UpdateApplicationReport = () => {
     try {
       const reportPayload = {
         ...reportData,
-        applications: applications
+        applications: applications.map((app) => ({
+          ...app,
+          pending_last_month: app.pending_last_month === '' ? 0 : app.pending_last_month,
+          application_count: app.application_count === '' ? 0 : app.application_count,
+          investigation_count: app.investigation_count === '' ? 0 : app.investigation_count,
+          verified_count: app.verified_count === '' ? 0 : app.verified_count,
+          approved_count: app.approved_count === '' ? 0 : app.approved_count,
+          rejected_count: app.rejected_count === '' ? 0 : app.rejected_count,
+          pending_count: app.pending_count === '' ? 0 : app.pending_count,
+        }))
       };
       await axiosInstance.patch(`/program/application-reports/${id}`, reportPayload);
       

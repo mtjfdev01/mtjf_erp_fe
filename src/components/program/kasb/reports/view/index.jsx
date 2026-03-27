@@ -20,21 +20,43 @@ const ViewKasbReport = () => {
     const fetchReport = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`/program/kasb/reports/date/${id}`);
-            
+            setError('');
+
+            let dateKey = id;
+            const isDateKey = typeof id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(id);
+
+            // If the route param isn't a date, treat it as a report row id:
+            // GET /:id -> derive date -> GET /date/:date.
+            if (!isDateKey) {
+                const single = await axios.get(`/program/kasb/reports/${id}`);
+                if (!single.data?.success) {
+                    setError(single.data?.message || 'Report not found');
+                    setReport(null);
+                    return;
+                }
+
+                const singleData = single.data.data;
+                dateKey = singleData?.date instanceof Date
+                    ? singleData.date.toISOString().split('T')[0]
+                    : new Date(singleData?.date).toISOString().split('T')[0];
+            }
+
+            const response = await axios.get(`/program/kasb/reports/date/${dateKey}`);
             if (response.data.success) {
                 const reportData = response.data.data;
                 setReport({
-                    id: reportData.date, // Using date as ID for grouping
+                    id: reportData.date, // Use date as ID for grouping/actions
                     date: reportData.date,
                     centers: reportData.centers || []
                 });
             } else {
                 setError(response.data.message || 'Report not found');
+                setReport(null);
             }
         } catch (err) {
             console.error('Error fetching kasb report:', err);
             setError(err.response?.data?.message || 'Failed to fetch report');
+            setReport(null);
         } finally {
             setLoading(false);
         }

@@ -9,10 +9,16 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import { programs_list } from '../../../../utils/program';
 import './CreateApplication.css';
 
 const CreateApplication = ({ applicationData = null, isEdit = false }) => {
   const navigate = useNavigate();
+
+  const projectOptions = programs_list.map((program) => ({
+    value: program.key,
+    label: program.label,
+  }));
   
   // Initialize with one empty application
   const [applications, setApplications] = useState(
@@ -44,7 +50,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
     
     if (numericFields.includes(field)) {
-      updatedApplications[index][field] = parseInt(value) || 0;
+      updatedApplications[index][field] = value === '' ? '' : parseInt(value, 10) || 0;
     } else {
       updatedApplications[index][field] = value;
     }
@@ -121,7 +127,16 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       
       const reportPayload = {
         ...reportData,
-        applications: applications
+        applications: applications.map((app) => ({
+          ...app,
+          pending_last_month: app.pending_last_month === '' ? 0 : app.pending_last_month,
+          application_count: app.application_count === '' ? 0 : app.application_count,
+          investigation_count: app.investigation_count === '' ? 0 : app.investigation_count,
+          verified_count: app.verified_count === '' ? 0 : app.verified_count,
+          approved_count: app.approved_count === '' ? 0 : app.approved_count,
+          rejected_count: app.rejected_count === '' ? 0 : app.rejected_count,
+          pending_count: app.pending_count === '' ? 0 : app.pending_count,
+        }))
       };
       
       await axiosInstance[method](endpoint, reportPayload);
@@ -214,12 +229,15 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                   </div>
 
                   <div className="form-grid">
-                    <FormInput
+                    <FormSelect
                       name={`project-${index}`}
                       label="Project Name"
                       value={application.project}
                       onChange={(e) => handleApplicationChange(index, 'project', e.target.value)}
+                      options={projectOptions}
                       required
+                      showDefaultOption={true}
+                      defaultOptionText="Select Project"
                     />
 
                     <FormInput
@@ -228,8 +246,8 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                       type="number"
                       value={application.pending_last_month}
                       onChange={(e) => handleApplicationChange(index, 'pending_last_month', e.target.value)}
-                      min="0"
-                      placeholder="0"
+                      // min="0"
+                      // placeholder="0"
                     />
 
                     <FormInput

@@ -31,8 +31,13 @@ const Login = () => {
     setError('');
 
     try {
-      console.log('Making login request with:', formData);
-      const response = await login(formData);
+      const trimmedFormData = {
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password.trim(),
+      };
+
+      console.log('Making login request with:', trimmedFormData);
+      const response = await login(trimmedFormData);
       console.log('Login response in component:', response);
       
       if (response && response.user) {

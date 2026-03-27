@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from '../../../../../utils/axios';
 import PageHeader from '../../../../common/PageHeader';
 import './ViewKasbTrainingReport.css';
+import Navbar from '../../../../Navbar';
 
 const ViewKasbTrainingReport = () => {
   const { id } = useParams();
@@ -47,7 +48,9 @@ const ViewKasbTrainingReport = () => {
   };
 
   if (loading) {
-    return (
+    return ( 
+      <>
+      <Navbar />
       <div className="view-kasb-training-report">
         <PageHeader 
           title="View Kasb Training Report" 
@@ -59,11 +62,14 @@ const ViewKasbTrainingReport = () => {
         />
         <div className="loading">Loading...</div>
       </div>
+      </>
     );
   }
 
   if (error) {
-    return (
+    return (<>
+          <Navbar />
+
       <div className="view-kasb-training-report">
         <PageHeader 
           title="View Kasb Training Report" 
@@ -75,6 +81,7 @@ const ViewKasbTrainingReport = () => {
         />
         <div className="error-message">{error}</div>
       </div>
+      </>
     );
   }
 
@@ -94,7 +101,14 @@ const ViewKasbTrainingReport = () => {
     );
   }
 
+  const totalAll = (report.activities || []).reduce(
+    (sum, a) => sum + (parseInt(a.total) || 0),
+    0,
+  );
+
   return (
+  <>
+        <Navbar />
     <div className="view-kasb-training-report">
       <PageHeader 
         title="View Kasb Training Report" 
@@ -116,30 +130,42 @@ const ViewKasbTrainingReport = () => {
               <label>Date:</label>
               <span>{formatDate(report.date)}</span>
             </div>
-            
+
             <div className="info-item">
-              <label>Skill Level:</label>
-              <span>{getSkillLevelLabel(report.skill_level)}</span>
+              <label>Activities:</label>
+              <span>{(report.activities || []).length}</span>
             </div>
-            
-            <div className="info-item">
-              <label>Quantity:</label>
-              <span>{report.quantity}</span>
-            </div>
-            
-            <div className="info-item">
-              <label>Addition:</label>
-              <span>{report.addition}</span>
-            </div>
-            
-            <div className="info-item">
-              <label>Left:</label>
-              <span>{report.left}</span>
-            </div>
-            
+
             <div className="info-item">
               <label>Total:</label>
-              <span className="total-value">{report.total}</span>
+              <span className="total-value">{totalAll}</span>
+            </div>
+          </div>
+
+          <div className="view-section" style={{ marginTop: '20px' }}>
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Skill Level</th>
+                    <th>Quantity</th>
+                    <th>Addition</th>
+                    <th>Left</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(report.activities || []).map((a) => (
+                    <tr key={a.id}>
+                      <td>{getSkillLevelLabel(a.skill_level)}</td>
+                      <td>{a.quantity}</td>
+                      <td>{a.addition}</td>
+                      <td>{a.left}</td>
+                      <td>{a.total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -152,7 +178,7 @@ const ViewKasbTrainingReport = () => {
             Back to List
           </button>
           <button 
-            onClick={() => navigate(`/program/kasb-training/reports/update/${report.id}`)}
+            onClick={() => navigate(`/program/kasb-training/reports/update/${id}`)}
             className="btn btn-primary"
           >
             Edit Report
@@ -160,6 +186,7 @@ const ViewKasbTrainingReport = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

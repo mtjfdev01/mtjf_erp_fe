@@ -155,16 +155,20 @@ const ListEducationReports = () => {
       <>
         <Navbar />
         <div className="list-education-reports">
-          <PageHeader 
-            title="Education Reports" 
-            breadcrumbs={[
-              { label: 'Program', path: '/program' },
-              { label: 'Education Reports' }
-            ]}
-            showAdd={true}
-            addPath="/program/education/reports/add"
-          />
-          <div className="loading">Loading...</div>
+          <div className="list-wrapper">
+            <div className="list-content">
+              <PageHeader 
+                title="Education Reports" 
+                breadcrumbs={[
+                  { label: 'Program', path: '/program' },
+                  { label: 'Education Reports' }
+                ]}
+                showAdd={true}
+                addPath="/program/education/reports/add"
+              />
+              <div className="loading">Loading...</div>
+            </div>
+          </div>
         </div>
       </>
     );
@@ -174,73 +178,77 @@ const ListEducationReports = () => {
     <>
       <Navbar />
       <div className="list-education-reports">
-        <PageHeader 
-          title="Education Reports" 
-          breadcrumbs={[
-            { label: 'Program', path: '/program' },
-            { label: 'Education Reports' }
-          ]}
-          showAdd={true}
-          addPath="/program/education/reports/add"
-        />
-        
-        {error && <div className="error-message">{error}</div>}
-        
-        <div className="table-container">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Male Total</th>
-                <th>Female Total</th>
-                <th>Overall Total</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {reports.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="no-data">No reports found</td>
-                </tr>
-              ) : (
-                reports.map((report) => (
-                  <tr key={report.id}>
-                    <td>{formatDate(report.date)}</td>
-                    <td>{getMaleTotal(report)}</td>
-                    <td>{getFemaleTotal(report)}</td>
-                    <td className="overall-total">{getOverallTotal(report)}</td>
-                    <td>
-                      <ActionMenu actions={getActionMenuItems(report)} />
-                    </td>
+        <div className="list-wrapper">
+          <div className="list-content">
+            <PageHeader 
+              title="Education Reports" 
+              breadcrumbs={[
+                { label: 'Program', path: '/program' },
+                { label: 'Education Reports' }
+              ]}
+              showAdd={true}
+              addPath="/program/education/reports/add"
+            />
+            
+            {error && <div className="error-message">{error}</div>}
+            
+            <div className="table-container">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Male Total</th>
+                    <th>Female Total</th>
+                    <th>Overall Total</th>
+                    <th>Actions</th>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        
-        {totalItems > 0 && (
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            totalItems={totalItems}
-            pageSize={pageSize}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            onSortChange={handleSortChange}
-            sortField={sortField}
-            sortOrder={sortOrder}
-            sortOptions={sortOptions}
-          />
-        )}
-        
-        {reports.length === 0 && totalItems === 0 && !error && (
-          <div className="empty-state">
-            <div className="empty-state-icon">📄</div>
-            <div className="empty-state-text">No reports found</div>
-            <div className="empty-state-subtext">Create your first report to get started.</div>
+                </thead>
+                <tbody>
+                  {reports.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="no-data">No reports found</td>
+                    </tr>
+                  ) : (
+                    reports.map((report) => (
+                      <tr key={report.id}>
+                        <td>{formatDate(report.date)}</td>
+                        <td>{getMaleTotal(report)}</td>
+                        <td>{getFemaleTotal(report)}</td>
+                        <td className="overall-total">{getOverallTotal(report)}</td>
+                        <td>
+                          <ActionMenu actions={getActionMenuItems(report)} />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+            
+            {totalItems > 0 && (
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={totalItems}
+                pageSize={pageSize}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                onSortChange={handleSortChange}
+                sortField={sortField}
+                sortOrder={sortOrder}
+                sortOptions={sortOptions}
+              />
+            )}
+            
+            {reports.length === 0 && totalItems === 0 && !error && (
+              <div className="empty-state">
+                <div className="empty-state-icon">📄</div>
+                <div className="empty-state-text">No reports found</div>
+                <div className="empty-state-subtext">Create your first report to get started.</div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
       <ConfirmationModal
         isOpen={showDeleteModal}

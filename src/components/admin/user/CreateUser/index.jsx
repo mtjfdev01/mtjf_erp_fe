@@ -286,9 +286,15 @@ const CreateUser = () => {
 
     setIsSubmitting(true);
     try {
+      const sanitizedForm = {
+        ...form,
+        email: form.email.trim().toLowerCase(),
+        password: form.password.trim(),
+      };
+
       // Create payload with user data and permissions
       const payload = {
-        ...form,
+        ...sanitizedForm,
         permissions: userPermissions
       };
 

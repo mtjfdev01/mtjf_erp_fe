@@ -6,6 +6,7 @@ import ActionMenu from '../../../../common/ActionMenu';
 import Pagination from '../../../../common/Pagination';
 import './ListKasbTrainingReports.css';
 import Navbar from '../../../../Navbar';
+import { FiEdit2, FiEye, FiTrash2 } from 'react-icons/fi';
 
 const ListKasbTrainingReports = () => {
   const navigate = useNavigate();
@@ -13,8 +14,8 @@ const ListKasbTrainingReports = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     fetchReports();
@@ -26,8 +27,11 @@ const ListKasbTrainingReports = () => {
       const response = await axios.get('/program/kasb-training/reports');
       
       if (response.data.success) {
-        setReports(response.data.data || []);
-        setTotalPages(Math.ceil((response.data.data || []).length / itemsPerPage));
+        const rows = response.data.data || [];
+        setReports(rows);
+
+        const uniqueDateKeys = new Set(rows.map((r) => getDateKey(r.date)));
+        setTotalPages(Math.max(1, Math.ceil(uniqueDateKeys.size / itemsPerPage)));
       } else {
         setError(response.data.message || 'Failed to fetch reports');
       }
@@ -38,10 +42,10 @@ const ListKasbTrainingReports = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this report?')) {
+  const handleDelete = async (dateKey) => {
+    if (window.confirm('Are you sure you want to delete this report date?')) {
       try {
-        const response = await axios.delete(`/program/kasb-training/reports/${id}`);
+        const response = await axios.delete(`/program/kasb-training/reports/date/${dateKey}`);
         
         if (response.data.success) {
           fetchReports();
@@ -68,9 +72,50 @@ const ListKasbTrainingReports = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
-  const paginatedReports = reports.slice(
+  function getDateKey(dateValue) {
+    if (!dateValue) return '';
+    const d = new Date(dateValue);
+    if (Number.isNaN(d.getTime())) return String(dateValue);
+    return d.toISOString().split('T')[0];
+  }
+
+  const dateGroups = Object.values(
+    reports.reduce((acc, row) => {
+      const key = getDateKey(row.date);
+      if (!key) return acc;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(row);
+      return acc;
+    }, {}),
+  )
+    .map((activities) => {
+      const dateKey = getDateKey(activities[0]?.date);
+      const skillLevelLabels = Array.from(
+        new Set(activities.map((a) => a.skill_level)),
+      )
+        .map((sl) => getSkillLevelLabel(sl))
+        .join(', ');
+
+      const totalQuantity = activities.reduce((sum, a) => sum + (parseInt(a.quantity) || 0), 0);
+      const totalAddition = activities.reduce((sum, a) => sum + (parseInt(a.addition) || 0), 0);
+      const totalLeft = activities.reduce((sum, a) => sum + (parseInt(a.left) || 0), 0);
+      const totalTotal = activities.reduce((sum, a) => sum + (parseInt(a.total) || 0), 0);
+
+      return {
+        dateKey,
+        activities,
+        skillLevelLabels,
+        totalQuantity,
+        totalAddition,
+        totalLeft,
+        totalTotal,
+      };
+    })
+    .sort((a, b) => new Date(b.dateKey).getTime() - new Date(a.dateKey).getTime());
+
+  const paginatedGroups = dateGroups.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   if (loading) {
@@ -118,40 +163,52 @@ const ListKasbTrainingReports = () => {
             </tr>
           </thead>
           <tbody>
-            {paginatedReports.length === 0 ? (
+            {paginatedGroups.length === 0 ? (
               <tr>
                 <td colSpan="7" className="no-data">No reports found</td>
               </tr>
             ) : (
-              paginatedReports.map((report) => (
-                <tr key={report.id}>
-                  <td>{formatDate(report.date)}</td>
-                  <td>{getSkillLevelLabel(report.skill_level)}</td>
-                  <td>{report.quantity}</td>
-                  <td>{report.addition}</td>
-                  <td>{report.left}</td>
-                  <td>{report.total}</td>
+              paginatedGroups.map((group) => {
+                const groupId = group.activities?.[0]?.id;
+                return (
+                <tr key={group.dateKey}>
+                  <td>{formatDate(group.dateKey)}</td>
+                  <td>{group.skillLevelLabels || '-'}</td>
+                  <td>{group.totalQuantity}</td>
+                  <td>{group.totalAddition}</td>
+                  <td>{group.totalLeft}</td>
+                  <td>{group.totalTotal}</td>
                   <td>
                     <ActionMenu
-                      items={[
+                      actions={[
                         {
+                          icon: <FiEye />,
                           label: 'View',
-                          onClick: () => navigate(`/program/kasb-training/reports/view/${report.id}`)
+                          color: '#4CAF50',
+                          visible: true,
+                          onClick: () => navigate(`/program/kasb-training/reports/view/${groupId}`),
+                          disabled: !groupId,
                         },
                         {
+                          icon: <FiEdit2 />,
                           label: 'Edit',
-                          onClick: () => navigate(`/program/kasb-training/reports/update/${report.id}`)
+                          color: '#2196F3',
+                          visible: true,
+                          onClick: () => navigate(`/program/kasb-training/reports/update/${groupId}`),
+                          disabled: !groupId,
                         },
                         {
+                          icon: <FiTrash2 />,
                           label: 'Delete',
-                          onClick: () => handleDelete(report.id),
-                          className: 'delete-action'
-                        }
+                          color: '#f44336',
+                          visible: true,
+                          onClick: () => handleDelete(group.dateKey),
+                        },
                       ]}
                     />
                   </td>
                 </tr>
-              ))
+              )})
             )}
           </tbody>
         </table>

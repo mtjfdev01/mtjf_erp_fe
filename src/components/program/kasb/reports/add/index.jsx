@@ -79,7 +79,8 @@ const AddKasbReport = () => {
         delivery: center.delivery || 0
       }));
 
-      const response = await axios.post('/program/kasb/reports', reportsData);
+      // Send multiple DTOs to the backend bulk-create endpoint
+      const response = await axios.post('/program/kasb/reports/multiple', reportsData);
       
       if (response.data.success) {
         navigate('/program/kasb/reports/list');

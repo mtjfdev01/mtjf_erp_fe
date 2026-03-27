@@ -398,7 +398,10 @@ const UpdateUser = () => {
 
     setIsSubmitting(true);
     try {
-      const payload = { ...form };
+      const payload = {
+        ...form,
+        email: form.email.trim().toLowerCase(),
+      };
 
       // Include geographic assignments for fund_raising department
       if (form.department === 'fund_raising') {

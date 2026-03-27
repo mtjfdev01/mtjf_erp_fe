@@ -113,19 +113,27 @@ const WaterReportsList = () => {
     return new Date(dateString).toLocaleDateString();
   };
 
+  const getDateKey = (dateValue) => {
+    try {
+      return new Date(dateValue).toISOString().split('T')[0];
+    } catch {
+      return String(dateValue || '');
+    }
+  };
+
   const getActionMenuItems = (report) => [
     {
       icon: <FiEye />,
       label: 'View',
       color: '#4CAF50',
-      onClick: () => navigate(`/program/water/reports/view/${report.id}`),
+      onClick: () => navigate(`/program/water/reports/view/${getDateKey(report.date)}`),
       visible: true
     },
     {
       icon: <FiEdit2 />,
       label: 'Edit',
       color: '#2196F3',
-      onClick: () => navigate(`/program/water/reports/update/${report.id}`),
+      onClick: () => navigate(`/program/water/reports/update/${getDateKey(report.date)}`),
       visible: true
     },
     {
