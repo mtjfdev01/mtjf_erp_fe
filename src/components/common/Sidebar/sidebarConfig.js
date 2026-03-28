@@ -87,7 +87,7 @@ const programDepartmentItems = (isUser = false) => [
     label: 'Applications Reports',
     path: '/program/applications_reports',
     type: 'list',
-    module: 'applications_reports'
+    module: 'application_reports'
   },
   {
     label: 'Ration Reports',
@@ -99,61 +99,61 @@ const programDepartmentItems = (isUser = false) => [
     label: 'Marriage Gifts',
     path: '/program/marriage_gifts/reports/list',
     type: 'list',
-    module: 'marriage_gifts'
+    module: 'marriage_gifts_reports'
   },
   {
     label: 'Financial Assistance',
     path: '/program/financial_assistance/reports/list',
     type: 'list',
-    module: 'financial_assistance'
+    module: 'financial_assistance_reports'
   },
   {
     label: 'Sewing Machine',
     path: '/program/sewing_machine/reports/list',
     type: 'list',
-    module: 'sewing_machine'
+    module: 'sewing_machine_reports'
   },
   {
     label: 'Wheel Chair/Crutches',
     path: '/program/wheel_chair_or_crutches/reports/list',
     type: 'list',
-    module: 'wheel_chair_or_crutches'
+    module: 'wheel_chair_or_crutches_reports'
   },
   {
     label: 'Water Reports',
     path: '/program/water/reports/list',
     type: 'list',
-    module: 'water'
+    module: 'water_reports'
   },
   {
     label: 'Kasb Reports',
     path: '/program/kasb/reports/list',
     type: 'list',
-    module: 'kasb'
+    module: 'kasb_reports'
   },
   {
     label: 'Kasb Training Reports',
     path: '/program/kasb-training/reports',
     type: 'list',
-    module: 'kasb_training'
+    module: 'kasb_training_reports'
   },
   {
     label: 'Education Reports',
     path: '/program/education/reports/list',
     type: 'list',
-    module: 'education'
+    module: 'education_reports'
   },
   {
     label: 'Tree Plantation Reports',
     path: '/program/tree_plantation/reports/list',
     type: 'list',
-    module: 'tree_plantation'
+    module: 'tree_plantation_reports'
   },
   {
     label: 'Area Ration Reports',
     path: '/program/area_ration/reports/list',
     type: 'list',
-    module: 'area_ration'
+    module: 'area_ration_reports'
   },
   {
     label: 'Targets',

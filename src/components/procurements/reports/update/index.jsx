@@ -36,13 +36,13 @@ const UpdateProcurementReport = () => {
       
       setForm({
         date: report.date ? report.date.split('T')[0] : '',
-        totalGeneratedPOs: report.totalGeneratedPOs?.toString() || '',
-        pendingPOs: report.pendingPOs?.toString() || '',
-        fulfilledPOs: report.fulfilledPOs?.toString() || '',
-        totalGeneratedPIs: report.totalGeneratedPIs?.toString() || '',
-        totalPaidAmount: report.totalPaidAmount?.toString() || '',
-        unpaidAmount: report.unpaidAmount?.toString() || '',
-        unpaidPIs: report.unpaidPIs?.toString() || '',
+        totalGeneratedPOs: report.total_generated_pos?.toString() || '',
+        pendingPOs: report.pending_pos?.toString() || '',
+        fulfilledPOs: report.fulfilled_pos?.toString() || '',
+        totalGeneratedPIs: report.total_generated_pis?.toString() || '',
+        totalPaidAmount: report.total_paid_amount?.toString() || '',
+        unpaidAmount: report.unpaid_amount?.toString() || '',
+        unpaidPIs: report.unpaid_pis?.toString() || '',
         tenders: report.tenders?.toString() || '',
       });
     } catch (err) {
@@ -64,14 +64,14 @@ const UpdateProcurementReport = () => {
     
     try {
       await axiosInstance.patch(`/procurements/reports/${id}`, {
-        ...form,
-        totalGeneratedPOs: parseInt(form.totalGeneratedPOs),
-        pendingPOs: parseInt(form.pendingPOs),
-        fulfilledPOs: parseInt(form.fulfilledPOs),
-        totalGeneratedPIs: parseInt(form.totalGeneratedPIs),
-        totalPaidAmount: parseFloat(form.totalPaidAmount),
-        unpaidAmount: parseFloat(form.unpaidAmount),
-        unpaidPIs: parseInt(form.unpaidPIs),
+        date: form.date,
+        total_generated_pos: parseInt(form.totalGeneratedPOs),
+        pending_pos: parseInt(form.pendingPOs),
+        fulfilled_pos: parseInt(form.fulfilledPOs),
+        total_generated_pis: parseInt(form.totalGeneratedPIs),
+        total_paid_amount: parseFloat(form.totalPaidAmount),
+        unpaid_amount: parseFloat(form.unpaidAmount),
+        unpaid_pis: parseInt(form.unpaidPIs),
         tenders: parseInt(form.tenders),
       });
 

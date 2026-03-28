@@ -40,7 +40,7 @@ const AddProcurementReport = () => {
       'tenders',
     ];
     for (const field of requiredFields) {
-      if (!form[field]) {
+      if (form[field] === '' || form[field] === undefined || form[field] === null) {
         setError(`Please fill in all required fields`);
         return false;
       }
@@ -71,27 +71,27 @@ const AddProcurementReport = () => {
     setIsSubmitting(true);
     try {
       await axiosInstance.post('/procurements/reports', {
-        ...form,
-        total_generated_pos: form.totalGeneratedPOs, 
-        pending_pos: form.pendingPOs,
-        fulfilled_pos: form.fulfilledPOs,
-        total_generated_pis: form.totalGeneratedPIs,
-        total_paid_amount: form.totalPaidAmount,
-        unpaid_amount: form.unpaidAmount,
-        unpaid_pis: form.unpaidPIs,
-        tenders: form.tenders,
+        date: form.date,
+        total_generated_pos: parseInt(form.totalGeneratedPOs),
+        pending_pos: parseInt(form.pendingPOs),
+        fulfilled_pos: parseInt(form.fulfilledPOs),
+        total_generated_pis: parseInt(form.totalGeneratedPIs),
+        total_paid_amount: parseFloat(form.totalPaidAmount),
+        unpaid_amount: parseFloat(form.unpaidAmount),
+        unpaid_pis: parseInt(form.unpaidPIs),
+        tenders: parseInt(form.tenders),
       });
       setSubmitted(true);
       setError('');
       setForm({
         date: '',
-        total_generated_pos: '',
-        pending_pos: '',
-        fulfilled_pos: '',
-        total_generated_pis: '',
-        total_paid_amount: '',
-        unpaid_amount: '',
-        unpaid_pis: '',
+        totalGeneratedPOs: '',
+        pendingPOs: '',
+        fulfilledPOs: '',
+        totalGeneratedPIs: '',
+        totalPaidAmount: '',
+        unpaidAmount: '',
+        unpaidPIs: '',
         tenders: '',
       });
     } catch (err) {
