@@ -304,10 +304,20 @@ const TasksList = () => {
       setLoading(true);
       setError('');
       try {
+        const scopedFilters = {
+          ...filters,
+          department: filters.department || currentDeptFromPath
+        };
+
+        // Always use strict backend filtering if a department is selected (either via path or dropdown).
+        // This ensures that clicking "Program Tasks" in sidebar OR selecting "Program" from dropdown
+        // shows ONLY tasks belonging to that department.
+        const isStrictFilter = !!scopedFilters.department;
+
         const payload = {
           pagination: { page: currentPage, pageSize, sortField, sortOrder },
-          filters: filters,
-          strictDepartment: false
+          filters: scopedFilters,
+          strictDepartment: isStrictFilter
         };
         const res = await axiosInstance.post('/tasks/search', payload);
         const list = res.data.data || [];
@@ -321,7 +331,7 @@ const TasksList = () => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters, taskPerms.reportScope, user?.department]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters, taskPerms.reportScope, user?.department, currentDeptFromPath]);
 
   const handleFilterChange = (key, value) => {
     if (key === 'search') {
@@ -399,7 +409,7 @@ const TasksList = () => {
     };
     const cls = statusClassMap[status] || 'status-registered';
     const label = capitalize(status) || 'Pending';
-    return <span className={`status-badge ${cls}`}>{label}</span>;
+    return <span className={`task-status-badge ${cls}`}>{label}</span>;
   };
 
   const renderAssignees = (t) => {
@@ -974,7 +984,7 @@ const TasksList = () => {
 
             <button
               className="tasks-add-btn"
-              onClick={() => navigate('/admin/tasks/add')}
+              onClick={() => navigate('/admin/tasks/add', { state: { defaultDepartment: currentDeptFromPath } })}
               disabled={!taskPerms.canCreate}
               title={hoverText('create')}
             >

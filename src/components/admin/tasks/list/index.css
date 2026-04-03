@@ -272,7 +272,7 @@
   min-width: 0;
 }
 
-.status-badge {
+.task-status-badge {
   padding: 4px 8px;
   border-radius: 8px;
   font-size: 0.75rem;
@@ -313,49 +313,49 @@
 }
 
 /* Status Badge Solid Colors to match Target Design */
-.status-badge.status-open {
+.task-status-badge.status-open {
   background-color: #077af5 !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-in_progress {
+.task-status-badge.status-in_progress {
   background-color: #fccf3a !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-completed {
+.task-status-badge.status-completed {
   background-color: #0feb42 !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-closed {
+.task-status-badge.status-closed {
   background-color: #6b7280 !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-approved {
+.task-status-badge.status-approved {
   background-color: #61C0AA !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-rejected {
+.task-status-badge.status-rejected {
   background-color: #f10a1d !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-cancelled {
+.task-status-badge.status-cancelled {
   background-color: #f10a1d !important;
   color: #ffffff !important;
   border: none;
 }
 
-.status-badge.status-pending_approval {
+.task-status-badge.status-pending_approval {
   background-color: #A281C7 !important;
   color: #ffffff !important;
   border: none;

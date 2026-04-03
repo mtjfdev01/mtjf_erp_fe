@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
 import Navbar from '../../../Navbar';
@@ -16,11 +16,16 @@ import './index.css';
 
 const AddTask = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, permissions } = useAuth();
+
+  // Get default department from navigation state if available
+  const defaultDept = location.state?.defaultDepartment || user?.department || '';
+
   const [form, setForm] = useState({
     title: '',
     description: '',
-    department: user?.department || '',
+    department: defaultDept,
     priority: 'medium',
     workflow_type: 'standard',
     task_type: 'one_time',
@@ -36,6 +41,24 @@ const AddTask = () => {
     recurrence_end_occurrences: '',
     approval_required: false
   });
+
+  const isAdmin = useMemo(() => {
+    const r = String(user?.role || '').toLowerCase();
+    return r === 'super_admin' || r === 'admin';
+  }, [user?.role]);
+
+  const departmentOptions = [
+    { value: 'admin', label: 'Admin' },
+    { value: 'program', label: 'Program' },
+    { value: 'store', label: 'Store' },
+    { value: 'procurements', label: 'Procurements' },
+    { value: 'accounts_and_finance', label: 'Accounts & Finance' },
+    { value: 'fund_raising', label: 'Fund Raising' },
+    { value: 'it', label: 'IT' },
+    { value: 'hr', label: 'HR' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'audio_video', label: 'Audio Video' }
+  ];
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [assignedUsers, setAssignedUsers] = useState([]);
@@ -148,7 +171,9 @@ const AddTask = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    const department = user?.department || form.department || 'admin';
+    // For admins, use the department selected in the form. 
+    // For regular users, use their own department.
+    const department = isAdmin ? (form.department || 'admin') : (user?.department || 'admin');
     const validationErrors = [];
     if (!form.title || !form.title.trim()) {
       validationErrors.push('Task title is required.');
@@ -338,6 +363,18 @@ const AddTask = () => {
                   options={projectOptions.map((p) => ({ value: p, label: p }))}
                 />
               </div>
+              {isAdmin && (
+                <div className="add-task-grid-2" style={{ marginTop: '1rem' }}>
+                  <FormSelect
+                    name="department"
+                    label="Assign to Department"
+                    value={form.department}
+                    onChange={handleSelectChange}
+                    options={departmentOptions}
+                    required
+                  />
+                </div>
+              )}
               <div className="add-task-grid-1">
                 <FormTextarea
                   name="description"
