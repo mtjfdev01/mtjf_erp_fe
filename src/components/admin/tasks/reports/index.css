@@ -233,11 +233,11 @@
   gap: 1.25rem;
 }
 
-.task-dashboard-bottom-left .task-card--project-report {
+.task-dashboard-bottom-left .task-report-card--project-report {
   grid-column: 1 / -1;
 }
 
-.task-card {
+.task-report-card {
   background: #ffffff;
   border-radius: 1rem;
   padding: 1.25rem;
@@ -250,43 +250,43 @@
   overflow: hidden;
 }
 
-.task-card--summary {
+.task-report-card--summary {
   display: flex;
   flex-direction: column;
   min-height: 415px;
 }
 
-.task-card--summary .task-status-grid,
-.task-card--summary .task-priority-grid,
-.task-card--summary .task-card-chart {
+.task-report-card--summary .task-status-grid,
+.task-report-card--summary .task-priority-grid,
+.task-report-card--summary .task-report-card-chart {
   flex: 1;
 }
 
-.task-card:hover {
+.task-report-card:hover {
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.12);
   transform: translateY(-2px);
   transition: box-shadow 0.18s ease, transform 0.18s ease;
 }
 
-.task-card-header {
+.task-report-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.75rem;
 }
 
-.task-card-header--sub {
+.task-report-card-header--sub {
   margin-top: 1.25rem;
 }
 
-.task-card-title {
-  font-size: 1.05rem;
+.task-report-card-title {
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: black;
   margin: 0;
 }
 
-.task-card-chip {
+.task-report-card-chip {
   font-size: 0.75rem;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
@@ -295,15 +295,15 @@
   font-weight: 500;
 }
 
-.task-card-chart {
+.task-report-card-chart {
   height: 240px;
 }
 
-.task-card-chart--wide {
+.task-report-card-chart--wide {
   height: 240px;
 }
 
-.task-card-chart--compact {
+.task-report-card-chart--compact {
   height: 240px;
 }
 
@@ -371,7 +371,7 @@
   color: var(--color-text-secondary);
 }
 
-.task-card-body {
+.task-report-card-body {
   margin-top: 0.25rem;
 }
 
@@ -529,17 +529,17 @@
   color: var(--color-text-primary);
 }
 
-.task-card--time-tracking {
+.task-report-card--time-tracking {
   margin-top: 0.5rem;
   grid-column: 1 / -1;
   padding: 0.8rem 1rem;
 }
 
-.task-card--time-tracking .task-card-header {
+.task-report-card--time-tracking .task-report-card-header {
   margin-bottom: 0.4rem;
 }
 
-.task-card--time-tracking .task-card-footer-text {
+.task-report-card--time-tracking .task-card-footer-text {
   font-size: 0.8rem;
 }
 
@@ -580,6 +580,7 @@
 @media (max-width: 640px) {
   .task-dashboard-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 240px;
   }
 
   .task-dashboard-bottom-left {
@@ -599,12 +600,12 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .task-card-chart,
-  .task-card-chart--wide {
+  .task-report-card-chart,
+  .task-report-card-chart--wide {
     height: 220px;
   }
 
-  .task-card-chart--compact {
+  .task-report-card-chart--compact {
     height: 180px;
   }
 
@@ -646,7 +647,7 @@
     grid-template-columns: 1fr;
   }
 
-  .task-card-chart {
+  .task-report-card-chart {
     height: 220px;
   }
 

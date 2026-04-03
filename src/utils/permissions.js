@@ -295,7 +295,12 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     canCreate: actions.create === true || permissions?.super_admin === true,
     canUpdate,
     canDelete: actions.delete === true || permissions?.super_admin === true,
-    canAssign: actions.assign === true || permissions?.super_admin === true,
+    canAssign:
+      actions.assign === true ||
+      permissions?.super_admin === true ||
+      isManagerRole ||
+      isDeptHeadRole ||
+      isTeamLeadRole,
     canApprove: canApproveBase || canApproveByRole,
     canComplete: actions.complete === true || permissions?.super_admin === true,
     canEditCompleted,

@@ -1,4 +1,5 @@
 export const departments = [
+  "admin",
   "store",
   "procurements",
   "accounts_and_finance",

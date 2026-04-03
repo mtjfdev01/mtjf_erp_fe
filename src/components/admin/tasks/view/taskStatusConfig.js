@@ -2,9 +2,7 @@ export const STATUS_BUTTON_CONFIG = {
   ASSIGNED: [
     { label: 'Start Working', action: 'START', color: 'primary' },
   ],
-  IN_PROGRESS: [
-    { label: 'Complete Task', action: 'COMPLETE', color: 'success' },
-  ],
+  IN_PROGRESS: [],
   COMPLETED: [
     { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
   ],
@@ -148,17 +146,20 @@ export const isStatusActionAvailable = (action, context) => {
       const isReporter = context.currentUserId != null && context.reportedById != null && Number(context.currentUserId) === Number(context.reportedById);
       const isCreatorOrReporter = isCreator || isReporter;
 
+      // If task is already approved or completed (in standard workflow), only creator/reporter can close it
+      if (currentStatusRaw === 'approved' || (currentStatusRaw === 'completed' && workflowRaw !== 'APPROVAL_REQUIRED')) {
+        return isCreatorOrReporter && sameDeptOrOrg;
+      }
+
       if (workflowRaw === 'APPROVAL_REQUIRED') {
-        if (allApprovalsCompleted && isConfiguredApprover) {
-          // If the approver is also the creator/reporter, they can close
+        // While in approval flow, allow closing only if all approvals are done AND user is creator/reporter
+        if (allApprovalsCompleted) {
           return isCreatorOrReporter && sameDeptOrOrg;
         }
-        // If not the last approver acting, only creator/reporter can close (if they have approve perms)
-        return (perms.canApprove === true || isAdminRole) && isCreatorOrReporter && sameDeptOrOrg;
+        // If not all approvals done, still only creator/reporter can close (if they have approve perms)
+        return perms.canApprove === true && isCreatorOrReporter && sameDeptOrOrg;
       }
-      if (isAdminRole) {
-        return true;
-      }
+      
       return perms.canUpdate && isCreatorOrReporter && sameDeptOrOrg;
     case 'SUBMIT_APPROVAL':
       return isAssignee && (perms.canUpdate || perms.canView) && !isAdminRole;

@@ -25,6 +25,7 @@ const TimeTracker = ({ taskId, taskStatus }) => {
 
   const [manualMinutes, setManualMinutes] = useState('');
   const [manualNotes, setManualNotes] = useState('');
+  const [showAll, setShowAll] = useState(false);
 
   const normalizedStatus = String(taskStatus || '').toLowerCase();
   const isClosed = normalizedStatus === 'closed';
@@ -253,7 +254,7 @@ const TimeTracker = ({ taskId, taskStatus }) => {
             Recent time entries
           </div>
           <ul className="task-time-history-list">
-            {entries.map((entry) => (
+            {entries.slice(0, 3).map((entry) => (
               <li key={entry.id} className="task-time-history-item">
                 <span className="task-time-history-duration">
                   {formatSeconds(entry.seconds || entry.duration_seconds || 0)}
@@ -267,6 +268,51 @@ const TimeTracker = ({ taskId, taskStatus }) => {
               </li>
             ))}
           </ul>
+          {entries.length > 3 && (
+            <div className="task-time-see-more-container">
+              <button
+                type="button"
+                className="task-time-see-more-btn"
+                onClick={() => setShowAll(true)}
+              >
+                See More
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {showAll && (
+        <div className="task-time-modal-overlay" onClick={() => setShowAll(false)}>
+          <div className="task-time-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="task-time-modal-header">
+              <h3>All Time Entries</h3>
+              <button
+                type="button"
+                className="task-time-modal-close"
+                onClick={() => setShowAll(false)}
+              >
+                &times;
+              </button>
+            </div>
+            <div className="task-time-modal-body">
+              <ul className="task-time-history-list">
+                {entries.map((entry) => (
+                  <li key={entry.id} className="task-time-history-item">
+                    <span className="task-time-history-duration">
+                      {formatSeconds(entry.seconds || entry.duration_seconds || 0)}
+                    </span>
+                    <span className="task-time-history-meta">
+                      {entry.created_at
+                        ? new Date(entry.created_at).toLocaleString()
+                        : ''}
+                      {entry.notes ? ` • ${entry.notes}` : ''}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </div>
       )}
     </div>

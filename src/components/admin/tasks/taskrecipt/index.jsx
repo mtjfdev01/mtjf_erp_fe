@@ -334,12 +334,12 @@ const TaskReceipt = () => {
                     </div>
 
                     <div className="info-card">
-                      <div className="info-row">
+                      {/* <div className="info-row">
                         <span className="label">Recurrence Rule:</span>
                         <span className="value">
                           {task.recurrence_rule || '-'}
                         </span>
-                      </div>
+                      </div> */}
                       <div className="info-row">
                         <span className="label">Next Recurrence:</span>
                         <span className="value">

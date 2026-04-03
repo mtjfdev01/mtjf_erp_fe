@@ -105,7 +105,6 @@ If you need to revert to the original styling:
 .list-wrapper .list-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
   width: 100%;
 }
 

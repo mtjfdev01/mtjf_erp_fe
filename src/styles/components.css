@@ -238,7 +238,6 @@
 .list-wrapper .list-content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-lg);
   width: 100%;
   padding-bottom: 0;
 }

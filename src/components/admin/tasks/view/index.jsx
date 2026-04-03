@@ -24,12 +24,13 @@ const ViewTask = () => {
   const navigate = useNavigate();
   const { user, permissions } = useAuth();
   const [task, setTask] = useState(null);
-  const [assignedUsers, setAssignedUsers] = useState([]);
+
   const [assignedUsersMeta, setAssignedUsersMeta] = useState([]);
   const [usersById, setUsersById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [attachment, setAttachment] = useState({ file: null });
+  const [attachmentDescription, setAttachmentDescription] = useState('');
   const [comment, setComment] = useState({ content: '' });
   const [savingAttachment, setSavingAttachment] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
@@ -39,14 +40,14 @@ const ViewTask = () => {
   const [showProgressHistory, setShowProgressHistory] = useState(false);
   const [approvalState, setApprovalState] = useState(null);
 
-  const getAttachmentHref = (fileUrl) => {
-    if (!fileUrl) return '#';
-    if (fileUrl.startsWith('http://') || fileUrl.startsWith('https://')) {
-      return fileUrl;
+  const getAttachmentHref = (urlStr) => {
+    if (!urlStr) return '#';
+    if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
+      return urlStr;
     }
     const base = axiosInstance.defaults.baseURL || '';
     const normalizedBase = base.replace(/\/$/, '');
-    return `${normalizedBase}${fileUrl}`;
+    return `${normalizedBase}${urlStr}`;
   };
 
   useEffect(() => {
@@ -61,93 +62,13 @@ const ViewTask = () => {
         const res = await axiosInstance.get(`/tasks/${id}`);
         const t = res.data.data;
         setTask(t);
-        const idsFromAssigned = Array.isArray(t.assigned_user_ids)
-          ? t.assigned_user_ids.filter((n) => Number.isInteger(n) && n > 0)
-          : [];
-        const idsFromMeta = Array.isArray(t.assigned_users_meta)
-          ? t.assigned_users_meta
-              .map((m) => m?.user_id)
-              .filter((n) => Number.isInteger(n) && n > 0)
-          : [];
-        const idsFromApprovers = Array.isArray(t.approval_required_user_ids)
-          ? t.approval_required_user_ids
-              .map((n) => Number(n))
-              .filter((n) => Number.isInteger(n) && n > 0)
-          : [];
-
-        let approvalMetaIds = [];
+        setAssignedUsersMeta(Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : []);
+        
         try {
           const approvalRes = await axiosInstance.get(`/tasks/${id}/approval`);
-          const approvalData = approvalRes.data?.data || null;
-          setApprovalState(approvalData);
-          const approvalsMetaRaw = Array.isArray(approvalData?.approvals_meta)
-            ? approvalData.approvals_meta
-            : [];
-          approvalMetaIds = approvalsMetaRaw
-            .map((m) => (m && m.user_id ? Number(m.user_id) : null))
-            .filter((n) => Number.isInteger(n) && n > 0);
+          setApprovalState(approvalRes.data?.data || null);
         } catch {
           setApprovalState(null);
-          approvalMetaIds = [];
-        }
-
-        const reassignmentIds = [];
-        if (Array.isArray(t.activities)) {
-          t.activities.forEach((a) => {
-            if (!a || a.action !== 'reassigned') return;
-            const details = a.details;
-            if (Array.isArray(details)) {
-              details.forEach((d) => {
-                if (!d || d.user_id == null) return;
-                const num = Number(d.user_id);
-                if (Number.isInteger(num) && num > 0) {
-                  reassignmentIds.push(num);
-                }
-              });
-            } else if (details && typeof details === 'object') {
-              const fromIds = Array.isArray(details.from_assigned_user_ids) ? details.from_assigned_user_ids : [];
-              const toIds = Array.isArray(details.to_assigned_user_ids) ? details.to_assigned_user_ids : [];
-              [...fromIds, ...toIds].forEach((idVal) => {
-                const num = Number(idVal);
-                if (Number.isInteger(num) && num > 0) {
-                  reassignmentIds.push(num);
-                }
-              });
-            }
-          });
-        }
-
-        const uniqueIds = Array.from(
-          new Set([
-            ...(idsFromAssigned || []),
-            ...(idsFromMeta || []),
-            ...idsFromApprovers,
-            ...approvalMetaIds,
-            ...reassignmentIds,
-          ]),
-        );
-        setAssignedUsersMeta(Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : []);
-        if (uniqueIds.length > 0) {
-          try {
-            const query = uniqueIds.map((idVal) => `ids=${encodeURIComponent(idVal)}`).join('&');
-            const byIds = await axiosInstance.get(`/users/by-ids${query ? `?${query}` : ''}`);
-            const usersArray = Array.isArray(byIds.data) ? byIds.data : [];
-            const map = {};
-            usersArray.forEach((u) => {
-              if (u && u.id != null) {
-                map[Number(u.id)] = u;
-              }
-            });
-            setUsersById(map);
-            const assignedSet = new Set(idsFromAssigned.map((v) => Number(v)));
-            setAssignedUsers(usersArray.filter((u) => assignedSet.has(Number(u.id))));
-          } catch {
-            setUsersById({});
-            setAssignedUsers([]);
-          }
-        } else {
-          setUsersById({});
-          setAssignedUsers([]);
         }
       } catch (e) {
         setError(e.response?.data?.message || 'Failed to load task.');
@@ -158,7 +79,99 @@ const ViewTask = () => {
     fetch();
   }, [id]);
 
-  const capitalize = (s) => s ? s.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') : '';
+  useEffect(() => {
+    if (!task) return;
+
+    const resolveUsers = async () => {
+      const idsFromAssigned = Array.isArray(task.assigned_user_ids)
+        ? task.assigned_user_ids.filter((n) => Number.isInteger(n) && n > 0)
+        : [];
+      const idsFromMeta = Array.isArray(task.assigned_users_meta)
+        ? task.assigned_users_meta
+            .map((m) => m?.user_id)
+            .filter((n) => Number.isInteger(n) && n > 0)
+        : [];
+      const idsFromApprovers = Array.isArray(task.approval_required_user_ids)
+        ? task.approval_required_user_ids
+            .map((n) => Number(n))
+            .filter((n) => Number.isInteger(n) && n > 0)
+        : [];
+
+      const approvalsMetaRaw = Array.isArray(approvalState?.approvals_meta)
+        ? approvalState.approvals_meta
+        : [];
+      const approvalMetaIds = approvalsMetaRaw
+        .map((m) => (m && m.user_id ? Number(m.user_id) : null))
+        .filter((n) => Number.isInteger(n) && n > 0);
+
+      const reassignmentIds = [];
+      if (Array.isArray(task.activities)) {
+        task.activities.forEach((a) => {
+          if (!a || a.action !== 'reassigned') return;
+          const details = a.details;
+          if (Array.isArray(details)) {
+            details.forEach((d) => {
+              if (!d || d.user_id == null) return;
+              const num = Number(d.user_id);
+              if (Number.isInteger(num) && num > 0) reassignmentIds.push(num);
+            });
+          } else if (details && typeof details === 'object') {
+            const fromIds = Array.isArray(details.from_assigned_user_ids) ? details.from_assigned_user_ids : [];
+            const toIds = Array.isArray(details.to_assigned_user_ids) ? details.to_assigned_user_ids : [];
+            [...fromIds, ...toIds].forEach((idVal) => {
+              const num = Number(idVal);
+              if (Number.isInteger(num) && num > 0) reassignmentIds.push(num);
+            });
+          }
+        });
+      }
+
+      const allNeededIds = Array.from(
+        new Set([
+          ...idsFromAssigned,
+          ...idsFromMeta,
+          ...idsFromApprovers,
+          ...approvalMetaIds,
+          ...reassignmentIds,
+          task.created_by_id,
+          task.reported_by_id,
+        ]),
+      ).filter((n) => n != null && Number.isInteger(n) && n > 0);
+
+      const missingIds = allNeededIds.filter(id => !usersById[id]);
+
+      if (missingIds.length > 0) {
+        try {
+          const query = missingIds.map((idVal) => `ids=${encodeURIComponent(idVal)}`).join('&');
+          const res = await axiosInstance.get(`/users/by-ids?${query}`);
+          const usersArray = Array.isArray(res.data) ? res.data : [];
+          setUsersById(prev => {
+            const next = { ...prev };
+            usersArray.forEach(u => {
+              if (u && u.id) next[Number(u.id)] = u;
+            });
+            return next;
+          });
+        } catch (err) {
+          console.error('Failed to resolve users', err);
+        }
+      }
+    };
+
+    resolveUsers();
+  }, [task, approvalState]);
+
+  const assignedUsers = useMemo(() => {
+    if (!task || !Array.isArray(task.assigned_user_ids)) return [];
+    return task.assigned_user_ids
+      .map(id => usersById[Number(id)])
+      .filter(Boolean);
+  }, [task?.assigned_user_ids, usersById]);
+
+  const capitalize = (s) => {
+    if (!s) return '';
+    return String(s).split('_').map(w => w[0] ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
+  };
   const getDeptTasksBasePath = (dept) => {
     const map = {
       program: '/program/tasks/list',
@@ -171,46 +184,40 @@ const ViewTask = () => {
     return map[dept] || '/admin/tasks/list';
   };
   const formatDate = (d) => d ? new Date(d).toLocaleString() : '-';
-  const formatDateOnly = (d) => d ? new Date(d).toLocaleDateString() : '-';
+  const formatDateOnly = (date) => {
+    if (!date) return 'N/A';
+    return new Date(date).toLocaleDateString('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
   const formatTaskId = (t) => {
     if (!t) return '-';
     if (t.code) return `#${t.code}`;
-    const raw = t.id != null ? String(t.id) : '';
-    if (!raw) return '-';
-    const padded = raw.padStart(4, '0');
+    const rawId = t.id != null ? String(t.id) : '';
+    if (!rawId) return '-';
+    const padded = rawId.padStart(4, '0');
     return `#TASK-${padded}`;
   };
 
   const getDueInfo = (rawDate, statusRaw) => {
-    if (!rawDate) {
-      return null;
-    }
-    const due = new Date(rawDate);
-    if (Number.isNaN(due.getTime())) {
-      return null;
-    }
+    if (!rawDate) return null;
+    const dueObj = new Date(rawDate);
+    if (Number.isNaN(dueObj.getTime())) return null;
     const now = new Date();
-    const diffMs = due.getTime() - now.getTime();
+    const diffMs = dueObj.getTime() - now.getTime();
     const diffDays = Math.round(diffMs / 86400000);
-    const status = String(statusRaw || '').toLowerCase();
-    if (['completed', 'closed', 'cancelled'].includes(status)) {
-      return null;
-    }
-    if (diffDays === 0) {
-      return { label: 'Due today', variant: 'warning' };
-    }
-    if (diffDays > 0) {
-      return {
-        label: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}`,
-        variant: 'normal',
-      };
-    }
+    const sLower = String(statusRaw || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled'].includes(sLower)) return null;
+    if (diffDays === 0) return { label: 'Due today', variant: 'warning' };
+    if (diffDays > 0) return { label: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}`, variant: 'normal' };
     const overdueDays = Math.abs(diffDays);
-    return {
-      label: `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`,
-      variant: 'danger',
-    };
+    return { label: `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`, variant: 'danger' };
   };
+  const handleBack = useCallback(() => {
+    navigate(-1);
+  }, [navigate]);
   const getUserDisplayName = (u) => {
     if (!u) return '-';
     const full = `${u.first_name || ''} ${u.last_name || ''}`.trim();
@@ -219,15 +226,15 @@ const ViewTask = () => {
     if (u.id) return `User #${u.id}`;
     return '-';
   };
-  const getUserNameFromId = (id) => {
-    const num = Number(id);
+  const getUserNameFromId = (idVal) => {
+    const num = Number(idVal);
     if (!Number.isFinite(num) || num <= 0) return '-';
     const userObj = usersById[num];
     if (userObj) return getUserDisplayName(userObj);
     return `User #${num}`;
   };
-  const getStatusBadge = (statusRaw) => {
-    const status = String(statusRaw || '').toLowerCase();
+  const getStatusBadge = (sVal) => {
+    const statusStr = String(sVal || '').toLowerCase();
     const statusClassMap = {
       pending: 'status-pending',
       pending_approval: 'status-pink',
@@ -242,8 +249,8 @@ const ViewTask = () => {
       cancelled: 'status-failed',
       closed: 'status-closed',
     };
-    const cls = statusClassMap[status] || 'status-registered';
-    const normalized = status ? status.replace(/_/g, ' ') : 'pending';
+    const cls = statusClassMap[statusStr] || 'status-registered';
+    const normalized = statusStr ? statusStr.replace(/_/g, ' ') : 'pending';
     const label = normalized.toUpperCase();
     return <span className={`status-badge ${cls}`}>{label}</span>;
   };
@@ -256,33 +263,38 @@ const ViewTask = () => {
     if (hasProject) return 'project_linked';
     return 'one_time';
   };
+
   const taskTypeValueFromBackend = String(task?.task_type || '').toLowerCase();
   const inferredTaskTypeValue = getTaskTypeValue(task);
-  const taskTypeValue = taskTypeValueFromBackend || inferredTaskTypeValue;
-  const isRecurringTask = taskTypeValue === 'recurring';
+  const taskTypeValueFinal = taskTypeValueFromBackend || inferredTaskTypeValue;
+  const isRecurringTask = taskTypeValueFinal === 'recurring';
   const taskTypeLabel =
-    taskTypeValue === 'recurring'
+    taskTypeValueFinal === 'recurring'
       ? 'Recurring Task'
-      : taskTypeValue === 'project_linked'
+      : taskTypeValueFinal === 'project_linked'
       ? 'Project-linked Task'
       : 'One-time Task';
+
   const isApprovalWorkflow =
     String(task?.workflow_type || '').toLowerCase() === 'approval_required';
   const statusLower = String(task?.status || '').toLowerCase();
+
   const approvalRequiredIds = Array.isArray(task?.approval_required_user_ids)
     ? task.approval_required_user_ids
         .map((n) => Number(n))
         .filter((n) => Number.isInteger(n) && n > 0)
     : [];
+
   const approvalsMetaRaw = Array.isArray(approvalState?.approvals_meta)
     ? approvalState.approvals_meta
     : [];
-
   const approvalsMeta = approvalsMetaRaw;
+
   const currentUserId = Number(user?.id) || 0;
   const isCurrentUserApprover =
     currentUserId > 0 && approvalRequiredIds.includes(currentUserId);
   const isApproverView = isApprovalWorkflow && isCurrentUserApprover;
+
   const approvalRows = approvalRequiredIds.map((idVal) => {
     const meta = approvalsMeta.find(
       (m) => m && Number(m.user_id) === Number(idVal),
@@ -306,8 +318,10 @@ const ViewTask = () => {
       decisionLabel,
     };
   });
+
   const hasApprovalPanel =
     isApprovalWorkflow && approvalRequiredIds && approvalRequiredIds.length > 0;
+
   const showCompletedDate =
     !!task?.completed_date &&
     ((!isApprovalWorkflow &&
@@ -325,6 +339,7 @@ const ViewTask = () => {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [statusModalAction, setStatusModalAction] = useState(null);
   const [statusActionLoading, setStatusActionLoading] = useState(false);
+
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [quickActionKey, setQuickActionKey] = useState(null);
@@ -333,12 +348,12 @@ const ViewTask = () => {
 
   const isTaskOverdue = () => {
     if (!task || !task.due_date) return false;
-    const due = new Date(task.due_date);
-    if (Number.isNaN(due.getTime())) return false;
+    const dueVal = new Date(task.due_date);
+    if (Number.isNaN(dueVal.getTime())) return false;
     const now = new Date();
-    const status = String(task.status || '').toLowerCase();
-    if (['completed', 'closed', 'cancelled'].includes(status)) return false;
-    return now > due;
+    const statusVal = String(task.status || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled'].includes(statusVal)) return false;
+    return now > dueVal;
   };
 
   const taskPerms = useMemo(
@@ -346,6 +361,85 @@ const ViewTask = () => {
     [permissions, user?.department, user?.role],
   );
   const canApprove = taskPerms.canApprove === true;
+
+  const renderRecurrenceInfo = () => {
+    if (task?.task_type !== 'recurring' || !task?.recurrence_rule) return null;
+
+    const info = task.recurrence_info;
+    if (!info) return null;
+
+    const { upcomingDates, lastDate, remainingCount } = info;
+    const rule = task.recurrence_rule;
+
+    return (
+      <div className="recurrence-card-container">
+        <div className="recurrence-card">
+          <div className="recurrence-card-body">
+            <div className="recurrence-icon-box">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <path d="M3 3v5h5" />
+                <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                <path d="M16 16h5v5" />
+              </svg>
+            </div>
+            <div className="recurrence-content">
+              <div className="recurrence-main-info">
+                <h4 className="recurrence-title-text">
+                  Recurring Task <span className="recurrence-dot-separator"></span> Every <strong>{rule}</strong>
+                </h4>
+                <div className="recurrence-status-row">
+                  {task.recurrence_end_type === 'on_date' && (
+                    <span className="recurrence-end-info">
+                      Ends on <strong>{formatDateOnly(lastDate)}</strong>
+                    </span>
+                  )}
+                  {task.recurrence_end_type === 'after_occurrences' && (
+                    <span className="recurrence-end-info">
+                      Ends after <strong>{task.recurrence_end_occurrences}</strong> total occurrences
+                    </span>
+                  )}
+                  {task.recurrence_end_type === 'never' && (
+                    <span className="recurrence-end-info">
+                      Repeats Indefinitely
+                    </span>
+                  )}
+                  {remainingCount !== null && (
+                    <span className="recurrence-count-badge">
+                      {remainingCount} Remaining
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {upcomingDates && upcomingDates.length > 0 && (
+                <div className="recurrence-upcoming">
+                  <span className="upcoming-title">Upcoming:</span>
+                  <div className="upcoming-pills">
+                    {upcomingDates.map((d, i) => (
+                      <span key={i} className="upcoming-pill">
+                        {formatDateOnly(d)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
   const canCreate = taskPerms.canCreate === true;
   const canUpdate = taskPerms.canUpdate === true;
   const canView = taskPerms.canView === true;
@@ -357,15 +451,25 @@ const ViewTask = () => {
       ? getUserDisplayName(assignedUsers[0])
       : '';
 
-  const isCurrentUserAssignee =
-    user && assignedUsers && assignedUsers.some((u) => Number(u.id) === Number(user.id));
-  const canEditMovChecklist = canView && isCurrentUserAssignee && statusLower !== 'closed';
-  const canChangeStatusInline =
-    canView &&
-    isCurrentUserAssignee &&
-    !['pending_approval', 'completed', 'closed', 'cancelled'].includes(
-      statusLower,
-    );
+  const isCurrentUserAssignee = useMemo(() => {
+    if (!user || !Array.isArray(assignedUsers)) return false;
+    return assignedUsers.some((u) => u && Number(u.id) === Number(user.id));
+  }, [user, assignedUsers]);
+
+  const canEditMovChecklist = useMemo(() => {
+    if (!task || !user || !taskPerms?.canUpdate) return false;
+    const sVal = String(task.status || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled', 'rejected'].includes(sVal)) return false;
+    const isAssignee = Array.isArray(task.assigned_user_ids) && task.assigned_user_ids.includes(user?.id);
+    const isDeptLeader = user?.role === 'dept_leader' && user?.department === task.department;
+    return user?.role === 'admin' || isAssignee || isDeptLeader;
+  }, [task, user, taskPerms]);
+
+  const canChangeStatusInline = useMemo(() => {
+    if (!task || !user || !isCurrentUserAssignee) return false;
+    const sVal = String(task.status || '').toLowerCase();
+    return !['pending_approval', 'completed', 'closed', 'cancelled'].includes(sVal);
+  }, [task, user, isCurrentUserAssignee]);
 
   const handleInlineStatusChange = async (nextStatus) => {
     if (!canChangeStatusInline) return;
@@ -561,22 +665,15 @@ const ViewTask = () => {
 
   const dependencies = Array.isArray(task?.dependencies) ? task.dependencies : [];
 
-  const collaborationUsers = (() => {
-    const map = {};
-    assignedUsers.forEach((u) => {
-      if (u && u.id != null) {
-        map[u.id] = u;
-      }
-    });
-    if (Array.isArray(task?.comments)) {
-      task.comments.forEach((c) => {
-        if (c && c.author && c.author.id != null) {
-          map[c.author.id] = c.author;
-        }
-      });
-    }
-    return Object.values(map);
-  })();
+  const allAttachments = useMemo(() => task?.attachments || [], [task?.attachments]);
+
+  const initialAttachments = useMemo(() => {
+    return allAttachments.filter((a) => a.is_initial === true);
+  }, [allAttachments]);
+
+  const activityAttachments = useMemo(() => {
+    return allAttachments.filter((a) => a.is_initial !== true);
+  }, [allAttachments]);
 
   const statusLabel = String(task?.status || '')
     .toUpperCase()
@@ -622,33 +719,30 @@ const ViewTask = () => {
     // 1. Filter and identify progress-related activities
     const progressRelated = task.activities.filter((a) => {
       if (!a) return false;
-      const action = String(a.action || '').toLowerCase();
-      const details = a.details && typeof a.details === 'object' ? a.details : {};
+      const actionStr = String(a.action || '').toLowerCase();
+      const detailObj = a.details && typeof a.details === 'object' ? a.details : {};
       
       const isProgressAction = 
-        action === 'progress_updated' || 
-        action === 'progress_update' || 
-        action === 'update_progress' || 
-        action.includes('progress');
+        actionStr === 'progress_updated' || 
+        actionStr === 'progress_update' || 
+        actionStr === 'update_progress' || 
+        actionStr.includes('progress');
 
-      const hasProgressValue = details && details.progress != null;
-      const notesMatch = typeof details.notes === 'string' && 
-        details.notes.toLowerCase().includes('checklist items completed');
+      const hasProgressValue = detailObj && detailObj.progress != null;
+      const notesMatch = typeof detailObj.notes === 'string' && 
+        detailObj.notes.toLowerCase().includes('checklist items completed');
 
       return isProgressAction || hasProgressValue || notesMatch;
     });
 
     // 2. Apply business rules:
-    // - Only show entries whose progress is <= current task progress (hides history when unchecking)
-    // - Only show the most recent entry for each unique progress level (removes duplicates from toggling)
-    // - Always keep "reset" entries
     const uniqueProgressMap = new Map();
     const resets = [];
 
     progressRelated.forEach((a) => {
-      const details = a.details || {};
-      const progValue = Number(details.progress);
-      const isReset = String(details.notes || '').toLowerCase().includes('reset');
+      const detailObj = a.details || {};
+      const progValue = Number(detailObj.progress);
+      const isReset = String(detailObj.notes || '').toLowerCase().includes('reset');
 
       if (isReset) {
         resets.push(a);
@@ -665,10 +759,10 @@ const ViewTask = () => {
       }
     });
 
-    const result = [...Array.from(uniqueProgressMap.values()), ...resets];
+    const listToReturn = [...Array.from(uniqueProgressMap.values()), ...resets];
 
     // 3. Sort by ID descending (latest first)
-    return result.sort((a, b) => {
+    return listToReturn.sort((a, b) => {
       const aid = Number(a.id) || 0;
       const bid = Number(b.id) || 0;
       return bid - aid;
@@ -711,7 +805,7 @@ const ViewTask = () => {
           <PageHeader 
             title="View Task"
             showBackButton={true}
-            backPath={getDeptTasksBasePath(backDeptForLoading)}
+            onBackClick={handleBack}
           />
           <div className="loading">Loading...</div>
         </div>
@@ -727,7 +821,7 @@ const ViewTask = () => {
           <PageHeader 
             title="View Task"
             showBackButton={true}
-            backPath={getDeptTasksBasePath(backDeptForLoading)}
+            onBackClick={handleBack}
           />
           <div className="view-content">
             <div className="status-message status-message--error">{error || 'Task not found'}</div>
@@ -743,8 +837,8 @@ const ViewTask = () => {
   const rawDescription = String(baseDescription || '').trim();
   const movLinesFromField = Array.isArray(task?.mov_items)
     ? task.mov_items
-        .map((text) => String(text || '').trim())
-        .filter((text) => text.length > 0)
+        .map((t) => String(t || '').trim())
+        .filter((t) => t.length > 0)
     : [];
   const movLines =
     movLinesFromField.length > 0
@@ -766,7 +860,7 @@ const ViewTask = () => {
         <PageHeader 
           title="Task Details"
           showBackButton={true}
-          backPath={getDeptTasksBasePath(user?.department || task?.department)}
+          onBackClick={handleBack}
           showEdit={taskPerms.canUpdate === true}
           editPath={`/admin/tasks/update/${task.id}`}
         />
@@ -834,6 +928,8 @@ const ViewTask = () => {
                 </div>
               </div>
 
+              {renderRecurrenceInfo()}
+
               <div className="receipt-body">
                 {isTaskOverdue() && (
                   <div className="overdue-reminder">
@@ -870,7 +966,9 @@ const ViewTask = () => {
                   align="top"
                 />
                 <div className="view-section">
-                  <h3 className="view-section-title">Description</h3>
+                  <h3 className="view-section-title">
+                    <span>📝</span> Description
+                  </h3>
                   <div className="view-grid">
                     <div className="view-item task-description-item">
                       {rawDescription ? (
@@ -914,7 +1012,7 @@ const ViewTask = () => {
                 </div>
                 <div className="view-section">
                   <h3 className="view-section-title">
-                    {isApproverView
+                    <span>✅</span> {isApproverView
                       ? 'Progress & Means of Verification'
                       : 'Check the box to update progress'}
                   </h3>
@@ -926,6 +1024,8 @@ const ViewTask = () => {
                           currentProgress={task.progress || 0}
                           movLines={movLines}
                           canEdit={canEditMovChecklist}
+                          currentUser={user}
+                          progressActivities={progressActivities}
                           onUpdate={(progress, notes, updatedTask) => {
                             if (updatedTask) {
                               setTask(updatedTask);
@@ -1020,23 +1120,83 @@ const ViewTask = () => {
                   </div>
                 </div>
 
+                {initialAttachments.length > 0 && (
+                  <div className="view-section">
+                    <h3 className="view-section-title">
+                      <span>📎</span> Task Attachments (Initial)
+                    </h3>
+                    <div className="view-grid">
+                      <div className="view-item task-attachments-item">
+                        <ul className="attachments-list">
+                          {initialAttachments.map((a) => {
+                            const rawType = a.file_type || '';
+                            const shortType = rawType.includes('/')
+                              ? rawType.split('/')[1]
+                              : rawType;
+                            const shortUpper = shortType
+                              ? shortType.toUpperCase()
+                              : 'FILE';
+                            return (
+                              <li key={a.id} className="attachments-item">
+                                <div className="attachment-main">
+                                  <div className="attachment-header">
+                                    <div className="attachment-icon">
+                                      {shortUpper}
+                                    </div>
+                                    <div className="attachment-text">
+                                      <div className="attachment-name">
+                                        {a.file_name}
+                                      </div>
+                                      {a.description && (
+                                        <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                                          {a.description}
+                                        </div>
+                                      )}
+                                      <div className="attachment-type">
+                                        {rawType}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="attachment-actions">
+                                    <a
+                                      href={getAttachmentHref(a.file_url)}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="attachment-open-button"
+                                    >
+                                      View
+                                    </a>
+                                    {canDeleteAttachment && (
+                                      <button
+                                        type="button"
+                                        className="attachment-remove-button"
+                                        onClick={() => handleRemoveAttachment(a.id)}
+                                      >
+                                        ×
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="view-layout">
                   <div className="view-layout-main">
                     <div
-                      className={`view-section view-section--timeline${
+                      className={`view-section${
                         isApproverView ? ' view-section--approver-secondary' : ''
                       }`}
                     >
-                      <h3 className="view-section-title">Task Information</h3>
-                      <div className="view-grid">
-                        {/* <div className="view-item">
-                          <span className="view-item-label">Task ID</span>
-                          <span className="view-item-value">{formatTaskId(task)}</span>
-                        </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Title</span>
-                          <span className="view-item-value">{task.title}</span>
-                        </div>*/}
+                      <h3 className="view-section-title">
+                        <span>ℹ️</span> Task Information
+                      </h3>
+                      <div className="view-grid view-grid--info">
                         <div className="view-item">
                           <span className="view-item-label">Status</span>
                           <span className="view-item-value">{getStatusBadge(task.status)}</span>
@@ -1061,14 +1221,6 @@ const ViewTask = () => {
                           <span className="view-item-label">Created By</span>
                           <span className="view-item-value">{getUserDisplayName(task.created_by)}</span>
                         </div>
-                        {/* <div className="view-item">
-                          <span className="view-item-label">Department</span>
-                          <span className="view-item-value">{capitalize(task.department)}</span>
-                        </div> 
-                        <div className="view-item">
-                          <span className="view-item-label">Reported To</span>
-                          <span className="view-item-value">{getUserDisplayName(task.reported_by)}</span>
-                        </div>*/}
                         <div className="view-item">
                           <span className="view-item-label">Project Name</span>
                           <span className="view-item-value">{task.project_name || '-'}</span>
@@ -1091,8 +1243,10 @@ const ViewTask = () => {
                         isApproverView ? ' view-section--approver-secondary' : ''
                       }`}
                     >
-                      <h3 className="view-section-title">Timeline</h3>
-                      <div className="view-grid-2">
+                      <h3 className="view-section-title">
+                        <span>📅</span> Timeline
+                      </h3>
+                      <div className="view-grid view-grid--info">
                         <div className="view-item">
                           <span className="view-item-label">Start Date</span>
                           <span className="view-item-value">{formatDateOnly(task.start_date)}</span>
@@ -1121,8 +1275,14 @@ const ViewTask = () => {
                         {isRecurringTask && (
                           <>
                             <div className="view-item">
-                              <span className="view-item-label">Recurrence Rule</span>
-                              <span className="view-item-value">{task.recurrence_rule || '-'}</span>
+                              <span className="view-item-label">Recurrence</span>
+                              <span className="view-item-value">
+                                {task.recurrence_rule
+                                  ? task.recurrence_rule.includes(' days')
+                                    ? `Every ${task.recurrence_rule}`
+                                    : task.recurrence_rule[0].toUpperCase() + task.recurrence_rule.slice(1)
+                                  : '-'}
+                              </span>
                             </div>
                             <div className="view-item">
                               <span className="view-item-label">Next Recurrence</span>
@@ -1135,7 +1295,9 @@ const ViewTask = () => {
 
                     {!isApproverView && dependencies.length > 0 && (
                       <div className="view-section">
-                        <h3 className="view-section-title">Dependencies</h3>
+                        <h3 className="view-section-title">
+                          <span>🔗</span> Dependencies
+                        </h3>
                         <div className="view-grid">
                           <div className="view-item">
                             <ul className="dependencies-list">
@@ -1161,7 +1323,9 @@ const ViewTask = () => {
                     )}
 
                     <div className="view-section">
-                      <h3 className="view-section-title">Team & Assignment</h3>
+                      <h3 className="view-section-title">
+                        <span>👥</span> Team & Assignment
+                      </h3>
                       <div className="team-assignment">
                         <div className="team-assignment-main">
                           <span className="team-assignment-label">Assigned:</span>
@@ -1218,12 +1382,12 @@ const ViewTask = () => {
                         <div className="team-assignment-meta">
                           <div className="collaboration-summary">
                             <span className="collaboration-count">
-                              {collaborationUsers.length}
+                              {assignedUsers.length}
                             </span>
                             <span className="collaboration-label">
-                              {collaborationUsers.length === 1
-                                ? 'Person involved'
-                                : 'People involved'}
+                              {assignedUsers.length === 1
+                                ? 'Person assigned'
+                                : 'People assigned'}
                             </span>
                           </div>
                         </div>
@@ -1235,7 +1399,9 @@ const ViewTask = () => {
                           isApproverView ? ' view-section--approver-primary' : ''
                         }`}
                       >
-                        <h3 className="view-section-title">Approval</h3>
+                        <h3 className="view-section-title">
+                          <span>🛡️</span> Approval
+                        </h3>
                         <div className="view-grid">
                           <div className="view-item">
                             <span className="view-item-label">Approvers</span>
@@ -1261,7 +1427,9 @@ const ViewTask = () => {
                     )}
                     {!isApproverView && reassignmentActivities.length > 0 && (
                       <div className="view-section">
-                        <h3 className="view-section-title">Reassignment History</h3>
+                        <h3 className="view-section-title">
+                          <span>🔄</span> Reassignment History
+                        </h3>
                         <div className="reassignment-list">
                           {reassignmentActivities.map((act, index) => {
                             const rawDetails = act.details;
@@ -1383,81 +1551,90 @@ const ViewTask = () => {
                           isApproverView ? ' view-section--approver-primary' : ''
                         }`}
                       >
-                        <h3 className="view-section-title">
-                          {isApproverView ? 'Attachments' : 'Attachments'}
-                        </h3>
-                        <div className="view-grid">
-                          <div className="view-item task-attachments-item">
-                            <ul className="attachments-list">
-                              {(task.attachments || []).map((a) => {
-                                const rawType = a.file_type || '';
-                                const shortType = rawType.includes('/')
-                                  ? rawType.split('/')[1]
-                                  : rawType;
-                                const shortUpper = shortType
-                                  ? shortType.toUpperCase()
-                                  : 'FILE';
-                                return (
-                                  <li key={a.id} className="attachments-item">
-                                    <div className="attachment-main">
-                                      <div className="attachment-header">
-                                        <div className="attachment-icon">
-                                          {shortUpper}
-                                        </div>
-                                        <div className="attachment-text">
-                                          <div className="attachment-name">
-                                            {a.file_name}
+                        <div className="activity-attachments-section">
+                          <h3 className="view-section-title">
+                            <span>📂</span> Activity Attachments
+                          </h3>
+                          <div className="view-grid">
+                            <div className="view-item task-attachments-item">
+                              <ul className="attachments-list">
+                                {activityAttachments.map((a) => {
+                                  const rawType = a.file_type || '';
+                                  const shortType = rawType.includes('/')
+                                    ? rawType.split('/')[1]
+                                    : rawType;
+                                  const shortUpper = shortType
+                                    ? shortType.toUpperCase()
+                                    : 'FILE';
+                                  return (
+                                    <li key={a.id} className="attachments-item">
+                                      <div className="attachment-main">
+                                        <div className="attachment-header">
+                                          <div className="attachment-icon">
+                                            {shortUpper}
                                           </div>
-                                          <div className="attachment-type">
-                                            {rawType}
+                                          <div className="attachment-text">
+                                            <div className="attachment-name">
+                                              {a.file_name}
+                                            </div>
+                                            {a.description && (
+                                              <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                                                {a.description}
+                                              </div>
+                                            )}
+                                            <div className="attachment-type">
+                                              {rawType}
+                                            </div>
                                           </div>
                                         </div>
-                                      </div>
-                                      <div className="attachment-actions">
-                                        <a
-                                          href={getAttachmentHref(a.file_url)}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="attachment-open-button"
-                                        >
-                                          View
-                                        </a>
-                                        {canDeleteAttachment && (
-                                          <button
-                                            type="button"
-                                            className="attachment-remove-button"
-                                            onClick={() => handleRemoveAttachment(a.id)}
+                                        <div className="attachment-actions">
+                                          <a
+                                            href={getAttachmentHref(a.file_url)}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="attachment-open-button"
                                           >
-                                            ×
-                                          </button>
-                                        )}
+                                            View
+                                          </a>
+                                          {canDeleteAttachment && (
+                                            <button
+                                              type="button"
+                                              className="attachment-remove-button"
+                                              onClick={() => handleRemoveAttachment(a.id)}
+                                            >
+                                              ×
+                                            </button>
+                                          )}
+                                        </div>
                                       </div>
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                              {(!task.attachments || task.attachments.length === 0) && <li>No attachments</li>}
-                            </ul>
+                                    </li>
+                                  );
+                                })}
+                                {activityAttachments.length === 0 && <li>No activity attachments</li>}
+                              </ul>
+                            </div>
                           </div>
                         </div>
                         {!isApproverView && (
                           <form onSubmit={addAttachment} className="task-attachments-form">
-                            <div className="form-grid-3">
+                            <div className="task-attachments-input-container">
                               <div className="form-group">
                                 <label className="form-label">File</label>
                                 <input
                                   type="file"
+                                  className="form-input task-file-input"
                                   onChange={handleAttachmentChange}
                                   disabled={!canInteractWithNotes || savingAttachment}
                                 />
                               </div>
                             </div>
-                            <div className="form-actions">
+                            <div className="form-actions task-attachments-actions">
                               <PrimaryButton
                                 type="submit"
                                 disabled={savingAttachment || !canInteractWithNotes}
                                 loading={savingAttachment}
                                 loadingText="Adding..."
+                                className="task-attachment-upload-btn"
                               >
                                 Upload Attachment
                               </PrimaryButton>
@@ -1472,7 +1649,7 @@ const ViewTask = () => {
                         }`}
                       >
                         <h3 className="view-section-title">
-                          {isApproverView ? 'Comments & Activity' : 'Comments & Activity'}
+                          <span>💬</span> {isApproverView ? 'Comments & Activity' : 'Comments & Activity'}
                         </h3>
                         <div className="view-grid">
                           <div className="view-item task-comments-item">
@@ -1535,7 +1712,9 @@ const ViewTask = () => {
 
                       {!isApproverView && (relatedLoading || relatedTasks.length > 0) && (
                         <div className="view-section">
-                          <h3 className="view-section-title">Related tasks</h3>
+                          <h3 className="view-section-title">
+                            <span>🔗</span> Related tasks
+                          </h3>
                           <div className="view-grid">
                             <div className="view-item">
                               {relatedLoading && (
@@ -1587,7 +1766,13 @@ const ViewTask = () => {
                   <div>MTJ Foundation • Task Management System</div>
                   <div className="metadata">
                     <span>Task ID: {formatTaskId(task)}</span>
-                    <span>Department: {capitalize(task.department)}</span>
+                    <span>
+                      Department: {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0
+                        ? [...new Set(task.assigned_users_meta.map(m => m ? m.department : null).filter(Boolean))]
+                            .map(d => capitalize(d))
+                            .join(', ')
+                        : capitalize(task.department)}
+                    </span>
                     <span>
                       Last updated:{' '}
                       {formatDate(task.updated_at || task.created_at)}

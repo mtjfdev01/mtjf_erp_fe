@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { FiMoreVertical } from 'react-icons/fi';
 import './ActionMenu.css';
 
-const ActionMenu = ({ actions }) => {
+const ActionMenu = ({ actions, trigger }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleActionClick = (action) => {
-    action.onClick();
+    if (action.onClick) {
+      action.onClick();
+    }
     setIsModalOpen(false);
   };
 
@@ -14,7 +16,7 @@ const ActionMenu = ({ actions }) => {
     <div className="action-menu">
       {/* Desktop View */}
       <div className="action-buttons desktop-view">
-        {actions.map((action, index) => (
+        {Array.isArray(actions) && actions.map((action, index) => (
           action.visible && (
             <button
               key={index}
@@ -36,7 +38,7 @@ const ActionMenu = ({ actions }) => {
           className="action-menu-trigger"
           onClick={() => setIsModalOpen(true)}
         >
-          <FiMoreVertical />
+          {trigger || <FiMoreVertical />}
         </button>
 
         {/* Mobile Modal */}
@@ -47,12 +49,13 @@ const ActionMenu = ({ actions }) => {
               onClick={() => setIsModalOpen(false)}
             />
             <div className="action-menu-modal">
-              {actions.map((action, index) => (
+              {Array.isArray(actions) && actions.map((action, index) => (
                 action.visible && (
                   <button
                     key={index}
-                    className="action-menu-item"
-                    onClick={() => handleActionClick(action)}
+                    className={`action-menu-item ${action.disabled ? 'action-disabled' : ''}`}
+                    onClick={() => !action.disabled && handleActionClick(action)}
+                    disabled={action.disabled}
                   >
                     <span className="action-icon" style={{ color: action.color }}>
                       {action.icon}

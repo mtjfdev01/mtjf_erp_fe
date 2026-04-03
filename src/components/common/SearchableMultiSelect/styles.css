@@ -59,7 +59,7 @@
   min-height: 24px;
 }
 
-.searchable-multi-select__placeholder {
+.searchable-multi-select__search-input::placeholder {
   color: #999;
   font-style: italic;
 }
@@ -154,25 +154,19 @@
 }
 
 .searchable-multi-select__search-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
   border: none;
   outline: none;
   background: transparent;
-  padding: 8px 12px;
+  padding: 4px 0;
   font-size: 14px;
-  z-index: 1;
-  pointer-events: auto;
+  min-width: 50px;
+  flex: 1;
 }
 
-/* Ensure tags are clickable above the input */
+/* Ensure tags are clickable */
 .searchable-multi-select__value {
   position: relative;
   z-index: 2;
-  pointer-events: none;
 }
 
 .searchable-multi-select__search-input:focus {

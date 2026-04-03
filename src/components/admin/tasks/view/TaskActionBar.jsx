@@ -94,10 +94,23 @@ const TaskActionBar = ({
           baseButtons = [];
         }
       } else {
-        baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
+        // For standard workflow, creator/reporter can close a completed task
+        const isCreator = Number(currentUserId) === Number(createdByUserId);
+        const isReporter = Number(currentUserId) === Number(reportedById);
+        if (isCreator || isReporter) {
+          baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
+        } else {
+          baseButtons = [];
+        }
       }
     } else if (normalizedStatus === 'APPROVED') {
-      baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
+      const isCreator = Number(currentUserId) === Number(createdByUserId);
+      const isReporter = Number(currentUserId) === Number(reportedById);
+      if (isCreator || isReporter) {
+        baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
+      } else {
+        baseButtons = [];
+      }
     } else if (
       normalizedStatus === 'REJECTED' &&
       normalizedWorkflow === 'APPROVAL_REQUIRED'

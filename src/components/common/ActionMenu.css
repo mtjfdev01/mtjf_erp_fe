@@ -43,6 +43,11 @@
 }
 
 /* Mobile View */
+.mobile-view {
+  display: flex;
+  align-items: center;
+}
+
 .action-menu-trigger {
   background: none;
   border: none;
@@ -123,7 +128,7 @@
 }
 
 @media (max-width: 768px) {
-  .desktop-view {
-    display: none;
+  .action-buttons.desktop-view {
+    display: none !important;
   }
 } 

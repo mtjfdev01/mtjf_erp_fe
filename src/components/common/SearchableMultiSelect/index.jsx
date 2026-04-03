@@ -244,7 +244,7 @@ const SearchableMultiSelect = ({
   // Render selected items as tags
   const renderSelectedItems = () => {
     if (selectedItems.length === 0) {
-      return <span className="searchable-multi-select__placeholder">{placeholder}</span>;
+      return null;
     }
     
     return selectedItems.map((item, index) => (
@@ -280,6 +280,24 @@ const SearchableMultiSelect = ({
         >
           <div className="searchable-multi-select__value">
             {renderSelectedItems()}
+            {allowResearch && (
+              <input
+                ref={inputRef}
+                type="text"
+                className="searchable-multi-select__search-input"
+                placeholder={selectedItems.length === 0 ? placeholder : ''}
+                value={searchTerm}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onFocus={handleInputFocus}
+                onBlur={handleInputBlur}
+                disabled={disabled}
+                autoComplete="off"
+                style={{
+                  width: searchTerm ? `${Math.max(searchTerm.length * 8 + 20, 50)}px` : selectedItems.length === 0 ? '100%' : '50px'
+                }}
+              />
+            )}
           </div>
           <div className="searchable-multi-select__actions">
             {selectedItems.length > 0 && (
@@ -298,25 +316,6 @@ const SearchableMultiSelect = ({
             <span className="searchable-multi-select__arrow">▼</span>
           </div>
         </div>
-        
-        {allowResearch && (
-          <input
-            ref={inputRef}
-            type="text"
-            className="searchable-multi-select__search-input"
-            // placeholder={selectedItems.length > 0 ? "Search for more..." : "Type to search..."}
-            value={searchTerm}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onFocus={handleInputFocus}
-            onBlur={handleInputBlur}
-            disabled={disabled}
-            autoComplete="off"
-            style={{
-              paddingLeft: selectedItems.length > 0 ? '4px' : '12px'
-            }}
-          />
-        )}
       </div>
 
       {isOpen && (

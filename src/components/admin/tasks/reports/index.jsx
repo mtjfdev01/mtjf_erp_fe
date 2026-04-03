@@ -67,6 +67,7 @@ const TaskReports = () => {
   const location = useLocation();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
+  const [viewType, setViewType] = useState('all'); // Default to 'all' for reports
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [taskStats, setTaskStats] = useState(null);
   const [taskStatsLoading, setTaskStatsLoading] = useState(false);
@@ -98,14 +99,17 @@ const TaskReports = () => {
     [permissions, user?.department, user?.role, currentDeptFromPath],
   );
   const rolePerms = useMemo(() => {
+    const r = String(user?.role || '').toLowerCase();
+    const isAdmin = r === 'super_admin' || r === 'admin';
     return {
       scope: taskPerms.reportScope,
       canCreate: taskPerms.canCreate,
       canAssign: taskPerms.canAssign,
       canApprove: taskPerms.canApprove,
-      canEditCompleted: taskPerms.canEditCompleted
+      canEditCompleted: taskPerms.canEditCompleted,
+      isAdmin
     };
-  }, [taskPerms]);
+  }, [taskPerms, user?.role]);
 
   const statsSummary = useMemo(() => {
     const total = taskStats?.total_tasks || 0;
@@ -120,15 +124,15 @@ const TaskReports = () => {
     const closed = breakdown.closed || 0;
     const rejected = breakdown.rejected || 0;
     const cancelled = breakdown.cancelled || 0;
-    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'approved']);
-    const ended = sumBy(['completed', 'closed', 'cancelled']);
+    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'approved', 'completed', 'rejected', 'cancelled']);
+    const ended = closed;
     const completionRate = taskStats?.completion_rate || 0;
     const overdue = taskStats?.overdue_tasks || 0;
-    const progressCompleted = completed + closed + approved;
-    const progressInProgress = inProgress + pendingApproval;
+    const progressCompleted = closed;
+    const progressInProgress = inProgress + pendingApproval + approved + completed;
     const progressNotStarted = open + draft;
-    const active = open + inProgress + pendingApproval + approved;
-    const completedTotal = completed + closed;
+    const active = open + inProgress + pendingApproval + approved + completed;
+    const completedTotal = closed;
     return {
       total,
       pending,
@@ -205,6 +209,8 @@ const TaskReports = () => {
   const completionRateChartInstance = useRef(null);
   const userBarChartRef = useRef(null);
   const userBarChartInstance = useRef(null);
+  const departmentChartRef = useRef(null);
+  const departmentCanvasRef = useRef(null);
   const projectBarChartRef = useRef(null);
   const projectBarChartInstance = useRef(null);
 
@@ -294,17 +300,24 @@ const TaskReports = () => {
 
   useEffect(() => {
     const fetchTaskReports = async () => {
+      // Don't fetch if user is not loaded yet
+      if (!user) return;
+
       setTaskStatsLoading(true);
       setTaskStatsError(null);
       try {
         const range = getDateRangeForDuration(duration);
-        
+
         // If we are in a specific department dashboard (e.g. /it/tasks/reports),
         // we should always filter by that department.
-        const department = currentDeptFromPath || selectedDepartment || undefined;
+        // Exception: If we are in the general admin dashboard, show all departments by default.
+        const isGeneralAdminDashboard = currentDeptFromPath === 'admin' && rolePerms.isAdmin;
+        const department = isGeneralAdminDashboard ? (selectedDepartment || undefined) : (currentDeptFromPath || selectedDepartment || undefined);
 
         let statsDepartment;
-        if (currentDeptFromPath) {
+        if (isGeneralAdminDashboard) {
+          statsDepartment = selectedDepartment || undefined;
+        } else if (currentDeptFromPath) {
           statsDepartment = currentDeptFromPath;
         } else if (rolePerms.scope === 'org') {
           statsDepartment = department;
@@ -314,10 +327,14 @@ const TaskReports = () => {
           statsDepartment = user?.department;
         }
 
+        // Filtering options such as ‘Created’ and ‘Assigned’ tasks should be disabled for the Admin view
+        const apiViewType = !rolePerms.isAdmin && viewType !== 'all' ? viewType : undefined;
+
         const statsParams = {
           start_date: range.from,
           end_date: range.to,
-          department: statsDepartment
+          department: statsDepartment,
+          view_type: apiViewType
         };
         const statsRes = await axiosInstance.get('/tasks/dashboard/stats', { params: statsParams });
         const statsData = statsRes.data?.data || statsRes.data;
@@ -327,7 +344,8 @@ const TaskReports = () => {
         const reportsParams = {
           start_date: range.from,
           end_date: range.to,
-          department: statsDepartment
+          department: statsDepartment,
+          view_type: apiViewType
         };
         const reportsRes = await axiosInstance.get('/tasks/reports', { params: reportsParams });
         const reportsData = reportsRes.data?.data || reportsRes.data;
@@ -338,13 +356,14 @@ const TaskReports = () => {
           avgCompletionDays: reportsData?.avgCompletionDays || null
         });
       } catch (e) {
+        console.error('Task reports fetch error:', e);
         setTaskStatsError(e.response?.data?.message || e.message || 'Failed to fetch task reports');
       } finally {
         setTaskStatsLoading(false);
       }
     };
     fetchTaskReports();
-  }, [duration, selectedDepartment, rolePerms.scope, user?.department, user?.id, currentDeptFromPath]);
+  }, [duration, selectedDepartment, rolePerms.scope, rolePerms.isAdmin, user?.department, user?.id, currentDeptFromPath, viewType]);
 
   useEffect(() => {
     const palette = (n) => {
@@ -373,7 +392,7 @@ const TaskReports = () => {
       const completionData = {
         labels: STATUS_LABELS,
         datasets: [{
-          label: 'Task Status Breakdown',
+          label: 'Task Status',
           data: statusValues,
           backgroundColor: STATUS_COLORS,
           borderColor: '#ffffff',
@@ -388,6 +407,31 @@ const TaskReports = () => {
         );
       }
     }
+
+    if (rolePerms.isAdmin && taskStats?.department_breakdown && departmentCanvasRef.current) {
+      const labels = Object.keys(taskStats.department_breakdown).map(d =>
+        String(d || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')
+      );
+      const dataValues = Object.values(taskStats.department_breakdown);
+      const data = {
+        labels,
+        datasets: [{
+          label: 'Department-wise Task',
+          data: dataValues,
+          backgroundColor: [
+            '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#4D5360', '#C9CBCF', '#8e5ea2', '#3cba9f'
+          ],
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      };
+      createOrUpdateDoughnutChart(
+        departmentCanvasRef.current.getContext('2d'),
+        data,
+        departmentChartRef
+      );
+    }
+
     if (taskAggregates.users.length > 0 && userBarChartRef.current) {
       const labels = taskAggregates.users.map(u => u.label);
       const values = taskAggregates.users.map(u => u.count);
@@ -458,6 +502,10 @@ const TaskReports = () => {
         completionRateChartInstance.current.destroy();
         completionRateChartInstance.current = null;
       }
+      if (departmentChartRef.current) {
+        departmentChartRef.current.destroy();
+        departmentChartRef.current = null;
+      }
       if (userBarChartInstance.current) {
         userBarChartInstance.current.destroy();
         userBarChartInstance.current = null;
@@ -467,7 +515,7 @@ const TaskReports = () => {
         projectBarChartInstance.current = null;
       }
     };
-  }, [taskStats, taskAggregates, statsSummary]);
+  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin]);
 
   return (
     <>
@@ -485,14 +533,32 @@ const TaskReports = () => {
                   onChange={(e) => setDuration(e.target.value)}
                 >
                   <option value="today">Today</option>
+                  <option value="yesterday">Yesterday</option>
                   <option value="this_week">This Week</option>
+                  <option value="last_week">Last Week</option>
                   <option value="this_month">This Month</option>
-                  <option value="this_year">This Year</option>
                   <option value="last_month">Last Month</option>
+                  <option value="this_year">This Year</option>
                   <option value="last_year">Last Year</option>
                 </select>
               </div>
-              {rolePerms.scope === 'org' && !currentDeptFromPath && (
+
+              {!rolePerms.isAdmin && (
+                <div className="task-filter-group">
+                  <span className="task-filter-label">Tasks</span>
+                  <select
+                    className="task-filter-select"
+                    value={viewType}
+                    onChange={(e) => setViewType(e.target.value)}
+                  >
+                    <option value="all">All Tasks</option>
+                    <option value="created">Created by Me</option>
+                    <option value="assigned">Assigned to Me</option>
+                  </select>
+                </div>
+              )}
+
+              {(rolePerms.isAdmin || rolePerms.scope === 'org') && (currentDeptFromPath === 'admin' || !currentDeptFromPath) && (
                 <div className="task-filter-group">
                   <span className="task-filter-label">Department</span>
                   <select
@@ -500,12 +566,13 @@ const TaskReports = () => {
                     value={selectedDepartment}
                     onChange={(e) => setSelectedDepartment(e.target.value)}
                   >
-                    <option value="">All</option>
+                    <option value="">All Departments</option>
                     {Array.isArray(departments) &&
                       departments.map((d) => (
                         <option key={d} value={d}>
-                          {String(d)
+                          {String(d || '')
                             .split('_')
+                            .filter(Boolean)
                             .map((w) => w[0].toUpperCase() + w.slice(1))
                             .join(' ')}
                         </option>
@@ -541,15 +608,17 @@ const TaskReports = () => {
                 </div>
                 <div className="task-dashboard-cards">
                   <div className="task-stat-card task-stat-card--total">
-                    <div className="task-stat-label">Total Task</div>
+                    <div className="task-stat-label">Total Tasks</div>
                     <div className="task-stat-value">{statsSummary.total}</div>
                   </div>
                   <div className="task-stat-card task-stat-card--pending task-stat-card--active">
-                    <div className="task-stat-label">Pending Task</div>
-                    <div className="task-stat-value">{statsSummary.pending}</div>
+                    <div className="task-stat-label">Pending Tasks</div>
+                    <div className="task-stat-value">
+                      {statsSummary.pending}/{statsSummary.total}
+                    </div>
                   </div>
                   <div className="task-stat-card task-stat-card--ended">
-                    <div className="task-stat-label">Ended Tasks</div>
+                    <div className="task-stat-label">Completed Tasks</div>
                     <div className="task-stat-value">
                       {statsSummary.ended}/{statsSummary.total}
                     </div>
@@ -572,9 +641,9 @@ const TaskReports = () => {
             <div className="task-dashboard-main">
               <div className="task-dashboard-column">
                 <div className="task-dashboard-bottom-left">
-                  <div className="task-card task-card--summary">
-                    <div className="task-card-header">
-                      <h2 className="task-card-title">Status Overview</h2>
+                  <div className="task-report-card task-report-card--summary">
+                    <div className="task-report-card-header">
+                      <h2 className="task-report-card-title">Status Overview</h2>
                     </div>
                     <div className="task-status-grid">
                       <div className="task-status-card task-status-card--danger">
@@ -628,9 +697,9 @@ const TaskReports = () => {
                     </div>
                   </div>
 
-                  <div className="task-card task-card--summary">
-                    <div className="task-card-header">
-                      <h2 className="task-card-title">Priority Overview</h2>
+                  <div className="task-report-card task-report-card--summary">
+                    <div className="task-report-card-header">
+                      <h2 className="task-report-card-title">Priority Overview</h2>
                     </div>
                     <div className="task-priority-grid">
                       <div className="task-status-card">
@@ -660,27 +729,54 @@ const TaskReports = () => {
                     </div>
                   </div>
 
-                  <div className="task-card task-card--summary task-card--project-report">
-                    <div className="task-card-header">
-                      <h2 className="task-card-title">Project-wise Task Report</h2>
-                      <span className="task-card-chip">
+                  <div className="task-report-card task-report-card--summary task-report-card--project-report">
+                    <div className="task-report-card-header">
+                      <h2 className="task-report-card-title">Project-wise Task Report</h2>
+                      <span className="task-report-card-chip">
                         {duration === 'this_year' ? 'This Year' : 'Selected Range'}
                       </span>
                     </div>
-                    <div className="task-card-chart task-card-chart--wide">
+                    <div className="task-report-card-chart task-report-card-chart--wide">
                       <canvas ref={projectBarChartRef}></canvas>
                     </div>
                   </div>
                 </div>
-
               </div>
 
               <div className="task-dashboard-column">
-                <div className="task-card task-card--summary">
-                  <div className="task-card-header">
-                    <h2 className="task-card-title">Task Progress</h2>
+                {rolePerms.isAdmin && (
+                  <div className="task-report-card task-report-card--summary">
+                    <div className="task-report-card-header">
+                      <h2 className="task-report-card-title">Department-wise Task Report</h2>
+                    </div>
+                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '300px' }}>
+                      <canvas ref={departmentCanvasRef}></canvas>
+                    </div>
+                    <div className="task-progress-legend" style={{ marginTop: '1rem' }}>
+                      {taskStats?.department_breakdown && Object.entries(taskStats.department_breakdown).map(([dept, count], index) => (
+                        <div key={dept} className="task-progress-legend-item">
+                          <span
+                            className="task-progress-dot"
+                            style={{
+                              backgroundColor: [
+                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#4D5360', '#C9CBCF', '#8e5ea2', '#3cba9f'
+                              ][index % 10]
+                            }}
+                          />
+                          <span className="task-progress-legend-label">
+                            {String(dept || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}: {count}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                  <div className="task-card-chart task-card-chart--wide">
+                )}
+
+                <div className="task-report-card task-report-card--summary">
+                  <div className="task-report-card-header">
+                    <h2 className="task-report-card-title">Task Progress</h2>
+                  </div>
+                  <div className="task-report-card-chart task-report-card-chart--wide">
                     <canvas ref={completionRateChartRef}></canvas>
                   </div>
                   <div className="task-progress-legend">
@@ -702,22 +798,22 @@ const TaskReports = () => {
                   {taskStatsError && <div className="error">{taskStatsError}</div>}
                 </div>
 
-                <div className="task-card task-card--summary">
-                  <div className="task-card-header">
-                    <h2 className="task-card-title">User-wise Task Report</h2>
+                <div className="task-report-card task-report-card--summary">
+                  <div className="task-report-card-header">
+                    <h2 className="task-report-card-title">User-wise Task Report</h2>
                   </div>
-                  <div className="task-card-chart task-card-chart--wide">
+                  <div className="task-report-card-chart task-report-card-chart--wide">
                     <canvas ref={userBarChartRef}></canvas>
                   </div>
                 </div>
               </div>
 
               {taskAggregates.avgCompletionDays !== null && (
-                <div className="task-card task-card--time-tracking">
-                  <div className="task-card-header">
-                    <h2 className="task-card-title">Time Tracking Report</h2>
+                <div className="task-report-card task-report-card--time-tracking">
+                  <div className="task-report-card-header">
+                    <h2 className="task-report-card-title">Time Tracking Report</h2>
                   </div>
-                  <div className="task-card-body">
+                  <div className="task-report-card-body">
                     <div className="task-card-footer-text">
                       Average completion time {taskAggregates.avgCompletionDays} days
                     </div>
