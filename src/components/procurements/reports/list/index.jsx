@@ -31,9 +31,9 @@ const ProcurementReportsList = () => {
   const sortOptions = [
     { value: 'created_at', label: 'Created Date' },
     { value: 'date', label: 'Report Date' },
-    { value: 'totalGeneratedPOs', label: 'Total Generated POs' },
-    { value: 'totalGeneratedPIs', label: 'Total Generated PIs' },
-    { value: 'totalPaidAmount', label: 'Total Paid Amount' }
+    { value: 'total_generated_pos', label: 'Total Generated POs' },
+    { value: 'total_generated_pis', label: 'Total Generated PIs' },
+    { value: 'total_paid_amount', label: 'Total Paid Amount' }
   ];
 
   useEffect(() => {
@@ -188,21 +188,21 @@ const ProcurementReportsList = () => {
                         <td>{formatDate(report.date)}</td>
                         <td>
                           <div className="po-summary">
-                            <span className="po-value po-generated">{report.totalGeneratedPOs}</span>
-                            <span className="po-value po-pending">{report.pendingPOs}</span>
-                            <span className="po-value po-fulfilled">{report.fulfilledPOs}</span>
+                            <span className="po-value po-generated">{report.total_generated_pos}</span>
+                            <span className="po-value po-pending">{report.pending_pos}</span>
+                            <span className="po-value po-fulfilled">{report.fulfilled_pos}</span>
                           </div>
                         </td>
                         <td>
                           <div className="pi-summary">
-                            <span className="pi-value pi-generated">{report.totalGeneratedPIs}</span>
-                            <span className="pi-value pi-unpaid">{report.unpaidPIs}</span>
+                            <span className="pi-value pi-generated">{report.total_generated_pis}</span>
+                            <span className="pi-value pi-unpaid">{report.unpaid_pis}</span>
                           </div>
                         </td>
                         <td>
                           <div className="amount-summary">
-                            <span className="amount-value amount-paid">{formatCurrency(report.totalPaidAmount)}</span>
-                            <span className="amount-value amount-unpaid">{formatCurrency(report.unpaidAmount)}</span>
+                            <span className="amount-value amount-paid">{formatCurrency(report.total_paid_amount)}</span>
+                            <span className="amount-value amount-unpaid">{formatCurrency(report.unpaid_amount)}</span>
                           </div>
                         </td>
                         <td>{report.tenders}</td>

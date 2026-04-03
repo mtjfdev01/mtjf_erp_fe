@@ -104,37 +104,37 @@ const ViewProcurementReport = () => {
                 
                 <div className="detail-item">
                   <label className="detail-label">Total Generated POs</label>
-                  <div className="detail-value">{report.totalGeneratedPOs}</div>
+                  <div className="detail-value">{report.total_generated_pos}</div>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Pending POs</label>
-                  <div className="detail-value">{report.pendingPOs}</div>
+                  <div className="detail-value">{report.pending_pos}</div>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Fulfilled POs</label>
-                  <div className="detail-value">{report.fulfilledPOs}</div>
+                  <div className="detail-value">{report.fulfilled_pos}</div>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Total Generated PIs</label>
-                  <div className="detail-value">{report.totalGeneratedPIs}</div>
+                  <div className="detail-value">{report.total_generated_pis}</div>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Total Paid Amount</label>
-                  <div className="detail-value">{formatCurrency(report.totalPaidAmount)}</div>
+                  <div className="detail-value">{formatCurrency(report.total_paid_amount)}</div>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Unpaid Amount</label>
-                  <div className="detail-value">{formatCurrency(report.unpaidAmount)}</div>
+                  <div className="detail-value">{formatCurrency(report.unpaid_amount)}</div>
                 </div>
                 
                 <div className="detail-item">
                   <label className="detail-label">Unpaid PIs</label>
-                  <div className="detail-value">{report.unpaidPIs}</div>
+                  <div className="detail-value">{report.unpaid_pis}</div>
                 </div>
                 
                 <div className="detail-item">
@@ -156,11 +156,11 @@ const ViewProcurementReport = () => {
                     </div>
                   </div>
                   
-                  {report.updatedAt && report.updatedAt !== report.created_at && (
+                  {report.updated_at && report.updated_at !== report.created_at && (
                     <div className="detail-item">
                       <label className="detail-label">Last Updated</label>
                       <div className="detail-value">
-                        {new Date(report.updatedAt).toLocaleString()}
+                        {new Date(report.updated_at).toLocaleString()}
                       </div>
                     </div>
                   )}

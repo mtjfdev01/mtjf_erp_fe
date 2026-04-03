@@ -17,6 +17,7 @@ const ViewOnlineDonation = () => {
   const [sendingThanksWhatsApp, setSendingThanksWhatsApp] = useState(false);
   const [sendingLinkEmail, setSendingLinkEmail] = useState(false);
   const [sendingLinkWhatsApp, setSendingLinkWhatsApp] = useState(false);
+  const [sendingReceipt, setSendingReceipt] = useState(false);
   const [messageStatus, setMessageStatus] = useState({ type: '', message: '' });
   const [markingCompleted, setMarkingCompleted] = useState(false);
   const [markingFailed, setMarkingFailed] = useState(false);
@@ -220,6 +221,38 @@ const ViewOnlineDonation = () => {
       console.error('Error sending link WhatsApp:', err);
     } finally {
       setSendingLinkWhatsApp(false);
+    }
+  };
+
+  const sendReceipt = async () => {
+    if (!id) return;
+
+    setSendingReceipt(true);
+    setMessageStatus({ type: '', message: '' });
+
+    try {
+      const response = await axiosInstance.post(`/donations/sendDonationReceipt/${id}`);
+
+      if (response.data.success) {
+        setMessageStatus({
+          type: 'success',
+          message: response.data.message || 'Receipt sent successfully!',
+        });
+        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+      } else {
+        setMessageStatus({
+          type: 'error',
+          message: response.data.message || 'Failed to send receipt',
+        });
+      }
+    } catch (err) {
+      setMessageStatus({
+        type: 'error',
+        message: err.response?.data?.message || 'Failed to send receipt. Please try again.',
+      });
+      console.error('Error sending receipt:', err);
+    } finally {
+      setSendingReceipt(false);
     }
   };
 
@@ -788,6 +821,38 @@ const ViewOnlineDonation = () => {
               >
                 {sendingLinkWhatsApp ? 'Sending...' : '💬 Send Payment Link WhatsApp'}
               </button>
+
+              {/* Send Receipt */}
+              {(donation?.donation_method === 'in_kind' || (donation?.in_kind_items && donation.in_kind_items.length > 0)) && (
+                <button
+                  onClick={sendReceipt}
+                  disabled={sendingReceipt || !donation?.donor?.email}
+                  style={{
+                    padding: '0.75rem 1.5rem',
+                    backgroundColor: '#f59e0b',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '6px',
+                    cursor: sendingReceipt || !donation?.donor?.email ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    opacity: sendingReceipt || !donation?.donor?.email ? 0.6 : 1,
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!sendingReceipt && donation?.donor?.email) {
+                      e.target.style.backgroundColor = '#d97706';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!sendingReceipt && donation?.donor?.email) {
+                      e.target.style.backgroundColor = '#f59e0b';
+                    }
+                  }}
+                >
+                  {sendingReceipt ? 'Sending...' : '🧾 Send Receipt'}
+                </button>
+              )}
             </div>
             
             {(!donation?.donor?.email && !donation?.donor?.phone) && (

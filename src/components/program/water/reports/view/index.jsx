@@ -20,7 +20,21 @@ const ViewWaterReport = () => {
     const fetchReport = async () => {
         try {
             setLoading(true);
-            const response = await axios.get(`/program/water/reports/date/${id}`);
+            setError('');
+
+            let dateKey = id;
+            const isDateKey = typeof id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(id);
+            if (!isDateKey) {
+                const single = await axios.get(`/program/water/reports/${id}`);
+                if (!single.data?.success) {
+                    setError(single.data?.message || 'Report not found');
+                    setReport(null);
+                    return;
+                }
+                dateKey = new Date(single.data.data?.date).toISOString().split('T')[0];
+            }
+
+            const response = await axios.get(`/program/water/reports/date/${dateKey}`);
             
             if (response.data.success) {
                 const reportData = response.data.data;

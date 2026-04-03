@@ -18,6 +18,7 @@ const AddTarget = () => {
     year: new Date().getFullYear().toString(),
     program: '',
     target: 0,
+    reached: 0,
     target_type: ''
   });
 
@@ -139,6 +140,18 @@ const AddTarget = () => {
           onChange={e => handleNumberChange(index, 'target', e.target.value)}
           required
         />
+        <FormInput
+          name="reached"
+          label="Reached"
+          type="number"
+          value={target.reached}
+          onChange={e => handleNumberChange(index, 'reached', e.target.value)}
+          required
+        />
+      </div>
+
+      <br />
+      <div className="form-grid-dynamic" style={{ gridTemplateColumns: '1fr 1fr', alignItems: 'flex-end' }}>
         <FormSelect
           name="target_type"
           label="Target Type"
@@ -149,7 +162,6 @@ const AddTarget = () => {
           showDefaultOption={true}
           defaultOptionText="Select Target Type"
         />
-
       </div>
 
     </>
