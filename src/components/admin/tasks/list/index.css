@@ -716,6 +716,7 @@
     justify-content: space-between;
     gap: 12px;
     position: relative;
+    padding-bottom: 30px; /* Space for the more-icon at bottom right */
   }
 
   .task-card-meta-left {
@@ -755,7 +756,9 @@
     display: flex !important;
     align-items: center;
     justify-content: center;
-    position: relative;
+    position: absolute !important;
+    right: 0 !important;
+    bottom: 0 !important;
   }
 
   .task-card-actions-mobile .desktop-view {
@@ -763,11 +766,11 @@
   }
 
   .more-icon {
-    font-size: 18px;
-    color: #64748b;
+    font-size: 1.5rem;
+    color: #C62828;
     background: #f1f5f9;
-    padding: 6px;
-    border-radius: 8px;
+    padding: 4px;
+    border-radius: 6px;
     cursor: pointer;
   }
 
