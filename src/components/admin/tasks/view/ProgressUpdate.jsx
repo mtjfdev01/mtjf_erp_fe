@@ -225,8 +225,8 @@ const ProgressUpdate = ({
                     }}
                   >
                     {Number(checkedById) === Number(currentUser?.id)
-                      ? '(You)'
-                      : `(Assignee)`}
+                      ? '(You checked)'
+                      : `(Assignee checked)`}
                   </span>
                 )}
               </button>

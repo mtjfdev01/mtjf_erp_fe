@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiHome, FiMoreHorizontal } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -35,6 +35,7 @@ const TasksList = () => {
   const [searchInput, setSearchInput] = useState('');
   const [isSearchPending, setIsSearchPending] = useState(false);
   const [myApprovals, setMyApprovals] = useState([]);
+  const [activeTab, setActiveTab] = useState('assigned_to_me');
 
   const currentUserId = user?.id ? Number(user.id) : null;
 
@@ -361,7 +362,12 @@ const TasksList = () => {
     const now = new Date();
     const status = String(task.status || '').toLowerCase();
     if (['completed', 'closed', 'cancelled'].includes(status)) return false;
-    return now > due;
+
+    // A task becomes overdue only after 12:00 PM (noon) on the due date.
+    const dueNoon = new Date(due);
+    dueNoon.setHours(12, 0, 0, 0);
+
+    return now > dueNoon;
   };
 
   const getDueInfo = (rawDate, statusRaw) => {
@@ -369,26 +375,43 @@ const TasksList = () => {
     const due = new Date(rawDate);
     if (Number.isNaN(due.getTime())) return null;
     const now = new Date();
-    const diffMs = due.getTime() - now.getTime();
-    const diffDays = Math.round(diffMs / 86400000);
     const status = String(statusRaw || '').toLowerCase();
     if (['completed', 'closed', 'cancelled'].includes(status)) {
       return null;
     }
-    if (diffDays === 0) {
-      return { label: 'Due today', variant: 'warning' };
-    }
-    if (diffDays > 0) {
+
+    // A task becomes overdue ONLY after 12:00 PM (noon) on the due date.
+    const dueNoon = new Date(due);
+    dueNoon.setHours(12, 0, 0, 0);
+
+    const startOfDueDay = new Date(due);
+    startOfDueDay.setHours(0, 0, 0, 0);
+    const startOfNowDay = new Date(now);
+    startOfNowDay.setHours(0, 0, 0, 0);
+
+    if (now > dueNoon) {
+      const diffMs = startOfNowDay.getTime() - startOfDueDay.getTime();
+      const overdueDays = Math.round(diffMs / 86400000);
+
+      if (overdueDays === 0) {
+        return { label: 'Overdue today', variant: 'warning' };
+      }
+      return {
+        label: `-${overdueDays} d`,
+        variant: 'danger',
+      };
+    } else {
+      const diffMs = startOfDueDay.getTime() - startOfNowDay.getTime();
+      const diffDays = Math.round(diffMs / 86400000);
+
+      if (diffDays === 0) {
+        return { label: 'Due today', variant: 'warning' };
+      }
       return {
         label: `In ${diffDays} d`,
         variant: 'normal',
       };
     }
-    const overdueDays = Math.abs(diffDays);
-    return {
-      label: `-${overdueDays} d`,
-      variant: 'danger',
-    };
   };
 
   const getStatusBadge = (statusRaw) => {
@@ -778,6 +801,20 @@ const TasksList = () => {
                   </span>
                 )}
               </div>
+              <div className="task-date-tooltip">
+                <div className="tooltip-item">
+                  <span className="tooltip-label">Created:</span>
+                  <span className="tooltip-value">{formatDate(t.created_at)}</span>
+                </div>
+                <div className="tooltip-item">
+                  <span className="tooltip-label">Started:</span>
+                  <span className="tooltip-value">{formatDate(t.start_date)}</span>
+                </div>
+                <div className="tooltip-item">
+                  <span className="tooltip-label">Due:</span>
+                  <span className="tooltip-value">{formatDate(t.due_date)}</span>
+                </div>
+              </div>
             </div>
             <div className="task-card-actions">
               <div className="task-action-icon view" title={hoverText('view')} onClick={() => navigate(`/admin/tasks/view/${t.id}`)}>
@@ -936,7 +973,7 @@ const TasksList = () => {
               </div>
 
               <div className="filter-item select-item">
-                <FiHome className="filter-icon" />
+                <FiUsers className="filter-icon" />
                 <select
                   value={filters.department === null ? (currentDeptFromPath || '') : filters.department}
                   onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
@@ -1036,40 +1073,77 @@ const TasksList = () => {
           {error && <div className="status-message status-message--error">{error}</div>}
 
           <div className="task-card-list">
-
-            {myTasks.length > 0 && (
-              <div className="tasks-group">
-                <div className="tasks-group-header">
-                  <span className="tasks-group-label tasks-group-label--mine">
-                    TASKS ASSIGNED TO YOU
-                  </span>
-                </div>
-                {myTasks.map((t) => renderTaskCard(t))}
+            <div className="task-tabs-container">
+              <div className="task-tabs">
+                <button
+                  className={`task-tab-btn ${activeTab === 'assigned_to_me' ? 'active active--mine' : ''}`}
+                  onClick={() => setActiveTab('assigned_to_me')}
+                >
+                  <FiUserCheck className="tab-icon" />
+                  <span className="tab-text">My Tasks</span>
+                  <span className="tab-count">{myTasks.length}</span>
+                </button>
+                {isManager && (
+                  <button
+                    className={`task-tab-btn ${activeTab === 'assigned_to_team' ? 'active active--team' : ''}`}
+                    onClick={() => setActiveTab('assigned_to_team')}
+                  >
+                    <FiUsers className="tab-icon" />
+                    <span className="tab-text">Team Tasks</span>
+                    <span className="tab-count">{teamTasks.length}</span>
+                  </button>
+                )}
+                <button
+                  className={`task-tab-btn ${activeTab === 'other_tasks' ? 'active active--other' : ''}`}
+                  onClick={() => setActiveTab('other_tasks')}
+                >
+                  <FiList className="tab-icon" />
+                  <span className="tab-text">Other Tasks</span>
+                  <span className="tab-count">{otherTasks.length}</span>
+                </button>
               </div>
-            )}
+            </div>
 
-
-            {otherTasks.length > 0 && (
-              <div className="tasks-group">
-                <div className="tasks-group-header">
-                  <span className="tasks-group-label tasks-group-label--other">
-                    OTHER TASKS
-                  </span>
+            <div className="tab-content-wrapper">
+              {activeTab === 'assigned_to_me' && (
+                <div className="tasks-group fade-in">
+                  {myTasks.length > 0 ? (
+                    myTasks.map((t) => renderTaskCard(t))
+                  ) : (
+                    <div className="empty-tab-state">
+                      <FiUserCheck className="empty-icon" />
+                      <p>No tasks assigned to you at the moment.</p>
+                    </div>
+                  )}
                 </div>
-                {otherTasks.map((t) => renderTaskCard(t))}
-              </div>
-            )}
+              )}
 
-            {teamTasks.length > 0 && (
-              <div className="tasks-group">
-                <div className="tasks-group-header">
-                  <span className="tasks-group-label tasks-group-label--team">
-                    TASKS ASSIGNED TO YOUR TEAM
-                  </span>
+              {activeTab === 'assigned_to_team' && isManager && (
+                <div className="tasks-group fade-in">
+                  {teamTasks.length > 0 ? (
+                    teamTasks.map((t) => renderTaskCard(t))
+                  ) : (
+                    <div className="empty-tab-state">
+                      <FiUsers className="empty-icon" />
+                      <p>No tasks assigned to your team members.</p>
+                    </div>
+                  )}
                 </div>
-                {teamTasks.map((t) => renderTaskCard(t))}
-              </div>
-            )}
+              )}
+
+              {activeTab === 'other_tasks' && (
+                <div className="tasks-group fade-in">
+                  {otherTasks.length > 0 ? (
+                    otherTasks.map((t) => renderTaskCard(t))
+                  ) : (
+                    <div className="empty-tab-state">
+                      <FiList className="empty-icon" />
+                      <p>No other tasks found.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
 
             {tasks.length === 0 && !error && (
               <div className="empty-state">
@@ -1077,92 +1151,12 @@ const TasksList = () => {
                   <FiThumbsUp />
                 </div>
                 <div className="empty-state-text">No tasks found</div>
-                <div className="empty-state-subtext">
+                {/* <div className="empty-state-subtext">
                   Adjust filters or create a new task to get started.
-                </div>
+                </div> */}
               </div>
             )}
           </div>
-          {reassignTask && (
-            <div className="custom-modal-overlay">
-              <div className="custom-modal-content reassign-modal reassign-modal-content">
-                <div className="reassign-modal-header">
-                  <div>
-                    <h2 className="reassign-modal-title">Reassign Task</h2>
-                    <p className="reassign-modal-subtitle">
-                      Select one or more users to assign this task to.
-                    </p>
-                  </div>
-                  <button className="custom-modal-close" onClick={handleCloseReassign}>
-                    &times;
-                  </button>
-                </div>
-                <div className="reassign-modal-body">
-                  <div className="reassign-field-group">
-                    <div className="reassign-field-label">Assign Users</div>
-                    <SearchableMultiSelect
-                      label=""
-                      apiEndpoint="/users/options"
-                      apiParams={multiSelectParams}
-                      onSelect={(users) => setReassignUsers(users)}
-                      onClear={() => setReassignUsers([])}
-                      value={reassignUsers}
-                      displayKey="first_name"
-                      valueKey="id"
-                      allowResearch={true}
-                      debounceDelay={500}
-                      minSearchLength={2}
-                      disabled={reassignSaving}
-                      renderOption={(userOption) => (
-                        <div className="reassign-user-option">
-                          <div className="reassign-user-name">
-                            {userOption.first_name} {userOption.last_name}
-                          </div>
-                          <div className="reassign-user-email">
-                            {userOption.email}
-                          </div>
-                          {userOption.department && (
-                            <div className="reassign-user-meta">
-                              {userOption.department} • {userOption.role || 'User'}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    />
-                    {reassignUsers.length > 0 && (
-                      <div className="reassign-selection-hint">
-                        {'\u2713'} {reassignUsers.length}{' '}
-                        {reassignUsers.length === 1 ? 'user selected' : 'users selected'}
-                      </div>
-                    )}
-                  </div>
-                  {reassignError && (
-                    <div className="status-message status-message--error reassign-error">
-                      {reassignError}
-                    </div>
-                  )}
-                </div>
-                <div className="reassign-modal-footer">
-                  <button
-                    type="button"
-                    className="secondary-button reassign-modal-cancel"
-                    onClick={handleCloseReassign}
-                    disabled={reassignSaving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    className="reassign-modal-confirm"
-                    onClick={handleReassignSubmit}
-                    disabled={reassignSaving}
-                  >
-                    {reassignSaving ? 'Reassigning...' : 'Confirm Reassign'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
           {totalItems > 0 && (
             <Pagination
               currentPage={currentPage}

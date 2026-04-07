@@ -1,7 +1,16 @@
+.task-report-container {
+  max-width: 1400px;
+  /* margin: 0 2rem; */
+  padding: 1rem;
+  background: var(--color-bg-primary);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
 .task-dashboard-shell {
   max-width: 1180px;
   margin: 1.5rem auto 2rem;
-  padding: 1.6rem 1.8rem 1.8rem;
+  padding: 1rem;
   background: linear-gradient(135deg, #f9fafb, #eff6ff);
   border-radius: 1rem;
   box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
