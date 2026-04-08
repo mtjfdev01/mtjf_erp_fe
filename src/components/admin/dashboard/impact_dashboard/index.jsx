@@ -45,7 +45,7 @@ const AllocationsSummary = () => {
         <div className="allocations-header">
           <div className="icon"><GiTakeMyMoney size={50} /></div>
           <div>
-            <h2 className="total">609M</h2>
+            <h2 className="total">M</h2>
             <p className="subtitle">Allocations</p>
           </div>
           <div className="icon"><FaRupeeSign  /></div>

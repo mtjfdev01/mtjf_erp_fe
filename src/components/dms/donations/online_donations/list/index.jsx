@@ -14,7 +14,7 @@ import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 
-import { FiEye, FiTrash2, FiDollarSign, FiFileText, FiDownload } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
@@ -480,6 +480,16 @@ const OnlineDonationsList = () => {
       label: 'View',
       color: '#4CAF50',
       onClick: () => navigate(`/donations/online_donations/view/${donation.id}`),
+      visible: true
+    },
+    {
+      icon: <FiEdit2 />,
+      label: 'Edit',
+      color: '#2196F3',
+      onClick: () =>
+        navigate(`/donations/online_donations/update/${donation.id}`, {
+          state: { fromList: location.pathname },
+        }),
       visible: true
     },
     // {

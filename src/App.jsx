@@ -14,6 +14,7 @@ import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import { SummaryProvider } from './context/SummaryContext';
 import { InKindItemsProvider } from './context/InKindItemsContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
@@ -22,6 +23,14 @@ import ApplicationReportsList from './components/program/applications_report/app
 import CreateApplicationReport from './components/program/applications_report/create_application_report';
 import UpdateApplicationReport from './components/program/applications_report/update_application_report';
 import ViewApplicationReport from './components/program/applications_report/view_application_report';
+import SubprogramsList from './components/program/subprograms/list';
+import AddSubprogram from './components/program/subprograms/add';
+import UpdateSubprogram from './components/program/subprograms/update';
+import ViewSubprogram from './components/program/subprograms/view';
+import ProgramsList from './components/program/programs/list';
+import AddProgram from './components/program/programs/add';
+import UpdateProgram from './components/program/programs/update';
+import ViewProgram from './components/program/programs/view';
 import AddRationReport from './components/program/ration_report/add';
 import RationReportList from './components/program/ration_report/list';
 import ViewRationReport from './components/program/ration_report/view';
@@ -92,7 +101,7 @@ import AdminApplicationView from './components/admin/hr/career/applications/view
 import JobsList from './components/admin/hr/careers/jobs/list/index';
 import AddJob from './components/admin/hr/careers/jobs/add/index';
 import ViewJob from './components/admin/hr/careers/jobs/view/index';
-import { OnlineDonationsList, ViewOnlineDonation } from './components/dms/donations/online_donations/index';
+import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
 import { DonorsList, RegisterDonor, ViewDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
@@ -102,6 +111,8 @@ import AddDonationBoxDonation from './components/dms/donations/donation_box/add'
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
+import EmailTemplateList from './components/dms/email_templates/list';
+import EmailTemplateForm from './components/dms/email_templates/form';
 import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
@@ -125,15 +136,21 @@ import UpdateTask from './components/admin/tasks/update';
 import ViewTask from './components/admin/tasks/view';
 import TaskReports from './components/admin/tasks/reports';
 import TaskReceipt from './components/admin/tasks/taskrecipt';
+import PublicTrackingPage from './components/progress_tracking/public';
+import TemplatesList from './components/progress_tracking/admin/templates/list';
+import TemplateView from './components/progress_tracking/admin/templates/view';
+import TrackersList from './components/progress_tracking/admin/trackers/list';
+import TrackersView from './components/progress_tracking/admin/trackers/view';
 const App = () => {
   return (<React.Fragment>
             <Router> 
               <AuthProvider>
                 <NotificationProvider>
-                <InKindItemsProvider>
-                <div className="app-container">
-                  {/* Sidebar - only show on protected routes */}
-                  <Routes>
+                  <SummaryProvider>
+                    <InKindItemsProvider>
+                      <div className="app-container">
+                        {/* Sidebar - only show on protected routes */}
+                        <Routes>
                     <Route path="/" element={<Login />} />
                     <Route
                       path="/*"
@@ -143,6 +160,11 @@ const App = () => {
                             <main className="app-main">
                               <Routes>
                                 {/* Main Dashboard Routes */}
+                                <Route path="/tracking/:token" element={<PublicTrackingPage />} />
+                                <Route path="/progress/templates" element={<TemplatesList />} />
+                                <Route path="/progress/templates/:id" element={<TemplateView />} />
+                                <Route path="/progress/trackers" element={<TrackersList />} />
+                                <Route path="/progress/trackers/:id" element={<TrackersView />} />
                                 <Route path="/store" element={<Store />} />
                                 <Route path="/procurements" element={<Procurements />} />
                                 <Route path="/program" element={<Program />} />
@@ -166,6 +188,18 @@ const App = () => {
                                 <Route path="/program/applications_reports/add" element={<CreateApplicationReport />} />
                                 <Route path="/program/applications_reports/edit_application_report/:id" element={<UpdateApplicationReport />} />
                                 <Route path="/program/applications_reports/view_application_report/:id" element={<ViewApplicationReport />} />
+
+                                {/* Subprogram CRUD Routes */}
+                                <Route path="/program/subprograms" element={<SubprogramsList />} />
+                                <Route path="/program/subprograms/add" element={<AddSubprogram />} />
+                                <Route path="/program/subprograms/update/:id" element={<UpdateSubprogram />} />
+                                <Route path="/program/subprograms/view/:id" element={<ViewSubprogram />} />
+
+                                {/* Program CRUD Routes */}
+                                <Route path="/program/programs" element={<ProgramsList />} />
+                                <Route path="/program/programs/add" element={<AddProgram />} />
+                                <Route path="/program/programs/update/:id" element={<UpdateProgram />} />
+                                <Route path="/program/programs/view/:id" element={<ViewProgram />} />
                                 
                                 {/* Ration Report Routes - Nested under /program */}
                                 <Route path="/program/ration_report/add" element={<AddRationReport />} />
@@ -278,6 +312,7 @@ const App = () => {
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/offline_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/donations/online_donations/update/:id" element={<UpdateOnlineDonation />} />
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
                                 
                                 {/* Donors Routes */}
@@ -337,6 +372,11 @@ const App = () => {
                                 <Route path="/dms/campaigns/view/:id" element={<ViewCampaign />} />
                                 <Route path="/dms/campaigns/edit/:id" element={<EditCampaign />} />
 
+                                {/* Email Template Routes */}
+                                <Route path="/dms/email_templates/list" element={<EmailTemplateList />} />
+                                <Route path="/dms/email_templates/add" element={<EmailTemplateForm />} />
+                                <Route path="/dms/email_templates/edit/:id" element={<EmailTemplateForm />} />
+
                                 {/* Tasks (Admin) */}
                                 <Route path="/admin/tasks/list" element={<TasksList />} />
                                 <Route path="/admin/tasks/add" element={<AddTask />} />
@@ -387,10 +427,11 @@ const App = () => {
                           </div>
                       }
                     />
-                  </Routes>
-                </div>
-              </InKindItemsProvider>
-              </NotificationProvider>
+                        </Routes>
+                      </div>
+                    </InKindItemsProvider>
+                  </SummaryProvider>
+                </NotificationProvider>
             </AuthProvider>
             </Router>
             <ToastContainer />

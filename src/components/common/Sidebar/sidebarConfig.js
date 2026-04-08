@@ -160,6 +160,28 @@ const programDepartmentItems = (isUser = false) => [
     path: '/program/targets/reports/list',
     type: 'list',
     module: 'targets'
+  },
+  {
+    label: 'Programs',
+    path: '/program/programs',
+    type: 'list',
+    module: 'programs'
+  },
+  {
+    label: 'Subprograms',
+    path: '/program/subprograms',
+    type: 'list',
+    module: 'subprograms'
+  },
+  {
+    label: 'Progress Tracking',
+    path: '/progress/trackers',
+    type: 'list',
+    module: 'progress_tracking',
+    subItems: [
+      { label: 'Trackers', path: '/progress/trackers', type: 'list', module: 'progress_tracking' },
+      { label: 'Workflow Templates', path: '/progress/templates', type: 'list', module: 'progress_tracking' },
+    ],
   }
 ];
 
@@ -258,7 +280,9 @@ const adminDepartmentItems = () => [
       {label: "education", path: "/program/education/reports/list", type: "list"},
       {label: "tree_plantation", path: "/program/tree_plantation/reports/list", type: "list"},
       {label: "area_ration", path: "/program/area_ration/reports/list", type: "list"},
-      {label: "targets", path: "/program/targets/reports/list", type: "list"} 
+      {label: "targets", path: "/program/targets/reports/list", type: "list"},
+      {label: "programs", path: "/program/programs", type: "list"},
+      {label: "subprograms", path: "/program/subprograms", type: "list"}
     ]
   },
   {
@@ -354,6 +378,18 @@ const adminDepartmentItems = () => [
       { label: 'Jobs', path: '/hr/careers/jobs/list', type: 'list' },
       { label: 'Applications', path: '/hr/career/applications/list', type: 'list' }
     ]
+  },
+  {
+    label: 'Programs',
+    path: '/program/programs',
+    type: 'list',
+    module: 'programs'
+  },
+  {
+    label: 'Subprograms',
+    path: '/program/subprograms',
+    type: 'list',
+    module: 'subprograms'
   }
 ];
 
@@ -573,6 +609,20 @@ const audioVideoDepartmentItems = () => [
   }
 ];
 
+// Email Templates module items
+const emailTemplatesItems = () => [
+  {
+    label: 'Email Templates',
+    path: '/dms/email_templates/list',
+    type: 'list',
+    module: 'email_templates',
+    subItems: [
+      { label: 'Templates List', path: '/dms/email_templates/list', type: 'list' },
+      { label: 'Add Template', path: '/dms/email_templates/add', type: 'list' }
+    ]
+  }
+];
+
 
 // Department configurations
 const departmentConfigs = {
@@ -635,6 +685,11 @@ const departmentConfigs = {
     label: 'Marketing',
     items: marketingDepartmentItems(isUser)
   }),
+  email_templates: () => ({
+    id: 'email_templates',
+    label: 'Communication',
+    items: emailTemplatesItems()
+  }),
 };
  
 // Filter items based on user permissions
@@ -679,6 +734,7 @@ export const getSidebarConfig = (user, permissions = null) => {
       departmentConfigs.fund_raising(false),
       departmentConfigs.geographic(false),
       departmentConfigs.hr(false),
+      departmentConfigs.email_templates(),
       ...(unifiedTaskingGroup ? [unifiedTaskingGroup] : [])
     ];
   }

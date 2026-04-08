@@ -78,10 +78,13 @@
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
   text-align: left;
+}
+
+.application-subtitle {
+  font-weight: 500;
+  color: var(--color-text-secondary);
 }
 
 .application-stats {

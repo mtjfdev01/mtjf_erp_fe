@@ -99,3 +99,36 @@ export const programs_list = [
   { id: 8, key: 'livelihood_support_program', label: 'Livelihood Support Program', logo: '/public/assets/images/program_logos/kasb.png' },
   { id: 9, key: 'disaster_management', label: 'Disaster Management', logo: '/public/assets/images/program_logos/disaster_management.png' },
 ];
+
+/** Subprograms: `program_id` matches `programs_list[].id` */
+export const subprograms_list = [
+  { id: 1, program_id: 1, key: 'food_security_general', label: 'General distribution' },
+  { id: 2, program_id: 1, key: 'food_security_targeted', label: 'Targeted assistance' },
+  { id: 3, program_id: 2, key: 'community_services_general', label: 'General' },
+  { id: 4, program_id: 2, key: 'community_services_outreach', label: 'Outreach' },
+  { id: 5, program_id: 3, key: 'education_general', label: 'General' },
+  { id: 6, program_id: 3, key: 'education_scholarships', label: 'Scholarships' },
+  { id: 7, program_id: 4, key: 'water_hand_pumps', label: 'Hand pumps' },
+  { id: 8, program_id: 4, key: 'water_filtration', label: 'Filtration systems' },
+  { id: 9, program_id: 5, key: 'kasb_tulamba', label: 'Tulamba center' },
+  { id: 10, program_id: 5, key: 'kasb_abdul_hakim', label: 'Abdul Hakim center' },
+  { id: 11, program_id: 6, key: 'green_initiative_general', label: 'General' },
+  { id: 12, program_id: 6, key: 'green_initiative_afforestation', label: 'Afforestation' },
+  { id: 13, program_id: 7, key: 'wocp_general', label: 'General' },
+  { id: 14, program_id: 7, key: 'wocp_shelter', label: 'Shelter support' },
+  { id: 15, program_id: 8, key: 'livelihood_general', label: 'General' },
+  { id: 16, program_id: 8, key: 'livelihood_skills', label: 'Skills training' },
+  { id: 17, program_id: 9, key: 'disaster_relief', label: 'Relief operations' },
+  { id: 18, program_id: 9, key: 'disaster_preparedness', label: 'Preparedness' },
+];
+
+/** Resolve display labels from keys (e.g. for read-only views). */
+export const getProgramLabelByKey = (key) => {
+  if (key == null || key === '') return '';
+  return programs_list.find((p) => p.key === key)?.label ?? key;
+};
+
+export const getSubprogramLabelByKey = (key) => {
+  if (key == null || key === '') return '';
+  return subprograms_list.find((s) => s.key === key)?.label ?? key;
+};
