@@ -102,7 +102,7 @@ const UpdateRationReport = () => {
       await axiosInstance.patch(`/program/ration/reports/${id}`, form);
       navigate('/program/ration_report/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -226,7 +226,7 @@ const UpdateRationReport = () => {
             />
           </div>
           <button type="submit" className="primary_btn" disabled={isSubmitting}>
-            {isSubmitting ? 'Updating...' : 'Update Report'}
+            {isSubmitting ? 'Updating...' : 'Submit Report'}
           </button>
         </form>
       </div>

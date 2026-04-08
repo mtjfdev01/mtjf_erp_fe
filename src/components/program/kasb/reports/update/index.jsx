@@ -142,10 +142,10 @@ const UpdateKasbReport = () => {
       if (response.data.success) {
         navigate('/program/kasb/reports/list');
       } else {
-        setError(response.data.message || 'Failed to update report');
+        setError(response.data.message || 'Failed to Submit Report');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -249,7 +249,7 @@ const UpdateKasbReport = () => {
 
               <div className="form-actions">
                 <button type="submit" className="primary_btn" disabled={isSubmitting}>
-                  {isSubmitting ? 'Updating...' : 'Update Report'}
+                  {isSubmitting ? 'Updating...' : 'Submit Report'}
                 </button>
               </div>
             </form>

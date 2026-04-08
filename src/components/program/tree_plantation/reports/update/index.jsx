@@ -62,7 +62,7 @@ const UpdateTreePlantationReport = () => {
       });
       navigate('/program/tree_plantation/reports/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +118,7 @@ const UpdateTreePlantationReport = () => {
             </div>
             <div className="form-actions">
               <button type="submit" className="primary_btn" disabled={isSubmitting}>
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

@@ -85,7 +85,7 @@ const UpdateMarriageGiftsReport = () => {
       await axiosInstance.patch(`/program/marriage-gifts/reports/${id}`, form);
       navigate('/program/marriage_gifts/reports/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -169,7 +169,7 @@ const UpdateMarriageGiftsReport = () => {
                 className="primary_btn"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

@@ -98,7 +98,7 @@ const UpdateEducationReport = () => {
       await axiosInstance.patch(`/program/education/reports/${id}`, form);
       navigate('/program/education/reports/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setSaving(false);
@@ -115,7 +115,7 @@ const UpdateEducationReport = () => {
             breadcrumbs={[
               { label: 'Program', path: '/program' },
               { label: 'Education Reports', path: '/program/education/reports/list' },
-              { label: 'Update Report' }
+              { label: 'Submit Report' }
             ]}
           />
           <div className="loading">Loading...</div>
@@ -133,11 +133,11 @@ const UpdateEducationReport = () => {
           breadcrumbs={[
             { label: 'Program', path: '/program' },
             { label: 'Education Reports', path: '/program/education/reports/list' },
-            { label: 'Update Report' }
+            { label: 'Submit Report' }
           ]}
           backPath="/program/education/reports/list"
           actionButton={{
-            label: 'Update Report',
+            label: 'Submit Report',
             onClick: handleSubmit,
             disabled: saving
           }}
@@ -262,7 +262,7 @@ const UpdateEducationReport = () => {
                 className="primary_btn"
                 disabled={saving}
               >
-                {saving ? 'Updating...' : 'Update Report'}
+                {saving ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

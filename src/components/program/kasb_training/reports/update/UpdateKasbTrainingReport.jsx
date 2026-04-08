@@ -137,7 +137,7 @@ const UpdateKasbTrainingReport = () => {
       if (response.data.success) {
         navigate('/program/kasb-training/reports');
       } else {
-        setError(response.data.message || 'Failed to update report');
+        setError(response.data.message || 'Failed to Submit Report');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred while updating the report');
@@ -211,7 +211,7 @@ const UpdateKasbTrainingReport = () => {
           breadcrumbs={[
             { label: 'Program', path: '/program' },
             { label: 'Kasb Training Reports', path: '/program/kasb-training/reports' },
-            { label: 'Update Report' }
+            { label: 'Submit Report' }
           ]}
         />
         <div className="loading">Loading...</div>
@@ -254,7 +254,7 @@ const UpdateKasbTrainingReport = () => {
 
           <div className="form-actions">
             <button type="submit" className="primary_btn" disabled={saving}>
-              {saving ? 'Updating...' : 'Update Report'}
+              {saving ? 'Updating...' : 'Submit Report'}
             </button>
           </div>
         </form>

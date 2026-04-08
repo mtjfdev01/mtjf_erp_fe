@@ -207,7 +207,7 @@ const UpdateApplicationReport = () => {
       // Navigate immediately after successful update
       navigate('/program/applications_reports');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -283,13 +283,13 @@ const UpdateApplicationReport = () => {
                   <div className="form-grid">
                     <FormSelect
                       name={`project-${index}`}
-                      label="Project Name"
+                      label="Themetic Area"
                       value={application.project}
                       onChange={(e) => handleApplicationChange(index, 'project', e.target.value)}
                       options={projectOptions}
                       required
                       showDefaultOption={true}
-                      defaultOptionText="Select Project"
+                      defaultOptionText="Select Theme"
                     />
                     <FormSelect
                       name={`subprogram-${index}`}
@@ -368,7 +368,7 @@ const UpdateApplicationReport = () => {
                 className="primary_btn"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

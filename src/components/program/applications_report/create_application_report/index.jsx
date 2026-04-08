@@ -10,7 +10,47 @@ import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import { programs_list } from '../../../../utils/program';
 
+import AddRationReport from '../../ration_report/add';
+import AddMarriageGiftsReport from '../../marriage_gifts/reports/add';
+import AddFinancialAssistanceReport from '../../financial_assistance/reports/add';
+import AddSewingMachineReport from '../../sewing_machine/reports/add';
+import AddWheelChairOrCrutchesReport from '../../wheel_chair_or_crutches/reports/add';
+import AddWaterReport from '../../water/reports/add';
+import AddKasbReport from '../../kasb/reports/add';
+import AddKasbTrainingReport from '../../kasb_training/reports/add/AddKasbTrainingReport';
+import AddEducationReport from '../../education/reports/add';
+import AddTreePlantationReport from '../../tree_plantation/reports/add';
+import AddAreaRationReport from '../../area_ration/reports/add';
+
 import './CreateApplication.css';
+
+const PROGRAM_COMPONENTS_MAP = {
+  // Programs
+  food_security: AddRationReport,
+  community_services: AddMarriageGiftsReport,
+  education: AddEducationReport,
+  water_clean_water: AddWaterReport,
+  kasb: AddKasbReport,
+  green_initiative: AddTreePlantationReport,
+  widows_and_orphans_care_program: AddFinancialAssistanceReport,
+  livelihood_support_program: AddSewingMachineReport,
+
+  // Subprograms (Mapping subprogram keys to components)
+  area_ration: AddAreaRationReport,
+  kasb_training: AddKasbTrainingReport,
+  'kasb-training': AddKasbTrainingReport,
+  wheel_chair_or_crutches: AddWheelChairOrCrutchesReport,
+  'wheel-chair-or-crutches': AddWheelChairOrCrutchesReport,
+  ration_report: AddRationReport,
+  marriage_gifts: AddMarriageGiftsReport,
+  financial_assistance: AddFinancialAssistanceReport,
+  sewing_machine: AddSewingMachineReport,
+  water_reports: AddWaterReport,
+  kasb_reports: AddKasbReport,
+  education_reports: AddEducationReport,
+  tree_plantation: AddTreePlantationReport,
+  area_ration_reports: AddAreaRationReport,
+};
 
 const CreateApplication = ({ applicationData = null, isEdit = false }) => {
   const navigate = useNavigate();
@@ -229,6 +269,11 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     return true;
   };
 
+  const lastApplication = applications[applications.length - 1];
+  const DynamicCreateComponent = 
+    (lastApplication?.subprogram && PROGRAM_COMPONENTS_MAP[lastApplication.subprogram]) || 
+    (lastApplication?.project && PROGRAM_COMPONENTS_MAP[lastApplication.project]);
+
   const handleSubmit = async e => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -344,13 +389,13 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                   <div className="form-grid">
                     <FormSelect
                       name={`project-${index}`}
-                      label="Project Name"
+                      label="Themetic Area"
                       value={application.project}
                       onChange={(e) => handleApplicationChange(index, 'project', e.target.value)}
                       options={projectOptions}
                       required
                       showDefaultOption={true}
-                      defaultOptionText="Select Project"
+                      defaultOptionText="Select Theme"
                     />
 
                     <FormSelect
@@ -439,6 +484,8 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                 {isSubmitting ? 'Submitting...' : (isEdit ? 'Update Report' : 'Create Report')}
               </button>
             </div>
+
+            {DynamicCreateComponent && <DynamicCreateComponent />}
           </form>
         )}
       </div>
