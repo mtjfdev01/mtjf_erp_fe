@@ -7,11 +7,33 @@ import '../../../../styles/components.css';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
+import FormSelect from '../../../common/FormSelect';
+import { programs_list } from '../../../../utils/program';
+import '../create_application_report/CreateApplication.css';
 import './UpdateApplication.css';
 
 const UpdateApplicationReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+
+  const [programsForSelect, setProgramsForSelect] = useState([]);
+
+  const projectOptions = programsForSelect.map((program) => ({
+    value: program.key,
+    label: program.label,
+  }));
+
+  const getSubProgramOptions = (programKey) => {
+    const program =
+      programsForSelect.find((p) => p.key === programKey) ||
+      programs_list.find((p) => p.key === programKey);
+    if (!program) return [];
+    return subprogramsForSelect
+      .filter((sp) => sp.program_id === program.id)
+      .map((sp) => ({ value: sp.key, label: sp.label }));
+  };
+
+  const [subprogramsForSelect, setSubprogramsForSelect] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -23,6 +45,38 @@ const UpdateApplicationReport = () => {
     fetchApplicationReport();
     // eslint-disable-next-line
   }, [id]);
+
+  useEffect(() => {
+    const fetchSubprograms = async () => {
+      try {
+        const response = await axiosInstance.get('/program/subprograms', {
+          params: { page: 1, pageSize: 1000 },
+        });
+        if (response.data?.success) {
+          setSubprogramsForSelect(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching subprograms:', err);
+      }
+    };
+
+    const fetchPrograms = async () => {
+      try {
+        // Fetch all programs so edit screens can show legacy/inactive values too.
+        const response = await axiosInstance.get('/program/programs', {
+          params: { page: 1, pageSize: 1000 },
+        });
+        if (response.data?.success) {
+          setProgramsForSelect(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching programs:', err);
+      }
+    };
+
+    fetchSubprograms();
+    fetchPrograms();
+  }, []);
 
   const fetchApplicationReport = async () => {
     try {
@@ -50,11 +104,14 @@ const UpdateApplicationReport = () => {
 
   const handleApplicationChange = (index, field, value) => {
     const updatedApplications = [...applications];
-    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
+    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
     if (numericFields.includes(field)) {
       updatedApplications[index][field] = value === '' ? '' : parseInt(value, 10) || 0;
     } else {
       updatedApplications[index][field] = value;
+      if (field === 'project') {
+        updatedApplications[index].subprogram = '';
+      }
     }
     setApplications(updatedApplications);
     if (error) setError('');
@@ -70,10 +127,10 @@ const UpdateApplicationReport = () => {
     const newApplication = {
       id: newId,
       project: '',
+      subprogram: '',
       pending_last_month: 0,
       application_count: 0,
       investigation_count: 0,
-      verified_count: 0,
       approved_count: 0,
       rejected_count: 0,
       pending_count: 0
@@ -96,15 +153,33 @@ const UpdateApplicationReport = () => {
     for (let i = 0; i < applications.length; i++) {
       const app = applications[i];
       if (!app.project.trim()) {
-        setError(`Please enter project name for application ${i + 1}`);
+        setError(`Please select a project for application ${i + 1}`);
         return false;
       }
-      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
+      if (!app.subprogram || !String(app.subprogram).trim()) {
+        setError(`Please select a sub program for application ${i + 1}`);
+        return false;
+      }
+      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
       for (const field of numericFields) {
         if (app[field] < 0) {
           setError(`${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} cannot be negative for application ${i + 1}`);
           return false;
         }
+      }
+
+      // Validate: pending_last_month + application_count - investigation_count = pending_count
+      const pendingLastMonth = Number(app.pending_last_month ?? 0) || 0;
+      const applicationCount = Number(app.application_count ?? 0) || 0;
+      const investigationCount = Number(app.investigation_count ?? 0) || 0;
+      const pendingCount = Number(app.pending_count ?? 0) || 0;
+
+      const expectedPending = pendingLastMonth + applicationCount - investigationCount;
+      if (expectedPending !== pendingCount) {
+        setError(
+          `For application ${i + 1}, Pending Count must equal Pending of Last Month + Application Count - Investigation Count (${pendingLastMonth} + ${applicationCount} - ${investigationCount} = ${expectedPending}).`
+        );
+        return false;
       }
     }
     return true;
@@ -122,7 +197,6 @@ const UpdateApplicationReport = () => {
           pending_last_month: app.pending_last_month === '' ? 0 : app.pending_last_month,
           application_count: app.application_count === '' ? 0 : app.application_count,
           investigation_count: app.investigation_count === '' ? 0 : app.investigation_count,
-          verified_count: app.verified_count === '' ? 0 : app.verified_count,
           approved_count: app.approved_count === '' ? 0 : app.approved_count,
           rejected_count: app.rejected_count === '' ? 0 : app.rejected_count,
           pending_count: app.pending_count === '' ? 0 : app.pending_count,
@@ -133,7 +207,7 @@ const UpdateApplicationReport = () => {
       // Navigate immediately after successful update
       navigate('/program/applications_reports');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -154,7 +228,7 @@ const UpdateApplicationReport = () => {
   return (
     <>
       <Navbar />
-      <div className="update-application-container">
+      <div className="update-application-container application-form-container">
         <PageHeader 
           title="Update Application Report"
           backPath="/program/applications_reports"
@@ -207,12 +281,28 @@ const UpdateApplicationReport = () => {
                     </div>
                   </div>
                   <div className="form-grid">
-                    <FormInput
+                    <FormSelect
                       name={`project-${index}`}
-                      label="Project Name"
+                      label="Themetic Area"
                       value={application.project}
-                      onChange={e => handleApplicationChange(index, 'project', e.target.value)}
+                      onChange={(e) => handleApplicationChange(index, 'project', e.target.value)}
+                      options={projectOptions}
                       required
+                      showDefaultOption={true}
+                      defaultOptionText="Select Theme"
+                    />
+                    <FormSelect
+                      name={`subprogram-${index}`}
+                      label="Sub Program"
+                      value={application.subprogram || ''}
+                      onChange={(e) => handleApplicationChange(index, 'subprogram', e.target.value)}
+                      options={getSubProgramOptions(application.project)}
+                      required
+                      showDefaultOption={true}
+                      defaultOptionText={
+                        application.project ? 'Select Sub Program' : 'Select Program First'
+                      }
+                      disabled={!application.project}
                     />
                     <FormInput
                       name={`pending_last_month-${index}`}
@@ -238,15 +328,6 @@ const UpdateApplicationReport = () => {
                       type="number"
                       value={application.investigation_count}
                       onChange={e => handleApplicationChange(index, 'investigation_count', e.target.value)}
-                      min="0"
-                      placeholder="0"
-                    />
-                    <FormInput
-                      name={`verified_count-${index}`}
-                      label="Verified Count"
-                      type="number"
-                      value={application.verified_count}
-                      onChange={e => handleApplicationChange(index, 'verified_count', e.target.value)}
                       min="0"
                       placeholder="0"
                     />
@@ -287,7 +368,7 @@ const UpdateApplicationReport = () => {
                 className="primary_btn"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

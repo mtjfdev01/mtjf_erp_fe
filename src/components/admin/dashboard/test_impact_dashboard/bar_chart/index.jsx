@@ -10,11 +10,11 @@ import { toPng } from "html-to-image";
 const BarChart = ({ title, data }) => {
   const chartRef = useRef(null);
 
-  const maxValue = Math.max(
-    ...data.map((item) => Math.max(item.targeted, item.reached))
-  );
+  const maxValue = Math.max(...data.map((item) => Math.max(item.targeted, item.reached)));
+  // Avoid divide-by-zero / NaN bar widths when all values are 0 (or data is empty).
+  const safeMaxValue = maxValue > 0 ? maxValue : 1;
 
-  const getBarWidth = (value) => (value / maxValue) * 100;
+  const getBarWidth = (value) => (value / safeMaxValue) * 100;
 
   const isBarTooNarrow = (width) => {
     return width < 10;

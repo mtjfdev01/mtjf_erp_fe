@@ -63,6 +63,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     program: {
       label: 'Program',
       submodules: {
+        progress_tracking: {
+          label: 'Progress Tracking',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         application_reports: {
           label: 'Application Reports',
           actions: ['create','list_view', 'view', 'update', 'delete']
@@ -131,6 +135,23 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         dashboard: {
           label: 'Dashboard',
           actions: ['view']
+        },
+        programs: {
+          label: 'Programs',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        },
+        subprograms: {
+          label: 'Subprograms',
+          actions: ['create','list_view', 'view', 'update', 'delete']
+        }
+      }
+    },
+    communication: {
+      label: 'Communication',
+      submodules: {
+        email_templates: {
+          label: 'Email Templates',
+          actions: ['create','list_view', 'view', 'update', 'delete', 'send']
         }
       }
     },

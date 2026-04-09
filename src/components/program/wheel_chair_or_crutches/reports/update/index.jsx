@@ -148,7 +148,7 @@ const UpdateWheelChairOrCrutchesReport = () => {
       await axiosInstance.post('/program/wheel_chair_or_crutches/reports/multiple', createDtos);
       navigate('/program/wheel_chair_or_crutches/reports/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -247,7 +247,7 @@ const UpdateWheelChairOrCrutchesReport = () => {
                 className="primary_btn"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

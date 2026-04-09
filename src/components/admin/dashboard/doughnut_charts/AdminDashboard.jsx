@@ -35,6 +35,9 @@ const defaultFilters = {
   customDateValue: '',
 };
 
+// Ignore filter UI for now; use a fixed duration.
+const DASHBOARD_DURATION = 'this_year';
+
 const AdminDashboard = () => {
   const lineChartRef = useRef(null);
   const doughnutChartRef = useRef(null);
@@ -46,6 +49,7 @@ const AdminDashboard = () => {
   const [departmentData, setDepartmentData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
   const [programModalOpen, setProgramModalOpen] = useState(false);
   const [selectedProgramDetails, setSelectedProgramDetails] = useState(null);
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
@@ -192,48 +196,41 @@ const AdminDashboard = () => {
   }
 
   // Helper to map department data for doughnut chart
-  function getDoughnutChartData( departmentData) {
+  function getDoughnutChartData(departmentData) {
     try {
-      const result =[];
-      if(departmentData?.accountsAndFinance){
+      const result = [];
+      if (departmentData?.accountsAndFinance) {
         result.push({
           label: "Accounts And Finance",
-          value: departmentData?.accountsAndFinance?.Grand_Total,
-          details: departmentData?.accountsAndFinance
-        })
-      } 
-      if(departmentData?.procurements){
+          value: Number(departmentData?.accountsAndFinance?.Grand_Total) || 0,
+          details: departmentData?.accountsAndFinance,
+        });
+      }
+      if (departmentData?.procurements) {
         result.push({
           label: "Procurements",
-          value: departmentData?.procurements?.Grand_Total,
-          details: departmentData?.procurements 
-        })
+          value: Number(departmentData?.procurements?.Grand_Total) || 0,
+          details: departmentData?.procurements,
+        });
       }
-      if(departmentData?.store){
+      if (departmentData?.store) {
         result.push({
           label: "Store",
-          value: departmentData?.store?.Grand_Total,
-          details: departmentData?.store
-        })
+          value: Number(departmentData?.store?.Grand_Total) || 0,
+          details: departmentData?.store,
+        });
       }
-      if(departmentData?.it){
+      if (departmentData?.it) {
         result.push({
           label: "IT",
-          value: departmentData?.it?.grandTotal,
-          details: departmentData?.it
-        })
-      } 
+          value: Number(departmentData?.it?.Grand_Total ?? departmentData?.it?.grandTotal) || 0,
+          details: departmentData?.it,
+        });
+      }
       return result;
-      // TODO: add else condition to handle no data found
-      // else {
-      //   return {
-      //     label: dept,
-      //     value: 0,
-      //     details: null // or { message: 'No data found' }
-      //   };
-      // }
     } catch (error) {
-      console.log(error.message)
+      console.log(error.message);
+      return [];
     }
   }
 
@@ -243,7 +240,7 @@ const AdminDashboard = () => {
       const result = [];
       const programData = departmentData?.program;
       if (!programData) return result;
-      // Map each program module to a chart segment
+
       const programModules = [
         { key: 'applicationReports', label: 'Applications' },
         { key: 'areaRationReports', label: 'Area Ration' },
@@ -258,18 +255,31 @@ const AdminDashboard = () => {
         { key: 'waterReports', label: 'Water' },
         { key: 'wheelChairOrCrutchesReports', label: 'Wheel Chair/Crutches' },
       ];
+
       programModules.forEach(({ key, label }) => {
         const data = programData[key];
-        if (data && (data.Grand_Total !== undefined || data['Total Quantity'] !== undefined || data['Total Wheel Chairs'] !== undefined || data['Total Crutches'] !== undefined)) {
-          // Prefer Grand_Total, fallback to other totals
-          const value = data.Grand_Total ?? data['Total Quantity'] ?? data['Total Wheel Chairs'] ?? data['Total Crutches'] ?? 0;
+        if (
+          data &&
+          (data.Grand_Total !== undefined ||
+            data['Total Quantity'] !== undefined ||
+            data['Total Wheel Chairs'] !== undefined ||
+            data['Total Crutches'] !== undefined)
+        ) {
+          const value =
+            data.Grand_Total ??
+            data['Total Quantity'] ??
+            data['Total Wheel Chairs'] ??
+            data['Total Crutches'] ??
+            0;
+
           result.push({
             label,
             value: Number(value) || 0,
-            details: data
+            details: data,
           });
         }
       });
+
       return result;
     } catch (error) {
       console.log(error.message);
@@ -293,48 +303,36 @@ async   function getLineChartData(departmentData) {
       }]
     };
   }
-const fetchDonationsSummary = async () => {
+const fetchDonationsSummary = async (year) => {
   try {
-    const response = await axiosInstance.get('/donations-summary?duration=year&year=2025');
-    setDonationSummary(response.data?.data?.data?.chart);
+    const response = await axiosInstance.get(`/donations-summary?duration=year&year=${year}`);
+    // API response shape (observed): { dateRange, chart: { labels, datasets } }
+    // Keep fallbacks for older shapes if they exist.
+    const chart =
+      response?.data?.chart ??
+      response?.data?.data?.chart ??
+      response?.data?.data?.data?.chart;
+    setDonationSummary(chart);
   } catch (error) {
     console.log(error.message);
   }
 }
 useEffect(() => {
-  // fetchDonationsSummary();
+  fetchDonationsSummary(new Date().getFullYear());
 }, []);
 
-  // API call when filters change
+  // Fetch department/program data once (ignore filter UI for now)
   useEffect(() => {
     const fetchDepartmentData = async () => {
-      console.log("asdouhweohgfouhrbgfoeruobguooerubgouerb");
-      const response = await axiosInstance.get('/donations-summary?duration=year&year=2025');
-      const data = response.data;
-      console.log("data 1234567890", data?.data?.chart);
-
       setLoading(true);
       setError(null);
       try {
-        let from, to;
-        if (filters.duration === 'custom' && filters.customRange?.from && filters.customRange?.to) {
-          from = filters.customRange.from;
-          to = filters.customRange.to;
-        } else {
-          const range = getDateRangeForDuration(filters.duration);
-          from = range.from;
-          to = range.to;
-        }
+        const range = getDateRangeForDuration(DASHBOARD_DURATION);
         const filterData = {
-          from,
-          to,
-          departments: filters.departments,
-          duration: filters.duration,
-          ...(filters.duration === 'custom' && {
-            customRange: filters.customRange,
-            customDateType: filters.customDateType,
-            customDateValue: filters.customDateValue,
-          })
+          from: range.from,
+          to: range.to,
+          departments,
+          duration: DASHBOARD_DURATION,
         };
         const response = await axiosInstance.post('admin/daily-reports', filterData);
         setDepartmentData(response.data);
@@ -344,11 +342,14 @@ useEffect(() => {
         setLoading(false);
       }
     };
-    // fetchDepartmentData();
-  }, [filters]);
+
+    fetchDepartmentData();
+  }, []);
 
   // Chart update effect
   useEffect(() => {
+    if (!departmentData) return;
+
     const chartData = getDoughnutChartData(departmentData);
     const doughnutData = {
       labels: chartData.map(d => d.label),
@@ -372,6 +373,7 @@ useEffect(() => {
         borderWidth: 1
       }]
     };
+
     // --- Programs Doughnut Chart Data ---
     const programsChartData = getProgramsDoughnutChartData(departmentData);
     const programsColors = [
@@ -461,13 +463,7 @@ useEffect(() => {
 
     return Object.entries(departmentData).map(([department, data]) => {
       if (data) {
-        return (
-          <Card 
-            key={department}
-            title={department}
-            data={data}
-          />
-        );
+        return <Card key={department} title={department} data={data} />;
       }
       return null;
     });
@@ -476,7 +472,6 @@ useEffect(() => {
   return (
     <div className="admin-dashboard">
       <Navbar />
-      <AdminFilteration filters={filters} onFilterChange={setFilters} />
       <div className="main">
         {loading && <div className="loading">Loading...</div>}
         {error && <div className="error">{error}</div>}
@@ -494,16 +489,19 @@ useEffect(() => {
               <canvas ref={programsDoughnutChartRef}></canvas>
             </div>
           </div>
-          <div className="chart">
+          {/* <div className="chart">
             <h2> Performance Overview <small style={{fontSize: '12px', color: 'gray'}}>Upcomming....</small></h2>
             <div>
               <canvas ref={lineChartRef}></canvas>
             </div>
-          </div>
+          </div> */}
 
-          <div className="chart">
-            <h2> Donations Summary <small style={{fontSize: '12px', color: 'gray'}}>Upcomming....</small></h2>
-            <div>
+          {/* <div className="chart"> */}
+            {/* <h2> Donations Summary </h2> */}
+
+          {/* </div> */}
+
+        </div>
               <LineChart 
                 data={donationSummary}
                 title="Donations Summary"
@@ -515,52 +513,27 @@ useEffect(() => {
                 showDownload={false}
                 downloadFileName="donations-summary"
               />
-            </div>
-          </div>
-
-        </div>
+        {/* <div className="department-cards">{renderCards()}</div> */}
       </div>
       <Modal open={programModalOpen} onClose={() => setProgramModalOpen(false)} details={selectedProgramDetails} title={selectedProgramTitle} />
       <Modal open={departmentModalOpen} onClose={() => setDepartmentModalOpen(false)} details={selectedDepartmentDetails} title={selectedDepartmentTitle} />
-      {/* <div>
-        <h2>Impact Dashboard</h2>
-        <AllocationsSummary />
-      </div>
-      <div>
-        <h2>People Summary</h2>
-        <PeopleSummary />
-      </div>
-      <div>
-        <h2>Beneficiary Type</h2>
-        <BeneficiaryTypes />
-      </div>
-      <div>
-        <h2>Organization Chart</h2>
-        <OrganizationChart />
-      </div>
-      <div>
-        <h2>Sector Chart</h2>
-        <SectorChart />
-      </div> */}
+
 
     <div className="dashboard-container">
       {/* Top row: allocations + gender/age */}
-      <div className="dashboard-row">
+      {/* <div className="dashboard-row">
         <div className="dashboard-col">
           <AllocationsSummary />
         </div>
         <div className="dashboard-col">
           <PeopleSummary />
         </div>
-      </div>
+      </div> */}
 
       {/* Middle row: beneficiary types + organizations */} 
-       <div className="dashboard-row">
+       <div className="dashboard-row full-width">
         <div className="dashboard-col">
           <BeneficiaryTypes />
-        </div>
-        <div className="dashboard-col">
-          <Organizations />
         </div>
       </div>
 

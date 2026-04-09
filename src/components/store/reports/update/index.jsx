@@ -69,7 +69,7 @@ const UpdateStoreReport = () => {
       // Redirect to list page after successful update
       navigate('/store/reports/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -174,7 +174,7 @@ const UpdateStoreReport = () => {
                 className="primary_btn" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>

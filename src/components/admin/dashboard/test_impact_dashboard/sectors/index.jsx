@@ -1,40 +1,89 @@
-import React, { useEffect } from "react";
+import React from "react";
 import BarChart from "../bar_chart";
 import { IoIosMan } from "react-icons/io";
-import { programs_list } from "../../../../../utils/program/index";
-import axiosInstance from "../../../../../utils/axios";
-const data = [
-  { label: "Food Security", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20}/> },
-  { label: "Community Services", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Food Security", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Nutrition", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Common and Support Services", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Emergency Shelter and NFI", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Early Recovery", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Education", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Logistics", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Multi-Purpose cash", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Camp Coordination / Management", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-  { label: "Multi-Sector", targeted: "", reached: "", percent: "", icon: <IoIosMan size={20} /> },
-]; 
+import { useSummary } from "../../../../../context/SummaryContext";
 
 // Fontend will only have label and logo and key 
 // Data will be formatted from backend mostly and pass the same format to BarChart component below is the format 
 // [  { label: "Food Security", targeted: 11700000, reached: 12700000, percent: "108%", icon: <IoIosMan size={20}/> }]
 const Sectors = () => {
+  const { achievementsCategoryWise, targetsCategoryWise, loading, error } = useSummary();
 
-  const getResult = async () => {
-    const year = new Date().getFullYear();
-    const result = await axiosInstance.get('/summary', {params: {year: year}});
-    return result;
-  };
+  if (loading || !achievementsCategoryWise || !targetsCategoryWise) {
+    return <div style={{ padding: 12 }}>Loading...</div>;
+  }
 
-  useEffect(() => {
-    getResult();
-  }, []);
+  const categoryData = [
+    {
+      label: "Girls",
+      targeted: targetsCategoryWise?.girls_target ?? 0,
+      reached: achievementsCategoryWise?.total_girls_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Boys",
+      targeted: targetsCategoryWise?.boys_target ?? 0,
+      reached: achievementsCategoryWise?.total_boys_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Youth",
+      targeted: targetsCategoryWise?.youth_target ?? 0,
+      reached: achievementsCategoryWise?.total_young_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Widows",
+      targeted: targetsCategoryWise?.widows_target ?? 0,
+      reached: achievementsCategoryWise?.total_widows_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Divorced",
+      targeted: targetsCategoryWise?.divorced_target ?? 0,
+      reached: achievementsCategoryWise?.total_divorced_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Disabled",
+      targeted: targetsCategoryWise?.disabled_target ?? 0,
+      reached: achievementsCategoryWise?.total_disabled_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Indegent",
+      targeted: targetsCategoryWise?.indegent_target ?? 0,
+      reached: achievementsCategoryWise?.total_indegent_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+    {
+      label: "Orphans",
+      targeted: targetsCategoryWise?.orphans_target ?? 0,
+      reached: achievementsCategoryWise?.total_orphans_achieved ?? 0,
+      percent: "",
+      icon: <IoIosMan size={20} />,
+    },
+  ];
+
+  const computedData = categoryData.map((item) => {
+    const targeted = Number(item.targeted) || 0;
+    const reached = Number(item.reached) || 0;
+    const percent = targeted > 0 ? Math.round((reached / targeted) * 100) : 0;
+    return { ...item, targeted, reached, percent: `${percent}%` };
+  });
 
   return (
-    <BarChart title="PEOPLE TARGETED AND REACHED BY PROGRAM" data={data} />
+    <BarChart
+      title={error ? "PEOPLE TARGETED AND REACHED BY CATEGORY" : "PEOPLE TARGETED AND REACHED BY CATEGORY"}
+      data={computedData}
+    />
   );
 };
 

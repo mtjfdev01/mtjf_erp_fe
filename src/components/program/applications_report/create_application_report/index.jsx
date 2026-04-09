@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiArrowLeft, FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import '../../../../styles/variables.css';
 import '../../../../styles/components.css';
@@ -8,14 +8,56 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
-import FormTextarea from '../../../common/FormTextarea';
 import { programs_list } from '../../../../utils/program';
+
+import AddRationReport from '../../ration_report/add';
+import AddMarriageGiftsReport from '../../marriage_gifts/reports/add';
+import AddFinancialAssistanceReport from '../../financial_assistance/reports/add';
+import AddSewingMachineReport from '../../sewing_machine/reports/add';
+import AddWheelChairOrCrutchesReport from '../../wheel_chair_or_crutches/reports/add';
+import AddWaterReport from '../../water/reports/add';
+import AddKasbReport from '../../kasb/reports/add';
+import AddKasbTrainingReport from '../../kasb_training/reports/add/AddKasbTrainingReport';
+import AddEducationReport from '../../education/reports/add';
+import AddTreePlantationReport from '../../tree_plantation/reports/add';
+import AddAreaRationReport from '../../area_ration/reports/add';
+
 import './CreateApplication.css';
+
+const PROGRAM_COMPONENTS_MAP = {
+  // Programs
+  food_security: AddRationReport,
+  community_services: AddMarriageGiftsReport,
+  education: AddEducationReport,
+  water_clean_water: AddWaterReport,
+  kasb: AddKasbReport,
+  green_initiative: AddTreePlantationReport,
+  widows_and_orphans_care_program: AddFinancialAssistanceReport,
+  livelihood_support_program: AddSewingMachineReport,
+
+  // Subprograms (Mapping subprogram keys to components)
+  area_ration: AddAreaRationReport,
+  kasb_training: AddKasbTrainingReport,
+  'kasb-training': AddKasbTrainingReport,
+  wheel_chair_or_crutches: AddWheelChairOrCrutchesReport,
+  'wheel-chair-or-crutches': AddWheelChairOrCrutchesReport,
+  ration_report: AddRationReport,
+  marriage_gifts: AddMarriageGiftsReport,
+  financial_assistance: AddFinancialAssistanceReport,
+  sewing_machine: AddSewingMachineReport,
+  water_reports: AddWaterReport,
+  kasb_reports: AddKasbReport,
+  education_reports: AddEducationReport,
+  tree_plantation: AddTreePlantationReport,
+  area_ration_reports: AddAreaRationReport,
+};
 
 const CreateApplication = ({ applicationData = null, isEdit = false }) => {
   const navigate = useNavigate();
 
-  const projectOptions = programs_list.map((program) => ({
+  const [activePrograms, setActivePrograms] = useState([]);
+
+  const projectOptions = activePrograms.map((program) => ({
     value: program.key,
     label: program.label,
   }));
@@ -26,10 +68,10 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       {
         id: 1,
         project: '',
+        subprogram: '',   // ✅ added
         pending_last_month: 0,
         application_count: 0,
         investigation_count: 0,
-        verified_count: 0,
         approved_count: 0,
         rejected_count: 0,
         pending_count: 0
@@ -45,14 +87,107 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [activeSubprograms, setActiveSubprograms] = useState([]);
+  const [latestPendingByProjectAndSubprogram, setLatestPendingByProjectAndSubprogram] = useState({});
+
+  useEffect(() => {
+    const fetchLatestApplicationReport = async () => {
+      try {
+        const response = await axiosInstance.get('/program/application-reports/latest');
+        console.log('Latest application report:', response.data);
+
+        const latest = response.data?.data;
+        const latestApps = Array.isArray(latest?.applications) ? latest.applications : [];
+
+        const map = {};
+        latestApps.forEach((a) => {
+          const projectKey = a?.project;
+          const subKey = a?.subprogram;
+          if (!projectKey || !subKey) return;
+          map[`${projectKey}::${subKey}`] = Number(a?.pending_count ?? 0);
+        });
+        setLatestPendingByProjectAndSubprogram(map);
+      } catch (err) {
+        console.log('Latest application report fetch failed:', err?.response?.data || err?.message || err);
+      }
+    };
+
+    const fetchActivePrograms = async () => {
+      try {
+        const response = await axiosInstance.get('/program/programs', {
+          params: { page: 1, pageSize: 1000, active: 'true' },
+        });
+        if (response.data?.success) {
+          setActivePrograms(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching active programs:', err);
+      }
+    };
+
+    const fetchActiveSubprograms = async () => {
+      try {
+        const response = await axiosInstance.get('/program/subprograms', {
+          params: { page: 1, pageSize: 1000, active: 'true' },
+        });
+        if (response.data?.success) {
+          setActiveSubprograms(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching active subprograms:', err);
+      }
+    };
+
+    fetchLatestApplicationReport();
+    fetchActivePrograms();
+    fetchActiveSubprograms();
+  }, []);
+
+
+  const getSubProgramOptions = (programKey) => {
+    const program = activePrograms.find((p) => p.key === programKey) || programs_list.find((p) => p.key === programKey);
+    if (!program) return [];
+  
+    return activeSubprograms
+      .filter(sp => sp.program_id === program.id)
+      .map(sp => ({
+        value: sp.key,
+        label: sp.label
+      }));
+  };
+
+
   const handleApplicationChange = (index, field, value) => {
     const updatedApplications = [...applications];
-    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
+    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
     
     if (numericFields.includes(field)) {
       updatedApplications[index][field] = value === '' ? '' : parseInt(value, 10) || 0;
     } else {
       updatedApplications[index][field] = value;
+
+      // ✅ reset subprogram if program changes
+    if (field === 'project') {
+      updatedApplications[index].subprogram = '';
+    }
+
+    }
+
+    // ✅ Auto-set pending_last_month from latest pending_count
+    // Trigger when project/subprogram changes and user hasn't entered a value yet.
+    if (field === 'project' || field === 'subprogram') {
+      const proj = updatedApplications[index].project;
+      const sub = updatedApplications[index].subprogram;
+      const key = proj && sub ? `${proj}::${sub}` : null;
+      const currentPendingLast = updatedApplications[index].pending_last_month;
+      const hasUserValue = !(currentPendingLast === '' || currentPendingLast === 0);
+
+      if (key && !hasUserValue) {
+        const latestPending = latestPendingByProjectAndSubprogram[key];
+        if (typeof latestPending === 'number' && !Number.isNaN(latestPending)) {
+          updatedApplications[index].pending_last_month = latestPending;
+        }
+      }
     }
     
     setApplications(updatedApplications);
@@ -69,10 +204,10 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     const newApplication = {
       id: newId,
       project: '',
+      subprogram: '',
       pending_last_month: 0,
       application_count: 0,
       investigation_count: 0,
-      verified_count: 0,
       approved_count: 0,
       rejected_count: 0,
       pending_count: 0
@@ -99,22 +234,45 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       const app = applications[i];
       
       if (!app.project.trim()) {
-        setError(`Please enter project name for application ${i + 1}`);
+        setError(`Please select a project for application ${i + 1}`);
+        return false;
+      }
+
+      if (!app.subprogram || !String(app.subprogram).trim()) {
+        setError(`Please select a sub program for application ${i + 1}`);
         return false;
       }
 
       // Validate that all numeric fields are non-negative
-      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
+      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
       for (const field of numericFields) {
         if (app[field] < 0) {
           setError(`${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} cannot be negative for application ${i + 1}`);
           return false;
         }
       }
-    }
 
+      // Validate: pending_last_month + application_count - investigation_count = pending_count
+      const pendingLastMonth = Number(app.pending_last_month ?? 0) || 0;
+      const applicationCount = Number(app.application_count ?? 0) || 0;
+      const investigationCount = Number(app.investigation_count ?? 0) || 0;
+      const pendingCount = Number(app.pending_count ?? 0) || 0;
+
+      const expectedPending = pendingLastMonth + applicationCount - investigationCount;
+      if (expectedPending !== pendingCount) {
+        setError(
+          `For application ${i + 1}, Pending Count must equal Pending of Last Month + Application Count - Investigation Count (${pendingLastMonth} + ${applicationCount} - ${investigationCount} = ${expectedPending}).`
+        );
+        return false;
+      }
+    }
     return true;
   };
+
+  const lastApplication = applications[applications.length - 1];
+  const DynamicCreateComponent = 
+    (lastApplication?.subprogram && PROGRAM_COMPONENTS_MAP[lastApplication.subprogram]) || 
+    (lastApplication?.project && PROGRAM_COMPONENTS_MAP[lastApplication.project]);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -129,10 +287,10 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
         ...reportData,
         applications: applications.map((app) => ({
           ...app,
+          subprogram: app.subprogram, // ✅ include
           pending_last_month: app.pending_last_month === '' ? 0 : app.pending_last_month,
           application_count: app.application_count === '' ? 0 : app.application_count,
           investigation_count: app.investigation_count === '' ? 0 : app.investigation_count,
-          verified_count: app.verified_count === '' ? 0 : app.verified_count,
           approved_count: app.approved_count === '' ? 0 : app.approved_count,
           rejected_count: app.rejected_count === '' ? 0 : app.rejected_count,
           pending_count: app.pending_count === '' ? 0 : app.pending_count,
@@ -149,10 +307,10 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
         setApplications([{
           id: 1,
           project: '',
+          subprogram: '',
           pending_last_month: 0,
           application_count: 0,
           investigation_count: 0,
-          verified_count: 0,
           approved_count: 0,
           rejected_count: 0,
           pending_count: 0
@@ -231,13 +389,27 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                   <div className="form-grid">
                     <FormSelect
                       name={`project-${index}`}
-                      label="Project Name"
+                      label="Themetic Area"
                       value={application.project}
                       onChange={(e) => handleApplicationChange(index, 'project', e.target.value)}
                       options={projectOptions}
                       required
                       showDefaultOption={true}
-                      defaultOptionText="Select Project"
+                      defaultOptionText="Select Theme"
+                    />
+
+                    <FormSelect
+                      name={`subprogram-${index}`}
+                      label="Sub Program"
+                      value={application.subprogram}
+                      onChange={(e) => handleApplicationChange(index, 'subprogram', e.target.value)}
+                      options={getSubProgramOptions(application.project)}
+                      required
+                      showDefaultOption={true}
+                      defaultOptionText={
+                        application.project ? "Select Sub Program" : "Select Program First"
+                      }
+                      disabled={!application.project}
                     />
 
                     <FormInput
@@ -266,16 +438,6 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                       type="number"
                       value={application.investigation_count}
                       onChange={(e) => handleApplicationChange(index, 'investigation_count', e.target.value)}
-                      min="0"
-                      placeholder="0"
-                    />
-
-                    <FormInput
-                      name={`verified_count-${index}`}
-                      label="Verified Count"
-                      type="number"
-                      value={application.verified_count}
-                      onChange={(e) => handleApplicationChange(index, 'verified_count', e.target.value)}
                       min="0"
                       placeholder="0"
                     />
@@ -322,6 +484,8 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                 {isSubmitting ? 'Submitting...' : (isEdit ? 'Update Report' : 'Create Report')}
               </button>
             </div>
+
+            {DynamicCreateComponent && <DynamicCreateComponent />}
           </form>
         )}
       </div>

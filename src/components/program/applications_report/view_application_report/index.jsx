@@ -7,6 +7,7 @@ import '../../../../styles/components.css';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import './ViewApplication.css';
+import { getProgramLabelByKey, getSubprogramLabelByKey } from '../../../../utils/program';
 
 const ViewApplicationReport = () => {
   const { id } = useParams();
@@ -14,6 +15,8 @@ const ViewApplicationReport = () => {
   const [applicationData, setApplicationData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [programLabelByKey, setProgramLabelByKey] = useState({});
+  const [subprogramLabelByKey, setSubprogramLabelByKey] = useState({});
 
   useEffect(() => {
     fetchApplicationReport();
@@ -27,6 +30,29 @@ const ViewApplicationReport = () => {
       // Handle the controller's response structure
       if (response.data.success) {
         setApplicationData(response.data.data);
+
+        // Load subprogram labels so the view reflects latest CRUD changes.
+        const programLookupResponse = await axiosInstance.get('/program/programs', {
+          params: { page: 1, pageSize: 1000 },
+        });
+        if (programLookupResponse.data?.success) {
+          const map = {};
+          (programLookupResponse.data.data || []).forEach((p) => {
+            map[p.key] = p.label;
+          });
+          setProgramLabelByKey(map);
+        }
+
+        const lookupResponse = await axiosInstance.get('/program/subprograms', {
+          params: { page: 1, pageSize: 1000 },
+        });
+        if (lookupResponse.data?.success) {
+          const map = {};
+          (lookupResponse.data.data || []).forEach((sp) => {
+            map[sp.key] = sp.label;
+          });
+          setSubprogramLabelByKey(map);
+        }
       } else {
         setError(response.data.message || 'Failed to fetch application report');
       }
@@ -131,7 +157,16 @@ const ViewApplicationReport = () => {
             {applicationData.applications.map((application, index) => (
               <div key={application.id} className="application-card">
                 <div className="application-header">
-                  <h4 className="application-title">Application {index + 1}: {application.project}</h4>
+                  <h4 className="application-title">
+                    Application {index + 1}:{' '}
+                    {programLabelByKey[application.project] || getProgramLabelByKey(application.project)}
+                    {application.subprogram ? (
+                      <span className="application-subtitle">
+                        {' — '}
+                        {subprogramLabelByKey[application.subprogram] || getSubprogramLabelByKey(application.subprogram)}
+                      </span>
+                    ) : null}
+                  </h4>
                 </div>
                 
                 <div className="application-stats">
@@ -150,10 +185,6 @@ const ViewApplicationReport = () => {
                     <div className="stat-item">
                       <label>Under Investigation:</label>
                       <span className="stat-value">{application.investigation_count}</span>
-                    </div>
-                    <div className="stat-item">
-                      <label>Verified:</label>
-                      <span className="stat-value">{application.verified_count}</span>
                     </div>
                   </div>
                   

@@ -6,6 +6,7 @@ import '../../../../../styles/components.css';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
+import FormSelect from '../../../../common/FormSelect';
 const ViewOnlineDonation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -26,14 +27,73 @@ const ViewOnlineDonation = () => {
   const [noteStatus, setNoteStatus] = useState({ type: '', message: '' });
   const [fetchingProviderStatus, setFetchingProviderStatus] = useState(false);
   const [providerStatusData, setProviderStatusData] = useState(null);
+  const [progressTracker, setProgressTracker] = useState(null);
+  const [progressTemplates, setProgressTemplates] = useState([]);
+  const [loadingProgress, setLoadingProgress] = useState(false);
+  const [creatingTracker, setCreatingTracker] = useState(false);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
 
   useEffect(() => {
     fetchDonation();
   }, [id]);
 
   useEffect(() => {
+    if (!id) return;
+    fetchProgressData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  useEffect(() => {
     setNote(donation?.note || '');
   }, [donation?.note]);
+
+  const fetchProgressData = async () => {
+    setLoadingProgress(true);
+    try {
+      const [templatesRes, trackerRes] = await Promise.all([
+        axiosInstance.get('/progress/workflow-templates'),
+        axiosInstance.get(`/progress/trackers/by-donation/${id}`),
+      ]);
+
+      if (templatesRes.data?.success) {
+        setProgressTemplates(templatesRes.data.data || []);
+      }
+
+      if (trackerRes.data?.success) {
+        setProgressTracker(trackerRes.data.data || null);
+      } else {
+        setProgressTracker(null);
+      }
+    } catch (e) {
+      // Tracker may not exist (404) — treat as empty
+      setProgressTracker(null);
+      try {
+        const templatesRes = await axiosInstance.get('/progress/workflow-templates');
+        if (templatesRes.data?.success) setProgressTemplates(templatesRes.data.data || []);
+      } catch (_) {}
+    } finally {
+      setLoadingProgress(false);
+    }
+  };
+
+  const createProgressTracker = async () => {
+    if (!selectedTemplateId) return;
+    setCreatingTracker(true);
+    try {
+      const res = await axiosInstance.post('/progress/trackers', {
+        template_id: Number(selectedTemplateId),
+        donation_id: Number(id),
+        donor_visible: true,
+      });
+      if (res.data?.success) {
+        setProgressTracker(res.data.data || null);
+      }
+    } catch (e) {
+      console.error('Failed to create progress tracker', e);
+    } finally {
+      setCreatingTracker(false);
+    }
+  };
 
   const fetchDonation = async () => {
     try {
@@ -440,6 +500,75 @@ const ViewOnlineDonation = () => {
           backPath="/donations/online_donations/list"
         />
         <div className="view-content">
+          <div className="view-section">
+            <h3 className="view-section-title">Progress Tracking</h3>
+
+            {loadingProgress ? (
+              <div className="loading">Loading progress...</div>
+            ) : !progressTracker ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '12px', alignItems: 'end', maxWidth: 720 }}>
+                <FormSelect
+                  label="Workflow Template"
+                  name="progress_template"
+                  value={selectedTemplateId}
+                  onChange={(e) => setSelectedTemplateId(e.target.value)}
+                  options={(progressTemplates || []).map((t) => ({ value: String(t.id), label: `${t.name} (${t.code})` }))}
+                  showDefaultOption={true}
+                  defaultOptionText="Select a template"
+                />
+                <button
+                  type="button"
+                  className="primary_btn"
+                  disabled={!selectedTemplateId || creatingTracker}
+                  onClick={createProgressTracker}
+                  style={{ height: '44px' }}
+                >
+                  {creatingTracker ? 'Creating...' : 'Create Tracker'}
+                </button>
+              </div>
+            ) : (
+              <div>
+                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                  <div><strong>Overall:</strong> {progressTracker.overall_status}</div>
+                  <div><strong>Template:</strong> {progressTracker?.template?.name || '-'}</div>
+                  <div><strong>Public Token:</strong> {progressTracker.public_tracking_token || '-'}</div>
+                </div>
+
+                {(progressTracker.steps || []).length > 0 ? (
+                  <div style={{ display: 'grid', gap: '10px' }}>
+                    {(progressTracker.steps || []).map((s) => (
+                      <div key={s.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
+                          <div style={{ fontWeight: 600 }}>{s.step_order}. {s.title}</div>
+                          <span className={`status-badge status-${s.status}`}>{s.status}</span>
+                        </div>
+                        {s.notes && <div style={{ marginTop: '6px', color: '#374151' }}>{s.notes}</div>}
+                        {s.completed_at && (
+                          <div style={{ marginTop: '6px', color: '#6b7280', fontSize: '13px' }}>
+                            Completed: {new Date(s.completed_at).toLocaleString()}
+                          </div>
+                        )}
+                        {(s.evidence || []).length > 0 && (
+                          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                            {(s.evidence || []).map((ev) => (
+                              <a key={ev.id} href={ev.file_url} target="_blank" rel="noreferrer" style={{ fontSize: '13px' }}>
+                                {ev.title || ev.file_type}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-state" style={{ padding: '20px' }}>
+                    No steps found for this tracker.
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
           <div className="view-section">
             <h3 className="view-section-title">Donation Details</h3>
             <div className="view-grid">

@@ -141,9 +141,9 @@ const PeopleSummary = () => {
         })}
       </div>
 
-      <p className="note">
+      {/* <p className="note">
         Each symbol (<IoIosMan size={16} />/ <IoIosWoman size={16} />) represents 698 thousand people
-      </p>
+      </p> */}
     </div>
   );
 };

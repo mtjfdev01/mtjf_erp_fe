@@ -127,11 +127,11 @@ const UpdateWaterReport = () => {
       if (response.data.success) {
         navigate('/program/water/reports/list');
       } else {
-        setError(response.data.message || 'Failed to update report');
+        setError(response.data.message || 'Failed to Submit Report');
       }
     } catch (err) {
       console.error('Error updating water report:', err);
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -212,7 +212,7 @@ const UpdateWaterReport = () => {
                   className="primary_btn"
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? 'Updating...' : 'Update Report'}
+                  {isSubmitting ? 'Updating...' : 'Submit Report'}
                 </button>
               </div>
             </form>

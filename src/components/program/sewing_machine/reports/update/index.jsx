@@ -85,7 +85,7 @@ const UpdateSewingMachineReport = () => {
       await axiosInstance.patch(`/program/sewing_machine/reports/${id}`, form);
       navigate('/program/sewing_machine/reports/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to update report. Please try again.');
+      setError(err.response?.data?.message || 'Failed to Submit Report. Please try again.');
       console.error('Error updating report:', err);
     } finally {
       setIsSubmitting(false);
@@ -169,7 +169,7 @@ const UpdateSewingMachineReport = () => {
                 className="primary_btn"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Updating...' : 'Update Report'}
+                {isSubmitting ? 'Updating...' : 'Submit Report'}
               </button>
             </div>
           </form>
