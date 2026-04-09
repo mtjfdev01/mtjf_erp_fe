@@ -722,16 +722,16 @@
   transition: all 0.3s ease;
 }
 
-.task-tab-btn.active--mine { color: #2563eb; }
-.task-tab-btn.active--mine .tab-count { background: #dbeafe; color: #2563eb; }
+.task-tab-btn.active--mine { color: #2563eb; border: 1px solid #2563eb; }
+.task-tab-btn.active--mine .tab-count { background: #dbeafe; color: #2563eb; border: 1px solid #2563eb; }
 .task-tab-btn.active--mine .tab-icon { color: #2563eb; }
 
-.task-tab-btn.active--team { color: #059669; }
-.task-tab-btn.active--team .tab-count { background: #d1fae5; color: #059669; }
+.task-tab-btn.active--team { color: #059669; border: 1px solid #059669; }
+.task-tab-btn.active--team .tab-count { background: #d1fae5; color: #059669; border: 1px solid #059669; }
 .task-tab-btn.active--team .tab-icon { color: #059669; }
 
-.task-tab-btn.active--other { color: #2BA8DC; }
-.task-tab-btn.active--other .tab-count { background: #dbfbff; color: #2BA8DC; }
+.task-tab-btn.active--other { color: #2BA8DC; border: 1px solid #2BA8DC; }
+.task-tab-btn.active--other .tab-count { background: #dbfbff; color: #2BA8DC; border: 1px solid #2BA8DC; }
 .task-tab-btn.active--other .tab-icon { color: #2BA8DC; }
 
 .fade-in {
