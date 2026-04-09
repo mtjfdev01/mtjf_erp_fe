@@ -9,7 +9,7 @@ import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
 import './index.css';
 
-const AddMarriageGiftsReport = () => {
+const AddMarriageGiftsReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     report_date: new Date().toISOString().split('T')[0],
@@ -24,25 +24,29 @@ const AddMarriageGiftsReport = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
+    const nextForm = {
+      ...form,
       [name]: value
-    }));
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleGiftChange = (vul, value) => {
     const fieldName = vul.toLowerCase();
     const numValue = value === '' ? 0 : parseInt(value, 10);
-    setForm(prev => ({
-      ...prev,
+    const nextForm = {
+      ...form,
       [fieldName]: isNaN(numValue) ? 0 : Math.max(0, numValue)
-    }));
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!form.report_date) {
       setError('Date is required');
       return;
@@ -51,10 +55,11 @@ const AddMarriageGiftsReport = () => {
     setIsSubmitting(true);
     try {
       await axiosInstance.post('/program/marriage-gifts/reports', form);
-      navigate('/program/marriage_gifts/reports/list');
+      if (!isEmbedded) navigate('/program/marriage_gifts/reports/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
       console.error('Error submitting report:', err);
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -69,15 +74,17 @@ const AddMarriageGiftsReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="form-wrapper">
-        <PageHeader 
-          title="Create Marriage Gifts Report"
-          showBackButton={true}
-          backPath="/program/marriage_gifts/reports/list"
-        />
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "form-wrapper"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Create Marriage Gifts Report"
+            showBackButton={true}
+            backPath="/program/marriage_gifts/reports/list"
+          />
+        )}
         
-        <div className="form-content">
+        <div className={isEmbedded ? "" : "form-content"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="status-message status-message--error">{error}</div>}
             
@@ -120,15 +127,17 @@ const AddMarriageGiftsReport = () => {
               ))}
             </div>
 
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="primary_btn"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating...' : 'Create Report'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary_btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Submit Report'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

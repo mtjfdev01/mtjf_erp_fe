@@ -10,7 +10,7 @@ import FormInput from '../../../common/FormInput';
 import './index.css';
 import RationReportSwitch from '../RationReportSwitch';
 
-const AddRationReport = () => {
+const AddRationReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     report_date: new Date().toISOString().split('T')[0],
@@ -32,25 +32,29 @@ const AddRationReport = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
+    const nextForm = {
+      ...form,
       [name]: name === 'is_alternate' ? e.target.checked : value
-    }));
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleVulnerabilityChange = (type, vul, value) => {
     const fieldName = `${type}_${vul.toLowerCase()}`;
     const numValue = value === '' ? 0 : parseInt(value, 10);
-    setForm(prev => ({
-      ...prev,
+    const nextForm = {
+      ...form,
       [fieldName]: isNaN(numValue) ? 0 : numValue
-    }));
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!form.report_date) {
       setError('Date is required');
       return;
@@ -59,10 +63,11 @@ const AddRationReport = () => {
     
     try {
       await axiosInstance.post('/program/ration/reports', form);
-      navigate('/program/ration_report/list');
+      if (!isEmbedded) navigate('/program/ration_report/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit form. Please try again.');
       console.error('Error submitting form:', err);
+      throw err; // Re-throw for parent to handle if embedded
     } finally {
       setIsSubmitting(false);
     }
@@ -77,9 +82,9 @@ const AddRationReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="page_container">
-        <PageHeader title="Create Ration Report" showBackButton={true} backPath="/program/ration_report/list" />
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "page_container"}>
+        {!isEmbedded && <PageHeader title="Create Ration Report" showBackButton={true} backPath="/program/ration_report/list" />}
         <form onSubmit={handleSubmit} className="user-form">
           {error && <div className="status-message status-message--error">{error}</div>}
           <div className="form-grid">
@@ -164,9 +169,11 @@ const AddRationReport = () => {
               style={{ maxWidth: 120 }}
             />
           </div>
-          <button type="submit" className="primary_btn" disabled={isSubmitting}>
-            {isSubmitting ? 'Submitting...' : 'Create Report'}
-          </button>
+          {!isEmbedded && (
+            <button type="submit" className="primary_btn" disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Submit Report'}
+            </button>
+          )}
         </form>
       </div>
     </>

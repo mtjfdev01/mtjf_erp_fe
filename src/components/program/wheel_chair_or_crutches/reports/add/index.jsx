@@ -11,7 +11,7 @@ import FormSelect from '../../../../common/FormSelect';
 import DynamicFormSection from '../../../../common/DynamicFormSection';
 import './index.css';
 
-const AddWheelChairOrCrutchesReport = () => {
+const AddWheelChairOrCrutchesReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   
   const initialDistributionRow = () => ({
@@ -30,59 +30,72 @@ const AddWheelChairOrCrutchesReport = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDateChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const nextForm = { ...form, [e.target.name]: e.target.value };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleRowChange = (id, field, value) => {
-    setForm(prevForm => ({
-      ...prevForm,
-      distributions: prevForm.distributions.map(row => 
-        row.id === id ? { ...row, [field]: value } : row
-      )
-    }));
+    const nextDistributions = form.distributions.map(row => 
+      row.id === id ? { ...row, [field]: value } : row
+    );
+    const nextForm = {
+      ...form,
+      distributions: nextDistributions
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
   
   const handleVulnerabilityChange = (id, vul, value) => {
-    setForm(prevForm => ({
-      ...prevForm,
-      distributions: prevForm.distributions.map(row => {
-        if (row.id !== id) return row;
-        
-        // Allow the input to be empty during typing.
-        // The value will be treated as 0 for calculations.
-        if (value === '') {
-          return { ...row, vulnerabilities: { ...row.vulnerabilities, [vul]: '' } };
-        }
+    const nextDistributions = form.distributions.map(row => {
+      if (row.id !== id) return row;
+      
+      // Allow the input to be empty during typing.
+      // The value will be treated as 0 for calculations.
+      if (value === '') {
+        return { ...row, vulnerabilities: { ...row.vulnerabilities, [vul]: '' } };
+      }
 
-        const num = parseInt(value, 10);
-        const newVulnerabilities = {
-          ...row.vulnerabilities,
-          // Fallback to 0 if parsing fails (e.g., non-numeric input)
-          [vul]: isNaN(num) ? 0 : num
-        };
-        return { ...row, vulnerabilities: newVulnerabilities };
-      })
-    }));
+      const num = parseInt(value, 10);
+      const newVulnerabilities = {
+        ...row.vulnerabilities,
+        // Fallback to 0 if parsing fails (e.g., non-numeric input)
+        [vul]: isNaN(num) ? 0 : num
+      };
+      return { ...row, vulnerabilities: newVulnerabilities };
+    });
+    
+    const nextForm = {
+      ...form,
+      distributions: nextDistributions
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const addRow = () => {
-    setForm(prevForm => ({
-      ...prevForm,
-      distributions: [...prevForm.distributions, initialDistributionRow()]
-    }));
+    const nextForm = {
+      ...form,
+      distributions: [...form.distributions, initialDistributionRow()]
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const removeRow = (id) => {
     if (form.distributions.length <= 1) return;
-    setForm(prevForm => ({
-      ...prevForm,
-      distributions: prevForm.distributions.filter(row => row.id !== id)
-    }));
+    const nextForm = {
+      ...form,
+      distributions: form.distributions.filter(row => row.id !== id)
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!form.date) {
       setError('Date is required');
       return;
@@ -102,10 +115,11 @@ const AddWheelChairOrCrutchesReport = () => {
       }));
 
       await axiosInstance.post('/program/wheel_chair_or_crutches/reports/multiple', createDtos);
-      navigate('/program/wheel_chair_or_crutches/reports/list');
+      if (!isEmbedded) navigate('/program/wheel_chair_or_crutches/reports/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
       console.error('Error submitting report:', err);
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -151,14 +165,16 @@ const AddWheelChairOrCrutchesReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="form-wrapper">
-        <PageHeader 
-          title="Create Wheel Chair/Crutches Report"
-          showBackButton={true}
-          backPath="/program/wheel_chair_or_crutches/reports/list"
-        />
-        <div className="form-content">
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "form-wrapper"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Create Wheel Chair/Crutches Report"
+            showBackButton={true}
+            backPath="/program/wheel_chair_or_crutches/reports/list"
+          />
+        )}
+        <div className={isEmbedded ? "" : "form-content"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="status-message status-message--error">{error}</div>}
             <div className="form-group" style={{maxWidth: '300px'}}>
@@ -181,15 +197,17 @@ const AddWheelChairOrCrutchesReport = () => {
               canRemove={form.distributions.length > 1}
             />
 
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="primary_btn"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating...' : 'Create Report'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary_btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Submit Report'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

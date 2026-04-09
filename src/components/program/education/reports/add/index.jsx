@@ -7,7 +7,7 @@ import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import PageHeader from '../../../../common/PageHeader';
 
-const AddEducationReport = () => {
+const AddEducationReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -25,10 +25,12 @@ const AddEducationReport = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDateChange = e => {
-    setForm(prev => ({
-      ...prev,
+    const nextForm = {
+      ...form,
       date: e.target.value
-    }));
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
@@ -36,19 +38,21 @@ const AddEducationReport = () => {
     const numValue = value === '' ? 0 : parseInt(value, 10);
     const validValue = isNaN(numValue) ? 0 : Math.max(0, numValue);
     
-    setForm(prev => ({
-      ...prev,
+    const nextForm = {
+      ...form,
       [field]: validValue
-    }));
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const getMaleTotal = () => {
-    return form.male_orphans + form.male_divorced + form.male_disable + form.male_indegent;
+    return (form.male_orphans || 0) + (form.male_divorced || 0) + (form.male_disable || 0) + (form.male_indegent || 0);
   };
 
   const getFemaleTotal = () => {
-    return form.female_orphans + form.female_divorced + form.female_disable + form.female_indegent;
+    return (form.female_orphans || 0) + (form.female_divorced || 0) + (form.female_disable || 0) + (form.female_indegent || 0);
   };
 
   const getOverallTotal = () => {
@@ -56,7 +60,7 @@ const AddEducationReport = () => {
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!form.date) {
       setError('Date is required');
       return;
@@ -66,12 +70,13 @@ const AddEducationReport = () => {
     try {
       const response = await axiosInstance.post('/program/education/reports', form);
       
-      if (response.data) {
+      if (response.data && !isEmbedded) {
         navigate('/program/education/reports/list');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
       console.error('Error submitting report:', err);
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -79,23 +84,25 @@ const AddEducationReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="add-education-report">
-        <PageHeader 
-          title="Create Education Report"
-          breadcrumbs={[
-            { label: 'Program', path: '/program' },
-            { label: 'Education Reports', path: '/program/education/reports/list' },
-            { label: 'Add Report' }
-          ]}
-          actionButton={{
-            label: 'Create Report',
-            onClick: handleSubmit,
-            disabled: isSubmitting
-          }}
-        />
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "add-education-report"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Create Education Report"
+            breadcrumbs={[
+              { label: 'Program', path: '/program' },
+              { label: 'Education Reports', path: '/program/education/reports/list' },
+              { label: 'Add Report' }
+            ]}
+            actionButton={{
+              label: 'Submit Report',
+              onClick: handleSubmit,
+              disabled: isSubmitting
+            }}
+          />
+        )}
         
-        <div className="form-container">
+        <div className={isEmbedded ? "" : "form-container"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="error-message">{error}</div>}
             
@@ -208,15 +215,17 @@ const AddEducationReport = () => {
               </div>
             </div>
             
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="primary_btn"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating...' : 'Create Report'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary_btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Submit Report'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

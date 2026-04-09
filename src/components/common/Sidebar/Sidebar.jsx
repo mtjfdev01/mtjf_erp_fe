@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import SidebarGroup from './SidebarGroup';
 import { getSidebarConfig } from './sidebarConfig';
-import { FiChevronsLeft, FiChevronsRight } from 'react-icons/fi';
+import { FiChevronsLeft, FiChevronsRight, FiUser } from 'react-icons/fi';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -91,10 +91,20 @@ const Sidebar = () => {
 
         <div className="sidebar-footer">
           {!collapsed && user && (
-            <div className="user-info">
-              <div className="user-name">{user.name || user.email}</div>
-              <div className="user-role">Role: {user.role}</div>
-              <div className="user-department">Dep: {user.department}</div> 
+            <div className="user-profile">
+              <div className="user-icon">
+                <FiUser />
+              </div>
+              <div className="user-info">
+                <div className="user-name">{user.name || user.email}</div>
+                <div className="user-role">{user.role}</div>
+                <div className="user-department">{user.department}</div> 
+              </div>
+            </div>
+          )}
+          {collapsed && user && (
+            <div className="user-icon-collapsed" title={`${user.name || user.email} (${user.role})`}>
+              <FiUser />
             </div>
           )}
         </div>

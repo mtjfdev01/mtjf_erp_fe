@@ -10,7 +10,7 @@ import FormSelect from '../../../../common/FormSelect';
 import DynamicFormSection from '../../../../common/DynamicFormSection';
 import axios from '../../../../../utils/axios';
 
-const AddKasbReport = () => {
+const AddKasbReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   
   const initialCenterRow = () => ({
@@ -28,7 +28,9 @@ const AddKasbReport = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDateChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const nextForm = { ...form, [e.target.name]: e.target.value };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
@@ -48,26 +50,32 @@ const AddKasbReport = () => {
       });
     }
 
-    setForm({ ...form, centers: newCenters });
+    const nextForm = { ...form, centers: newCenters };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
   
   const addRow = () => {
-    setForm(prevForm => ({
-      ...prevForm,
-      centers: [...prevForm.centers, initialCenterRow()]
-    }));
+    const nextForm = {
+      ...form,
+      centers: [...form.centers, initialCenterRow()]
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const removeRow = (id) => {
     if (form.centers.length <= 1) return;
-    setForm(prevForm => ({
-      ...prevForm,
-      centers: prevForm.centers.filter(row => row.id !== id)
-    }));
+    const nextForm = {
+      ...form,
+      centers: form.centers.filter(row => row.id !== id)
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setIsSubmitting(true);
     setError('');
 
@@ -83,13 +91,14 @@ const AddKasbReport = () => {
       const response = await axios.post('/program/kasb/reports/multiple', reportsData);
       
       if (response.data.success) {
-        navigate('/program/kasb/reports/list');
+        if (!isEmbedded) navigate('/program/kasb/reports/list');
       } else {
-        setError(response.data.message || 'Failed to create report');
+        setError(response.data.message || 'Failed to Submit Report');
       }
     } catch (err) {
       console.error('Error creating kasb report:', err);
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -120,14 +129,16 @@ const AddKasbReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="form-wrapper">
-        <PageHeader 
-          title="Create Kasb Report"
-          showBackButton={true}
-          backPath="/program/kasb/reports/list"
-        />
-        <div className="form-content">
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "form-wrapper"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Create Kasb Report"
+            showBackButton={true}
+            backPath="/program/kasb/reports/list"
+          />
+        )}
+        <div className={isEmbedded ? "" : "form-content"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="status-message status-message--error">{error}</div>}
             <div className="form-group" style={{maxWidth: '300px'}}>
@@ -150,15 +161,17 @@ const AddKasbReport = () => {
               canRemove={form.centers.length > 1}
             />
 
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="primary_btn"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating...' : 'Create Report'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary_btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Submit Report'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

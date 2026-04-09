@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import './Navbar.css';
 import NotificationBell from './common/NotificationBell';
+import mtjfLogo from '../assets/mtjf_logo.png';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -23,7 +24,8 @@ const Navbar = () => {
     <nav className="navbar">
       <div className="navbar-container">
         <div className="navbar-brand">
-          <h2>MTJ Foundation Operations Report</h2>
+          <img src={mtjfLogo} alt="MTJF Logo" className="navbar-logo" />
+          <h2>Operations Report</h2>
         </div>
         <div className="navbar-actions">
           <NotificationBell />

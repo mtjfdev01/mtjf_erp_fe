@@ -10,7 +10,7 @@ import FormSelect from '../../../../common/FormSelect';
 import DynamicFormSection from '../../../../common/DynamicFormSection';
 import axios from '../../../../../utils/axios';
 
-const AddWaterReport = () => {
+const AddWaterReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   
   const initialActivityRow = () => ({
@@ -29,7 +29,9 @@ const AddWaterReport = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleDateChange = e => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const nextForm = { ...form, [e.target.name]: e.target.value };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
@@ -49,26 +51,32 @@ const AddWaterReport = () => {
       });
     }
 
-    setForm({ ...form, activities: newActivities });
+    const nextForm = { ...form, activities: newActivities };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
   
   const addRow = () => {
-    setForm(prevForm => ({
-      ...prevForm,
-      activities: [...prevForm.activities, initialActivityRow()]
-    }));
+    const nextForm = {
+      ...form,
+      activities: [...form.activities, initialActivityRow()]
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const removeRow = (id) => {
     if (form.activities.length <= 1) return;
-    setForm(prevForm => ({
-      ...prevForm,
-      activities: prevForm.activities.filter(row => row.id !== id)
-    }));
+    const nextForm = {
+      ...form,
+      activities: form.activities.filter(row => row.id !== id)
+    };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setIsSubmitting(true);
     setError('');
 
@@ -84,13 +92,14 @@ const AddWaterReport = () => {
       const response = await axios.post('/program/water/reports/multiple', reportsData);
       
       if (response.data.success) {
-        navigate('/program/water/reports/list');
+        if (!isEmbedded) navigate('/program/water/reports/list');
       } else {
-        setError(response.data.message || 'Failed to create report');
+        setError(response.data.message || 'Failed to Submit Report');
       }
     } catch (err) {
       console.error('Error creating water report:', err);
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -129,14 +138,16 @@ const AddWaterReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="form-wrapper">
-        <PageHeader 
-          title="Create Water Report"
-          showBackButton={true}
-          backPath="/program/water/reports/list"
-        />
-        <div className="form-content">
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "form-wrapper"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Create Water Report"
+            showBackButton={true}
+            backPath="/program/water/reports/list"
+          />
+        )}
+        <div className={isEmbedded ? "" : "form-content"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="status-message status-message--error">{error}</div>}
             <div className="form-group" style={{maxWidth: '300px'}}>
@@ -159,15 +170,17 @@ const AddWaterReport = () => {
               canRemove={form.activities.length > 1}
             />
 
-            <div className="form-actions">
-              <button
-                type="submit"
-                className="primary_btn"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? 'Creating...' : 'Create Report'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button
+                  type="submit"
+                  className="primary_btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? 'Creating...' : 'Submit Report'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

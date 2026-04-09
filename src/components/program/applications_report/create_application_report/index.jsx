@@ -274,6 +274,12 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     (lastApplication?.subprogram && PROGRAM_COMPONENTS_MAP[lastApplication.subprogram]) || 
     (lastApplication?.project && PROGRAM_COMPONENTS_MAP[lastApplication.project]);
 
+  const [childFormData, setChildFormData] = useState(null);
+
+  const handleChildFormDataChange = (data) => {
+    setChildFormData(data);
+  };
+
   const handleSubmit = async e => {
     e.preventDefault();
     if (!validateForm()) return;
@@ -297,7 +303,75 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
         }))
       };
       
+      // Submit the application report
       await axiosInstance[method](endpoint, reportPayload);
+
+      // Submit child form data if available
+      if (childFormData) {
+        let childEndpoint = '';
+        const activeSub = lastApplication?.subprogram;
+        const activeProject = lastApplication?.project;
+        
+        // Map project/subprogram to their respective POST endpoints
+        if (activeSub === 'area_ration' || activeSub === 'area_ration_reports') childEndpoint = '/program/area_ration/reports';
+        else if (activeSub === 'kasb_training' || activeSub === 'kasb-training') childEndpoint = '/program/kasb-training/reports/multiple';
+        else if (activeSub === 'wheel_chair_or_crutches' || activeSub === 'wheel-chair-or-crutches') childEndpoint = '/program/wheel_chair_or_crutches/reports/multiple';
+        else if (activeProject === 'food_security' || activeSub === 'ration_report') childEndpoint = '/program/ration/reports';
+        else if (activeProject === 'community_services' || activeSub === 'marriage_gifts') childEndpoint = '/program/marriage-gifts/reports';
+        else if (activeProject === 'education' || activeSub === 'education_reports') childEndpoint = '/program/education/reports';
+        else if (activeProject === 'water_clean_water' || activeSub === 'water_reports') childEndpoint = '/program/water/reports/multiple';
+        else if (activeProject === 'kasb' || activeSub === 'kasb_reports') childEndpoint = '/program/kasb/reports/multiple';
+        else if (activeProject === 'green_initiative' || activeSub === 'tree_plantation') childEndpoint = '/program/tree_plantation/reports';
+        else if (activeProject === 'widows_and_orphans_care_program' || activeSub === 'financial_assistance') childEndpoint = '/program/financial_assistance/reports';
+        else if (activeProject === 'livelihood_support_program' || activeSub === 'sewing_machine') childEndpoint = '/program/sewing_machine/reports';
+
+        if (childEndpoint) {
+          // Some endpoints expect multiple DTOs as an array
+          let finalChildData = childFormData;
+          if (childEndpoint.includes('multiple')) {
+            if (activeSub === 'kasb_training' || activeSub === 'kasb-training') {
+               finalChildData = childFormData.activities.map(a => ({
+                 date: childFormData.date,
+                 skill_level: a.skill_level,
+                 quantity: a.quantity === '' ? 0 : parseInt(a.quantity, 10),
+                 addition: a.addition === '' ? 0 : parseInt(a.addition, 10),
+                 left: a.left === '' ? 0 : parseInt(a.left, 10)
+               }));
+            } else if (activeSub === 'wheel_chair_or_crutches' || activeSub === 'wheel-chair-or-crutches') {
+               finalChildData = childFormData.distributions.map(dist => ({
+                 date: childFormData.date,
+                 type: dist.type,
+                 gender: dist.gender,
+                 orphans: dist.vulnerabilities.Orphans || 0,
+                 divorced: dist.vulnerabilities.Divorced || 0,
+                 disable: dist.vulnerabilities.Disable || 0,
+                 indegent: dist.vulnerabilities.Indegent || 0
+               }));
+            } else if (activeProject === 'water_clean_water' || activeSub === 'water_reports') {
+               finalChildData = childFormData.activities.map(a => ({
+                 date: childFormData.date,
+                 activity: a.activity,
+                 system: a.system,
+                 quantity: a.quantity || 0
+               }));
+            } else if (activeProject === 'kasb' || activeSub === 'kasb_reports') {
+               finalChildData = childFormData.centers.map(c => ({
+                 date: childFormData.date,
+                 center: c.center,
+                 delivery: c.delivery || 0
+               }));
+            }
+          } else {
+             // Single DTO endpoints
+             if (activeProject === 'green_initiative' || activeSub === 'tree_plantation') {
+               finalChildData = { ...childFormData, plants: parseInt(childFormData.plants, 10) };
+             } else if (activeSub === 'area_ration' || activeSub === 'area_ration_reports') {
+               finalChildData = { ...childFormData, quantity: parseInt(childFormData.quantity, 10) };
+             }
+          }
+          await axiosInstance.post(childEndpoint, finalChildData);
+        }
+      }
 
       // Navigate immediately after successful operation
       navigate('/program/applications_reports');
@@ -481,11 +555,17 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                 className="primary_btn"
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Submitting...' : (isEdit ? 'Update Report' : 'Create Report')}
+                {isSubmitting ? 'Submitting...' : (isEdit ? 'Update Report' : 'Submit Report')}
               </button>
             </div>
 
-            {DynamicCreateComponent && <DynamicCreateComponent />}
+            {DynamicCreateComponent && (
+              <div className="embedded-report-section">
+                <hr className="section-divider" />
+                <h3 className="embedded-report-title">Related Program Report</h3>
+                <DynamicCreateComponent isEmbedded={true} onFormDataChange={handleChildFormDataChange} />
+              </div>
+            )}
           </form>
         )}
       </div>
