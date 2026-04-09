@@ -184,14 +184,32 @@ const ViewTask = () => {
     return map[dept] || '/admin/tasks/list';
   };
   const formatDate = (d) => d ? new Date(d).toLocaleString() : '-';
+
+  const parseAsLocal = (dateInput) => {
+    if (!dateInput) return new Date(NaN);
+    if (dateInput instanceof Date) return new Date(dateInput);
+    
+    // If it's a date string from backend (YYYY-MM-DD), parse as local midnight
+    if (typeof dateInput === 'string' && dateInput.includes('-') && !dateInput.includes('T') && !dateInput.includes(':')) {
+      const [year, month, day] = dateInput.split('-').map(Number);
+      return new Date(year, month - 1, day);
+    }
+    return new Date(dateInput);
+  };
+
   const formatDateOnly = (date) => {
     if (!date) return 'N/A';
-    return new Date(date).toLocaleDateString('en-GB', {
+    // Use string parsing to avoid timezone shift for "YYYY-MM-DD" dates
+    const d = parseAsLocal(date);
+    if (Number.isNaN(d.getTime())) return 'N/A';
+    
+    return d.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
       year: 'numeric'
     });
   };
+
   const formatTaskId = (t) => {
     if (!t) return '-';
     if (t.code) return `#${t.code}`;
@@ -203,17 +221,38 @@ const ViewTask = () => {
 
   const getDueInfo = (rawDate, statusRaw) => {
     if (!rawDate) return null;
-    const dueObj = new Date(rawDate);
+    const dueObj = parseAsLocal(rawDate);
     if (Number.isNaN(dueObj.getTime())) return null;
     const now = new Date();
-    const diffMs = dueObj.getTime() - now.getTime();
-    const diffDays = Math.round(diffMs / 86400000);
     const sLower = String(statusRaw || '').toLowerCase();
     if (['completed', 'closed', 'cancelled'].includes(sLower)) return null;
-    if (diffDays === 0) return { label: 'Due today', variant: 'warning' };
-    if (diffDays > 0) return { label: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}`, variant: 'normal' };
-    const overdueDays = Math.abs(diffDays);
-    return { label: `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`, variant: 'danger' };
+
+    // A task becomes overdue ONLY after 12:00 PM (noon) on the due date.
+    const dueNoon = new Date(dueObj);
+    dueNoon.setHours(12, 0, 0, 0);
+
+    const startOfDueDay = new Date(dueObj);
+    startOfDueDay.setHours(0, 0, 0, 0);
+    const startOfNowDay = new Date(now);
+    startOfNowDay.setHours(0, 0, 0, 0);
+
+    if (now > dueNoon) {
+      const diffMs = startOfNowDay.getTime() - startOfDueDay.getTime();
+      const overdueDays = Math.round(diffMs / 86400000);
+      
+      if (overdueDays === 0) {
+        return { label: 'Overdue today', variant: 'warning' };
+      }
+      return { label: `Overdue by ${overdueDays} day${overdueDays === 1 ? '' : 's'}`, variant: 'danger' };
+    } else {
+      const diffMs = startOfDueDay.getTime() - startOfNowDay.getTime();
+      const diffDays = Math.round(diffMs / 86400000);
+
+      if (diffDays === 0) {
+        return { label: 'Due today', variant: 'warning' };
+      }
+      return { label: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}`, variant: 'normal' };
+    }
   };
   const handleBack = useCallback(() => {
     navigate(-1);
@@ -346,15 +385,76 @@ const ViewTask = () => {
   const [currentUserHasActedOnApproval, setCurrentUserHasActedOnApproval] =
     useState(false);
 
-  const isTaskOverdue = () => {
+  const isTaskOverdueAfterToday = () => {
     if (!task || !task.due_date) return false;
-    const dueVal = new Date(task.due_date);
+    const dueVal = parseAsLocal(task.due_date);
     if (Number.isNaN(dueVal.getTime())) return false;
     const now = new Date();
     const statusVal = String(task.status || '').toLowerCase();
     if (['completed', 'closed', 'cancelled'].includes(statusVal)) return false;
-    return now > dueVal;
+
+    // Red banner should only appear AFTER the due date (next day onwards)
+    const startOfNextDay = new Date(dueVal);
+    startOfNextDay.setDate(startOfNextDay.getDate() + 1);
+    startOfNextDay.setHours(0, 0, 0, 0);
+
+    return now.getTime() >= startOfNextDay.getTime();
   };
+
+  const isTaskOverdueToday = () => {
+    if (!task || !task.due_date) return false;
+    const dueVal = parseAsLocal(task.due_date);
+    if (Number.isNaN(dueVal.getTime())) return false;
+    const now = new Date();
+    const statusVal = String(task.status || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled'].includes(statusVal)) return false;
+
+    // Amber warning if it's past 12 PM on the due date today.
+    const dueNoon = new Date(dueVal);
+    dueNoon.setHours(12, 0, 0, 0);
+
+    const startOfDueDay = new Date(dueVal);
+    startOfDueDay.setHours(0, 0, 0, 0);
+    const startOfNowDay = new Date(now);
+    startOfNowDay.setHours(0, 0, 0, 0);
+
+    return (
+      startOfDueDay.getTime() === startOfNowDay.getTime() &&
+      now.getTime() > dueNoon.getTime()
+    );
+  };
+
+  const isTaskDueTodayBeforeNoon = () => {
+    if (!task || !task.due_date) return false;
+    const dueVal = parseAsLocal(task.due_date);
+    if (Number.isNaN(dueVal.getTime())) return false;
+    const now = new Date();
+    const statusVal = String(task.status || '').toLowerCase();
+    if (['completed', 'closed', 'cancelled'].includes(statusVal)) return false;
+
+    const dueNoon = new Date(dueVal);
+    dueNoon.setHours(12, 0, 0, 0);
+
+    const startOfDueDay = new Date(dueVal);
+    startOfDueDay.setHours(0, 0, 0, 0);
+    const startOfNowDay = new Date(now);
+    startOfNowDay.setHours(0, 0, 0, 0);
+
+    return (
+      startOfDueDay.getTime() === startOfNowDay.getTime() &&
+      now.getTime() <= dueNoon.getTime()
+    );
+  };
+
+  const renderReminderBanner = (title, message, isWarning = false) => (
+    <div className={`overdue-reminder${isWarning ? ' overdue-reminder--warning' : ''}`}>
+      <div className="overdue-reminder-icon">!</div>
+      <div className="overdue-reminder-content">
+        <div className="overdue-reminder-title">{title}</div>
+        <div className="overdue-reminder-text">{message}</div>
+      </div>
+    </div>
+  );
 
   const taskPerms = useMemo(
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
@@ -931,19 +1031,30 @@ const ViewTask = () => {
               {renderRecurrenceInfo()}
 
               <div className="receipt-body">
-                {isTaskOverdue() && (
-                  <div className="overdue-reminder">
-                    <div className="overdue-reminder-icon">!</div>
-                    <div className="overdue-reminder-content">
-                      <div className="overdue-reminder-title">Task is overdue</div>
-                      <div className="overdue-reminder-text">
-                        {primaryAssigneeName
-                          ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
-                          : 'This task is now overdue. Please review and complete it as soon as possible.'}
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {isTaskOverdueAfterToday() ? (
+                  renderReminderBanner(
+                    'Task is overdue',
+                    primaryAssigneeName
+                      ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
+                      : 'This task is now overdue. Please review and complete it as soon as possible.'
+                  )
+                ) : isTaskOverdueToday() ? (
+                  renderReminderBanner(
+                    'Overdue Today',
+                    primaryAssigneeName
+                      ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                      : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.',
+                    true
+                  )
+                ) : isTaskDueTodayBeforeNoon() ? (
+                  renderReminderBanner(
+                    'Due Today',
+                    primaryAssigneeName
+                      ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                      : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.',
+                    true
+                  )
+                ) : null}
 
                 <TaskActionBar
                   taskId={task.id}
@@ -1247,6 +1358,10 @@ const ViewTask = () => {
                         <span>📅</span> Timeline
                       </h3>
                       <div className="view-grid view-grid--info">
+                        <div className="view-item">
+                          <span className="view-item-label">Created Date</span>
+                          <span className="view-item-value">{formatDateOnly(task.created_at)}</span>
+                        </div>
                         <div className="view-item">
                           <span className="view-item-label">Start Date</span>
                           <span className="view-item-value">{formatDateOnly(task.start_date)}</span>

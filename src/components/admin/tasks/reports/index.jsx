@@ -520,7 +520,7 @@ const TaskReports = () => {
   return (
     <>
       <Navbar />
-      <div className="user-list-container">
+      <div className="task-report-container">
         <PageHeader title="Tasks Dashboard" showBackButton={true} />
         <div className="task-dashboard-shell">
           <div className="task-dashboard-layout">
@@ -808,7 +808,7 @@ const TaskReports = () => {
                 </div>
               </div>
 
-              {taskAggregates.avgCompletionDays !== null && (
+              {/* {taskAggregates.avgCompletionDays !== null && (
                 <div className="task-report-card task-report-card--time-tracking">
                   <div className="task-report-card-header">
                     <h2 className="task-report-card-title">Time Tracking Report</h2>
@@ -819,7 +819,7 @@ const TaskReports = () => {
                     </div>
                   </div>
                 </div>
-              )}
+              )} */}
             </div>
           </div>
         </div>

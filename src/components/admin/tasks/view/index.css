@@ -2099,6 +2099,23 @@
   color: #7f1d1d;
 }
 
+.overdue-reminder--warning {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+}
+
+.overdue-reminder--warning .overdue-reminder-icon {
+  background-color: #d97706;
+}
+
+.overdue-reminder--warning .overdue-reminder-title {
+  color: #92400e;
+}
+
+.overdue-reminder--warning .overdue-reminder-text {
+  color: #78350f;
+}
+
 .collaboration-summary {
   display: flex;
   align-items: center;

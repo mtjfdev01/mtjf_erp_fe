@@ -204,6 +204,62 @@
   border-radius: 10px;
   border: 1px solid #f3f4f6;
   min-width: 180px;
+  position: relative;
+  cursor: help;
+}
+
+.task-date-tooltip {
+  visibility: hidden;
+  position: absolute;
+  bottom: 110%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #1f2937;
+  color: #ffffff;
+  padding: 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  z-index: 100;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  opacity: 0;
+  transition: opacity 0.2s, visibility 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.task-date-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #1f2937 transparent transparent transparent;
+}
+
+.task-card-dates:hover .task-date-tooltip {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+}
+
+.tooltip-label {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.tooltip-value {
+  color: #ffffff;
+  font-weight: 600;
 }
 
 .task-card-selection {
@@ -595,8 +651,119 @@
   border-radius: 4px;
   cursor: pointer;
   transition: background-color 0.15s ease, box-shadow 0.15s ease,
-    transform 0.05s ease;
+  transform 0.05s ease;
   color: #fff;
+}
+
+.task-tabs-container {
+  margin-bottom: 2rem;
+  background: #ffffff;
+  padding: 0.5rem;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  border: 1px solid #f3f4f6;
+}
+
+.task-tabs {
+  display: flex;
+  gap: 0.7rem;
+  background: #f9fafb;
+  padding: 0.4rem;
+  border-radius: 12px;
+  flex-wrap: wrap;
+}
+
+.task-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.8rem 1.5rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #6b7280;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  flex: 1;
+  justify-content: center;
+  min-width: 160px;
+}
+
+.task-tab-btn:hover {
+  color: #C62828;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.task-tab-btn.active {
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.tab-icon {
+  font-size: 1.1rem;
+  transition: transform 0.3s ease;
+}
+
+.task-tab-btn:hover .tab-icon {
+  transform: scale(1.1);
+}
+
+.tab-count {
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 0.2rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.3s ease;
+}
+
+.task-tab-btn.active--mine { color: #2563eb; border: 1px solid #2563eb; }
+.task-tab-btn.active--mine .tab-count { background: #dbeafe; color: #2563eb; border: 1px solid #2563eb; }
+.task-tab-btn.active--mine .tab-icon { color: #2563eb; }
+
+.task-tab-btn.active--team { color: #059669; border: 1px solid #059669; }
+.task-tab-btn.active--team .tab-count { background: #d1fae5; color: #059669; border: 1px solid #059669; }
+.task-tab-btn.active--team .tab-icon { color: #059669; }
+
+.task-tab-btn.active--other { color: #2BA8DC; border: 1px solid #2BA8DC; }
+.task-tab-btn.active--other .tab-count { background: #dbfbff; color: #2BA8DC; border: 1px solid #2BA8DC; }
+.task-tab-btn.active--other .tab-icon { color: #2BA8DC; }
+
+.fade-in {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.empty-tab-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  background: #ffffff;
+  border-radius: 16px;
+  border: 2px dashed #e5e7eb;
+  color: #9ca3af;
+  gap: 1rem;
+}
+
+.empty-icon {
+  font-size: 3rem;
+  opacity: 0.3;
+}
+
+.empty-tab-state p {
+  font-size: 1rem;
+  font-weight: 500;
 }
 
 .tasks-group-label {
@@ -610,18 +777,6 @@
   text-transform: uppercase;
   color: #ffffff;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.tasks-group-label--mine {
-  background: #3b82f6;
-}
-
-.tasks-group-label--team {
-  background: #10b981;
-}
-
-.tasks-group-label--other {
-  background: #374151;
 }
 
 /* Desktop view defaults */
