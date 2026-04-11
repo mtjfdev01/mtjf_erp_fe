@@ -100,6 +100,12 @@ const ViewProgram = () => {
               {data.status}
             </span>
           </div>
+          <div className="view-row">
+            <span className="view-label">Application reports</span>
+            <span className={`status-badge ${data.applicationable !== false ? 'active' : 'inactive'}`}>
+              {data.applicationable !== false ? 'Enabled' : 'Disabled'}
+            </span>
+          </div>
 
           <div className="view-actions">
             <button className="secondary_btn" type="button" onClick={() => navigate('/program/programs')}>

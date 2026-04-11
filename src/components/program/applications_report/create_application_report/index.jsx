@@ -52,6 +52,73 @@ const PROGRAM_COMPONENTS_MAP = {
   area_ration_reports: AddAreaRationReport,
 };
 
+function resolveChildEndpoint(activeSub, activeProject) {
+  if (activeSub === 'area_ration' || activeSub === 'area_ration_reports') return '/program/area_ration/reports';
+  if (activeSub === 'kasb_training' || activeSub === 'kasb-training') return '/program/kasb-training/reports/multiple';
+  if (activeSub === 'wheel_chair_or_crutches' || activeSub === 'wheel-chair-or-crutches') return '/program/wheel_chair_or_crutches/reports/multiple';
+  if (activeProject === 'food_security' || activeSub === 'ration_report') return '/program/ration/reports';
+  if (activeProject === 'community_services' || activeSub === 'marriage_gifts') return '/program/marriage-gifts/reports';
+  if (activeProject === 'education' || activeSub === 'education_reports') return '/program/education/reports';
+  if (activeProject === 'water_clean_water' || activeSub === 'water_reports') return '/program/water/reports/multiple';
+  if (activeProject === 'kasb' || activeSub === 'kasb_reports') return '/program/kasb/reports/multiple';
+  if (activeProject === 'green_initiative' || activeSub === 'tree_plantation') return '/program/tree_plantation/reports';
+  if (activeProject === 'widows_and_orphans_care_program' || activeSub === 'financial_assistance') return '/program/financial_assistance/reports';
+  if (activeProject === 'livelihood_support_program' || activeSub === 'sewing_machine') return '/program/sewing_machine/reports';
+  return '';
+}
+
+function buildProgramReportPayload(childFormData, activeSub, activeProject, childEndpoint) {
+  let finalChildData = childFormData;
+  if (childEndpoint.includes('multiple')) {
+    if (activeSub === 'kasb_training' || activeSub === 'kasb-training') {
+      finalChildData = childFormData.activities.map((a) => ({
+        date: childFormData.date,
+        skill_level: a.skill_level,
+        quantity: a.quantity === '' ? 0 : parseInt(a.quantity, 10),
+        addition: a.addition === '' ? 0 : parseInt(a.addition, 10),
+        left: a.left === '' ? 0 : parseInt(a.left, 10),
+      }));
+    } else if (activeSub === 'wheel_chair_or_crutches' || activeSub === 'wheel-chair-or-crutches') {
+      finalChildData = childFormData.distributions.map((dist) => ({
+        date: childFormData.date,
+        type: dist.type,
+        gender: dist.gender,
+        orphans: dist.vulnerabilities.Orphans || 0,
+        divorced: dist.vulnerabilities.Divorced || 0,
+        disable: dist.vulnerabilities.Disable || 0,
+        indegent: dist.vulnerabilities.Indegent || 0,
+      }));
+    } else if (activeProject === 'water_clean_water' || activeSub === 'water_reports') {
+      finalChildData = childFormData.activities.map((a) => ({
+        date: childFormData.date,
+        activity: a.activity,
+        system: a.system,
+        quantity: a.quantity || 0,
+      }));
+    } else if (activeProject === 'kasb' || activeSub === 'kasb_reports') {
+      finalChildData = childFormData.centers.map((c) => ({
+        date: childFormData.date,
+        center: c.center,
+        delivery: c.delivery || 0,
+      }));
+    }
+  } else if (activeProject === 'green_initiative' || activeSub === 'tree_plantation') {
+    finalChildData = { ...childFormData, plants: parseInt(childFormData.plants, 10) };
+  } else if (activeSub === 'area_ration' || activeSub === 'area_ration_reports') {
+    finalChildData = { ...childFormData, quantity: parseInt(childFormData.quantity, 10) };
+  }
+  return finalChildData;
+}
+
+function getEmbeddedComponentForApplication(app) {
+  if (!app) return null;
+  return (
+    (app.subprogram && PROGRAM_COMPONENTS_MAP[app.subprogram]) ||
+    (app.project && PROGRAM_COMPONENTS_MAP[app.project]) ||
+    null
+  );
+}
+
 const CreateApplication = ({ applicationData = null, isEdit = false }) => {
   const navigate = useNavigate();
 
@@ -72,6 +139,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
         pending_last_month: 0,
         application_count: 0,
         investigation_count: 0,
+        verified_count: 0,
         approved_count: 0,
         rejected_count: 0,
         pending_count: 0
@@ -115,7 +183,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     const fetchActivePrograms = async () => {
       try {
         const response = await axiosInstance.get('/program/programs', {
-          params: { page: 1, pageSize: 1000, active: 'true' },
+          params: { page: 1, pageSize: 1000, active: 'true', applicationable: 'true' },
         });
         if (response.data?.success) {
           setActivePrograms(response.data.data || []);
@@ -159,7 +227,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
 
   const handleApplicationChange = (index, field, value) => {
     const updatedApplications = [...applications];
-    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
+    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
     
     if (numericFields.includes(field)) {
       updatedApplications[index][field] = value === '' ? '' : parseInt(value, 10) || 0;
@@ -191,6 +259,17 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     }
     
     setApplications(updatedApplications);
+
+    if (field === 'project' || field === 'subprogram') {
+      const rowId = updatedApplications[index].id;
+      setChildFormDataByRowId((prev) => {
+        if (!(rowId in prev)) return prev;
+        const next = { ...prev };
+        delete next[rowId];
+        return next;
+      });
+    }
+
     if (error) setError('');
   };
 
@@ -208,6 +287,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       pending_last_month: 0,
       application_count: 0,
       investigation_count: 0,
+      verified_count: 0,
       approved_count: 0,
       rejected_count: 0,
       pending_count: 0
@@ -217,8 +297,13 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
 
   const removeApplication = (index) => {
     if (applications.length > 1) {
-      const updatedApplications = applications.filter((_, i) => i !== index);
-      setApplications(updatedApplications);
+      const removedId = applications[index].id;
+      setChildFormDataByRowId((prev) => {
+        const next = { ...prev };
+        delete next[removedId];
+        return next;
+      });
+      setApplications(applications.filter((_, i) => i !== index));
     }
   };
 
@@ -244,7 +329,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       }
 
       // Validate that all numeric fields are non-negative
-      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
+      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
       for (const field of numericFields) {
         if (app[field] < 0) {
           setError(`${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} cannot be negative for application ${i + 1}`);
@@ -261,7 +346,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       const expectedPending = pendingLastMonth + applicationCount - investigationCount;
       if (expectedPending !== pendingCount) {
         setError(
-          `For application ${i + 1}, Pending Count must equal Pending of Last Month + Application Count - Investigation Count (${pendingLastMonth} + ${applicationCount} - ${investigationCount} = ${expectedPending}).`
+          `For application ${i + 1}, Pending Count must equal Previous Pendings + Application Count - Investigation Count (${pendingLastMonth} + ${applicationCount} - ${investigationCount} = ${expectedPending}).`
         );
         return false;
       }
@@ -269,15 +354,10 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
     return true;
   };
 
-  const lastApplication = applications[applications.length - 1];
-  const DynamicCreateComponent = 
-    (lastApplication?.subprogram && PROGRAM_COMPONENTS_MAP[lastApplication.subprogram]) || 
-    (lastApplication?.project && PROGRAM_COMPONENTS_MAP[lastApplication.project]);
+  const [childFormDataByRowId, setChildFormDataByRowId] = useState({});
 
-  const [childFormData, setChildFormData] = useState(null);
-
-  const handleChildFormDataChange = (data) => {
-    setChildFormData(data);
+  const handleChildFormDataChange = (rowId, data) => {
+    setChildFormDataByRowId((prev) => ({ ...prev, [rowId]: data }));
   };
 
   const handleSubmit = async e => {
@@ -297,6 +377,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
           pending_last_month: app.pending_last_month === '' ? 0 : app.pending_last_month,
           application_count: app.application_count === '' ? 0 : app.application_count,
           investigation_count: app.investigation_count === '' ? 0 : app.investigation_count,
+          verified_count: app.verified_count === '' ? 0 : app.verified_count,
           approved_count: app.approved_count === '' ? 0 : app.approved_count,
           rejected_count: app.rejected_count === '' ? 0 : app.rejected_count,
           pending_count: app.pending_count === '' ? 0 : app.pending_count,
@@ -306,71 +387,20 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
       // Submit the application report
       await axiosInstance[method](endpoint, reportPayload);
 
-      // Submit child form data if available
-      if (childFormData) {
-        let childEndpoint = '';
-        const activeSub = lastApplication?.subprogram;
-        const activeProject = lastApplication?.project;
-        
-        // Map project/subprogram to their respective POST endpoints
-        if (activeSub === 'area_ration' || activeSub === 'area_ration_reports') childEndpoint = '/program/area_ration/reports';
-        else if (activeSub === 'kasb_training' || activeSub === 'kasb-training') childEndpoint = '/program/kasb-training/reports/multiple';
-        else if (activeSub === 'wheel_chair_or_crutches' || activeSub === 'wheel-chair-or-crutches') childEndpoint = '/program/wheel_chair_or_crutches/reports/multiple';
-        else if (activeProject === 'food_security' || activeSub === 'ration_report') childEndpoint = '/program/ration/reports';
-        else if (activeProject === 'community_services' || activeSub === 'marriage_gifts') childEndpoint = '/program/marriage-gifts/reports';
-        else if (activeProject === 'education' || activeSub === 'education_reports') childEndpoint = '/program/education/reports';
-        else if (activeProject === 'water_clean_water' || activeSub === 'water_reports') childEndpoint = '/program/water/reports/multiple';
-        else if (activeProject === 'kasb' || activeSub === 'kasb_reports') childEndpoint = '/program/kasb/reports/multiple';
-        else if (activeProject === 'green_initiative' || activeSub === 'tree_plantation') childEndpoint = '/program/tree_plantation/reports';
-        else if (activeProject === 'widows_and_orphans_care_program' || activeSub === 'financial_assistance') childEndpoint = '/program/financial_assistance/reports';
-        else if (activeProject === 'livelihood_support_program' || activeSub === 'sewing_machine') childEndpoint = '/program/sewing_machine/reports';
+      for (const app of applications) {
+        const childFormData = childFormDataByRowId[app.id];
+        if (!childFormData) continue;
 
-        if (childEndpoint) {
-          // Some endpoints expect multiple DTOs as an array
-          let finalChildData = childFormData;
-          if (childEndpoint.includes('multiple')) {
-            if (activeSub === 'kasb_training' || activeSub === 'kasb-training') {
-               finalChildData = childFormData.activities.map(a => ({
-                 date: childFormData.date,
-                 skill_level: a.skill_level,
-                 quantity: a.quantity === '' ? 0 : parseInt(a.quantity, 10),
-                 addition: a.addition === '' ? 0 : parseInt(a.addition, 10),
-                 left: a.left === '' ? 0 : parseInt(a.left, 10)
-               }));
-            } else if (activeSub === 'wheel_chair_or_crutches' || activeSub === 'wheel-chair-or-crutches') {
-               finalChildData = childFormData.distributions.map(dist => ({
-                 date: childFormData.date,
-                 type: dist.type,
-                 gender: dist.gender,
-                 orphans: dist.vulnerabilities.Orphans || 0,
-                 divorced: dist.vulnerabilities.Divorced || 0,
-                 disable: dist.vulnerabilities.Disable || 0,
-                 indegent: dist.vulnerabilities.Indegent || 0
-               }));
-            } else if (activeProject === 'water_clean_water' || activeSub === 'water_reports') {
-               finalChildData = childFormData.activities.map(a => ({
-                 date: childFormData.date,
-                 activity: a.activity,
-                 system: a.system,
-                 quantity: a.quantity || 0
-               }));
-            } else if (activeProject === 'kasb' || activeSub === 'kasb_reports') {
-               finalChildData = childFormData.centers.map(c => ({
-                 date: childFormData.date,
-                 center: c.center,
-                 delivery: c.delivery || 0
-               }));
-            }
-          } else {
-             // Single DTO endpoints
-             if (activeProject === 'green_initiative' || activeSub === 'tree_plantation') {
-               finalChildData = { ...childFormData, plants: parseInt(childFormData.plants, 10) };
-             } else if (activeSub === 'area_ration' || activeSub === 'area_ration_reports') {
-               finalChildData = { ...childFormData, quantity: parseInt(childFormData.quantity, 10) };
-             }
-          }
-          await axiosInstance.post(childEndpoint, finalChildData);
-        }
+        const childEndpoint = resolveChildEndpoint(app.subprogram, app.project);
+        if (!childEndpoint) continue;
+
+        const finalChildData = buildProgramReportPayload(
+          childFormData,
+          app.subprogram,
+          app.project,
+          childEndpoint,
+        );
+        await axiosInstance.post(childEndpoint, finalChildData);
       }
 
       // Navigate immediately after successful operation
@@ -385,6 +415,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
           pending_last_month: 0,
           application_count: 0,
           investigation_count: 0,
+          verified_count: 0,
           approved_count: 0,
           rejected_count: 0,
           pending_count: 0
@@ -392,6 +423,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
         setReportData({
           report_date: new Date().toISOString().split('T')[0],
         });
+        setChildFormDataByRowId({});
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
@@ -432,7 +464,9 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
 
             {/* Applications Section */}
             <div className="applications-section">
-              {applications.map((application, index) => (
+              {applications.map((application, index) => {
+                const Embedded = getEmbeddedComponentForApplication(application);
+                return (
                 <div key={application.id} className="application-entry">
                   <div className="application-header">
                     <h4 className="application-title">Application {index + 1}</h4>
@@ -488,7 +522,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
 
                     <FormInput
                       name={`pending_last_month-${index}`}
-                      label="Pending of Last Month"
+                      label="Previous Pendings"
                       type="number"
                       value={application.pending_last_month}
                       onChange={(e) => handleApplicationChange(index, 'pending_last_month', e.target.value)}
@@ -512,6 +546,16 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                       type="number"
                       value={application.investigation_count}
                       onChange={(e) => handleApplicationChange(index, 'investigation_count', e.target.value)}
+                      min="0"
+                      placeholder="0"
+                    />
+
+                    <FormInput
+                      name={`verified_count-${index}`}
+                      label="Verified Count"
+                      type="number"
+                      value={application.verified_count ?? ''}
+                      onChange={(e) => handleApplicationChange(index, 'verified_count', e.target.value)}
                       min="0"
                       placeholder="0"
                     />
@@ -546,8 +590,23 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                       placeholder="0"
                     />
                   </div>
+
+                  {Embedded && (
+                    <div className="embedded-report-section embedded-report-section--per-row">
+                      <hr className="section-divider" />
+                      <h3 className="embedded-report-title">
+                        Related Program Report — Application {index + 1}
+                      </h3>
+                      <Embedded
+                        key={`${application.id}-${application.project}-${application.subprogram}`}
+                        isEmbedded={true}
+                        onFormDataChange={(data) => handleChildFormDataChange(application.id, data)}
+                      />
+                    </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="form-actions">
               <button
@@ -558,14 +617,6 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                 {isSubmitting ? 'Submitting...' : (isEdit ? 'Update Report' : 'Submit Report')}
               </button>
             </div>
-
-            {DynamicCreateComponent && (
-              <div className="embedded-report-section">
-                <hr className="section-divider" />
-                <h3 className="embedded-report-title">Related Program Report</h3>
-                <DynamicCreateComponent isEmbedded={true} onFormDataChange={handleChildFormDataChange} />
-              </div>
-            )}
           </form>
         )}
       </div>

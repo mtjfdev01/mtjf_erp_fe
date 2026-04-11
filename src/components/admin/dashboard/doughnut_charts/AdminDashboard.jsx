@@ -20,6 +20,8 @@ import Sectors from '../test_impact_dashboard/sectors';
 import AllocationsSummary from '../impact_dashboard';
 import PeopleSummary from '../people_summary';
 import LineChart from '../../../common/charts/line_chart';
+import ProgramApplicationCard from '../../../common/dashboard/program_application_card';
+import DeliverablesOverallCard from '../../../common/dashboard/deliverables_overall_card';
     
 // doughnutChartRef = store, procurements, aaccounts_and_finance 
 // programsDoughnutChartRef  = programs module 
@@ -469,6 +471,8 @@ useEffect(() => {
     });
   };
 
+  const deliverablesRange = getDateRangeForDuration(DASHBOARD_DURATION);
+
   return (
     <div className="admin-dashboard">
       <Navbar />
@@ -502,17 +506,27 @@ useEffect(() => {
           {/* </div> */}
 
         </div>
-              <LineChart 
-                data={donationSummary}
-                title="Donations Summary"
-                options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                }}
-                height={300}
-                showDownload={false}
-                downloadFileName="donations-summary"
-              />
+
+        <div className="admin-dashboard__below-charts">
+          <LineChart
+            data={donationSummary}
+            title="Donations Summary"
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+            }}
+            height={300}
+            showDownload={false}
+            downloadFileName="donations-summary"
+          />
+          <DeliverablesOverallCard
+            from={deliverablesRange.from}
+            to={deliverablesRange.to}
+            title="Deliverables — overall"
+          />
+          <ProgramApplicationCard from={deliverablesRange.from} to={deliverablesRange.to} />
+        </div>
+
         {/* <div className="department-cards">{renderCards()}</div> */}
       </div>
       <Modal open={programModalOpen} onClose={() => setProgramModalOpen(false)} details={selectedProgramDetails} title={selectedProgramTitle} />

@@ -134,6 +134,14 @@ const ApplicationReportsList = () => {
     return applications.reduce((total, app) => total + app.pending_count, 0);
   };
 
+  const getTotalVerified = (applications) => {
+    return applications.reduce((total, app) => total + (Number(app.verified_count) || 0), 0);
+  };
+
+  const getTotalApproved = (applications) => {
+    return applications.reduce((total, app) => total + (Number(app.approved_count) || 0), 0);
+  };
+
   const getActionMenuItems = (report) => [
     {
       icon: <FiEye />,
@@ -214,6 +222,8 @@ const ApplicationReportsList = () => {
                 <th>Report Date</th>
                 <th>Projects Count</th>
                 <th>Total Applications</th>
+                <th>Total Verified</th>
+                <th>Total Approved</th>
                 <th>Total Pending</th>
                 {/* <th className="hide-on-mobile">Notes</th> */}
                 <th>Actions</th>
@@ -235,6 +245,16 @@ const ApplicationReportsList = () => {
                   <td>
                     <span className="total-applications">
                       {getTotalApplications(report.applications)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="total-verified">
+                      {getTotalVerified(report.applications)}
+                    </span>
+                  </td>
+                  <td>
+                    <span className="total-approved">
+                      {getTotalApproved(report.applications)}
                     </span>
                   </td>
                   <td>

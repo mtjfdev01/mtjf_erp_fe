@@ -190,6 +190,10 @@ const ViewApplicationReport = () => {
                   
                   <div className="stat-row">
                     <div className="stat-item">
+                      <label>Verified:</label>
+                      <span className="stat-value stat-verified">{application.verified_count ?? 0}</span>
+                    </div>
+                    <div className="stat-item">
                       <label>Approved:</label>
                       <span className="stat-value stat-approved">{application.approved_count}</span>
                     </div>

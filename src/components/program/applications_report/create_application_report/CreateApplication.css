@@ -16,6 +16,11 @@
   border-top: 2px solid #eee;
 }
 
+.application-entry .embedded-report-section--per-row {
+  margin-top: var(--spacing-md);
+  padding-top: var(--spacing-md);
+}
+
 .section-divider {
   border: 0;
   height: 1px;

@@ -4,16 +4,13 @@
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(0,0,0,0.4);
+  background: rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
 }
 
-h2{
-  margin-bottom: 8px;
-}
 .custom-modal-content {
   background: #fff;
   padding: 2rem;
@@ -23,8 +20,15 @@ h2{
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.2);
 }
+
+.custom-modal-content h2 {
+  margin: 0 0 8px;
+  padding-right: 2rem;
+  font-size: 1.25rem;
+}
+
 .custom-modal-close {
   position: absolute;
   top: 0.5rem;
@@ -32,13 +36,46 @@ h2{
   background: none;
   border: none;
   font-size: 2rem;
+  line-height: 1;
   cursor: pointer;
   color: #333;
 }
-.custom-modal-details ul {
+
+.custom-modal-details .custom-modal-kv-list,
+.custom-modal-kv-list {
   list-style: none;
   padding: 0;
+  margin: 0;
 }
-.custom-modal-details li {
+
+.custom-modal-details li,
+.custom-modal-kv-list li {
   margin-bottom: 0.5rem;
-} 
+}
+
+.custom-modal-kv-key {
+  color: #6b7280;
+}
+
+.custom-modal-kv-value {
+  font-weight: 600;
+}
+
+.custom-modal-body--sections {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.custom-modal-section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.custom-modal-section-empty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}

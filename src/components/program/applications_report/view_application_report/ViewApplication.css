@@ -126,6 +126,10 @@
   color: var(--color-success);
 }
 
+.stat-verified {
+  color: #2563eb;
+}
+
 .stat-rejected {
   color: var(--color-error);
 }

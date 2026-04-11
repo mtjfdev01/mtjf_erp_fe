@@ -89,7 +89,12 @@ const UpdateApplicationReport = () => {
         setReportData({
           report_date: data.report_date || ''
         });
-        setApplications(data.applications || []);
+        setApplications(
+          (data.applications || []).map((a) => ({
+            ...a,
+            verified_count: a.verified_count ?? 0,
+          })),
+        );
       } else {
         setError(response.data.message || 'Failed to fetch application report');
       }
@@ -104,7 +109,7 @@ const UpdateApplicationReport = () => {
 
   const handleApplicationChange = (index, field, value) => {
     const updatedApplications = [...applications];
-    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
+    const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
     if (numericFields.includes(field)) {
       updatedApplications[index][field] = value === '' ? '' : parseInt(value, 10) || 0;
     } else {
@@ -131,6 +136,7 @@ const UpdateApplicationReport = () => {
       pending_last_month: 0,
       application_count: 0,
       investigation_count: 0,
+      verified_count: 0,
       approved_count: 0,
       rejected_count: 0,
       pending_count: 0
@@ -160,7 +166,7 @@ const UpdateApplicationReport = () => {
         setError(`Please select a sub program for application ${i + 1}`);
         return false;
       }
-      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'approved_count', 'rejected_count', 'pending_count'];
+      const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
       for (const field of numericFields) {
         if (app[field] < 0) {
           setError(`${field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())} cannot be negative for application ${i + 1}`);
@@ -177,7 +183,7 @@ const UpdateApplicationReport = () => {
       const expectedPending = pendingLastMonth + applicationCount - investigationCount;
       if (expectedPending !== pendingCount) {
         setError(
-          `For application ${i + 1}, Pending Count must equal Pending of Last Month + Application Count - Investigation Count (${pendingLastMonth} + ${applicationCount} - ${investigationCount} = ${expectedPending}).`
+          `For application ${i + 1}, Pending Count must equal Previous Pendings + Application Count - Investigation Count (${pendingLastMonth} + ${applicationCount} - ${investigationCount} = ${expectedPending}).`
         );
         return false;
       }
@@ -197,6 +203,7 @@ const UpdateApplicationReport = () => {
           pending_last_month: app.pending_last_month === '' ? 0 : app.pending_last_month,
           application_count: app.application_count === '' ? 0 : app.application_count,
           investigation_count: app.investigation_count === '' ? 0 : app.investigation_count,
+          verified_count: app.verified_count === '' ? 0 : app.verified_count,
           approved_count: app.approved_count === '' ? 0 : app.approved_count,
           rejected_count: app.rejected_count === '' ? 0 : app.rejected_count,
           pending_count: app.pending_count === '' ? 0 : app.pending_count,
@@ -306,7 +313,7 @@ const UpdateApplicationReport = () => {
                     />
                     <FormInput
                       name={`pending_last_month-${index}`}
-                      label="Pending of Last Month"
+                      label="Previous Pendings"
                       type="number"
                       value={application.pending_last_month}
                       onChange={e => handleApplicationChange(index, 'pending_last_month', e.target.value)}
@@ -328,6 +335,15 @@ const UpdateApplicationReport = () => {
                       type="number"
                       value={application.investigation_count}
                       onChange={e => handleApplicationChange(index, 'investigation_count', e.target.value)}
+                      min="0"
+                      placeholder="0"
+                    />
+                    <FormInput
+                      name={`verified_count-${index}`}
+                      label="Verified Count"
+                      type="number"
+                      value={application.verified_count ?? ''}
+                      onChange={e => handleApplicationChange(index, 'verified_count', e.target.value)}
                       min="0"
                       placeholder="0"
                     />

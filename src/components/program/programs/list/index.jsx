@@ -116,6 +116,7 @@ const ProgramsList = () => {
     { value: 'key', label: 'Key' },
     { value: 'label', label: 'Label' },
     { value: 'status', label: 'Status' },
+    { value: 'applicationable', label: 'Application reports' },
   ];
 
   if (loading) {
@@ -146,6 +147,7 @@ const ProgramsList = () => {
                   <th>Label</th>
                   <th className="hide-on-mobile">Logo</th>
                   <th>Status</th>
+                  <th className="hide-on-mobile">App reports</th>
                   <th className="table-actions">Actions</th>
                 </tr>
               </thead>
@@ -158,6 +160,11 @@ const ProgramsList = () => {
                     <td>
                       <span className={`status-badge ${row.status === 'active' ? 'active' : 'inactive'}`}>
                         {row.status}
+                      </span>
+                    </td>
+                    <td className="hide-on-mobile">
+                      <span className={`status-badge ${row.applicationable !== false ? 'active' : 'inactive'}`}>
+                        {row.applicationable !== false ? 'Yes' : 'No'}
                       </span>
                     </td>
                     <td className="table-actions">

@@ -14,6 +14,7 @@ const AddProgram = () => {
     label: '',
     logo: '',
     status: 'active',
+    applicationable: true,
   });
 
   const [error, setError] = useState('');
@@ -22,6 +23,11 @@ const AddProgram = () => {
   const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
+  ];
+
+  const applicationableOptions = [
+    { value: 'true', label: 'Yes — use in application reports & overview' },
+    { value: 'false', label: 'No — hide from application flows' },
   ];
 
   const handleSubmit = async (e) => {
@@ -38,6 +44,7 @@ const AddProgram = () => {
         label: form.label,
         logo: form.logo || null,
         status: form.status,
+        applicationable: form.applicationable,
       });
       navigate('/program/programs');
     } catch (err) {
@@ -90,6 +97,18 @@ const AddProgram = () => {
                 value={form.status}
                 onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
                 options={statusOptions}
+                required
+                showDefaultOption={false}
+              />
+
+              <FormSelect
+                name="applicationable"
+                label="Application reports"
+                value={form.applicationable ? 'true' : 'false'}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, applicationable: e.target.value === 'true' }))
+                }
+                options={applicationableOptions}
                 required
                 showDefaultOption={false}
               />

@@ -166,4 +166,7 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-export default axiosInstance; 
+export default axiosInstance;
+
+// Program application overview API: import from `./programApplicationOverviewApi.js`
+// (not re-exported here to avoid circular dependency: that module imports this file). 
