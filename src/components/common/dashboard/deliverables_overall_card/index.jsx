@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
-import { FiChevronLeft, FiChevronRight, FiHeart, FiShoppingBag } from 'react-icons/fi';
+import { FiBook, FiChevronLeft, FiChevronRight, FiDroplet, FiHeart, FiLayers, FiShoppingBag, FiTool, FiUsers } from 'react-icons/fi';
 
 import '../../../../styles/variables.css';
 import './DeliverablesOverallCard.css';
 import axiosInstance from '../../../../utils/axios';
 import { fetchDeliverablesOverall } from '../../../../utils/deliverablesOverallApi';
+import Modal from '../../Modal';
 
 function formatCount(n) {
   return typeof n === 'number' ? n.toLocaleString() : n;
@@ -17,8 +18,8 @@ function rangeCaption(from, to) {
   return 'All dates';
 }
 
-/** Soft icon colors per program key (aligned with program application overview). */
-const MINI_CARD_ACCENT = {
+const CARD_ACCENT = {
+  overall: { soft: '#e2e8f0', solid: '#1e293b' },
   food_security: { soft: '#dcfce7', solid: '#15803d' },
   community_services: { soft: '#ede9fe', solid: '#7c3aed' },
   widows_and_orphans_care_program: { soft: '#ffedd5', solid: '#ea580c' },
@@ -32,62 +33,135 @@ const MINI_CARD_ACCENT = {
   area_ration: { soft: '#fef3c7', solid: '#b45309' },
 };
 
-function accentForProgramKey(key) {
-  return MINI_CARD_ACCENT[key] || { soft: '#e2e8f0', solid: '#475569' };
+function accentForKey(key) {
+  return CARD_ACCENT[key] || { soft: '#e2e8f0', solid: '#475569' };
 }
 
-function DeliverablesProgramMiniCard({ card }) {
-  const { soft, solid } = accentForProgramKey(card.key);
-  const lines = Array.isArray(card.lines) ? card.lines : [];
+const ICON_KEY_BY_PROGRAM = {
+  overall: 'layers',
+  food_security: 'bag',
+  community_services: 'users',
+  widows_and_orphans_care_program: 'heart',
+  education: 'book',
+  water_clean_water: 'droplet',
+  kasb: 'tool',
+  kasb_training: 'tool',
+  livelihood_support_program: 'tool',
+  green_initiative: 'bag',
+  disaster_management: 'heart',
+  area_ration: 'shopping',
+};
+
+const ICON_MAP = {
+  bag: FiShoppingBag,
+  users: FiUsers,
+  heart: FiHeart,
+  book: FiBook,
+  droplet: FiDroplet,
+  tool: FiTool,
+  shopping: FiShoppingBag,
+  layers: FiLayers,
+};
+
+function lookupCount(lines, key) {
+  const arr = Array.isArray(lines) ? lines : [];
+  const hit = arr.find((x) => x && x.key === key);
+  if (!hit) return 0;
+  if (typeof hit.total === 'number') return hit.total;
+  return Number(hit.count) || 0;
+}
+
+function cardToModalSections(card) {
+  const breakdownLines = Array.isArray(card.breakdown) ? card.breakdown : [];
+  const breakdownDetails = {};
+  for (const line of breakdownLines) {
+    breakdownDetails[line.label] = formatCount(Number(line.value) || 0);
+  }
+
+  return [
+    {
+      title: 'Summary',
+      details: {
+        Delivered: formatCount(Number(card.totalDelivered) || 0),
+        'Vulnerabilities (sum)': formatCount(Number(card.totalVulnerabilities) || 0),
+        Period: rangeCaption(card.from, card.to),
+      },
+    },
+    {
+      title: 'Breakdown',
+      details: breakdownDetails,
+    },
+  ];
+}
+
+function DeliverablesCarouselCardItem({ card }) {
+  const { soft, solid } = accentForKey(card.key);
+  const iconKey = ICON_KEY_BY_PROGRAM[card.key] || 'tool';
+  const Icon = ICON_MAP[iconKey] || FiTool;
+  const title = card.label?.length > 15 ? `${card.label.slice(0, 10)}..` : card.label;
 
   return (
-    <article className="deliverables-mini-card">
-      <div className="deliverables-mini-card__head">
-        <span
-          className="deliverables-mini-card__icon-wrap"
-          style={{ background: soft, color: solid }}
-          aria-hidden
-        >
-          <FiShoppingBag />
+    <>
+      <div className="deliverables-overall-carousel__card-top">
+        <span className="deliverables-overall-carousel__icon-wrap" style={{ background: soft, color: solid }}>
+          <Icon aria-hidden />
         </span>
-        <h4 className="deliverables-mini-card__title" title={card.label}>
-          {card.label}
-        </h4>
+        <p
+          className="deliverables-overall-carousel__total"
+          aria-label={`Delivered ${formatCount(Number(card.totalDelivered) || 0)}`}
+        >
+          {formatCount(Number(card.totalDelivered) || 0)}
+        </p>
       </div>
-      {lines.length === 0 ? (
-        <p className="deliverables-mini-card__empty">No vulnerability breakdown for this program.</p>
-      ) : (
-        <ul className="deliverables-mini-card__list">
-          {lines.map((line) => (
-            <li key={line.key} className="deliverables-mini-card__row">
-              <span className="deliverables-mini-card__row-label">{line.label}</span>
-              <span className="deliverables-mini-card__row-value">
-                {formatCount(Number(line.count) || 0)}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      <div className="deliverables-mini-card__footer">
-        <span>Total</span>
-        <span>{formatCount(Number(card.vulnerabilitiesTotal) || 0)}</span>
+
+      <div className="deliverables-overall-carousel__title-row">
+        <h3 className="deliverables-overall-carousel__name" title={card.label}>
+          {title}
+        </h3>
       </div>
-    </article>
+
+      <div className="deliverables-overall-carousel__footer">
+        <div className="deliverables-overall-carousel__footer-row">
+          <div className="deliverables-overall-carousel__stat">
+            <span className="deliverables-overall-carousel__stat-label">Widows</span>
+            <span className="deliverables-overall-carousel__stat-value">
+              {formatCount(lookupCount(card.vulnerabilityLines, 'widows'))}
+            </span>
+          </div>
+          <div className="deliverables-overall-carousel__stat">
+            <span className="deliverables-overall-carousel__stat-label">Orphans</span>
+            <span className="deliverables-overall-carousel__stat-value">
+              {formatCount(lookupCount(card.vulnerabilityLines, 'orphans'))}
+            </span>
+          </div>
+        </div>
+        <div className="deliverables-overall-carousel__footer-row">
+          <div className="deliverables-overall-carousel__stat">
+            <span className="deliverables-overall-carousel__stat-label">Divorced</span>
+            <span className="deliverables-overall-carousel__stat-value">
+              {formatCount(lookupCount(card.vulnerabilityLines, 'divorced'))}
+            </span>
+          </div>
+          <div className="deliverables-overall-carousel__stat">
+            <span className="deliverables-overall-carousel__stat-label">Disable</span>
+            <span className="deliverables-overall-carousel__stat-value">
+              {formatCount(lookupCount(card.vulnerabilityLines, 'disable'))}
+            </span>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
-/**
- * Deliverables overall: summary card + horizontal scroll of per-program vulnerability mini-cards.
- * Loads `GET /new-dashboard/dashboard-report/deliverables-overall` with optional `from` / `to` (YYYY-MM-DD).
- */
 export default function DeliverablesOverallCard({
   from: fromProp,
   to: toProp,
   title = 'Deliverables by program (overall)',
+  subtitle,
   className = '',
 }) {
   const headingId = useId();
-  const carouselHeadingId = useId();
   const trackRef = useRef(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
@@ -96,9 +170,11 @@ export default function DeliverablesOverallCard({
   const [draftTo, setDraftTo] = useState(toProp ?? '');
   const [appliedFrom, setAppliedFrom] = useState(fromProp ?? '');
   const [appliedTo, setAppliedTo] = useState(toProp ?? '');
+
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [fetchError, setFetchError] = useState(null);
+  const [modalCard, setModalCard] = useState(null);
 
   useEffect(() => {
     setDraftFrom(fromProp ?? '');
@@ -112,7 +188,7 @@ export default function DeliverablesOverallCard({
     (async () => {
       try {
         setLoading(true);
-        setError(null);
+        setFetchError(null);
         const data = await fetchDeliverablesOverall({
           from: appliedFrom || undefined,
           to: appliedTo || undefined,
@@ -121,7 +197,7 @@ export default function DeliverablesOverallCard({
         if (!cancelled) setPayload(data || null);
       } catch (err) {
         if (!cancelled) {
-          setError(err?.message || 'Failed to load deliverables');
+          setFetchError(err?.message || 'Failed to load deliverables');
           setPayload(null);
         }
       } finally {
@@ -133,25 +209,64 @@ export default function DeliverablesOverallCard({
     };
   }, [appliedFrom, appliedTo]);
 
-  const programsList = Array.isArray(payload?.programsList) ? payload.programsList : [];
+  useEffect(() => {
+    if (!payload) setModalCard(null);
+  }, [payload]);
+
+  const programCards = Array.isArray(payload?.programVulnerabilityCards) ? payload.programVulnerabilityCards : [];
   const vulnerabilities = Array.isArray(payload?.vulnerabilities) ? payload.vulnerabilities : [];
-  const programVulnerabilityCards = Array.isArray(payload?.programVulnerabilityCards)
-    ? payload.programVulnerabilityCards
-    : [];
 
-  const programsTotal = useMemo(() => {
-    if (typeof payload?.totalDeliveredAllPrograms === 'number') {
-      return payload.totalDeliveredAllPrograms;
-    }
-    return programsList.reduce((s, r) => s + (Number(r.totalDelivered) || 0), 0);
-  }, [payload, programsList]);
+  const overallDelivered =
+    typeof payload?.totalDeliveredAllPrograms === 'number'
+      ? payload.totalDeliveredAllPrograms
+      : (Array.isArray(payload?.programsList) ? payload.programsList : []).reduce(
+          (s, r) => s + (Number(r?.totalDelivered) || 0),
+          0,
+        );
 
-  const vulnerabilitiesTotal = useMemo(() => {
-    if (typeof payload?.totalVulnerabilitiesAll === 'number') {
-      return payload.totalVulnerabilitiesAll;
-    }
-    return vulnerabilities.reduce((s, r) => s + (Number(r.total) || 0), 0);
-  }, [payload, vulnerabilities]);
+  const overallVulnerabilities =
+    typeof payload?.totalVulnerabilitiesAll === 'number'
+      ? payload.totalVulnerabilitiesAll
+      : vulnerabilities.reduce((s, r) => s + (Number(r?.total) || 0), 0);
+
+  const overallCard = useMemo(() => {
+    const from = payload?.from ?? appliedFrom;
+    const to = payload?.to ?? appliedTo;
+    return {
+      id: 'overall',
+      key: 'overall',
+      label: 'Overall',
+      from,
+      to,
+      totalDelivered: overallDelivered,
+      totalVulnerabilities: overallVulnerabilities,
+      vulnerabilityLines: vulnerabilities, // uses `.total`
+      breakdown: vulnerabilities.map((v) => ({ label: v.label, value: Number(v.total) || 0 })),
+    };
+  }, [payload, appliedFrom, appliedTo, overallDelivered, overallVulnerabilities, vulnerabilities]);
+
+  const cards = useMemo(() => {
+    const from = payload?.from ?? appliedFrom;
+    const to = payload?.to ?? appliedTo;
+    const mapped = programCards.map((c) => ({
+      id: c.key,
+      key: c.key,
+      label: c.label,
+      from,
+      to,
+      totalDelivered: Number(c.totalDelivered) || 0,
+      totalVulnerabilities: Number(c.vulnerabilitiesTotal) || 0,
+      vulnerabilityLines: Array.isArray(c.lines) ? c.lines : [], // uses `.count`
+      breakdown: (Array.isArray(c.lines) ? c.lines : []).map((l) => ({ label: l.label, value: Number(l.count) || 0 })),
+    }));
+    return [overallCard, ...mapped];
+  }, [payload, appliedFrom, appliedTo, programCards, overallCard]);
+
+  const defaultSubtitle =
+    subtitle ??
+    (loading && cards.length <= 1
+      ? 'Loading…'
+      : `Period: ${rangeCaption(payload?.from ?? appliedFrom, payload?.to ?? appliedTo)}`);
 
   const updateScrollState = useCallback(() => {
     const el = trackRef.current;
@@ -173,187 +288,105 @@ export default function DeliverablesOverallCard({
       el.removeEventListener('scroll', updateScrollState);
       ro.disconnect();
     };
-  }, [programVulnerabilityCards, updateScrollState]);
+  }, [cards, updateScrollState]);
 
-  const scrollCarouselByDir = (direction) => {
+  const scrollByDir = (direction) => {
     const el = trackRef.current;
     if (!el) return;
-    const first = el.querySelector('.deliverables-mini-card');
+    const firstWrap = el.querySelector('.deliverables-overall-carousel__card-wrap');
     const gap = parseFloat(getComputedStyle(el).gap) || 16;
-    const step = first ? first.offsetWidth + gap : el.clientWidth * 0.85;
+    const step = firstWrap ? firstWrap.offsetWidth + gap : el.clientWidth * 0.85;
     el.scrollBy({ left: direction * step, behavior: 'smooth' });
   };
 
   return (
-    <section
-      className={`deliverables-overall-card ${className}`.trim()}
-      aria-labelledby={headingId}
-    >
-      <header className="deliverables-overall-card__header">
-        <div className="deliverables-overall-card__titles">
-          <h2 id={headingId} className="deliverables-overall-card__title">
+    <section className={`deliverables-overall-carousel ${className}`.trim()} aria-labelledby={headingId}>
+      <header className="deliverables-overall-carousel__header">
+        <div className="deliverables-overall-carousel__titles">
+          <h2 id={headingId} className="deliverables-overall-carousel__title">
             {title}
           </h2>
-          <p className="deliverables-overall-card__subtitle">
-            {loading && !payload
-              ? 'Loading…'
-              : `Period: ${rangeCaption(payload?.from ?? appliedFrom, payload?.to ?? appliedTo)}`}
-          </p>
+          <p className="deliverables-overall-carousel__subtitle">{defaultSubtitle}</p>
+          {fetchError && (
+            <p className="deliverables-overall-carousel__fetch-warning" role="status">
+              {fetchError}
+            </p>
+          )}
         </div>
-        <div className="deliverables-overall-card__filters">
-          <div className="deliverables-overall-card__field">
-            <label htmlFor={`${headingId}-from`}>From</label>
-            <input
-              id={`${headingId}-from`}
-              type="date"
-              value={draftFrom}
-              onChange={(e) => setDraftFrom(e.target.value)}
-            />
+
+        <div className="deliverables-overall-carousel__controls">
+          <div className="deliverables-overall-carousel__filters">
+            <div className="deliverables-overall-carousel__field">
+              <label htmlFor={`${headingId}-from`}>From</label>
+              <input id={`${headingId}-from`} type="date" value={draftFrom} onChange={(e) => setDraftFrom(e.target.value)} />
+            </div>
+            <div className="deliverables-overall-carousel__field">
+              <label htmlFor={`${headingId}-to`}>To</label>
+              <input id={`${headingId}-to`} type="date" value={draftTo} onChange={(e) => setDraftTo(e.target.value)} />
+            </div>
+            <button
+              type="button"
+              className="deliverables-overall-carousel__apply"
+              disabled={loading}
+              onClick={() => {
+                setAppliedFrom(draftFrom);
+                setAppliedTo(draftTo);
+              }}
+            >
+              Apply range
+            </button>
           </div>
-          <div className="deliverables-overall-card__field">
-            <label htmlFor={`${headingId}-to`}>To</label>
-            <input
-              id={`${headingId}-to`}
-              type="date"
-              value={draftTo}
-              onChange={(e) => setDraftTo(e.target.value)}
-            />
+
+          <div className="deliverables-overall-carousel__nav">
+            <button
+              type="button"
+              className="deliverables-overall-carousel__nav-btn"
+              onClick={() => scrollByDir(-1)}
+              disabled={!canPrev}
+              aria-label="Show previous cards"
+            >
+              <FiChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              className="deliverables-overall-carousel__nav-btn"
+              onClick={() => scrollByDir(1)}
+              disabled={!canNext}
+              aria-label="Show next cards"
+            >
+              <FiChevronRight size={20} />
+            </button>
           </div>
-          <button
-            type="button"
-            className="deliverables-overall-card__apply"
-            disabled={loading}
-            onClick={() => {
-              setAppliedFrom(draftFrom);
-              setAppliedTo(draftTo);
-            }}
-          >
-            Apply range
-          </button>
         </div>
       </header>
 
-      {error && (
-        <p className="deliverables-overall-card__error" role="alert">
-          {error}
-        </p>
-      )}
-      {loading && !payload && (
-        <p className="deliverables-overall-card__loading">Loading deliverables…</p>
-      )}
-
-      {payload && (
-        <>
-          <div className="deliverables-overall-card__body">
-            <div className="deliverables-overall-card__split">
-              <div className="deliverables-overall-card__section">
-                <div className="deliverables-overall-card__section-head">
-                  <span
-                    className="deliverables-overall-card__icon-wrap deliverables-overall-card__icon-wrap--programs"
-                    aria-hidden
-                  >
-                    <FiShoppingBag />
-                  </span>
-                  <h3 className="deliverables-overall-card__section-title">
-                    Programs — total delivered
-                  </h3>
-                </div>
-                {programsList.length === 0 ? (
-                  <p className="deliverables-overall-card__empty">No programs in scope.</p>
-                ) : (
-                  <ul className="deliverables-overall-card__list">
-                    {programsList.map((row) => (
-                      <li key={row.key} className="deliverables-overall-card__row">
-                        <span className="deliverables-overall-card__row-label" title={row.label}>
-                          {row.label}
-                        </span>
-                        <span className="deliverables-overall-card__row-value">
-                          {formatCount(Number(row.totalDelivered) || 0)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="deliverables-overall-card__section-footer">
-                  <span>Total</span>
-                  <span>{formatCount(programsTotal)}</span>
-                </div>
-              </div>
-
-              <div className="deliverables-overall-card__divider" aria-hidden />
-
-              <div className="deliverables-overall-card__section">
-                <div className="deliverables-overall-card__section-head">
-                  <span
-                    className="deliverables-overall-card__icon-wrap deliverables-overall-card__icon-wrap--vuln"
-                    aria-hidden
-                  >
-                    <FiHeart />
-                  </span>
-                  <h3 className="deliverables-overall-card__section-title">
-                    Vulnerabilities — total (all programs)
-                  </h3>
-                </div>
-                {vulnerabilities.length === 0 ? (
-                  <p className="deliverables-overall-card__empty">No vulnerability data.</p>
-                ) : (
-                  <ul className="deliverables-overall-card__list">
-                    {vulnerabilities.map((row) => (
-                      <li key={row.key} className="deliverables-overall-card__row">
-                        <span className="deliverables-overall-card__row-label">{row.label}</span>
-                        <span className="deliverables-overall-card__row-value">
-                          {formatCount(Number(row.total) || 0)}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <div className="deliverables-overall-card__section-footer">
-                  <span>Total</span>
-                  <span>{formatCount(vulnerabilitiesTotal)}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="deliverables-overall-card__carousel" aria-labelledby={carouselHeadingId}>
-            <div className="deliverables-overall-card__carousel-top">
-              <h3 id={carouselHeadingId} className="deliverables-overall-card__carousel-title">
-                By program — vulnerabilities
-              </h3>
-              <div className="deliverables-overall-card__carousel-nav">
+      <div className="deliverables-overall-carousel__viewport">
+        {loading && (!payload || cards.length === 0) ? (
+          <p className="deliverables-overall-carousel__loading">Loading deliverables…</p>
+        ) : (
+          <div ref={trackRef} className="deliverables-overall-carousel__track" role="list">
+            {cards.map((card) => (
+              <div key={card.id} className="deliverables-overall-carousel__card-wrap" role="listitem">
                 <button
                   type="button"
-                  className="deliverables-overall-card__carousel-nav-btn"
-                  onClick={() => scrollCarouselByDir(-1)}
-                  disabled={!canPrev}
-                  aria-label="Scroll to previous program cards"
+                  className="deliverables-overall-carousel__card deliverables-overall-carousel__card--trigger"
+                  onClick={() => setModalCard(card)}
+                  aria-label={`Open details for ${card.label}`}
                 >
-                  <FiChevronLeft size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="deliverables-overall-card__carousel-nav-btn"
-                  onClick={() => scrollCarouselByDir(1)}
-                  disabled={!canNext}
-                  aria-label="Scroll to next program cards"
-                >
-                  <FiChevronRight size={20} />
+                  <DeliverablesCarouselCardItem card={card} />
                 </button>
               </div>
-            </div>
-            <div className="deliverables-overall-card__carousel-viewport">
-              <div ref={trackRef} className="deliverables-overall-card__carousel-track" role="list">
-                {programVulnerabilityCards.map((card) => (
-                  <div key={card.key} className="deliverables-overall-card__carousel-item" role="listitem">
-                    <DeliverablesProgramMiniCard card={card} />
-                  </div>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
-        </>
-      )}
+        )}
+      </div>
+
+      <Modal
+        open={modalCard != null}
+        onClose={() => setModalCard(null)}
+        title={modalCard?.label}
+        sections={modalCard ? cardToModalSections(modalCard) : null}
+      />
     </section>
   );
 }
