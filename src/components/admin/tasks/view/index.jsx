@@ -1133,10 +1133,11 @@ const ViewTask = () => {
                         <ProgressUpdate
                           taskId={task.id}
                           currentProgress={task.progress || 0}
+                          lastProgressNotes={task.last_progress_notes}
                           movLines={movLines}
                           canEdit={canEditMovChecklist}
                           currentUser={user}
-                          progressActivities={progressActivities}
+                          progressActivities={task.activities || []}
                           onUpdate={(progress, notes, updatedTask) => {
                             if (updatedTask) {
                               setTask(updatedTask);
@@ -1180,7 +1181,7 @@ const ViewTask = () => {
                                     : '';
                                 const notes =
                                   details && typeof details.notes === 'string'
-                                    ? details.notes
+                                    ? details.notes.replace(/\s*\[indices:[\d,]+\]/, '')
                                     : '';
                                 const performer =
                                   a && a.performed_by ? a.performed_by : null;
@@ -1734,7 +1735,7 @@ const ViewTask = () => {
                           <form onSubmit={addAttachment} className="task-attachments-form">
                             <div className="task-attachments-input-container">
                               <div className="form-group">
-                                <label className="form-label">File</label>
+                                {/* <label className="form-label">File</label> */}
                                 <input
                                   type="file"
                                   className="form-input task-file-input"
@@ -1804,11 +1805,10 @@ const ViewTask = () => {
                         {!isApproverView && (
                           <form onSubmit={addComment} className="task-comments-form">
                             <FormTextarea
+                              placeholder="Add Comment"
                               name="content"
-                              label="Add Comment"
                               value={comment.content}
                               onChange={handleCommentChange}
-                              required
                               disabled={!canInteractWithNotes}
                             />
                             <div className="form-actions">
@@ -1816,7 +1816,7 @@ const ViewTask = () => {
                                 type="submit"
                                 disabled={savingComment || !canInteractWithNotes}
                                 loading={savingComment}
-                                loadingText="Posting..."
+                                loadingText="Posting...."
                               >
                                 Post Comment
                               </PrimaryButton>

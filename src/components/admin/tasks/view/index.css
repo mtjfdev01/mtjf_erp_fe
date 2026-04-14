@@ -1124,11 +1124,6 @@
   grid-column: 1 / -1;
 }
 
-.task-attachments-form,
-.task-comments-form {
-  margin-top: 1rem;
-}
-
 .task-attachments-input-container {
   width: 100%;
   margin-bottom: 0.75rem;
@@ -1747,6 +1742,7 @@
   font-weight: 600;
   color: #1e40af;
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 @media (max-width: 480px) {
@@ -1845,10 +1841,10 @@
   display: flex;
   gap: 1rem;
   padding: 1rem;
-  align-items: flex-start;
+  align-items: center;
+  justify-content: flex-start;
   background: #f8fafc;
   border-radius: 12px;
-  margin-bottom: 1rem;
   border: 1px solid #f1f5f9;
   transition: all 0.2s ease;
 }
@@ -1872,8 +1868,8 @@
 
 .comment-avatar {
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   border-radius: 10px;
   background: #3b82f6;
   color: #ffffff;
@@ -1922,7 +1918,7 @@
 
 .comment-author {
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: #1e293b;
 }
 
@@ -2000,7 +1996,7 @@
 }
 
 .comment-content {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: #334155;
   line-height: 1.5;
   word-break: break-word;

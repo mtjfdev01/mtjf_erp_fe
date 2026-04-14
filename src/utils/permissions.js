@@ -87,7 +87,8 @@ export const canViewModule = (permissions, department, module) => {
  * @returns {boolean} - Whether user is super admin
  */
 export const isSuperAdmin = (permissions) => {
-  return permissions?.super_admin === true;
+  if (!permissions) return false;
+  return permissions.super_admin === true || (permissions.super_admin && typeof permissions.super_admin === 'object' && permissions.super_admin.super_admin === true);
 };
 
 /**
@@ -232,7 +233,7 @@ export default {
   
 export const getTaskPermissions = (permissions, department, userRole) => {
   const role = String(userRole || '').toLowerCase();
-  const isAdminRole = role === 'super_admin' || role === 'admin';
+  const isAdmin = isSuperAdmin(permissions) || role === 'super_admin' || role === 'admin';
   const isDeptHeadRole = role === 'dept_head';
   const isManagerRole = role === 'manager' || role === 'assistant_manager';
   const isTeamLeadRole = role === 'team_lead' || role === 'coordinator';
@@ -242,8 +243,8 @@ export const getTaskPermissions = (permissions, department, userRole) => {
 
   const deptKey = department && permissions?.[department]?.tasks ? department : null;
   const modulePermissions = (deptKey ? permissions?.[deptKey]?.tasks : null) 
-    || permissions?.admin?.tasks 
     || permissions?.tasking?.tasks 
+    || permissions?.admin?.tasks 
     || permissions?.tasks 
     || {};
   const reports = modulePermissions?.reports || {};
@@ -264,7 +265,7 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     scope = 'self';
   } else {
     // Fallback based on role if no explicit scope is defined in reports
-    if (isAdminRole) {
+    if (isAdmin) {
       scope = 'org';
     } else if (isDeptHeadRole) {
       scope = 'department';
@@ -275,34 +276,36 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     }
   }
 
-  const canViewBase = actions.view === true || actions.list_view === true;
+  const canViewDetail = actions.view === true || isAdmin;
+  const canViewBase = canViewDetail || actions.list_view === true;
   const canViewReports =
     reports.view_all === true ||
     reports.view_dept === true ||
     reports.view_team === true ||
     reports.view_own === true;
   const canUpdate =
-    actions.update === true || permissions?.super_admin === true;
+    actions.update === true || isAdmin;
   const canEditCompleted =
     actions.edit_completed === true ||
     actions.update === true ||
-    permissions?.super_admin === true;
+    isAdmin;
   const canApproveBase =
-    actions.approve === true || permissions?.super_admin === true;
-  const canApproveByRole = isAdminRole || isDeptHeadRole || isManagerRole || isTeamLeadRole;
+    actions.approve === true || isAdmin;
+  const canApproveByRole = isAdmin || isDeptHeadRole || isManagerRole || isTeamLeadRole;
   return {
-    canView: canViewBase || canViewReports || permissions?.super_admin === true,
-    canCreate: actions.create === true || permissions?.super_admin === true,
+    canView: canViewBase || canViewReports,
+    canViewDetail: canViewDetail,
+    canCreate: actions.create === true || isAdmin,
     canUpdate,
-    canDelete: actions.delete === true || permissions?.super_admin === true,
+    canDelete: actions.delete === true || isAdmin,
     canAssign:
       actions.assign === true ||
-      permissions?.super_admin === true ||
+      isAdmin ||
       isManagerRole ||
       isDeptHeadRole ||
       isTeamLeadRole,
     canApprove: canApproveBase || canApproveByRole,
-    canComplete: actions.complete === true || permissions?.super_admin === true,
+    canComplete: actions.complete === true || isAdmin,
     canEditCompleted,
     reportScope: scope
   };

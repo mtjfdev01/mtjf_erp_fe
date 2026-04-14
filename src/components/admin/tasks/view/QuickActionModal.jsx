@@ -171,6 +171,22 @@ const QuickActionModal = ({
                 debounceDelay={500}
                 minSearchLength={2}
                 disabled={loading}
+                renderOption={(user) => (
+                    <div className="assign-user-option">
+                      <div className="assign-user-name">
+                        {user.first_name} {user.last_name}
+                      </div>
+                      <div className="assign-user-email">
+                        {user.email}
+                      </div>
+                      {user.department && (
+                        <div className="assign-user-meta">
+                          {user.department} • {user.role || 'User'}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  placeholder="Select users to assign"
               />
             )}
             {showDueDate && (

@@ -237,8 +237,10 @@
 
 .assign-users-row-col .form-input {
   background-color: #ffffff;
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 0.75rem;
   color: #374151;
+  text-transform: uppercase;
 }
 
 .assign-users-hint {
