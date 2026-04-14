@@ -40,7 +40,8 @@ import {
   FiFlag,
   FiPackage,
   FiCreditCard,
-  FiAlertCircle
+  FiAlertCircle,
+  FiBookmark
 } from 'react-icons/fi';
 
 const TASK_MODULE_KEYS = new Set(['tasks', 'tasking']);
@@ -220,11 +221,39 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiTarget
   },
   {
+    label: 'AAS Collection Centers',
+    path: '/program/aas_collection_centers_reports',
+    type: 'list',
+    module: 'aas_collection_centers_reports',
+    icon: FiFileText
+  },
+  {
+    label: 'Al Hasanain CLG',
+    path: '/program/al_hasanain_clg',
+    type: 'list',
+    module: 'al_hasanain_clg',
+    icon: FiBook
+  },
+  {
     label: 'Programs',
     path: '/program/programs',
     type: 'list',
     module: 'programs',
     icon: FiGrid
+  },
+  {
+    label: 'Dream Schools',
+    path: '/program/dream_schools',
+    type: 'list',
+    module: 'programs',
+    icon: FiBookmark
+  },
+  {
+    label: 'Dream School Reports',
+    path: '/program/dream_school_reports',
+    type: 'list',
+    module: 'programs',
+    icon: FiFileText
   },
   {
     label: 'Subprograms',
@@ -351,7 +380,11 @@ const adminDepartmentItems = () => [
       {label: "tree_plantation", path: "/program/tree_plantation/reports/list", type: "list", icon: FiFeather},
       {label: "area_ration", path: "/program/area_ration/reports/list", type: "list", icon: FiMapPin},
       {label: "targets", path: "/program/targets/reports/list", type: "list", icon: FiTarget},
+      {label: "AAS Collection Centers", path: "/program/aas_collection_centers_reports", type: "list", icon: FiFileText},
+      {label: "Al Hasanain CLG", path: "/program/al_hasanain_clg", type: "list", icon: FiBook},
       {label: "programs", path: "/program/programs", type: "list", icon: FiGrid},
+      {label: "Dream Schools", path: "/program/dream_schools", type: "list", icon: FiBookmark},
+      {label: "Dream School Reports", path: "/program/dream_school_reports", type: "list", icon: FiFileText},
       {label: "subprograms", path: "/program/subprograms", type: "list", icon: FiList}
     ]
   },
@@ -464,6 +497,20 @@ const adminDepartmentItems = () => [
     type: 'list',
     module: 'programs',
     icon: FiGrid
+  },
+  {
+    label: 'Dream Schools',
+    path: '/program/dream_schools',
+    type: 'list',
+    module: 'programs',
+    icon: FiBookmark
+  },
+  {
+    label: 'Dream School Reports',
+    path: '/program/dream_school_reports',
+    type: 'list',
+    module: 'programs',
+    icon: FiFileText
   },
   {
     label: 'Subprograms',

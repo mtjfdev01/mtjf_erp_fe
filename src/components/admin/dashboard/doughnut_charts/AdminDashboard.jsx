@@ -481,7 +481,7 @@ useEffect(() => {
         {error && <div className="error">{error}</div>}
         
         <div className="charts">
-          <div className="chart">
+          {/* <div className="chart">
             <h2>Department Distribution</h2>
             <div>
               <canvas ref={doughnutChartRef}></canvas>
@@ -492,7 +492,7 @@ useEffect(() => {
             <div>
               <canvas ref={programsDoughnutChartRef}></canvas>
             </div>
-          </div>
+          </div> */}
           {/* <div className="chart">
             <h2> Performance Overview <small style={{fontSize: '12px', color: 'gray'}}>Upcomming....</small></h2>
             <div>

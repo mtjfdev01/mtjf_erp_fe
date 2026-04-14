@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import {
   FiBook,
@@ -48,6 +48,10 @@ function rowToModalDetails(row) {
     details['Approval rate'] = `${row.approvalRate}%`;
   }
   return details;
+}
+
+function isOverallRow(row) {
+  return row?.isOverall === true || row?.id === 'overall';
 }
 
 function ProgramApplicationCardItem({ row }) {
@@ -197,6 +201,21 @@ export default function ProgramApplicationCard({
     };
   }, [items, updateScrollState]);
 
+  const modalSections = useMemo(() => {
+    if (!modalRow || !isOverallRow(modalRow)) return null;
+    const programs = items.filter((r) => !isOverallRow(r));
+    const sections = [{ title: 'Summary', details: rowToModalDetails(modalRow) }];
+    if (programs.length > 0) {
+      const byProgram = {};
+      for (const p of programs) {
+        const label = p.name || p.id || 'Program';
+        byProgram[label] = formatCount(Number(p.total) || 0);
+      }
+      sections.push({ title: 'Applications by program', details: byProgram });
+    }
+    return sections;
+  }, [modalRow, items]);
+
   const scrollByDir = (direction) => {
     const el = trackRef.current;
     if (!el) return;
@@ -270,7 +289,8 @@ export default function ProgramApplicationCard({
         open={modalRow != null}
         onClose={() => setModalRow(null)}
         title={modalRow?.name}
-        details={modalRow ? rowToModalDetails(modalRow) : null}
+        details={modalRow && !isOverallRow(modalRow) ? rowToModalDetails(modalRow) : null}
+        sections={modalSections}
       />
     </section>
   );

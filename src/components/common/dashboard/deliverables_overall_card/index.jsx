@@ -78,20 +78,37 @@ function cardToModalSections(card) {
     breakdownDetails[line.label] = formatCount(Number(line.value) || 0);
   }
 
-  return [
+  const summary = {
+    Delivered: formatCount(Number(card.totalDelivered) || 0),
+    'Vulnerabilities (sum)': formatCount(Number(card.totalVulnerabilities) || 0),
+    Period: rangeCaption(card.from, card.to),
+  };
+
+  const sections = [
     {
       title: 'Summary',
-      details: {
-        Delivered: formatCount(Number(card.totalDelivered) || 0),
-        'Vulnerabilities (sum)': formatCount(Number(card.totalVulnerabilities) || 0),
-        Period: rangeCaption(card.from, card.to),
-      },
-    },
-    {
-      title: 'Breakdown',
-      details: breakdownDetails,
+      details: summary,
     },
   ];
+
+  if (card.key === 'overall' && Array.isArray(card.programsDeliveredByLabel) && card.programsDeliveredByLabel.length > 0) {
+    const byProgram = {};
+    for (const row of card.programsDeliveredByLabel) {
+      const name = row.label || row.key || 'Program';
+      byProgram[name] = formatCount(Number(row.totalDelivered) || 0);
+    }
+    sections.push({
+      title: 'Delivered by program',
+      details: byProgram,
+    });
+  }
+
+  sections.push({
+    title: 'Vulnerability breakdown',
+    details: breakdownDetails,
+  });
+
+  return sections;
 }
 
 function DeliverablesCarouselCardItem({ card }) {
@@ -232,6 +249,13 @@ export default function DeliverablesOverallCard({
   const overallCard = useMemo(() => {
     const from = payload?.from ?? appliedFrom;
     const to = payload?.to ?? appliedTo;
+    const programsDeliveredByLabel = Array.isArray(payload?.programsList)
+      ? payload.programsList.map((p) => ({
+          key: p.key,
+          label: p.label,
+          totalDelivered: Number(p.totalDelivered) || 0,
+        }))
+      : [];
     return {
       id: 'overall',
       key: 'overall',
@@ -242,6 +266,7 @@ export default function DeliverablesOverallCard({
       totalVulnerabilities: overallVulnerabilities,
       vulnerabilityLines: vulnerabilities, // uses `.total`
       breakdown: vulnerabilities.map((v) => ({ label: v.label, value: Number(v.total) || 0 })),
+      programsDeliveredByLabel,
     };
   }, [payload, appliedFrom, appliedTo, overallDelivered, overallVulnerabilities, vulnerabilities]);
 
