@@ -20,6 +20,8 @@
 
 .app-main {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
   margin-left: 23%;
   padding: var(--spacing-lg);
   background: var(--color-bg-secondary);

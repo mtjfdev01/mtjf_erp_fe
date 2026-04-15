@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { IoIosArrowDown } from "react-icons/io";
 import SidebarItem from './SidebarItem';
 import './Sidebar.css';
 
@@ -21,8 +22,11 @@ const SidebarGroup = ({ group, collapsed, activeItem, onItemClick }) => {
         onClick={handleGroupClick}
         style={{ cursor: 'pointer' }}
       >
+        {group.icon && <span className="sidebar-group-icon"><group.icon /></span>}
         <span className="sidebar-group-label">{group.label}</span>
-        <span className={`sidebar-group-arrow${expanded ? ' sidebar-group-arrow--expanded' : ''}`}>▼</span>
+        <span className={`sidebar-group-arrow${expanded ? ' sidebar-group-arrow--expanded' : ''}`}>
+          <IoIosArrowDown />
+        </span>
       </div>
       {!collapsed && expanded && (
         <div className="sidebar-group-items">

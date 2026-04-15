@@ -15,7 +15,28 @@
 
 .main {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   padding: 20px;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Stack under charts: line chart + program carousel stay within viewport */
+.admin-dashboard__below-charts {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  margin-top: 0.5rem;
+}
+
+.admin-dashboard__below-charts .line-chart-container {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 /* New department cards layout */

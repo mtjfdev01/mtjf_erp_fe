@@ -8,7 +8,7 @@ import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
 import './index.css';
 
-const AddAreaRationReport = () => {
+const AddAreaRationReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     report_date: '',
@@ -22,12 +22,14 @@ const AddAreaRationReport = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    const nextForm = { ...form, [name]: value };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!form.report_date || !form.province || !form.district || !form.city || !form.quantity) {
       setError('All fields are required');
       return;
@@ -38,9 +40,10 @@ const AddAreaRationReport = () => {
         ...form,
         quantity: parseInt(form.quantity, 10)
       });
-      navigate('/program/area_ration/reports/list');
+      if (!isEmbedded) navigate('/program/area_ration/reports/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -48,14 +51,16 @@ const AddAreaRationReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="form-wrapper">
-        <PageHeader 
-          title="Add Area Ration Report"
-          showBackButton={true}
-          backPath="/program/area_ration/reports/list"
-        />
-        <div className="form-content">
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "form-wrapper"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Add Area Ration Report"
+            showBackButton={true}
+            backPath="/program/area_ration/reports/list"
+          />
+        )}
+        <div className={isEmbedded ? "" : "form-content"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="status-message status-message--error">{error}</div>}
             <div className="form-grid-2">
@@ -101,11 +106,13 @@ const AddAreaRationReport = () => {
                 required
               />
             </div>
-            <div className="form-actions">
-              <button type="submit" className="primary_btn" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button type="submit" className="primary_btn" disabled={isSubmitting}>
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>

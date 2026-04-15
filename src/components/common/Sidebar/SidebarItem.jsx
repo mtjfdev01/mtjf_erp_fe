@@ -26,6 +26,7 @@ const SidebarItem = ({ item, activeItem, onItemClick }) => {
         className={`sidebar-item-header ${isActive ? 'sidebar-item-header--active' : ''}`}
         onClick={() => hasSubItems ? toggleExpanded() : handleItemClick(item.path)}
       >
+        {item.icon && <span className="sidebar-item-icon"><item.icon /></span>}
         <span className="sidebar-item-label">{item.label}</span>
         {hasSubItems && (
           <span className={`sidebar-item-arrow ${expanded ? 'sidebar-item-arrow--expanded' : ''}`}>
@@ -44,6 +45,7 @@ const SidebarItem = ({ item, activeItem, onItemClick }) => {
                 className={`sidebar-sub-item ${isSubActive ? 'sidebar-sub-item--active' : ''}`}
                 onClick={() => handleItemClick(subItem.path)}
               >
+                {subItem.icon && <span className="sidebar-sub-item-icon"><subItem.icon /></span>}
                 <span className="sidebar-sub-item-label">{subItem.label}</span>
               </div>
             );

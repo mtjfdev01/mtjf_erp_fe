@@ -16,6 +16,7 @@ const UpdateProgram = () => {
     label: '',
     logo: '',
     status: 'active',
+    applicationable: true,
   });
 
   const [error, setError] = useState('');
@@ -24,6 +25,11 @@ const UpdateProgram = () => {
   const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
+  ];
+
+  const applicationableOptions = [
+    { value: 'true', label: 'Yes — use in application reports & overview' },
+    { value: 'false', label: 'No — hide from application flows' },
   ];
 
   useEffect(() => {
@@ -42,6 +48,7 @@ const UpdateProgram = () => {
           label: data.label ?? '',
           logo: data.logo ?? '',
           status: data.status ?? 'active',
+          applicationable: data.applicationable !== false,
         });
       } else {
         setError(response.data.message || 'Failed to fetch program');
@@ -68,6 +75,7 @@ const UpdateProgram = () => {
         label: form.label,
         logo: form.logo || null,
         status: form.status,
+        applicationable: form.applicationable,
       });
       navigate('/program/programs');
     } catch (err) {
@@ -128,6 +136,18 @@ const UpdateProgram = () => {
                 value={form.status}
                 onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
                 options={statusOptions}
+                required
+                showDefaultOption={false}
+              />
+
+              <FormSelect
+                name="applicationable"
+                label="Application reports"
+                value={form.applicationable ? 'true' : 'false'}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, applicationable: e.target.value === 'true' }))
+                }
+                options={applicationableOptions}
                 required
                 showDefaultOption={false}
               />

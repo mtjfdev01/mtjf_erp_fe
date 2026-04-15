@@ -305,7 +305,6 @@ const App = () => {
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/list/:id" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/view/:id" element={<ViewDonationBoxDonation />} />
-                            
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
                                 
                                 {/* Donations Routes */}
@@ -389,6 +388,7 @@ const App = () => {
                                 <Route path="/program/tasks/list" element={<TasksList />} />
                                 <Route path="/program/tasks/view/:id" element={<ViewTask />} />
                                 <Route path="/program/tasks/reports" element={<TaskReports />} />
+                                
                                 
                                 <Route path="/store/tasks/list" element={<TasksList />} />
                                 <Route path="/store/tasks/view/:id" element={<ViewTask />} />

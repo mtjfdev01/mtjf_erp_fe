@@ -18,6 +18,18 @@
   align-items: center;
 }
 
+.navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.navbar-logo {
+  height: 40px;
+  width: auto;
+  object-fit: contain;
+}
+
 .navbar-brand h2 {
   margin: 0;
   font-size: 24px;
@@ -58,6 +70,10 @@
     font-size: 20px;
   }
 
+  .navbar-logo {
+    height: 32px;
+  }
+
   .logout-button {
     padding: 6px 16px;
     font-size: 14px;
@@ -75,6 +91,10 @@
 
   .navbar-brand h2 {
     font-size: 18px;
+  }
+
+  .navbar-logo {
+    height: 28px;
   }
 
   .logout-button {

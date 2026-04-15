@@ -8,7 +8,7 @@ import PageHeader from '../../../../common/PageHeader';
 import './AddKasbTrainingReport.css';
 import Navbar from '../../../../Navbar';
 
-const AddKasbTrainingReport = () => {
+const AddKasbTrainingReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -51,41 +51,45 @@ const AddKasbTrainingReport = () => {
   };
 
   const handleDateChange = (e) => {
-    setFormData({ ...formData, date: e.target.value });
+    const nextForm = { ...formData, date: e.target.value };
+    setFormData(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleRowChange = (id, field, value) => {
-    setFormData((prev) => {
-      const updatedActivities = prev.activities.map((activity) => {
-        if (activity.id !== id) return activity;
+    const updatedActivities = formData.activities.map((activity) => {
+      if (activity.id !== id) return activity;
 
-        // Keep empty input while typing (especially for numeric fields)
-        const nextActivity = { ...activity, [field]: value };
-        nextActivity.total = recalcTotal(nextActivity);
-        return nextActivity;
-      });
-
-      return { ...prev, activities: updatedActivities };
+      // Keep empty input while typing (especially for numeric fields)
+      const nextActivity = { ...activity, [field]: value };
+      nextActivity.total = recalcTotal(nextActivity);
+      return nextActivity;
     });
+
+    const nextForm = { ...formData, activities: updatedActivities };
+    setFormData(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const addActivity = () => {
-    setFormData((prev) => ({
-      ...prev,
-      activities: [...prev.activities, initialActivityRow()],
-    }));
+    const nextForm = {
+      ...formData,
+      activities: [...formData.activities, initialActivityRow()],
+    };
+    setFormData(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const removeActivity = (id) => {
-    setFormData((prev) => {
-      if (prev.activities.length <= 1) return prev;
-      return {
-        ...prev,
-        activities: prev.activities.filter((a) => a.id !== id),
-      };
-    });
+    if (formData.activities.length <= 1) return;
+    const nextForm = {
+      ...formData,
+      activities: formData.activities.filter((a) => a.id !== id),
+    };
+    setFormData(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
   };
 
   const renderActivityItem = (activity) => (
@@ -146,7 +150,7 @@ const AddKasbTrainingReport = () => {
   );
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setLoading(true);
     setError('');
 
@@ -161,23 +165,24 @@ const AddKasbTrainingReport = () => {
 
       const response = await axios.post('/program/kasb-training/reports/multiple', createDtos);
       if (response.data.success) {
-        navigate('/program/kasb-training/reports');
+        if (!isEmbedded) navigate('/program/kasb-training/reports');
       } else {
-        setError(response.data.message || 'Failed to create report');
+        setError(response.data.message || 'Failed to Submit Report');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'An error occurred while creating the report');
+      throw err;
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="add-kasb-training-report">
-      <Navbar />
-      <PageHeader title="Add Kasb Training Report" showBackButton={true} backPath="/program/kasb-training/reports" />
+    <div className={isEmbedded ? "" : "add-kasb-training-report"}>
+      {!isEmbedded && <Navbar />}
+      {!isEmbedded && <PageHeader title="Add Kasb Training Report" showBackButton={true} backPath="/program/kasb-training/reports" />}
 
-      <div className="form-container">
+      <div className={isEmbedded ? "" : "form-container"}>
         <form onSubmit={handleSubmit}>
           <div className="form-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
             <FormInput
@@ -201,11 +206,13 @@ const AddKasbTrainingReport = () => {
 
           {error && <div className="error-message">{error}</div>}
 
-          <div className="form-actions">
-            <button type="submit" className="primary_btn" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Report'}
-            </button>
-          </div>
+          {!isEmbedded && (
+            <div className="form-actions">
+              <button type="submit" className="primary_btn" disabled={loading}>
+                {loading ? 'Creating...' : 'Submit Report'}
+              </button>
+            </div>
+          )}
         </form>
       </div>
     </div>

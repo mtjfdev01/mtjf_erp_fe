@@ -172,7 +172,7 @@ const MarriageGiftsList = () => {
           {error && <div className="status-message status-message--error">{error}</div>}
           
           <div className="list-header">
-            <h2 className="header-title">All Reports</h2>
+            {/* <h2 className="header-title">All Reports</h2> */}
           </div>
           
           <div className="table-container">

@@ -8,7 +8,7 @@ import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
 import './index.css';
 
-const AddTreePlantationReport = () => {
+const AddTreePlantationReport = ({ isEmbedded = false, onFormDataChange }) => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     report_date: '',
@@ -20,12 +20,14 @@ const AddTreePlantationReport = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    const nextForm = { ...form, [name]: value };
+    setForm(nextForm);
+    if (onFormDataChange) onFormDataChange(nextForm);
     if (error) setError('');
   };
 
   const handleSubmit = async e => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (!form.report_date || !form.school_name || !form.plants) {
       setError('All fields are required');
       return;
@@ -36,9 +38,10 @@ const AddTreePlantationReport = () => {
         ...form,
         plants: parseInt(form.plants, 10)
       });
-      navigate('/program/tree_plantation/reports/list');
+      if (!isEmbedded) navigate('/program/tree_plantation/reports/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to submit report. Please try again.');
+      throw err;
     } finally {
       setIsSubmitting(false);
     }
@@ -46,14 +49,16 @@ const AddTreePlantationReport = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="form-wrapper">
-        <PageHeader 
-          title="Add Tree Plantation Report"
-          showBackButton={true}
-          backPath="/program/tree_plantation/reports/list"
-        />
-        <div className="form-content">
+      {!isEmbedded && <Navbar />}
+      <div className={isEmbedded ? "" : "form-wrapper"}>
+        {!isEmbedded && (
+          <PageHeader 
+            title="Add Tree Plantation Report"
+            showBackButton={true}
+            backPath="/program/tree_plantation/reports/list"
+          />
+        )}
+        <div className={isEmbedded ? "" : "form-content"}>
           <form onSubmit={handleSubmit}>
             {error && <div className="status-message status-message--error">{error}</div>}
             <div className="form-grid-2">
@@ -83,11 +88,13 @@ const AddTreePlantationReport = () => {
                 required
               />
             </div>
-            <div className="form-actions">
-              <button type="submit" className="primary_btn" disabled={isSubmitting}>
-                {isSubmitting ? 'Submitting...' : 'Submit'}
-              </button>
-            </div>
+            {!isEmbedded && (
+              <div className="form-actions">
+                <button type="submit" className="primary_btn" disabled={isSubmitting}>
+                  {isSubmitting ? 'Submitting...' : 'Submit'}
+                </button>
+              </div>
+            )}
           </form>
         </div>
       </div>
