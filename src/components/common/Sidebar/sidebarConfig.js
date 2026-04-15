@@ -500,7 +500,6 @@ const hrDepartmentItems = (isUser = false) => [
       { label: 'Tasking Dashboard', path: '/hr/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-<<<<<<< HEAD
   // {
   //   label: 'Complaints',
   //   path: '/hr/complaints/list',
@@ -511,19 +510,6 @@ const hrDepartmentItems = (isUser = false) => [
   //     { label: 'Complaints Dashboard', path: '/hr/complaints/reports', type: 'list', module: 'complaints' }
   //   ]
   // }
-=======
-  {
-    label: 'Complaints',
-    path: '/hr/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/hr/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/hr/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
->>>>>>> 0342c97eabfe6ffceed8eaf5c7da1d4248b722f6
 ];
 
 const geographicItems = (isUser = false) => [
@@ -661,7 +647,6 @@ const itDepartmentItems = () => [
       { label: 'Tasking Dashboard', path: '/it/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-<<<<<<< HEAD
   // {
   //   label: 'Complaints',
   //   path: '/it/complaints/list',
@@ -672,19 +657,6 @@ const itDepartmentItems = () => [
   //     { label: 'Complaints Dashboard', path: '/it/complaints/reports', type: 'list', module: 'complaints' }
   //   ]
   // }
-=======
-  {
-    label: 'Complaints',
-    path: '/it/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/it/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/it/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
->>>>>>> 0342c97eabfe6ffceed8eaf5c7da1d4248b722f6
 ];
 
 // Marketing department menu
@@ -700,7 +672,6 @@ const marketingDepartmentItems = () => [
       { label: 'Tasking Dashboard', path: '/marketing/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-<<<<<<< HEAD
   // {
   //   label: 'Complaints',
   //   path: '/marketing/complaints/list',
@@ -711,19 +682,6 @@ const marketingDepartmentItems = () => [
   //     { label: 'Complaints Dashboard', path: '/marketing/complaints/reports', type: 'list', module: 'complaints' }
   //   ]
   // }
-=======
-  {
-    label: 'Complaints',
-    path: '/marketing/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/marketing/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/marketing/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
->>>>>>> 0342c97eabfe6ffceed8eaf5c7da1d4248b722f6
 ];
 
 // Audio Video department menu
@@ -739,7 +697,6 @@ const audioVideoDepartmentItems = () => [
       { label: 'Tasking Dashboard', path: '/audio_video/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-<<<<<<< HEAD
   // {
   //   label: 'Complaints',
   //   path: '/audio_video/complaints/list',
@@ -750,19 +707,6 @@ const audioVideoDepartmentItems = () => [
   //     { label: 'Complaints Dashboard', path: '/audio_video/complaints/reports', type: 'list', module: 'complaints' }
   //   ]
   // }
-=======
-  {
-    label: 'Complaints',
-    path: '/audio_video/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/audio_video/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/audio_video/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
->>>>>>> 0342c97eabfe6ffceed8eaf5c7da1d4248b722f6
 ];
 
 // Email Templates module items
