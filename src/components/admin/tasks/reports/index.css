@@ -383,6 +383,7 @@
 
 .task-progress-legend-label {
   white-space: nowrap;
+  text-transform: uppercase;
 }
 
 .task-card-footer-text {
@@ -468,6 +469,7 @@
   background: #ffffff;
   font-size: 0.85rem;
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
+  text-transform: uppercase;
 }
 
 .task-filter-select:focus {
