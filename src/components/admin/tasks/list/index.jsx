@@ -981,7 +981,7 @@ const TasksList = () => {
                 >
                   <option value="">Department</option>
                   {filterConfig[1].options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value} style={{ textTransform: 'uppercase' }}>{opt.label}</option>
                   ))}
                 </select>
                 <FiChevronDown className="chevron-icon" />
