@@ -555,17 +555,16 @@ const hrDepartmentItems = (isUser = false) => [
       { label: 'Tasking Dashboard', path: '/hr/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-  {
-    label: 'Complaints',
-    path: '/hr/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/hr/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/hr/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
+  // {
+  //   label: 'Complaints',
+  //   path: '/hr/complaints/list',
+  //   type: 'list',
+  //   module: 'complaints',
+  //   subItems: [
+  //     { label: 'Complaints List', path: '/hr/complaints/list', type: 'list', module: 'complaints' },
+  //     { label: 'Complaints Dashboard', path: '/hr/complaints/reports', type: 'list', module: 'complaints' }
+  //   ]
+  // }
 ];
 
 const geographicItems = (isUser = false) => [
@@ -703,17 +702,16 @@ const itDepartmentItems = () => [
       { label: 'Tasking Dashboard', path: '/it/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-  {
-    label: 'Complaints',
-    path: '/it/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/it/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/it/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
+  // {
+  //   label: 'Complaints',
+  //   path: '/it/complaints/list',
+  //   type: 'list',
+  //   module: 'complaints',
+  //   subItems: [
+  //     { label: 'Complaints List', path: '/it/complaints/list', type: 'list', module: 'complaints' },
+  //     { label: 'Complaints Dashboard', path: '/it/complaints/reports', type: 'list', module: 'complaints' }
+  //   ]
+  // }
 ];
 
 // Marketing department menu
@@ -729,17 +727,16 @@ const marketingDepartmentItems = () => [
       { label: 'Tasking Dashboard', path: '/marketing/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-  {
-    label: 'Complaints',
-    path: '/marketing/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/marketing/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/marketing/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
+  // {
+  //   label: 'Complaints',
+  //   path: '/marketing/complaints/list',
+  //   type: 'list',
+  //   module: 'complaints',
+  //   subItems: [
+  //     { label: 'Complaints List', path: '/marketing/complaints/list', type: 'list', module: 'complaints' },
+  //     { label: 'Complaints Dashboard', path: '/marketing/complaints/reports', type: 'list', module: 'complaints' }
+  //   ]
+  // }
 ];
 
 // Audio Video department menu
@@ -755,17 +752,16 @@ const audioVideoDepartmentItems = () => [
       { label: 'Tasking Dashboard', path: '/audio_video/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
-  {
-    label: 'Complaints',
-    path: '/audio_video/complaints/list',
-    type: 'list',
-    module: 'complaints',
-    icon: FiAlertCircle,
-    subItems: [
-      { label: 'Complaints List', path: '/audio_video/complaints/list', type: 'list', module: 'complaints', icon: FiList },
-      { label: 'Complaints Dashboard', path: '/audio_video/complaints/reports', type: 'list', module: 'complaints', icon: FiBarChart2 }
-    ]
-  }
+  // {
+  //   label: 'Complaints',
+  //   path: '/audio_video/complaints/list',
+  //   type: 'list',
+  //   module: 'complaints',
+  //   subItems: [
+  //     { label: 'Complaints List', path: '/audio_video/complaints/list', type: 'list', module: 'complaints' },
+  //     { label: 'Complaints Dashboard', path: '/audio_video/complaints/reports', type: 'list', module: 'complaints' }
+  //   ]
+  // }
 ];
 
 // Email Templates module items

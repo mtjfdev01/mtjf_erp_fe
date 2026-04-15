@@ -781,8 +781,11 @@ const UpdateUser = () => {
         <UserPermissions
           isOpen={showPermissionsModal}
           user={user}
-          onSave={() => {
+          onSave={(updatedUser) => {
             setShowPermissionsModal(false);
+            if (updatedUser) {
+              setUser(updatedUser);
+            }
             toast.success('Permissions updated successfully');
           }}
           onCancel={() => setShowPermissionsModal(false)}

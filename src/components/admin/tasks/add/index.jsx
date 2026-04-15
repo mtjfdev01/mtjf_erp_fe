@@ -363,18 +363,6 @@ const AddTask = () => {
                   options={projectOptions.map((p) => ({ value: p, label: p }))}
                 />
               </div>
-              {isAdmin && (
-                <div className="add-task-grid-2" style={{ marginTop: '1rem' }}>
-                  <FormSelect
-                    name="department"
-                    label="Assign to Department"
-                    value={form.department}
-                    onChange={handleSelectChange}
-                    options={departmentOptions}
-                    required
-                  />
-                </div>
-              )}
               <div className="add-task-grid-1">
                 <FormTextarea
                   name="description"
@@ -529,6 +517,7 @@ const AddTask = () => {
                       )}
                     </div>
                   )}
+                  placeholder="Select users to assign"
                 />
                 {assignedUsers.length > 0 && (
                   <div className="assign-users-hint">

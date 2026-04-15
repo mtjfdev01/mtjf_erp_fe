@@ -5,8 +5,10 @@ import '../../../../styles/components.css';
 import './UserPermissions.css';
 import { toast } from 'react-toastify';
 import { FiCloudLightning } from 'react-icons/fi';
+import { useAuth } from '../../../../context/AuthContext';
 
 const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
+  const { user: currentUser, checkAuth } = useAuth();
   const [permissions, setPermissions] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -421,7 +423,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       if (response.data) {
         console.log('User after combined update:', response.data);
         toast.success('User and permissions updated successfully');
-        if (onSave) onSave(permissions);
+        
+        // If the user being updated is the current logged-in user, refresh the auth context
+        if (currentUser && Number(currentUser.id) === Number(user.id)) {
+          console.log('Current user permissions updated, refreshing auth context...');
+          checkAuth();
+        }
+        
+        if (onSave) onSave(response.data);
       } else {
         setError('Failed to update user and permissions');
       }

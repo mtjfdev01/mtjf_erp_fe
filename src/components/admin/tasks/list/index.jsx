@@ -159,7 +159,7 @@ const TasksList = () => {
 
   const hoverText = (action) => {
     if (action === 'create' && !taskPerms.canCreate) return 'You do not have permission to create tasks';
-    if (action === 'view' && !taskPerms.canView) return 'You do not have permission to view tasks';
+    if (action === 'view' && !taskPerms.canViewDetail) return 'You do not have permission to view tasks';
     if (action === 'update' && !taskPerms.canUpdate) return 'You do not have permission to edit tasks';
     if (action === 'delete' && !taskPerms.canDelete) return 'You do not have permission to delete tasks';
     if (action === 'assign' && !taskPerms.canAssign) return 'You do not have permission to assign tasks';
@@ -408,7 +408,7 @@ const TasksList = () => {
         return { label: 'Due today', variant: 'warning' };
       }
       return {
-        label: `In ${diffDays} d`,
+        label: `In ${diffDays} days`,
         variant: 'normal',
       };
     }
@@ -677,7 +677,10 @@ const TasksList = () => {
 
   const getActionMenuItems = (task) => {
     const status = String(task.status).toLowerCase();
-    const canView = taskPerms.canView === true;
+    const canViewDetail = taskPerms.canViewDetail === true;
+    const canUpdate = taskPerms.canUpdate === true;
+    const canDelete = taskPerms.canDelete === true;
+    const canEditCompleted = taskPerms.canEditCompleted === true;
 
     // Hide reassign action in list for Department Head and Manager roles
     // (it's already available in Quick Actions for these roles)
@@ -688,37 +691,28 @@ const TasksList = () => {
         icon: <FiEye />,
         label: 'View',
         color: '#45cc49ff',
-        onClick: () => navigate(`/admin/tasks/view/${task.id}`),
+        onClick: canViewDetail ? () => navigate(`/admin/tasks/view/${task.id}`) : undefined,
         visible: true,
-        disabled: !canView,
-        title: !canView ? hoverText('view') : 'View'
+        disabled: !canViewDetail,
+        title: !canViewDetail ? hoverText('view') : 'View'
       },
       {
         icon: <FiEdit2 />,
         label: 'Edit',
         color: '#1e92f1ff',
-        onClick: () => navigate(`/admin/tasks/update/${task.id}`),
+        onClick: ((status !== 'completed' || canEditCompleted) && canUpdate) ? () => navigate(`/admin/tasks/update/${task.id}`) : undefined,
         visible: true,
-        disabled: (status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate,
-        title: !taskPerms.canUpdate ? hoverText('update') : (status === 'completed' && !taskPerms.canEditCompleted ? hoverText('edit_completed') : 'Edit')
-      },
-      {
-        icon: <FiUserCheck />,
-        label: 'Reassign',
-        color: '#8b5cf6',
-        onClick: () => handleOpenReassign(task),
-        visible: showReassignInList,
-        disabled: !showReassignInList,
-        title: showReassignInList ? 'Reassign' : hoverText('assign'),
+        disabled: (status === 'completed' && !canEditCompleted) || !canUpdate,
+        title: !canUpdate ? hoverText('update') : (status === 'completed' && !canEditCompleted ? hoverText('edit_completed') : 'Edit')
       },
       {
         icon: <FiTrash2 />,
         label: 'Delete',
         color: '#f4291bff',
-        onClick: () => deleteTask(task),
+        onClick: canDelete ? () => deleteTask(task) : undefined,
         visible: true,
-        disabled: !taskPerms.canDelete,
-        title: !taskPerms.canDelete ? hoverText('delete') : 'Delete'
+        disabled: !canDelete,
+        title: !canDelete ? hoverText('delete') : 'Delete'
       }
     ];
   };
@@ -797,7 +791,7 @@ const TasksList = () => {
                 {getDueInfo(t.due_date, t.status) && (
                   <span className={`overdue-text overdue-${getDueInfo(t.due_date, t.status).variant}`}>
                     {getDueInfo(t.due_date, t.status).label.startsWith('-') ? '→ ' : 'in '}
-                    {getDueInfo(t.due_date, t.status).label.replace('-', '').replace('in ', '')}
+                    {getDueInfo(t.due_date, t.status).label.replace('-', '').replace('In ', '')}
                   </span>
                 )}
               </div>
@@ -817,23 +811,30 @@ const TasksList = () => {
               </div>
             </div>
             <div className="task-card-actions">
-              <div className="task-action-icon view" title={hoverText('view')} onClick={() => navigate(`/admin/tasks/view/${t.id}`)}>
+              <button
+                className="task-action-icon view"
+                title={hoverText('view')}
+                onClick={taskPerms.canViewDetail ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
+                disabled={!taskPerms.canViewDetail}
+              >
                 <FiEye />
-              </div>
-              <div
-                className={`task-action-icon edit ${((status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate) ? 'u-hidden' : ''}`}
+              </button>
+              <button
+                className="task-action-icon edit"
                 title={hoverText('update')}
-                onClick={() => navigate(`/admin/tasks/update/${t.id}`)}
+                onClick={((status !== 'completed' || taskPerms.canEditCompleted) && taskPerms.canUpdate) ? () => navigate(`/admin/tasks/update/${t.id}`) : undefined}
+                disabled={(status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate}
               >
                 <FiEdit2 />
-              </div>
-              <div
-                className={`task-action-icon delete ${!taskPerms.canDelete ? 'u-hidden' : ''}`}
+              </button>
+              <button
+                className="task-action-icon delete"
                 title={hoverText('delete')}
-                onClick={() => deleteTask(t)}
+                onClick={taskPerms.canDelete ? () => deleteTask(t) : undefined}
+                disabled={!taskPerms.canDelete}
               >
                 <FiTrash2 />
-              </div>
+              </button>
             </div>
           </div>
         </div>
@@ -980,7 +981,7 @@ const TasksList = () => {
                 >
                   <option value="">Department</option>
                   {filterConfig[1].options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value} value={opt.value} style={{ textTransform: 'uppercase' }}>{opt.label}</option>
                   ))}
                 </select>
                 <FiChevronDown className="chevron-icon" />
@@ -1021,7 +1022,7 @@ const TasksList = () => {
 
             <button
               className="tasks-add-btn"
-              onClick={() => navigate('/admin/tasks/add', { state: { defaultDepartment: currentDeptFromPath } })}
+              onClick={taskPerms.canCreate ? () => navigate('/admin/tasks/add', { state: { defaultDepartment: currentDeptFromPath } }) : undefined}
               disabled={!taskPerms.canCreate}
               title={hoverText('create')}
             >
@@ -1049,7 +1050,7 @@ const TasksList = () => {
                     <li
                       key={t.id}
                       className="tasks-approval-item"
-                      onClick={() => navigate(`/admin/tasks/view/${t.id}`)}
+                      onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
                     >
                       <div className="tasks-approval-item-main">
                         <span className="tasks-approval-title">

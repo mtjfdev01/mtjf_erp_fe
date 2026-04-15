@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 const ProgressUpdate = ({
   taskId,
   currentProgress,
+  lastProgressNotes,
   movLines,
   onUpdate,
   canEdit = true,
@@ -28,14 +29,32 @@ const ProgressUpdate = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const getItemCompletedBy = useCallback((targetProgress) => {
+  const parseCheckedIndices = useCallback((notes) => {
+    if (!notes || typeof notes !== 'string') return null;
+    const match = notes.match(/\[indices:([\d,]+)\]/);
+    if (match) {
+      return match[1].split(',').map(Number);
+    }
+    return null;
+  }, []);
+
+  const getItemCompletedBy = useCallback((index, targetProgress) => {
     if (!Array.isArray(progressActivities) || progressActivities.length === 0) return null;
-    const activity = progressActivities.find(a => {
+    
+    // First try to find by encoded indices in notes
+    const activityWithIndices = [...progressActivities].reverse().find(a => {
+      const indices = parseCheckedIndices(a?.details?.notes);
+      return indices && indices.includes(index);
+    });
+    if (activityWithIndices) return activityWithIndices.performed_by?.id || null;
+
+    // Fallback to progress percentage matching (legacy)
+    const activityWithProgress = progressActivities.find(a => {
       if (!a || !a.details) return false;
       return Number(a.details.progress) === targetProgress;
     });
-    return activity?.performed_by?.id || null;
-  }, [progressActivities]);
+    return activityWithProgress?.performed_by?.id || null;
+  }, [progressActivities, parseCheckedIndices]);
 
   useEffect(() => {
     if (isStructured) {
@@ -59,17 +78,26 @@ const ProgressUpdate = ({
       );
       return;
     }
+
+    const checkedIndices = parseCheckedIndices(lastProgressNotes);
     const numericProgress = Number(currentProgress) || 0;
     const completedCount = Math.max(
       0,
       Math.min(total, Math.round((numericProgress / 100) * total)),
     );
+
     const nextItems = lines.map((text, index) => {
-      const completed = index < completedCount;
+      let completed = false;
+      if (checkedIndices) {
+        completed = checkedIndices.includes(index);
+      } else {
+        completed = index < completedCount;
+      }
+
       let completed_by_id = null;
       if (completed) {
         const targetProgress = Math.round(((index + 1) / total) * 100);
-        completed_by_id = getItemCompletedBy(targetProgress);
+        completed_by_id = getItemCompletedBy(index, targetProgress);
       }
       return {
         text,
@@ -79,26 +107,16 @@ const ProgressUpdate = ({
     });
     setItems(nextItems);
     const nextProgress =
-      total > 0 ? Math.round((completedCount / total) * 100) : 0;
+      total > 0 ? Math.round((nextItems.filter(i => i.completed).length / total) * 100) : 0;
     setProgress(nextProgress);
-  }, [movLines, isStructured, currentProgress, getItemCompletedBy]);
-
-  const clampedProgress = Math.max(0, Math.min(100, progress));
-  const progressBucket =
-    clampedProgress === 0
-      ? 'task-progress-bar-fill--0'
-      : clampedProgress <= 25
-      ? 'task-progress-bar-fill--25'
-      : clampedProgress <= 50
-      ? 'task-progress-bar-fill--50'
-      : clampedProgress <= 75
-      ? 'task-progress-bar-fill--75'
-      : 'task-progress-bar-fill--100';
+  }, [movLines, isStructured, currentProgress, lastProgressNotes, getItemCompletedBy, parseCheckedIndices]);
 
   const completedCount = isStructured
     ? items.filter((item) => item.checked).length
     : items.filter((item) => item.completed).length;
   const totalCount = items.length;
+  const calculatedProgress = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const clampedProgress = Math.max(0, Math.min(100, calculatedProgress));
 
   const handleToggle = async (index) => {
     if (!taskId || !items.length || loading || !canEdit) return;
@@ -141,11 +159,15 @@ const ProgressUpdate = ({
           i === index ? { ...item, completed: !item.completed } : item,
         );
         const total = nextItems.length;
-        const completed = nextItems.filter((item) => item.completed).length;
+        const checkedCount = nextItems.filter((item) => item.completed).length;
         const nextProgress =
-          total > 0 ? Math.round((completed / total) * 100) : 0;
+          total > 0 ? Math.round((checkedCount / total) * 100) : 0;
 
-        const note = `Complete: ${completed} of ${total} checklist items completed.`;
+        const indices = nextItems
+          .map((item, i) => (item.completed ? i : null))
+          .filter((i) => i !== null);
+        const note = `Complete: ${checkedCount} of ${total} checklist items completed. [indices:${indices.join(',')}]`;
+        
         const payload = {
           progress: nextProgress,
           notes: note,
@@ -189,7 +211,10 @@ const ProgressUpdate = ({
           </div>
         </div>
         <div className="task-progress-bar">
-          <div className={`task-progress-bar-fill ${progressBucket}`} />
+          <div 
+            className="task-progress-bar-fill"
+            style={{ width: `${clampedProgress}%` }}
+          />
         </div>
       </div>
       {error && <div className="task-progress-error">{error}</div>}
