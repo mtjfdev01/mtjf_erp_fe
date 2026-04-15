@@ -22,6 +22,9 @@ import PeopleSummary from '../people_summary';
 import LineChart from '../../../common/charts/line_chart';
 import ProgramApplicationCard from '../../../common/dashboard/program_application_card';
 import DeliverablesOverallCard from '../../../common/dashboard/deliverables_overall_card';
+import DepartmentReportsSummary from '../../../common/dashboard/department_reports_summary';
+import { DashboardDateRangeProvider } from '../../../../context/DashboardDateRangeContext';
+import FundraisingDashboard from '../../../common/charts/fundraising_dashboard';
     
 // doughnutChartRef = store, procurements, aaccounts_and_finance 
 // programsDoughnutChartRef  = programs module 
@@ -42,23 +45,40 @@ const DASHBOARD_DURATION = 'this_year';
 
 const AdminDashboard = () => {
   const lineChartRef = useRef(null);
-  const doughnutChartRef = useRef(null);
-  const doughnutChartInstance = useRef(null);
-  const programsDoughnutChartRef = useRef(null);
-  const programsDoughnutChartInstance = useRef(null); // for programs doughnut chart
+  // -------------------------
+  // Doughnut charts (disabled)
+  // -------------------------
+  // const doughnutChartRef = useRef(null);
+  // const doughnutChartInstance = useRef(null);
+  // const programsDoughnutChartRef = useRef(null);
+  // const programsDoughnutChartInstance = useRef(null); // for programs doughnut chart
   const lineChartInstance = useRef(null);
   const [filters, setFilters] = useState(defaultFilters);
-  const [departmentData, setDepartmentData] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  // -------------------------
+  // Doughnut charts data source (disabled)
+  // -------------------------
+  // `admin/daily-reports` was used to populate department/program doughnut charts.
+  // Keep these disabled until we re-enable the charts.
+  // const [departmentData, setDepartmentData] = useState(null);
+  // const [loading, setLoading] = useState(false);
+  // const [error, setError] = useState(null);
 
-  const [programModalOpen, setProgramModalOpen] = useState(false);
-  const [selectedProgramDetails, setSelectedProgramDetails] = useState(null);
-  const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
-  const [selectedDepartmentDetails, setSelectedDepartmentDetails] = useState(null);
-  const [selectedDepartmentTitle, setSelectedDepartmentTitle] = useState('');
-  const [selectedProgramTitle, setSelectedProgramTitle] = useState('');
+  // -------------------------
+  // Doughnut click modals (disabled)
+  // -------------------------
+  // const [programModalOpen, setProgramModalOpen] = useState(false);
+  // const [selectedProgramDetails, setSelectedProgramDetails] = useState(null);
+  // const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
+  // const [selectedDepartmentDetails, setSelectedDepartmentDetails] = useState(null);
+  // const [selectedDepartmentTitle, setSelectedDepartmentTitle] = useState('');
+  // const [selectedProgramTitle, setSelectedProgramTitle] = useState('');
   const [donationSummary, setDonationSummary] = useState(null);
+  const [showDeptSummaryAndFundraising, setShowDeptSummaryAndFundraising] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setShowDeptSummaryAndFundraising(true), 5000);
+    return () => clearTimeout(t);
+  }, []);
 
   // Helper to get date range for API
   const getDateRangeForDuration = (durationValue) => {
@@ -154,140 +174,142 @@ const AdminDashboard = () => {
     });
   }
 
-  function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartData) {
-    if (chartInstanceRef.current) {
-      chartInstanceRef.current.data = data;
-      chartInstanceRef.current.options.plugins.tooltip.callbacks = {
-        label: function(context) {
-          const idx = context.dataIndex;
-          const details = chartData[idx]?.details;
-          if (!details) return 'No data found';
-          // Format details as key-value pairs
-          return [
-            chartData[idx].label,
-            ...Object.entries(details).map(([k, v]) => `${k}: ${v}`)
-          ];
-        }
-      };
-      chartInstanceRef.current.update();
-      return;
-    }
-    chartInstanceRef.current = new Chart(ctx, {
-      type: 'doughnut',
-      data,
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const idx = context.dataIndex;
-                const details = chartData[idx]?.details;
-                if (!details) return 'No data found';
-                return [
-                  chartData[idx].label,
-                  ...Object.entries(details).map(([k, v]) => `${k}: ${v}`)
-                ];
-              }
-            }
-          }
-        }
-      }
-    });
-  }
+  // -------------------------
+  // Doughnut chart helpers (disabled)
+  // -------------------------
+  // function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartData) {
+  //   if (chartInstanceRef.current) {
+  //     chartInstanceRef.current.data = data;
+  //     chartInstanceRef.current.options.plugins.tooltip.callbacks = {
+  //       label: function(context) {
+  //         const idx = context.dataIndex;
+  //         const details = chartData[idx]?.details;
+  //         if (!details) return 'No data found';
+  //         return [
+  //           chartData[idx].label,
+  //           ...Object.entries(details).map(([k, v]) => `${k}: ${v}`)
+  //         ];
+  //       }
+  //     };
+  //     chartInstanceRef.current.update();
+  //     return;
+  //   }
+  //   chartInstanceRef.current = new Chart(ctx, {
+  //     type: 'doughnut',
+  //     data,
+  //     options: {
+  //       responsive: true,
+  //       maintainAspectRatio: false,
+  //       plugins: {
+  //         tooltip: {
+  //           callbacks: {
+  //             label: function(context) {
+  //               const idx = context.dataIndex;
+  //               const details = chartData[idx]?.details;
+  //               if (!details) return 'No data found';
+  //               return [
+  //                 chartData[idx].label,
+  //                 ...Object.entries(details).map(([k, v]) => `${k}: ${v}`)
+  //               ];
+  //             }
+  //           }
+  //         }
+  //       }
+  //     }
+  //   });
+  // }
 
-  // Helper to map department data for doughnut chart
-  function getDoughnutChartData(departmentData) {
-    try {
-      const result = [];
-      if (departmentData?.accountsAndFinance) {
-        result.push({
-          label: "Accounts And Finance",
-          value: Number(departmentData?.accountsAndFinance?.Grand_Total) || 0,
-          details: departmentData?.accountsAndFinance,
-        });
-      }
-      if (departmentData?.procurements) {
-        result.push({
-          label: "Procurements",
-          value: Number(departmentData?.procurements?.Grand_Total) || 0,
-          details: departmentData?.procurements,
-        });
-      }
-      if (departmentData?.store) {
-        result.push({
-          label: "Store",
-          value: Number(departmentData?.store?.Grand_Total) || 0,
-          details: departmentData?.store,
-        });
-      }
-      if (departmentData?.it) {
-        result.push({
-          label: "IT",
-          value: Number(departmentData?.it?.Grand_Total ?? departmentData?.it?.grandTotal) || 0,
-          details: departmentData?.it,
-        });
-      }
-      return result;
-    } catch (error) {
-      console.log(error.message);
-      return [];
-    }
-  }
+  // Helper to map department data for doughnut chart (disabled)
+  // function getDoughnutChartData(departmentData) {
+  //   try {
+  //     const result = [];
+  //     if (departmentData?.accountsAndFinance) {
+  //       result.push({
+  //         label: "Accounts And Finance",
+  //         value: Number(departmentData?.accountsAndFinance?.Grand_Total) || 0,
+  //         details: departmentData?.accountsAndFinance,
+  //       });
+  //     }
+  //     if (departmentData?.procurements) {
+  //       result.push({
+  //         label: "Procurements",
+  //         value: Number(departmentData?.procurements?.Grand_Total) || 0,
+  //         details: departmentData?.procurements,
+  //       });
+  //     }
+  //     if (departmentData?.store) {
+  //       result.push({
+  //         label: "Store",
+  //         value: Number(departmentData?.store?.Grand_Total) || 0,
+  //         details: departmentData?.store,
+  //       });
+  //     }
+  //     if (departmentData?.it) {
+  //       result.push({
+  //         label: "IT",
+  //         value: Number(departmentData?.it?.Grand_Total ?? departmentData?.it?.grandTotal) || 0,
+  //         details: departmentData?.it,
+  //       });
+  //     }
+  //     return result;
+  //   } catch (error) {
+  //     console.log(error.message);
+  //     return [];
+  //   }
+  // }
 
-  // Helper to map program data for programs doughnut chart
-  function getProgramsDoughnutChartData(departmentData) {
-    try {
-      const result = [];
-      const programData = departmentData?.program;
-      if (!programData) return result;
-
-      const programModules = [
-        { key: 'applicationReports', label: 'Applications' },
-        { key: 'areaRationReports', label: 'Area Ration' },
-        { key: 'educationReports', label: 'Education' },
-        { key: 'financialAssistanceReports', label: 'Financial Assistance' },
-        { key: 'kasbReports', label: 'Kasb' },
-        { key: 'kasabTrainingReports', label: 'Kasb Training' },
-        { key: 'marriageGiftsReports', label: 'Marriage Gifts' },
-        { key: 'rationReports', label: 'Ration' },
-        { key: 'sewingMachineReports', label: 'Sewing Machine' },
-        { key: 'treePlantationReports', label: 'Tree Plantation' },
-        { key: 'waterReports', label: 'Water' },
-        { key: 'wheelChairOrCrutchesReports', label: 'Wheel Chair/Crutches' },
-      ];
-
-      programModules.forEach(({ key, label }) => {
-        const data = programData[key];
-        if (
-          data &&
-          (data.Grand_Total !== undefined ||
-            data['Total Quantity'] !== undefined ||
-            data['Total Wheel Chairs'] !== undefined ||
-            data['Total Crutches'] !== undefined)
-        ) {
-          const value =
-            data.Grand_Total ??
-            data['Total Quantity'] ??
-            data['Total Wheel Chairs'] ??
-            data['Total Crutches'] ??
-            0;
-
-          result.push({
-            label,
-            value: Number(value) || 0,
-            details: data,
-          });
-        }
-      });
-
-      return result;
-    } catch (error) {
-      console.log(error.message);
-      return [];
-    }
-  }
+  // Helper to map program data for programs doughnut chart (disabled)
+  // function getProgramsDoughnutChartData(departmentData) {
+  //   try {
+  //     const result = [];
+  //     const programData = departmentData?.program;
+  //     if (!programData) return result;
+  //
+  //     const programModules = [
+  //       { key: 'applicationReports', label: 'Applications' },
+  //       { key: 'areaRationReports', label: 'Area Ration' },
+  //       { key: 'educationReports', label: 'Education' },
+  //       { key: 'financialAssistanceReports', label: 'Financial Assistance' },
+  //       { key: 'kasbReports', label: 'Kasb' },
+  //       { key: 'kasabTrainingReports', label: 'Kasb Training' },
+  //       { key: 'marriageGiftsReports', label: 'Marriage Gifts' },
+  //       { key: 'rationReports', label: 'Ration' },
+  //       { key: 'sewingMachineReports', label: 'Sewing Machine' },
+  //       { key: 'treePlantationReports', label: 'Tree Plantation' },
+  //       { key: 'waterReports', label: 'Water' },
+  //       { key: 'wheelChairOrCrutchesReports', label: 'Wheel Chair/Crutches' },
+  //     ];
+  //
+  //     programModules.forEach(({ key, label }) => {
+  //       const data = programData[key];
+  //       if (
+  //         data &&
+  //         (data.Grand_Total !== undefined ||
+  //           data['Total Quantity'] !== undefined ||
+  //           data['Total Wheel Chairs'] !== undefined ||
+  //           data['Total Crutches'] !== undefined)
+  //       ) {
+  //         const value =
+  //           data.Grand_Total ??
+  //           data['Total Quantity'] ??
+  //           data['Total Wheel Chairs'] ??
+  //           data['Total Crutches'] ??
+  //           0;
+  //
+  //         result.push({
+  //           label,
+  //           value: Number(value) || 0,
+  //           details: data,
+  //         });
+  //       }
+  //     });
+  //
+  //     return result;
+  //   } catch (error) {
+  //     console.log(error.message);
+  //     return [];
+  //   }
+  // }
 
   // Helper to map data for line chart
 async   function getLineChartData(departmentData) {
@@ -305,171 +327,176 @@ async   function getLineChartData(departmentData) {
       }]
     };
   }
-const fetchDonationsSummary = async (year) => {
-  try {
-    const response = await axiosInstance.get(`/donations-summary?duration=year&year=${year}`);
-    // API response shape (observed): { dateRange, chart: { labels, datasets } }
-    // Keep fallbacks for older shapes if they exist.
-    const chart =
-      response?.data?.chart ??
-      response?.data?.data?.chart ??
-      response?.data?.data?.data?.chart;
-    setDonationSummary(chart);
-  } catch (error) {
-    console.log(error.message);
-  }
-}
-useEffect(() => {
-  fetchDonationsSummary(new Date().getFullYear());
-}, []);
+// const fetchDonationsSummary = async (year) => {
+//   try {
+//     const response = await axiosInstance.get(`/donations-summary?duration=year&year=${year}`);
+//     // API response shape (observed): { dateRange, chart: { labels, datasets } }
+//     // Keep fallbacks for older shapes if they exist.
+//     const chart =
+//       response?.data?.chart ??
+//       response?.data?.data?.chart ??
+//       response?.data?.data?.data?.chart;
+//     setDonationSummary(chart);
+//   } catch (error) {
+//     console.log(error.message);
+//   }
+// }
+// useEffect(() => {
+//   fetchDonationsSummary(new Date().getFullYear());
+// }, []);
 
   // Fetch department/program data once (ignore filter UI for now)
-  useEffect(() => {
-    const fetchDepartmentData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const range = getDateRangeForDuration(DASHBOARD_DURATION);
-        const filterData = {
-          from: range.from,
-          to: range.to,
-          departments,
-          duration: DASHBOARD_DURATION,
-        };
-        const response = await axiosInstance.post('admin/daily-reports', filterData);
-        setDepartmentData(response.data);
-      } catch (err) {
-        setError(err.message || 'Failed to fetch department data');
-      } finally {
-        setLoading(false);
-      }
-    };
+  // NOTE: This API call was used for Doughnut charts data.
+  // It is fully disabled for now (no chart data fetch).
+  // useEffect(() => {
+  //   const fetchDepartmentData = async () => {
+  //     setLoading(true);
+  //     setError(null);
+  //     try {
+  //       const range = getDateRangeForDuration(DASHBOARD_DURATION);
+  //       const filterData = {
+  //         from: range.from,
+  //         to: range.to,
+  //         departments,
+  //         duration: DASHBOARD_DURATION,
+  //       };
+  //       const response = await axiosInstance.post('admin/daily-reports', filterData);
+  //       setDepartmentData(response.data);
+  //     } catch (err) {
+  //       setError(err.message || 'Failed to fetch department data');
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+  //
+  //   fetchDepartmentData();
+  // }, []);
 
-    fetchDepartmentData();
-  }, []);
+  // Chart update effect (disabled with admin/daily-reports)
+  // useEffect(() => {
+  //   if (!departmentData) return;
 
-  // Chart update effect
-  useEffect(() => {
-    if (!departmentData) return;
+    // -------------------------
+    // Doughnut charts update + click handlers (disabled)
+    // -------------------------
+    // const chartData = getDoughnutChartData(departmentData);
+    // const doughnutData = {
+    //   labels: chartData.map(d => d.label),
+    //   datasets: [{
+    //     label: 'Department Data',
+    //     data: chartData.map(d => d.value),
+    //     backgroundColor: [
+    //       'rgba(54, 162, 235, 1)',
+    //       'rgba(75, 192, 192, 1)',
+    //       'rgba(255, 206, 86, 1)',
+    //       'rgba(120, 46, 139,1)',
+    //       'rgba(255, 99, 132, 1)'
+    //     ],
+    //     borderColor: [
+    //       'rgba(54, 162, 235, 1)',
+    //       'rgba(75, 192, 192, 1)',
+    //       'rgba(255, 206, 86, 1)',
+    //       'rgba(120, 46, 139,1)',
+    //       'rgba(255, 99, 132, 1)'
+    //     ],
+    //     borderWidth: 1
+    //   }]
+    // };
+    //
+    // // --- Programs Doughnut Chart Data ---
+    // const programsChartData = getProgramsDoughnutChartData(departmentData);
+    // const programsColors = [
+    //   '#1f77b4', // blue
+    //   '#ff7f0e', // orange
+    //   '#2ca02c', // green
+    //   '#d62728', // red
+    //   '#9467bd', // purple
+    //   '#8c564b', // brown
+    //   '#e377c2', // pink
+    //   '#7f7f7f', // gray
+    //   '#bcbd22', // olive
+    //   '#17becf', // cyan
+    //   '#f7b6d2', // light pink
+    //   '#c5b0d5', // light purple
+    //   '#c49c94', // light brown
+    //   '#dbdb8d', // light olive
+    //   '#9edae5', // light cyan
+    // ];
+    // const programsDoughnutData = {
+    //   labels: programsChartData.map(d => d.label),
+    //   datasets: [{
+    //     label: 'Programs Data',
+    //     data: programsChartData.map(d => d.value),
+    //     backgroundColor: programsColors.slice(0, programsChartData.length),
+    //     borderColor: programsColors.slice(0, programsChartData.length),
+    //     borderWidth: 1
+    //   }]
+    // };
+    //
+    // if (doughnutChartRef.current) {
+    //   createOrUpdateDoughnutChart(doughnutChartRef.current.getContext('2d'), doughnutData, doughnutChartInstance, chartData);
+    //   doughnutChartRef.current.onclick = function(evt) {
+    //     if (!doughnutChartInstance.current) return;
+    //     const points = doughnutChartInstance.current.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+    //     if (points.length > 0) {
+    //       const idx = points[0].index;
+    //       const details = chartData[idx]?.details;
+    //       const title = chartData[idx]?.label;
+    //       setSelectedDepartmentDetails(details);
+    //       setSelectedDepartmentTitle(title);
+    //       setDepartmentModalOpen(true);
+    //     }
+    //   };
+    // }
+    // if (programsDoughnutChartRef.current) {
+    //   createOrUpdateDoughnutChart(programsDoughnutChartRef.current.getContext('2d'), programsDoughnutData, programsDoughnutChartInstance, programsChartData);
+    //   programsDoughnutChartRef.current.onclick = function(evt) {
+    //     if (!programsDoughnutChartInstance.current) return;
+    //     const points = programsDoughnutChartInstance.current.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
+    //     if (points.length > 0) {
+    //       const idx = points[0].index;
+    //       const details = programsChartData[idx]?.details;
+    //       const title = programsChartData[idx]?.label;
+    //       setSelectedProgramDetails(details);
+    //       setSelectedProgramTitle(title);
+    //       setProgramModalOpen(true);
+    //     }
+    //   };
+    // }
 
-    const chartData = getDoughnutChartData(departmentData);
-    const doughnutData = {
-      labels: chartData.map(d => d.label),
-      datasets: [{
-        label: 'Department Data',
-        data: chartData.map(d => d.value),
-        backgroundColor: [
-          'rgba(54, 162, 235, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(120, 46, 139,1)',
-          'rgba(255, 99, 132, 1)'
-        ],
-        borderColor: [
-          'rgba(54, 162, 235, 1)',
-          'rgba(75, 192, 192, 1)',
-          'rgba(255, 206, 86, 1)',
-          'rgba(120, 46, 139,1)',
-          'rgba(255, 99, 132, 1)'
-        ],
-        borderWidth: 1
-      }]
-    };
-
-    // --- Programs Doughnut Chart Data ---
-    const programsChartData = getProgramsDoughnutChartData(departmentData);
-    const programsColors = [
-      '#1f77b4', // blue
-      '#ff7f0e', // orange
-      '#2ca02c', // green
-      '#d62728', // red
-      '#9467bd', // purple
-      '#8c564b', // brown
-      '#e377c2', // pink
-      '#7f7f7f', // gray
-      '#bcbd22', // olive
-      '#17becf', // cyan
-      '#f7b6d2', // light pink
-      '#c5b0d5', // light purple
-      '#c49c94', // light brown
-      '#dbdb8d', // light olive
-      '#9edae5', // light cyan
-    ];
-    const programsDoughnutData = {
-      labels: programsChartData.map(d => d.label),
-      datasets: [{
-        label: 'Programs Data',
-        data: programsChartData.map(d => d.value),
-        backgroundColor: programsColors.slice(0, programsChartData.length),
-        borderColor: programsColors.slice(0, programsChartData.length),
-        borderWidth: 1
-      }]
-    };
-
-    if (doughnutChartRef.current) {
-      createOrUpdateDoughnutChart(doughnutChartRef.current.getContext('2d'), doughnutData, doughnutChartInstance, chartData);
-      // Add click handler for department doughnut chart
-      doughnutChartRef.current.onclick = function(evt) {
-        if (!doughnutChartInstance.current) return;
-        const points = doughnutChartInstance.current.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
-        if (points.length > 0) {
-          const idx = points[0].index;
-          const details = chartData[idx]?.details;
-          const title = chartData[idx]?.label;
-          setSelectedDepartmentDetails(details);
-          setSelectedDepartmentTitle(title);
-          setDepartmentModalOpen(true);
-        }
-      };
-    }
-    if (programsDoughnutChartRef.current) {
-      createOrUpdateDoughnutChart(programsDoughnutChartRef.current.getContext('2d'), programsDoughnutData, programsDoughnutChartInstance, programsChartData);
-      // Add click handler for programs doughnut chart
-      programsDoughnutChartRef.current.onclick = function(evt) {
-        if (!programsDoughnutChartInstance.current) return;
-        const points = programsDoughnutChartInstance.current.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, true);
-        if (points.length > 0) {
-          const idx = points[0].index;
-          const details = programsChartData[idx]?.details;
-          const title = programsChartData[idx]?.label;
-          setSelectedProgramDetails(details);
-          setSelectedProgramTitle(title);
-          setProgramModalOpen(true);
-        }
-      };
-    }
-
-    const lineData = getLineChartData(departmentData);
-    if (lineChartRef.current) {
-      createOrUpdateLineChart(lineChartRef.current.getContext('2d'), lineData, lineChartInstance);
-    }
+  //   const lineData = getLineChartData(departmentData);
+  //   if (lineChartRef.current) {
+  //     createOrUpdateLineChart(lineChartRef.current.getContext('2d'), lineData, lineChartInstance);
+  //   }
     // Cleanup function
-    return () => {
-      if (doughnutChartInstance.current) {
-        doughnutChartInstance.current.destroy();
-        doughnutChartInstance.current = null;
-      }
-      if (programsDoughnutChartInstance.current) {
-        programsDoughnutChartInstance.current.destroy();
-        programsDoughnutChartInstance.current = null;
-      }
-      if (lineChartInstance.current) {
-        lineChartInstance.current.destroy();
-        lineChartInstance.current = null;
-      }
-    };
-  }, [departmentData]);
+  //   return () => {
+      // Doughnut chart instances cleanup (disabled)
+      // if (doughnutChartInstance.current) {
+      //   doughnutChartInstance.current.destroy();
+      //   doughnutChartInstance.current = null;
+      // }
+      // if (programsDoughnutChartInstance.current) {
+      //   programsDoughnutChartInstance.current.destroy();
+      //   programsDoughnutChartInstance.current = null;
+      // }
+  //     if (lineChartInstance.current) {
+  //       lineChartInstance.current.destroy();
+  //       lineChartInstance.current = null;
+  //     }
+  //   };
+  // }, [departmentData]);
 
-  const renderCards = () => {
-    if (!departmentData) return null;
-
-    return Object.entries(departmentData).map(([department, data]) => {
-      if (data) {
-        return <Card key={department} title={department} data={data} />;
-      }
-      return null;
-    });
-  };
+  // Cards renderer for departmentData (disabled with admin/daily-reports)
+  // const renderCards = () => {
+  //   if (!departmentData) return null;
+  //
+  //   return Object.entries(departmentData).map(([department, data]) => {
+  //     if (data) {
+  //       return <Card key={department} title={department} data={data} />;
+  //     }
+  //     return null;
+  //   });
+  // };
 
   const deliverablesRange = getDateRangeForDuration(DASHBOARD_DURATION);
 
@@ -477,8 +504,9 @@ useEffect(() => {
     <div className="admin-dashboard">
       <Navbar />
       <div className="main">
-        {loading && <div className="loading">Loading...</div>}
-        {error && <div className="error">{error}</div>}
+        {/* Doughnut charts loading/error (disabled with admin/daily-reports) */}
+        {/* {loading && <div className="loading">Loading...</div>} */}
+        {/* {error && <div className="error">{error}</div>} */}
         
         <div className="charts">
           {/* <div className="chart">
@@ -508,7 +536,7 @@ useEffect(() => {
         </div>
 
         <div className="admin-dashboard__below-charts">
-          <LineChart
+          {/* <LineChart
             data={donationSummary}
             title="Donations Summary"
             options={{
@@ -518,22 +546,30 @@ useEffect(() => {
             height={300}
             showDownload={false}
             downloadFileName="donations-summary"
-          />
+          /> */}
+          <ProgramApplicationCard from={deliverablesRange.from} to={deliverablesRange.to} />
           <DeliverablesOverallCard
             from={deliverablesRange.from}
             to={deliverablesRange.to}
             title="Deliverables — overall"
           />
-          <ProgramApplicationCard from={deliverablesRange.from} to={deliverablesRange.to} />
+          {showDeptSummaryAndFundraising ? (
+            <>
+              <FundraisingDashboard />
+              <DashboardDateRangeProvider>
+                <DepartmentReportsSummary />
+              </DashboardDateRangeProvider>
+            </>
+          ) : null}
         </div>
 
         {/* <div className="department-cards">{renderCards()}</div> */}
       </div>
-      <Modal open={programModalOpen} onClose={() => setProgramModalOpen(false)} details={selectedProgramDetails} title={selectedProgramTitle} />
-      <Modal open={departmentModalOpen} onClose={() => setDepartmentModalOpen(false)} details={selectedDepartmentDetails} title={selectedDepartmentTitle} />
+      {/* Doughnut chart click detail modals (disabled) */}
+      {/* <Modal open={programModalOpen} onClose={() => setProgramModalOpen(false)} details={selectedProgramDetails} title={selectedProgramTitle} /> */}
+      {/* <Modal open={departmentModalOpen} onClose={() => setDepartmentModalOpen(false)} details={selectedDepartmentDetails} title={selectedDepartmentTitle} /> */}
 
-
-    <div className="dashboard-container">
+    {/* <div className="dashboard-container">  */}
       {/* Top row: allocations + gender/age */}
       {/* <div className="dashboard-row">
         <div className="dashboard-col">
@@ -545,17 +581,17 @@ useEffect(() => {
       </div> */}
 
       {/* Middle row: beneficiary types + organizations */} 
-       <div className="dashboard-row full-width">
+       {/* <div className="dashboard-row full-width">
         <div className="dashboard-col">
           <BeneficiaryTypes />
         </div>
-      </div>
+      </div> */}
 
       {/* Bottom row: sectors full width */}
-      <div className="dashboard-row full-width">
+      {/* <div className="dashboard-row full-width">
         <Sectors />
-      </div>
-    </div>
+      </div> */}
+    {/* </div> */}
     </div>
   );
 };

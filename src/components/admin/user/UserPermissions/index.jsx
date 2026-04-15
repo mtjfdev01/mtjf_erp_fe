@@ -115,6 +115,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Wheel Chair or Crutches Reports',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
+        health_reports: {
+          label: 'Health Reports',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         aas_collection_centers_reports: {
           label: 'AAS Collection Centers Reports',
           actions: ['create', 'list_view', 'view', 'update', 'delete']

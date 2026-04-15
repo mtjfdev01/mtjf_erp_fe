@@ -148,7 +148,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   return (
     <div className="fundraising-charts-demo">
       {/* Filters Section */}
-      {!isForbidden &&
+      {/* {!isForbidden &&
       <div className="fundraising-charts-demo__filters">
         <DropdownFilter
           filterKey="donation_type"
@@ -199,7 +199,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
           <ClearButton onClick={handleClearFilters} text="Clear" />
         </div>
       </div>
-}
+} */}
 
       {loading ? (
         <div className="fundraising-charts-demo__loading">

@@ -67,6 +67,10 @@ import AddWheelChairOrCrutchesReport from './components/program/wheel_chair_or_c
 import WheelChairOrCrutchesList from './components/program/wheel_chair_or_crutches/reports/list';
 import UpdateWheelChairOrCrutchesReport from './components/program/wheel_chair_or_crutches/reports/update';
 import ViewWheelChairOrCrutchesReport from './components/program/wheel_chair_or_crutches/reports/view';
+import AddHealthReport from './components/program/health/reports/add';
+import HealthReportsList from './components/program/health/reports/list';
+import UpdateHealthReport from './components/program/health/reports/update';
+import ViewHealthReport from './components/program/health/reports/view';
 import AddWaterReport from './components/program/water/reports/add';
 import WaterReportsList from './components/program/water/reports/list';
 import UpdateWaterReport from './components/program/water/reports/update';
@@ -267,6 +271,12 @@ const App = () => {
                                 <Route path="/program/wheel_chair_or_crutches/reports/list" element={<WheelChairOrCrutchesList />} />
                                 <Route path="/program/wheel_chair_or_crutches/reports/update/:id" element={<UpdateWheelChairOrCrutchesReport />} />
                                 <Route path="/program/wheel_chair_or_crutches/reports/view/:id" element={<ViewWheelChairOrCrutchesReport />} />
+
+                                {/* Health Reports */}
+                                <Route path="/program/health/reports/add" element={<AddHealthReport />} />
+                                <Route path="/program/health/reports/list" element={<HealthReportsList />} />
+                                <Route path="/program/health/reports/update/:id" element={<UpdateHealthReport />} />
+                                <Route path="/program/health/reports/view/:id" element={<ViewHealthReport />} />
 
                                 {/* Water Reports */}
                                 <Route path="/program/water/reports/add" element={<AddWaterReport />} />

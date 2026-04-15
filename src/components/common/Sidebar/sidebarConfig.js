@@ -172,6 +172,13 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiLifeBuoy
   },
   {
+    label: 'Health Reports',
+    path: '/program/health/reports/list',
+    type: 'list',
+    module: 'health_reports',
+    icon: FiHeart
+  },
+  {
     label: 'Water Reports',
     path: '/program/water/reports/list',
     type: 'list',
@@ -373,6 +380,7 @@ const adminDepartmentItems = () => [
       {label: "financial_assistance", path: "/program/financial_assistance/reports/list", type: "list", icon: FiDollarSign},
       {label: "sewing_machine", path: "/program/sewing_machine/reports/list", type: "list", icon: FiSettings},
       {label: "wheel_chair_or_crutches", path: "/program/wheel_chair_or_crutches/reports/list", type: "list", icon: FiLifeBuoy},
+      {label: "health", path: "/program/health/reports/list", type: "list", icon: FiHeart},
       {label: "water", path: "/program/water/reports/list", type: "list", icon: FiDroplet},
       {label: "kasb", path: "/program/kasb/reports/list", type: "list", icon: FiBriefcase},
       {label: "kasb_training", path: "/program/kasb-training/reports", type: "list", icon: FiBookOpen},

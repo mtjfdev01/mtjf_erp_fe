@@ -128,7 +128,8 @@ button.program-application-card__card--trigger {
   width: 100%;
   margin: 0;
   font: inherit;
-  color: inherit;
+  /* Explicit text color so nested stat accents (orange/blue/green/red) are not lost to `inherit` quirks. */
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
   appearance: none;
@@ -293,19 +294,38 @@ button.program-application-card__card--trigger:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.program-application-card__stat-value--investigated {
+/* Chained with base for higher specificity than `.program-application-card__stat-value` alone
+   (avoids ties inside `<button class="...--trigger">` where source order can mute colors). */
+.program-application-card__stat-value.program-application-card__stat-value--investigated {
   color: #d97706;
 }
 
-.program-application-card__stat-value--verified {
+.program-application-card__stat-value.program-application-card__stat-value--verified {
   color: #2563eb;
 }
 
-.program-application-card__stat-value--approved {
+.program-application-card__stat-value.program-application-card__stat-value--approved {
   color: var(--color-success-dark);
 }
 
-.program-application-card__stat-value--rejected {
+.program-application-card__stat-value.program-application-card__stat-value--rejected {
+  color: var(--color-error);
+}
+
+/* Inside card trigger `<button>`, `color: inherit` must not flatten stat colors. */
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--investigated {
+  color: #d97706;
+}
+
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--verified {
+  color: #2563eb;
+}
+
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--approved {
+  color: var(--color-success-dark);
+}
+
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--rejected {
   color: var(--color-error);
 }
 
