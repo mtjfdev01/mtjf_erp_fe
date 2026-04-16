@@ -249,9 +249,12 @@ export const NotificationProvider = ({ children }) => {
       return current === true;
     };
 
+    if (user?.id) {
+      fetchUnreadCount();
+    }
+    
     if (hasAccess()) {
       fetchNotifications();
-      fetchUnreadCount();
     }
   }, [user, permissions, fetchNotifications, fetchUnreadCount]);
 

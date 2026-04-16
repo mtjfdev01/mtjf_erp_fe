@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FiBook, FiChevronLeft, FiChevronRight, FiDroplet, FiHeart, FiLayers, FiShoppingBag, FiTool, FiUsers } from 'react-icons/fi';
+import { HiCalendarDateRange } from 'react-icons/hi2';
 
 import '../../../../styles/variables.css';
 import './DeliverablesOverallCard.css';
@@ -187,6 +188,7 @@ export default function DeliverablesOverallCard({
   const [draftTo, setDraftTo] = useState(toProp ?? '');
   const [appliedFrom, setAppliedFrom] = useState(fromProp ?? '');
   const [appliedTo, setAppliedTo] = useState(toProp ?? '');
+  const [filtersMobileOpen, setFiltersMobileOpen] = useState(false);
 
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -198,6 +200,7 @@ export default function DeliverablesOverallCard({
     setDraftTo(toProp ?? '');
     setAppliedFrom(fromProp ?? '');
     setAppliedTo(toProp ?? '');
+    setFiltersMobileOpen(false);
   }, [fromProp, toProp]);
 
   useEffect(() => {
@@ -340,7 +343,7 @@ export default function DeliverablesOverallCard({
         </div>
 
         <div className="deliverables-overall-carousel__controls">
-          <div className="deliverables-overall-carousel__filters">
+          <div className="deliverables-overall-carousel__filters deliverables-overall-carousel__filters--desktop">
             <div className="deliverables-overall-carousel__field">
               <label htmlFor={`${headingId}-from`}>From</label>
               <input id={`${headingId}-from`} type="date" value={draftFrom} onChange={(e) => setDraftFrom(e.target.value)} />
@@ -360,6 +363,57 @@ export default function DeliverablesOverallCard({
             >
               Apply range
             </button>
+          </div>
+
+          <button
+            type="button"
+            className="deliverables-overall-carousel__filters-toggle"
+            aria-label="Open date range filters"
+            aria-expanded={filtersMobileOpen}
+            onClick={() => setFiltersMobileOpen((v) => !v)}
+            disabled={loading}
+          >
+            <HiCalendarDateRange size={20} aria-hidden />
+          </button>
+
+          <div
+            className={`deliverables-overall-carousel__filters-panel${
+              filtersMobileOpen ? ' deliverables-overall-carousel__filters-panel--open' : ''
+            }`}
+            aria-label="Date range filter panel"
+          >
+            <div className="deliverables-overall-carousel__filters deliverables-overall-carousel__filters--mobile">
+              <div className="deliverables-overall-carousel__field">
+                <label htmlFor={`${headingId}-from-mobile`}>From</label>
+                <input
+                  id={`${headingId}-from-mobile`}
+                  type="date"
+                  value={draftFrom}
+                  onChange={(e) => setDraftFrom(e.target.value)}
+                />
+              </div>
+              <div className="deliverables-overall-carousel__field">
+                <label htmlFor={`${headingId}-to-mobile`}>To</label>
+                <input
+                  id={`${headingId}-to-mobile`}
+                  type="date"
+                  value={draftTo}
+                  onChange={(e) => setDraftTo(e.target.value)}
+                />
+              </div>
+              <button
+                type="button"
+                className="deliverables-overall-carousel__apply"
+                disabled={loading}
+                onClick={() => {
+                  setAppliedFrom(draftFrom);
+                  setAppliedTo(draftTo);
+                  setFiltersMobileOpen(false);
+                }}
+              >
+                Apply range
+              </button>
+            </div>
           </div>
 
           <div className="deliverables-overall-carousel__nav">

@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { HiCalendarDateRange } from 'react-icons/hi2';
 import {
   FiBook,
   FiDroplet,
@@ -52,6 +53,13 @@ function rowToModalDetails(row) {
 
 function isOverallRow(row) {
   return row?.isOverall === true || row?.id === 'overall';
+}
+
+function rangeCaption(from, to) {
+  if (from && to) return `${from} → ${to}`;
+  if (from) return `From ${from}`;
+  if (to) return `Until ${to}`;
+  return 'All dates';
 }
 
 function ProgramApplicationCardItem({ row }) {
@@ -120,6 +128,7 @@ function ProgramApplicationCardItem({ row }) {
  * @param {string} [props.title]
  * @param {string} [props.subtitle]
  * @param {string} [props.className]
+ * @param {boolean} [props.showDateRangeFilter] — show From/To inputs (ignored when `items` is provided)
  */
 export default function ProgramApplicationCard({
   items: itemsProp,
@@ -128,16 +137,31 @@ export default function ProgramApplicationCard({
   title = 'Program Overview (Applications)',
   subtitle,
   className = '',
+  showDateRangeFilter = true,
 }) {
   const headingId = useId();
   const trackRef = useRef(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(true);
 
+  const [draftFrom, setDraftFrom] = useState(from ?? '');
+  const [draftTo, setDraftTo] = useState(to ?? '');
+  const [appliedFrom, setAppliedFrom] = useState(from ?? '');
+  const [appliedTo, setAppliedTo] = useState(to ?? '');
+  const [filtersMobileOpen, setFiltersMobileOpen] = useState(false);
+
   const [items, setItems] = useState(() => (Array.isArray(itemsProp) ? itemsProp : []));
   const [loading, setLoading] = useState(() => !Array.isArray(itemsProp));
   const [fetchError, setFetchError] = useState(null);
   const [modalRow, setModalRow] = useState(null);
+
+  useEffect(() => {
+    setDraftFrom(from ?? '');
+    setDraftTo(to ?? '');
+    setAppliedFrom(from ?? '');
+    setAppliedTo(to ?? '');
+    setFiltersMobileOpen(false);
+  }, [from, to]);
 
   useEffect(() => {
     if (Array.isArray(itemsProp)) {
@@ -153,8 +177,8 @@ export default function ProgramApplicationCard({
         setLoading(true);
         setFetchError(null);
         const data = await fetchProgramApplicationOverviewCardsFromServer({
-          from,
-          to,
+          from: appliedFrom || undefined,
+          to: appliedTo || undefined,
           client: axiosInstance,
         });
         if (!cancelled) setItems(Array.isArray(data) ? data : []);
@@ -171,13 +195,13 @@ export default function ProgramApplicationCard({
     return () => {
       cancelled = true;
     };
-  }, [itemsProp, from, to]);
+  }, [itemsProp, appliedFrom, appliedTo]);
 
   const defaultSubtitle =
     subtitle ??
     (loading && items.length === 0
       ? 'Loading…'
-      : `Total ${items.length} Program${items.length === 1 ? '' : 's'}`);
+      : `Period: ${rangeCaption(appliedFrom, appliedTo)} • Total ${items.length} Program${items.length === 1 ? '' : 's'}`);
 
   const updateScrollState = useCallback(() => {
     const el = trackRef.current;
@@ -242,25 +266,119 @@ export default function ProgramApplicationCard({
             </p>
           )}
         </div>
-        <div className="program-application-card__nav">
-          <button
-            type="button"
-            className="program-application-card__nav-btn"
-            onClick={() => scrollByDir(-1)}
-            disabled={!canPrev}
-            aria-label="Show previous programs"
-          >
-            <FiChevronLeft size={20} />
-          </button>
-          <button
-            type="button"
-            className="program-application-card__nav-btn"
-            onClick={() => scrollByDir(1)}
-            disabled={!canNext}
-            aria-label="Show next programs"
-          >
-            <FiChevronRight size={20} />
-          </button>
+
+        <div className="program-application-card__controls">
+          {!Array.isArray(itemsProp) && showDateRangeFilter ? (
+            <>
+              <div className="program-application-card__filters program-application-card__filters--desktop" aria-label="Date range filter">
+                <div className="program-application-card__field">
+                  <label htmlFor={`${headingId}-from`}>From</label>
+                  <input
+                    id={`${headingId}-from`}
+                    type="date"
+                    value={draftFrom}
+                    onChange={(e) => setDraftFrom(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <div className="program-application-card__field">
+                  <label htmlFor={`${headingId}-to`}>To</label>
+                  <input
+                    id={`${headingId}-to`}
+                    type="date"
+                    value={draftTo}
+                    onChange={(e) => setDraftTo(e.target.value)}
+                    disabled={loading}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="program-application-card__apply"
+                  disabled={loading}
+                  onClick={() => {
+                    setAppliedFrom(draftFrom);
+                    setAppliedTo(draftTo);
+                  }}
+                >
+                  Apply range
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="program-application-card__filters-toggle"
+                aria-label="Open date range filters"
+                aria-expanded={filtersMobileOpen}
+                onClick={() => setFiltersMobileOpen((v) => !v)}
+                disabled={loading}
+              >
+                <HiCalendarDateRange size={20} aria-hidden />
+              </button>
+
+              <div
+                className={`program-application-card__filters-panel${
+                  filtersMobileOpen ? ' program-application-card__filters-panel--open' : ''
+                }`}
+                aria-label="Date range filter panel"
+              >
+                <div className="program-application-card__filters program-application-card__filters--mobile">
+                  <div className="program-application-card__field">
+                    <label htmlFor={`${headingId}-from-mobile`}>From</label>
+                    <input
+                      id={`${headingId}-from-mobile`}
+                      type="date"
+                      value={draftFrom}
+                      onChange={(e) => setDraftFrom(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  <div className="program-application-card__field">
+                    <label htmlFor={`${headingId}-to-mobile`}>To</label>
+                    <input
+                      id={`${headingId}-to-mobile`}
+                      type="date"
+                      value={draftTo}
+                      onChange={(e) => setDraftTo(e.target.value)}
+                      disabled={loading}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="program-application-card__apply"
+                    disabled={loading}
+                    onClick={() => {
+                      setAppliedFrom(draftFrom);
+                      setAppliedTo(draftTo);
+                      setFiltersMobileOpen(false);
+                    }}
+                  >
+                    Apply range
+                  </button>
+                </div>
+              </div>
+            </>
+          ) : null}
+
+          <div className="program-application-card__nav">
+            <button
+              type="button"
+              className="program-application-card__nav-btn"
+              onClick={() => scrollByDir(-1)}
+              disabled={!canPrev}
+              aria-label="Show previous programs"
+            >
+              <FiChevronLeft size={20} />
+            </button>
+            <button
+              type="button"
+              className="program-application-card__nav-btn"
+              onClick={() => scrollByDir(1)}
+              disabled={!canNext}
+              aria-label="Show next programs"
+            >
+              <FiChevronRight size={20} />
+            </button>
+          </div>
         </div>
       </header>
 

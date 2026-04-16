@@ -11,53 +11,136 @@
 }
 
 .fundraising-cards__list {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 12px;
 }
 
 .fundraising-card {
+  position: relative;
   display: flex;
-  flex-direction: row;
   align-items: center;
-  gap: 12px;
-  min-width: 180px;
-  padding: 12px 16px;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
   background: var(--color-bg-primary, #fff);
   border: 1px solid var(--color-bg-tertiary, #e5e7eb);
   border-radius: var(--border-radius-lg, 8px);
   box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.05));
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
+  overflow: hidden;
 }
 
 .fundraising-card:hover {
   box-shadow: var(--shadow-md, 0 4px 6px rgb(0 0 0 / 0.1));
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--fund-card-solid, #64748b) 45%, var(--color-bg-tertiary, #e5e7eb));
+}
+
+.fundraising-card::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--fund-card-solid, #64748b);
+}
+
+.fundraising-card__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.fundraising-card__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--fund-card-soft, #f1f5f9);
+  color: var(--fund-card-solid, #64748b);
+  border: 1px solid color-mix(in srgb, var(--fund-card-solid, #64748b) 18%, #ffffff);
+  flex-shrink: 0;
+}
+
+.fundraising-card__meta {
+  min-width: 0;
 }
 
 .fundraising-card__title {
   font-size: var(--font-size-sm, 0.875rem);
   color: var(--color-text-secondary, #4b5563);
-  white-space: nowrap;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+.fundraising-card__hint {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--color-text-light, #6b7280);
 }
 
 .fundraising-card__value {
-  font-size: var(--font-size-lg, 1.125rem);
-  font-weight: 600;
+  font-size: clamp(1.1rem, 2.2vw, 1.45rem);
+  font-weight: 800;
   color: var(--color-text-primary, #1f2937);
   margin-left: auto;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-@media (min-width: 640px) {
-  .fundraising-card {
-    min-width: 200px;
-    flex: 1 1 calc(50% - 12px);
-    max-width: calc(50% - 6px);
+.fundraising-card--tone-slate {
+  --fund-card-soft: #f1f5f9;
+  --fund-card-solid: #475569;
+}
+
+.fundraising-card--tone-indigo {
+  --fund-card-soft: #e0e7ff;
+  --fund-card-solid: #4338ca;
+}
+
+.fundraising-card--tone-blue {
+  --fund-card-soft: #dbeafe;
+  --fund-card-solid: #2563eb;
+}
+
+.fundraising-card--tone-emerald {
+  --fund-card-soft: #dcfce7;
+  --fund-card-solid: #15803d;
+}
+
+.fundraising-card--tone-amber {
+  --fund-card-soft: #fef3c7;
+  --fund-card-solid: #b45309;
+}
+
+.fundraising-card--tone-rose {
+  --fund-card-soft: #ffe4e6;
+  --fund-card-solid: #be123c;
+}
+
+.fundraising-card--tone-violet {
+  --fund-card-soft: #ede9fe;
+  --fund-card-solid: #7c3aed;
+}
+
+.fundraising-card--tone-cyan {
+  --fund-card-soft: #cffafe;
+  --fund-card-solid: #0891b2;
+}
+
+@media (min-width: 520px) {
+  .fundraising-cards__list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (min-width: 900px) {
-  .fundraising-card {
-    flex: 1 1 calc(25% - 12px);
-    max-width: none;
+@media (min-width: 920px) {
+  .fundraising-cards__list {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
