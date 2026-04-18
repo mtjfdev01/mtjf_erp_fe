@@ -107,6 +107,44 @@ const UpdateTask = () => {
     setMovItems((prev) => prev.filter((_, i) => i !== index));
   };
 
+  // Auto-calculate due date based on recurrence frequency
+  const calculateDueDate = (startDate, frequency) => {
+    if (!startDate || !frequency) return '';
+    
+    const start = new Date(startDate);
+    if (isNaN(start.getTime())) return '';
+    
+    const dueDate = new Date(start);
+    
+    switch (frequency) {
+      case 'daily':
+        dueDate.setDate(dueDate.getDate() + 1);
+        break;
+      case 'weekly':
+        dueDate.setDate(dueDate.getDate() + 7);
+        break;
+      case 'monthly':
+        dueDate.setMonth(dueDate.getMonth() + 1);
+        break;
+      case 'quarterly':
+        dueDate.setMonth(dueDate.getMonth() + 3);
+        break;
+      case 'annually':
+        dueDate.setFullYear(dueDate.getFullYear() + 1);
+        break;
+      case 'other':
+        // For custom days, add the custom_recurrence_days
+        const customDays = parseInt(form.custom_recurrence_days) || 1;
+        dueDate.setDate(dueDate.getDate() + customDays);
+        break;
+      default:
+        return '';
+    }
+    
+    // Format as YYYY-MM-DD
+    return dueDate.toISOString().split('T')[0];
+  };
+
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
@@ -291,6 +329,17 @@ const UpdateTask = () => {
     const { name, value } = e.target;
     setForm((prev) => {
       const next = { ...prev, [name]: value };
+      
+      // Auto-calculate due date when start_date or recurrence_frequency changes
+      if ((name === 'start_date' || name === 'recurrence_frequency') && prev.task_type === 'recurring') {
+        const startDate = name === 'start_date' ? value : prev.start_date;
+        const frequency = name === 'recurrence_frequency' ? value : prev.recurrence_frequency;
+        const calculatedDueDate = calculateDueDate(startDate, frequency);
+        if (calculatedDueDate) {
+          next.due_date = calculatedDueDate;
+        }
+      }
+      
       if (name === 'custom_recurrence_days') {
         next.recurrence_rule = value ? `${value} days` : '';
       }
@@ -302,6 +351,15 @@ const UpdateTask = () => {
     const { name, value } = e.target;
     setForm((prev) => {
       const next = { ...prev, [name]: value };
+      
+      // Auto-calculate due date when recurrence_frequency changes
+      if (name === 'recurrence_frequency' && prev.task_type === 'recurring') {
+        const calculatedDueDate = calculateDueDate(prev.start_date, value);
+        if (calculatedDueDate) {
+          next.due_date = calculatedDueDate;
+        }
+      }
+      
       if (name === 'recurrence_frequency') {
         if (value === 'other') {
           next.recurrence_rule = next.custom_recurrence_days ? `${next.custom_recurrence_days} days` : '';
@@ -670,10 +728,12 @@ const UpdateTask = () => {
                 />
                 <FormInput
                   name="due_date"
-                  label={form.task_type === 'recurring' ? 'Due Date (of first task)' : 'Due Date'}
+                  label={form.task_type === 'recurring' ? 'Due Date (of first task) - Auto-calculated' : 'Due Date'}
                   type="date"
                   value={form.due_date}
                   onChange={handleChange}
+                  disabled={form.task_type === 'recurring' && form.recurrence_frequency}
+                  placeholder={form.task_type === 'recurring' ? 'Select frequency to auto-calculate' : undefined}
                 />
               </div>
               {form.task_type === 'recurring' && (
