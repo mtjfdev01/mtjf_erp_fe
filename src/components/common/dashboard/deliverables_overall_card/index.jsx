@@ -119,7 +119,7 @@ function DeliverablesCarouselCardItem({ card }) {
   const title = card.label?.length > 15 ? `${card.label.slice(0, 10)}..` : card.label;
 
   return (
-    <>
+    <div className="deliverables-overall-carousel__card-item">
       <div className="deliverables-overall-carousel__card-top">
         <span className="deliverables-overall-carousel__icon-wrap" style={{ background: soft, color: solid }}>
           <Icon aria-hidden />
@@ -168,7 +168,7 @@ function DeliverablesCarouselCardItem({ card }) {
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

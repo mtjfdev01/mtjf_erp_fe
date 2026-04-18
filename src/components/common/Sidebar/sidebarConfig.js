@@ -972,21 +972,10 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
 
-  // Super admin sees all departments (check both role and permission)
+  // Super admin: show Admin Panel only. It already aggregates Program, Store, DMS,
+  // Fund Raising, etc., so listing every department again duplicates the sidebar.
   if (isSuperAdminRole || isSuperAdminPermission) {
-    const unifiedTaskingGroup = buildUnifiedTaskingGroup(user, permissions, true);
-    return [
-      departmentConfigs.program(false),
-      departmentConfigs.store(false),
-      departmentConfigs.procurements(false),
-      departmentConfigs.accounts_and_finance(false),
-      departmentConfigs.admin(),
-      departmentConfigs.fund_raising(false),
-      departmentConfigs.geographic(false),
-      departmentConfigs.hr(false),
-      departmentConfigs.email_templates(),
-      ...(unifiedTaskingGroup ? [unifiedTaskingGroup] : [])
-    ];
+    return [departmentConfigs.admin(false)];
   }
 
   // For non-super-admin users, sidebar is derived from permission map only.

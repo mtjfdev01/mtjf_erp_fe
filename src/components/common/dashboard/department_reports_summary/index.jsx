@@ -456,10 +456,10 @@ export default function DepartmentReportsSummary() {
         <SummaryStatCard {...storeCard} />
         <SummaryStatCard {...procurementsCard} />
         <SummaryStatCard {...accountsCard} />
+        <SummaryStatCard {...healthReportsCard} />
         <SummaryStatCard {...alHasanainCard} />
         <SummaryStatCard {...aasCard} />
         <SummaryStatCard {...dreamSchoolReportsCard} />
-        <SummaryStatCard {...healthReportsCard} />
       </div>
 
       <DateRangePopup

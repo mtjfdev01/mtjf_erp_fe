@@ -148,7 +148,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
   return (
     <div className="fundraising-charts-demo">
       {/* Filters Section */}
-      {/* {!isForbidden &&
+      {!isForbidden &&
       <div className="fundraising-charts-demo__filters">
         <DropdownFilter
           filterKey="donation_type"
@@ -173,14 +173,15 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
           onFilterChange={handleFilterChange}
           placeholder="Comma-separated refs (e.g. MTJ-123,MTJ-456)"
         />
-        <MultiSelect
+        {/* <MultiSelect
           name="projects"
           label="Projects"
           options={projectOptions}
           value={tempFilters.projects}
           onChange={(value) => handleFilterChange('projects', value)}
           placeholder="Select Projects"
-        />
+        /> */}
+
         <DateFilter
           filterKey="date"
           label="Specific Date"
@@ -199,7 +200,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
           <ClearButton onClick={handleClearFilters} text="Clear" />
         </div>
       </div>
-} */}
+}
 
       {loading ? (
         <div className="fundraising-charts-demo__loading">

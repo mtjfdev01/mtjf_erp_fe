@@ -694,7 +694,11 @@ button.deliverables-program-overview-card--trigger:focus-visible {
   min-width: 0;
   box-sizing: border-box;
   --doc-gap: 1rem;
+  /* Minimum slide width — same squeeze fix as program_application_card */
+  --doc-card-min: 220px;
   --doc-card-basis: 100%;
+  /* Resolved slide width; inherited by card wrap + inner card body */
+  --doc-slide: min(100%, max(var(--doc-card-basis), var(--doc-card-min)));
   background: var(--color-bg-primary);
   border-radius: var(--border-radius-lg);
   border: 1px solid var(--color-bg-tertiary);
@@ -909,10 +913,10 @@ button.deliverables-program-overview-card--trigger:focus-visible {
 }
 
 .deliverables-overall-carousel__card-wrap {
-  flex: 0 0 var(--doc-card-basis);
+  flex: 0 0 var(--doc-slide);
   scroll-snap-align: start;
-  min-width: 0;
-  max-width: var(--doc-card-basis);
+  min-width: var(--doc-slide);
+  max-width: var(--doc-slide);
 }
 
 .deliverables-overall-carousel__card {
@@ -925,12 +929,13 @@ button.deliverables-program-overview-card--trigger:focus-visible {
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  /* vertical rhythm lives on `.deliverables-overall-carousel__card-item` */
   box-sizing: border-box;
 }
 
 button.deliverables-overall-carousel__card--trigger {
   width: 100%;
+  min-width: var(--doc-slide);
   margin: 0;
   font: inherit;
   color: inherit;
@@ -938,6 +943,17 @@ button.deliverables-overall-carousel__card--trigger {
   cursor: pointer;
   appearance: none;
   -webkit-tap-highlight-color: transparent;
+}
+
+.deliverables-overall-carousel__card-item {
+  width: 100%;
+  min-width: var(--doc-slide);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 button.deliverables-overall-carousel__card--trigger:hover {
@@ -969,7 +985,6 @@ button.deliverables-overall-carousel__card--trigger:focus-visible {
 }
 
 .deliverables-overall-carousel__title-row {
-  margin-top: var(--spacing-sm);
   display: flex;
   justify-content: center;
 }

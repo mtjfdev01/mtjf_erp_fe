@@ -5,6 +5,8 @@
   box-sizing: border-box;
   /* Gap between carousel slides; flex-basis uses (100% - gaps) / columns */
   --pac-gap: 1rem;
+  /* Minimum slide width — avoids unreadable squeeze when many columns fit in % */
+  --pac-card-min: 220px;
   /* One full-width slide on narrow viewports */
   --pac-card-basis: 100%;
   background: var(--color-bg-primary);
@@ -262,10 +264,12 @@
 }
 
 .program-application-card__card-wrap {
-  flex: 0 0 var(--pac-card-basis);
+  /* Use the larger of responsive basis and min width; cap at 100% so one-up mode still fits */
+  --pac-slide: min(100%, max(var(--pac-card-basis), var(--pac-card-min)));
+  flex: 0 0 var(--pac-slide);
   scroll-snap-align: start;
-  min-width: 0;
-  max-width: var(--pac-card-basis);
+  min-width: var(--pac-slide);
+  max-width: var(--pac-slide);
 }
 
 .program-application-card__card {

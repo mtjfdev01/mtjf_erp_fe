@@ -323,10 +323,10 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
         return false;
       }
 
-      if (!app.subprogram || !String(app.subprogram).trim()) {
-        setError(`Please select a sub program for application ${i + 1}`);
-        return false;
-      }
+      // if (!app.subprogram || !String(app.subprogram).trim()) {
+      //   setError(`Please select a sub program for application ${i + 1}`);
+      //   return false;
+      // }
 
       // Validate that all numeric fields are non-negative
       const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
@@ -512,7 +512,7 @@ const CreateApplication = ({ applicationData = null, isEdit = false }) => {
                       value={application.subprogram}
                       onChange={(e) => handleApplicationChange(index, 'subprogram', e.target.value)}
                       options={getSubProgramOptions(application.project)}
-                      required
+                      // required
                       showDefaultOption={true}
                       defaultOptionText={
                         application.project ? "Select Sub Program" : "Select Program First"
