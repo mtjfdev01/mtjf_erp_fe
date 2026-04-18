@@ -14,7 +14,7 @@ const Pagination = ({
   sortOrder = 'DESC',
   sortOptions = []
 }) => {
-  const pageSizeOptions = [10, 15, 20, 30, { value: 0, label: 'View All' }];
+  const pageSizeOptions = [10, 15, 20, 30, { value: -1, label: 'View All' }];
 
   const handlePageChange = (page) => {
     if (page >= 1 && page <= totalPages && page !== currentPage) {

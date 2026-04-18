@@ -1,5 +1,21 @@
 import axiosInstance from './axios';
 
+function formatYmdLocal(d) {
+  const y = d.getFullYear();
+  const mo = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${mo}-${day}`;
+}
+
+/** First and last day of the month containing `ref` (local calendar). */
+export function getCalendarMonthRangeYmd(ref = new Date()) {
+  const y = ref.getFullYear();
+  const m = ref.getMonth();
+  const from = new Date(y, m, 1);
+  const to = new Date(y, m + 1, 0);
+  return { from: formatYmdLocal(from), to: formatYmdLocal(to) };
+}
+
 /**
  * @param {object} [options]
  * @param {string} [options.from] - YYYY-MM-DD inclusive
@@ -13,7 +29,17 @@ export async function fetchStoreDailyMonthSum(options = {}) {
   if (to) params.to = to;
   const res = await client.get('/new-dashboard/dashboard-report/store-daily-month-sum', { params });
   if (res.data?.success === false) throw new Error(res.data?.message || 'Failed to load store sum');
-  return res.data?.data;
+  const d = res.data?.data;
+  if (!d) return null;
+  return {
+    from: d.from,
+    to: d.to,
+    generated_demands: Number(d.generated_demands) || 0,
+    pending_demands: Number(d.pending_demands) || 0,
+    rejected_demands: Number(d.rejected_demands) || 0,
+    generated_grn: Number(d.generated_grn) || 0,
+    pending_grn: Number(d.pending_grn) || 0,
+  };
 }
 
 export async function fetchProcurementsDailyMonthSum(options = {}) {
@@ -77,6 +103,7 @@ export async function fetchHealthReportsMonthSum(options = {}) {
 }
 
 export default {
+  getCalendarMonthRangeYmd,
   fetchStoreDailyMonthSum,
   fetchProcurementsDailyMonthSum,
   fetchAccountsAndFinanceDailyMonthSum,

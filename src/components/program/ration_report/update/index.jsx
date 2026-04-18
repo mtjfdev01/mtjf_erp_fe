@@ -30,7 +30,16 @@ const UpdateRationReport = () => {
     half_disable: 0,
     half_indegent: 0,
     half_orphan: 0,
-    life_time: 0
+    life_time_full_widows: 0,
+    life_time_full_divorced: 0,
+    life_time_full_disable: 0,
+    life_time_full_indegent: 0,
+    life_time_full_orphan: 0,
+    life_time_half_widows: 0,
+    life_time_half_divorced: 0,
+    life_time_half_disable: 0,
+    life_time_half_indegent: 0,
+    life_time_half_orphan: 0
   });
 
   useEffect(() => {
@@ -57,7 +66,16 @@ const UpdateRationReport = () => {
           half_disable: data.half?.Disable || 0,
           half_indegent: data.half?.Indegent || 0,
           half_orphan: data.half?.Orphan || 0,
-          life_time: data.life_time || 0
+          life_time_full_widows: data.life_time_full?.Widows || 0,
+          life_time_full_divorced: data.life_time_full?.Divorced || 0,
+          life_time_full_disable: data.life_time_full?.Disable || 0,
+          life_time_full_indegent: data.life_time_full?.Indegent || 0,
+          life_time_full_orphan: data.life_time_full?.Orphan || 0,
+          life_time_half_widows: data.life_time_half?.Widows || 0,
+          life_time_half_divorced: data.life_time_half?.Divorced || 0,
+          life_time_half_disable: data.life_time_half?.Disable || 0,
+          life_time_half_indegent: data.life_time_half?.Indegent || 0,
+          life_time_half_orphan: data.life_time_half?.Orphan || 0
         });
         setError('');
       } else {
@@ -115,6 +133,9 @@ const UpdateRationReport = () => {
       return sum + (form[fieldName] || 0);
     }, 0);
   };
+
+  const getLifeTimeCombinedTotal = () =>
+    getTotal('life_time_full') + getTotal('life_time_half');
 
   if (loading) {
     return (
@@ -213,16 +234,67 @@ const UpdateRationReport = () => {
             </div>
           </div>
           <div className="horizontal-row">
-            <label className="semi-title" htmlFor="life_time" style={{ marginRight: 8 }}>Life Time:</label>
+            <p className="semi-title">Life time — full:</p>
+            {ration_vulnerabilities.map(vul => (
+              <FormInput
+                key={`life_time_full-${vul}`}
+                name={`life_time_full-${vul}`}
+                label={vul}
+                type="number"
+                min={0}
+                value={form[`life_time_full_${vul.toLowerCase()}`] || 0}
+                onChange={e => handleVulnerabilityChange('life_time_full', vul, e.target.value)}
+              />
+            ))}
+            <div className="form-group">
+              <label className="form-label">Total</label>
+              <input
+                type="number"
+                className="form-input"
+                value={getTotal('life_time_full')}
+                readOnly
+                tabIndex={-1}
+                style={{ background: '#f5f5f5', fontWeight: 600 }}
+              />
+            </div>
+          </div>
+          <div className="horizontal-row">
+            <p className="semi-title">Life time — half:</p>
+            {ration_vulnerabilities.map(vul => (
+              <FormInput
+                key={`life_time_half-${vul}`}
+                name={`life_time_half-${vul}`}
+                label={vul}
+                type="number"
+                min={0}
+                value={form[`life_time_half_${vul.toLowerCase()}`] || 0}
+                onChange={e => handleVulnerabilityChange('life_time_half', vul, e.target.value)}
+              />
+            ))}
+            <div className="form-group">
+              <label className="form-label">Total</label>
+              <input
+                type="number"
+                className="form-input"
+                value={getTotal('life_time_half')}
+                readOnly
+                tabIndex={-1}
+                style={{ background: '#f5f5f5', fontWeight: 600 }}
+              />
+            </div>
+          </div>
+          <div className="horizontal-row">
+            <label className="semi-title" htmlFor="life_time_combined_total" style={{ marginRight: 8 }}>
+              Life time (combined total):
+            </label>
             <input
-              id="life_time"
-              name="life_time"
+              id="life_time_combined_total"
               type="number"
               className="form-input"
-              value={form.life_time}
-              onChange={handleChange}
-              min={0}
-              style={{ maxWidth: 120 }}
+              value={getLifeTimeCombinedTotal()}
+              readOnly
+              tabIndex={-1}
+              style={{ maxWidth: 120, background: '#f5f5f5', fontWeight: 600 }}
             />
           </div>
           <button type="submit" className="primary_btn" disabled={isSubmitting}>
