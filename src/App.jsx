@@ -31,6 +31,22 @@ import ProgramsList from './components/program/programs/list';
 import AddProgram from './components/program/programs/add';
 import UpdateProgram from './components/program/programs/update';
 import ViewProgram from './components/program/programs/view';
+import DreamSchoolsList from './components/program/dream_schools/list';
+import AddDreamSchool from './components/program/dream_schools/add';
+import UpdateDreamSchool from './components/program/dream_schools/update';
+import ViewDreamSchool from './components/program/dream_schools/view';
+import DreamSchoolReportsList from './components/program/dream_school_reports/list';
+import AddDreamSchoolReport from './components/program/dream_school_reports/add';
+import EditDreamSchoolReport from './components/program/dream_school_reports/edit';
+import ViewDreamSchoolReport from './components/program/dream_school_reports/view';
+import AasCollectionCentersReportsList from './components/program/aas_collection_centers_reports/list';
+import AddAasCollectionCentersReport from './components/program/aas_collection_centers_reports/add';
+import UpdateAasCollectionCentersReport from './components/program/aas_collection_centers_reports/update';
+import ViewAasCollectionCentersReport from './components/program/aas_collection_centers_reports/view';
+import AlHasanainClgList from './components/program/al_hasanain_clg/list';
+import AddAlHasanainClg from './components/program/al_hasanain_clg/add';
+import UpdateAlHasanainClg from './components/program/al_hasanain_clg/update';
+import ViewAlHasanainClg from './components/program/al_hasanain_clg/view';
 import AddRationReport from './components/program/ration_report/add';
 import RationReportList from './components/program/ration_report/list';
 import ViewRationReport from './components/program/ration_report/view';
@@ -51,6 +67,10 @@ import AddWheelChairOrCrutchesReport from './components/program/wheel_chair_or_c
 import WheelChairOrCrutchesList from './components/program/wheel_chair_or_crutches/reports/list';
 import UpdateWheelChairOrCrutchesReport from './components/program/wheel_chair_or_crutches/reports/update';
 import ViewWheelChairOrCrutchesReport from './components/program/wheel_chair_or_crutches/reports/view';
+import AddHealthReport from './components/program/health/reports/add';
+import HealthReportsList from './components/program/health/reports/list';
+import UpdateHealthReport from './components/program/health/reports/update';
+import ViewHealthReport from './components/program/health/reports/view';
 import AddWaterReport from './components/program/water/reports/add';
 import WaterReportsList from './components/program/water/reports/list';
 import UpdateWaterReport from './components/program/water/reports/update';
@@ -200,6 +220,27 @@ const App = () => {
                                 <Route path="/program/programs/add" element={<AddProgram />} />
                                 <Route path="/program/programs/update/:id" element={<UpdateProgram />} />
                                 <Route path="/program/programs/view/:id" element={<ViewProgram />} />
+
+                                <Route path="/program/dream_schools" element={<DreamSchoolsList />} />
+                                <Route path="/program/dream_schools/add" element={<AddDreamSchool />} />
+                                <Route path="/program/dream_schools/update/:id" element={<UpdateDreamSchool />} />
+                                <Route path="/program/dream_schools/view/:id" element={<ViewDreamSchool />} />
+                                <Route path="/program/dream_school_reports" element={<DreamSchoolReportsList />} />
+                                <Route path="/program/dream_school_reports/add" element={<AddDreamSchoolReport />} />
+                                <Route path="/program/dream_school_reports/edit/:id" element={<EditDreamSchoolReport />} />
+                                <Route path="/program/dream_school_reports/view/:id" element={<ViewDreamSchoolReport />} />
+
+                                {/* AAS Collection Centers Reports */}
+                                <Route path="/program/aas_collection_centers_reports" element={<AasCollectionCentersReportsList />} />
+                                <Route path="/program/aas_collection_centers_reports/add" element={<AddAasCollectionCentersReport />} />
+                                <Route path="/program/aas_collection_centers_reports/update/:id" element={<UpdateAasCollectionCentersReport />} />
+                                <Route path="/program/aas_collection_centers_reports/view/:id" element={<ViewAasCollectionCentersReport />} />
+
+                                {/* Al Hasanain CLG */}
+                                <Route path="/program/al_hasanain_clg" element={<AlHasanainClgList />} />
+                                <Route path="/program/al_hasanain_clg/add" element={<AddAlHasanainClg />} />
+                                <Route path="/program/al_hasanain_clg/update/:id" element={<UpdateAlHasanainClg />} />
+                                <Route path="/program/al_hasanain_clg/view/:id" element={<ViewAlHasanainClg />} />
                                 
                                 {/* Ration Report Routes - Nested under /program */}
                                 <Route path="/program/ration_report/add" element={<AddRationReport />} />
@@ -230,6 +271,12 @@ const App = () => {
                                 <Route path="/program/wheel_chair_or_crutches/reports/list" element={<WheelChairOrCrutchesList />} />
                                 <Route path="/program/wheel_chair_or_crutches/reports/update/:id" element={<UpdateWheelChairOrCrutchesReport />} />
                                 <Route path="/program/wheel_chair_or_crutches/reports/view/:id" element={<ViewWheelChairOrCrutchesReport />} />
+
+                                {/* Health Reports */}
+                                <Route path="/program/health/reports/add" element={<AddHealthReport />} />
+                                <Route path="/program/health/reports/list" element={<HealthReportsList />} />
+                                <Route path="/program/health/reports/update/:id" element={<UpdateHealthReport />} />
+                                <Route path="/program/health/reports/view/:id" element={<ViewHealthReport />} />
 
                                 {/* Water Reports */}
                                 <Route path="/program/water/reports/add" element={<AddWaterReport />} />

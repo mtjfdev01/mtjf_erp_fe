@@ -46,6 +46,163 @@
   flex-shrink: 0;
 }
 
+.program-application-card__controls {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.program-application-card__filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--spacing-sm);
+  min-width: 0;
+}
+
+.program-application-card__filters--desktop {
+  display: flex;
+}
+
+.program-application-card__filters--mobile {
+  display: flex;
+}
+
+.program-application-card__filters-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--border-radius-md);
+  border: 1px solid var(--color-bg-tertiary);
+  background: var(--color-bg-primary);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.program-application-card__filters-toggle:hover:not(:disabled) {
+  background: var(--color-bg-secondary);
+  color: var(--color-primary);
+  border-color: var(--color-primary-light);
+}
+
+.program-application-card__filters-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.program-application-card__filters-panel {
+  display: none;
+  width: 100%;
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: max-height 260ms ease, opacity 180ms ease, transform 180ms ease;
+}
+
+.program-application-card__filters-panel--open {
+  max-height: 220px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.program-application-card__field {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.program-application-card__field label {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.program-application-card__field input[type='date'] {
+  height: 36px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-bg-tertiary);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-width: 0;
+}
+
+.program-application-card__apply {
+  height: 36px;
+  padding: 0 var(--spacing-md);
+  border: 1px solid var(--color-bg-tertiary);
+  border-radius: var(--border-radius-md);
+  background: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.program-application-card__apply:hover:not(:disabled) {
+  border-color: var(--color-primary-light);
+  background: #eef2ff;
+}
+
+.program-application-card__apply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .program-application-card__controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .program-application-card__filters {
+    flex: 1 1 100%;
+    width: 100%;
+  }
+
+  .program-application-card__filters--desktop {
+    display: none;
+  }
+
+  .program-application-card__filters-toggle {
+    display: inline-flex;
+  }
+
+  .program-application-card__filters-panel {
+    display: block;
+    flex: 1 1 100%;
+  }
+
+  .program-application-card__nav {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .program-application-card__filters-panel--open {
+    max-height: 260px;
+  }
+
+  .program-application-card__field {
+    flex: 1 1 100%;
+  }
+
+  .program-application-card__field input[type='date'] {
+    width: 100%;
+  }
+
+  .program-application-card__apply {
+    width: 100%;
+  }
+}
+
 .program-application-card__nav-btn {
   display: flex;
   align-items: center;
@@ -128,7 +285,8 @@ button.program-application-card__card--trigger {
   width: 100%;
   margin: 0;
   font: inherit;
-  color: inherit;
+  /* Explicit text color so nested stat accents (orange/blue/green/red) are not lost to `inherit` quirks. */
+  color: var(--color-text-primary);
   text-align: left;
   cursor: pointer;
   appearance: none;
@@ -293,19 +451,38 @@ button.program-application-card__card--trigger:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
-.program-application-card__stat-value--investigated {
+/* Chained with base for higher specificity than `.program-application-card__stat-value` alone
+   (avoids ties inside `<button class="...--trigger">` where source order can mute colors). */
+.program-application-card__stat-value.program-application-card__stat-value--investigated {
   color: #d97706;
 }
 
-.program-application-card__stat-value--verified {
+.program-application-card__stat-value.program-application-card__stat-value--verified {
   color: #2563eb;
 }
 
-.program-application-card__stat-value--approved {
+.program-application-card__stat-value.program-application-card__stat-value--approved {
   color: var(--color-success-dark);
 }
 
-.program-application-card__stat-value--rejected {
+.program-application-card__stat-value.program-application-card__stat-value--rejected {
+  color: var(--color-error);
+}
+
+/* Inside card trigger `<button>`, `color: inherit` must not flatten stat colors. */
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--investigated {
+  color: #d97706;
+}
+
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--verified {
+  color: #2563eb;
+}
+
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--approved {
+  color: var(--color-success-dark);
+}
+
+button.program-application-card__card--trigger .program-application-card__stat-value.program-application-card__stat-value--rejected {
   color: var(--color-error);
 }
 

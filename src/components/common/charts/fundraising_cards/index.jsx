@@ -1,4 +1,13 @@
 import React from 'react';
+import {
+  FiActivity,
+  FiBox,
+  FiBriefcase,
+  FiCreditCard,
+  FiGift,
+  FiLayers,
+  FiUsers,
+} from 'react-icons/fi';
 import './index.css';
 
 /**
@@ -8,20 +17,79 @@ const formatValue = (value, isCurrency = true) => {
   const num = Number(value);
   if (Number.isNaN(num)) return '—';
   if (!isCurrency) return num.toLocaleString();
-  if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
-  if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
-  return num.toLocaleString();
+  try {
+    return new Intl.NumberFormat(undefined, {
+      notation: 'compact',
+      maximumFractionDigits: 1,
+    }).format(num);
+  } catch {
+    if (num >= 1_000_000) return `${(num / 1_000_000).toFixed(1)}M`;
+    if (num >= 1_000) return `${(num / 1_000).toFixed(1)}K`;
+    return num.toLocaleString();
+  }
+};
+
+function fullValue(value, isCurrency = true) {
+  const num = Number(value);
+  if (Number.isNaN(num)) return '—';
+  if (!isCurrency) return num.toLocaleString();
+  return num.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
+
+const ICON_BY_KEY = {
+  total_donations_amount: FiLayers,
+  total_donors_count: FiUsers,
+  online_donations_amount: FiCreditCard,
+  donation_box_amount: FiBox,
+  csr_amount: FiBriefcase,
+  individual_amount: FiGift,
+  events_amount: FiActivity,
+  campaigns_amount: FiLayers,
+};
+
+const TONE_BY_KEY = {
+  total_donations_amount: 'indigo',
+  total_donors_count: 'slate',
+  online_donations_amount: 'blue',
+  donation_box_amount: 'emerald',
+  csr_amount: 'amber',
+  individual_amount: 'rose',
+  events_amount: 'violet',
+  campaigns_amount: 'cyan',
 };
 
 /**
  * Single horizontal card: title + value.
  */
-const FundraisingCard = ({ title, value, isCurrency = true, className = '' }) => (
-  <div className={`fundraising-card ${className}`.trim()}>
-    <div className="fundraising-card__title">{title}</div>
-    <div className="fundraising-card__value">{formatValue(value, isCurrency)}</div>
-  </div>
-);
+const FundraisingCard = ({
+  title,
+  value,
+  isCurrency = true,
+  className = '',
+  icon: Icon,
+  tone = 'slate',
+}) => {
+  const compact = formatValue(value, isCurrency);
+  const full = fullValue(value, isCurrency);
+  const aria = `${title} ${full}`;
+
+  return (
+    <div className={`fundraising-card fundraising-card--tone-${tone} ${className}`.trim()}>
+      <div className="fundraising-card__left">
+        <div className="fundraising-card__icon" aria-hidden>
+          {Icon ? <Icon size={18} /> : null}
+        </div>
+        <div className="fundraising-card__meta">
+          <div className="fundraising-card__title">{title}</div>
+          <div className="fundraising-card__hint">{isCurrency ? 'Amount' : 'Count'}</div>
+        </div>
+      </div>
+      <div className="fundraising-card__value" title={full} aria-label={aria}>
+        {compact}
+      </div>
+    </div>
+  );
+};
 
 /**
  * Props.cards: shape from API data.cards
@@ -51,6 +119,8 @@ const FundraisingCards = ({ cards, title = 'Fundraising overview', className = '
             title={label}
             value={cards[key]}
             isCurrency={isCurrency}
+            icon={ICON_BY_KEY[key]}
+            tone={TONE_BY_KEY[key]}
           />
         ))}
       </div>

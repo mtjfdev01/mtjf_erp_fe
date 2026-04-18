@@ -39,6 +39,15 @@ export const wheel_chair_or_crutches_vulnerabilities = [
   'Indegent'
 ];
 
+// Vulnerabilities list for health
+export const health_vulnerabilities = [
+  'Widows',
+  'Divorced',
+  'Disable',
+  'Indegent',
+  'Orphans',
+];
+
 // Vulnerabilities list for education
 export const education_vulnerabilities = [
   'Orphans',
