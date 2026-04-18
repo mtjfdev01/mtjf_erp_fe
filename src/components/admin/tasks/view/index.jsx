@@ -557,12 +557,22 @@ const ViewTask = () => {
   }, [user, assignedUsers]);
 
   const canEditMovChecklist = useMemo(() => {
-    if (!task || !user || !taskPerms?.canUpdate) return false;
+    if (!task || !user) return false;
+    
+    // Check if task is in a terminal state where MOV cannot be edited
     const sVal = String(task.status || '').toLowerCase();
     if (['completed', 'closed', 'cancelled', 'rejected'].includes(sVal)) return false;
+    
+    // Check if user is assignee
     const isAssignee = Array.isArray(task.assigned_user_ids) && task.assigned_user_ids.includes(user?.id);
-    const isDeptLeader = user?.role === 'dept_leader' && user?.department === task.department;
-    return user?.role === 'admin' || isAssignee || isDeptLeader;
+    
+    // ONLY assignees can check/uncheck MOV items (with view permission)
+    // Task creators, admins, dept leaders, and others CANNOT modify MOV checkboxes
+    if (isAssignee) {
+      return taskPerms?.canView === true;
+    }
+    
+    return false;
   }, [task, user, taskPerms]);
 
   const canChangeStatusInline = useMemo(() => {

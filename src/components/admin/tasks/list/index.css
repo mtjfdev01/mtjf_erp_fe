@@ -673,7 +673,7 @@
 }
 
 .task-tabs-container {
-  margin-bottom: 2rem;
+  margin-bottom: 1rem;
   background: #ffffff;
   padding: 0.5rem;
   border-radius: 16px;
@@ -1210,7 +1210,7 @@
 }
 
 .tasks-approval-banner {
-  margin: 0 1rem 0.75rem;
+  margin: 2rem 0 0 2rem;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -1315,6 +1315,7 @@
 .tasks-approval-item:hover {
   background: linear-gradient(90deg, #fde68a, #fffbeb);
 }
+
 
 .tasks-approval-title {
   font-size: 0.85rem;

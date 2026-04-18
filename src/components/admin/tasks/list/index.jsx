@@ -36,6 +36,7 @@ const TasksList = () => {
   const [isSearchPending, setIsSearchPending] = useState(false);
   const [myApprovals, setMyApprovals] = useState([]);
   const [activeTab, setActiveTab] = useState('assigned_to_me');
+  const [approvalsLoaded, setApprovalsLoaded] = useState(false);
 
   const currentUserId = user?.id ? Number(user.id) : null;
 
@@ -224,30 +225,31 @@ const TasksList = () => {
     }) : [];
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager]);
 
-  useEffect(() => {
-    if (!currentUserId) {
-      setMyApprovals([]);
+  // Optimized: Lazy load approvals only when needed (not on initial task list load)
+  const fetchApprovalsIfNeeded = useCallback(async () => {
+    // Only fetch approvals once and only if user has approval permissions
+    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove) {
       return;
     }
+    
     let cancelled = false;
-    const fetchApprovals = async () => {
-      try {
-        const res = await axiosInstance.get('/tasks/approvals/my');
-        const data = Array.isArray(res.data?.data) ? res.data.data : [];
-        if (!cancelled) {
-          setMyApprovals(data);
-        }
-      } catch {
-        if (!cancelled) {
-          setMyApprovals([]);
-        }
+    try {
+      const res = await axiosInstance.get('/tasks/approvals/my');
+      const data = Array.isArray(res.data?.data) ? res.data.data : [];
+      if (!cancelled) {
+        setMyApprovals(data);
+        setApprovalsLoaded(true);
       }
-    };
-    fetchApprovals();
+    } catch {
+      if (!cancelled) {
+        setMyApprovals([]);
+        setApprovalsLoaded(true); // Mark as loaded even on error to prevent retries
+      }
+    }
     return () => {
       cancelled = true;
     };
-  }, [currentUserId]);
+  }, [currentUserId, taskPerms.canApprove, approvalsLoaded]);
 
   const approvalRequestsForUser = useMemo(() => {
     if (!currentUserId) return [];
@@ -300,6 +302,7 @@ const TasksList = () => {
     return results;
   }, [myApprovals, tasks, currentUserId]);
 
+  // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
   useEffect(() => {
     const fetchTasks = async () => {
       setLoading(true);
@@ -315,12 +318,36 @@ const TasksList = () => {
         // shows ONLY tasks belonging to that department.
         const isStrictFilter = !!scopedFilters.department;
 
-        const payload = {
-          pagination: { page: currentPage, pageSize, sortField, sortOrder },
-          filters: scopedFilters,
-          strictDepartment: isStrictFilter
-        };
-        const res = await axiosInstance.post('/tasks/search', payload);
+        // Check if user-applied search filters are active (excluding department from URL path)
+        // Only use /tasks/search when user actively searches or filters by status/priority
+        const hasUserAppliedFilters = 
+          filters.search || 
+          filters.status || 
+          filters.priority;
+
+        let res;
+        
+        if (hasUserAppliedFilters) {
+          // Use POST /tasks/search when user applies search/status/priority filters
+          const payload = {
+            pagination: { page: currentPage, pageSize, sortField, sortOrder },
+            filters: scopedFilters,
+            strictDepartment: isStrictFilter
+          };
+          res = await axiosInstance.post('/tasks/search', payload);
+        } else {
+          // Use GET /tasks/list for default loading (including department from URL path)
+          const params = {
+            page: currentPage,
+            pageSize,
+            sortField,
+            sortOrder,
+            department: scopedFilters.department || undefined,
+            strictDepartment: isStrictFilter
+          };
+          res = await axiosInstance.get('/tasks/list', { params });
+        }
+        
         const list = res.data.data || [];
         setTasks(list);
         setTotalItems(res.data.pagination?.total || 0);
@@ -332,7 +359,69 @@ const TasksList = () => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters, taskPerms.reportScope, user?.department, currentDeptFromPath]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, taskPerms.reportScope, user?.department, currentDeptFromPath]);
+
+  // Optimized: Load approvals ONLY when user has approver access AND banner might be visible
+  // Does NOT load on initial task list load - only when user scrolls to banner area
+  useEffect(() => {
+    // Skip if already loaded, no user, or no approval permissions
+    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove) {
+      return;
+    }
+
+    let observer = null;
+    let timeoutId = null;
+    const OBSERVER_DELAY = 1000; // Wait 1000ms after page load before checking visibility
+
+    // Delayed setup to ensure DOM is ready and initial render is complete
+    timeoutId = setTimeout(() => {
+      // Create a sentinel element positioned where the approval banner would appear
+      const sentinel = document.createElement('div');
+      sentinel.style.cssText = 'position: absolute; top: 0; height: 1px; visibility: hidden; pointer-events: none;';
+      sentinel.setAttribute('data-approval-sentinel', 'true');
+      
+      // Insert sentinel before the task list container (where banner would render)
+      const taskListContainer = document.querySelector('.task-card-list');
+      if (taskListContainer && taskListContainer.parentElement) {
+        taskListContainer.parentElement.insertBefore(sentinel, taskListContainer);
+        
+        // Use Intersection Observer to detect when user scrolls to banner area
+        observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              // Only load approvals when sentinel enters viewport
+              if (entry.isIntersecting && !approvalsLoaded) {
+                fetchApprovalsIfNeeded();
+                observer.disconnect();
+              }
+            });
+          },
+          {
+            root: null, // viewport
+            rootMargin: '50px', // Load when 50px away from viewport
+            threshold: 0
+          }
+        );
+        
+        observer.observe(sentinel);
+      }
+    }, OBSERVER_DELAY);
+
+    // Cleanup function
+    return () => {
+      if (observer) {
+        observer.disconnect();
+      }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      // Clean up sentinel element
+      const existingSentinel = document.querySelector('[data-approval-sentinel="true"]');
+      if (existingSentinel && existingSentinel.parentNode) {
+        existingSentinel.parentNode.removeChild(existingSentinel);
+      }
+    };
+  }, [currentUserId, taskPerms.canApprove, approvalsLoaded, fetchApprovalsIfNeeded]);
 
   const handleFilterChange = (key, value) => {
     if (key === 'search') {
