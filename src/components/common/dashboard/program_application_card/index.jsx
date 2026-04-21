@@ -235,7 +235,7 @@ export default function ProgramApplicationCard({
         const label = p.name || p.id || 'Program';
         byProgram[label] = formatCount(Number(p.total) || 0);
       }
-      sections.push({ title: 'Applications by program', details: byProgram });
+      sections.push({ title: 'Applications by Program', details: byProgram });
     }
     return sections;
   }, [modalRow, items]);

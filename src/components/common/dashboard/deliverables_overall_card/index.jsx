@@ -40,6 +40,7 @@ function accentForKey(key) {
 
 const ICON_KEY_BY_PROGRAM = {
   overall: 'layers',
+  total_beneficiaries: 'users',
   food_security: 'bag',
   community_services: 'users',
   widows_and_orphans_care_program: 'heart',
@@ -273,6 +274,34 @@ export default function DeliverablesOverallCard({
     };
   }, [payload, appliedFrom, appliedTo, overallDelivered, overallVulnerabilities, vulnerabilities]);
 
+  const totalBeneficiariesCard = useMemo(() => {
+    const from = payload?.from ?? appliedFrom;
+    const to = payload?.to ?? appliedTo;
+    const programsDeliveredByLabel = Array.isArray(payload?.programsList)
+      ? payload.programsList.map((p) => ({
+          key: p.key,
+          label: p.label,
+          totalDelivered: (Number(p.totalDelivered) || 0) * 7,
+        }))
+      : [];
+    const scaledVulnerabilities = vulnerabilities.map((v) => ({
+      ...v,
+      total: (Number(v.total) || 0) * 7,
+    }));
+    return {
+      id: 'total_beneficiaries',
+      key: 'total_beneficiaries',
+      label: 'Total Benificiaries',
+      from,
+      to,
+      totalDelivered: (Number(overallDelivered) || 0) * 7,
+      totalVulnerabilities: (Number(overallVulnerabilities) || 0) * 7,
+      vulnerabilityLines: scaledVulnerabilities, // uses `.total`
+      breakdown: scaledVulnerabilities.map((v) => ({ label: v.label, value: Number(v.total) || 0 })),
+      programsDeliveredByLabel,
+    };
+  }, [payload, appliedFrom, appliedTo, overallDelivered, overallVulnerabilities, vulnerabilities]);
+
   const cards = useMemo(() => {
     const from = payload?.from ?? appliedFrom;
     const to = payload?.to ?? appliedTo;
@@ -287,8 +316,8 @@ export default function DeliverablesOverallCard({
       vulnerabilityLines: Array.isArray(c.lines) ? c.lines : [], // uses `.count`
       breakdown: (Array.isArray(c.lines) ? c.lines : []).map((l) => ({ label: l.label, value: Number(l.count) || 0 })),
     }));
-    return [overallCard, ...mapped];
-  }, [payload, appliedFrom, appliedTo, programCards, overallCard]);
+    return [overallCard, totalBeneficiariesCard, ...mapped];
+  }, [payload, appliedFrom, appliedTo, programCards, overallCard, totalBeneficiariesCard]);
 
   const defaultSubtitle =
     subtitle ??

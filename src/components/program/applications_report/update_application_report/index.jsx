@@ -162,10 +162,10 @@ const UpdateApplicationReport = () => {
         setError(`Please select a project for application ${i + 1}`);
         return false;
       }
-      if (!app.subprogram || !String(app.subprogram).trim()) {
-        setError(`Please select a sub program for application ${i + 1}`);
-        return false;
-      }
+      // if (!app.subprogram || !String(app.subprogram).trim()) {
+      //   setError(`Please select a sub program for application ${i + 1}`);
+      //   return false;
+      // }
       const numericFields = ['pending_last_month', 'application_count', 'investigation_count', 'verified_count', 'approved_count', 'rejected_count', 'pending_count'];
       for (const field of numericFields) {
         if (app[field] < 0) {
@@ -304,7 +304,7 @@ const UpdateApplicationReport = () => {
                       value={application.subprogram || ''}
                       onChange={(e) => handleApplicationChange(index, 'subprogram', e.target.value)}
                       options={getSubProgramOptions(application.project)}
-                      required
+                      // required
                       showDefaultOption={true}
                       defaultOptionText={
                         application.project ? 'Select Sub Program' : 'Select Program First'

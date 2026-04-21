@@ -555,7 +555,7 @@ async   function getLineChartData(departmentData) {
           />
           {showDeptSummaryAndFundraising ? (
             <>
-              <FundraisingDashboard />
+              {/* <FundraisingDashboard /> */}
               <DashboardDateRangeProvider>
                 <DepartmentReportsSummary />
               </DashboardDateRangeProvider>
