@@ -69,6 +69,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Progress Tracking',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
+        progress_tracking_trackers: {
+          label: 'Progress Tracking - Trackers',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        progress_tracking_templates: {
+          label: 'Progress Tracking - Templates',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         application_reports: {
           label: 'Application Reports',
           actions: ['create','list_view', 'view', 'update', 'delete']

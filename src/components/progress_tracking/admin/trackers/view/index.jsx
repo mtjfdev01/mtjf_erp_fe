@@ -135,6 +135,14 @@ const TrackersView = () => {
               <button type="button" className="primary_btn" onClick={regenToken} disabled={saving}>
                 {saving ? 'Working...' : (tracker.public_tracking_token ? 'Regenerate Token' : 'Generate Token')}
               </button>
+              <button
+                type="button"
+                className="secondary_btn"
+                onClick={() => navigate(`/progress/trackers/${tracker.id}/steps`)}
+                disabled={saving}
+              >
+                Manage Steps
+              </button>
               {tracker.donation_id && (
                 <button type="button" className="secondary_btn" onClick={() => navigate(`/donations/online_donations/view/${tracker.donation_id}`)}>
                   Open Donation
@@ -171,7 +179,7 @@ const TrackersView = () => {
                       name={`notes_${s.id}`}
                       type="textarea"
                       value={s.notes || ''}
-                      onChange={(e) => updateStep(s.id, { status: s.status, notes: e.target.value })}
+                      onChange={(e) => updateStep(s.id, { notes: e.target.value })}
                       placeholder="Internal notes / donor-safe notes depending on visibility"
                     />
                   </div>

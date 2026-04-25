@@ -6,6 +6,8 @@ const Card = ({ title, data }) => {
 
   const renderValue = (value) => {
     if (value === null || value === undefined) return '';
+    // Allow callers to pass React nodes (badges, links, etc.)
+    if (React.isValidElement(value)) return value;
     if (typeof value === 'number') {
       // If it's a monetary value (check for specific fields)
       if (title.toLowerCase().includes('amount') || 
@@ -18,7 +20,13 @@ const Card = ({ title, data }) => {
       return value;
     }
     // If backend sends nested objects (e.g. `program`), avoid rendering raw objects.
-    if (typeof value === 'object') return JSON.stringify(value);
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value);
+      } catch {
+        return '[object]';
+      }
+    }
     return value;
   };
 

@@ -4,6 +4,7 @@ import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import ActionMenu from '../../../../common/ActionMenu';
+import { FiEdit2, FiEye } from 'react-icons/fi';
 
 const TemplatesList = () => {
   const navigate = useNavigate();
@@ -34,7 +35,16 @@ const TemplatesList = () => {
 
   const actionsFor = (t) => [
     {
-      label: 'View/Edit',
+      icon: <FiEye />,
+      label: 'View',
+      color: '#4CAF50',
+      onClick: () => navigate(`/progress/templates/${t.id}`),
+      visible: true,
+    },
+    {
+      icon: <FiEdit2 />,
+      label: 'Edit',
+      color: '#2196F3',
       visible: true,
       onClick: () => navigate(`/progress/templates/${t.id}`),
     },
@@ -56,7 +66,13 @@ const TemplatesList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Workflow Templates" showBackButton={false} />
+        <PageHeader
+          title="Workflow Templates"
+          showBackButton={false}
+          showAdd={true}
+          addPath="/progress/templates/add"
+          addTitle="Create workflow template"
+        />
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
           <div className="table-container">

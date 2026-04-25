@@ -19,6 +19,7 @@ import {
   fetchStoreDailyMonthSum,
 } from '../../../../utils/newDashboardMonthlySumsApi';
 import { buildDepartmentSummaryModalSections } from '../../../../utils/departmentSummaryModalSections';
+import { fetchHealthTypeTotals } from '../../../../utils/healthTypeTotalsApi';
 import { useDashboardDateRange } from '../../../../context/DashboardDateRangeContext';
 
 const DETAIL_MODAL_TITLES = {
@@ -53,6 +54,7 @@ export default function DepartmentReportsSummary() {
   const [aasLoading, setAasLoading] = useState(true);
   const [dsrLoading, setDsrLoading] = useState(true);
   const [healthLoading, setHealthLoading] = useState(true);
+  const [healthTypeTotalsLoading, setHealthTypeTotalsLoading] = useState(true);
 
   const [store, setStore] = useState(null);
   const [proc, setProc] = useState(null);
@@ -61,6 +63,7 @@ export default function DepartmentReportsSummary() {
   const [aas, setAas] = useState(null);
   const [dsr, setDsr] = useState(null);
   const [health, setHealth] = useState(null);
+  const [healthTypeTotals, setHealthTypeTotals] = useState(null);
 
   const [popupOpen, setPopupOpen] = useState(false);
   const [popupTarget, setPopupTarget] = useState('store'); // store | procurements | accounts_and_finance | al_hasanain_clg | aas_collection_centers_report | dream_school_reports | health_reports
@@ -212,6 +215,26 @@ export default function DepartmentReportsSummary() {
         if (!cancelled) setHealth(data || null);
       } finally {
         if (!cancelled) setHealthLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [healthRange?.from, healthRange?.to]);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        setHealthTypeTotalsLoading(true);
+        const data = await fetchHealthTypeTotals({
+          from: healthRange?.from,
+          to: healthRange?.to,
+          client: axiosInstance,
+        });
+        if (!cancelled) setHealthTypeTotals(data || null);
+      } finally {
+        if (!cancelled) setHealthTypeTotalsLoading(false);
       }
     })();
     return () => {
@@ -425,17 +448,24 @@ export default function DepartmentReportsSummary() {
 
   const healthReportsCard = useMemo(() => {
     const big = health ? safeNum(health.total_sum) : 0;
+    const types = Array.isArray(healthTypeTotals?.types) ? healthTypeTotals.types : [];
+    const typeStats = types.map((t) => ({
+      label: t.type,
+      value: safeNum(t.total),
+    }));
     return {
       icon: FiHeart,
       accent: { bg: '#ffe4e6', fg: '#be123c' },
       title: 'Health',
       bigValue: healthLoading ? '—' : big,
-      miniStats: [
-        { label: 'Widows', value: healthLoading ? '—' : safeNum(health?.widows_sum) },
-        { label: 'Orphans', value: healthLoading ? '—' : safeNum(health?.orphans_sum) },
-        { label: 'Disabled', value: healthLoading ? '—' : safeNum(health?.disable_sum) },
-        { label: 'Indigent', value: healthLoading ? '—' : safeNum(health?.indegent_sum) },
-      ],
+      miniStats: healthTypeTotalsLoading
+        ? [
+            { label: 'In-house', value: '—' },
+            { label: 'Referred', value: '—' },
+            { label: 'Surgeries Supported', value: '—' },
+            { label: 'Ambulance', value: '—' },
+          ]
+        : typeStats,
       actions: (
         <button
           type="button"
@@ -448,7 +478,7 @@ export default function DepartmentReportsSummary() {
       ),
       detailOnClick: () => setDetailModalKey('health_reports'),
     };
-  }, [health, healthLoading]);
+  }, [health, healthLoading, healthTypeTotals, healthTypeTotalsLoading]);
 
   return (
     <>
