@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
 
@@ -26,6 +26,8 @@ const TimeTracker = ({ taskId, taskStatus }) => {
   const [manualMinutes, setManualMinutes] = useState('');
   const [manualNotes, setManualNotes] = useState('');
   const [showAll, setShowAll] = useState(false);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const normalizedStatus = String(taskStatus || '').toLowerCase();
   const isClosed = normalizedStatus === 'closed';
@@ -45,34 +47,37 @@ const TimeTracker = ({ taskId, taskStatus }) => {
     };
   }, [isRunning, activeStartedAt]);
 
-  useEffect(() => {
-    const fetchHistory = async () => {
-      if (!taskId) return;
-      setLoading(true);
-      setError('');
-      try {
-        const res = await axiosInstance.get(`/tasks/${taskId}/work-history`);
-        const data = res.data?.data || {};
-        const list = Array.isArray(data.entries) ? data.entries : [];
-        const total = Number(data.total_seconds) || 0;
-        const activeEntry = data.active_entry || null;
-        setEntries(list);
-        setTotalSeconds(total);
-        if (activeEntry && activeEntry.started_at) {
-          const startedTime = new Date(activeEntry.started_at).getTime();
-          if (!Number.isNaN(startedTime)) {
-            setIsRunning(true);
-            setActiveStartedAt(startedTime);
-          }
+  // Fetch work history only on user interaction (Start Timer or Add Time)
+  const fetchHistory = useCallback(async () => {
+    if (hasLoaded || isLoading || !taskId) return;
+    
+    setIsLoading(true);
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axiosInstance.get(`/tasks/${taskId}/work-history`);
+      const data = res.data?.data || {};
+      const list = Array.isArray(data.entries) ? data.entries : [];
+      const total = Number(data.total_seconds) || 0;
+      const activeEntry = data.active_entry || null;
+      setEntries(list);
+      setTotalSeconds(total);
+      if (activeEntry && activeEntry.started_at) {
+        const startedTime = new Date(activeEntry.started_at).getTime();
+        if (!Number.isNaN(startedTime)) {
+          setIsRunning(true);
+          setActiveStartedAt(startedTime);
         }
-      } catch (e) {
-        setError(e.response?.data?.message || 'Failed to load work history.');
-      } finally {
-        setLoading(false);
       }
-    };
-    fetchHistory();
-  }, [taskId]);
+      setHasLoaded(true);
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to load work history.');
+      setHasLoaded(true); // Mark as loaded even on error to prevent retries
+    } finally {
+      setLoading(false);
+      setIsLoading(false);
+    }
+  }, [taskId, hasLoaded, isLoading]);
 
   const effectiveTotalSeconds = useMemo(
     () => totalSeconds + tickSeconds,
@@ -81,6 +86,10 @@ const TimeTracker = ({ taskId, taskStatus }) => {
 
   const handleStart = async () => {
     if (!taskId || isRunning) return;
+    // Ensure work history is loaded before starting timer
+    if (!hasLoaded) {
+      await fetchHistory();
+    }
     setLoading(true);
     setError('');
     try {
@@ -139,6 +148,10 @@ const TimeTracker = ({ taskId, taskStatus }) => {
     if (!taskId || !minutes || minutes <= 0) {
       toast.error('Please enter a valid number of minutes.');
       return;
+    }
+    // Ensure work history is loaded before adding manual entry
+    if (!hasLoaded) {
+      await fetchHistory();
     }
     setLoading(true);
     setError('');

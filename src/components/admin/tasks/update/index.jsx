@@ -9,7 +9,7 @@ import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
-import { splitDescriptionAndMov, encodeMovIntoDescription } from '../../../../utils/movEncoding';
+import { splitDescriptionAndMov } from '../../../../utils/movEncoding';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import '../../../../styles/variables.css';
 import './index.css';
@@ -17,7 +17,7 @@ import './index.css';
 const UpdateTask = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { permissions } = useAuth();
+  const { user, permissions } = useAuth();
   const [form, setForm] = useState({
     title: '',
     description: '',
@@ -84,6 +84,25 @@ const UpdateTask = () => {
 
   const taskPerms = useMemo(() => getTaskPermissions(permissions || {}), [permissions]);
   const multiSelectParams = useMemo(() => ({ active: true }), []);
+  
+  // Custom search function for assignees - excludes the logged-in user (task creator)
+  const searchAssignees = useMemo(() => {
+    return async (searchTerm) => {
+      try {
+        const response = await axiosInstance.get('/users/options', {
+          params: { search: searchTerm, active: true }
+        });
+        const users = response.data.data || response.data || [];
+        // Filter out the logged-in user (task creator cannot assign to themselves)
+        const currentUserId = Number(user?.id);
+        return users.filter(userItem => Number(userItem.id) !== currentUserId);
+      } catch (err) {
+        console.error('Search error:', err);
+        return [];
+      }
+    };
+  }, [user?.id]);
+  
   const canEditCompleted = taskPerms.canEditCompleted === true;
   
   const editTitle =
@@ -390,13 +409,11 @@ const UpdateTask = () => {
         setSaving(false);
         return;
       }
-      const descriptionWithMov = encodeMovIntoDescription(
-        form.description,
-        movItemsClean,
-      );
+      
+      // FIXED: Do NOT encode MOV into description - send it separately via mov_items field
       const payload = {
         title: form.title || undefined,
-        description: descriptionWithMov || undefined,
+        description: form.description || undefined,
         priority: form.priority || undefined,
         status: form.status || undefined,
         workflow_type: form.workflow_type || undefined,
@@ -642,8 +659,7 @@ const UpdateTask = () => {
               <div className="add-task-grid-1">
                 <SearchableMultiSelect
                   label="Assign Users"
-                  apiEndpoint="/users/options"
-                  apiParams={multiSelectParams}
+                  onSearch={searchAssignees}
                   onSelect={(users) => setAssignedUsers(users)}
                   onClear={() => setAssignedUsers([])}
                   value={assignedUsers}

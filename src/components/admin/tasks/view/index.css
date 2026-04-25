@@ -1590,6 +1590,11 @@
   width: 100%;
 }
 
+/* Locked state: Item checked by another user */
+.mov-checklist-item--locked {
+  opacity: 0.85;
+}
+
 .mov-checklist-button {
   width: 100%;
   display: flex;
@@ -1604,8 +1609,27 @@
   align-items: center;
 }
 
+/* Disabled state: Non-assignees or task creators */
+.mov-checklist-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Locked state: Item checked by another user */
 .mov-checklist-button--readonly {
   cursor: not-allowed;
+  opacity: 0.75;
+  background-color: #f3f4f6;
+  border-color: #d1d5db;
+}
+
+/* Owned state: Item checked by current user */
+.mov-checklist-button--owned {
+  background-color: #ecfdf3;
+  border-color: #86efac;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.2);
 }
 
 .mov-checklist-button--checked {
@@ -1637,6 +1661,16 @@
   font-size: 0.8rem;
   color: #111827;
   word-break: break-word;
+}
+
+.mov-checklist-info {
+  font-size: 10px;
+  margin-left: auto;
+  opacity: 0.7;
+  white-space: nowrap;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  background-color: rgba(0, 0, 0, 0.05);color: #000000;
 }
 
 .task-progress-empty {

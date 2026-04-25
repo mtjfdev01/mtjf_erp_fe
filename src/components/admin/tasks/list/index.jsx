@@ -30,7 +30,8 @@ const TasksList = () => {
     search: '',
     department: '', // Default to empty string for "All Departments"
     status: '',
-    priority: ''
+    priority: '',
+    user_name: '' // User name search filter (like User Management)
   });
   const [searchInput, setSearchInput] = useState('');
   const [isSearchPending, setIsSearchPending] = useState(false);
@@ -78,7 +79,7 @@ const TasksList = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.department, filters.status, filters.priority]);
+  }, [filters.search, filters.department, filters.status, filters.priority, filters.user_name]);
 
   useEffect(() => {
     return () => {
@@ -211,20 +212,6 @@ const TasksList = () => {
     return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t)) : [];
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, user?.department, isManager]);
 
-  const otherTasks = useMemo(() => {
-    if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
-    // Show all other tasks that are NOT assigned to current user and (if manager) NOT team tasks
-    return Array.isArray(tasks) ? tasks.filter((t) => {
-      const assignedToMe = isTaskAssignedToCurrentUser(t);
-      if (assignedToMe) return false;
-
-      const assignedToTeam = isManager && isTaskAssignedToTeam(t);
-      if (assignedToTeam) return false;
-
-      return true;
-    }) : [];
-  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager]);
-
   // Optimized: Lazy load approvals only when needed (not on initial task list load)
   const fetchApprovalsIfNeeded = useCallback(async () => {
     // Only fetch approvals once and only if user has approval permissions
@@ -288,19 +275,66 @@ const TasksList = () => {
         ? String(myMeta.decision || 'pending').toLowerCase()
         : 'pending';
       const statusLower = String(approval.approval_status || '').toLowerCase();
-      if (
-        statusLower !== 'pending_approval' &&
-        !(statusLower === 'rejected' && myDecision === 'pending')
-      ) {
+      
+      // Include tasks where:
+      // 1. Status is pending_approval (awaiting decision)
+      // 2. Status is rejected and user's decision is still pending (can still act)
+      // 3. User has already made a decision (approved/rejected) - show for visibility
+      const isPendingAction = 
+        statusLower === 'pending_approval' || 
+        (statusLower === 'rejected' && myDecision === 'pending');
+      const hasUserActed = myDecision !== 'pending';
+      
+      // Include task if it needs action OR user has already participated
+      if (!isPendingAction && !hasUserActed) {
         return;
       }
-      if (myDecision !== 'pending') {
-        return;
-      }
-      results.push(task);
+      
+      // Enrich task with approval status for UI display
+      results.push({
+        ...task,
+        _approvalStatus: statusLower,
+        _myDecision: myDecision,
+        _isPendingAction: isPendingAction,
+      });
     });
-    return results;
+    
+    // Sort: pending actions first, then completed approvals
+    return results.sort((a, b) => {
+      if (a._isPendingAction && !b._isPendingAction) return -1;
+      if (!a._isPendingAction && b._isPendingAction) return 1;
+      return 0;
+    });
   }, [myApprovals, tasks, currentUserId]);
+
+  const otherTasks = useMemo(() => {
+    if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
+    
+    // Get regular other tasks (not assigned to current user or team)
+    const regularOtherTasks = Array.isArray(tasks) ? tasks.filter((t) => {
+      const assignedToMe = isTaskAssignedToCurrentUser(t);
+      if (assignedToMe) return false;
+
+      const assignedToTeam = isManager && isTaskAssignedToTeam(t);
+      if (assignedToTeam) return false;
+
+      return true;
+    }) : [];
+    
+    // Get approval tasks (tasks user has approved/rejected or needs to approve)
+    // These should be included in "Other Tasks" tab with existing task card design
+    // Only include approval tasks if myApprovals has been loaded
+    const approvalTasksToAdd = Array.isArray(approvalRequestsForUser) ? approvalRequestsForUser.filter(t => {
+      const taskId = Number(t.id);
+      // Check if already in regularOtherTasks to avoid duplicates
+      const alreadyIncluded = regularOtherTasks.some(rt => Number(rt.id) === taskId);
+      return !alreadyIncluded;
+    }) : [];
+    
+    // Combine: approval tasks first (for visibility), then regular other tasks
+    // All tasks use the same existing task card design via renderTaskCard()
+    return [...approvalTasksToAdd, ...regularOtherTasks];
+  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager, approvalRequestsForUser]);
 
   // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
   useEffect(() => {
@@ -319,16 +353,17 @@ const TasksList = () => {
         const isStrictFilter = !!scopedFilters.department;
 
         // Check if user-applied search filters are active (excluding department from URL path)
-        // Only use /tasks/search when user actively searches or filters by status/priority
+        // Only use /tasks/search when user actively searches or filters by status/priority/user_name
         const hasUserAppliedFilters = 
           filters.search || 
           filters.status || 
-          filters.priority;
+          filters.priority ||
+          filters.user_name;
 
         let res;
         
         if (hasUserAppliedFilters) {
-          // Use POST /tasks/search when user applies search/status/priority filters
+          // Use POST /tasks/search when user applies search/status/priority/user_name filters
           const payload = {
             pagination: { page: currentPage, pageSize, sortField, sortOrder },
             filters: scopedFilters,
@@ -343,6 +378,7 @@ const TasksList = () => {
             sortField,
             sortOrder,
             department: scopedFilters.department || undefined,
+            user_name: scopedFilters.user_name || undefined,
             strictDepartment: isStrictFilter
           };
           res = await axiosInstance.get('/tasks/list', { params });
@@ -359,7 +395,7 @@ const TasksList = () => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, taskPerms.reportScope, user?.department, currentDeptFromPath]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department, currentDeptFromPath]);
 
   // Optimized: Load approvals ONLY when user has approver access AND banner might be visible
   // Does NOT load on initial task list load - only when user scrolls to banner area
@@ -371,7 +407,7 @@ const TasksList = () => {
 
     let observer = null;
     let timeoutId = null;
-    const OBSERVER_DELAY = 1000; // Wait 1000ms after page load before checking visibility
+    const OBSERVER_DELAY = 100; // Wait 100ms after page load before checking visibility
 
     // Delayed setup to ensure DOM is ready and initial render is complete
     timeoutId = setTimeout(() => {
@@ -486,7 +522,7 @@ const TasksList = () => {
         return { label: 'Overdue today', variant: 'warning' };
       }
       return {
-        label: `-${overdueDays} d`,
+        label: `-${overdueDays} days`,
         variant: 'danger',
       };
     } else {
@@ -879,7 +915,7 @@ const TasksList = () => {
                 <span>{formatDate(t.due_date)}</span>
                 {getDueInfo(t.due_date, t.status) && (
                   <span className={`overdue-text overdue-${getDueInfo(t.due_date, t.status).variant}`}>
-                    {getDueInfo(t.due_date, t.status).label.startsWith('-') ? '→ ' : 'in '}
+                    {getDueInfo(t.due_date, t.status).label.startsWith('-') ? '→ ' : ''}
                     {getDueInfo(t.due_date, t.status).label.replace('-', '').replace('In ', '')}
                   </span>
                 )}
@@ -1062,6 +1098,16 @@ const TasksList = () => {
                 />
               </div>
 
+              <div className="filter-item search-item">
+                <FiSearch className="filter-icon" />
+                <input
+                  type="text"
+                  placeholder="Search users..."
+                  value={filters.user_name}
+                  onChange={(e) => setFilters(prev => ({ ...prev, user_name: e.target.value }))}
+                />
+              </div>
+
               <div className="filter-item select-item">
                 <FiUsers className="filter-icon" />
                 <select
@@ -1123,43 +1169,58 @@ const TasksList = () => {
             <div className="status-message">Loading tasks...</div>
           ) : (
             <>
-          {approvalRequestsForUser.length > 0 && (
-            <div className="tasks-approval-banner">
-              <div className="tasks-approval-pill">
-                <div className="tasks-approval-header">
-                  <span className="tasks-approval-label">Approval requests</span>
-                  <span className="tasks-approval-count">
-                    {approvalRequestsForUser.length === 1
-                      ? '1 task pending your approval'
-                      : `${approvalRequestsForUser.length} tasks pending your approval`}
-                  </span>
-                </div>
-                <ul className="tasks-approval-list">
-                  {approvalRequestsForUser.map((t) => (
-                    <li
-                      key={t.id}
-                      className="tasks-approval-item"
-                      onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
-                    >
-                      <div className="tasks-approval-item-main">
-                        <span className="tasks-approval-title">
-                          {t.title || `Task #${t.id}`}
-                        </span>
-                        {(t.priority || t.due_date) && (
-                          <span className="tasks-approval-sub">
-                            {t.priority ? capitalize(t.priority) : null}
-                            {t.priority && t.due_date ? ' • ' : ''}
-                            {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
+          {/* Approval Banner - Only for PENDING approval requests */}
+          {(() => {
+            try {
+              if (!Array.isArray(approvalRequestsForUser)) return null;
+              const pendingApprovals = approvalRequestsForUser.filter(t => t && t._isPendingAction === true);
+              if (!pendingApprovals || pendingApprovals.length === 0) return null;
+              return (
+              <div className="tasks-approval-banner">
+                <div className="tasks-approval-pill">
+                  <div className="tasks-approval-header">
+                    <span className="tasks-approval-label">Approval requests</span>
+                    <span className="tasks-approval-count">
+                      {pendingApprovals.length === 1
+                        ? '1 task pending your approval'
+                        : `${pendingApprovals.length} tasks pending your approval`}
+                    </span>
+                  </div>
+                  <ul className="tasks-approval-list">
+                    {pendingApprovals.map((t) => (
+                      <li
+                        key={t.id}
+                        className="tasks-approval-item"
+                        onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
+                      >
+                        <div className="tasks-approval-item-main">
+                          <span className="tasks-approval-title">
+                            {t.title || `Task #${t.id}`}
                           </span>
-                        )}
-                      </div>
-                      <span className="tasks-approval-meta">View</span>
-                    </li>
-                  ))}
-                </ul>
+                          <span className="tasks-approval-sub">
+                            Pending your review
+                            {(t.priority || t.due_date) && (
+                              <>
+                                {' • '}
+                                {t.priority ? capitalize(t.priority) : null}
+                                {t.priority && t.due_date ? ' • ' : ''}
+                                {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
+                              </>
+                            )}
+                          </span>
+                        </div>
+                        <span className="tasks-approval-meta">View</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            </div>
-          )}
+              );
+            } catch (error) {
+              // Silently fail if there's an error with approval banner
+              return null;
+            }
+          })()}
           {error && <div className="status-message status-message--error">{error}</div>}
 
           <div className="task-card-list">
@@ -1234,18 +1295,6 @@ const TasksList = () => {
                 </div>
               )}
             </div>
-
-            {tasks.length === 0 && !error && (
-              <div className="empty-state">
-                <div className="empty-state-icon">
-                  <FiThumbsUp />
-                </div>
-                <div className="empty-state-text">No tasks found</div>
-                {/* <div className="empty-state-subtext">
-                  Adjust filters or create a new task to get started.
-                </div> */}
-              </div>
-            )}
           </div>
           {totalItems > 0 && (
             <Pagination

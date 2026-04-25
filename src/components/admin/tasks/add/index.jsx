@@ -10,7 +10,6 @@ import FormTextarea from '../../../common/FormTextarea';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
-import { encodeMovIntoDescription } from '../../../../utils/movEncoding';
 import '../../../../styles/variables.css';
 import './index.css';
 
@@ -89,6 +88,25 @@ const AddTask = () => {
     'Community Service'
   ];
   const multiSelectParams = useMemo(() => ({ active: true }), []);
+  
+  // Custom search function for assignees - excludes the logged-in user (task creator)
+  const searchAssignees = useMemo(() => {
+    return async (searchTerm) => {
+      try {
+        const response = await axiosInstance.get('/users/options', {
+          params: { search: searchTerm, active: true }
+        });
+        const users = response.data.data || response.data || [];
+        // Filter out the logged-in user (task creator cannot assign to themselves)
+        const currentUserId = Number(user?.id);
+        return users.filter(userItem => Number(userItem.id) !== currentUserId);
+      } catch (err) {
+        console.error('Search error:', err);
+        return [];
+      }
+    };
+  }, [user?.id]);
+  
   const createTitle = taskPerms.canCreate ? 'Create Task' : 'You do not have permission to create tasks';
   const userDisplayName = (u) => {
     const name = `${u?.first_name || ''} ${u?.last_name || ''}`.trim();
@@ -280,13 +298,11 @@ const AddTask = () => {
     let createdTaskId = null;
     try {
       const movItemsClean = movItemsCleanForValidation;
-      const descriptionWithMov = encodeMovIntoDescription(
-        form.description,
-        movItemsClean,
-      );
+      
+      // FIXED: Do NOT encode MOV into description - send it separately via mov_checklist field
       const payload = {
         title: form.title,
-        description: descriptionWithMov || undefined,
+        description: form.description || undefined,
         department,
         priority: form.priority || undefined,
         workflow_type: form.workflow_type || undefined,
@@ -444,9 +460,6 @@ const AddTask = () => {
                     )}
                   </div>
                 ))}
-                <div className="mov-hint">
-                  MOV items should be clear and measurable.
-                </div>
                 <div className="mov-actions">
                   <button
                     type="button"
@@ -539,8 +552,7 @@ const AddTask = () => {
               <div className="add-task-grid-1">
                 <SearchableMultiSelect
                   label="Assign Users"
-                  apiEndpoint="/users/options"
-                  apiParams={multiSelectParams}
+                  onSearch={searchAssignees}
                   onSelect={(users) => setAssignedUsers(users)}
                   onClear={() => setAssignedUsers([])}
                   value={assignedUsers}
