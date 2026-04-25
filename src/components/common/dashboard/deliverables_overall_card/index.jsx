@@ -41,6 +41,7 @@ function accentForKey(key) {
 const ICON_KEY_BY_PROGRAM = {
   overall: 'layers',
   total_beneficiaries: 'users',
+  in_direct_beneficiaries: 'users',
   food_security: 'bag',
   community_services: 'users',
   widows_and_orphans_care_program: 'heart',
@@ -93,7 +94,11 @@ function cardToModalSections(card) {
     },
   ];
 
-  if (card.key === 'overall' && Array.isArray(card.programsDeliveredByLabel) && card.programsDeliveredByLabel.length > 0) {
+  if (
+    (card.key === 'overall' || card.key === 'total_beneficiaries' || card.key === 'in_direct_beneficiaries') &&
+    Array.isArray(card.programsDeliveredByLabel) &&
+    card.programsDeliveredByLabel.length > 0
+  ) {
     const byProgram = {};
     for (const row of card.programsDeliveredByLabel) {
       const name = row.label || row.key || 'Program';
@@ -105,10 +110,12 @@ function cardToModalSections(card) {
     });
   }
 
-  sections.push({
-    title: 'Vulnerability breakdown',
-    details: breakdownDetails,
-  });
+  if (card.key !== 'total_beneficiaries' && card.key !== 'in_direct_beneficiaries') {
+    sections.push({
+      title: 'Vulnerability breakdown',
+      details: breakdownDetails,
+    });
+  }
 
   return sections;
 }
@@ -117,7 +124,7 @@ function DeliverablesCarouselCardItem({ card }) {
   const { soft, solid } = accentForKey(card.key);
   const iconKey = ICON_KEY_BY_PROGRAM[card.key] || 'tool';
   const Icon = ICON_MAP[iconKey] || FiTool;
-  const title = card.label?.length > 15 ? `${card.label.slice(0, 10)}..` : card.label;
+  const title = card?.label
 
   return (
     <div className="deliverables-overall-carousel__card-item">
@@ -263,7 +270,7 @@ export default function DeliverablesOverallCard({
     return {
       id: 'overall',
       key: 'overall',
-      label: 'Overall',
+      label: 'Direct Benificiaries',
       from,
       to,
       totalDelivered: overallDelivered,
@@ -284,10 +291,6 @@ export default function DeliverablesOverallCard({
           totalDelivered: (Number(p.totalDelivered) || 0) * 7,
         }))
       : [];
-    const scaledVulnerabilities = vulnerabilities.map((v) => ({
-      ...v,
-      total: (Number(v.total) || 0) * 7,
-    }));
     return {
       id: 'total_beneficiaries',
       key: 'total_beneficiaries',
@@ -295,12 +298,36 @@ export default function DeliverablesOverallCard({
       from,
       to,
       totalDelivered: (Number(overallDelivered) || 0) * 7,
-      totalVulnerabilities: (Number(overallVulnerabilities) || 0) * 7,
-      vulnerabilityLines: scaledVulnerabilities, // uses `.total`
-      breakdown: scaledVulnerabilities.map((v) => ({ label: v.label, value: Number(v.total) || 0 })),
+      totalVulnerabilities: 0,
+      vulnerabilityLines: [],
+      breakdown: [],
       programsDeliveredByLabel,
     };
   }, [payload, appliedFrom, appliedTo, overallDelivered, overallVulnerabilities, vulnerabilities]);
+
+  const inDirectBeneficiariesCard = useMemo(() => {
+    const from = payload?.from ?? appliedFrom;
+    const to = payload?.to ?? appliedTo;
+    const programsDeliveredByLabel = Array.isArray(payload?.programsList)
+      ? payload.programsList.map((p) => ({
+          key: p.key,
+          label: p.label,
+          totalDelivered: (Number(p.totalDelivered) || 0) * 6,
+        }))
+      : [];
+    return {
+      id: 'in_direct_beneficiaries',
+      key: 'in_direct_beneficiaries',
+      label: 'In Direct Benificiaries',
+      from,
+      to,
+      totalDelivered: (Number(overallDelivered) || 0) * 6,
+      totalVulnerabilities: 0,
+      vulnerabilityLines: [],
+      breakdown: [],
+      programsDeliveredByLabel,
+    };
+  }, [payload, appliedFrom, appliedTo, overallDelivered]);
 
   const cards = useMemo(() => {
     const from = payload?.from ?? appliedFrom;
@@ -316,8 +343,8 @@ export default function DeliverablesOverallCard({
       vulnerabilityLines: Array.isArray(c.lines) ? c.lines : [], // uses `.count`
       breakdown: (Array.isArray(c.lines) ? c.lines : []).map((l) => ({ label: l.label, value: Number(l.count) || 0 })),
     }));
-    return [overallCard, totalBeneficiariesCard, ...mapped];
-  }, [payload, appliedFrom, appliedTo, programCards, overallCard, totalBeneficiariesCard]);
+    return [totalBeneficiariesCard, overallCard, inDirectBeneficiariesCard, ...mapped];
+  }, [payload, appliedFrom, appliedTo, programCards, overallCard, totalBeneficiariesCard, inDirectBeneficiariesCard]);
 
   const defaultSubtitle =
     subtitle ??

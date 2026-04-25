@@ -122,7 +122,7 @@ import JobsList from './components/admin/hr/careers/jobs/list/index';
 import AddJob from './components/admin/hr/careers/jobs/add/index';
 import ViewJob from './components/admin/hr/careers/jobs/view/index';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
-import { DonorsList, RegisterDonor, ViewDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
@@ -158,9 +158,14 @@ import TaskReports from './components/admin/tasks/reports';
 import TaskReceipt from './components/admin/tasks/taskrecipt';
 import PublicTrackingPage from './components/progress_tracking/public';
 import TemplatesList from './components/progress_tracking/admin/templates/list';
+import TemplateAdd from './components/progress_tracking/admin/templates/add';
 import TemplateView from './components/progress_tracking/admin/templates/view';
 import TrackersList from './components/progress_tracking/admin/trackers/list';
+import TrackersAdd from './components/progress_tracking/admin/trackers/add';
 import TrackersView from './components/progress_tracking/admin/trackers/view';
+import StepsList from './components/progress_tracking/admin/steps/list';
+import StepView from './components/progress_tracking/admin/steps/view';
+import EvidenceView from './components/progress_tracking/admin/evidence/view';
 const App = () => {
   return (<React.Fragment>
             <Router> 
@@ -182,9 +187,14 @@ const App = () => {
                                 {/* Main Dashboard Routes */}
                                 <Route path="/tracking/:token" element={<PublicTrackingPage />} />
                                 <Route path="/progress/templates" element={<TemplatesList />} />
+                                <Route path="/progress/templates/add" element={<TemplateAdd />} />
                                 <Route path="/progress/templates/:id" element={<TemplateView />} />
                                 <Route path="/progress/trackers" element={<TrackersList />} />
+                                <Route path="/progress/trackers/add" element={<TrackersAdd />} />
                                 <Route path="/progress/trackers/:id" element={<TrackersView />} />
+                                <Route path="/progress/trackers/:trackerId/steps" element={<StepsList />} />
+                                <Route path="/progress/trackers/:trackerId/steps/:stepId" element={<StepView />} />
+                                <Route path="/progress/trackers/:trackerId/steps/:stepId/evidence/:evidenceId" element={<EvidenceView />} />
                                 <Route path="/store" element={<Store />} />
                                 <Route path="/procurements" element={<Procurements />} />
                                 <Route path="/program" element={<Program />} />
@@ -362,11 +372,10 @@ const App = () => {
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
                                 
                                 {/* Donors Routes */}
-                                <Route path="/dms/donors/online/list" element={<DonorsList />} />
-                                <Route path="/dms/donors/offline/list" element={<DonorsList />} />  
+                                <Route path="/dms/donors/list" element={<DonorsList />} />
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
-                                <Route path="/dms/donors/online/list" element={<DonorsList />} /> 
+                                <Route path="/dms/donors/edit/:id" element={<EditDonor />} />
 
                                 
                                 {/* Volunteers Routes */}

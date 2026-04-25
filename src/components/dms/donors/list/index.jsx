@@ -6,11 +6,12 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
+import Modal from '../../../common/Modal';
 import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import { DownloadCSV } from '../../../common/download';
-import { FiEye, FiEdit, FiTrash2, FiUser } from 'react-icons/fi';
+import { FiEye, FiEdit, FiTrash2, FiUser, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
 
@@ -22,6 +23,11 @@ const DonorsList = () => {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donorToDelete, setDonorToDelete] = useState(null);
+  const [revealModalOpen, setRevealModalOpen] = useState(false);
+  const [revealModalTitle, setRevealModalTitle] = useState('');
+  const [revealedPassword, setRevealedPassword] = useState('');
+  const [revealError, setRevealError] = useState('');
+  const [revealLoading, setRevealLoading] = useState(false);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,6 +108,16 @@ const DonorsList = () => {
   const canExportCsv = useMemo(() => {
     if (!permissions) return false;
     return permissions.super_admin === true || permissions.fund_raising?.online_donors?.csv_xport === true;
+  }, [permissions]);
+
+  const canRevealPassword = useMemo(() => {
+    if (!permissions) return false;
+    // UI-only gating; backend enforces final access control.
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising?.online_donors?.update === true ||
+      permissions.fund_raising?.offline_donors?.update === true
+    );
   }, [permissions]);
 
   const csvColumns = [
@@ -229,6 +245,32 @@ const DonorsList = () => {
     setDonorToDelete(null);
   };
 
+  const closeRevealModal = () => {
+    setRevealModalOpen(false);
+    setRevealModalTitle('');
+    setRevealedPassword('');
+    setRevealError('');
+    setRevealLoading(false);
+  };
+
+  const handleRevealPassword = async (donor) => {
+    try {
+      setRevealError('');
+      setRevealLoading(true);
+      setRevealModalTitle(`Donor Password — ${donor?.name || donor?.email || 'Donor'}`);
+      setRevealModalOpen(true);
+
+      const res = await axiosInstance.get(`/donors/${donor.id}/reveal-password`);
+      const password = res?.data?.data?.password || '';
+      setRevealedPassword(password);
+      if (!password) setRevealError('No password returned.');
+    } catch (err) {
+      setRevealError(err.response?.data?.message || 'Failed to reveal password');
+    } finally {
+      setRevealLoading(false);
+    }
+  };
+
   const getDonorActions = (donor) => [
     {
       icon: <FiEye />,
@@ -243,6 +285,13 @@ const DonorsList = () => {
       color: '#ff9800',
       onClick: () => navigate(`/dms/donors/edit/${donor.id}`),
       visible: true
+    },
+    {
+      icon: <FiKey />,
+      label: 'Reveal Password',
+      color: '#111827',
+      onClick: () => handleRevealPassword(donor),
+      visible: canRevealPassword === true
     },
     {
       icon: <FiTrash2 />,
@@ -494,6 +543,18 @@ const DonorsList = () => {
         text={`Are you sure you want to delete donor "${donorToDelete?.name}"? This action cannot be undone.`}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}
+      />
+
+      <Modal
+        open={revealModalOpen}
+        onClose={closeRevealModal}
+        title={revealModalTitle || 'Reveal Password'}
+        details={{
+          Status: revealLoading ? 'Loading...' : revealError ? 'Error' : 'Success',
+          ...(revealError ? { Message: revealError } : {}),
+          ...(revealedPassword ? { Password: revealedPassword } : {}),
+          Note: 'Password is shown for operational use only. Close this dialog when done.',
+        }}
       />
     </>
   );

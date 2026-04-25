@@ -277,7 +277,9 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiTrendingUp,
     subItems: [
       { label: 'Trackers', path: '/progress/trackers', type: 'list', module: 'progress_tracking', icon: FiList },
+      { label: 'Create Tracker', path: '/progress/trackers/add', type: 'create', module: 'progress_tracking', icon: FiPlusCircle },
       { label: 'Workflow Templates', path: '/progress/templates', type: 'list', module: 'progress_tracking', icon: FiLayers },
+      { label: 'Create Template', path: '/progress/templates/add', type: 'create', module: 'progress_tracking', icon: FiPlusCircle },
     ],
   }
 ];
@@ -374,6 +376,10 @@ const adminDepartmentItems = () => [
     icon: FiLayers,
     subItems: [
       { label: 'Program Dashboard', path: '/program', type: 'list', icon: FiHome },
+      { label: 'Progress Tracking (Trackers)', path: '/progress/trackers', type: 'list', icon: FiTrendingUp },
+      { label: 'Progress Tracking (Create Tracker)', path: '/progress/trackers/add', type: 'create', icon: FiPlusCircle },
+      { label: 'Progress Tracking (Templates)', path: '/progress/templates', type: 'list', icon: FiLayers },
+      { label: 'Progress Tracking (Create Template)', path: '/progress/templates/add', type: 'create', icon: FiPlusCircle },
       {label: "Application Reports", path: "/program/applications_reports", type: "list", icon: FiFileText},
       {label: "ration_report", path: "/program/ration_report/list", type: "list", icon: FiBox},
       {label: "marriage_gifts", path: "/program/marriage_gifts/reports/list", type: "list", icon: FiGift},

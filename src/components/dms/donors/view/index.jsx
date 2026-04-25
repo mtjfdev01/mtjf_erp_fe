@@ -1,18 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
+import { useAuth } from '../../../../context/AuthContext';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Card from '../../../common/Card';
-import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit, FiTrash2 } from 'react-icons/fi';
+import Modal from '../../../common/Modal';
+import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit, FiTrash2, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 
 const ViewDonor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const { permissions } = useAuth();
   const [donor, setDonor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [revealModalOpen, setRevealModalOpen] = useState(false);
+  const [revealedPassword, setRevealedPassword] = useState('');
+  const [revealError, setRevealError] = useState('');
+  const [revealLoading, setRevealLoading] = useState(false);
 
   useEffect(() => {
     fetchDonor();
@@ -49,6 +56,38 @@ const ViewDonor = () => {
 
   const handleAddDonation = () => {
     navigate(`/donations/online_donations/add?donor_id=${id}`);
+  };
+
+  const canRevealPassword = (() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising?.online_donors?.update === true ||
+      permissions.fund_raising?.offline_donors?.update === true
+    );
+  })();
+
+  const closeRevealModal = () => {
+    setRevealModalOpen(false);
+    setRevealedPassword('');
+    setRevealError('');
+    setRevealLoading(false);
+  };
+
+  const handleRevealPassword = async () => {
+    try {
+      setRevealError('');
+      setRevealLoading(true);
+      setRevealModalOpen(true);
+      const res = await axiosInstance.get(`/donors/${id}/reveal-password`);
+      const password = res?.data?.data?.password || '';
+      setRevealedPassword(password);
+      if (!password) setRevealError('No password returned.');
+    } catch (err) {
+      setRevealError(err.response?.data?.message || 'Failed to reveal password');
+    } finally {
+      setRevealLoading(false);
+    }
   };
 
   const getDonorTypeIcon = (type) => {
@@ -210,6 +249,21 @@ const ViewDonor = () => {
               <FiEdit style={{ marginRight: '8px' }} />
               Edit Donor
             </button>
+
+            {canRevealPassword && (
+              <button
+                className="primary_btn"
+                onClick={handleRevealPassword}
+                style={{
+                  backgroundColor: '#111827',
+                  marginLeft: '10px'
+                }}
+                title="Reveal donor password (admin only)"
+              >
+                <FiKey style={{ marginRight: '8px' }} />
+                Reveal Password
+              </button>
+            )}
             
             <button 
               className="primary_btn" 
@@ -235,6 +289,18 @@ const ViewDonor = () => {
           </div>
         </div>
       </div>
+
+      <Modal
+        open={revealModalOpen}
+        onClose={closeRevealModal}
+        title={`Donor Password — ${donor?.name || donor?.email || 'Donor'}`}
+        details={{
+          Status: revealLoading ? 'Loading...' : revealError ? 'Error' : 'Success',
+          ...(revealError ? { Message: revealError } : {}),
+          ...(revealedPassword ? { Password: revealedPassword } : {}),
+          Note: 'Password is shown for operational use only. Close this dialog when done.',
+        }}
+      />
     </>
   );
 };

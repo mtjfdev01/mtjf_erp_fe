@@ -32,7 +32,7 @@ export default function SummaryStatCard({
 }) {
   const bg = accent?.bg || '#e2e8f0';
   const fg = accent?.fg || '#1e293b';
-  const stats = Array.isArray(miniStats) ? miniStats.slice(0, 4) : [];
+  const stats = Array.isArray(miniStats) ? miniStats : [];
 
   const topRow = (
     <div className="summary-stat-card__top">

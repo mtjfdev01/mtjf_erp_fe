@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Chart, registerables } from 'chart.js';
 import { RiDownload2Fill } from 'react-icons/ri';
 import { toPng } from 'html-to-image';
@@ -7,23 +7,22 @@ import './index.css';
 Chart.register(...registerables);
 
 /**
- * Cumulative fundraising line chart (total raised over time).
+ * Simple bar chart for comparing counts (e.g. donors, boxes, events, campaigns).
  *
- * @param {string} [title] - Chart title (e.g. "Cumulative")
- * @param {string} [subtitle] - Optional small caption under title
- * @param {Object} data - { labels: string[], values: number[] } — labels = period (e.g. months), values = cumulative amount
- * @param {number} [height=300] - Chart height in px
- * @param {boolean} [showDownload=true] - Show download as PNG
- * @param {string} [downloadFileName] - Custom download filename
+ * @param {string} [title]
+ * @param {{ labels: string[], values: number[] }} data
+ * @param {number} [height=320]
+ * @param {boolean} [showDownload=true]
+ * @param {string} [downloadFileName]
  */
-const CumulativeChart = ({
-  title = 'Cumulative',
+export default function OverviewComparisonChart({
+  title = 'Overview Comparison',
   subtitle,
   data,
-  height = 300,
+  height = 320,
   showDownload = true,
   downloadFileName,
-}) => {
+}) {
   const chartRef = useRef(null);
   const chartInstanceRef = useRef(null);
   const containerRef = useRef(null);
@@ -34,15 +33,20 @@ const CumulativeChart = ({
       labels: data.labels,
       datasets: [
         {
-          label: 'Total raised',
+          label: 'Count',
           data: data.values,
-          borderColor: 'rgb(54, 162, 235)',
-          backgroundColor: 'rgba(54, 162, 235, 0.1)',
-          fill: true,
-          tension: 0.4,
-          borderWidth: 2,
-          pointRadius: 4,
-          pointBackgroundColor: 'rgb(54, 162, 235)',
+          backgroundColor: [
+            '#2563eb',
+            '#7c3aed',
+            '#f59e0b',
+            '#14b8a6',
+            '#22c55e',
+            '#f97316',
+            '#06b6d4',
+          ].slice(0, data.values.length),
+          borderRadius: 8,
+          borderSkipped: false,
+          maxBarThickness: 56,
         },
       ],
     };
@@ -56,28 +60,18 @@ const CumulativeChart = ({
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (ctx) => {
-              const v = ctx.raw;
-              if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
-              if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K`;
-              return String(v);
-            },
+            label: (ctx) => `${ctx.raw ?? 0}`,
           },
         },
       },
       scales: {
         x: {
-          ticks: { maxRotation: 45, minRotation: 45 },
+          ticks: { maxRotation: 0, autoSkip: false },
+          grid: { display: false },
         },
         y: {
           beginAtZero: true,
-          ticks: {
-            callback: (value) => {
-              if (value >= 1e6) return `${value / 1e6}M`;
-              if (value >= 1e3) return `${value / 1e3}K`;
-              return String(value);
-            },
-          },
+          ticks: { precision: 0 },
         },
       },
     }),
@@ -93,7 +87,7 @@ const CumulativeChart = ({
       chartInstanceRef.current.update();
     } else {
       chartInstanceRef.current = new Chart(ctx, {
-        type: 'line',
+        type: 'bar',
         data: chartData,
         options,
       });
@@ -115,7 +109,7 @@ const CumulativeChart = ({
         backgroundColor: '#ffffff',
       });
       const link = document.createElement('a');
-      link.download = `${downloadFileName || 'cumulative-chart'}.png`;
+      link.download = `${downloadFileName || 'overview-comparison'}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -125,25 +119,25 @@ const CumulativeChart = ({
 
   if (!chartData) {
     return (
-      <div className="cumulative-chart-container">
-        <div className="cumulative-chart-error">No data available</div>
+      <div className="overview-comparison-chart-container">
+        <div className="overview-comparison-chart-error">No data available</div>
       </div>
     );
   }
 
   return (
-    <div className="cumulative-chart-container" ref={containerRef}>
+    <div className="overview-comparison-chart-container" ref={containerRef}>
       {(title || showDownload) && (
-        <div className="cumulative-chart-header">
-          <div className="cumulative-chart-heading">
-            {title && <h2 className="cumulative-chart-title">{title}</h2>}
-            {subtitle ? <p className="cumulative-chart-subtitle">{subtitle}</p> : null}
+        <div className="overview-comparison-chart-header">
+          <div className="overview-comparison-chart-heading">
+            {title && <h2 className="overview-comparison-chart-title">{title}</h2>}
+            {subtitle ? <p className="overview-comparison-chart-subtitle">{subtitle}</p> : null}
           </div>
           {showDownload && (
             <button
               type="button"
               onClick={handleDownload}
-              className="cumulative-chart-download-btn"
+              className="overview-comparison-chart-download-btn"
               title="Download as PNG"
             >
               <RiDownload2Fill />
@@ -151,11 +145,10 @@ const CumulativeChart = ({
           )}
         </div>
       )}
-      <div className="cumulative-chart-wrapper" style={{ height: `${height}px` }}>
+      <div className="overview-comparison-chart-wrapper" style={{ height: `${height}px` }}>
         <canvas ref={chartRef} />
       </div>
     </div>
   );
-};
+}
 
-export default CumulativeChart;

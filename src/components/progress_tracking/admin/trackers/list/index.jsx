@@ -7,6 +7,7 @@ import ActionMenu from '../../../../common/ActionMenu';
 import Pagination from '../../../../common/Pagination';
 import { SearchFilter } from '../../../../common/filters';
 import { SearchButton, ClearButton } from '../../../../common/filters';
+import { FiEye } from 'react-icons/fi';
 
 
 
@@ -67,7 +68,13 @@ const TrackersList = () => {
   };
 
   const actionsFor = (t) => [
-    { label: 'View', visible: true, onClick: () => navigate(`/progress/trackers/${t.id}`) },
+    {
+      icon: <FiEye />,
+      label: 'View',
+      color: '#4CAF50',
+      onClick: () => navigate(`/progress/trackers/${t.id}`),
+      visible: true,
+    },
   ];
 
   if (loading) {
@@ -86,7 +93,13 @@ const TrackersList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Progress Trackers" showBackButton={false} />
+        <PageHeader
+          title="Progress Trackers"
+          showBackButton={false}
+          showAdd={true}
+          addPath="/progress/trackers/add"
+          addTitle="Create tracker"
+        />
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
 

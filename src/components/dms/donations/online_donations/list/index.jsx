@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
@@ -14,7 +14,7 @@ import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 
-import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
@@ -36,6 +36,7 @@ const OnlineDonationsList = () => {
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
+  const [workflowTemplates, setWorkflowTemplates] = useState([]);
   
   // Report generation state
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -67,6 +68,7 @@ const OnlineDonationsList = () => {
     donation_type: '',
     donation_method: '',
     donation_source: '',
+    progress_workflow_template_id: '',
     date: '',
     start_date: '',
     end_date: '',
@@ -106,6 +108,19 @@ const OnlineDonationsList = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlDonorId]);
+
+  // Load workflow templates for filtering
+  useEffect(() => {
+    const run = async () => {
+      try {
+        const res = await axiosInstance.get('/progress/workflow-templates');
+        if (res.data?.success) setWorkflowTemplates(res.data.data || []);
+      } catch (_) {
+        // non-blocking
+      }
+    };
+    run();
+  }, []);
 
   // Universal filter change handler - Updates temporary filters only
   const handleFilterChange = (key, value) => {
@@ -221,6 +236,7 @@ const OnlineDonationsList = () => {
           donation_type: appliedFilters.donation_type,
           donation_method: appliedFilters.donation_method,
           donation_source: appliedFilters.donation_source,
+          progress_workflow_template_id: appliedFilters.progress_workflow_template_id || undefined,
           orderId: appliedFilters.orderId,
           
           // Date filters
@@ -483,6 +499,13 @@ const OnlineDonationsList = () => {
       visible: true
     },
     {
+      icon: <FiTrendingUp />,
+      label: 'Tracking',
+      color: '#7c3aed',
+      onClick: () => navigate(`/progress/trackers/${donation?.progress_tracker?.id}/steps`),
+      visible: Boolean(donation?.progress_tracker?.id),
+    },
+    {
       icon: <FiEdit2 />,
       label: 'Edit',
       color: '#2196F3',
@@ -547,6 +570,14 @@ const OnlineDonationsList = () => {
     { value: 'collection_box', label: 'Collection Box' },
     {value:'bank', label:'Bank'}
   ];
+
+  const workflowTemplateOptions = useMemo(() => {
+    const opts = (workflowTemplates || []).map((t) => ({
+      value: String(t.id),
+      label: t.name || t.code || String(t.id),
+    }));
+    return [{ value: '', label: 'All Templates' }, ...opts];
+  }, [workflowTemplates]);
 
   const priceRangeOptions = [
     { value: '', label: 'Any Amount' },
@@ -745,6 +776,15 @@ const OnlineDonationsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All Sources"
+            />
+
+            <DropdownFilter
+              filterKey="progress_workflow_template_id"
+              label="Workflow Template"
+              data={workflowTemplateOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All Templates"
             />
             
             {/* <HybridDropdown
