@@ -81,6 +81,7 @@ const TemplatesList = () => {
                 <tr>
                   <th>Name</th>
                   <th>Code</th>
+                  <th className="hide-on-mobile">Batchable</th>
                   <th className="hide-on-mobile">Active</th>
                   <th className="table-actions">Actions</th>
                 </tr>
@@ -90,6 +91,7 @@ const TemplatesList = () => {
                   <tr key={t.id}>
                     <td>{t.name}</td>
                     <td>{t.code}</td>
+                    <td className="hide-on-mobile">{t.is_batchable ? `Yes (${t.batch_parts || '-'})` : 'No'}</td>
                     <td className="hide-on-mobile">{t.is_active ? 'Yes' : 'No'}</td>
                     <td className="table-actions">
                       <ActionMenu actions={actionsFor(t)} />

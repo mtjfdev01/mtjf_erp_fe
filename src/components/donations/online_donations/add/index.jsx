@@ -11,6 +11,7 @@ import { donation_collection_centers } from '../../../../utils/dms';
 import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import { useInKindItems } from '../../../../context/InKindItemsContext';
 import ReloadButton from '../../../common/buttons/reload';
+import { projectCards } from '../../../../utils/program';
 
 const AddDonation = () => {
   const navigate = useNavigate();
@@ -60,8 +61,76 @@ const AddDonation = () => {
     
     // Project information
     project_id: '',
-    project_name: ''
+    project_name: '',
+
+    // Optional: website-style payload for initiatives/cart (used by Qurbani workflow)
+    donation_items: [],
   });
+
+  const QURBANI_PROJECT_ID = 'qurbani-barai-mustehqeen';
+  const qurbaniProject = (projectCards || []).find((p) => p.id === QURBANI_PROJECT_ID) || null;
+  const qurbaniInitiatives = qurbaniProject?.initiatives || [];
+  const isQurbaniProject = form.project_id === QURBANI_PROJECT_ID;
+  const projectOptions = (projectCards || []).map((p) => ({
+    value: p.id,
+    label: p.title,
+  }));
+
+  const setToQurbaniProject = () => {
+    setForm((prev) => ({
+      ...prev,
+      project_id: QURBANI_PROJECT_ID,
+      project_name: qurbaniProject?.title || prev.project_name || 'Qurbani Barai Mustehqeen',
+      donation_items: Array.isArray(prev.donation_items) ? prev.donation_items : [],
+    }));
+  };
+
+  const addQurbaniItemRow = () => {
+    setForm((prev) => ({
+      ...prev,
+      donation_items: [
+        ...(Array.isArray(prev.donation_items) ? prev.donation_items : []),
+        {
+          initiativeId: '',
+          initiativeTitle: '',
+          initiativeSubtitle: '',
+          quantity: 1,
+          basePrice: 0,
+          totalAmount: 0,
+        },
+      ],
+    }));
+  };
+
+  const removeQurbaniItemRow = (idx) => {
+    setForm((prev) => ({
+      ...prev,
+      donation_items: (Array.isArray(prev.donation_items) ? prev.donation_items : []).filter(
+        (_, i) => i !== idx,
+      ),
+    }));
+  };
+
+  const updateQurbaniItemRow = (idx, patch) => {
+    setForm((prev) => {
+      const items = Array.isArray(prev.donation_items) ? prev.donation_items : [];
+      const next = items.map((it, i) => {
+        if (i !== idx) return it;
+        const merged = { ...(it || {}), ...(patch || {}) };
+        const qty = Number(merged.quantity || 0);
+        const price = Number(merged.basePrice || 0);
+        const q = Number.isFinite(qty) && qty > 0 ? Math.floor(qty) : 1;
+        const p = Number.isFinite(price) && price >= 0 ? price : 0;
+        return {
+          ...merged,
+          quantity: q,
+          basePrice: p,
+          totalAmount: q * p,
+        };
+      });
+      return { ...prev, donation_items: next };
+    });
+  };
   
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -170,9 +239,35 @@ const AddDonation = () => {
       }
 
       // Prepare donation data
+      const donationItems = Array.isArray(form.donation_items) ? form.donation_items : [];
+      const qurbaniPayloadItems =
+        isQurbaniProject && donationItems.length > 0
+          ? donationItems
+              .filter((x) => x?.initiativeId && Number(x?.quantity || 0) > 0)
+              .map((x) => ({
+                projectId: QURBANI_PROJECT_ID,
+                initiativeId: x.initiativeId,
+                projectTitle: qurbaniProject?.title || form.project_name || 'Qurbani Barai Mustehqeen',
+                initiativeTitle: x.initiativeTitle,
+                initiativeSubtitle: x.initiativeSubtitle,
+                quantity: Number(x.quantity),
+                donationType: String(form.donation_type || 'GENERAL').toUpperCase(),
+                basePrice: Number(x.basePrice || 0),
+                selectedPricingOptionId: null,
+                selectedPricingOptionLabel: null,
+                customAmount: 0,
+                totalAmount: Number(x.totalAmount || 0),
+              }))
+          : [];
+
+      const qurbaniTotal =
+        qurbaniPayloadItems.length > 0
+          ? qurbaniPayloadItems.reduce((sum, it) => sum + Number(it.totalAmount || 0), 0)
+          : null;
+
       const donationData = {
         donor_id: form.donor_id,
-        amount: parseFloat(form.amount),
+        amount: qurbaniTotal != null ? Number(qurbaniTotal) : parseFloat(form.amount),
         currency: form.currency,
         date: form.date,
         donation_type: form.donation_type,
@@ -182,6 +277,7 @@ const AddDonation = () => {
         status: form.status,
         project_id: form.project_id || null,
         project_name: form.project_name,
+        ...(qurbaniPayloadItems.length > 0 ? { donation_items: qurbaniPayloadItems } : {}),
         // Payment method specific fields
         cheque_number: form.cheque_number || null,
         bank_name: form.bank_name || null,
@@ -805,26 +901,168 @@ const AddDonation = () => {
            )}
           {/* Project Information */}
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Project Information (Optional)</h3>
-            <div className="form-grid-2">
-              <FormInput
-                label="Project ID"
-                type="text"
-                name="project_id"
-                value={form.project_id}
-                onChange={handleChange}
-                placeholder="Enter project ID"
-              />
-
-              <FormInput
-                label="Project Name"
-                type="text"
-                name="project_name"
-                value={form.project_name}
-                onChange={handleChange}
-                placeholder="Enter project name"
-              />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+              <h3 style={{ margin: 0, color: '#333' }}>Project Information (Optional)</h3>
+              {!isQurbaniProject && (
+                <button
+                  type="button"
+                  className="secondary_btn"
+                  onClick={setToQurbaniProject}
+                  style={{ padding: '8px 10px' }}
+                >
+                  Use Qurbani workflow
+                </button>
+              )}
             </div>
+
+            {!isQurbaniProject ? (
+              <div className="form-grid-2">
+                <FormSelect
+                  label="Project ID"
+                  name="project_id"
+                  value={form.project_id}
+                  options={projectOptions}
+                  onChange={(e) => {
+                    const id = e.target.value;
+                    const proj = (projectCards || []).find((p) => p.id === id) || null;
+                    setForm((prev) => ({
+                      ...prev,
+                      project_id: id,
+                      project_name: proj?.title || prev.project_name,
+                      donation_items: id === QURBANI_PROJECT_ID ? prev.donation_items : [],
+                    }));
+                  }}
+                  showDefaultOption={true}
+                  defaultOptionText="Select project"
+                />
+                <FormInput
+                  label="Project Name"
+                  type="text"
+                  name="project_name"
+                  value={
+                    (projectCards || []).find((p) => p.id === form.project_id)?.title ||
+                    form.project_name
+                  }
+                  onChange={handleChange}
+                  placeholder="Auto-filled from selected project"
+                  disabled={true}
+                />
+              </div>
+            ) : (
+              <>
+                <div className="form-grid-2" style={{ marginBottom: '12px' }}>
+                  <FormInput
+                    label="Project ID"
+                    type="text"
+                    name="project_id"
+                    value={form.project_id}
+                    onChange={handleChange}
+                    placeholder="Enter project ID"
+                    disabled={true}
+                  />
+                  <FormInput
+                    label="Project Name"
+                    type="text"
+                    name="project_name"
+                    value={form.project_name}
+                    onChange={handleChange}
+                    placeholder="Enter project name"
+                    disabled={true}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontWeight: 600, color: '#333' }}>Qurbani items</div>
+                  <button type="button" className="secondary_btn" onClick={addQurbaniItemRow}>
+                    <FiPlus style={{ marginRight: '6px' }} /> Add item
+                  </button>
+                </div>
+
+                {(Array.isArray(form.donation_items) ? form.donation_items : []).length === 0 ? (
+                  <div style={{ padding: '10px 12px', background: '#f8fafc', border: '1px solid #e5e7eb', borderRadius: '8px', color: '#475569' }}>
+                    Add at least one Qurbani item (Cow Share / Full Cow / Goat). The amount will be calculated from these items.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {(form.donation_items || []).map((it, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          border: '1px solid #e5e7eb',
+                          borderRadius: '10px',
+                          padding: '12px',
+                          background: 'white',
+                        }}
+                      >
+                        <div className="form-grid-2" style={{ alignItems: 'end' }}>
+                          <div>
+                            <label style={{ display: 'block', marginBottom: '6px', fontSize: '14px', color: '#374151' }}>
+                              Initiative
+                            </label>
+                            <select
+                              className="form-control"
+                              value={it?.initiativeId || ''}
+                              onChange={(e) => {
+                                const initiativeId = e.target.value;
+                                const initiative = (qurbaniInitiatives || []).find((x) => x.id === initiativeId) || null;
+                                updateQurbaniItemRow(idx, {
+                                  initiativeId,
+                                  initiativeTitle: initiative?.title || '',
+                                  initiativeSubtitle: initiative?.subtitle || '',
+                                  basePrice: Number(initiative?.price || 0),
+                                });
+                              }}
+                            >
+                              <option value="">Select initiative</option>
+                              {(qurbaniInitiatives || []).map((x) => (
+                                <option key={x.id} value={x.id}>
+                                  {x.title} — {Number(x.price || 0).toLocaleString()} PKR
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <FormInput
+                            label="Quantity"
+                            type="number"
+                            name={`qurbani_qty_${idx}`}
+                            value={it?.quantity ?? 1}
+                            onChange={(e) => updateQurbaniItemRow(idx, { quantity: e.target.value })}
+                            min="1"
+                            step="1"
+                          />
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px', color: '#334155' }}>
+                          <div>
+                            Unit: {Number(it?.basePrice || 0).toLocaleString()} PKR
+                          </div>
+                          <div style={{ fontWeight: 700 }}>
+                            Line total: {Number(it?.totalAmount || 0).toLocaleString()} PKR
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+                          <button
+                            type="button"
+                            className="danger_btn"
+                            onClick={() => removeQurbaniItemRow(idx)}
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                          >
+                            <FiTrash2 /> Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', fontWeight: 800, color: '#111827' }}>
+                      Total:{' '}
+                      {((form.donation_items || []).reduce((sum, x) => sum + Number(x?.totalAmount || 0), 0) || 0).toLocaleString()} PKR
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {/* Payment Details */}
