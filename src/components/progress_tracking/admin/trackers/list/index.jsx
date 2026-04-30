@@ -30,14 +30,14 @@ const TrackersList = () => {
     search: '',
     template_id: '',
     batch_id: '',
-    batch_status: 'open',
+    // batch_status: 'open',
     batch_number: '',
   });
   const [appliedFilters, setAppliedFilters] = useState({
     search: '',
     template_id: '',
     batch_id: '',
-    batch_status: 'open',
+    // batch_status: 'open',
     batch_number: '',
   });
 
@@ -87,7 +87,7 @@ const TrackersList = () => {
         search: appliedFilters.search || undefined,
         template_id: appliedFilters.template_id || undefined,
         batch_id: appliedFilters.batch_id || undefined,
-        batch_status: appliedFilters.batch_status || undefined,
+        // batch_status: appliedFilters.batch_status || undefined,
         batch_number: appliedFilters.batch_number || undefined,
       };
       const res = await axiosInstance.get('/progress/trackers', { params });
@@ -126,7 +126,7 @@ const TrackersList = () => {
       search: '',
       template_id: '',
       batch_id: '',
-      batch_status: 'open',
+      // batch_status: 'open',
       batch_number: '',
     };
     setTempFilters(empty);
@@ -187,7 +187,7 @@ const TrackersList = () => {
               placeholder="All templates"
               showClearButton={true}
             />
-            <DropdownFilter
+            {/* <DropdownFilter
               filterKey="batch_status"
               label="Batch Status"
               data={[
@@ -197,7 +197,7 @@ const TrackersList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="Select status"
-            />
+            /> */}
             <DropdownFilter
               filterKey="batch_id"
               label="Batch"
