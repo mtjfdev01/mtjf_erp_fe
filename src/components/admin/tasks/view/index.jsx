@@ -27,6 +27,7 @@ const ViewTask = () => {
 
   const [assignedUsersMeta, setAssignedUsersMeta] = useState([]);
   const [usersById, setUsersById] = useState({});
+  const [usersFetchInProgress, setUsersFetchInProgress] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [attachment, setAttachment] = useState({ file: null });
@@ -39,6 +40,8 @@ const ViewTask = () => {
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [showProgressHistory, setShowProgressHistory] = useState(false);
   const [approvalState, setApprovalState] = useState(null);
+  const [approvalLoaded, setApprovalLoaded] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
 
   const getAttachmentHref = (urlStr) => {
     if (!urlStr) return '#';
@@ -55,34 +58,49 @@ const ViewTask = () => {
   }, [task?.id]);
 
   useEffect(() => {
+    let cancelled = false;
     const fetch = async () => {
       setLoading(true);
       setError('');
       try {
         const res = await axiosInstance.get(`/tasks/${id}`);
         const t = res.data.data;
-        setTask(t);
-        setAssignedUsersMeta(Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : []);
-        
-        try {
-          const approvalRes = await axiosInstance.get(`/tasks/${id}/approval`);
-          setApprovalState(approvalRes.data?.data || null);
-        } catch {
-          setApprovalState(null);
+        if (!cancelled) {
+          setTask(t);
+          setAssignedUsersMeta(Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : []);
+          // Note: approval data is now lazy-loaded only when needed
         }
       } catch (e) {
-        setError(e.response?.data?.message || 'Failed to load task.');
+        if (!cancelled) {
+          setError(e.response?.data?.message || 'Failed to load task.');
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
     fetch();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
+  // Optimized user resolution - CONDITIONAL API CALL
+  // The /users/by-ids API is ONLY called when:
+  // 1. Task has assigned users (assigned_user_ids)
+  // 2. Approval data is loaded AND task has approvers
+  // 3. Task has reassignment activities
+  // 
+  // NOT called for:
+  // - created_by / reported_by (backend already returns full user objects)
+  // - Tasks with no assignees, no approval workflow, no activities
+  // - Users already cached in usersById state
   useEffect(() => {
     if (!task) return;
 
     const resolveUsers = async () => {
+      // Collect all user IDs that need to be resolved
       const idsFromAssigned = Array.isArray(task.assigned_user_ids)
         ? task.assigned_user_ids.filter((n) => Number.isInteger(n) && n > 0)
         : [];
@@ -91,6 +109,7 @@ const ViewTask = () => {
             .map((m) => m?.user_id)
             .filter((n) => Number.isInteger(n) && n > 0)
         : [];
+      
       const idsFromApprovers = Array.isArray(task.approval_required_user_ids)
         ? task.approval_required_user_ids
             .map((n) => Number(n))
@@ -104,8 +123,9 @@ const ViewTask = () => {
         .map((m) => (m && m.user_id ? Number(m.user_id) : null))
         .filter((n) => Number.isInteger(n) && n > 0);
 
+      // Only include reassignment IDs if there are activities
       const reassignmentIds = [];
-      if (Array.isArray(task.activities)) {
+      if (Array.isArray(task.activities) && task.activities.length > 0) {
         task.activities.forEach((a) => {
           if (!a || a.action !== 'reassigned') return;
           const details = a.details;
@@ -126,6 +146,10 @@ const ViewTask = () => {
         });
       }
 
+      // NOTE: created_by_id and reported_by_id are NOT included here because
+      // the backend already returns task.created_by and task.reported_by as full user objects
+      // via leftJoinAndSelect in the findOne method
+
       const allNeededIds = Array.from(
         new Set([
           ...idsFromAssigned,
@@ -133,14 +157,14 @@ const ViewTask = () => {
           ...idsFromApprovers,
           ...approvalMetaIds,
           ...reassignmentIds,
-          task.created_by_id,
-          task.reported_by_id,
         ]),
       ).filter((n) => n != null && Number.isInteger(n) && n > 0);
 
+      // Only fetch if there are missing IDs that we don't already have cached
       const missingIds = allNeededIds.filter(id => !usersById[id]);
 
-      if (missingIds.length > 0) {
+      if (missingIds.length > 0 && !usersFetchInProgress) {
+        setUsersFetchInProgress(true);
         try {
           const query = missingIds.map((idVal) => `ids=${encodeURIComponent(idVal)}`).join('&');
           const res = await axiosInstance.get(`/users/by-ids?${query}`);
@@ -154,12 +178,31 @@ const ViewTask = () => {
           });
         } catch (err) {
           console.error('Failed to resolve users', err);
+        } finally {
+          setUsersFetchInProgress(false);
         }
       }
     };
 
     resolveUsers();
-  }, [task, approvalState]);
+  }, [task?.id, approvalState]); // Only re-run when task ID changes or approval state is loaded
+
+  // Lazy load approval data only when needed
+  const loadApprovalData = useCallback(async () => {
+    if (approvalLoaded || approvalLoading) return;
+    
+    setApprovalLoading(true);
+    try {
+      const approvalRes = await axiosInstance.get(`/tasks/${id}/approval`);
+      setApprovalState(approvalRes.data?.data || null);
+      setApprovalLoaded(true);
+    } catch {
+      setApprovalState(null);
+      setApprovalLoaded(true);
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [id, approvalLoaded, approvalLoading]);
 
   const assignedUsers = useMemo(() => {
     if (!task || !Array.isArray(task.assigned_user_ids)) return [];
@@ -361,6 +404,9 @@ const ViewTask = () => {
   const hasApprovalPanel =
     isApprovalWorkflow && approvalRequiredIds && approvalRequiredIds.length > 0;
 
+  // Note: Approval data is now loaded on-demand when user performs approval action
+  // Removed auto-load useEffect to prevent unnecessary API calls on task view load
+
   const showCompletedDate =
     !!task?.completed_date &&
     ((!isApprovalWorkflow &&
@@ -559,9 +605,19 @@ const ViewTask = () => {
   const canEditMovChecklist = useMemo(() => {
     if (!task || !user) return false;
     
-    // Check if task is in a terminal state where MOV cannot be edited
+    // Check if task is in a terminal or approval state where MOV cannot be edited
+    // MOV editing is blocked when task is:
+    // - Completed/Closed/Cancelled/Rejected (terminal states)
+    // - Pending Approval/Approved (approval workflow states, should be read-only)
     const sVal = String(task.status || '').toLowerCase();
-    if (['completed', 'closed', 'cancelled', 'rejected'].includes(sVal)) return false;
+    if (['completed', 'closed', 'cancelled', 'rejected', 'pending_approval', 'approved'].includes(sVal)) return false;
+    
+    // ROLE-BASED RESTRICTION: Task creators CANNOT interact with MOV checkboxes
+    // Only assignees can check/uncheck MOV items
+    const isTaskCreator = Number(task.created_by_id) === Number(user?.id);
+    if (isTaskCreator) {
+      return false; // Block task creators from MOV interaction
+    }
     
     // Check if user is assignee
     const isAssignee = Array.isArray(task.assigned_user_ids) && task.assigned_user_ids.includes(user?.id);
@@ -670,7 +726,9 @@ const ViewTask = () => {
     }
   };
 
-  const handleStatusActionClick = (action) => {
+  const handleStatusActionClick = async (action) => {
+    // Do NOT load approval data on button click
+    // Approval data will be loaded only when user submits the form with a note
     setStatusModalAction(action);
     setStatusModalOpen(true);
   };
@@ -703,11 +761,12 @@ const ViewTask = () => {
         }
       }
     }
-    try {
-      const approvalRes = await axiosInstance.get(`/tasks/${id}/approval`);
-      const approvalData = approvalRes.data?.data || null;
-      setApprovalState(approvalData);
-    } catch {
+    // Load approval data ONLY after user submits an approval action with a note
+    // This ensures /tasks/:id/approval is called only on actual submission (not on button click)
+    if (statusModalAction === 'APPROVE' || statusModalAction === 'REJECT' || statusModalAction === 'SUBMIT_APPROVAL') {
+      // Reset approval loaded state to allow fresh data fetch
+      setApprovalLoaded(false);
+      await loadApprovalData();
     }
   };
 
@@ -1191,7 +1250,10 @@ const ViewTask = () => {
                                     : '';
                                 const notes =
                                   details && typeof details.notes === 'string'
-                                    ? details.notes.replace(/\s*\[indices:[\d,]+\]/, '')
+                                    ? details.notes
+                                        .replace(/\s*\[indices:[\d,]+\]/, '')
+                                        .replace(/\s*\[ownership:[^\]]+\]/, '')
+                                        .trim()
                                     : '';
                                 const performer =
                                   a && a.performed_by ? a.performed_by : null;
@@ -1451,7 +1513,7 @@ const ViewTask = () => {
                     <div className="view-section">
                       <h3 className="view-section-title">
                         <span>👥</span> Team & Assignment
-                      </h3>
+                        </h3>
                       <div className="team-assignment">
                         <div className="team-assignment-main">
                           <span className="team-assignment-label">Assigned:</span>

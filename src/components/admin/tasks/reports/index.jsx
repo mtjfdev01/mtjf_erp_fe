@@ -85,14 +85,22 @@ const TaskReports = () => {
 
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
-    if (!teamSearchQuery.trim()) return taskAggregates.users;
+    
+    // Exclude the logged-in user from team performance
+    const currentUserId = Number(user?.id);
+    const teamWithoutCurrentUser = taskAggregates.users.filter(member => {
+      const memberId = Number(member.id || member.user_id || member.userId);
+      return memberId !== currentUserId;
+    });
+    
+    if (!teamSearchQuery.trim()) return teamWithoutCurrentUser;
 
     const query = teamSearchQuery.toLowerCase();
-    return taskAggregates.users.filter(member =>
+    return teamWithoutCurrentUser.filter(member =>
       member.label.toLowerCase().includes(query) ||
       (member.role && member.role.toLowerCase().includes(query))
     );
-  }, [taskAggregates.users, teamSearchQuery]);
+  }, [taskAggregates.users, teamSearchQuery, user?.id]);
 
   const teamSummary = useMemo(() => {
     const list = filteredTeamMembers;
@@ -1000,7 +1008,7 @@ const TaskReports = () => {
                       />
                     </div>
                     <span className="task-team-active-badge">
-                      {taskAggregates.users.length} Active Members
+                      {filteredTeamMembers.length} Active Members
                     </span>
                   </div>
                 </div>

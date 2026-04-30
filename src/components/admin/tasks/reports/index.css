@@ -274,7 +274,7 @@
 .task-report-card--summary {
   display: flex;
   flex-direction: column;
-  min-height: 415px;
+  min-height: 420px;
 }
 
 .task-report-card--summary .task-status-grid,
