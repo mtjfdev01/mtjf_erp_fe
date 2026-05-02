@@ -188,7 +188,7 @@ const TrackersView = () => {
                     <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                       {(s.evidence || []).map((ev) => (
                         <a key={ev.id} href={ev.file_url} target="_blank" rel="noreferrer" style={{ fontSize: 13 }}>
-                          {ev.title || ev.file_type}
+                          {ev.evidence_label ? `${ev.evidence_label}: ` : ''}{ev.title || ev.file_type}
                         </a>
                       ))}
                     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
@@ -10,6 +10,7 @@ const TemplateView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [template, setTemplate] = useState(null);
+  const [parents, setParents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -29,7 +30,11 @@ const TemplateView = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await axiosInstance.get(`/progress/workflow-templates/${id}`);
+      const [res, parentsRes] = await Promise.all([
+        axiosInstance.get(`/progress/workflow-templates/${id}`),
+        axiosInstance.get('/progress/workflow-templates'),
+      ]);
+      if (parentsRes.data?.success) setParents(parentsRes.data.data || []);
       if (res.data?.success) setTemplate(res.data.data);
       else setError(res.data?.message || 'Failed to load template');
     } catch (e) {
@@ -51,6 +56,18 @@ const TemplateView = () => {
         code: template.code,
         description: template.description,
         is_active: template.is_active,
+        parent_id: template.parent_id ? Number(template.parent_id) : null,
+        target_amount:
+          template.target_amount === '' || template.target_amount == null
+            ? null
+            : Number(template.target_amount),
+        is_batchable: Boolean(template.is_batchable),
+        batch_parts:
+          !template.is_batchable || template.batch_parts === '' ? null : Number(template.batch_parts),
+        batch_part_amount:
+          !template.is_batchable || template.batch_part_amount === ''
+            ? null
+            : Number(template.batch_part_amount),
       });
       await fetchData();
     } catch (e) {
@@ -59,6 +76,15 @@ const TemplateView = () => {
       setSaving(false);
     }
   };
+
+  const canSave = useMemo(() => {
+    if (!template) return false;
+    if (!template.name || !template.code) return false;
+    if (!template.is_batchable) return true;
+    const bp = Number(template.batch_parts);
+    const bpa = Number(template.batch_part_amount);
+    return Number.isFinite(bp) && bp > 0 && Number.isFinite(bpa) && bpa > 0;
+  }, [template]);
 
   const addStep = async () => {
     setSaving(true);
@@ -113,6 +139,30 @@ const TemplateView = () => {
           <div className="view-section">
             <h3 className="view-section-title">Template</h3>
             <div className="form-grid-2">
+              <FormSelect
+                label="Parent Template (optional)"
+                name="parent_id"
+                value={template.parent_id == null ? '' : String(template.parent_id)}
+                onChange={(e) =>
+                  setTemplate({
+                    ...template,
+                    parent_id: e.target.value ? Number(e.target.value) : null,
+                  })
+                }
+                options={[
+                  { value: '', label: 'None' },
+                  ...(parents || [])
+                    .filter((p) => String(p.id) !== String(template.id))
+                    .map((p) => ({ value: String(p.id), label: `${p.name} (${p.code})` })),
+                ]}
+              />
+              <FormInput
+                label="Target Amount (optional)"
+                name="target_amount"
+                type="number"
+                value={template.target_amount ?? ''}
+                onChange={(e) => setTemplate({ ...template, target_amount: e.target.value })}
+              />
               <FormInput label="Name" name="name" value={template.name || ''} onChange={(e) => setTemplate({ ...template, name: e.target.value })} />
               <FormInput label="Code" name="code" value={template.code || ''} onChange={(e) => setTemplate({ ...template, code: e.target.value })} />
               <FormSelect
@@ -125,6 +175,34 @@ const TemplateView = () => {
                   { value: 'false', label: 'Inactive' },
                 ]}
               />
+              <FormSelect
+                label="Batchable"
+                name="is_batchable"
+                value={template.is_batchable ? 'true' : 'false'}
+                onChange={(e) => setTemplate({ ...template, is_batchable: e.target.value === 'true' })}
+                options={[
+                  { value: 'false', label: 'No' },
+                  { value: 'true', label: 'Yes' },
+                ]}
+              />
+              {template.is_batchable && (
+                <>
+                  <FormInput
+                    label="Batch Parts"
+                    name="batch_parts"
+                    type="number"
+                    value={template.batch_parts ?? ''}
+                    onChange={(e) => setTemplate({ ...template, batch_parts: e.target.value })}
+                  />
+                  <FormInput
+                    label="Batch Part Amount"
+                    name="batch_part_amount"
+                    type="number"
+                    value={template.batch_part_amount ?? ''}
+                    onChange={(e) => setTemplate({ ...template, batch_part_amount: e.target.value })}
+                  />
+                </>
+              )}
               <FormInput
                 label="Description"
                 name="description"
@@ -134,7 +212,7 @@ const TemplateView = () => {
               />
             </div>
             <div className="form-actions">
-              <button type="button" className="primary_btn" onClick={saveTemplate} disabled={saving}>
+              <button type="button" className="primary_btn" onClick={saveTemplate} disabled={saving || !canSave}>
                 {saving ? 'Saving...' : 'Save'}
               </button>
               <button type="button" className="secondary_btn" onClick={() => navigate('/progress/templates')}>

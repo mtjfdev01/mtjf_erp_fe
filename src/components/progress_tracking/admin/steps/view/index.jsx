@@ -280,7 +280,14 @@ const EvidenceView = () => {
                   {evidence.map((ev) => (
                     <tr key={ev.id}>
                       <td>{ev.id}</td>
-                      <td>{ev.file_type}</td>
+                      <td>
+                        {ev.evidence_label ? (
+                          <span style={{ fontSize: 12, color: '#6b7280', marginRight: 8 }}>
+                            {ev.evidence_label}
+                          </span>
+                        ) : null}
+                        {ev.file_type}
+                      </td>
                       <td className="table-actions">
                         <ActionMenu actions={evidenceActionsFor(ev)} />
                       </td>

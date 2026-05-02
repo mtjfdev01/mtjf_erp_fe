@@ -6,6 +6,7 @@ import PageHeader from '../../../../common/PageHeader';
 import ActionMenu from '../../../../common/ActionMenu';
 import Pagination from '../../../../common/Pagination';
 import { SearchFilter } from '../../../../common/filters';
+import { DropdownFilter } from '../../../../common/filters';
 import { SearchButton, ClearButton } from '../../../../common/filters';
 import { FiEye } from 'react-icons/fi';
 
@@ -17,14 +18,64 @@ const TrackersList = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [batchOptions, setBatchOptions] = useState([]);
+  const [templateOptions, setTemplateOptions] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
 
-  const [tempFilters, setTempFilters] = useState({ search: '' });
-  const [appliedFilters, setAppliedFilters] = useState({ search: '' });
+  const [tempFilters, setTempFilters] = useState({
+    search: '',
+    template_id: '',
+    batch_id: '',
+    // batch_status: 'open',
+    batch_number: '',
+  });
+  const [appliedFilters, setAppliedFilters] = useState({
+    search: '',
+    template_id: '',
+    batch_id: '',
+    // batch_status: 'open',
+    batch_number: '',
+  });
+
+  const fetchBatchOptions = async () => {
+    try {
+      const res = await axiosInstance.get('/progress/batches/options', {
+        params: { status: 'open' },
+      });
+      if (res.data?.success) {
+        const items = res.data.data || [];
+        setBatchOptions(
+          items.map((b) => ({
+            value: String(b.id),
+            label: `Batch #${b.batch_number}${b.template_name ? ` — ${b.template_name}` : ''} (${b.allocated_parts}/${b.batch_parts})`,
+          })),
+        );
+      }
+    } catch (e) {
+      // ignore; tracker list still works without dropdown options
+    }
+  };
+
+  const fetchTemplateOptions = async () => {
+    try {
+      const res = await axiosInstance.get('/progress/workflow-templates');
+      if (res.data?.success) {
+        const items = res.data.data || [];
+        setTemplateOptions(
+          items.map((tpl) => ({
+            value: String(tpl.id),
+            label: tpl.code ? `${tpl.name} (${tpl.code})` : tpl.name,
+          })),
+        );
+      }
+    } catch (e) {
+      // ignore; template filter optional
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -34,6 +85,10 @@ const TrackersList = () => {
         page: currentPage,
         pageSize,
         search: appliedFilters.search || undefined,
+        template_id: appliedFilters.template_id || undefined,
+        batch_id: appliedFilters.batch_id || undefined,
+        // batch_status: appliedFilters.batch_status || undefined,
+        batch_number: appliedFilters.batch_number || undefined,
       };
       const res = await axiosInstance.get('/progress/trackers', { params });
       if (res.data?.success) {
@@ -51,6 +106,12 @@ const TrackersList = () => {
   };
 
   useEffect(() => {
+    fetchBatchOptions();
+    fetchTemplateOptions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, appliedFilters]);
@@ -61,7 +122,13 @@ const TrackersList = () => {
     setCurrentPage(1);
   };
   const handleClear = () => {
-    const empty = { search: '' };
+    const empty = {
+      search: '',
+      template_id: '',
+      batch_id: '',
+      // batch_status: 'open',
+      batch_number: '',
+    };
     setTempFilters(empty);
     setAppliedFilters(empty);
     setCurrentPage(1);
@@ -111,6 +178,43 @@ const TrackersList = () => {
               onFilterChange={handleFilterChange}
               placeholder="Search by template/donation id..."
             />
+            <DropdownFilter
+              filterKey="template_id"
+              label="Workflow template"
+              data={templateOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All templates"
+              showClearButton={true}
+            />
+            {/* <DropdownFilter
+              filterKey="batch_status"
+              label="Batch Status"
+              data={[
+                { value: 'open', label: 'Open' },
+                { value: 'closed', label: 'Closed' },
+              ]}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Select status"
+            /> */}
+            <DropdownFilter
+              filterKey="batch_id"
+              label="Batch"
+              data={batchOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All open batches"
+              showClearButton={true}
+            />
+            <SearchFilter
+              filterKey="batch_number"
+              label="Batch #"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="e.g. 12"
+              showIcon={false}
+            />
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
               <SearchButton onClick={handleApply} text="Search" loading={loading} />
               <ClearButton onClick={handleClear} text="Clear" />
@@ -124,6 +228,7 @@ const TrackersList = () => {
                   <th>ID</th>
                   <th>Template</th>
                   <th className="hide-on-mobile">Donation ID</th>
+                  <th className="hide-on-mobile">Batch #</th>
                   <th>Overall</th>
                   <th className="table-actions">Actions</th>
                 </tr>
@@ -134,6 +239,7 @@ const TrackersList = () => {
                     <td>{t.id}</td>
                     <td>{t?.template?.name || '-'}</td>
                     <td className="hide-on-mobile">{t.donation_id || '-'}</td>
+                    <td className="hide-on-mobile">{t.batch_number || '-'}</td>
                     <td>{t.overall_status}</td>
                     <td className="table-actions">
                       <ActionMenu actions={actionsFor(t)} />
