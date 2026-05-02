@@ -543,12 +543,12 @@
 .task-progress-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.75rem;
+  gap: 0.25rem;
+  padding: 0.5rem;
   background: #f8fafc;
-  border-radius: 8px;
   border: 1px solid #e8ecf4;
-  font-size: 0.825rem;
+  font-size: 0.6rem;
+  font-weight: 800;
   color: var(--color-text-secondary);
 }
 
@@ -2570,7 +2570,7 @@
   }
 
   .task-progress-legend-item {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
   }
 
   .task-progress-dot {
@@ -2579,7 +2579,7 @@
   }
 
   .task-progress-legend-label {
-    font-size: 0.72rem;
+    font-size: 0.7rem;
   }
 
   /* Team Performance */
