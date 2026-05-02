@@ -539,15 +539,39 @@ const TaskReports = () => {
         'cancelled'
       ];
 
-      const datasets = statusKeys.map((status, index) => ({
+      // First, calculate total count for each status across all departments
+      const statusTotals = statusKeys.map((status, index) => {
+        const total = depts.reduce((sum, dept) => {
+          const entry = taskStats.department_status_breakdown[dept][status];
+          const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+          return sum + count;
+        }, 0);
+        return { status, index, total };
+      });
+
+      // Filter out statuses with zero total across all departments
+      const activeStatuses = statusTotals.filter(item => item.total > 0);
+
+      // Create datasets only for statuses with actual data
+      const datasets = activeStatuses.map(({ status, index }) => ({
         label: STATUS_LABELS[index],
         data: depts.map(dept => {
           const entry = taskStats.department_status_breakdown[dept][status];
-          return entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+          const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+          return count > 0 ? count : null;
         }),
         backgroundColor: STATUS_COLORS[index],
+        hoverBackgroundColor: STATUS_COLORS[index],
         borderColor: '#ffffff',
-        borderWidth: 1
+        hoverBorderColor: '#ffffff',
+        borderWidth: 2.5,
+        hoverBorderWidth: 3,
+        borderRadius: 6,
+        borderSkipped: false,
+        barPercentage: 0.7,
+        categoryPercentage: 0.8,
+        barThickness: 'flex',
+        maxBarThickness: 60
       }));
 
       const data = {
@@ -569,65 +593,622 @@ const TaskReports = () => {
               legend: {
                 display: true,
                 position: 'bottom',
+                align: 'center',
                 labels: {
-                  boxWidth: 12,
-                  font: { size: 10 }
+                  boxWidth: 14,
+                  boxHeight: 14,
+                  font: { 
+                    size: 11,
+                    weight: '600',
+                    family: "'Inter', sans-serif"
+                  },
+                  padding: 16,
+                  usePointStyle: true,
+                  pointStyle: 'rectRounded',
+                  color: '#475569'
+                },
+                onHover: (legendItem, legendData) => {
+                  legendItem.cursor = 'pointer';
                 }
               },
               tooltip: {
                 mode: 'nearest',
-                intersect: true
+                intersect: true,
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                borderColor: 'rgba(255, 255, 255, 0.15)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 10,
+                titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
+                bodyFont: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+                bodySpacing: 5,
+                displayColors: true,
+                boxWidth: 10,
+                boxHeight: 10,
+                boxPadding: 4,
+                caretPadding: 8,
+                caretSize: 6,
+                filter: function(tooltipItem) {
+                  return tooltipItem.raw !== null && tooltipItem.raw !== undefined && tooltipItem.raw > 0;
+                },
+                callbacks: {
+                  title: function(context) {
+                    const dept = context[0].label;
+                    return `🏢 ${dept}`;
+                  },
+                  label: function(context) {
+                    const status = context.dataset.label;
+                    const value = context.parsed.y;
+                    if (value === null || value === undefined || value === 0) return null;
+                    return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
+                  },
+                  afterLabel: function(context) {
+                    const deptIndex = context.dataIndex;
+                    const chart = context.chart;
+                    let totalTasks = 0;
+                    
+                    chart.data.datasets.forEach(dataset => {
+                      const value = dataset.data[deptIndex];
+                      if (value !== null && value !== undefined) {
+                        totalTasks += value;
+                      }
+                    });
+                    
+                    return `\n📊 Total: ${totalTasks} task${totalTasks !== 1 ? 's' : ''}`;
+                  }
+                }
+              },
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                offset: 4,
+                font: {
+                  size: 10,
+                  weight: '700',
+                  family: "'Inter', sans-serif"
+                },
+                color: '#ffffff',
+                formatter: (value) => {
+                  return value > 0 ? value : null;
+                },
+                display: (context) => {
+                  // Don't display labels for hidden datasets
+                  const meta = context.chart.getDatasetMeta(context.datasetIndex);
+                  if (meta.hidden) return false;
+                  
+                  const value = context.dataset.data[context.dataIndex];
+                  return value > 0;
+                },
+                textShadowColor: 'rgba(0, 0, 0, 0.4)',
+                textShadowBlur: 3
               }
             },
             scales: {
               x: {
-                stacked: true,
-                ticks: { font: { size: 10 } }
+                stacked: false,
+                grid: {
+                  display: false
+                },
+                border: {
+                  display: false
+                },
+                ticks: { 
+                  font: { 
+                    size: 11,
+                    weight: '600',
+                    family: "'Inter', sans-serif"
+                  },
+                  color: '#475569',
+                  maxRotation: 45,
+                  minRotation: 45,
+                  padding: 10
+                }
               },
               y: {
-                stacked: true,
+                stacked: false,
                 beginAtZero: true,
-                ticks: { stepSize: 1 }
+                grid: {
+                  color: 'rgba(0, 0, 0, 0.04)',
+                  lineWidth: 1,
+                  drawBorder: false,
+                  borderDash: [4, 4]
+                },
+                border: {
+                  display: false,
+                  lineWidth: 0
+                },
+                ticks: { 
+                  font: { 
+                    size: 11,
+                    weight: '600',
+                    family: "'Inter', sans-serif"
+                  },
+                  color: '#475569',
+                  precision: 0,
+                  maxTicksLimit: 10,
+                  padding: 10,
+                  stepSize: 1
+                },
+                title: {
+                  display: true,
+                  text: 'Number of Tasks',
+                  font: { 
+                    size: 13,
+                    weight: '700',
+                    family: "'Inter', sans-serif"
+                  },
+                  color: '#334155',
+                  padding: { top: 12 }
+                },
+                suggestedMax: function(context) {
+                  const max = Math.max(...context.chart.data.datasets[0]?.data || [0]);
+                  return Math.ceil(max * 1.18);
+                }
               }
+            },
+            interaction: {
+              mode: 'nearest',
+              axis: 'xy',
+              intersect: true
+            },
+            animation: {
+              duration: 800,
+              easing: 'easeOutQuart'
             }
-          }
+          },
+          plugins: [{
+            id: 'valueLabels',
+            afterDatasetsDraw: (chart) => {
+              const { ctx } = chart;
+              const isHorizontal = chart.config.options.indexAxis === 'y';
+              const chartWidth = chart.width;
+              
+              // Dynamic badge sizing based on chart width for responsiveness
+              let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
+              
+              if (chartWidth < 480) {
+                // Extra small screens
+                badgeWidth = 22;
+                badgeHeight = 15;
+                cornerRadius = 3;
+                fontSize = 9;
+                padding = 4;
+              } else if (chartWidth < 768) {
+                // Small screens
+                badgeWidth = 24;
+                badgeHeight = 16;
+                cornerRadius = 3;
+                fontSize = 10;
+                padding = 4;
+              } else {
+                // Medium and larger screens
+                badgeWidth = 26;
+                badgeHeight = 17;
+                cornerRadius = 3;
+                fontSize = 10;
+                padding = 5;
+              }
+              
+              chart.data.datasets.forEach((dataset, datasetIndex) => {
+                const meta = chart.getDatasetMeta(datasetIndex);
+                
+                // Skip hidden datasets (via legend toggle)
+                if (meta.hidden) return;
+                
+                meta.data.forEach((bar, index) => {
+                  const value = dataset.data[index];
+                  
+                  // Only render label if value exists, is greater than 0, and bar element exists
+                  if (value && value > 0 && bar) {
+                    ctx.save();
+                    
+                    let x, y;
+                    
+                    if (isHorizontal) {
+                      // Horizontal bar: badge at the end (right side)
+                      x = bar.x + padding;
+                      y = bar.y - badgeHeight / 2;
+                    } else {
+                      // Vertical bar: badge above the bar
+                      x = bar.x - badgeWidth / 2;
+                      y = bar.y - badgeHeight - padding;
+                    }
+                    
+                    // Ensure badge stays within chart boundaries
+                    if (x < 0) x = 4;
+                    if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
+                    if (y < 0) y = 4;
+                    if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
+                    
+                    // Draw badge background (no border)
+                    ctx.fillStyle = '#ffffff';
+                    
+                    // Rounded rectangle
+                    ctx.beginPath();
+                    ctx.moveTo(x + cornerRadius, y);
+                    ctx.lineTo(x + badgeWidth - cornerRadius, y);
+                    ctx.quadraticCurveTo(x + badgeWidth, y, x + badgeWidth, y + cornerRadius);
+                    ctx.lineTo(x + badgeWidth, y + badgeHeight - cornerRadius);
+                    ctx.quadraticCurveTo(x + badgeWidth, y + badgeHeight, x + badgeWidth - cornerRadius, y + badgeHeight);
+                    ctx.lineTo(x + cornerRadius, y + badgeHeight);
+                    ctx.quadraticCurveTo(x, y + badgeHeight, x, y + badgeHeight - cornerRadius);
+                    ctx.lineTo(x, y + cornerRadius);
+                    ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
+                    ctx.closePath();
+                    ctx.fill();
+                    // Removed: ctx.stroke() - no border
+                    
+                    // Draw value text
+                    ctx.fillStyle = dataset.backgroundColor;
+                    ctx.font = `bold ${fontSize}px sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(value, x + badgeWidth / 2, y + badgeHeight / 2);
+                    
+                    ctx.restore();
+                  }
+                });
+              });
+            }
+          }]
         });
       }
     }
 
     if (taskAggregates.users.length > 0 && userBarChartRef.current) {
       const labels = taskAggregates.users.map(u => u.label);
-      const values = taskAggregates.users.map(u => u.count);
-      const colors = palette(values.length);
+      
+      // Create a dataset for each status (stacked bar chart)
+      const datasets = STATUS_LABELS.map((statusLabel, index) => {
+        const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
+        
+        return {
+          label: statusLabel,
+          data: taskAggregates.users.map(u => {
+            return u.statuses && u.statuses[statusKey] ? u.statuses[statusKey] : 0;
+          }),
+          backgroundColor: STATUS_COLORS[index],
+          hoverBackgroundColor: STATUS_COLORS[index],
+          borderColor: 'transparent',
+          hoverBorderColor: 'transparent',
+          borderWidth: 0,
+          hoverBorderWidth: 0,
+          borderRadius: 0,
+          borderSkipped: false,
+          statusKey: statusKey,
+          barPercentage: 0.55,
+          categoryPercentage: 0.65,
+          barThickness: 'flex',
+          maxBarThickness: 45
+        };
+      });
+      
       const data = {
         labels,
-        datasets: [{
-          label: 'Tasks by User',
-          data: values,
-          backgroundColor: '#17becf',
-          borderColor: '#cfa717ff',
-          borderWidth: 1
-        }]
+        datasets
       };
+      
       if (userBarChartInstance.current) {
         userBarChartInstance.current.data = data;
         userBarChartInstance.current.update();
       } else {
-        userBarChartInstance.current = new Chart(userBarChartRef.current.getContext('2d'), { type: 'bar', data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { maxRotation: 45, minRotation: 45 } } } } });
+        userBarChartInstance.current = new Chart(userBarChartRef.current.getContext('2d'), { 
+          type: 'bar', 
+          data, 
+          options: { 
+            responsive: true, 
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'bottom',
+                align: 'center',
+                labels: {
+                  boxWidth: 14,
+                  boxHeight: 14,
+                  font: { 
+                    size: 11,
+                    weight: '600',
+                    family: "'Inter', sans-serif"
+                  },
+                  padding: 16,
+                  usePointStyle: true,
+                  pointStyle: 'rectRounded',
+                  color: '#475569'
+                }
+              },
+              tooltip: {
+                mode: 'nearest',
+                intersect: true,
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#fff',
+                bodyColor: '#fff',
+                borderColor: 'rgba(255, 255, 255, 0.15)',
+                borderWidth: 1,
+                cornerRadius: 8,
+                padding: 10,
+                titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
+                bodyFont: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+                bodySpacing: 5,
+                displayColors: true,
+                boxWidth: 10,
+                boxHeight: 10,
+                boxPadding: 4,
+                caretPadding: 8,
+                caretSize: 6,
+                filter: function(tooltipItem) {
+                  return tooltipItem.raw > 0;
+                },
+                callbacks: {
+                  title: function(context) {
+                    const userName = context[0].label;
+                    return `👤 ${userName}`;
+                  },
+                  label: function(context) {
+                    const status = context.dataset.label;
+                    const value = context.parsed.y;
+                    if (value === 0) return null;
+                    return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
+                  },
+                  afterLabel: function(context) {
+                    const userIndex = context.dataIndex;
+                    const user = taskAggregates.users[userIndex];
+                    
+                    if (!user || !user.tasks || user.tasks.length === 0) {
+                      return null;
+                    }
+                    
+                    const currentStatus = context.dataset.statusKey;
+                    const statusTasks = user.tasks.filter(t => (t.status || 'open') === currentStatus);
+                    
+                    if (statusTasks.length === 0) return null;
+                    
+                    // Show task details with project names
+                    const taskDetails = statusTasks.slice(0, 5).map(t => {
+                      const project = t.project ? `\n  📁 ${t.project}` : '';
+                      const department = t.department ? `\n  🏢 ${String(t.department).split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}` : '';
+                      return `• ${t.title}${project}${department}`;
+                    });
+                    
+                    const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
+                    
+                    return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
+                  }
+                }
+              },
+              datalabels: {
+                anchor: 'end',
+                align: 'end',
+                offset: 4,
+                font: {
+                  size: 10,
+                  weight: '700',
+                  family: "'Inter', sans-serif"
+                },
+                color: '#ffffff',
+                formatter: (value) => {
+                  return value > 0 ? value : null;
+                },
+                display: (context) => {
+                  // Don't display labels for hidden datasets
+                  const meta = context.chart.getDatasetMeta(context.datasetIndex);
+                  if (meta.hidden) return false;
+                  
+                  const value = context.dataset.data[context.dataIndex];
+                  return value > 0;
+                },
+                textShadowColor: 'rgba(0, 0, 0, 0.4)',
+                textShadowBlur: 3
+              }
+            },
+            scales: { 
+              x: {
+                stacked: true,
+                grid: {
+                  display: true,
+                  color: 'rgba(0, 0, 0, 0.04)',
+                  lineWidth: 1,
+                  drawBorder: false,
+                  borderDash: [4, 4]
+                },
+                border: {
+                  display: false
+                },
+                ticks: { 
+                  font: { 
+                    size: 11,
+                    weight: '600',
+                    family: "'Inter', sans-serif"
+                  },
+                  color: '#475569',
+                  maxRotation: 45,
+                  minRotation: 45,
+                  padding: 10
+                },
+                title: {
+                  display: true,
+                  text: 'Number of Tasks',
+                  font: { 
+                    size: 13,
+                    weight: '700',
+                    family: "'Inter', sans-serif"
+                  },
+                  color: '#334155',
+                  padding: { top: 12 }
+                },
+                suggestedMax: function(context) {
+                  const totals = context.chart.data.labels.map((_, idx) => {
+                    return context.chart.data.datasets.reduce((sum, dataset) => {
+                      return sum + (dataset.data[idx] || 0);
+                    }, 0);
+                  });
+                  const max = Math.max(...totals);
+                  return Math.ceil(max * 1.18);
+                }
+              },
+              y: {
+                stacked: true,
+                grid: {
+                  display: false,
+                  drawBorder: false
+                },
+                border: {
+                  display: false,
+                  lineWidth: 0
+                },
+                ticks: {
+                  autoSkip: false,
+                  font: { 
+                    size: 12,
+                    weight: '700',
+                    family: "'Inter', sans-serif"
+                  },
+                  color: '#1e293b',
+                  padding: 12,
+                  crossAlign: 'far'
+                }
+              }
+            },
+            animation: {
+              duration: 800,
+              easing: 'easeOutQuart'
+            }
+          },
+          plugins: [{
+            id: 'totalLabels',
+            afterDatasetsDraw: (chart) => {
+              const { ctx } = chart;
+              const chartWidth = chart.width;
+              
+              // Dynamic badge sizing based on chart width for responsiveness
+              let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
+              
+              if (chartWidth < 480) {
+                badgeWidth = 28;
+                badgeHeight = 18;
+                cornerRadius = 4;
+                fontSize = 10;
+                padding = 6;
+              } else if (chartWidth < 768) {
+                badgeWidth = 32;
+                badgeHeight = 20;
+                cornerRadius = 4;
+                fontSize = 11;
+                padding = 6;
+              } else {
+                badgeWidth = 36;
+                badgeHeight = 22;
+                cornerRadius = 5;
+                fontSize = 12;
+                padding = 8;
+              }
+              
+              // Only process the last dataset to show total at the top
+              const lastDatasetIndex = chart.data.datasets.length - 1;
+              if (lastDatasetIndex < 0) return;
+              
+              const meta = chart.getDatasetMeta(lastDatasetIndex);
+              
+              meta.data.forEach((bar, index) => {
+                // Calculate total for this bar across only VISIBLE datasets
+                let total = 0;
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                  // Only count if dataset is visible (not hidden via legend)
+                  const dsMeta = chart.getDatasetMeta(datasetIndex);
+                  if (!dsMeta.hidden) {
+                    total += (dataset.data[index] || 0);
+                  }
+                });
+                
+                if (total > 0 && bar) {
+                  ctx.save();
+                  
+                  // Position badge above the bar (top)
+                  let x = bar.x - badgeWidth / 2;
+                  let y = bar.y - badgeHeight - padding;
+                  
+                  // Ensure badge stays within chart boundaries
+                  if (x < 0) x = 4;
+                  if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
+                  if (y < 0) y = 4;
+                  if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
+                  
+                  // Draw badge background with shadow
+                  ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+                  ctx.shadowBlur = 6;
+                  ctx.shadowOffsetX = 0;
+                  ctx.shadowOffsetY = 2;
+                  
+                  ctx.fillStyle = '#ffffff';
+                  
+                  // Rounded rectangle
+                  ctx.beginPath();
+                  ctx.moveTo(x + cornerRadius, y);
+                  ctx.lineTo(x + badgeWidth - cornerRadius, y);
+                  ctx.quadraticCurveTo(x + badgeWidth, y, x + badgeWidth, y + cornerRadius);
+                  ctx.lineTo(x + badgeWidth, y + badgeHeight - cornerRadius);
+                  ctx.quadraticCurveTo(x + badgeWidth, y + badgeHeight, x + badgeWidth - cornerRadius, y + badgeHeight);
+                  ctx.lineTo(x + cornerRadius, y + badgeHeight);
+                  ctx.quadraticCurveTo(x, y + badgeHeight, x, y + badgeHeight - cornerRadius);
+                  ctx.lineTo(x, y + cornerRadius);
+                  ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
+                  ctx.closePath();
+                  ctx.fill();
+                  
+                  // Reset shadow
+                  ctx.shadowColor = 'transparent';
+                  ctx.shadowBlur = 0;
+                  ctx.shadowOffsetX = 0;
+                  ctx.shadowOffsetY = 0;
+                  
+                  // Draw total value text
+                  ctx.fillStyle = '#0f172a';
+                  ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
+                  ctx.textAlign = 'center';
+                  ctx.textBaseline = 'middle';
+                  ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
+                  
+                  ctx.restore();
+                }
+              });
+            }
+          }]
+        });
       }
     }
     if (taskAggregates.projects.length > 0 && projectBarChartRef.current) {
       const labels = taskAggregates.projects.map(p => p.label);
-      const values = taskAggregates.projects.map(p => p.count);
+      
+      // Create a dataset for each status (will be stacked into one tower per project)
+      const datasets = STATUS_LABELS.map((statusLabel, index) => {
+        const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
+        
+        return {
+          label: statusLabel,
+          data: taskAggregates.projects.map(p => {
+            return p.statuses && p.statuses[statusKey] ? p.statuses[statusKey] : 0;
+          }),
+          backgroundColor: STATUS_COLORS[index],
+          hoverBackgroundColor: STATUS_COLORS[index],
+          borderColor: '#ffffff',
+          hoverBorderColor: '#ffffff',
+          borderWidth: 2.5,
+          hoverBorderWidth: 3,
+          borderRadius: 6,
+          borderSkipped: false,
+          statusKey: statusKey,
+          barPercentage: 0.5,
+          categoryPercentage: 0.6,
+          barThickness: 'flex',
+          maxBarThickness: 40
+        };
+      });
+      
       const data = {
         labels,
-        datasets: [{
-          label: 'Tasks by Project',
-          data: values,
-          backgroundColor: '#0686e1ff',
-          borderColor: '#bfc7a1ff',
-          borderWidth: 1
-        }]
+        datasets
       };
       if (projectBarChartInstance.current) {
         projectBarChartInstance.current.data = data;
@@ -643,19 +1224,275 @@ const TaskReports = () => {
               responsive: true,
               maintainAspectRatio: false,
               plugins: {
-                legend: { display: false }
+                legend: {
+                  display: true,
+                  position: 'bottom',
+                  align: 'center',
+                  labels: {
+                    boxWidth: 14,
+                    boxHeight: 14,
+                    font: { 
+                      size: 11,
+                      weight: '600',
+                      family: "'Inter', sans-serif"
+                    },
+                    padding: 16,
+                    usePointStyle: true,
+                    pointStyle: 'rectRounded',
+                    color: '#475569'
+                  },
+                  onHover: (legendItem, legendData) => {
+                    legendItem.cursor = 'pointer';
+                  }
+                },
+                tooltip: {
+                  mode: 'nearest',
+                  intersect: true,
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                  borderWidth: 1,
+                  cornerRadius: 8,
+                  padding: 10,
+                  titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
+                  bodyFont: { size: 11, weight: '500', family: "'Inter', sans-serif" },
+                  bodySpacing: 5,
+                  displayColors: true,
+                  boxWidth: 10,
+                  boxHeight: 10,
+                  boxPadding: 4,
+                  caretPadding: 8,
+                  caretSize: 6,
+                  filter: function(tooltipItem) {
+                    return tooltipItem.raw > 0;
+                  },
+                  callbacks: {
+                    title: function(context) {
+                      const projectName = context[0].label;
+                      return `📊 ${projectName}`;
+                    },
+                    label: function(context) {
+                      const status = context.dataset.label;
+                      const value = context.parsed.x;
+                      if (value === 0) return null;
+                      return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
+                    },
+                    afterLabel: function(context) {
+                      const projectIndex = context.dataIndex;
+                      const project = taskAggregates.projects[projectIndex];
+                      
+                      if (!project || !project.tasks || project.tasks.length === 0) {
+                        return null;
+                      }
+                      
+                      const currentStatus = context.dataset.statusKey;
+                      const statusTasks = project.tasks.filter(t => (t.status || 'open') === currentStatus);
+                      
+                      if (statusTasks.length === 0) return null;
+                      
+                      // Show task details
+                      const taskDetails = statusTasks.slice(0, 5).map(t => {
+                        const assignees = t.assignee_names || 'Unassigned';
+                        const department = String(t.department || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
+                        return `• ${t.title}\n  👤 ${assignees}\n  🏢 ${department}`;
+                      });
+                      
+                      const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
+                      
+                      return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
+                    }
+                  }
+                },
               },
               scales: {
                 x: {
-                  beginAtZero: true
+                  stacked: true,
+                  beginAtZero: true,
+                  grid: {
+                    display: true,
+                    color: 'rgba(0, 0, 0, 0.04)',
+                    lineWidth: 1,
+                    drawBorder: false,
+                    borderDash: [4, 4]
+                  },
+                  border: {
+                    display: false
+                  },
+                  ticks: {
+                    precision: 0,
+                    maxTicksLimit: 10,
+                    font: { 
+                      size: 11,
+                      weight: '600',
+                      family: "'Inter', sans-serif"
+                    },
+                    color: '#475569',
+                    padding: 10,
+                    callback: function(value) {
+                      if (Number.isInteger(value)) {
+                        return value;
+                      }
+                      return null;
+                    }
+                  },
+                  suggestedMax: function(context) {
+                    const totals = context.chart.data.labels.map((_, idx) => {
+                      return context.chart.data.datasets.reduce((sum, dataset) => {
+                        return sum + (dataset.data[idx] || 0);
+                      }, 0);
+                    });
+                    const max = Math.max(...totals);
+                    return Math.ceil(max * 1.18);
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Tasks',
+                    font: { 
+                      size: 13,
+                      weight: '700',
+                      family: "'Inter', sans-serif"
+                    },
+                    color: '#334155',
+                    padding: { top: 12 }
+                  }
                 },
                 y: {
+                  stacked: true,
+                  grid: {
+                    display: false,
+                    drawBorder: false
+                  },
+                  border: {
+                    display: false,
+                    lineWidth: 0
+                  },
                   ticks: {
-                    autoSkip: false
+                    autoSkip: false,
+                    font: { 
+                      size: 12,
+                      weight: '700',
+                      family: "'Inter', sans-serif"
+                    },
+                    color: '#1e293b',
+                    padding: 12,
+                    crossAlign: 'far'
                   }
                 }
               }
-            }
+            },
+            animation: {
+              duration: 800,
+              easing: 'easeOutQuart'
+            },
+            plugins: [{
+              id: 'totalLabels',
+              afterDatasetsDraw: (chart) => {
+                const { ctx } = chart;
+                const isHorizontal = chart.config.options.indexAxis === 'y';
+                const chartWidth = chart.width;
+                
+                // Dynamic badge sizing based on chart width for responsiveness
+                let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
+                
+                if (chartWidth < 480) {
+                  badgeWidth = 28;
+                  badgeHeight = 18;
+                  cornerRadius = 4;
+                  fontSize = 10;
+                  padding = 6;
+                } else if (chartWidth < 768) {
+                  badgeWidth = 32;
+                  badgeHeight = 20;
+                  cornerRadius = 4;
+                  fontSize = 11;
+                  padding = 6;
+                } else {
+                  badgeWidth = 36;
+                  badgeHeight = 22;
+                  cornerRadius = 5;
+                  fontSize = 12;
+                  padding = 8;
+                }
+                
+                // Only process the last dataset to show total
+                const lastDatasetIndex = chart.data.datasets.length - 1;
+                if (lastDatasetIndex < 0) return;
+                
+                const meta = chart.getDatasetMeta(lastDatasetIndex);
+                
+                meta.data.forEach((bar, index) => {
+                  // Calculate total for this bar across only VISIBLE datasets
+                  let total = 0;
+                  chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    // Only count if dataset is visible (not hidden via legend)
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (!meta.hidden) {
+                      total += (dataset.data[index] || 0);
+                    }
+                  });
+                  
+                  if (total > 0 && bar) {
+                    ctx.save();
+                    
+                    let x, y;
+                    
+                    if (isHorizontal) {
+                      // Horizontal bar: badge at the end (right side)
+                      x = bar.x + padding;
+                      y = bar.y - badgeHeight / 2;
+                    } else {
+                      // Vertical bar: badge above the bar
+                      x = bar.x - badgeWidth / 2;
+                      y = bar.y - badgeHeight - padding;
+                    }
+                    
+                    // Ensure badge stays within chart boundaries
+                    if (x < 0) x = 4;
+                    if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
+                    if (y < 0) y = 4;
+                    if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
+                    
+                    // Draw badge background with shadow
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+                    ctx.shadowBlur = 6;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 2;
+                    
+                    ctx.fillStyle = '#ffffff';
+                    
+                    // Rounded rectangle
+                    ctx.beginPath();
+                    ctx.moveTo(x + cornerRadius, y);
+                    ctx.lineTo(x + badgeWidth - cornerRadius, y);
+                    ctx.quadraticCurveTo(x + badgeWidth, y, x + badgeWidth, y + cornerRadius);
+                    ctx.lineTo(x + badgeWidth, y + badgeHeight - cornerRadius);
+                    ctx.quadraticCurveTo(x + badgeWidth, y + badgeHeight, x + badgeWidth - cornerRadius, y + badgeHeight);
+                    ctx.lineTo(x + cornerRadius, y + badgeHeight);
+                    ctx.quadraticCurveTo(x, y + badgeHeight, x, y + badgeHeight - cornerRadius);
+                    ctx.lineTo(x, y + cornerRadius);
+                    ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    // Reset shadow
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    
+                    // Draw total value text
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
+                    
+                    ctx.restore();
+                  }
+                });
+              }
+            }]
           }
         );
       }
@@ -766,11 +1603,11 @@ const TaskReports = () => {
             {!showTeamPerformance ? (
               <>
                 <div className="task-dashboard-header">
-                  <div className="task-dashboard-header-bar">
+                  {/* <div className="task-dashboard-header-bar">
                     <div className="task-dashboard-header-bar-time">{formattedCurrentTime}</div>
-                  </div>
+                  </div> */}
                   <div className="task-dashboard-header-top">
-                    <div className="task-dashboard-welcome task-dashboard-welcome-card">
+                    {/* <div className="task-dashboard-welcome task-dashboard-welcome-card">
                       <div className="task-dashboard-title">
                         Welcome{" "}
                         {user?.first_name || user?.last_name
@@ -782,7 +1619,7 @@ const TaskReports = () => {
                         <span className="task-badge">{`Role: ${role}`}</span>
                         <span className="task-badge">{`Scope: ${rolePerms.scope}`}</span>
                       </div>
-                    </div>
+                    </div> */}
                     <div className="task-dashboard-cards">
                       <div className="task-stat-card task-stat-card--total">
                         <div className="task-stat-label">Total Tasks</div>
@@ -818,7 +1655,7 @@ const TaskReports = () => {
                 <div className="task-dashboard-main">
                   <div className="task-dashboard-column">
                     <div className="task-dashboard-bottom-left">
-                      <div className="task-report-card task-report-card--summary">
+                      <div className="task-report-card task-report-card--status-overview">
                         <div className="task-report-card-header">
                           <h2 className="task-report-card-title">Status Overview</h2>
                         </div>
@@ -874,7 +1711,7 @@ const TaskReports = () => {
                         </div>
                       </div>
 
-                      <div className="task-report-card task-report-card--summary">
+                      <div className="task-report-card task-report-card--priority-overview">
                         <div className="task-report-card-header">
                           <h2 className="task-report-card-title">Priority Overview</h2>
                         </div>
@@ -906,21 +1743,18 @@ const TaskReports = () => {
                         </div>
                       </div>
 
-                      <div className="task-report-card task-report-card--summary task-report-card--project-report">
+                      {/* <div className="task-report-card task-report-card--summary task-report-card--project-report">
                         <div className="task-report-card-header">
                           <h2 className="task-report-card-title">Project-wise Task Report</h2>
-                          <span className="task-report-card-chip">
-                            {duration === 'this_year' ? 'This Year' : 'Selected Range'}
-                          </span>
                         </div>
                         <div className="task-report-card-chart task-report-card-chart--wide">
                           <canvas ref={projectBarChartRef}></canvas>
                         </div>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                   <div className="task-dashboard-column">
-                    <div className="task-report-card task-report-card--summary">
+                    <div className="task-report-card task-report-card--task-progress">
                       <div className="task-report-card-header">
                         <h2 className="task-report-card-title">Task Progress</h2>
                       </div>
@@ -934,7 +1768,8 @@ const TaskReports = () => {
                             <div key={label} className="task-progress-legend-item">
                               <span
                                 className={`task-progress-dot ${colorClass}`}
-                              />
+                                style={{ backgroundColor: STATUS_COLORS[index] || '' }}
+                             />
                               <span className="task-progress-legend-label">
                                 {label}
                               </span>
@@ -946,7 +1781,25 @@ const TaskReports = () => {
                       {taskStatsError && <div className="error">{taskStatsError}</div>}
                     </div>
 
-                    <div className="task-report-card task-report-card--summary">
+                    {/* <div className="task-report-card task-report-card--summary">
+                      <div className="task-report-card-header">
+                        <h2 className="task-report-card-title">User-wise Task Report</h2>
+                      </div>
+                      <div className="task-report-card-chart task-report-card-chart--wide">
+                        <canvas ref={userBarChartRef}></canvas>
+                      </div>
+                    </div> */}
+                  </div>
+                </div>
+                      <div className="task-report-card task-report-card--project-report">
+                        <div className="task-report-card-header">
+                          <h2 className="task-report-card-title">Project-wise Task Report</h2>
+                        </div>
+                        <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '480px', height: '480px' }}>
+                          <canvas ref={projectBarChartRef}></canvas>
+                        </div>
+                      </div>
+                      <div className="task-report-card task-report-card--user-report">
                       <div className="task-report-card-header">
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
                       </div>
@@ -954,15 +1807,12 @@ const TaskReports = () => {
                         <canvas ref={userBarChartRef}></canvas>
                       </div>
                     </div>
-                  </div>
-                </div>
-
                 {rolePerms.isAdmin && (
-                  <div className="task-report-card task-report-card--summary">
+                  <div className="task-report-card task-report-card--department-report">
                     <div className="task-report-card-header">
                       <h2 className="task-report-card-title">Department-wise Task Report</h2>
                     </div>
-                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '300px' }}>
+                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '480px', height: '480px' }}>
                       <canvas ref={departmentCanvasRef}></canvas>
                     </div>
                     <div className="task-progress-legend" style={{ marginTop: '1rem' }}>

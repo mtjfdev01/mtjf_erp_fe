@@ -91,11 +91,7 @@ const ViewTask = () => {
   // 1. Task has assigned users (assigned_user_ids)
   // 2. Approval data is loaded AND task has approvers
   // 3. Task has reassignment activities
-  // 
-  // NOT called for:
-  // - created_by / reported_by (backend already returns full user objects)
-  // - Tasks with no assignees, no approval workflow, no activities
-  // - Users already cached in usersById state
+
   useEffect(() => {
     if (!task) return;
 
@@ -1047,54 +1043,76 @@ const ViewTask = () => {
                 </div>
                 <div className="task-id">{formatTaskId(task)}</div>
               </div>
-
-              <div className="status-banner">
-                <div className="status-banner-main">
-                  <strong>Task Status:</strong>
-                  {canChangeStatusInline ? (
-                    <div className="status-dropdown">
-                      <button
-                        type="button"
-                        className="status-dropdown-toggle"
-                        onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                        disabled={statusActionLoading}
-                      >
-                        <span className="status-dropdown-label">{statusLabel}</span>
-                        <span className="status-dropdown-arrow">▾</span>
-                      </button>
-                      {statusDropdownOpen && (
-                        <div className="status-dropdown-menu">
-                          {inlineStatusOptions.map((opt) => {
-                            const isActive =
-                              String(task.status || '').toLowerCase() === opt.value;
-                            return (
-                              <button
-                                key={opt.value}
-                                type="button"
-                                className={`status-dropdown-item${
-                                  isActive ? ' status-dropdown-item--active' : ''
-                                }`}
-                                onClick={() => handleInlineStatusChange(opt.value)}
-                                disabled={statusActionLoading}
-                              >
-                                <span
-                                  className={`status-dropdown-check${
-                                    isActive ? ' status-dropdown-check--checked' : ''
+              <div className="task-view-status-actions-row">
+                <div className="task-view-status-banner-inline">
+                  <div className="task-view-status-banner-main">
+                    <strong>Task Status:</strong>
+                    {canChangeStatusInline ? (
+                      <div className="status-dropdown">
+                        <button
+                          type="button"
+                          className="status-dropdown-toggle"
+                          onClick={() => setStatusDropdownOpen((prev) => !prev)}
+                          disabled={statusActionLoading}
+                        >
+                          <span className="status-dropdown-label">{statusLabel}</span>
+                          <span className="status-dropdown-arrow">▾</span>
+                        </button>
+                        {statusDropdownOpen && (
+                          <div className="status-dropdown-menu">
+                            {inlineStatusOptions.map((opt) => {
+                              const isActive =
+                                String(task.status || '').toLowerCase() === opt.value;
+                              return (
+                                <button
+                                  key={opt.value}
+                                  type="button"
+                                  className={`status-dropdown-item${
+                                    isActive ? ' status-dropdown-item--active' : ''
                                   }`}
-                                />
-                                <span className="status-dropdown-item-label">
-                                  {opt.label}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="receipt-status-badge">{statusLabel}</span>
-                  )}
+                                  onClick={() => handleInlineStatusChange(opt.value)}
+                                  disabled={statusActionLoading}
+                                >
+                                  <span
+                                    className={`status-dropdown-check${
+                                      isActive ? ' status-dropdown-check--checked' : ''
+                                    }`}
+                                  />
+                                  <span className="status-dropdown-item-label">
+                                    {opt.label}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="receipt-status-badge">{statusLabel}</span>
+                    )}
+                  </div>
                 </div>
+
+                <TaskActionBar
+                  taskId={task.id}
+                  currentStatus={task.status}
+                  permissions={taskPerms}
+                  userDepartment={user?.department}
+                  taskDepartment={task.department}
+                  workflowType={task.workflow_type}
+                  userRole={user?.role}
+                  isAssignee={isCurrentUserAssignee}
+                  currentUserId={user?.id}
+                  createdByUserId={task.created_by_id}
+                  reportedById={task.reported_by_id}
+                  approvalRequiredUserIds={task.approval_required_user_ids}
+                  approvalsMeta={approvalState?.approvals_meta}
+                  currentUserHasActedOnApproval={currentUserHasActedOnApproval}
+                  onStatusAction={handleStatusActionClick}
+                  onQuickAction={handleQuickAction}
+                  disabled={statusActionLoading}
+                  align="top"
+                />
               </div>
 
               {renderRecurrenceInfo()}
@@ -1125,26 +1143,6 @@ const ViewTask = () => {
                   )
                 ) : null}
 
-                <TaskActionBar
-                  taskId={task.id}
-                  currentStatus={task.status}
-                  permissions={taskPerms}
-                  userDepartment={user?.department}
-                  taskDepartment={task.department}
-                  workflowType={task.workflow_type}
-                  userRole={user?.role}
-                  isAssignee={isCurrentUserAssignee}
-                  currentUserId={user?.id}
-                  createdByUserId={task.created_by_id}
-                  reportedById={task.reported_by_id}
-                  approvalRequiredUserIds={task.approval_required_user_ids}
-                  approvalsMeta={approvalState?.approvals_meta}
-                  currentUserHasActedOnApproval={currentUserHasActedOnApproval}
-                  onStatusAction={handleStatusActionClick}
-                  onQuickAction={handleQuickAction}
-                  disabled={statusActionLoading}
-                  align="top"
-                />
                 <div className="view-section">
                   <h3 className="view-section-title">
                     <span>📝</span> Description
@@ -1231,7 +1229,7 @@ const ViewTask = () => {
                       <div className="view-item">
                         <div className="task-progress-history">
                           <div className="task-progress-history-title">
-                            Progress history
+                            🔄 Progress history
                           </div>
                           {progressActivities.length > 0 ? (
                             <ul className="task-progress-history-list">

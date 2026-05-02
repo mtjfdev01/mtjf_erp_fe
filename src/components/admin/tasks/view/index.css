@@ -24,10 +24,11 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s ease;
+  border-left: 6px solid green;
 }
 
 .task-receipt-page .view-section:hover {
@@ -40,8 +41,6 @@
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: #4b5563;
-  margin-bottom: 1.25rem;
-  padding-bottom: 0.75rem;
   border-bottom: 1px solid #f3f4f6;
   display: flex;
   align-items: center;
@@ -64,7 +63,7 @@
 .view-grid--info {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem 2rem;
+  gap: 1rem;
 }
 
 @media (max-width: 768px) {
@@ -82,13 +81,13 @@
   background: transparent;
   border: none;
   border-radius: 0;
-  gap: 0.35rem;
+  gap: 0.3rem;
 }
 
 .view-item-label {
-  font-weight: 600;
+  font-weight: 800;
   color: #6b7280;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   letter-spacing: 0.025em;
 }
@@ -138,7 +137,6 @@
   padding-top: 0;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
 }
 
 .task-notes-panel .view-section {
@@ -149,9 +147,10 @@
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s ease;
+  border-left: 6px solid green;
 }
 
 .task-time-tracker:hover {
@@ -162,7 +161,7 @@
   display: grid;
   grid-template-columns: 1.8fr 1.2fr;
   gap: 1.5rem;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 @media (max-width: 1024px) {
@@ -175,7 +174,6 @@
 .view-layout-side {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
 }
 
 
@@ -237,16 +235,41 @@
   letter-spacing: 1px;
 }
 
-.status-banner {
-  padding: 14px 30px;
-  background: linear-gradient(90deg, #16a34a, #22c55e);
-  color: #ffffff;
+
+/* Task View Status Actions Row - Scoped to prevent global collisions */
+.task-view-status-actions-row {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.15);
 }
 
-.status-banner-main {
+.task-view-status-banner-inline {
+  flex: 1;
+  padding: 0;
+  background: transparent;
+  min-width: 0;
+}
+
+.task-view-status-banner-inline .task-view-status-banner-main {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  flex-wrap: wrap;
+}
+
+.task-view-status-banner-inline strong {
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  white-space: nowrap;
+}
+
+.task-view-status-banner-main {
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -254,11 +277,15 @@
 
 .receipt-status-badge {
   background: rgba(255, 255, 255, 0.2);
-  padding: 4px 12px;
+  backdrop-filter: blur(8px);
+  padding: 0.375rem 1rem;
   border-radius: 20px;
   font-weight: 600;
-  font-size: 0.7rem;
-  margin-left: 10px;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
 }
 
 .status-dropdown {
@@ -269,20 +296,36 @@
 .status-dropdown-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 4px 12px;
-  border-radius: 999px;
+  gap: 0.5rem;
+  padding: 0.375rem 1rem;
+  border-radius: 20px;
   border: none;
-  background-color: #55d685;
+  background-color: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
   color: #ffffff;
   font-weight: 600;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.status-dropdown-toggle:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.status-dropdown-toggle:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .status-dropdown-toggle:disabled {
-  opacity: 0.7;
-  cursor: default;
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .status-dropdown-label {
@@ -295,35 +338,52 @@
 
 .status-dropdown-menu {
   position: absolute;
-  top: 110%;
+  top: calc(100% + 0.5rem);
   right: 0;
-  min-width: 170px;
-  border-radius: 0.5rem;
+  min-width: 200px;
+  border-radius: 0.75rem;
   background-color: #ffffff;
-  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.18);
-  padding: 0.35rem 0;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
+  padding: 0.5rem 0;
   z-index: 40;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  animation: dropdownSlideIn 0.15s ease-out;
+}
+
+@keyframes dropdownSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .status-dropdown-item {
   width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
   border: none;
   background: transparent;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
   color: #111827;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
 
 .status-dropdown-item:hover {
   background-color: #f3f4f6;
+  padding-left: 1.25rem;
 }
 
 .status-dropdown-item--active {
   font-weight: 600;
+  background-color: #f0fdf4;
+  color: #16a34a;
 }
 
 .status-pending {
@@ -401,7 +461,7 @@
 }
 
 .receipt-body {
-  padding: 30px;
+  padding: 15px;
 }
 
 .receipt-footer {
@@ -635,7 +695,46 @@
     padding: 1.25rem;
   }
 
-  .status-banner-main {
+  .task-view-status-actions-row {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    align-items: stretch;
+  }
+
+  .task-view-status-banner-inline {
+    width: 100%;
+    padding: 0;
+  }
+
+  .task-view-status-banner-inline .task-view-status-banner-main {
+    justify-content: center;
+    gap: 0.75rem;
+  }
+
+  .task-view-status-actions-row .task-action-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .task-view-status-actions-row .task-action-bar-primary {
+    flex-wrap: wrap;
+    justify-content: center;
+    width: 100%;
+  }
+
+  .task-view-status-actions-row .task-action-bar-secondary {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .task-action-quick-toggle {
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .task-view-status-banner-main {
     flex-direction: column;
     gap: 0.5rem;
   }
@@ -645,7 +744,7 @@
   }
 
   .receipt-body {
-    padding: 1.25rem;
+    padding: 15px;
   }
 
   .receipt-footer {
@@ -714,11 +813,9 @@
 
 .task-notes-panel {
   margin-top: var(--spacing-lg);
-  padding-top: var(--spacing-lg);
-  /* border-top: 1px solid #e5e7eb; */
+  /* padding-top: var(--spacing-lg); */
   display: flex;
   flex-direction: column;
-  gap: 1.75rem;
 }
 
 .task-notes-panel .view-section {
@@ -727,6 +824,33 @@
 
 .task-action-bar-container--bottom {
   margin-top: 1.5rem;
+}
+
+/* TaskActionBar within task-view-status-actions-row */
+.task-view-status-actions-row .task-action-bar-container {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  flex-shrink: 0;
+}
+
+.task-view-status-actions-row .task-action-bar {
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.task-view-status-actions-row .task-action-bar-primary {
+  display: flex;
+  gap: 0.625rem;
+  align-items: center;
+}
+
+.task-view-status-actions-row .task-action-bar-secondary {
+  position: relative;
+  display: flex;
+  align-items: center;
 }
 
 .task-action-bar {
@@ -750,11 +874,11 @@
 
 .task-action-button {
   min-height: 35px;
-  padding: 0.5rem 1.25rem;
+  padding: 0.2rem 1.5rem;
   border-radius: 999px;
   border: none;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   cursor: pointer;
   color: #ffffff;
   transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
@@ -799,25 +923,68 @@
 }
 
 .task-action-quick-toggle {
-  padding: 0.5rem 1rem;
-  border-radius: 10px;
+  padding: 0.5rem 1.125rem;
+  border-radius: 8px;
   border: none;
-  background-color: #08a7d3;
+  background: #30AEE3;
+  backdrop-filter: blur(8px);
   color: #ffffff;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  white-space: nowrap;
+}
+
+.task-action-quick-toggle:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
+}
+
+.task-action-quick-toggle:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .task-action-quick-menu {
   position: absolute;
   right: 0;
-  margin-top: 0.5rem;
-  min-width: 220px;
+  top: calc(100% + 0.5rem);
+  min-width: 240px;
   border-radius: 0.75rem;
   background-color: #ffffff;
-  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
   padding: 0.5rem 0;
   z-index: 20;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  animation: dropdownSlideIn 0.15s ease-out;
+}
+
+.task-action-quick-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.625rem 1rem;
+  border: none;
+  background: transparent;
+  font-size: 0.875rem;
+  color: #111827;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.task-action-quick-item:hover:not(:disabled) {
+  background-color: #f3f4f6;
+  padding-left: 1.25rem;
+}
+
+.task-action-quick-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .task-action-quick-item {
@@ -1269,7 +1436,7 @@
 
 .task-progress {
   margin-top: 0.25rem;
-  padding: 1.25rem;
+  padding: 1rem;
   border-radius: 12px;
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
@@ -1502,7 +1669,7 @@
 }
 
 .task-progress-history {
-  padding: 0.75rem 1rem;
+  padding: 0.7rem 0.7rem;
   border-radius: 0.9rem;
   background-color: #ffffff;
   border: 1px solid #e5e7eb;
@@ -1737,7 +1904,7 @@
 .team-assignment-pill-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: 0.5rem;
   flex: 1;
 }
 
@@ -1745,7 +1912,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.4rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 8px;
   background-color: #f0f7ff;
   border: 1px solid #d0e6ff;
@@ -1772,8 +1939,8 @@
 }
 
 .team-assignment-pill {
-  font-size: 0.8rem;
-  font-weight: 600;
+  font-size: 0.6rem;
+  font-weight: 800;
   color: #1e40af;
   white-space: nowrap;
   text-transform: uppercase;
