@@ -126,6 +126,7 @@ const TaskReports = () => {
   const [selectedMemberTasks, setSelectedMemberTasks] = useState(null);
   const [showMemberTasksModal, setShowMemberTasksModal] = useState(false);
   const [memberTasksLoading, setMemberTasksLoading] = useState(false);
+  const [showFilterPopover, setShowFilterPopover] = useState(false);
 
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
@@ -1254,8 +1255,8 @@ const TaskReports = () => {
           borderRadius: 6,
           borderSkipped: false,
           statusKey: statusKey,
-          barPercentage: 0.5,
-          categoryPercentage: 0.6,
+          barPercentage: 0.7,
+          categoryPercentage: 0.9,
           barThickness: 'flex',
           maxBarThickness: 40
         };
@@ -1572,14 +1573,51 @@ const TaskReports = () => {
     };
   }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin]);
 
-  return (
-    <>
-      <Navbar />
-      <div className="task-report-container">
-        <PageHeader title="Tasks Dashboard" showBackButton={true} />
-        <div className="task-dashboard-shell">
-          <div className="task-dashboard-layout">
-            <div className="task-dashboard-filters">
+  const filterPopoverRef = useRef(null);
+  const filterButtonRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        showFilterPopover &&
+        filterPopoverRef.current &&
+        filterButtonRef.current &&
+        !filterPopoverRef.current.contains(event.target) &&
+        !filterButtonRef.current.contains(event.target)
+      ) {
+        setShowFilterPopover(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showFilterPopover]);
+
+  const filterButtonElement = (
+    <div style={{ position: 'relative' }}>
+      <button
+        ref={filterButtonRef}
+        className="task-filter-button"
+        onClick={() => setShowFilterPopover(!showFilterPopover)}
+      >
+        <span className="task-filter-button-icon">🔍</span>
+        <span className="task-filter-button-text">Filters</span>
+      </button>
+      {showFilterPopover && (
+        <div ref={filterPopoverRef} className="task-filter-popover">
+          <div className="task-filter-popover-content">
+            <div className="task-filter-popover-header">
+              <h3 className="task-filter-popover-title">Dashboard Filters</h3>
+              <button
+                className="task-filter-popover-close"
+                onClick={() => setShowFilterPopover(false)}
+              >
+                ×
+              </button>
+            </div>
+            <div className="task-filter-popover-body">
               <div className="task-filter-group">
                 <span className="task-filter-label">Duration</span>
                 <select
@@ -1647,13 +1685,21 @@ const TaskReports = () => {
                   </button>
                 </div>
               )}
-              <div className="task-dashboard-header-bottom">
-                <div className="task-dashboard-duration">
-                  <span className="task-duration-pill">
-                    Duration: {durationLabel}
-                  </span>
-                </div>
-              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      <Navbar />
+      <div className="task-report-container">
+        <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
+        <div className="task-dashboard-shell">
+          <div className="task-dashboard-layout">
+            <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
             </div>
             {!showTeamPerformance ? (
               <>
@@ -1715,49 +1761,49 @@ const TaskReports = () => {
                           <h2 className="task-report-card-title">Status Overview</h2>
                         </div>
                         <div className="task-status-grid">
-                          <div className="task-status-card task-status-card--danger">
+                          <div className="task-status-card task-status-card--open">
                             <div className="task-status-label">Open</div>
                             <div className="task-status-value">
                               {statsSummary.open}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card task-status-card--danger">
+                          <div className="task-status-card task-status-card--in-progress">
                             <div className="task-status-label">In Progress</div>
                             <div className="task-status-value">
                               {statsSummary.inProgress}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card task-status-card--priority-low">
+                          <div className="task-status-card task-status-card--pending-approval">
                             <div className="task-status-label">Pending Approval</div>
                             <div className="task-status-value">
                               {statsSummary.pendingApproval}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card task-status-card--priority-medium">
+                          <div className="task-status-card task-status-card--approved">
                             <div className="task-status-label">Approved</div>
                             <div className="task-status-value">
                               {statsSummary.approved}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card task-status-card--priority-high">
+                          <div className="task-status-card task-status-card--rejected">
                             <div className="task-status-label">Rejected</div>
                             <div className="task-status-value">
                               {statsSummary.rejected}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card task-status-card--priority-critical">
+                          <div className="task-status-card task-status-card--completed">
                             <div className="task-status-label">Completed</div>
                             <div className="task-status-value">
                               {statsSummary.completed}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card">
+                          <div className="task-status-card task-status-card--closed">
                             <div className="task-status-label">Closed</div>
                             <div className="task-status-value">
                               {statsSummary.closed}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card">
+                          <div className="task-status-card task-status-card--cancelled">
                             <div className="task-status-label">Cancelled</div>
                             <div className="task-status-value">
                               {statsSummary.cancelled}/{statsSummary.total}
@@ -1771,25 +1817,25 @@ const TaskReports = () => {
                           <h2 className="task-report-card-title">Priority Overview</h2>
                         </div>
                         <div className="task-priority-grid">
-                          <div className="task-status-card">
+                          <div className="task-status-card task-status-card--priority-low">
                             <div className="task-status-label">Low</div>
                             <div className="task-status-value">
                               {prioritySummary.low}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card">
+                          <div className="task-status-card task-status-card--priority-medium">
                             <div className="task-status-label">Medium</div>
                             <div className="task-status-value">
                               {prioritySummary.medium}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card">
+                          <div className="task-status-card task-status-card--priority-high">
                             <div className="task-status-label">High</div>
                             <div className="task-status-value">
                               {prioritySummary.high}/{statsSummary.total}
                             </div>
                           </div>
-                          <div className="task-status-card">
+                          <div className="task-status-card task-status-card--priority-critical">
                             <div className="task-status-label">Critical</div>
                             <div className="task-status-value">
                               {prioritySummary.critical}/{statsSummary.total}
@@ -1846,11 +1892,12 @@ const TaskReports = () => {
                     </div> */}
                   </div>
                 </div>
+                <div className="task-dashboard-reports-grid">
                       <div className="task-report-card task-report-card--project-report">
                         <div className="task-report-card-header">
                           <h2 className="task-report-card-title">Project-wise Task Report</h2>
                         </div>
-                        <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '480px', height: '480px' }}>
+                        <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
                           <canvas ref={projectBarChartRef}></canvas>
                         </div>
                       </div>
@@ -1858,7 +1905,7 @@ const TaskReports = () => {
                       <div className="task-report-card-header">
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
                       </div>
-                      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '480px', height: '480px' }}>
+                      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
                         <canvas ref={userBarChartRef}></canvas>
                       </div>
                     </div>
@@ -1867,10 +1914,10 @@ const TaskReports = () => {
                     <div className="task-report-card-header">
                       <h2 className="task-report-card-title">Department-wise Task Report</h2>
                     </div>
-                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '480px', height: '480px' }}>
+                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
                       <canvas ref={departmentCanvasRef}></canvas>
                     </div>
-                    <div className="task-progress-legend" style={{ marginTop: '1rem' }}>
+                    <div className="task-progress-legend" style={{ marginTop: '0.5rem' }}>
                       {taskStats?.department_breakdown && Object.entries(taskStats.department_breakdown).map(([dept, count], index) => (
                         <div key={dept} className="task-progress-legend-item">
                           <span
@@ -1889,6 +1936,7 @@ const TaskReports = () => {
                     </div>
                   </div>
                 )}
+                </div>
               </>
             ) : (
               /* Team Performance Dashboard (Screenshot 1) */

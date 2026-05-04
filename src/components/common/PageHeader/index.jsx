@@ -16,7 +16,8 @@ const PageHeader = ({
   showAdd = false,
   addPath = '',
   addDisabled = false,
-  addTitle = 'Add new'
+  addTitle = 'Add new',
+  rightElement
 }) => {
   const navigate = useNavigate();
 
@@ -74,6 +75,7 @@ const PageHeader = ({
             <MdEdit />
           </button>
         )}
+        {rightElement}
       </div>
     </div>
   );
