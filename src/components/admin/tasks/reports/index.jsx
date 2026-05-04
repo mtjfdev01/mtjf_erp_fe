@@ -14,6 +14,50 @@ import './index.css';
 
 Chart.register(...registerables);
 
+const getResponsiveTooltipSizes = () => {
+  const width = window.innerWidth;
+  if (width < 480) {
+    return {
+      titleFontSize: 8,
+      bodyFontSize: 7,
+      padding: 4,
+      cornerRadius: 4,
+      boxWidth: 6,
+      boxHeight: 6,
+      boxPadding: 1,
+      caretPadding: 3,
+      caretSize: 4,
+      bodySpacing: 2
+    };
+  } else if (width < 768) {
+    return {
+      titleFontSize: 9,
+      bodyFontSize: 8,
+      padding: 5,
+      cornerRadius: 5,
+      boxWidth: 7,
+      boxHeight: 7,
+      boxPadding: 2,
+      caretPadding: 4,
+      caretSize: 5,
+      bodySpacing: 2
+    };
+  } else {
+    return {
+      titleFontSize: 10,
+      bodyFontSize: 9,
+      padding: 6,
+      cornerRadius: 6,
+      boxWidth: 8,
+      boxHeight: 8,
+      boxPadding: 2,
+      caretPadding: 5,
+      caretSize: 5,
+      bodySpacing: 3
+    };
+  }
+};
+
 const STATUS_LABELS = [
   'Open',
   'In Progress',
@@ -323,6 +367,17 @@ const TaskReports = () => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (completionRateChartInstance.current) completionRateChartInstance.current.update();
+      if (userBarChartInstance.current) userBarChartInstance.current.update();
+      if (departmentChartRef.current) departmentChartRef.current.update();
+      if (projectBarChartInstance.current) projectBarChartInstance.current.update();
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   const getDateRangeForDuration = useCallback((durationValue) => {
     const today = new Date();
     const formatDateToYYYYMMDD = (date) => date.toISOString().split('T')[0];
@@ -525,7 +580,7 @@ const TaskReports = () => {
     if (rolePerms.isAdmin && taskStats?.department_status_breakdown && departmentCanvasRef.current) {
       const depts = Object.keys(taskStats.department_status_breakdown);
       const labels = depts.map(d =>
-        String(d || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')
+        String(d || 'Unassigned').split('_').map(w => w ? w.toUpperCase() : '').join(' ')
       );
 
       const statusKeys = [
@@ -568,8 +623,8 @@ const TaskReports = () => {
         hoverBorderWidth: 3,
         borderRadius: 6,
         borderSkipped: false,
-        barPercentage: 0.7,
-        categoryPercentage: 0.8,
+        barPercentage: 0.6,
+        categoryPercentage: 0.5,
         barThickness: 'flex',
         maxBarThickness: 60
       }));
@@ -619,17 +674,17 @@ const TaskReports = () => {
                 bodyColor: '#fff',
                 borderColor: 'rgba(255, 255, 255, 0.15)',
                 borderWidth: 1,
-                cornerRadius: 8,
-                padding: 10,
-                titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
-                bodyFont: { size: 11, weight: '500', family: "'Inter', sans-serif" },
-                bodySpacing: 5,
+                cornerRadius: (() => getResponsiveTooltipSizes().cornerRadius)(),
+                padding: (() => getResponsiveTooltipSizes().padding)(),
+                titleFont: { size: (() => getResponsiveTooltipSizes().titleFontSize)(), weight: '600', family: "'Inter', sans-serif" },
+                bodyFont: { size: (() => getResponsiveTooltipSizes().bodyFontSize)(), weight: '500', family: "'Inter', sans-serif" },
+                bodySpacing: (() => getResponsiveTooltipSizes().bodySpacing)(),
                 displayColors: true,
-                boxWidth: 10,
-                boxHeight: 10,
-                boxPadding: 4,
-                caretPadding: 8,
-                caretSize: 6,
+                boxWidth: (() => getResponsiveTooltipSizes().boxWidth)(),
+                boxHeight: (() => getResponsiveTooltipSizes().boxHeight)(),
+                boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
+                caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
+                caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
                 filter: function(tooltipItem) {
                   return tooltipItem.raw !== null && tooltipItem.raw !== undefined && tooltipItem.raw > 0;
                 },
@@ -927,17 +982,17 @@ const TaskReports = () => {
                 bodyColor: '#fff',
                 borderColor: 'rgba(255, 255, 255, 0.15)',
                 borderWidth: 1,
-                cornerRadius: 8,
-                padding: 10,
-                titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
-                bodyFont: { size: 11, weight: '500', family: "'Inter', sans-serif" },
-                bodySpacing: 5,
+                cornerRadius: (() => getResponsiveTooltipSizes().cornerRadius)(),
+                padding: (() => getResponsiveTooltipSizes().padding)(),
+                titleFont: { size: (() => getResponsiveTooltipSizes().titleFontSize)(), weight: '600', family: "'Inter', sans-serif" },
+                bodyFont: { size: (() => getResponsiveTooltipSizes().bodyFontSize)(), weight: '500', family: "'Inter', sans-serif" },
+                bodySpacing: (() => getResponsiveTooltipSizes().bodySpacing)(),
                 displayColors: true,
-                boxWidth: 10,
-                boxHeight: 10,
-                boxPadding: 4,
-                caretPadding: 8,
-                caretSize: 6,
+                boxWidth: (() => getResponsiveTooltipSizes().boxWidth)(),
+                boxHeight: (() => getResponsiveTooltipSizes().boxHeight)(),
+                boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
+                caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
+                caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
                 filter: function(tooltipItem) {
                   return tooltipItem.raw > 0;
                 },
@@ -1253,17 +1308,17 @@ const TaskReports = () => {
                   bodyColor: '#fff',
                   borderColor: 'rgba(255, 255, 255, 0.15)',
                   borderWidth: 1,
-                  cornerRadius: 8,
-                  padding: 10,
-                  titleFont: { size: 12, weight: '600', family: "'Inter', sans-serif" },
-                  bodyFont: { size: 11, weight: '500', family: "'Inter', sans-serif" },
-                  bodySpacing: 5,
+                  cornerRadius: (() => getResponsiveTooltipSizes().cornerRadius)(),
+                  padding: (() => getResponsiveTooltipSizes().padding)(),
+                  titleFont: { size: (() => getResponsiveTooltipSizes().titleFontSize)(), weight: '600', family: "'Inter', sans-serif" },
+                  bodyFont: { size: (() => getResponsiveTooltipSizes().bodyFontSize)(), weight: '500', family: "'Inter', sans-serif" },
+                  bodySpacing: (() => getResponsiveTooltipSizes().bodySpacing)(),
                   displayColors: true,
-                  boxWidth: 10,
-                  boxHeight: 10,
-                  boxPadding: 4,
-                  caretPadding: 8,
-                  caretSize: 6,
+                  boxWidth: (() => getResponsiveTooltipSizes().boxWidth)(),
+                  boxHeight: (() => getResponsiveTooltipSizes().boxHeight)(),
+                  boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
+                  caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
+                  caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
                   filter: function(tooltipItem) {
                     return tooltipItem.raw > 0;
                   },
@@ -1803,7 +1858,7 @@ const TaskReports = () => {
                       <div className="task-report-card-header">
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
                       </div>
-                      <div className="task-report-card-chart task-report-card-chart--wide">
+                      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '480px', height: '480px' }}>
                         <canvas ref={userBarChartRef}></canvas>
                       </div>
                     </div>

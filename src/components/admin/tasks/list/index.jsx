@@ -38,6 +38,7 @@ const TasksList = () => {
   const [myApprovals, setMyApprovals] = useState([]);
   const [activeTab, setActiveTab] = useState('assigned_to_me');
   const [approvalsLoaded, setApprovalsLoaded] = useState(false);
+  const [hasInteractedWithApprovals, setHasInteractedWithApprovals] = useState(false);
 
   const currentUserId = user?.id ? Number(user.id) : null;
 
@@ -212,10 +213,10 @@ const TasksList = () => {
     return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t)) : [];
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, user?.department, isManager]);
 
-  // Optimized: Lazy load approvals only when needed (not on initial task list load)
+  // Optimized: Lazy load approvals only when user interacts with approval banner
   const fetchApprovalsIfNeeded = useCallback(async () => {
-    // Only fetch approvals once and only if user has approval permissions
-    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove) {
+    // Only fetch approvals once, only if user has approval permissions, AND only after interaction
+    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove || !hasInteractedWithApprovals) {
       return;
     }
     
@@ -236,7 +237,7 @@ const TasksList = () => {
     return () => {
       cancelled = true;
     };
-  }, [currentUserId, taskPerms.canApprove, approvalsLoaded]);
+  }, [currentUserId, taskPerms.canApprove, approvalsLoaded, hasInteractedWithApprovals]);
 
   const approvalRequestsForUser = useMemo(() => {
     if (!currentUserId) return [];
@@ -397,67 +398,10 @@ const TasksList = () => {
     fetchTasks();
   }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department, currentDeptFromPath]);
 
-  // Optimized: Load approvals ONLY when user has approver access AND banner might be visible
-  // Does NOT load on initial task list load - only when user scrolls to banner area
+  // Load approvals only after user has interacted with the approval banner
   useEffect(() => {
-    // Skip if already loaded, no user, or no approval permissions
-    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove) {
-      return;
-    }
-
-    let observer = null;
-    let timeoutId = null;
-    const OBSERVER_DELAY = 100; // Wait 100ms after page load before checking visibility
-
-    // Delayed setup to ensure DOM is ready and initial render is complete
-    timeoutId = setTimeout(() => {
-      // Create a sentinel element positioned where the approval banner would appear
-      const sentinel = document.createElement('div');
-      sentinel.style.cssText = 'position: absolute; top: 0; height: 1px; visibility: hidden; pointer-events: none;';
-      sentinel.setAttribute('data-approval-sentinel', 'true');
-      
-      // Insert sentinel before the task list container (where banner would render)
-      const taskListContainer = document.querySelector('.task-card-list');
-      if (taskListContainer && taskListContainer.parentElement) {
-        taskListContainer.parentElement.insertBefore(sentinel, taskListContainer);
-        
-        // Use Intersection Observer to detect when user scrolls to banner area
-        observer = new IntersectionObserver(
-          (entries) => {
-            entries.forEach((entry) => {
-              // Only load approvals when sentinel enters viewport
-              if (entry.isIntersecting && !approvalsLoaded) {
-                fetchApprovalsIfNeeded();
-                observer.disconnect();
-              }
-            });
-          },
-          {
-            root: null, // viewport
-            rootMargin: '50px', // Load when 50px away from viewport
-            threshold: 0
-          }
-        );
-        
-        observer.observe(sentinel);
-      }
-    }, OBSERVER_DELAY);
-
-    // Cleanup function
-    return () => {
-      if (observer) {
-        observer.disconnect();
-      }
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-      // Clean up sentinel element
-      const existingSentinel = document.querySelector('[data-approval-sentinel="true"]');
-      if (existingSentinel && existingSentinel.parentNode) {
-        existingSentinel.parentNode.removeChild(existingSentinel);
-      }
-    };
-  }, [currentUserId, taskPerms.canApprove, approvalsLoaded, fetchApprovalsIfNeeded]);
+    fetchApprovalsIfNeeded();
+  }, [fetchApprovalsIfNeeded]);
 
   const handleFilterChange = (key, value) => {
     if (key === 'search') {
@@ -1169,9 +1113,33 @@ const TasksList = () => {
             <div className="status-message">Loading tasks...</div>
           ) : (
             <>
-          {/* Approval Banner - Only for PENDING approval requests */}
+          {/* Approval Banner - Lazy Loaded */}
           {(() => {
             try {
+              // If user has approval permissions but hasn't interacted yet
+              if (taskPerms.canApprove && !hasInteractedWithApprovals && !approvalsLoaded) {
+                return (
+                  <div 
+                    className="tasks-approval-banner tasks-approval-banner--prompt"
+                    onClick={() => setHasInteractedWithApprovals(true)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className="tasks-approval-pill">
+                      <div className="tasks-approval-header">
+                        <span className="tasks-approval-label">Approval requests</span>
+                        <span className="tasks-approval-count">
+                          Click to view pending approvals
+                        </span>
+                      </div>
+                      <div style={{ padding: '12px 20px', textAlign: 'center', color: '#666' }}>
+                        <span style={{ fontWeight: 500 }}>Tap here</span> to check for tasks needing your approval
+                      </div>
+                    </div>
+                  </div>
+                );
+              }
+
+              // If user has interacted, show the actual approval banner
               if (!Array.isArray(approvalRequestsForUser)) return null;
               const pendingApprovals = approvalRequestsForUser.filter(t => t && t._isPendingAction === true);
               if (!pendingApprovals || pendingApprovals.length === 0) return null;
