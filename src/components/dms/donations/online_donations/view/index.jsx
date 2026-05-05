@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
@@ -32,6 +32,29 @@ const ViewOnlineDonation = () => {
   const [loadingProgress, setLoadingProgress] = useState(false);
   const [creatingTracker, setCreatingTracker] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
+  const [selectedBatchId, setSelectedBatchId] = useState('all');
+
+  const donationBatchOptions = useMemo(() => {
+    const steps = progressTracker?.steps || [];
+    const map = new Map();
+    for (const s of steps) {
+      const bid = s?.batch_id != null ? Number(s.batch_id) : null;
+      if (bid == null || !Number.isFinite(bid) || bid <= 0) continue;
+      const bn =
+        s?.batch?.batch_number != null ? Number(s.batch.batch_number) : bid;
+      if (!map.has(bid)) map.set(bid, { value: String(bid), label: `Batch #${bn}` });
+    }
+    return Array.from(map.values()).sort((a, b) => Number(a.value) - Number(b.value));
+  }, [progressTracker]);
+
+  const visibleProgressSteps = useMemo(() => {
+    const steps = progressTracker?.steps || [];
+    if (selectedBatchId === 'all') return steps;
+    const bid = Number(selectedBatchId);
+    if (!Number.isFinite(bid) || bid <= 0) return steps;
+    const filtered = steps.filter((s) => Number(s?.batch_id) === bid);
+    return filtered.length ? filtered : steps;
+  }, [progressTracker, selectedBatchId]);
 
   useEffect(() => {
     fetchDonation();
@@ -61,6 +84,7 @@ const ViewOnlineDonation = () => {
 
       if (trackerRes.data?.success) {
         setProgressTracker(trackerRes.data.data || null);
+        setSelectedBatchId('all');
       } else {
         setProgressTracker(null);
       }
@@ -534,12 +558,72 @@ const ViewOnlineDonation = () => {
                   <div><strong>Public Token:</strong> {progressTracker.public_tracking_token || '-'}</div>
                 </div>
 
+                {donationBatchOptions.length > 0 && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 8,
+                      alignItems: 'center',
+                      marginBottom: 10,
+                      padding: '10px 12px',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: 10,
+                    }}
+                  >
+                    <span style={{ fontSize: 13, color: '#475569', fontWeight: 700 }}>Batches:</span>
+                    <button
+                      type="button"
+                      className="secondary_btn"
+                      onClick={() => setSelectedBatchId('all')}
+                      style={{
+                        padding: '6px 10px',
+                        height: '34px',
+                        borderRadius: 8,
+                        background: selectedBatchId === 'all' ? '#dbeafe' : 'white',
+                        borderColor: '#bfdbfe',
+                        color: '#1e40af',
+                      }}
+                    >
+                      All
+                    </button>
+                    {donationBatchOptions.map((b) => (
+                      <button
+                        key={b.value}
+                        type="button"
+                        className="secondary_btn"
+                        onClick={() => setSelectedBatchId(String(b.value))}
+                        style={{
+                          padding: '6px 10px',
+                          height: '34px',
+                          borderRadius: 8,
+                          background: String(selectedBatchId) === String(b.value) ? '#dbeafe' : 'white',
+                          borderColor: '#bfdbfe',
+                          color: '#1e40af',
+                          whiteSpace: 'nowrap',
+                        }}
+                        title={b.label}
+                      >
+                        {String(b.label || '').replace('Batch ', '')}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {(progressTracker.steps || []).length > 0 ? (
-                  <div style={{ display: 'grid', gap: '10px' }}>
-                    {(progressTracker.steps || []).map((s) => (
+                  <div style={{ display: 'grid', gap: '10px', maxHeight: 520, overflow: 'auto', paddingRight: 4 }}>
+                    {visibleProgressSteps.map((s) => (
                       <div key={s.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-                          <div style={{ fontWeight: 600 }}>{s.step_order}. {s.title}</div>
+                          <div style={{ fontWeight: 600 }}>
+                            {s.step_order}. {s.title}
+                            {s.batch_id != null && (
+                              <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: '#64748b' }}>
+                                (Batch #{s?.batch?.batch_number ?? s.batch_id})
+                              </span>
+                            )}
+                          </div>
                           <span className={`status-badge status-${s.status}`}>{s.status}</span>
                         </div>
                         {s.notes && <div style={{ marginTop: '6px', color: '#374151' }}>{s.notes}</div>}
