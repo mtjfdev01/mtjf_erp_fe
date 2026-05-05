@@ -365,7 +365,8 @@ const adminDepartmentItems = () => [
     module: 'dashboard',
     icon: FiHome,
     subItems: [
-      { label: 'Admin Dashboard', path: '/admin', type: 'list', icon: FiHome }
+      { label: 'Admin Dashboard', path: '/admin', type: 'list', icon: FiHome },
+      { label: 'Workflow Template Report', path: '/admin/progress-template-dashboard', type: 'list', icon: FiBarChart2 }
     ]
   },
   {
