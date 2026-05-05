@@ -65,6 +65,9 @@ const AddDonation = () => {
 
     // Optional: website-style payload for initiatives/cart (used by Qurbani workflow)
     donation_items: [],
+
+    /** Qurbani only: optional on-behalf name(s) */
+    on_behalf_names: '',
   });
 
   const QURBANI_PROJECT_ID = 'qurbani-barai-mustehqeen';
@@ -244,20 +247,25 @@ const AddDonation = () => {
         isQurbaniProject && donationItems.length > 0
           ? donationItems
               .filter((x) => x?.initiativeId && Number(x?.quantity || 0) > 0)
-              .map((x) => ({
-                projectId: QURBANI_PROJECT_ID,
-                initiativeId: x.initiativeId,
-                projectTitle: qurbaniProject?.title || form.project_name || 'Qurbani Barai Mustehqeen',
-                initiativeTitle: x.initiativeTitle,
-                initiativeSubtitle: x.initiativeSubtitle,
-                quantity: Number(x.quantity),
-                donationType: String(form.donation_type || 'GENERAL').toUpperCase(),
-                basePrice: Number(x.basePrice || 0),
-                selectedPricingOptionId: null,
-                selectedPricingOptionLabel: null,
-                customAmount: 0,
-                totalAmount: Number(x.totalAmount || 0),
-              }))
+              .map((x) => {
+                const initiative =
+                  (qurbaniInitiatives || []).find((i) => i.id === x.initiativeId) || null;
+                return {
+                  projectId: QURBANI_PROJECT_ID,
+                  initiativeId: x.initiativeId,
+                  projectTitle: qurbaniProject?.title || form.project_name || 'Qurbani Barai Mustehqeen',
+                  initiativeTitle: x.initiativeTitle,
+                  initiativeSubtitle: x.initiativeSubtitle,
+                  templateCode: initiative?.templateCode || x.templateCode || null,
+                  quantity: Number(x.quantity),
+                  donationType: String(form.donation_type || 'GENERAL').toUpperCase(),
+                  basePrice: Number(x.basePrice || 0),
+                  selectedPricingOptionId: null,
+                  selectedPricingOptionLabel: null,
+                  customAmount: 0,
+                  totalAmount: Number(x.totalAmount || 0),
+                };
+              })
           : [];
 
       const qurbaniTotal =
@@ -277,6 +285,11 @@ const AddDonation = () => {
         status: form.status,
         project_id: form.project_id || null,
         project_name: form.project_name,
+        ...(isQurbaniProject
+          ? {
+              on_behalf_names: String(form.on_behalf_names || '').trim() || null,
+            }
+          : {}),
         ...(qurbaniPayloadItems.length > 0 ? { donation_items: qurbaniPayloadItems } : {}),
         // Payment method specific fields
         cheque_number: form.cheque_number || null,
@@ -333,13 +346,15 @@ const AddDonation = () => {
     { value: 'sadqa', label: 'Sadqa' },
     { value: 'general', label: 'General' },
     { value: 'fidya', label: 'Fidya' },
-    { value: 'kaffarah', label: 'Kaffarah' }
+    { value: 'kaffarah', label: 'Kaffarah' },
+    { value: 'qurbani-barai-mustehqeen', label: 'Qurbani Barai Mustehqeen' },
   ];
 
   const donationMethodOptions = [
     { value: 'cash', label: 'Cash' },
     { value: 'cheque', label: 'Cheque' },
     { value: 'in_kind', label: 'In Kind' },
+    { value: 'bank_transfer', label: 'Bank Transfer' },
   ];
 
   const statusOptions = [
@@ -930,6 +945,8 @@ const AddDonation = () => {
                       project_id: id,
                       project_name: proj?.title || prev.project_name,
                       donation_items: id === QURBANI_PROJECT_ID ? prev.donation_items : [],
+                      on_behalf_names:
+                        id === QURBANI_PROJECT_ID ? prev.on_behalf_names : '',
                     }));
                   }}
                   showDefaultOption={true}
@@ -1061,6 +1078,16 @@ const AddDonation = () => {
                     </div>
                   </div>
                 )}
+
+                <FormInput
+                  label="On behalf name(s) (optional)"
+                  type="textarea"
+                  name="on_behalf_names"
+                  value={form.on_behalf_names}
+                  onChange={handleChange}
+                  placeholder="Enter name(s) this Qurbani is performed on behalf of"
+                  rows="3"
+                />
               </>
             )}
           </div>

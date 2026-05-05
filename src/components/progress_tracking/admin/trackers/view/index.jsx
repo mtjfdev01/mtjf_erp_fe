@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -17,6 +17,8 @@ const STATUS_OPTIONS = [
 const TrackersView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const batchIdFromUrl = searchParams.get('batch_id');
   const [tracker, setTracker] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -44,6 +46,28 @@ const TrackersView = () => {
   useEffect(() => {
     if (id) fetchData();
   }, [id]);
+
+  const batchFilterOptions = useMemo(() => {
+    const steps = tracker?.steps || [];
+    const map = new Map();
+    for (const s of steps) {
+      const bid = s.batch_id != null ? Number(s.batch_id) : null;
+      if (bid == null || !Number.isFinite(bid) || bid <= 0) continue;
+      const bn = s.batch?.batch_number != null ? Number(s.batch.batch_number) : bid;
+      if (!map.has(bid)) map.set(bid, { batch_id: bid, batch_number: bn });
+    }
+    return Array.from(map.values()).sort((a, b) => a.batch_number - b.batch_number);
+  }, [tracker]);
+
+  const visibleSteps = useMemo(() => {
+    const steps = (tracker?.steps || []).filter((s) => !s.is_archived);
+    const raw = batchIdFromUrl != null && String(batchIdFromUrl).trim() !== ''
+      ? Number(batchIdFromUrl)
+      : NaN;
+    if (!Number.isFinite(raw) || raw <= 0) return steps;
+    const scoped = steps.filter((s) => s.batch_id != null && Number(s.batch_id) === raw);
+    return scoped.length ? scoped : steps;
+  }, [tracker, batchIdFromUrl]);
 
   const updateStep = async (stepId, patch) => {
     setSaving(true);
@@ -138,7 +162,11 @@ const TrackersView = () => {
               <button
                 type="button"
                 className="secondary_btn"
-                onClick={() => navigate(`/progress/trackers/${tracker.id}/steps`)}
+                onClick={() =>
+                  navigate(
+                    `/progress/trackers/${tracker.id}/steps${batchIdFromUrl ? `?batch_id=${encodeURIComponent(batchIdFromUrl)}` : ''}`,
+                  )
+                }
                 disabled={saving}
               >
                 Manage Steps
@@ -158,11 +186,72 @@ const TrackersView = () => {
 
           <div className="view-section">
             <h3 className="view-section-title">Steps</h3>
+            {batchFilterOptions.length > 0 && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  alignItems: 'center',
+                  marginBottom: '12px',
+                  padding: '10px 12px',
+                  background: '#f8fafc',
+                  borderRadius: '8px',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                <span style={{ fontSize: '13px', color: '#475569', fontWeight: 600 }}>Batch:</span>
+                <Link
+                  to={`/progress/trackers/${tracker.id}`}
+                  style={{
+                    fontSize: '13px',
+                    padding: '4px 10px',
+                    borderRadius: '6px',
+                    textDecoration: 'none',
+                    background: !batchIdFromUrl ? '#dbeafe' : 'white',
+                    color: '#1e40af',
+                    border: '1px solid #bfdbfe',
+                  }}
+                >
+                  All
+                </Link>
+                {batchFilterOptions.map((b) => (
+                  <Link
+                    key={b.batch_id}
+                    to={`/progress/trackers/${tracker.id}?batch_id=${b.batch_id}`}
+                    style={{
+                      fontSize: '13px',
+                      padding: '4px 10px',
+                      borderRadius: '6px',
+                      textDecoration: 'none',
+                      background:
+                        String(batchIdFromUrl) === String(b.batch_id) ? '#dbeafe' : 'white',
+                      color: '#1e40af',
+                      border: '1px solid #bfdbfe',
+                    }}
+                  >
+                    #{b.batch_number}
+                  </Link>
+                ))}
+              </div>
+            )}
+            {visibleSteps.length === 0 && (tracker.steps || []).length > 0 && (
+              <div className="status-message" style={{ marginBottom: 12 }}>
+                No steps for the selected batch. Choose another batch or view all.
+              </div>
+            )}
             <div style={{ display: 'grid', gap: 10 }}>
-              {(tracker.steps || []).map((s) => (
+              {visibleSteps.map((s) => (
                 <div key={s.id} style={{ border: '1px solid #e5e7eb', borderRadius: 8, padding: 12 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ fontWeight: 600 }}>{s.step_order}. {s.title}</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+                    <div style={{ fontWeight: 600 }}>
+                      {s.step_order}. {s.title}
+                      {s.batch_id != null && (
+                        <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: '#64748b' }}>
+                          (Batch #{s.batch?.batch_number ?? s.batch_id})
+                        </span>
+                      )}
+                    </div>
                     <span className={`status-badge status-${s.status}`}>{s.status}</span>
                   </div>
 
