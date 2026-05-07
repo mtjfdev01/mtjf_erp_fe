@@ -91,20 +91,68 @@ const STATUS_DOT_CLASSNAMES = [
   'task-progress-dot--cancelled'
 ];
 
+const DEPARTMENT_COLORS = [
+  '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF',
+  '#FF9F40', '#4D5360', '#C9CBCF', '#8E5EA2', '#3CBA9F'
+];
+
 function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
+  const drawLabels = (chart) => {
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach((dataset, i) => {
+      const meta = chart.getDatasetMeta(i);
+      meta.data.forEach((arc, index) => {
+        const value = dataset.data[index];
+        if (value === 0 || !arc) return;
+        
+        const total = dataset.data.reduce((a, b) => a + b, 0);
+        const percentage = Math.round((value / total) * 100);
+        
+        ctx.save();
+        const center = arc.getCenterPoint();
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.fillText(value.toString(), center.x, center.y - 6);
+        ctx.font = '10px Inter, sans-serif';
+        ctx.fillText(`(${percentage}%)`, center.x, center.y + 8);
+        ctx.restore();
+      });
+    });
+  };
+
   if (chartInstanceRef.current) {
     chartInstanceRef.current.data = data;
     chartInstanceRef.current.update();
     return;
   }
+
   chartInstanceRef.current = new Chart(ctx, {
     type: 'doughnut',
     data,
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
-    }
+      plugins: { 
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const label = context.label || '';
+              const value = context.parsed || 0;
+              const total = context.dataset.data.reduce((a, b) => a + b, 0);
+              const percentage = Math.round((value / total) * 100);
+              return `${label}: ${value} (${percentage}%)`;
+            }
+          }
+        }
+      }
+    },
+    plugins: [{
+      id: 'doughnutLabels',
+      afterDatasetsDraw: drawLabels
+    }]
   });
 }
 
@@ -127,17 +175,19 @@ const TaskReports = () => {
   const [showMemberTasksModal, setShowMemberTasksModal] = useState(false);
   const [memberTasksLoading, setMemberTasksLoading] = useState(false);
   const [showFilterPopover, setShowFilterPopover] = useState(false);
+  const [hiddenDepartments, setHiddenDepartments] = useState(new Set());
+  const [hiddenStatuses, setHiddenStatuses] = useState(new Set());
 
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
-    
+
     // Exclude the logged-in user from team performance
     const currentUserId = Number(user?.id);
     const teamWithoutCurrentUser = taskAggregates.users.filter(member => {
       const memberId = Number(member.id || member.user_id || member.userId);
       return memberId !== currentUserId;
     });
-    
+
     if (!teamSearchQuery.trim()) return teamWithoutCurrentUser;
 
     const query = teamSearchQuery.toLowerCase();
@@ -309,6 +359,26 @@ const TaskReports = () => {
     if (!dueDate) return 0;
     const diff = new Date() - new Date(dueDate);
     return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  };
+
+  const toggleDepartmentVisibility = (dept) => {
+    const newHidden = new Set(hiddenDepartments);
+    if (newHidden.has(dept)) {
+      newHidden.delete(dept);
+    } else {
+      newHidden.add(dept);
+    }
+    setHiddenDepartments(newHidden);
+  };
+
+  const toggleStatusVisibility = (statusLabel) => {
+    const newHidden = new Set(hiddenStatuses);
+    if (newHidden.has(statusLabel)) {
+      newHidden.delete(statusLabel);
+    } else {
+      newHidden.add(statusLabel);
+    }
+    setHiddenStatuses(newHidden);
   };
 
   const handleShowMemberTasks = async (member) => {
@@ -548,8 +618,8 @@ const TaskReports = () => {
       return colors;
     };
 
-    if (taskStats) {
-      const statusValues = [
+    if (taskStats && completionRateChartRef.current) {
+      const allStatusValues = [
         statsSummary.open || 0,
         statsSummary.inProgress || 0,
         statsSummary.pendingApproval || 0,
@@ -559,28 +629,59 @@ const TaskReports = () => {
         statsSummary.closed || 0,
         statsSummary.cancelled || 0
       ];
+      
+      const visibleData = STATUS_LABELS.map((label, index) => ({
+        label,
+        value: allStatusValues[index],
+        color: STATUS_COLORS[index],
+        colorClass: STATUS_DOT_CLASSNAMES[index],
+        index,
+        isHidden: hiddenStatuses.has(label)
+      })).filter(item => item.value > 0);
+      
+      const visibleLabels = visibleData.map(item => item.label);
+      const visibleValues = visibleData.map(item => item.isHidden ? 0 : item.value);
+      const visibleColors = visibleData.map(item => item.color);
+      
       const completionData = {
-        labels: STATUS_LABELS,
+        labels: visibleLabels,
         datasets: [{
           label: 'Task Status',
-          data: statusValues,
-          backgroundColor: STATUS_COLORS,
+          data: visibleValues,
+          backgroundColor: visibleColors,
           borderColor: '#ffffff',
           borderWidth: 2
         }]
       };
-      if (completionRateChartRef.current) {
-        createOrUpdateDoughnutChart(
-          completionRateChartRef.current.getContext('2d'),
-          completionData,
-          completionRateChartInstance
-        );
-      }
+      
+      createOrUpdateDoughnutChart(
+        completionRateChartRef.current.getContext('2d'),
+        completionData,
+        completionRateChartInstance
+      );
     }
 
     if (rolePerms.isAdmin && taskStats?.department_status_breakdown && departmentCanvasRef.current) {
-      const depts = Object.keys(taskStats.department_status_breakdown);
-      const labels = depts.map(d =>
+      // First, get all departments with at least one task
+      const deptsWithTasks = Object.keys(taskStats.department_status_breakdown).filter(dept => {
+        const statusData = taskStats.department_status_breakdown[dept];
+        const totalTasks = Object.values(statusData).reduce((sum, entry) => {
+          const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+          return sum + count;
+        }, 0);
+        return totalTasks > 0;
+      });
+
+      // Create a consistent color map for departments
+      const deptColorMap = {};
+      deptsWithTasks.forEach((dept, index) => {
+        deptColorMap[dept] = DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
+      });
+
+      // Filter out hidden departments
+      const visibleDepts = deptsWithTasks.filter(dept => !hiddenDepartments.has(dept));
+
+      const labels = visibleDepts.map(d =>
         String(d || 'Unassigned').split('_').map(w => w ? w.toUpperCase() : '').join(' ')
       );
 
@@ -597,7 +698,7 @@ const TaskReports = () => {
 
       // First, calculate total count for each status across all departments
       const statusTotals = statusKeys.map((status, index) => {
-        const total = depts.reduce((sum, dept) => {
+        const total = visibleDepts.reduce((sum, dept) => {
           const entry = taskStats.department_status_breakdown[dept][status];
           const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
           return sum + count;
@@ -611,7 +712,7 @@ const TaskReports = () => {
       // Create datasets only for statuses with actual data
       const datasets = activeStatuses.map(({ status, index }) => ({
         label: STATUS_LABELS[index],
-        data: depts.map(dept => {
+        data: visibleDepts.map(dept => {
           const entry = taskStats.department_status_breakdown[dept][status];
           const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
           return count > 0 ? count : null;
@@ -653,7 +754,7 @@ const TaskReports = () => {
                 labels: {
                   boxWidth: 14,
                   boxHeight: 14,
-                  font: { 
+                  font: {
                     size: 11,
                     weight: '600',
                     family: "'Inter', sans-serif"
@@ -661,10 +762,14 @@ const TaskReports = () => {
                   padding: 16,
                   usePointStyle: true,
                   pointStyle: 'rectRounded',
-                  color: '#475569'
+                  color: '#475569',
+                  cursor: 'pointer'
                 },
-                onHover: (legendItem, legendData) => {
-                  legendItem.cursor = 'pointer';
+                onHover: (event, legendItem, legend) => {
+                  event.native.target.style.cursor = 'pointer';
+                },
+                onLeave: (event, legendItem, legend) => {
+                  event.native.target.style.cursor = 'default';
                 }
               },
               tooltip: {
@@ -686,32 +791,32 @@ const TaskReports = () => {
                 boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
                 caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
                 caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
-                filter: function(tooltipItem) {
+                filter: function (tooltipItem) {
                   return tooltipItem.raw !== null && tooltipItem.raw !== undefined && tooltipItem.raw > 0;
                 },
                 callbacks: {
-                  title: function(context) {
+                  title: function (context) {
                     const dept = context[0].label;
                     return `🏢 ${dept}`;
                   },
-                  label: function(context) {
+                  label: function (context) {
                     const status = context.dataset.label;
                     const value = context.parsed.y;
                     if (value === null || value === undefined || value === 0) return null;
                     return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
                   },
-                  afterLabel: function(context) {
+                  afterLabel: function (context) {
                     const deptIndex = context.dataIndex;
                     const chart = context.chart;
                     let totalTasks = 0;
-                    
+
                     chart.data.datasets.forEach(dataset => {
                       const value = dataset.data[deptIndex];
                       if (value !== null && value !== undefined) {
                         totalTasks += value;
                       }
                     });
-                    
+
                     return `\n📊 Total: ${totalTasks} task${totalTasks !== 1 ? 's' : ''}`;
                   }
                 }
@@ -733,7 +838,7 @@ const TaskReports = () => {
                   // Don't display labels for hidden datasets
                   const meta = context.chart.getDatasetMeta(context.datasetIndex);
                   if (meta.hidden) return false;
-                  
+
                   const value = context.dataset.data[context.dataIndex];
                   return value > 0;
                 },
@@ -750,8 +855,8 @@ const TaskReports = () => {
                 border: {
                   display: false
                 },
-                ticks: { 
-                  font: { 
+                ticks: {
+                  font: {
                     size: 11,
                     weight: '600',
                     family: "'Inter', sans-serif"
@@ -775,8 +880,8 @@ const TaskReports = () => {
                   display: false,
                   lineWidth: 0
                 },
-                ticks: { 
-                  font: { 
+                ticks: {
+                  font: {
                     size: 11,
                     weight: '600',
                     family: "'Inter', sans-serif"
@@ -790,7 +895,7 @@ const TaskReports = () => {
                 title: {
                   display: true,
                   text: 'Number of Tasks',
-                  font: { 
+                  font: {
                     size: 13,
                     weight: '700',
                     family: "'Inter', sans-serif"
@@ -798,7 +903,7 @@ const TaskReports = () => {
                   color: '#334155',
                   padding: { top: 12 }
                 },
-                suggestedMax: function(context) {
+                suggestedMax: function (context) {
                   const max = Math.max(...context.chart.data.datasets[0]?.data || [0]);
                   return Math.ceil(max * 1.18);
                 }
@@ -820,10 +925,10 @@ const TaskReports = () => {
               const { ctx } = chart;
               const isHorizontal = chart.config.options.indexAxis === 'y';
               const chartWidth = chart.width;
-              
+
               // Dynamic badge sizing based on chart width for responsiveness
               let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
-              
+
               if (chartWidth < 480) {
                 // Extra small screens
                 badgeWidth = 22;
@@ -846,22 +951,22 @@ const TaskReports = () => {
                 fontSize = 10;
                 padding = 5;
               }
-              
+
               chart.data.datasets.forEach((dataset, datasetIndex) => {
                 const meta = chart.getDatasetMeta(datasetIndex);
-                
+
                 // Skip hidden datasets (via legend toggle)
                 if (meta.hidden) return;
-                
+
                 meta.data.forEach((bar, index) => {
                   const value = dataset.data[index];
-                  
+
                   // Only render label if value exists, is greater than 0, and bar element exists
                   if (value && value > 0 && bar) {
                     ctx.save();
-                    
+
                     let x, y;
-                    
+
                     if (isHorizontal) {
                       // Horizontal bar: badge at the end (right side)
                       x = bar.x + padding;
@@ -871,16 +976,16 @@ const TaskReports = () => {
                       x = bar.x - badgeWidth / 2;
                       y = bar.y - badgeHeight - padding;
                     }
-                    
+
                     // Ensure badge stays within chart boundaries
                     if (x < 0) x = 4;
                     if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
                     if (y < 0) y = 4;
                     if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
-                    
+
                     // Draw badge background (no border)
                     ctx.fillStyle = '#ffffff';
-                    
+
                     // Rounded rectangle
                     ctx.beginPath();
                     ctx.moveTo(x + cornerRadius, y);
@@ -895,14 +1000,14 @@ const TaskReports = () => {
                     ctx.closePath();
                     ctx.fill();
                     // Removed: ctx.stroke() - no border
-                    
+
                     // Draw value text
                     ctx.fillStyle = dataset.backgroundColor;
                     ctx.font = `bold ${fontSize}px sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(value, x + badgeWidth / 2, y + badgeHeight / 2);
-                    
+
                     ctx.restore();
                   }
                 });
@@ -915,46 +1020,54 @@ const TaskReports = () => {
 
     if (taskAggregates.users.length > 0 && userBarChartRef.current) {
       const labels = taskAggregates.users.map(u => u.label);
-      
-      // Create a dataset for each status (stacked bar chart)
-      const datasets = STATUS_LABELS.map((statusLabel, index) => {
+
+      // Calculate total tasks per status across all users
+      const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
         const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
-        
-        return {
-          label: statusLabel,
-          data: taskAggregates.users.map(u => {
-            return u.statuses && u.statuses[statusKey] ? u.statuses[statusKey] : 0;
-          }),
-          backgroundColor: STATUS_COLORS[index],
-          hoverBackgroundColor: STATUS_COLORS[index],
-          borderColor: 'transparent',
-          hoverBorderColor: 'transparent',
-          borderWidth: 0,
-          hoverBorderWidth: 0,
-          borderRadius: 0,
-          borderSkipped: false,
-          statusKey: statusKey,
-          barPercentage: 0.55,
-          categoryPercentage: 0.65,
-          barThickness: 'flex',
-          maxBarThickness: 45
-        };
+        const total = taskAggregates.users.reduce((sum, user) => {
+          return sum + (user.statuses && user.statuses[statusKey] ? user.statuses[statusKey] : 0);
+        }, 0);
+        return { statusLabel, statusKey, index, total };
       });
-      
+
+      // Filter out statuses with zero tasks
+      const activeStatuses = statusTotals.filter(item => item.total > 0);
+
+      // Create a dataset only for statuses with actual data
+      const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
+        label: statusLabel,
+        data: taskAggregates.users.map(u => {
+          return u.statuses && u.statuses[statusKey] ? u.statuses[statusKey] : 0;
+        }),
+        backgroundColor: STATUS_COLORS[index],
+        hoverBackgroundColor: STATUS_COLORS[index],
+        borderColor: 'transparent',
+        hoverBorderColor: 'transparent',
+        borderWidth: 0,
+        hoverBorderWidth: 0,
+        borderRadius: 0,
+        borderSkipped: false,
+        statusKey: statusKey,
+        barPercentage: 0.55,
+        categoryPercentage: 0.65,
+        barThickness: 'flex',
+        maxBarThickness: 45
+      }));
+
       const data = {
         labels,
         datasets
       };
-      
+
       if (userBarChartInstance.current) {
         userBarChartInstance.current.data = data;
         userBarChartInstance.current.update();
       } else {
-        userBarChartInstance.current = new Chart(userBarChartRef.current.getContext('2d'), { 
-          type: 'bar', 
-          data, 
-          options: { 
-            responsive: true, 
+        userBarChartInstance.current = new Chart(userBarChartRef.current.getContext('2d'), {
+          type: 'bar',
+          data,
+          options: {
+            responsive: true,
             maintainAspectRatio: false,
             plugins: {
               legend: {
@@ -964,7 +1077,7 @@ const TaskReports = () => {
                 labels: {
                   boxWidth: 14,
                   boxHeight: 14,
-                  font: { 
+                  font: {
                     size: 11,
                     weight: '600',
                     family: "'Inter', sans-serif"
@@ -972,7 +1085,14 @@ const TaskReports = () => {
                   padding: 16,
                   usePointStyle: true,
                   pointStyle: 'rectRounded',
-                  color: '#475569'
+                  color: '#475569',
+                  cursor: 'pointer'
+                },
+                onHover: (event, legendItem, legend) => {
+                  event.native.target.style.cursor = 'pointer';
+                },
+                onLeave: (event, legendItem, legend) => {
+                  event.native.target.style.cursor = 'default';
                 }
               },
               tooltip: {
@@ -994,42 +1114,42 @@ const TaskReports = () => {
                 boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
                 caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
                 caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
-                filter: function(tooltipItem) {
+                filter: function (tooltipItem) {
                   return tooltipItem.raw > 0;
                 },
                 callbacks: {
-                  title: function(context) {
+                  title: function (context) {
                     const userName = context[0].label;
                     return `👤 ${userName}`;
                   },
-                  label: function(context) {
+                  label: function (context) {
                     const status = context.dataset.label;
                     const value = context.parsed.y;
                     if (value === 0) return null;
                     return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
                   },
-                  afterLabel: function(context) {
+                  afterLabel: function (context) {
                     const userIndex = context.dataIndex;
                     const user = taskAggregates.users[userIndex];
-                    
+
                     if (!user || !user.tasks || user.tasks.length === 0) {
                       return null;
                     }
-                    
+
                     const currentStatus = context.dataset.statusKey;
                     const statusTasks = user.tasks.filter(t => (t.status || 'open') === currentStatus);
-                    
+
                     if (statusTasks.length === 0) return null;
-                    
+
                     // Show task details with project names
                     const taskDetails = statusTasks.slice(0, 5).map(t => {
                       const project = t.project ? `\n  📁 ${t.project}` : '';
                       const department = t.department ? `\n  🏢 ${String(t.department).split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}` : '';
                       return `• ${t.title}${project}${department}`;
                     });
-                    
+
                     const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
-                    
+
                     return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
                   }
                 }
@@ -1051,7 +1171,7 @@ const TaskReports = () => {
                   // Don't display labels for hidden datasets
                   const meta = context.chart.getDatasetMeta(context.datasetIndex);
                   if (meta.hidden) return false;
-                  
+
                   const value = context.dataset.data[context.dataIndex];
                   return value > 0;
                 },
@@ -1059,7 +1179,7 @@ const TaskReports = () => {
                 textShadowBlur: 3
               }
             },
-            scales: { 
+            scales: {
               x: {
                 stacked: true,
                 grid: {
@@ -1072,8 +1192,8 @@ const TaskReports = () => {
                 border: {
                   display: false
                 },
-                ticks: { 
-                  font: { 
+                ticks: {
+                  font: {
                     size: 11,
                     weight: '600',
                     family: "'Inter', sans-serif"
@@ -1086,7 +1206,7 @@ const TaskReports = () => {
                 title: {
                   display: true,
                   text: 'Number of Tasks',
-                  font: { 
+                  font: {
                     size: 13,
                     weight: '700',
                     family: "'Inter', sans-serif"
@@ -1094,7 +1214,7 @@ const TaskReports = () => {
                   color: '#334155',
                   padding: { top: 12 }
                 },
-                suggestedMax: function(context) {
+                suggestedMax: function (context) {
                   const totals = context.chart.data.labels.map((_, idx) => {
                     return context.chart.data.datasets.reduce((sum, dataset) => {
                       return sum + (dataset.data[idx] || 0);
@@ -1116,7 +1236,7 @@ const TaskReports = () => {
                 },
                 ticks: {
                   autoSkip: false,
-                  font: { 
+                  font: {
                     size: 12,
                     weight: '700',
                     family: "'Inter', sans-serif"
@@ -1137,10 +1257,10 @@ const TaskReports = () => {
             afterDatasetsDraw: (chart) => {
               const { ctx } = chart;
               const chartWidth = chart.width;
-              
+
               // Dynamic badge sizing based on chart width for responsiveness
               let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
-              
+
               if (chartWidth < 480) {
                 badgeWidth = 28;
                 badgeHeight = 18;
@@ -1160,13 +1280,13 @@ const TaskReports = () => {
                 fontSize = 12;
                 padding = 8;
               }
-              
+
               // Only process the last dataset to show total at the top
               const lastDatasetIndex = chart.data.datasets.length - 1;
               if (lastDatasetIndex < 0) return;
-              
+
               const meta = chart.getDatasetMeta(lastDatasetIndex);
-              
+
               meta.data.forEach((bar, index) => {
                 // Calculate total for this bar across only VISIBLE datasets
                 let total = 0;
@@ -1177,28 +1297,28 @@ const TaskReports = () => {
                     total += (dataset.data[index] || 0);
                   }
                 });
-                
+
                 if (total > 0 && bar) {
                   ctx.save();
-                  
+
                   // Position badge above the bar (top)
                   let x = bar.x - badgeWidth / 2;
                   let y = bar.y - badgeHeight - padding;
-                  
+
                   // Ensure badge stays within chart boundaries
                   if (x < 0) x = 4;
                   if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
                   if (y < 0) y = 4;
                   if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
-                  
+
                   // Draw badge background with shadow
                   ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
                   ctx.shadowBlur = 6;
                   ctx.shadowOffsetX = 0;
                   ctx.shadowOffsetY = 2;
-                  
+
                   ctx.fillStyle = '#ffffff';
-                  
+
                   // Rounded rectangle
                   ctx.beginPath();
                   ctx.moveTo(x + cornerRadius, y);
@@ -1212,20 +1332,20 @@ const TaskReports = () => {
                   ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
                   ctx.closePath();
                   ctx.fill();
-                  
+
                   // Reset shadow
                   ctx.shadowColor = 'transparent';
                   ctx.shadowBlur = 0;
                   ctx.shadowOffsetX = 0;
                   ctx.shadowOffsetY = 0;
-                  
+
                   // Draw total value text
                   ctx.fillStyle = '#0f172a';
                   ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
                   ctx.textAlign = 'center';
                   ctx.textBaseline = 'middle';
                   ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
-                  
+
                   ctx.restore();
                 }
               });
@@ -1236,32 +1356,40 @@ const TaskReports = () => {
     }
     if (taskAggregates.projects.length > 0 && projectBarChartRef.current) {
       const labels = taskAggregates.projects.map(p => p.label);
-      
-      // Create a dataset for each status (will be stacked into one tower per project)
-      const datasets = STATUS_LABELS.map((statusLabel, index) => {
+
+      // Calculate total tasks per status across all projects
+      const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
         const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
-        
-        return {
-          label: statusLabel,
-          data: taskAggregates.projects.map(p => {
-            return p.statuses && p.statuses[statusKey] ? p.statuses[statusKey] : 0;
-          }),
-          backgroundColor: STATUS_COLORS[index],
-          hoverBackgroundColor: STATUS_COLORS[index],
-          borderColor: '#ffffff',
-          hoverBorderColor: '#ffffff',
-          borderWidth: 2.5,
-          hoverBorderWidth: 3,
-          borderRadius: 6,
-          borderSkipped: false,
-          statusKey: statusKey,
-          barPercentage: 0.7,
-          categoryPercentage: 0.9,
-          barThickness: 'flex',
-          maxBarThickness: 40
-        };
+        const total = taskAggregates.projects.reduce((sum, project) => {
+          return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
+        }, 0);
+        return { statusLabel, statusKey, index, total };
       });
-      
+
+      // Filter out statuses with zero tasks
+      const activeStatuses = statusTotals.filter(item => item.total > 0);
+
+      // Create a dataset only for statuses with actual data
+      const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
+        label: statusLabel,
+        data: taskAggregates.projects.map(p => {
+          return p.statuses && p.statuses[statusKey] ? p.statuses[statusKey] : 0;
+        }),
+        backgroundColor: STATUS_COLORS[index],
+        hoverBackgroundColor: STATUS_COLORS[index],
+        borderColor: '#ffffff',
+        hoverBorderColor: '#ffffff',
+        borderWidth: 2.5,
+        hoverBorderWidth: 3,
+        borderRadius: 6,
+        borderSkipped: false,
+        statusKey: statusKey,
+        barPercentage: 0.7,
+        categoryPercentage: 0.9,
+        barThickness: 'flex',
+        maxBarThickness: 40
+      }));
+
       const data = {
         labels,
         datasets
@@ -1287,7 +1415,7 @@ const TaskReports = () => {
                   labels: {
                     boxWidth: 14,
                     boxHeight: 14,
-                    font: { 
+                    font: {
                       size: 11,
                       weight: '600',
                       family: "'Inter', sans-serif"
@@ -1320,42 +1448,42 @@ const TaskReports = () => {
                   boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
                   caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
                   caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
-                  filter: function(tooltipItem) {
+                  filter: function (tooltipItem) {
                     return tooltipItem.raw > 0;
                   },
                   callbacks: {
-                    title: function(context) {
+                    title: function (context) {
                       const projectName = context[0].label;
                       return `📊 ${projectName}`;
                     },
-                    label: function(context) {
+                    label: function (context) {
                       const status = context.dataset.label;
                       const value = context.parsed.x;
                       if (value === 0) return null;
                       return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
                     },
-                    afterLabel: function(context) {
+                    afterLabel: function (context) {
                       const projectIndex = context.dataIndex;
                       const project = taskAggregates.projects[projectIndex];
-                      
+
                       if (!project || !project.tasks || project.tasks.length === 0) {
                         return null;
                       }
-                      
+
                       const currentStatus = context.dataset.statusKey;
                       const statusTasks = project.tasks.filter(t => (t.status || 'open') === currentStatus);
-                      
+
                       if (statusTasks.length === 0) return null;
-                      
+
                       // Show task details
                       const taskDetails = statusTasks.slice(0, 5).map(t => {
                         const assignees = t.assignee_names || 'Unassigned';
                         const department = String(t.department || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
                         return `• ${t.title}\n  👤 ${assignees}\n  🏢 ${department}`;
                       });
-                      
+
                       const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
-                      
+
                       return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
                     }
                   }
@@ -1378,21 +1506,21 @@ const TaskReports = () => {
                   ticks: {
                     precision: 0,
                     maxTicksLimit: 10,
-                    font: { 
+                    font: {
                       size: 11,
                       weight: '600',
                       family: "'Inter', sans-serif"
                     },
                     color: '#475569',
                     padding: 10,
-                    callback: function(value) {
+                    callback: function (value) {
                       if (Number.isInteger(value)) {
                         return value;
                       }
                       return null;
                     }
                   },
-                  suggestedMax: function(context) {
+                  suggestedMax: function (context) {
                     const totals = context.chart.data.labels.map((_, idx) => {
                       return context.chart.data.datasets.reduce((sum, dataset) => {
                         return sum + (dataset.data[idx] || 0);
@@ -1404,7 +1532,7 @@ const TaskReports = () => {
                   title: {
                     display: true,
                     text: 'Number of Tasks',
-                    font: { 
+                    font: {
                       size: 13,
                       weight: '700',
                       family: "'Inter', sans-serif"
@@ -1425,7 +1553,7 @@ const TaskReports = () => {
                   },
                   ticks: {
                     autoSkip: false,
-                    font: { 
+                    font: {
                       size: 12,
                       weight: '700',
                       family: "'Inter', sans-serif"
@@ -1447,10 +1575,10 @@ const TaskReports = () => {
                 const { ctx } = chart;
                 const isHorizontal = chart.config.options.indexAxis === 'y';
                 const chartWidth = chart.width;
-                
+
                 // Dynamic badge sizing based on chart width for responsiveness
                 let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
-                
+
                 if (chartWidth < 480) {
                   badgeWidth = 28;
                   badgeHeight = 18;
@@ -1470,13 +1598,13 @@ const TaskReports = () => {
                   fontSize = 12;
                   padding = 8;
                 }
-                
+
                 // Only process the last dataset to show total
                 const lastDatasetIndex = chart.data.datasets.length - 1;
                 if (lastDatasetIndex < 0) return;
-                
+
                 const meta = chart.getDatasetMeta(lastDatasetIndex);
-                
+
                 meta.data.forEach((bar, index) => {
                   // Calculate total for this bar across only VISIBLE datasets
                   let total = 0;
@@ -1487,12 +1615,12 @@ const TaskReports = () => {
                       total += (dataset.data[index] || 0);
                     }
                   });
-                  
+
                   if (total > 0 && bar) {
                     ctx.save();
-                    
+
                     let x, y;
-                    
+
                     if (isHorizontal) {
                       // Horizontal bar: badge at the end (right side)
                       x = bar.x + padding;
@@ -1502,21 +1630,21 @@ const TaskReports = () => {
                       x = bar.x - badgeWidth / 2;
                       y = bar.y - badgeHeight - padding;
                     }
-                    
+
                     // Ensure badge stays within chart boundaries
                     if (x < 0) x = 4;
                     if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
                     if (y < 0) y = 4;
                     if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
-                    
+
                     // Draw badge background with shadow
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
                     ctx.shadowBlur = 6;
                     ctx.shadowOffsetX = 0;
                     ctx.shadowOffsetY = 2;
-                    
+
                     ctx.fillStyle = '#ffffff';
-                    
+
                     // Rounded rectangle
                     ctx.beginPath();
                     ctx.moveTo(x + cornerRadius, y);
@@ -1530,20 +1658,20 @@ const TaskReports = () => {
                     ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
                     ctx.closePath();
                     ctx.fill();
-                    
+
                     // Reset shadow
                     ctx.shadowColor = 'transparent';
                     ctx.shadowBlur = 0;
                     ctx.shadowOffsetX = 0;
                     ctx.shadowOffsetY = 0;
-                    
+
                     // Draw total value text
                     ctx.fillStyle = '#0f172a';
                     ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
-                    
+
                     ctx.restore();
                   }
                 });
@@ -1571,7 +1699,7 @@ const TaskReports = () => {
         projectBarChartInstance.current = null;
       }
     };
-  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin]);
+  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses]);
 
   const filterPopoverRef = useRef(null);
   const filterButtonRef = useRef(null);
@@ -1863,20 +1991,50 @@ const TaskReports = () => {
                         <canvas ref={completionRateChartRef}></canvas>
                       </div>
                       <div className="task-progress-legend">
-                        {STATUS_LABELS.map((label, index) => {
-                          const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
-                          return (
-                            <div key={label} className="task-progress-legend-item">
-                              <span
-                                className={`task-progress-dot ${colorClass}`}
-                                style={{ backgroundColor: STATUS_COLORS[index] || '' }}
-                             />
-                              <span className="task-progress-legend-label">
-                                {label}
-                              </span>
-                            </div>
-                          );
-                        })}
+                        {(() => {
+                          const allStatusValues = [
+                            statsSummary.open || 0,
+                            statsSummary.inProgress || 0,
+                            statsSummary.pendingApproval || 0,
+                            statsSummary.approved || 0,
+                            statsSummary.rejected || 0,
+                            statsSummary.completed || 0,
+                            statsSummary.closed || 0,
+                            statsSummary.cancelled || 0
+                          ];
+                          
+                          return STATUS_LABELS.map((label, index) => {
+                            const count = allStatusValues[index];
+                            if (count === 0) return null;
+                            
+                            const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
+                            const isHidden = hiddenStatuses.has(label);
+                            
+                            return (
+                              <div
+                                key={label}
+                                className="task-progress-legend-item"
+                                onClick={() => toggleStatusVisibility(label)}
+                                style={{
+                                  cursor: 'pointer',
+                                  opacity: isHidden ? 0.4 : 1,
+                                  textDecoration: isHidden ? 'line-through' : 'none'
+                                }}
+                              >
+                                <span
+                                  className={`task-progress-dot ${colorClass}`}
+                                  style={{ 
+                                    backgroundColor: STATUS_COLORS[index] || '',
+                                    opacity: isHidden ? 0.4 : 1
+                                  }}
+                                />
+                                <span className="task-progress-legend-label">
+                                  {label}: {count}
+                                </span>
+                              </div>
+                            );
+                          });
+                        })()}
                       </div>
                       {taskStatsLoading && <div className="loading">Loading task progress...</div>}
                       {taskStatsError && <div className="error">{taskStatsError}</div>}
@@ -1893,49 +2051,69 @@ const TaskReports = () => {
                   </div>
                 </div>
                 <div className="task-dashboard-reports-grid">
-                      <div className="task-report-card task-report-card--project-report">
-                        <div className="task-report-card-header">
-                          <h2 className="task-report-card-title">Project-wise Task Report</h2>
-                        </div>
-                        <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
-                          <canvas ref={projectBarChartRef}></canvas>
-                        </div>
-                      </div>
-                      <div className="task-report-card task-report-card--user-report">
-                      <div className="task-report-card-header">
-                        <h2 className="task-report-card-title">User-wise Task Report</h2>
-                      </div>
-                      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
-                        <canvas ref={userBarChartRef}></canvas>
-                      </div>
-                    </div>
-                {rolePerms.isAdmin && (
-                  <div className="task-report-card task-report-card--department-report">
+                  <div className="task-report-card task-report-card--project-report">
                     <div className="task-report-card-header">
-                      <h2 className="task-report-card-title">Department-wise Task Report</h2>
+                      <h2 className="task-report-card-title">Project-wise Task Report</h2>
                     </div>
                     <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
-                      <canvas ref={departmentCanvasRef}></canvas>
-                    </div>
-                    <div className="task-progress-legend" style={{ marginTop: '0.5rem' }}>
-                      {taskStats?.department_breakdown && Object.entries(taskStats.department_breakdown).map(([dept, count], index) => (
-                        <div key={dept} className="task-progress-legend-item">
-                          <span
-                            className="task-progress-dot"
-                            style={{
-                              backgroundColor: [
-                                '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#4D5360', '#C9CBCF', '#8e5ea2', '#3cba9f'
-                              ][index % 10]
-                            }}
-                          />
-                          <span className="task-progress-legend-label">
-                            {String(dept || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}: {count}
-                          </span>
-                        </div>
-                      ))}
+                      <canvas ref={projectBarChartRef}></canvas>
                     </div>
                   </div>
-                )}
+                  <div className="task-report-card task-report-card--user-report">
+                    <div className="task-report-card-header">
+                      <h2 className="task-report-card-title">User-wise Task Report</h2>
+                    </div>
+                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
+                      <canvas ref={userBarChartRef}></canvas>
+                    </div>
+                  </div>
+                  {rolePerms.isAdmin && (
+                    <div className="task-report-card task-report-card--department-report">
+                      <div className="task-report-card-header">
+                        <h2 className="task-report-card-title">Department-wise Task Report</h2>
+                      </div>
+                      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
+                        <canvas ref={departmentCanvasRef}></canvas>
+                      </div>
+                      <div className="task-progress-legend" style={{ marginTop: '0.5rem' }}>
+                        {taskStats?.department_breakdown && (() => {
+                          // Create consistent color map for legend items
+                          const deptColorMap = {};
+                          Object.entries(taskStats.department_breakdown).forEach(([dept], index) => {
+                            deptColorMap[dept] = DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
+                          });
+
+                          return Object.entries(taskStats.department_breakdown).map(([dept, count], index) => {
+                            const isHidden = hiddenDepartments.has(dept);
+                            const deptColor = deptColorMap[dept];
+
+                            return (
+                              <div
+                                key={dept}
+                                className="task-progress-legend-item"
+                                onClick={() => toggleDepartmentVisibility(dept)}
+                                style={{
+                                  opacity: isHidden ? 0.4 : 1,
+                                  textDecoration: isHidden ? 'line-through' : 'none'
+                                }}
+                              >
+                                <span
+                                  className="task-progress-dot"
+                                  style={{
+                                    backgroundColor: deptColor,
+                                    opacity: isHidden ? 0.4 : 1
+                                  }}
+                                />
+                                <span className="task-progress-legend-label">
+                                  {String(dept || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}: {count}
+                                </span>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             ) : (
@@ -1965,41 +2143,41 @@ const TaskReports = () => {
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="task-team-summary">
                   <div className="task-team-summary-item">
                     <div className="task-team-summary-value"><div className="stat-icon">👥</div>
-                    {teamSummary.members}
-                    <div className="task-team-summary-label" style={{ color: '#059669' }}>Team Members</div>
+                      {teamSummary.members}
+                      <div className="task-team-summary-label" style={{ color: '#059669' }}>Team Members</div>
                     </div>
-                    
+
                   </div>
                   <div className="task-team-summary-item">
                     <div className="task-team-summary-value"><div className="stat-icon">📋</div>
-                    {teamSummary.totalTasks}
-                    <div className="task-team-summary-label" style={{ color: '#077af5' }}>Total Tasks</div>
+                      {teamSummary.totalTasks}
+                      <div className="task-team-summary-label" style={{ color: '#077af5' }}>Total Tasks</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
                     <div className="task-team-summary-value"><div className="stat-icon">🔄</div>
-                    {teamSummary.inProgress}
-                    <div className="task-team-summary-label" style={{ color: '#fccf3a' }}>In Progress</div>
+                      {teamSummary.inProgress}
+                      <div className="task-team-summary-label" style={{ color: '#fccf3a' }}>In Progress</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
                     <div className="task-team-summary-value"><div className="stat-icon">✅</div>
-                    {teamSummary.completed}
-                    <div className="task-team-summary-label" style={{ color: '#0feb42' }}>Completed</div>
+                      {teamSummary.completed}
+                      <div className="task-team-summary-label" style={{ color: '#0feb42' }}>Completed</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
                     <div className="task-team-summary-value"><div className="stat-icon">⚠️</div>
-                    {teamSummary.overdue}<div className="task-team-summary-label" style={{ color: '#FF6384' }}>Overdue</div>
+                      {teamSummary.overdue}<div className="task-team-summary-label" style={{ color: '#FF6384' }}>Overdue</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
                     <div className="task-team-summary-value"><div className="stat-icon">📊</div>
-                    {teamSummary.avgRate}%<div className="task-team-summary-label" style={{ color: '#077af5' }}>Avg Completion</div>
+                      {teamSummary.avgRate}%<div className="task-team-summary-label" style={{ color: '#077af5' }}>Avg Completion</div>
                     </div>
                   </div>
                 </div>
