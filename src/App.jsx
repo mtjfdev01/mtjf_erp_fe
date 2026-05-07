@@ -166,6 +166,7 @@ import TrackersView from './components/progress_tracking/admin/trackers/view';
 import StepsList from './components/progress_tracking/admin/steps/list';
 import StepView from './components/progress_tracking/admin/steps/view';
 import EvidenceView from './components/progress_tracking/admin/evidence/view';
+import ProgressTemplateDashboard from './components/admin/dashboard/progress_template_dashboard';
 const App = () => {
   return (<React.Fragment>
             <Router> 
@@ -200,6 +201,7 @@ const App = () => {
                                 <Route path="/program" element={<Program />} />
                                 <Route path="/accounts_and_finance" element={<AccountsAndFinance />} />
                                 <Route path="/admin" element={<AdminDashboard />} />
+                                <Route path="/admin/progress-template-dashboard" element={<ProgressTemplateDashboard />} />
 
                                 {/* User Management Routes */}
                                 <Route path="/admin/users" element={<UserList />} />

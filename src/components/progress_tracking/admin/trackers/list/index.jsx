@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -228,7 +228,7 @@ const TrackersList = () => {
                   <th>ID</th>
                   <th>Template</th>
                   <th className="hide-on-mobile">Donation ID</th>
-                  <th className="hide-on-mobile">Batch #</th>
+                  <th className="hide-on-mobile">Batches</th>
                   <th>Overall</th>
                   <th className="table-actions">Actions</th>
                 </tr>
@@ -239,7 +239,36 @@ const TrackersList = () => {
                     <td>{t.id}</td>
                     <td>{t?.template?.name || '-'}</td>
                     <td className="hide-on-mobile">{t.donation_id || '-'}</td>
-                    <td className="hide-on-mobile">{t.batch_number || '-'}</td>
+                    <td className="hide-on-mobile">
+                      {Array.isArray(t.allocation_batches) && t.allocation_batches.length > 0 ? (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                          {t.allocation_batches.map((b) => (
+                            <Link
+                              key={b.batch_id}
+                              to={`/progress/trackers/${t.id}?batch_id=${b.batch_id}`}
+                              style={{
+                                fontSize: '13px',
+                                color: '#2563eb',
+                                textDecoration: 'underline',
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              #{b.batch_number}
+                              {b.parts_count ? ` (${b.parts_count}p)` : ''}
+                            </Link>
+                          ))}
+                        </div>
+                      ) : t.batch_number != null && t.batch_number !== '' ? (
+                        <Link
+                          to={`/progress/trackers/${t.id}`}
+                          style={{ fontSize: '13px', color: '#2563eb', textDecoration: 'underline' }}
+                        >
+                          #{t.batch_number}
+                        </Link>
+                      ) : (
+                        '—'
+                      )}
+                    </td>
                     <td>{t.overall_status}</td>
                     <td className="table-actions">
                       <ActionMenu actions={actionsFor(t)} />
