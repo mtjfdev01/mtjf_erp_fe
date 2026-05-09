@@ -71,14 +71,45 @@ export const canViewModule = (permissions, department, module) => {
   if (!permissions || !department || !module) {
     return false;
   }
-  
+
+  // Unified donors (fund_raising): allow sidebar if new `donors` or legacy online/offline donor flags exist
+  if (department === 'fund_raising' && module === 'donors') {
+    const fr = permissions[department];
+    if (!fr) return false;
+    const donors = fr.donors;
+    if (donors?.view === true || donors?.list_view === true) return true;
+    const online = fr.online_donors;
+    const offline = fr.offline_donors;
+    return (
+      online?.view === true ||
+      online?.list_view === true ||
+      offline?.view === true ||
+      offline?.list_view === true
+    );
+  }
+
   const modulePermissions = permissions[department]?.[module];
   if (!modulePermissions) {
     return false;
   }
-  
+
   // User can view module if they have view or list_view permission
   return modulePermissions.view === true || modulePermissions.list_view === true;
+};
+
+/**
+ * True if fund_raising donor permissions grant `action` (unified `donors` or legacy online/offline donor keys).
+ */
+export const fundRaisingDonorsHas = (permissions, action) => {
+  if (!permissions?.fund_raising || !action) {
+    return false;
+  }
+  const fr = permissions.fund_raising;
+  return (
+    fr.donors?.[action] === true ||
+    fr.online_donors?.[action] === true ||
+    fr.offline_donors?.[action] === true
+  );
 };
 
 /**
@@ -213,6 +244,7 @@ export default {
   hasModuleAccess,
   hasDepartmentAccess,
   canViewModule,
+  fundRaisingDonorsHas,
   isSuperAdmin,
   getAccessibleModules,
   getModulePermissions,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
+import { fundRaisingDonorsHas } from '../../../../utils/permissions';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Card from '../../../common/Card';
@@ -60,11 +61,7 @@ const ViewDonor = () => {
 
   const canRevealPassword = (() => {
     if (!permissions) return false;
-    return (
-      permissions.super_admin === true ||
-      permissions.fund_raising?.online_donors?.update === true ||
-      permissions.fund_raising?.offline_donors?.update === true
-    );
+    return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'update');
   })();
 
   const closeRevealModal = () => {

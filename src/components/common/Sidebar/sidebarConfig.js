@@ -423,7 +423,7 @@ const adminDepartmentItems = () => [
       {label: "donations", path: "/donations/online_donations/list", type: "list", icon: FiCreditCard},
       {label: "donation_box", path: "/dms/donation_box/list", type: "list", icon: FiBox},
       {label: "donation_box_donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
-      {label: "donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
+      {label: "Donor", path: "/dms/donors/list", type: "list", icon: FiUsers},
       {label: "volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
       {label: "surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
       {label: "events", path: "/dms/events/list", type: "list", icon: FiCalendar},
@@ -598,17 +598,10 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   //   module: 'offline_donations'
   // },
   {
-    label: 'Online Donors',
-    path: '/dms/donors/online/list',
+    label: 'Donor',
+    path: '/dms/donors/list',
     type: 'list',
-    module: 'online_donors',
-    icon: FiUsers
-  },
-  {
-    label: 'Offline Donors',
-    path: '/dms/donors/offline/list',
-    type: 'list',
-    module: 'offline_donors',
+    module: 'donors',
     icon: FiUsers
   },
   {

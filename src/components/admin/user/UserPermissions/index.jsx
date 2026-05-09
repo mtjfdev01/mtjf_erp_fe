@@ -7,6 +7,26 @@ import { toast } from 'react-toastify';
 import { FiCloudLightning } from 'react-icons/fi';
 import { useAuth } from '../../../../context/AuthContext';
 
+/** Merge legacy fund_raising online_donors/offline_donors into donors and drop old keys for save/load. */
+const mergeFundRaisingDonorPermissions = (rawPermissions) => {
+  if (!rawPermissions || typeof rawPermissions !== 'object') return rawPermissions;
+  const next = JSON.parse(JSON.stringify(rawPermissions));
+  if (!next.fund_raising) return next;
+  const fr = next.fund_raising;
+  const actions = ['create', 'list_view', 'view', 'update', 'delete', 'csv_xport'];
+  const merged = {};
+  actions.forEach((a) => {
+    merged[a] =
+      fr.donors?.[a] === true ||
+      fr.online_donors?.[a] === true ||
+      fr.offline_donors?.[a] === true;
+  });
+  next.fund_raising = { ...fr, donors: merged };
+  delete next.fund_raising.online_donors;
+  delete next.fund_raising.offline_donors;
+  return next;
+};
+
 const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const { user: currentUser, checkAuth } = useAuth();
   const [permissions, setPermissions] = useState({});
@@ -17,7 +37,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   // Initialize permissions when user data is available
   useEffect(() => {
     if (user?.permissions?.permissions) {
-      setPermissions(user.permissions.permissions);
+      setPermissions(mergeFundRaisingDonorPermissions(user.permissions.permissions));
     }
   }, [user]);
 
@@ -196,12 +216,9 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Donation Box Donations',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
-        online_donors: {
-          label: 'Online Donors',
-          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']        },
-        offline_donors: {
-          label: 'Offline Donors',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+        donors: {
+          label: 'Donors',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'csv_xport']
         },
         // donations_report: {
         //   label: 'Donations Report',
@@ -406,7 +423,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const handleSave = async () => {
     if (!user?.id) {
       try {
-        if (onSave) onSave(permissions);
+        if (onSave) onSave(mergeFundRaisingDonorPermissions(permissions));
       } catch (error) {
         setError('User ID is required');
       }
@@ -419,7 +436,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       // Create payload with only user data and permissions
       const updatePayload = {
         ...user,
-        permissions: permissions
+        permissions: mergeFundRaisingDonorPermissions(permissions)
       };
       
       console.log('User before permissions update:', user);
