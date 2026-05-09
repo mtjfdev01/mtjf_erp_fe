@@ -785,6 +785,7 @@
 
 .task-report-card-chart--wide canvas {
   transition: transform 0.3s ease;
+  cursor: pointer;
 }
 
 .task-report-card-chart--wide:hover canvas {
@@ -871,6 +872,21 @@
 .task-progress-legend-label {
   white-space: nowrap;
   text-transform: uppercase;
+}
+
+/* Ensure Chart.js built-in legends have pointer cursor */
+.task-report-card-chart canvas + ul,
+.task-report-card-chart canvas + div,
+canvas[ref*="Canvas"] + ul,
+canvas[ref*="Canvas"] + div,
+.chartjs-size-monitor + ul,
+.chartjs-size-monitor + div {
+  cursor: pointer !important;
+}
+
+.task-report-card-chart ul li,
+.task-report-card-chart div span {
+  cursor: pointer !important;
 }
 
 .task-card-footer-text {
