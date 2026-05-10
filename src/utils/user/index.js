@@ -67,6 +67,7 @@ export const departmentRoles = {
   };
 
   export const departments = [
+    { value: 'admin', label: 'Admin' },
     { value: 'store', label: 'Store' },
     { value: 'procurements', label: 'Procurement' },
     { value: 'accounts_and_finance', label: 'Accounts & Finance' },
@@ -76,7 +77,8 @@ export const departmentRoles = {
     { value: 'audio_video', label: 'Audio Video' },
     { value: 'fund_raising', label: 'Fund Raising' },
     { value: 'hr', label: 'HR' },
-    {value: 'meal', label: 'Meal'}
+    { value: 'meal', label: 'Meal' },
+    { value: 'health', label: 'Health' }
   ];
   
   export const bloodGroups = [
@@ -94,7 +96,19 @@ export const departmentRoles = {
   export const defaultRoles = [
     { value: 'user', label: 'User' },
     { value: 'assistant_manager', label: 'Assistant Manager' },
-    { value: 'manager', label: 'Manager' }
+    { value: 'manager', label: 'Manager' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'super_admin', label: 'Super Admin' },
+    { value: 'officer', label: 'Officer' },
+    { value: 'coordinator', label: 'Coordinator' },
+    { value: 'support', label: 'Support' },
+    { value: 'analyst', label: 'Analyst' },
+    { value: 'developer', label: 'Developer' },
+    { value: 'team_lead', label: 'Team Lead' },
+    { value: 'staff', label: 'Staff' }, 
+    { value: 'field_officer', label: 'Field Officer' },
+    { value: 'volunteer', label: 'Volunteer' },
+    { value: 'dept_head', label: 'Dept Head' }
   ];
   
   export const genders = [

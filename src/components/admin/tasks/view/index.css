@@ -476,8 +476,8 @@
 
 /* Professional Recurrence Card */
 .recurrence-card-container {
-  margin: 1.5rem auto;
-  width: calc(100% - 3rem);
+  margin: 1rem auto;
+  width: calc(100% - 2rem);
   max-width: 100%;
 }
 
@@ -519,7 +519,7 @@
 .recurrence-card-body {
   display: flex;
   align-items: flex-start;
-  padding: 1.25rem 1.5rem;
+  padding: 1rem;
   gap: 1.25rem;
 }
 
@@ -579,7 +579,7 @@
 
 .recurrence-count-badge {
   background: #f1f5f9;
-  color: #475569;
+  color: #0062ea;
   padding: 0.15rem 0.6rem;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -597,9 +597,12 @@
 }
 
 .upcoming-title {
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #94a3b8;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #3b82f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }

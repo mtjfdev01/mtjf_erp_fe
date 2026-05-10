@@ -213,13 +213,13 @@ const TasksList = () => {
     return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t)) : [];
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, user?.department, isManager]);
 
-  // Optimized: Lazy load approvals only when user interacts with approval banner
-  const fetchApprovalsIfNeeded = useCallback(async () => {
-    // Only fetch approvals once, only if user has approval permissions, AND only after interaction
-    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove || !hasInteractedWithApprovals) {
+  // Load approvals immediately for users with approval permissions
+  const fetchApprovals = useCallback(async () => {
+    // Only fetch approvals once, and only if user has approval permissions
+    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove) {
       return;
     }
-    
+
     let cancelled = false;
     try {
       const res = await axiosInstance.get('/tasks/approvals/my');
@@ -237,7 +237,7 @@ const TasksList = () => {
     return () => {
       cancelled = true;
     };
-  }, [currentUserId, taskPerms.canApprove, approvalsLoaded, hasInteractedWithApprovals]);
+  }, [currentUserId, taskPerms.canApprove, approvalsLoaded]);
 
   const approvalRequestsForUser = useMemo(() => {
     if (!currentUserId) return [];
@@ -276,21 +276,21 @@ const TasksList = () => {
         ? String(myMeta.decision || 'pending').toLowerCase()
         : 'pending';
       const statusLower = String(approval.approval_status || '').toLowerCase();
-      
+
       // Include tasks where:
       // 1. Status is pending_approval (awaiting decision)
       // 2. Status is rejected and user's decision is still pending (can still act)
       // 3. User has already made a decision (approved/rejected) - show for visibility
-      const isPendingAction = 
-        statusLower === 'pending_approval' || 
+      const isPendingAction =
+        statusLower === 'pending_approval' ||
         (statusLower === 'rejected' && myDecision === 'pending');
       const hasUserActed = myDecision !== 'pending';
-      
+
       // Include task if it needs action OR user has already participated
       if (!isPendingAction && !hasUserActed) {
         return;
       }
-      
+
       // Enrich task with approval status for UI display
       results.push({
         ...task,
@@ -299,7 +299,7 @@ const TasksList = () => {
         _isPendingAction: isPendingAction,
       });
     });
-    
+
     // Sort: pending actions first, then completed approvals
     return results.sort((a, b) => {
       if (a._isPendingAction && !b._isPendingAction) return -1;
@@ -310,7 +310,7 @@ const TasksList = () => {
 
   const otherTasks = useMemo(() => {
     if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
-    
+
     // Get regular other tasks (not assigned to current user or team)
     const regularOtherTasks = Array.isArray(tasks) ? tasks.filter((t) => {
       const assignedToMe = isTaskAssignedToCurrentUser(t);
@@ -321,7 +321,7 @@ const TasksList = () => {
 
       return true;
     }) : [];
-    
+
     // Get approval tasks (tasks user has approved/rejected or needs to approve)
     // These should be included in "Other Tasks" tab with existing task card design
     // Only include approval tasks if myApprovals has been loaded
@@ -331,7 +331,7 @@ const TasksList = () => {
       const alreadyIncluded = regularOtherTasks.some(rt => Number(rt.id) === taskId);
       return !alreadyIncluded;
     }) : [];
-    
+
     // Combine: approval tasks first (for visibility), then regular other tasks
     // All tasks use the same existing task card design via renderTaskCard()
     return [...approvalTasksToAdd, ...regularOtherTasks];
@@ -355,14 +355,14 @@ const TasksList = () => {
 
         // Check if user-applied search filters are active (excluding department from URL path)
         // Only use /tasks/search when user actively searches or filters by status/priority/user_name
-        const hasUserAppliedFilters = 
-          filters.search || 
-          filters.status || 
+        const hasUserAppliedFilters =
+          filters.search ||
+          filters.status ||
           filters.priority ||
           filters.user_name;
 
         let res;
-        
+
         if (hasUserAppliedFilters) {
           // Use POST /tasks/search when user applies search/status/priority/user_name filters
           const payload = {
@@ -384,7 +384,7 @@ const TasksList = () => {
           };
           res = await axiosInstance.get('/tasks/list', { params });
         }
-        
+
         const list = res.data.data || [];
         setTasks(list);
         setTotalItems(res.data.pagination?.total || 0);
@@ -398,10 +398,10 @@ const TasksList = () => {
     fetchTasks();
   }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department, currentDeptFromPath]);
 
-  // Load approvals only after user has interacted with the approval banner
+  // Load approvals immediately for users with approval permissions
   useEffect(() => {
-    fetchApprovalsIfNeeded();
-  }, [fetchApprovalsIfNeeded]);
+    fetchApprovals();
+  }, [fetchApprovals]);
 
   const handleFilterChange = (key, value) => {
     if (key === 'search') {
@@ -1113,171 +1113,151 @@ const TasksList = () => {
             <div className="status-message">Loading tasks...</div>
           ) : (
             <>
-          {/* Approval Banner - Lazy Loaded */}
-          {(() => {
-            try {
-              // If user has approval permissions but hasn't interacted yet
-              if (taskPerms.canApprove && !hasInteractedWithApprovals && !approvalsLoaded) {
-                return (
-                  <div 
-                    className="tasks-approval-banner tasks-approval-banner--prompt"
-                    onClick={() => setHasInteractedWithApprovals(true)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    <div className="tasks-approval-pill">
-                      <div className="tasks-approval-header">
-                        <span className="tasks-approval-label">Approval requests</span>
-                        <span className="tasks-approval-count">
-                          Click to view pending approvals
-                        </span>
-                      </div>
-                      <div style={{ padding: '12px 20px', textAlign: 'center', color: '#666' }}>
-                        <span style={{ fontWeight: 500 }}>Tap here</span> to check for tasks needing your approval
-                      </div>
-                    </div>
-                  </div>
-                );
-              }
-
-              // If user has interacted, show the actual approval banner
-              if (!Array.isArray(approvalRequestsForUser)) return null;
-              const pendingApprovals = approvalRequestsForUser.filter(t => t && t._isPendingAction === true);
-              if (!pendingApprovals || pendingApprovals.length === 0) return null;
-              return (
-              <div className="tasks-approval-banner">
-                <div className="tasks-approval-pill">
-                  <div className="tasks-approval-header">
-                    <span className="tasks-approval-label">Approval requests</span>
-                    <span className="tasks-approval-count">
-                      {pendingApprovals.length === 1
-                        ? '1 task pending your approval'
-                        : `${pendingApprovals.length} tasks pending your approval`}
-                    </span>
-                  </div>
-                  <ul className="tasks-approval-list">
-                    {pendingApprovals.map((t) => (
-                      <li
-                        key={t.id}
-                        className="tasks-approval-item"
-                        onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
-                      >
-                        <div className="tasks-approval-item-main">
-                          <span className="tasks-approval-title">
-                            {t.title || `Task #${t.id}`}
-                          </span>
-                          <span className="tasks-approval-sub">
-                            Pending your review
-                            {(t.priority || t.due_date) && (
-                              <>
-                                {' • '}
-                                {t.priority ? capitalize(t.priority) : null}
-                                {t.priority && t.due_date ? ' • ' : ''}
-                                {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
-                              </>
-                            )}
+              {/* Approval Banner - Only shown if there are actual pending approvals */}
+              {(() => {
+                try {
+                  if (!taskPerms.canApprove) return null;
+                  if (!approvalsLoaded) return null; // Wait until approvals are loaded
+                  if (!Array.isArray(approvalRequestsForUser)) return null;
+                  
+                  const pendingApprovals = approvalRequestsForUser.filter(t => t && t._isPendingAction === true);
+                  if (!pendingApprovals || pendingApprovals.length === 0) return null;
+                  
+                  return (
+                    <div className="tasks-approval-banner">
+                      <div className="tasks-approval-pill">
+                        <div className="tasks-approval-header">
+                          <span className="tasks-approval-label">Approval requests</span>
+                          <span className="tasks-approval-count">
+                            {pendingApprovals.length === 1
+                              ? '1 task pending your approval'
+                              : `${pendingApprovals.length} tasks pending your approval`}
                           </span>
                         </div>
-                        <span className="tasks-approval-meta">View</span>
-                      </li>
-                    ))}
-                  </ul>
+                        <ul className="tasks-approval-list">
+                          {pendingApprovals.map((t) => (
+                            <li
+                              key={t.id}
+                              className="tasks-approval-item"
+                              onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
+                            >
+                              <div className="tasks-approval-item-main">
+                                <span className="tasks-approval-title">
+                                  {t.title || `Task #${t.id}`}
+                                </span>
+                                <span className="tasks-approval-sub">
+                                  Pending your review
+                                  {(t.priority || t.due_date) && (
+                                    <>
+                                      {' • '}
+                                      {t.priority ? capitalize(t.priority) : null}
+                                      {t.priority && t.due_date ? ' • ' : ''}
+                                      {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
+                                    </>
+                                  )}
+                                </span>
+                              </div>
+                              <span className="tasks-approval-meta">View</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  );
+                } catch (error) {
+                  // Silently fail if there's an error with approval banner
+                  return null;
+                }
+              })()}
+              {error && <div className="status-message status-message--error">{error}</div>}
+
+              <div className="task-card-list">
+                <div className="task-tabs-container">
+                  <div className="task-tabs">
+                    <button
+                      className={`task-tab-btn ${activeTab === 'assigned_to_me' ? 'active active--mine' : ''}`}
+                      onClick={() => setActiveTab('assigned_to_me')}
+                    >
+                      <FiUserCheck className="tab-icon" />
+                      <span className="tab-text">My Tasks</span>
+                      <span className="tab-count">{myTasks.length}</span>
+                    </button>
+                    {isManager && (
+                      <button
+                        className={`task-tab-btn ${activeTab === 'assigned_to_team' ? 'active active--team' : ''}`}
+                        onClick={() => setActiveTab('assigned_to_team')}
+                      >
+                        <FiUsers className="tab-icon" />
+                        <span className="tab-text">Team Tasks</span>
+                        <span className="tab-count">{teamTasks.length}</span>
+                      </button>
+                    )}
+                    <button
+                      className={`task-tab-btn ${activeTab === 'other_tasks' ? 'active active--other' : ''}`}
+                      onClick={() => setActiveTab('other_tasks')}
+                    >
+                      <FiList className="tab-icon" />
+                      <span className="tab-text">Other Tasks</span>
+                      <span className="tab-count">{otherTasks.length}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="tab-content-wrapper">
+                  {activeTab === 'assigned_to_me' && (
+                    <div className="tasks-group fade-in">
+                      {myTasks.length > 0 ? (
+                        myTasks.map((t) => renderTaskCard(t))
+                      ) : (
+                        <div className="empty-tab-state">
+                          <FiUserCheck className="empty-icon" />
+                          <p>No tasks assigned to you at the moment.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'assigned_to_team' && isManager && (
+                    <div className="tasks-group fade-in">
+                      {teamTasks.length > 0 ? (
+                        teamTasks.map((t) => renderTaskCard(t))
+                      ) : (
+                        <div className="empty-tab-state">
+                          <FiUsers className="empty-icon" />
+                          <p>No tasks assigned to your team members.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'other_tasks' && (
+                    <div className="tasks-group fade-in">
+                      {otherTasks.length > 0 ? (
+                        otherTasks.map((t) => renderTaskCard(t))
+                      ) : (
+                        <div className="empty-tab-state">
+                          <FiList className="empty-icon" />
+                          <p>No other tasks found.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
-              );
-            } catch (error) {
-              // Silently fail if there's an error with approval banner
-              return null;
-            }
-          })()}
-          {error && <div className="status-message status-message--error">{error}</div>}
-
-          <div className="task-card-list">
-            <div className="task-tabs-container">
-              <div className="task-tabs">
-                <button
-                  className={`task-tab-btn ${activeTab === 'assigned_to_me' ? 'active active--mine' : ''}`}
-                  onClick={() => setActiveTab('assigned_to_me')}
-                >
-                  <FiUserCheck className="tab-icon" />
-                  <span className="tab-text">My Tasks</span>
-                  <span className="tab-count">{myTasks.length}</span>
-                </button>
-                {isManager && (
-                  <button
-                    className={`task-tab-btn ${activeTab === 'assigned_to_team' ? 'active active--team' : ''}`}
-                    onClick={() => setActiveTab('assigned_to_team')}
-                  >
-                    <FiUsers className="tab-icon" />
-                    <span className="tab-text">Team Tasks</span>
-                    <span className="tab-count">{teamTasks.length}</span>
-                  </button>
-                )}
-                <button
-                  className={`task-tab-btn ${activeTab === 'other_tasks' ? 'active active--other' : ''}`}
-                  onClick={() => setActiveTab('other_tasks')}
-                >
-                  <FiList className="tab-icon" />
-                  <span className="tab-text">Other Tasks</span>
-                  <span className="tab-count">{otherTasks.length}</span>
-                </button>
-              </div>
-            </div>
-
-            <div className="tab-content-wrapper">
-              {activeTab === 'assigned_to_me' && (
-                <div className="tasks-group fade-in">
-                  {myTasks.length > 0 ? (
-                    myTasks.map((t) => renderTaskCard(t))
-                  ) : (
-                    <div className="empty-tab-state">
-                      <FiUserCheck className="empty-icon" />
-                      <p>No tasks assigned to you at the moment.</p>
-                    </div>
-                  )}
-                </div>
+              {totalItems > 0 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalItems}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={(n) => { setPageSize(n); setCurrentPage(1); }}
+                  onSortChange={(f, o) => { setSortField(f); setSortOrder(o); setCurrentPage(1); }}
+                  sortField={sortField}
+                  sortOrder={sortOrder}
+                  sortOptions={sortOptions}
+                />
               )}
-
-              {activeTab === 'assigned_to_team' && isManager && (
-                <div className="tasks-group fade-in">
-                  {teamTasks.length > 0 ? (
-                    teamTasks.map((t) => renderTaskCard(t))
-                  ) : (
-                    <div className="empty-tab-state">
-                      <FiUsers className="empty-icon" />
-                      <p>No tasks assigned to your team members.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {activeTab === 'other_tasks' && (
-                <div className="tasks-group fade-in">
-                  {otherTasks.length > 0 ? (
-                    otherTasks.map((t) => renderTaskCard(t))
-                  ) : (
-                    <div className="empty-tab-state">
-                      <FiList className="empty-icon" />
-                      <p>No other tasks found.</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          {totalItems > 0 && (
-            <Pagination
-              currentPage={currentPage}
-              totalPages={totalPages}
-              totalItems={totalItems}
-              pageSize={pageSize}
-              onPageChange={setCurrentPage}
-              onPageSizeChange={(n) => { setPageSize(n); setCurrentPage(1); }}
-              onSortChange={(f, o) => { setSortField(f); setSortOrder(o); setCurrentPage(1); }}
-              sortField={sortField}
-              sortOrder={sortOrder}
-              sortOptions={sortOptions}
-            />
-          )}
             </>
           )}
         </div>
@@ -1287,6 +1267,3 @@ const TasksList = () => {
 };
 
 export default TasksList;
-
-
-
