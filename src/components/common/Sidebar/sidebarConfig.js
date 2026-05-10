@@ -665,7 +665,7 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   },
   {
     label: 'Dashboard',
-    path: '/fund_raising',
+    path: '/fund_raising/dashboard',
     type: 'list',
     module: 'dashboard',
     icon: FiHome

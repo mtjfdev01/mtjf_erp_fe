@@ -131,6 +131,7 @@ import AddDonationBoxDonation from './components/dms/donations/donation_box/add'
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
+import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
 import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
@@ -355,6 +356,7 @@ const App = () => {
                                 
                                 {/* Fund Raising Welcome */}
                                 <Route path="/fund_raising" element={<FundRaising />} />
+                                <Route path="/fund_raising/dashboard" element={<FundRaisingDashboardPage />} />
                                 {/* DMS Section Routes */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
