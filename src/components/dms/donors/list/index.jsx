@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
+import { fundRaisingDonorsHas } from '../../../../utils/permissions';
 import Navbar from '../../../Navbar'; 
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
@@ -45,6 +46,7 @@ const DonorsList = () => {
     date: '',
     start_date: '',
     end_date: '',
+    source: '',
     multi_time_donors: null,
     recurring: null
   });
@@ -57,6 +59,7 @@ const DonorsList = () => {
     date: '',
     start_date: '',
     end_date: '',
+    source: '',
     multi_time_donors: null,
     recurring: null
   });
@@ -107,17 +110,45 @@ const DonorsList = () => {
 
   const canExportCsv = useMemo(() => {
     if (!permissions) return false;
-    return permissions.super_admin === true || permissions.fund_raising?.online_donors?.csv_xport === true;
+    return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'csv_xport');
   }, [permissions]);
 
   const canRevealPassword = useMemo(() => {
     if (!permissions) return false;
     // UI-only gating; backend enforces final access control.
-    return (
-      permissions.super_admin === true ||
-      permissions.fund_raising?.online_donors?.update === true ||
-      permissions.fund_raising?.offline_donors?.update === true
-    );
+    return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'update');
+  }, [permissions]);
+
+  /** Align with server: online = source website; offline = all other sources. Empty value = all (select placeholder). */
+  const donorSourceFilterOptions = useMemo(() => {
+    if (!permissions) {
+      return [
+        { value: 'online', label: 'Online donors' },
+        { value: 'offline', label: 'Offline donors' },
+      ];
+    }
+    if (permissions.super_admin === true) {
+      return [
+        { value: 'online', label: 'Online donors' },
+        { value: 'offline', label: 'Offline donors' },
+      ];
+    }
+    const fr = permissions.fund_raising || {};
+    const unified =
+      fr.donors?.list_view === true ||
+      fr.donors?.view === true;
+    const online =
+      unified ||
+      fr.online_donors?.list_view === true ||
+      fr.online_donors?.view === true;
+    const offline =
+      unified ||
+      fr.offline_donors?.list_view === true ||
+      fr.offline_donors?.view === true;
+    const opts = [];
+    if (online) opts.push({ value: 'online', label: 'Online donors' });
+    if (offline) opts.push({ value: 'offline', label: 'Offline donors' });
+    return opts;
   }, [permissions]);
 
   const csvColumns = [
@@ -152,6 +183,7 @@ const DonorsList = () => {
       date: '',
       start_date: '',
       end_date: '',
+      source: '',
       multi_time_donors: null,
       recurring: null
     };
@@ -188,6 +220,9 @@ const DonorsList = () => {
       }
       if (params.recurring === null || params.recurring === undefined) {
         delete params.recurring;
+      }
+      if (!params.source) {
+        delete params.source;
       }
       
       const response = await axiosInstance.get('/donors', { params }); 
@@ -397,6 +432,15 @@ const DonorsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All Types"
+            />
+
+            <DropdownFilter
+              filterKey="source"
+              label="Donor source"
+              data={donorSourceFilterOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All sources"
             />
             
             <DropdownFilter
