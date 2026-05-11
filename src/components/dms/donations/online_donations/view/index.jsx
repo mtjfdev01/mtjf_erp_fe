@@ -7,6 +7,15 @@ import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
+
+const PROGRESS_STEP_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'skipped', label: 'Skipped' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+
 const ViewOnlineDonation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -27,34 +36,60 @@ const ViewOnlineDonation = () => {
   const [noteStatus, setNoteStatus] = useState({ type: '', message: '' });
   const [fetchingProviderStatus, setFetchingProviderStatus] = useState(false);
   const [providerStatusData, setProviderStatusData] = useState(null);
-  const [progressTracker, setProgressTracker] = useState(null);
+  const [progressTrackers, setProgressTrackers] = useState([]);
   const [progressTemplates, setProgressTemplates] = useState([]);
   const [loadingProgress, setLoadingProgress] = useState(false);
   const [creatingTracker, setCreatingTracker] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [selectedBatchId, setSelectedBatchId] = useState('all');
+  const [savingProgressStep, setSavingProgressStep] = useState(false);
+  const [progressSectionError, setProgressSectionError] = useState('');
+  const [progressEvidenceUrl, setProgressEvidenceUrl] = useState('');
+  const [progressEvidenceTitle, setProgressEvidenceTitle] = useState('');
+  const [progressEvidenceType, setProgressEvidenceType] = useState('link');
+  const [activeProgressStepId, setActiveProgressStepId] = useState(null);
 
+  /** Batches across every workflow tracker for this donation (batch_id is unique). */
   const donationBatchOptions = useMemo(() => {
-    const steps = progressTracker?.steps || [];
     const map = new Map();
-    for (const s of steps) {
-      const bid = s?.batch_id != null ? Number(s.batch_id) : null;
-      if (bid == null || !Number.isFinite(bid) || bid <= 0) continue;
-      const bn =
-        s?.batch?.batch_number != null ? Number(s.batch.batch_number) : bid;
-      if (!map.has(bid)) map.set(bid, { value: String(bid), label: `Batch #${bn}` });
+    for (const tr of progressTrackers || []) {
+      const tplName = tr?.template?.name || 'Workflow';
+      for (const s of tr?.steps || []) {
+        const bid = s?.batch_id != null ? Number(s.batch_id) : null;
+        if (bid == null || !Number.isFinite(bid) || bid <= 0) continue;
+        const bn =
+          s?.batch?.batch_number != null ? Number(s.batch.batch_number) : bid;
+        if (!map.has(bid)) {
+          map.set(bid, {
+            value: String(bid),
+            label: `${tplName} · #${bn}`,
+          });
+        }
+      }
     }
     return Array.from(map.values()).sort((a, b) => Number(a.value) - Number(b.value));
-  }, [progressTracker]);
+  }, [progressTrackers]);
 
-  const visibleProgressSteps = useMemo(() => {
-    const steps = progressTracker?.steps || [];
-    if (selectedBatchId === 'all') return steps;
-    const bid = Number(selectedBatchId);
-    if (!Number.isFinite(bid) || bid <= 0) return steps;
-    const filtered = steps.filter((s) => Number(s?.batch_id) === bid);
-    return filtered.length ? filtered : steps;
-  }, [progressTracker, selectedBatchId]);
+  /** Per-tracker step lists after batch filter (same fallback as tracker view when batch empty). */
+  const visibleTrackerSections = useMemo(() => {
+    return (progressTrackers || []).map((tr) => {
+      const steps = (tr.steps || []).filter((s) => !s.is_archived);
+      let shown = steps;
+      if (selectedBatchId !== 'all') {
+        const bid = Number(selectedBatchId);
+        if (Number.isFinite(bid) && bid > 0) {
+          const filtered = steps.filter((s) => Number(s?.batch_id) === bid);
+          shown = filtered.length ? filtered : steps;
+        }
+      }
+      return { tracker: tr, steps: shown };
+    });
+  }, [progressTrackers, selectedBatchId]);
+
+  const totalProgressSteps = useMemo(
+    () => visibleTrackerSections.reduce((n, sec) => n + sec.steps.length, 0),
+    [visibleTrackerSections],
+  );
 
   useEffect(() => {
     fetchDonation();
@@ -82,21 +117,57 @@ const ViewOnlineDonation = () => {
         setProgressTemplates(templatesRes.data.data || []);
       }
 
-      if (trackerRes.data?.success) {
-        setProgressTracker(trackerRes.data.data || null);
+      if (trackerRes.data?.success && trackerRes.data.data) {
+        const d = trackerRes.data.data;
+        let trackers = [];
+        if (Array.isArray(d.trackers)) trackers = d.trackers;
+        else if (d.id != null && Array.isArray(d.steps)) trackers = [d];
+        setProgressTrackers(trackers);
         setSelectedBatchId('all');
       } else {
-        setProgressTracker(null);
+        setProgressTrackers([]);
       }
     } catch (e) {
-      // Tracker may not exist (404) — treat as empty
-      setProgressTracker(null);
+      setProgressTrackers([]);
       try {
         const templatesRes = await axiosInstance.get('/progress/workflow-templates');
         if (templatesRes.data?.success) setProgressTemplates(templatesRes.data.data || []);
       } catch (_) {}
     } finally {
       setLoadingProgress(false);
+    }
+  };
+
+  const updateProgressStep = async (stepId, patch) => {
+    setSavingProgressStep(true);
+    setProgressSectionError('');
+    try {
+      await axiosInstance.patch(`/progress/trackers/steps/${stepId}`, patch);
+      await fetchProgressData();
+    } catch (e) {
+      setProgressSectionError(e.response?.data?.message || 'Failed to update step');
+    } finally {
+      setSavingProgressStep(false);
+    }
+  };
+
+  const addProgressEvidence = async () => {
+    if (!activeProgressStepId || !progressEvidenceUrl) return;
+    setSavingProgressStep(true);
+    setProgressSectionError('');
+    try {
+      await axiosInstance.post(`/progress/trackers/steps/${activeProgressStepId}/evidence`, {
+        file_url: progressEvidenceUrl,
+        file_type: progressEvidenceType,
+        title: progressEvidenceTitle || null,
+      });
+      setProgressEvidenceUrl('');
+      setProgressEvidenceTitle('');
+      await fetchProgressData();
+    } catch (e) {
+      setProgressSectionError(e.response?.data?.message || 'Failed to add evidence');
+    } finally {
+      setSavingProgressStep(false);
     }
   };
 
@@ -110,7 +181,7 @@ const ViewOnlineDonation = () => {
         donor_visible: true,
       });
       if (res.data?.success) {
-        setProgressTracker(res.data.data || null);
+        await fetchProgressData();
       }
     } catch (e) {
       console.error('Failed to create progress tracker', e);
@@ -123,7 +194,6 @@ const ViewOnlineDonation = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get(`/donations/${id}`);
-      console.log("ASDadadasdadsada9ijrwef09dej2q0439jef", response)
       if (response.data.success) {
         setDonation(response.data.data);
         setError('');
@@ -484,7 +554,7 @@ const ViewOnlineDonation = () => {
         <Navbar />
         <div className="view-wrapper">
           <PageHeader 
-            title="View Online Donation 123"
+            title="View Online Donation"
             showBackButton={true}
             backPath="/donations/online_donations/list"
           />
@@ -529,7 +599,7 @@ const ViewOnlineDonation = () => {
 
             {loadingProgress ? (
               <div className="loading">Loading progress...</div>
-            ) : !progressTracker ? (
+            ) : progressTrackers.length === 0 ? (
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: '12px', alignItems: 'end', maxWidth: 720 }}>
                 <FormSelect
                   label="Workflow Template"
@@ -552,10 +622,13 @@ const ViewOnlineDonation = () => {
               </div>
             ) : (
               <div>
-                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                  <div><strong>Overall:</strong> {progressTracker.overall_status}</div>
-                  <div><strong>Template:</strong> {progressTracker?.template?.name || '-'}</div>
-                  <div><strong>Public Token:</strong> {progressTracker.public_tracking_token || '-'}</div>
+                {progressSectionError && (
+                  <div className="status-message status-message--error" style={{ marginBottom: 12 }}>
+                    {progressSectionError}
+                  </div>
+                )}
+                <div style={{ marginBottom: 12, fontSize: 14, color: '#475569' }}>
+                  <strong>Workflows on this donation:</strong> {progressTrackers.length}
                 </div>
 
                 {donationBatchOptions.length > 0 && (
@@ -611,42 +684,168 @@ const ViewOnlineDonation = () => {
                   </div>
                 )}
 
-                {(progressTracker.steps || []).length > 0 ? (
-                  <div style={{ display: 'grid', gap: '10px', maxHeight: 520, overflow: 'auto', paddingRight: 4 }}>
-                    {visibleProgressSteps.map((s) => (
-                      <div key={s.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px' }}>
-                          <div style={{ fontWeight: 600 }}>
-                            {s.step_order}. {s.title}
-                            {s.batch_id != null && (
-                              <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: '#64748b' }}>
-                                (Batch #{s?.batch?.batch_number ?? s.batch_id})
+                {totalProgressSteps > 0 ? (
+                  <div style={{ display: 'grid', gap: '20px', maxHeight: 640, overflow: 'auto', paddingRight: 4 }}>
+                    {visibleTrackerSections.map(({ tracker: tr, steps }) => (
+                      <div
+                        key={tr.id}
+                        style={{
+                          border: '1px solid #e2e8f0',
+                          borderRadius: 10,
+                          padding: 14,
+                          background: '#fafafa',
+                        }}
+                      >
+                        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 15 }}>
+                              {tr?.template?.name || 'Workflow'}{' '}
+                              <span style={{ fontWeight: 500, color: '#64748b' }}>
+                                ({tr?.template?.code || tr.template_id})
                               </span>
+                            </div>
+                            <div style={{ fontSize: 13, color: '#475569', marginTop: 4 }}>
+                              Overall: {tr.overall_status}
+                              {tr.public_tracking_token ? (
+                                <span style={{ marginLeft: 10 }}>Token: {tr.public_tracking_token}</span>
+                              ) : null}
+                            </div>
+                          </div>
+                          <div className="form-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
+                            <button
+                              type="button"
+                              className="secondary_btn"
+                              disabled={savingProgressStep}
+                              onClick={() =>
+                                navigate(
+                                  `/progress/trackers/${tr.id}${selectedBatchId !== 'all' ? `?batch_id=${encodeURIComponent(selectedBatchId)}` : ''}`,
+                                )
+                              }
+                            >
+                              Open tracker
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary_btn"
+                              disabled={savingProgressStep}
+                              onClick={() =>
+                                navigate(
+                                  `/progress/trackers/${tr.id}/steps${selectedBatchId !== 'all' ? `?batch_id=${encodeURIComponent(selectedBatchId)}` : ''}`,
+                                )
+                              }
+                            >
+                              Manage steps
+                            </button>
+                            {tr.public_tracking_token && (
+                              <button
+                                type="button"
+                                className="secondary_btn"
+                                disabled={savingProgressStep}
+                                onClick={() => navigate(`/tracking/${tr.public_tracking_token}`)}
+                              >
+                                Public page
+                              </button>
                             )}
                           </div>
-                          <span className={`status-badge status-${s.status}`}>{s.status}</span>
                         </div>
-                        {s.notes && <div style={{ marginTop: '6px', color: '#374151' }}>{s.notes}</div>}
-                        {s.completed_at && (
-                          <div style={{ marginTop: '6px', color: '#6b7280', fontSize: '13px' }}>
-                            Completed: {new Date(s.completed_at).toLocaleString()}
-                          </div>
-                        )}
-                        {(s.evidence || []).length > 0 && (
-                          <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                            {(s.evidence || []).map((ev) => (
-                              <a key={ev.id} href={ev.file_url} target="_blank" rel="noreferrer" style={{ fontSize: '13px' }}>
-                                {ev.title || ev.file_type}
-                              </a>
-                            ))}
-                          </div>
-                        )}
+                        <div style={{ display: 'grid', gap: 10 }}>
+                          {steps.map((s) => (
+                            <div key={s.id} style={{ border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px', background: '#fff' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap' }}>
+                                <div style={{ fontWeight: 600 }}>
+                                  {s.step_order}. {s.title}
+                                  {s.batch_id != null && (
+                                    <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: '#64748b' }}>
+                                      (Batch #{s?.batch?.batch_number ?? s.batch_id})
+                                    </span>
+                                  )}
+                                </div>
+                                <span className={`status-badge status-${s.status}`}>{s.status}</span>
+                              </div>
+                              {s.completed_at && (
+                                <div style={{ marginTop: '6px', color: '#6b7280', fontSize: '13px' }}>
+                                  Completed: {new Date(s.completed_at).toLocaleString()}
+                                </div>
+                              )}
+                              <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 10, marginTop: 10 }}>
+                                <FormSelect
+                                  label="Status"
+                                  name={`progress_status_${s.id}`}
+                                  value={s.status}
+                                  onChange={(e) => updateProgressStep(s.id, { status: e.target.value })}
+                                  options={PROGRESS_STEP_STATUS_OPTIONS}
+                                  disabled={savingProgressStep}
+                                />
+                                <FormInput
+                                  label="Notes"
+                                  name={`progress_notes_${s.id}`}
+                                  type="textarea"
+                                  value={s.notes || ''}
+                                  onChange={(e) => updateProgressStep(s.id, { notes: e.target.value })}
+                                  placeholder="Internal notes / donor-visible notes per template"
+                                  disabled={savingProgressStep}
+                                />
+                              </div>
+                              {(s.evidence || []).length > 0 && (
+                                <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                                  {(s.evidence || []).map((ev) => (
+                                    <a key={ev.id} href={ev.file_url} target="_blank" rel="noreferrer" style={{ fontSize: '13px' }}>
+                                      {ev.evidence_label ? `${ev.evidence_label}: ` : ''}{ev.title || ev.file_type}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
+                              <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 160px', gap: 10, alignItems: 'end' }}>
+                                <FormInput
+                                  label="Evidence URL"
+                                  name={`progress_evidence_${s.id}`}
+                                  value={activeProgressStepId === s.id ? progressEvidenceUrl : ''}
+                                  onChange={(e) => { setActiveProgressStepId(s.id); setProgressEvidenceUrl(e.target.value); }}
+                                  placeholder="https://..."
+                                  disabled={savingProgressStep}
+                                />
+                                <button
+                                  type="button"
+                                  className="secondary_btn"
+                                  onClick={() => { setActiveProgressStepId(s.id); addProgressEvidence(); }}
+                                  disabled={savingProgressStep}
+                                >
+                                  Add evidence
+                                </button>
+                              </div>
+                              <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: 10, marginTop: 8 }}>
+                                <FormInput
+                                  label="Evidence title"
+                                  name={`progress_evidence_title_${s.id}`}
+                                  value={activeProgressStepId === s.id ? progressEvidenceTitle : ''}
+                                  onChange={(e) => { setActiveProgressStepId(s.id); setProgressEvidenceTitle(e.target.value); }}
+                                  placeholder="Optional"
+                                  disabled={savingProgressStep}
+                                />
+                                <FormSelect
+                                  label="Type"
+                                  name={`progress_evidence_type_${s.id}`}
+                                  value={activeProgressStepId === s.id ? progressEvidenceType : 'link'}
+                                  onChange={(e) => { setActiveProgressStepId(s.id); setProgressEvidenceType(e.target.value); }}
+                                  options={[
+                                    { value: 'image', label: 'Image' },
+                                    { value: 'video', label: 'Video' },
+                                    { value: 'pdf', label: 'PDF' },
+                                    { value: 'document', label: 'Document' },
+                                    { value: 'link', label: 'Link' },
+                                  ]}
+                                  disabled={savingProgressStep}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     ))}
                   </div>
                 ) : (
                   <div className="empty-state" style={{ padding: '20px' }}>
-                    No steps found for this tracker.
+                    No steps found for these trackers (try another batch filter if applied).
                   </div>
                 )}
               </div>

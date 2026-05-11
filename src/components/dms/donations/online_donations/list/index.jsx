@@ -502,8 +502,16 @@ const OnlineDonationsList = () => {
       icon: <FiTrendingUp />,
       label: 'Tracking',
       color: '#7c3aed',
-      onClick: () => navigate(`/progress/trackers/${donation?.progress_tracker?.id}/steps`),
-      visible: Boolean(donation?.progress_tracker?.id),
+      onClick: () => {
+        const t =
+          (Array.isArray(donation?.progress_trackers) && donation.progress_trackers[0]) ||
+          donation?.progress_tracker;
+        if (t?.id) navigate(`/progress/trackers/${t.id}/steps`);
+      },
+      visible: Boolean(
+        (Array.isArray(donation?.progress_trackers) && donation.progress_trackers[0]?.id) ||
+          donation?.progress_tracker?.id,
+      ),
     },
     {
       icon: <FiEdit2 />,
