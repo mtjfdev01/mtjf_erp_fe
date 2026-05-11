@@ -28,6 +28,10 @@ const TrackersView = () => {
   const [evidenceTitle, setEvidenceTitle] = useState('');
   const [evidenceType, setEvidenceType] = useState('link');
   const [activeStepId, setActiveStepId] = useState(null);
+  const [batchTagDraft, setBatchTagDraft] = useState('');
+  const [savingBatchTag, setSavingBatchTag] = useState(false);
+  const [partsToAdd, setPartsToAdd] = useState('');
+  const [allocatingParts, setAllocatingParts] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -47,6 +51,21 @@ const TrackersView = () => {
     if (id) fetchData();
   }, [id]);
 
+  useEffect(() => {
+    const raw =
+      batchIdFromUrl != null && String(batchIdFromUrl).trim() !== ''
+        ? Number(batchIdFromUrl)
+        : NaN;
+    if (!Number.isFinite(raw) || raw <= 0) {
+      setBatchTagDraft('');
+      return;
+    }
+    const steps = tracker?.steps || [];
+    const step = steps.find((s) => s.batch_id != null && Number(s.batch_id) === raw);
+    const tn = step?.batch?.tag_number;
+    setBatchTagDraft(tn != null && String(tn).trim() !== '' ? String(tn).trim() : '');
+  }, [batchIdFromUrl, tracker]);
+
   const batchFilterOptions = useMemo(() => {
     const steps = tracker?.steps || [];
     const map = new Map();
@@ -54,7 +73,10 @@ const TrackersView = () => {
       const bid = s.batch_id != null ? Number(s.batch_id) : null;
       if (bid == null || !Number.isFinite(bid) || bid <= 0) continue;
       const bn = s.batch?.batch_number != null ? Number(s.batch.batch_number) : bid;
-      if (!map.has(bid)) map.set(bid, { batch_id: bid, batch_number: bn });
+      const tagRaw = s.batch?.tag_number;
+      const tag =
+        tagRaw != null && String(tagRaw).trim() !== '' ? String(tagRaw).trim() : null;
+      if (!map.has(bid)) map.set(bid, { batch_id: bid, batch_number: bn, tag_number: tag });
     }
     return Array.from(map.values()).sort((a, b) => a.batch_number - b.batch_number);
   }, [tracker]);
@@ -112,6 +134,44 @@ const TrackersView = () => {
     }
   };
 
+  const saveBatchTag = async () => {
+    const raw =
+      batchIdFromUrl != null && String(batchIdFromUrl).trim() !== ''
+        ? Number(batchIdFromUrl)
+        : NaN;
+    if (!Number.isFinite(raw) || raw <= 0) return;
+    setSavingBatchTag(true);
+    setError('');
+    try {
+      await axiosInstance.patch(`/progress/batches/${raw}`, {
+        tag_number: batchTagDraft.trim() || null,
+      });
+      await fetchData();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to update batch tag');
+    } finally {
+      setSavingBatchTag(false);
+    }
+  };
+
+  const allocateMoreParts = async () => {
+    const n = Number(partsToAdd || 0);
+    if (!Number.isFinite(n) || n <= 0) return;
+    setAllocatingParts(true);
+    setError('');
+    try {
+      await axiosInstance.post(`/progress/trackers/${tracker.id}/allocate-parts`, {
+        parts_requested: n,
+      });
+      setPartsToAdd('');
+      await fetchData();
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to allocate parts');
+    } finally {
+      setAllocatingParts(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -155,6 +215,42 @@ const TrackersView = () => {
               <div><strong>Donation:</strong> {tracker.donation_id || '-'}</div>
               <div><strong>Token:</strong> {tracker.public_tracking_token || '-'}</div>
             </div>
+            {tracker?.template?.is_batchable === true && (
+              <div
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 10,
+                  alignItems: 'end',
+                  marginTop: 12,
+                  padding: '10px 12px',
+                  background: '#f8fafc',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                  maxWidth: 520,
+                }}
+              >
+                <div style={{ flex: '1 1 180px' }}>
+                  <FormInput
+                    label="Add parts (batchable templates)"
+                    name="add_parts"
+                    value={partsToAdd}
+                    onChange={(e) => setPartsToAdd(e.target.value)}
+                    placeholder="e.g. 1"
+                    disabled={allocatingParts}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="secondary_btn"
+                  onClick={allocateMoreParts}
+                  disabled={allocatingParts}
+                  style={{ height: 40 }}
+                >
+                  {allocatingParts ? 'Allocating…' : 'Allocate'}
+                </button>
+              </div>
+            )}
             <div className="form-actions" style={{ marginTop: 12 }}>
               <button type="button" className="primary_btn" onClick={regenToken} disabled={saving}>
                 {saving ? 'Working...' : (tracker.public_tracking_token ? 'Regenerate Token' : 'Generate Token')}
@@ -229,12 +325,52 @@ const TrackersView = () => {
                       color: '#1e40af',
                       border: '1px solid #bfdbfe',
                     }}
+                    title={b.tag_number ? `Tag: ${b.tag_number}` : undefined}
                   >
                     #{b.batch_number}
+                    {b.tag_number ? ` · ${b.tag_number}` : ''}
                   </Link>
                 ))}
               </div>
             )}
+            {batchIdFromUrl != null &&
+              String(batchIdFromUrl).trim() !== '' &&
+              Number.isFinite(Number(batchIdFromUrl)) &&
+              Number(batchIdFromUrl) > 0 && (
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 10,
+                    alignItems: 'end',
+                    marginBottom: 12,
+                    padding: '10px 12px',
+                    background: '#f1f5f9',
+                    borderRadius: 8,
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div style={{ flex: '1 1 220px', minWidth: 180 }}>
+                    <FormInput
+                      label="Batch tag (shared for all donations on this batch)"
+                      name="batch_tag"
+                      value={batchTagDraft}
+                      onChange={(e) => setBatchTagDraft(e.target.value)}
+                      placeholder="e.g. physical tag / reference number"
+                      disabled={savingBatchTag}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="secondary_btn"
+                    onClick={saveBatchTag}
+                    disabled={savingBatchTag}
+                    style={{ height: 40 }}
+                  >
+                    {savingBatchTag ? 'Saving…' : 'Save batch tag'}
+                  </button>
+                </div>
+              )}
             {visibleSteps.length === 0 && (tracker.steps || []).length > 0 && (
               <div className="status-message" style={{ marginBottom: 12 }}>
                 No steps for the selected batch. Choose another batch or view all.
@@ -248,7 +384,11 @@ const TrackersView = () => {
                       {s.step_order}. {s.title}
                       {s.batch_id != null && (
                         <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: '#64748b' }}>
-                          (Batch #{s.batch?.batch_number ?? s.batch_id})
+                          (Batch #{s.batch?.batch_number ?? s.batch_id}
+                          {s.batch?.tag_number != null && String(s.batch.tag_number).trim() !== ''
+                            ? ` · ${String(s.batch.tag_number).trim()}`
+                            : ''}
+                          )
                         </span>
                       )}
                     </div>
