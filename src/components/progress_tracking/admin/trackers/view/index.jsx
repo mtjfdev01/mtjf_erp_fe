@@ -159,7 +159,7 @@ const TrackersView = () => {
               <button type="button" className="primary_btn" onClick={regenToken} disabled={saving}>
                 {saving ? 'Working...' : (tracker.public_tracking_token ? 'Regenerate Token' : 'Generate Token')}
               </button>
-              <button
+              {/* <button
                 type="button"
                 className="secondary_btn"
                 onClick={() =>
@@ -170,7 +170,7 @@ const TrackersView = () => {
                 disabled={saving}
               >
                 Manage Steps
-              </button>
+              </button> */}
               {tracker.donation_id && (
                 <button type="button" className="secondary_btn" onClick={() => navigate(`/donations/online_donations/view/${tracker.donation_id}`)}>
                   Open Donation
