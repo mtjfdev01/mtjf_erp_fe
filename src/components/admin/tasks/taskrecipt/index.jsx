@@ -288,7 +288,7 @@ const TaskReceipt = () => {
                         </span>
                       </div> */}
                       <div className="info-row">
-                        <span className="label">Project:</span>
+                        <span className="label">Project/Program:</span>
                         <span className="value">
                           {task.project_name || '-'}
                         </span>

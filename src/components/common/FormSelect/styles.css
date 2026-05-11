@@ -48,22 +48,3 @@
   border-color: var(--color-primary);
   box-shadow: 0 0 0 2px var(--color-primary-light);
 }
-
-.form-input:disabled {
-  background-color: var(--color-bg-secondary);
-  cursor: not-allowed;
-}
-
-.form-input--error {
-  border-color: var(--color-error);
-}
-
-.form-input--error:focus {
-  box-shadow: 0 0 0 2px var(--color-error-light);
-}
-
-.form-error {
-  color: var(--color-error);
-  font-size: var(--font-size-sm);
-  margin-top: var(--spacing-xs);
-} 

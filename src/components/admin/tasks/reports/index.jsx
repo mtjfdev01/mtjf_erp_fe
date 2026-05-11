@@ -80,6 +80,30 @@ const STATUS_COLORS = [
   '#f10a1d'
 ];
 
+// Project and Program categories for filtering
+const PROJECTS_LIST = [
+  'MTJ Foundation',
+  'Al-Hassanain College',
+  'Al-Hassanain School',
+  'Al-Hassanain Mudrasa',
+  'Aas Lab',
+  'Aas Clinics'
+];
+
+const PROGRAMS_LIST = [
+  'General',
+  'Health',
+  'Education',
+  'Clean Water',
+  'Apna Ghar',
+  'Disaster Relief',
+  'KASB Skill Development',
+  'Seeds of Change',
+  'Qurbani Barai Mustehqeen',
+  'Aaslab',
+  'Community Service'
+];
+
 const STATUS_DOT_CLASSNAMES = [
   'task-progress-dot--open',
   'task-progress-dot--in-progress',
@@ -156,6 +180,265 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
   });
 }
 
+const ProjectProgramWiseReport = React.memo(({ projects }) => {
+  const [projectCategory, setProjectCategory] = useState('all');
+  const projectBarChartRef = useRef(null);
+  const projectBarChartInstance = useRef(null);
+
+  const filteredProjects = useMemo(() => {
+    if (!projects) return [];
+    let list = projects;
+    
+    if (projectCategory !== 'all') {
+      list = list.filter(p => {
+        const projectName = p.label;
+        if (projectCategory === 'project') {
+          return PROJECTS_LIST.includes(projectName);
+        } else if (projectCategory === 'program') {
+          return PROGRAMS_LIST.includes(projectName);
+        }
+        return true;
+      });
+    }
+    
+    return list;
+  }, [projects, projectCategory]);
+
+  const dynamicHeight = useMemo(() => {
+    const projectCount = filteredProjects.length;
+    if (projectCount === 0) return 380;
+    // Base height for legend and axes + per-project height
+    const calculated = projectCount * 55 + 150;
+    return Math.max(380, Math.min(calculated, 800)); // Cap at 800px
+  }, [filteredProjects.length]);
+
+  useEffect(() => {
+    if (filteredProjects.length > 0 && projectBarChartRef.current) {
+      const labels = filteredProjects.map(p => p.label);
+
+      const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
+        const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
+        const total = filteredProjects.reduce((sum, project) => {
+          return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
+        }, 0);
+        return { statusLabel, statusKey, index, total };
+      });
+
+      const activeStatuses = statusTotals.filter(item => item.total > 0);
+
+      const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
+        label: statusLabel,
+        data: filteredProjects.map(p => {
+          return p.statuses && p.statuses[statusKey] ? p.statuses[statusKey] : 0;
+        }),
+        backgroundColor: STATUS_COLORS[index],
+        hoverBackgroundColor: STATUS_COLORS[index],
+        borderColor: '#ffffff',
+        hoverBorderColor: '#ffffff',
+        borderWidth: 2.5,
+        hoverBorderWidth: 3,
+        borderRadius: 6,
+        borderSkipped: false,
+        statusKey: statusKey,
+        barPercentage: 0.8,
+        categoryPercentage: 0.9,
+        barThickness: filteredProjects.length === 1 ? 40 : 'flex',
+        maxBarThickness: 45
+      }));
+
+      const data = { labels, datasets };
+      
+      if (projectBarChartInstance.current) {
+        projectBarChartInstance.current.data = data;
+        projectBarChartInstance.current.update();
+      } else {
+        projectBarChartInstance.current = new Chart(
+          projectBarChartRef.current.getContext('2d'),
+          {
+            type: 'bar',
+            data,
+            options: {
+              indexAxis: 'y',
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  display: true,
+                  position: 'bottom',
+                  align: 'center',
+                  labels: {
+                    boxWidth: 14,
+                    boxHeight: 14,
+                    font: { size: 11, weight: '600', family: "'Inter', sans-serif" },
+                    padding: 16,
+                    usePointStyle: true,
+                    pointStyle: 'rectRounded',
+                    color: '#475569'
+                  }
+                },
+                tooltip: {
+                  mode: 'nearest',
+                  intersect: true,
+                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                  titleColor: '#fff',
+                  bodyColor: '#fff',
+                  borderColor: 'rgba(255, 255, 255, 0.15)',
+                  borderWidth: 1,
+                  cornerRadius: getResponsiveTooltipSizes().cornerRadius,
+                  padding: getResponsiveTooltipSizes().padding,
+                  titleFont: { size: getResponsiveTooltipSizes().titleFontSize, weight: '600', family: "'Inter', sans-serif" },
+                  bodyFont: { size: getResponsiveTooltipSizes().bodyFontSize, weight: '500', family: "'Inter', sans-serif" },
+                  displayColors: true,
+                  callbacks: {
+                    title: (context) => `📊 ${context[0].label}`,
+                    label: (context) => {
+                      const status = context.dataset.label;
+                      const value = context.parsed.x;
+                      return value > 0 ? ` ${status}: ${value} task${value !== 1 ? 's' : ''}` : null;
+                    },
+                    afterLabel: (context) => {
+                      const projectIndex = context.dataIndex;
+                      const project = filteredProjects[projectIndex];
+                      if (!project || !project.tasks || project.tasks.length === 0) return null;
+                      const currentStatus = context.dataset.statusKey;
+                      const statusTasks = project.tasks.filter(t => (t.status || 'open') === currentStatus);
+                      if (statusTasks.length === 0) return null;
+                      const taskDetails = statusTasks.slice(0, 5).map(t => {
+                        const assignees = t.assignee_names || 'Unassigned';
+                        const dept = String(t.department || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
+                        return `• ${t.title}\n  👤 ${assignees}\n  🏢 ${dept}`;
+                      });
+                      const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
+                      return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
+                    }
+                  }
+                },
+              },
+              scales: {
+                x: {
+                  stacked: true,
+                  beginAtZero: true,
+                  grid: { display: true, color: 'rgba(0, 0, 0, 0.04)', lineWidth: 1, drawBorder: false, borderDash: [4, 4] },
+                  ticks: {
+                    precision: 0,
+                    font: { size: 11, weight: '600', family: "'Inter', sans-serif" },
+                    color: '#475569',
+                    callback: (value) => Number.isInteger(value) ? value : null
+                  },
+                  suggestedMax: (context) => {
+                    const totals = context.chart.data.labels.map((_, idx) => {
+                      return context.chart.data.datasets.reduce((sum, dataset) => {
+                        return sum + (dataset.data[idx] || 0);
+                      }, 0);
+                    });
+                    const max = Math.max(...totals);
+                    return Math.max(5, Math.ceil(max * 1.2));
+                  },
+                  title: {
+                    display: true,
+                    text: 'Number of Tasks',
+                    font: { size: 13, weight: '700', family: "'Inter', sans-serif" },
+                    color: '#334155',
+                    padding: { top: 12 }
+                  }
+                },
+                y: {
+                  stacked: true,
+                  grid: { display: false, drawBorder: false },
+                  ticks: {
+                    autoSkip: false,
+                    font: { size: 12, weight: '700', family: "'Inter', sans-serif" },
+                    color: '#1e293b',
+                    padding: 12,
+                    crossAlign: 'far'
+                  }
+                }
+              }
+            },
+            plugins: [{
+              id: 'totalLabels',
+              afterDatasetsDraw: (chart) => {
+                const { ctx } = chart;
+                const isHorizontal = chart.config.options.indexAxis === 'y';
+                const chartWidth = chart.width;
+                let badgeWidth = 36, badgeHeight = 22, cornerRadius = 5, fontSize = 12, padding = 8;
+                if (chartWidth < 480) { badgeWidth = 28; badgeHeight = 18; cornerRadius = 4; fontSize = 10; padding = 6; }
+                const lastDatasetIndex = chart.data.datasets.length - 1;
+                if (lastDatasetIndex < 0) return;
+                const meta = chart.getDatasetMeta(lastDatasetIndex);
+                meta.data.forEach((bar, index) => {
+                  let total = 0;
+                  chart.data.datasets.forEach((dataset, dsIdx) => {
+                    const dsMeta = chart.getDatasetMeta(dsIdx);
+                    if (!dsMeta.hidden) total += (dataset.data[index] || 0);
+                  });
+                  if (total > 0 && bar) {
+                    ctx.save();
+                    let x = isHorizontal ? bar.x + padding : bar.x - badgeWidth / 2;
+                    let y = isHorizontal ? bar.y - badgeHeight / 2 : bar.y - badgeHeight - padding;
+                    if (x < 0) x = 4;
+                    if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
+                    if (y < 0) y = 4;
+                    if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)'; ctx.shadowBlur = 6;
+                    ctx.fillStyle = '#ffffff';
+                    ctx.beginPath();
+                    ctx.roundRect(x, y, badgeWidth, badgeHeight, cornerRadius);
+                    ctx.fill();
+                    ctx.fillStyle = '#0f172a'; ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
+                    ctx.restore();
+                  }
+                });
+              }
+            }]
+          }
+        );
+      }
+    }
+    return () => {
+      if (projectBarChartInstance.current) {
+        projectBarChartInstance.current.destroy();
+        projectBarChartInstance.current = null;
+      }
+    };
+  }, [filteredProjects]);
+
+  return (
+    <div className="task-report-card task-report-card--project-report">
+      <div className="task-report-card-header task-report-card-header--with-filter">
+        <div className="task-report-header-left">
+          <h2 className="task-report-card-title">Project/Program-wise Task Report</h2>
+          <div className="task-report-filter-inline">
+            <select
+              className="task-report-category-filter"
+              value={projectCategory}
+              onChange={(e) => setProjectCategory(e.target.value)}
+            >
+              <option value="all">All Types</option>
+              <option value="project">Project</option>
+              <option value="program">Program</option>
+            </select>
+            {projectCategory !== 'all' && (
+              <button
+                className="task-report-filter-clear-inline"
+                onClick={() => setProjectCategory('all')}
+                title="Clear Filter"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: `${dynamicHeight}px` }}>
+        <canvas ref={projectBarChartRef}></canvas>
+      </div>
+    </div>
+  );
+});
+
 const TaskReports = () => {
   const { user, permissions } = useAuth();
   const location = useLocation();
@@ -177,6 +460,9 @@ const TaskReports = () => {
   const [showFilterPopover, setShowFilterPopover] = useState(false);
   const [hiddenDepartments, setHiddenDepartments] = useState(new Set());
   const [hiddenStatuses, setHiddenStatuses] = useState(new Set());
+  const [hiddenDoughnutStatuses, setHiddenDoughnutStatuses] = useState(new Set());
+  const [hiddenDepartmentBarDepartments, setHiddenDepartmentBarDepartments] = useState(new Set());
+  const [hiddenBarStatuses, setHiddenBarStatuses] = useState(new Set());
 
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
@@ -381,6 +667,26 @@ const TaskReports = () => {
     setHiddenStatuses(newHidden);
   };
 
+  const toggleDonutStatusVisibility = (statusLabel) => {
+    const newHidden = new Set(hiddenDoughnutStatuses);
+    if (newHidden.has(statusLabel)) {
+      newHidden.delete(statusLabel);
+    } else {
+      newHidden.add(statusLabel);
+    }
+    setHiddenDoughnutStatuses(newHidden);
+  };
+
+  const toggleBarDepartmentVisibility = (department) => {
+    const newHidden = new Set(hiddenDepartmentBarDepartments);
+    if (newHidden.has(department)) {
+      newHidden.delete(department);
+    } else {
+      newHidden.add(department);
+    }
+    setHiddenDepartmentBarDepartments(newHidden);
+  };
+
   const handleShowMemberTasks = async (member) => {
     setSelectedMemberTasks({ member, tasks: [] });
     setShowMemberTasksModal(true);
@@ -428,8 +734,6 @@ const TaskReports = () => {
   const userBarChartInstance = useRef(null);
   const departmentChartRef = useRef(null);
   const departmentCanvasRef = useRef(null);
-  const projectBarChartRef = useRef(null);
-  const projectBarChartInstance = useRef(null);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -443,7 +747,6 @@ const TaskReports = () => {
       if (completionRateChartInstance.current) completionRateChartInstance.current.update();
       if (userBarChartInstance.current) userBarChartInstance.current.update();
       if (departmentChartRef.current) departmentChartRef.current.update();
-      if (projectBarChartInstance.current) projectBarChartInstance.current.update();
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -636,7 +939,7 @@ const TaskReports = () => {
         color: STATUS_COLORS[index],
         colorClass: STATUS_DOT_CLASSNAMES[index],
         index,
-        isHidden: hiddenStatuses.has(label)
+        isHidden: hiddenDoughnutStatuses.has(label)
       })).filter(item => item.value > 0);
       
       const visibleLabels = visibleData.map(item => item.label);
@@ -679,7 +982,7 @@ const TaskReports = () => {
       });
 
       // Filter out hidden departments
-      const visibleDepts = deptsWithTasks.filter(dept => !hiddenDepartments.has(dept));
+      const visibleDepts = deptsWithTasks.filter(dept => !hiddenDepartmentBarDepartments.has(dept));
 
       const labels = visibleDepts.map(d =>
         String(d || 'Unassigned').split('_').map(w => w ? w.toUpperCase() : '').join(' ')
@@ -1354,333 +1657,9 @@ const TaskReports = () => {
         });
       }
     }
-    if (taskAggregates.projects.length > 0 && projectBarChartRef.current) {
-      const labels = taskAggregates.projects.map(p => p.label);
+  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses, hiddenDoughnutStatuses, hiddenDepartmentBarDepartments]);
 
-      // Calculate total tasks per status across all projects
-      const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
-        const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
-        const total = taskAggregates.projects.reduce((sum, project) => {
-          return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
-        }, 0);
-        return { statusLabel, statusKey, index, total };
-      });
-
-      // Filter out statuses with zero tasks
-      const activeStatuses = statusTotals.filter(item => item.total > 0);
-
-      // Create a dataset only for statuses with actual data
-      const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
-        label: statusLabel,
-        data: taskAggregates.projects.map(p => {
-          return p.statuses && p.statuses[statusKey] ? p.statuses[statusKey] : 0;
-        }),
-        backgroundColor: STATUS_COLORS[index],
-        hoverBackgroundColor: STATUS_COLORS[index],
-        borderColor: '#ffffff',
-        hoverBorderColor: '#ffffff',
-        borderWidth: 2.5,
-        hoverBorderWidth: 3,
-        borderRadius: 6,
-        borderSkipped: false,
-        statusKey: statusKey,
-        barPercentage: 0.7,
-        categoryPercentage: 0.9,
-        barThickness: 'flex',
-        maxBarThickness: 40
-      }));
-
-      const data = {
-        labels,
-        datasets
-      };
-      if (projectBarChartInstance.current) {
-        projectBarChartInstance.current.data = data;
-        projectBarChartInstance.current.update();
-      } else {
-        projectBarChartInstance.current = new Chart(
-          projectBarChartRef.current.getContext('2d'),
-          {
-            type: 'bar',
-            data,
-            options: {
-              indexAxis: 'y',
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: {
-                  display: true,
-                  position: 'bottom',
-                  align: 'center',
-                  labels: {
-                    boxWidth: 14,
-                    boxHeight: 14,
-                    font: {
-                      size: 11,
-                      weight: '600',
-                      family: "'Inter', sans-serif"
-                    },
-                    padding: 16,
-                    usePointStyle: true,
-                    pointStyle: 'rectRounded',
-                    color: '#475569'
-                  },
-                  onHover: (legendItem, legendData) => {
-                    legendItem.cursor = 'pointer';
-                  }
-                },
-                tooltip: {
-                  mode: 'nearest',
-                  intersect: true,
-                  backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                  titleColor: '#fff',
-                  bodyColor: '#fff',
-                  borderColor: 'rgba(255, 255, 255, 0.15)',
-                  borderWidth: 1,
-                  cornerRadius: (() => getResponsiveTooltipSizes().cornerRadius)(),
-                  padding: (() => getResponsiveTooltipSizes().padding)(),
-                  titleFont: { size: (() => getResponsiveTooltipSizes().titleFontSize)(), weight: '600', family: "'Inter', sans-serif" },
-                  bodyFont: { size: (() => getResponsiveTooltipSizes().bodyFontSize)(), weight: '500', family: "'Inter', sans-serif" },
-                  bodySpacing: (() => getResponsiveTooltipSizes().bodySpacing)(),
-                  displayColors: true,
-                  boxWidth: (() => getResponsiveTooltipSizes().boxWidth)(),
-                  boxHeight: (() => getResponsiveTooltipSizes().boxHeight)(),
-                  boxPadding: (() => getResponsiveTooltipSizes().boxPadding)(),
-                  caretPadding: (() => getResponsiveTooltipSizes().caretPadding)(),
-                  caretSize: (() => getResponsiveTooltipSizes().caretSize)(),
-                  filter: function (tooltipItem) {
-                    return tooltipItem.raw > 0;
-                  },
-                  callbacks: {
-                    title: function (context) {
-                      const projectName = context[0].label;
-                      return `📊 ${projectName}`;
-                    },
-                    label: function (context) {
-                      const status = context.dataset.label;
-                      const value = context.parsed.x;
-                      if (value === 0) return null;
-                      return ` ${status}: ${value} task${value !== 1 ? 's' : ''}`;
-                    },
-                    afterLabel: function (context) {
-                      const projectIndex = context.dataIndex;
-                      const project = taskAggregates.projects[projectIndex];
-
-                      if (!project || !project.tasks || project.tasks.length === 0) {
-                        return null;
-                      }
-
-                      const currentStatus = context.dataset.statusKey;
-                      const statusTasks = project.tasks.filter(t => (t.status || 'open') === currentStatus);
-
-                      if (statusTasks.length === 0) return null;
-
-                      // Show task details
-                      const taskDetails = statusTasks.slice(0, 5).map(t => {
-                        const assignees = t.assignee_names || 'Unassigned';
-                        const department = String(t.department || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
-                        return `• ${t.title}\n  👤 ${assignees}\n  🏢 ${department}`;
-                      });
-
-                      const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
-
-                      return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
-                    }
-                  }
-                },
-              },
-              scales: {
-                x: {
-                  stacked: true,
-                  beginAtZero: true,
-                  grid: {
-                    display: true,
-                    color: 'rgba(0, 0, 0, 0.04)',
-                    lineWidth: 1,
-                    drawBorder: false,
-                    borderDash: [4, 4]
-                  },
-                  border: {
-                    display: false
-                  },
-                  ticks: {
-                    precision: 0,
-                    maxTicksLimit: 10,
-                    font: {
-                      size: 11,
-                      weight: '600',
-                      family: "'Inter', sans-serif"
-                    },
-                    color: '#475569',
-                    padding: 10,
-                    callback: function (value) {
-                      if (Number.isInteger(value)) {
-                        return value;
-                      }
-                      return null;
-                    }
-                  },
-                  suggestedMax: function (context) {
-                    const totals = context.chart.data.labels.map((_, idx) => {
-                      return context.chart.data.datasets.reduce((sum, dataset) => {
-                        return sum + (dataset.data[idx] || 0);
-                      }, 0);
-                    });
-                    const max = Math.max(...totals);
-                    return Math.ceil(max * 1.18);
-                  },
-                  title: {
-                    display: true,
-                    text: 'Number of Tasks',
-                    font: {
-                      size: 13,
-                      weight: '700',
-                      family: "'Inter', sans-serif"
-                    },
-                    color: '#334155',
-                    padding: { top: 12 }
-                  }
-                },
-                y: {
-                  stacked: true,
-                  grid: {
-                    display: false,
-                    drawBorder: false
-                  },
-                  border: {
-                    display: false,
-                    lineWidth: 0
-                  },
-                  ticks: {
-                    autoSkip: false,
-                    font: {
-                      size: 12,
-                      weight: '700',
-                      family: "'Inter', sans-serif"
-                    },
-                    color: '#1e293b',
-                    padding: 12,
-                    crossAlign: 'far'
-                  }
-                }
-              }
-            },
-            animation: {
-              duration: 800,
-              easing: 'easeOutQuart'
-            },
-            plugins: [{
-              id: 'totalLabels',
-              afterDatasetsDraw: (chart) => {
-                const { ctx } = chart;
-                const isHorizontal = chart.config.options.indexAxis === 'y';
-                const chartWidth = chart.width;
-
-                // Dynamic badge sizing based on chart width for responsiveness
-                let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
-
-                if (chartWidth < 480) {
-                  badgeWidth = 28;
-                  badgeHeight = 18;
-                  cornerRadius = 4;
-                  fontSize = 10;
-                  padding = 6;
-                } else if (chartWidth < 768) {
-                  badgeWidth = 32;
-                  badgeHeight = 20;
-                  cornerRadius = 4;
-                  fontSize = 11;
-                  padding = 6;
-                } else {
-                  badgeWidth = 36;
-                  badgeHeight = 22;
-                  cornerRadius = 5;
-                  fontSize = 12;
-                  padding = 8;
-                }
-
-                // Only process the last dataset to show total
-                const lastDatasetIndex = chart.data.datasets.length - 1;
-                if (lastDatasetIndex < 0) return;
-
-                const meta = chart.getDatasetMeta(lastDatasetIndex);
-
-                meta.data.forEach((bar, index) => {
-                  // Calculate total for this bar across only VISIBLE datasets
-                  let total = 0;
-                  chart.data.datasets.forEach((dataset, datasetIndex) => {
-                    // Only count if dataset is visible (not hidden via legend)
-                    const meta = chart.getDatasetMeta(datasetIndex);
-                    if (!meta.hidden) {
-                      total += (dataset.data[index] || 0);
-                    }
-                  });
-
-                  if (total > 0 && bar) {
-                    ctx.save();
-
-                    let x, y;
-
-                    if (isHorizontal) {
-                      // Horizontal bar: badge at the end (right side)
-                      x = bar.x + padding;
-                      y = bar.y - badgeHeight / 2;
-                    } else {
-                      // Vertical bar: badge above the bar
-                      x = bar.x - badgeWidth / 2;
-                      y = bar.y - badgeHeight - padding;
-                    }
-
-                    // Ensure badge stays within chart boundaries
-                    if (x < 0) x = 4;
-                    if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
-                    if (y < 0) y = 4;
-                    if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
-
-                    // Draw badge background with shadow
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-                    ctx.shadowBlur = 6;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 2;
-
-                    ctx.fillStyle = '#ffffff';
-
-                    // Rounded rectangle
-                    ctx.beginPath();
-                    ctx.moveTo(x + cornerRadius, y);
-                    ctx.lineTo(x + badgeWidth - cornerRadius, y);
-                    ctx.quadraticCurveTo(x + badgeWidth, y, x + badgeWidth, y + cornerRadius);
-                    ctx.lineTo(x + badgeWidth, y + badgeHeight - cornerRadius);
-                    ctx.quadraticCurveTo(x + badgeWidth, y + badgeHeight, x + badgeWidth - cornerRadius, y + badgeHeight);
-                    ctx.lineTo(x + cornerRadius, y + badgeHeight);
-                    ctx.quadraticCurveTo(x, y + badgeHeight, x, y + badgeHeight - cornerRadius);
-                    ctx.lineTo(x, y + cornerRadius);
-                    ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
-                    ctx.closePath();
-                    ctx.fill();
-
-                    // Reset shadow
-                    ctx.shadowColor = 'transparent';
-                    ctx.shadowBlur = 0;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;
-
-                    // Draw total value text
-                    ctx.fillStyle = '#0f172a';
-                    ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
-
-                    ctx.restore();
-                  }
-                });
-              }
-            }]
-          }
-        );
-      }
-    }
+  useEffect(() => {
     return () => {
       if (completionRateChartInstance.current) {
         completionRateChartInstance.current.destroy();
@@ -1694,12 +1673,8 @@ const TaskReports = () => {
         userBarChartInstance.current.destroy();
         userBarChartInstance.current = null;
       }
-      if (projectBarChartInstance.current) {
-        projectBarChartInstance.current.destroy();
-        projectBarChartInstance.current = null;
-      }
     };
-  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses]);
+  }, []);
 
   const filterPopoverRef = useRef(null);
   const filterButtonRef = useRef(null);
@@ -1972,14 +1947,6 @@ const TaskReports = () => {
                         </div>
                       </div>
 
-                      {/* <div className="task-report-card task-report-card--summary task-report-card--project-report">
-                        <div className="task-report-card-header">
-                          <h2 className="task-report-card-title">Project-wise Task Report</h2>
-                        </div>
-                        <div className="task-report-card-chart task-report-card-chart--wide">
-                          <canvas ref={projectBarChartRef}></canvas>
-                        </div>
-                      </div> */}
                     </div>
                   </div>
                   <div className="task-dashboard-column">
@@ -2008,13 +1975,13 @@ const TaskReports = () => {
                             if (count === 0) return null;
                             
                             const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
-                            const isHidden = hiddenStatuses.has(label);
+                            const isHidden = hiddenDoughnutStatuses.has(label);
                             
                             return (
                               <div
                                 key={label}
                                 className="task-progress-legend-item"
-                                onClick={() => toggleStatusVisibility(label)}
+                                onClick={() => toggleDonutStatusVisibility(label)}
                                 style={{
                                   cursor: 'pointer',
                                   opacity: isHidden ? 0.4 : 1,
@@ -2040,31 +2007,27 @@ const TaskReports = () => {
                       {taskStatsError && <div className="error">{taskStatsError}</div>}
                     </div>
 
-                    {/* <div className="task-report-card task-report-card--summary">
-                      <div className="task-report-card-header">
-                        <h2 className="task-report-card-title">User-wise Task Report</h2>
-                      </div>
-                      <div className="task-report-card-chart task-report-card-chart--wide">
-                        <canvas ref={userBarChartRef}></canvas>
-                      </div>
-                    </div> */}
                   </div>
                 </div>
                 <div className="task-dashboard-reports-grid">
-                  <div className="task-report-card task-report-card--project-report">
-                    <div className="task-report-card-header">
-                      <h2 className="task-report-card-title">Project-wise Task Report</h2>
-                    </div>
-                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
-                      <canvas ref={projectBarChartRef}></canvas>
-                    </div>
-                  </div>
+                  <ProjectProgramWiseReport projects={taskAggregates.projects} />
                   <div className="task-report-card task-report-card--user-report">
                     <div className="task-report-card-header">
                       <h2 className="task-report-card-title">User-wise Task Report</h2>
                     </div>
-                    <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
-                      <canvas ref={userBarChartRef}></canvas>
+                    <div className="task-report-card-chart task-report-card-chart--wide">
+                      <div className="task-report-slider-container">
+                        <div 
+                          className="task-report-chart-inner" 
+                          style={{ 
+                            width: `${Math.max(100, (taskAggregates.users?.length || 0) * 100)}px`,
+                            minWidth: '100%',
+                            height: '380px' 
+                          }}
+                        >
+                          <canvas ref={userBarChartRef}></canvas>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   {rolePerms.isAdmin && (
@@ -2072,27 +2035,39 @@ const TaskReports = () => {
                       <div className="task-report-card-header">
                         <h2 className="task-report-card-title">Department-wise Task Report</h2>
                       </div>
-                      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: '380px' }}>
-                        <canvas ref={departmentCanvasRef}></canvas>
+                      <div className="task-report-card-chart task-report-card-chart--wide">
+                        <div className="task-report-slider-container">
+                          <div 
+                            className="task-report-chart-inner" 
+                            style={{ 
+                              width: `${Math.max(100, (Object.keys(taskStats?.department_breakdown || {}).length || 0) * 120)}px`,
+                              minWidth: '100%',
+                              height: '380px' 
+                            }}
+                          >
+                            <canvas ref={departmentCanvasRef}></canvas>
+                          </div>
+                        </div>
                       </div>
                       <div className="task-progress-legend" style={{ marginTop: '0.5rem' }}>
                         {taskStats?.department_breakdown && (() => {
                           // Create consistent color map for legend items
                           const deptColorMap = {};
-                          Object.entries(taskStats.department_breakdown).forEach(([dept], index) => {
+                          Object.keys(taskStats.department_breakdown).forEach((dept, index) => {
                             deptColorMap[dept] = DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
                           });
 
-                          return Object.entries(taskStats.department_breakdown).map(([dept, count], index) => {
-                            const isHidden = hiddenDepartments.has(dept);
+                          return Object.entries(taskStats.department_breakdown).map(([dept, count]) => {
+                            const isHidden = hiddenDepartmentBarDepartments.has(dept);
                             const deptColor = deptColorMap[dept];
 
                             return (
                               <div
                                 key={dept}
                                 className="task-progress-legend-item"
-                                onClick={() => toggleDepartmentVisibility(dept)}
+                                onClick={() => toggleBarDepartmentVisibility(dept)}
                                 style={{
+                                  cursor: 'pointer',
                                   opacity: isHidden ? 0.4 : 1,
                                   textDecoration: isHidden ? 'line-through' : 'none'
                                 }}

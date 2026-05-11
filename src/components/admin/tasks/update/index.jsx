@@ -1,11 +1,10 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
-import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
@@ -13,6 +12,259 @@ import { splitDescriptionAndMov } from '../../../../utils/movEncoding';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import '../../../../styles/variables.css';
 import './index.css';
+
+const TaskFormSelect = ({
+  name,
+  label,
+  value,
+  options,
+  onChange,
+  error,
+  required = false,
+  disabled = false,
+  showDefaultOption = false,
+  defaultOptionText = null,
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleToggle = () => {
+    if (!disabled) {
+      setIsOpen(!isOpen);
+    }
+  };
+
+  const handleSelect = (optionValue) => {
+    onChange({ target: { name, value: optionValue } });
+    setIsOpen(false);
+  };
+
+  const getDisplayLabel = () => {
+    const selectedOption = options.find(opt => 
+      (typeof opt === 'string' ? opt : opt.value) === value
+    );
+    if (selectedOption) {
+      return typeof selectedOption === 'string' ? selectedOption : selectedOption.label;
+    }
+    return defaultOptionText || `Select ${label}`;
+  };
+
+  return (
+    <div className="form-group" ref={containerRef}>
+      <label className="form-label">
+        {label}
+        {required && <span className="required-mark">*</span>}
+      </label>
+      <div className="task-custom-select-container">
+        <div
+          className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${disabled ? 'is-disabled' : ''}`}
+          onClick={handleToggle}
+        >
+          <span className={`task-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
+            {getDisplayLabel()}
+          </span>
+          <span className="task-custom-select-arrow">▼</span>
+        </div>
+
+        {isOpen && (
+          <div className="task-custom-select-dropdown">
+            {showDefaultOption && (
+              <button
+                type="button"
+                className={`task-custom-select-option ${!value ? 'is-selected' : ''}`}
+                onClick={() => handleSelect('')}
+              >
+                {defaultOptionText || `Select ${label}`}
+              </button>
+            )}
+            {options.map((option) => {
+              const optValue = typeof option === 'string' ? option : option.value;
+              const optLabel = typeof option === 'string' ? option : option.label;
+              return (
+                <button
+                  key={optValue}
+                  type="button"
+                  className={`task-custom-select-option ${value === optValue ? 'is-selected' : ''}`}
+                  onClick={() => handleSelect(optValue)}
+                >
+                  {optLabel}
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {error && <span className="form-error">{error}</span>}
+    </div>
+  );
+};
+
+const ProjectProgramSelect = ({ value, onChange, error }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectionStep, setSelectionStep] = useState('category');
+  const [projectCategory, setProjectCategory] = useState('');
+  const containerRef = useRef(null);
+
+  const projects = [
+    'MTJ Foundation',
+    'Al-Hassanain College',
+    'Al-Hassanain School',
+    'Al-Hassanain Mudrasa',
+    'Aas Lab',
+    'Aas Clinics'
+  ];
+
+  const programs = [
+    'General',
+    'Health',
+    'Education',
+    'Clean Water',
+    'Apna Ghar',
+    'Disaster Relief',
+    'KASB Skill Development',
+    'Seeds of Change',
+    'Qurbani Barai Mustehqeen',
+    'Aaslab',
+    'Community Service'
+  ];
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (containerRef.current && !containerRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (!value) {
+      setSelectionStep('category');
+      setProjectCategory('');
+    } else if (selectionStep === 'category') {
+      if (projects.includes(value)) {
+        setProjectCategory('Projects');
+        setSelectionStep('item');
+      } else if (programs.includes(value)) {
+        setProjectCategory('Programs');
+        setSelectionStep('item');
+      }
+    }
+  }, [value]);
+
+  const handleToggle = () => setIsOpen(!isOpen);
+
+  const handleCategorySelect = (category) => {
+    setProjectCategory(category);
+    setSelectionStep('item');
+    setIsOpen(true);
+  };
+
+  const handleItemSelect = (item) => {
+    onChange({ target: { name: 'project_name', value: item } });
+    setIsOpen(false);
+  };
+
+  const handleBack = (e) => {
+    e.stopPropagation();
+    setSelectionStep('category');
+    setProjectCategory('');
+  };
+
+  const handleClear = (e) => {
+    e.stopPropagation();
+    onChange({ target: { name: 'project_name', value: '' } });
+    setSelectionStep('category');
+    setProjectCategory('');
+    setIsOpen(false);
+  };
+
+  const getDisplayValue = () => {
+    if (value) {
+      const isProject = projects.includes(value);
+      return `${isProject ? '📁' : '📋'} ${value}`;
+    }
+    return '';
+  };
+
+  return (
+    <div className="form-group" ref={containerRef}>
+      <label className="form-label">
+        Project/Program <span className="required-mark">*</span>
+      </label>
+      <div className="task-custom-select-container">
+        <div 
+          className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''}`}
+          onClick={handleToggle}
+        >
+          {value ? (
+            <span className="task-custom-select-value">{getDisplayValue()}</span>
+          ) : (
+            <span className="task-custom-select-placeholder">Select Project or Program</span>
+          )}
+          <span className="task-custom-select-arrow">▼</span>
+        </div>
+
+        {value && (
+          <button type="button" className="task-custom-select-clear-btn" onClick={handleClear}>✕</button>
+        )}
+
+        {isOpen && (
+          <div className="task-custom-select-dropdown">
+            <div className="task-custom-select-dropdown-header">
+              <span className="task-custom-select-dropdown-title">
+                {selectionStep === 'category' ? 'Select Category' : projectCategory}
+              </span>
+              {selectionStep === 'item' && (
+                <button type="button" className="task-custom-select-back-link" onClick={handleBack}>
+                  ← Back
+                </button>
+              )}
+            </div>
+
+            <div className="task-custom-select-options-list">
+              {selectionStep === 'category' ? (
+                <>
+                  <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Projects')}>
+                    <span><span className="task-custom-select-option-icon">📁</span> Projects</span>
+                    <span className="task-custom-select-option-arrow">›</span>
+                  </button>
+                  <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Programs')}>
+                    <span><span className="task-custom-select-option-icon">📋</span> Programs</span>
+                    <span className="task-custom-select-option-arrow">›</span>
+                  </button>
+                </>
+              ) : (
+                (projectCategory === 'Projects' ? projects : programs).map(item => (
+                  <button 
+                    key={item} 
+                    type="button" 
+                    className={`task-custom-select-option ${value === item ? 'is-selected' : ''}`}
+                    onClick={() => handleItemSelect(item)}
+                  >
+                    {item}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+      {error && <span className="form-error">{error}</span>}
+    </div>
+  );
+};
 
 const UpdateTask = () => {
   const navigate = useNavigate();
@@ -61,29 +313,9 @@ const UpdateTask = () => {
       .join(' ');
   };
 
-  const projectOptions = useMemo(() => {
-    const base = [
-      'General',
-      'Health',
-      'Education',
-      'Clean Water',
-      'Apna Ghar',
-      'Disaster Relief',
-      'KASB Skill Development',
-      'Seeds of Change',
-      'Qurbani Barai Mustehqeen',
-      'Aaslab',
-      'Community Service'
-    ];
-    const options = base.map((p) => ({ value: p, label: p }));
-    if (form.project_name && !base.includes(form.project_name)) {
-      return [{ value: form.project_name, label: form.project_name }, ...options];
-    }
-    return options;
-  }, [form.project_name]);
-
   const taskPerms = useMemo(() => getTaskPermissions(permissions || {}), [permissions]);
   const multiSelectParams = useMemo(() => ({ active: true }), []);
+
   
   // Custom search function for assignees - excludes the logged-in user (task creator)
   const searchAssignees = useMemo(() => {
@@ -512,19 +744,17 @@ const UpdateTask = () => {
             <div className="add-task-section">
               <div className="add-task-section-title">1. Basic Details</div>
               <div className="add-task-grid-2">
+                <ProjectProgramSelect
+                  value={form.project_name}
+                  onChange={(e) => {
+                    setForm((prev) => ({ ...prev, project_name: e.target.value }));
+                  }}
+                />
                 <FormInput
                   name="title"
                   label="Title"
                   value={form.title}
                   onChange={handleChange}
-                />
-                <FormSelect
-                  name="project_name"
-                  label="Project"
-                  value={form.project_name}
-                  onChange={handleChange}
-                  showDefaultOption
-                  options={projectOptions}
                 />
               </div>
               <div className="add-task-grid-1">
@@ -578,14 +808,14 @@ const UpdateTask = () => {
             <div className="add-task-section">
               <div className="add-task-section-title">3. Task Configuration</div>
               <div className="add-task-grid-2">
-                <FormSelect
+                <TaskFormSelect
                   name="status"
                   label="Status"
                   value={form.status}
                   onChange={handleChange}
                   options={statusOptions}
                 />
-                <FormSelect
+                <TaskFormSelect
                   name="priority"
                   label="Priority"
                   value={form.priority}
@@ -595,7 +825,7 @@ const UpdateTask = () => {
                     label: p[0].toUpperCase() + p.slice(1)
                   }))}
                 />
-                <FormSelect
+                <TaskFormSelect
                   name="task_type"
                   label="Task Type"
                   value={form.task_type}
@@ -606,7 +836,7 @@ const UpdateTask = () => {
                     { value: 'project_linked', label: 'Project-linked task' }
                   ]}
                 />
-                <FormSelect
+                <TaskFormSelect
                   name="workflow_type"
                   label="Workflow Type"
                   value={form.workflow_type}
@@ -620,6 +850,76 @@ const UpdateTask = () => {
                   }))}
                 />
               </div>
+              
+              {form.task_type === 'recurring' && (
+                <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
+                  <div className="add-task-grid-2">
+                    <TaskFormSelect
+                      name="recurrence_frequency"
+                      label="Recurring Frequency"
+                      value={form.recurrence_frequency}
+                      onChange={handleSelectChange}
+                      showDefaultOption
+                      options={['daily', 'weekly', 'monthly', 'quarterly', 'annually', 'other'].map(
+                        (f) => ({
+                          value: f,
+                          label: f[0].toUpperCase() + f.slice(1)
+                        })
+                      )}
+                    />
+                    {form.recurrence_frequency === 'other' && (
+                      <FormInput
+                        name="custom_recurrence_days"
+                        label="Custom Recurrence Days"
+                        type="number"
+                        min="1"
+                        value={form.custom_recurrence_days}
+                        onChange={handleChange}
+                        placeholder="Enter number of days"
+                        required
+                      />
+                    )}
+                  </div>
+                  <div className="recurrence-end-section" style={{ marginTop: '1rem' }}>
+                    <div className="form-label" style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#6b7280' }}>END CONDITION</div>
+                    <div className="add-task-grid-2">
+                      <TaskFormSelect
+                        name="recurrence_end_type"
+                        label="End After"
+                        value={form.recurrence_end_type}
+                        onChange={handleSelectChange}
+                        options={[
+                          { value: 'never', label: 'Indefinitely (No end date)' },
+                          { value: 'on_date', label: 'On specific date' },
+                          { value: 'after_occurrences', label: 'After number of occurrences' }
+                        ]}
+                      />
+                      {form.recurrence_end_type === 'on_date' && (
+                        <FormInput
+                          name="recurrence_end_date"
+                          label="End Date"
+                          type="date"
+                          value={form.recurrence_end_date}
+                          onChange={handleChange}
+                          required
+                        />
+                      )}
+                      {form.recurrence_end_type === 'after_occurrences' && (
+                        <FormInput
+                          name="recurrence_end_occurrences"
+                          label="Number of Occurrences"
+                          type="number"
+                          min="1"
+                          value={form.recurrence_end_occurrences}
+                          onChange={handleChange}
+                          required
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {form.workflow_type === 'approval_required' && (
                 <div className="add-task-grid-1" style={{ marginTop: '1rem' }}>
                   <SearchableMultiSelect
@@ -755,7 +1055,7 @@ const UpdateTask = () => {
               {form.task_type === 'recurring' && (
                 <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid #f3f4f6' }}>
                   <div className="add-task-grid-2">
-                    <FormSelect
+                    <TaskFormSelect
                       name="recurrence_frequency"
                       label="Recurring Frequency"
                       value={form.recurrence_frequency}
@@ -784,7 +1084,7 @@ const UpdateTask = () => {
                   <div className="recurrence-end-section" style={{ marginTop: '1rem' }}>
                     <div className="form-label" style={{ fontWeight: 'bold', marginBottom: '0.5rem', fontSize: '0.85rem', color: '#6b7280' }}>END CONDITION</div>
                     <div className="add-task-grid-2">
-                      <FormSelect
+                      <TaskFormSelect
                         name="recurrence_end_type"
                         label="End After"
                         value={form.recurrence_end_type}

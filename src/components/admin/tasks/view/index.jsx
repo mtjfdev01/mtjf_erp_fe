@@ -566,7 +566,7 @@ const ViewTask = () => {
 
               {upcomingDates && upcomingDates.length > 0 && (
                 <div className="recurrence-upcoming">
-                  <span className="upcoming-title">Upcoming:</span>
+                  <span className="upcoming-title">Upcoming Dates</span>
                   <div className="upcoming-pills">
                     {upcomingDates.map((d, i) => (
                       <span key={i} className="upcoming-pill">
@@ -1404,7 +1404,7 @@ const ViewTask = () => {
                           <span className="view-item-value">{getUserDisplayName(task.created_by)}</span>
                         </div>
                         <div className="view-item">
-                          <span className="view-item-label">Project Name</span>
+                          <span className="view-item-label">Project/Program</span>
                           <span className="view-item-value">{task.project_name || '-'}</span>
                         </div>
                         {isApprovalWorkflow &&
