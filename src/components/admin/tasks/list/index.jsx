@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal, FiClipboard } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -39,6 +39,7 @@ const TasksList = () => {
   const [activeTab, setActiveTab] = useState('assigned_to_me');
   const [approvalsLoaded, setApprovalsLoaded] = useState(false);
   const [hasInteractedWithApprovals, setHasInteractedWithApprovals] = useState(false);
+  const [showApprovalBanner, setShowApprovalBanner] = useState(false);
 
   const currentUserId = user?.id ? Number(user.id) : null;
 
@@ -1124,44 +1125,67 @@ const TasksList = () => {
                   if (!pendingApprovals || pendingApprovals.length === 0) return null;
                   
                   return (
-                    <div className="tasks-approval-banner">
-                      <div className="tasks-approval-pill">
-                        <div className="tasks-approval-header">
-                          <span className="tasks-approval-label">Approval requests</span>
-                          <span className="tasks-approval-count">
-                            {pendingApprovals.length === 1
-                              ? '1 task pending your approval'
-                              : `${pendingApprovals.length} tasks pending your approval`}
-                          </span>
-                        </div>
-                        <ul className="tasks-approval-list">
-                          {pendingApprovals.map((t) => (
-                            <li
-                              key={t.id}
-                              className="tasks-approval-item"
-                              onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
-                            >
-                              <div className="tasks-approval-item-main">
-                                <span className="tasks-approval-title">
-                                  {t.title || `Task #${t.id}`}
-                                </span>
-                                <span className="tasks-approval-sub">
-                                  Pending your review
-                                  {(t.priority || t.due_date) && (
-                                    <>
-                                      {' • '}
-                                      {t.priority ? capitalize(t.priority) : null}
-                                      {t.priority && t.due_date ? ' • ' : ''}
-                                      {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
-                                    </>
-                                  )}
-                                </span>
+                    <div className="approval-wrapper">
+                      {/* Show either compact pill OR expanded banner */}
+                      {!showApprovalBanner ? (
+                        <div className="approval-pill-container">
+                          <button 
+                            className="approval-pill"
+                            onClick={() => setShowApprovalBanner(true)}
+                          >
+                            <div className="approval-pill-content">
+                              <span className="approval-pill-text">Pending Your Approval</span>
+                              <div className="approval-pill-icon-wrapper">
+                                <div className="approval-pill-icon">
+                                  <FiClipboard />
+                                </div>
+                                <span className="approval-pill-count">{pendingApprovals.length}</span>
                               </div>
-                              <span className="tasks-approval-meta">View</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                            </div>
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="tasks-approval-banner">
+                          <div className="tasks-approval-pill">
+                            <div className="tasks-approval-header">
+                              <span className="tasks-approval-label">Approval requests</span>
+                              <button 
+                                className="approval-close-btn"
+                                onClick={() => setShowApprovalBanner(false)}
+                              >
+                                ✕
+                              </button>
+                            </div>
+                            <ul className="tasks-approval-list">
+                              {pendingApprovals.map((t) => (
+                                <li
+                                  key={t.id}
+                                  className="tasks-approval-item"
+                                  onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
+                                >
+                                  <div className="tasks-approval-item-main">
+                                    <span className="tasks-approval-title">
+                                      {t.title || `Task #${t.id}`}
+                                    </span>
+                                    <span className="tasks-approval-sub">
+                                      Pending your review
+                                      {(t.priority || t.due_date) && (
+                                        <>
+                                          {' • '}
+                                          {t.priority ? capitalize(t.priority) : null}
+                                          {t.priority && t.due_date ? ' • ' : ''}
+                                          {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
+                                        </>
+                                      )}
+                                    </span>
+                                  </div>
+                                  <span className="tasks-approval-meta">View</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 } catch (error) {

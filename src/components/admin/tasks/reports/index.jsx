@@ -463,6 +463,7 @@ const TaskReports = () => {
   const [hiddenDoughnutStatuses, setHiddenDoughnutStatuses] = useState(new Set());
   const [hiddenDepartmentBarDepartments, setHiddenDepartmentBarDepartments] = useState(new Set());
   const [hiddenBarStatuses, setHiddenBarStatuses] = useState(new Set());
+  const [hiddenUserBarStatuses, setHiddenUserBarStatuses] = useState(new Set());
 
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
@@ -685,6 +686,27 @@ const TaskReports = () => {
       newHidden.add(department);
     }
     setHiddenDepartmentBarDepartments(newHidden);
+  };
+
+  const toggleUserBarStatusVisibility = (statusLabel) => {
+    const newHidden = new Set(hiddenUserBarStatuses);
+    if (newHidden.has(statusLabel)) {
+      newHidden.delete(statusLabel);
+    } else {
+      newHidden.add(statusLabel);
+    }
+    setHiddenUserBarStatuses(newHidden);
+
+    // Also toggle the dataset visibility in the Chart.js instance
+    if (userBarChartInstance.current) {
+      const datasets = userBarChartInstance.current.data.datasets;
+      datasets.forEach((dataset, index) => {
+        const datasetLabel = dataset.label;
+        const meta = userBarChartInstance.current.getDatasetMeta(index);
+        meta.hidden = newHidden.has(datasetLabel);
+      });
+      userBarChartInstance.current.update();
+    }
   };
 
   const handleShowMemberTasks = async (member) => {
@@ -1374,29 +1396,7 @@ const TaskReports = () => {
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                display: true,
-                position: 'bottom',
-                align: 'center',
-                labels: {
-                  boxWidth: 14,
-                  boxHeight: 14,
-                  font: {
-                    size: 11,
-                    weight: '600',
-                    family: "'Inter', sans-serif"
-                  },
-                  padding: 16,
-                  usePointStyle: true,
-                  pointStyle: 'rectRounded',
-                  color: '#475569',
-                  cursor: 'pointer'
-                },
-                onHover: (event, legendItem, legend) => {
-                  event.native.target.style.cursor = 'pointer';
-                },
-                onLeave: (event, legendItem, legend) => {
-                  event.native.target.style.cursor = 'default';
-                }
+                display: false,
               },
               tooltip: {
                 mode: 'nearest',
@@ -2029,6 +2029,49 @@ const TaskReports = () => {
                         </div>
                       </div>
                     </div>
+                    <div className="task-progress-legend task-progress-legend--sticky" style={{ marginTop: '0.5rem' }}>
+                      {(() => {
+                        // Calculate total count for each status
+                        const statusTotals = STATUS_LABELS.map((label, index) => {
+                          const statusKey = label.toLowerCase().replace(/\s+/g, '_');
+                          const total = taskAggregates.users.reduce((sum, user) => {
+                            return sum + (user.statuses && user.statuses[statusKey] ? user.statuses[statusKey] : 0);
+                          }, 0);
+                          return { label, index, total };
+                        });
+                        
+                        return statusTotals.map(({ label, index, total }) => {
+                          if (total === 0) return null;
+                          
+                          const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
+                          const isHidden = hiddenUserBarStatuses.has(label);
+                          
+                          return (
+                            <div
+                              key={label}
+                              className="task-progress-legend-item"
+                              onClick={() => toggleUserBarStatusVisibility(label)}
+                              style={{
+                                cursor: 'pointer',
+                                opacity: isHidden ? 0.4 : 1,
+                                textDecoration: isHidden ? 'line-through' : 'none'
+                              }}
+                            >
+                              <span
+                                className={`task-progress-dot ${colorClass}`}
+                                style={{ 
+                                  backgroundColor: STATUS_COLORS[index] || '',
+                                  opacity: isHidden ? 0.4 : 1
+                                }}
+                              />
+                              <span className="task-progress-legend-label">
+                                {label}: {total}
+                              </span>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
                   {rolePerms.isAdmin && (
                     <div className="task-report-card task-report-card--department-report">
@@ -2049,7 +2092,7 @@ const TaskReports = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="task-progress-legend" style={{ marginTop: '0.5rem' }}>
+                      <div className="task-progress-legend task-progress-legend--sticky" style={{ marginTop: '0.5rem' }}>
                         {taskStats?.department_breakdown && (() => {
                           // Create consistent color map for legend items
                           const deptColorMap = {};
