@@ -1329,6 +1329,7 @@
 .task-attachment-upload-btn {
   margin-top: 0 !important;
   width: 100% !important;
+  /* color: #ffffff !important; */
 }
 
 .task-attachments-actions {
