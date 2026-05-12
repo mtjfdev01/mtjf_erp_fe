@@ -21,7 +21,10 @@ const TrackersView = () => {
   const batchIdFromUrl = searchParams.get('batch_id');
   const [tracker, setTracker] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  /** Initial load only — full-page error. */
+  const [loadError, setLoadError] = useState('');
+  /** Step / allocate / tag / token failures — inline banner so the page stays usable. */
+  const [actionError, setActionError] = useState('');
   const [saving, setSaving] = useState(false);
 
   const [evidenceUrl, setEvidenceUrl] = useState('');
@@ -35,13 +38,17 @@ const TrackersView = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    setError('');
+    setLoadError('');
     try {
       const res = await axiosInstance.get(`/progress/trackers/${id}`);
-      if (res.data?.success) setTracker(res.data.data);
-      else setError(res.data?.message || 'Failed to load tracker');
+      if (res.data?.success) {
+        setTracker(res.data.data);
+        setActionError('');
+      } else {
+        setLoadError(res.data?.message || 'Failed to load tracker');
+      }
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to load tracker');
+      setLoadError(e.response?.data?.message || 'Failed to load tracker');
     } finally {
       setLoading(false);
     }
@@ -93,11 +100,12 @@ const TrackersView = () => {
 
   const updateStep = async (stepId, patch) => {
     setSaving(true);
+    setActionError('');
     try {
       await axiosInstance.patch(`/progress/trackers/steps/${stepId}`, patch);
       await fetchData();
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to update step');
+      setActionError(e.response?.data?.message || 'Failed to update step');
     } finally {
       setSaving(false);
     }
@@ -106,6 +114,7 @@ const TrackersView = () => {
   const addEvidence = async () => {
     if (!activeStepId || !evidenceUrl) return;
     setSaving(true);
+    setActionError('');
     try {
       await axiosInstance.post(`/progress/trackers/steps/${activeStepId}/evidence`, {
         file_url: evidenceUrl,
@@ -116,7 +125,7 @@ const TrackersView = () => {
       setEvidenceTitle('');
       await fetchData();
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to add evidence');
+      setActionError(e.response?.data?.message || 'Failed to add evidence');
     } finally {
       setSaving(false);
     }
@@ -124,11 +133,12 @@ const TrackersView = () => {
 
   const regenToken = async () => {
     setSaving(true);
+    setActionError('');
     try {
       await axiosInstance.post(`/progress/trackers/${id}/token`);
       await fetchData();
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to generate token');
+      setActionError(e.response?.data?.message || 'Failed to generate token');
     } finally {
       setSaving(false);
     }
@@ -141,14 +151,14 @@ const TrackersView = () => {
         : NaN;
     if (!Number.isFinite(raw) || raw <= 0) return;
     setSavingBatchTag(true);
-    setError('');
+    setActionError('');
     try {
       await axiosInstance.patch(`/progress/batches/${raw}`, {
         tag_number: batchTagDraft.trim() || null,
       });
       await fetchData();
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to update batch tag');
+      setActionError(e.response?.data?.message || 'Failed to update batch tag');
     } finally {
       setSavingBatchTag(false);
     }
@@ -158,7 +168,7 @@ const TrackersView = () => {
     const n = Number(partsToAdd || 0);
     if (!Number.isFinite(n) || n <= 0) return;
     setAllocatingParts(true);
-    setError('');
+    setActionError('');
     try {
       await axiosInstance.post(`/progress/trackers/${tracker.id}/allocate-parts`, {
         parts_requested: n,
@@ -166,7 +176,7 @@ const TrackersView = () => {
       setPartsToAdd('');
       await fetchData();
     } catch (e) {
-      setError(e.response?.data?.message || 'Failed to allocate parts');
+      setActionError(e.response?.data?.message || 'Failed to allocate parts');
     } finally {
       setAllocatingParts(false);
     }
@@ -184,14 +194,14 @@ const TrackersView = () => {
     );
   }
 
-  if (error) {
+  if (loadError) {
     return (
       <>
         <Navbar />
         <div className="view-wrapper">
           <PageHeader title="Progress Tracker" showBackButton={true} backPath="/progress/trackers" />
           <div className="view-content">
-            <div className="status-message status-message--error">{error}</div>
+            <div className="status-message status-message--error">{loadError}</div>
           </div>
         </div>
       </>
@@ -206,6 +216,11 @@ const TrackersView = () => {
       <div className="view-wrapper">
         <PageHeader title="Progress Tracker" showBackButton={true} backPath="/progress/trackers" />
         <div className="view-content">
+          {actionError ? (
+            <div className="status-message status-message--error" style={{ marginBottom: 16 }}>
+              {actionError}
+            </div>
+          ) : null}
           <div className="view-section">
             <h3 className="view-section-title">Summary</h3>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
