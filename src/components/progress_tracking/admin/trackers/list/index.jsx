@@ -54,9 +54,13 @@ const TrackersList = () => {
               b.tag_number != null && String(b.tag_number).trim() !== ''
                 ? String(b.tag_number).trim()
                 : null;
+            const tname =
+              b.tag_name != null && String(b.tag_name).trim() !== ''
+                ? String(b.tag_name).trim()
+                : null;
             return {
               value: String(b.id),
-              label: `Batch #${b.batch_number}${tag ? ` · ${tag}` : ''}${b.template_name ? ` — ${b.template_name}` : ''} (${b.allocated_parts}/${b.batch_parts})`,
+              label: `Batch #${b.batch_number}${tag ? ` · ${tag}` : ''}${tname ? ` (${tname})` : ''}${b.template_name ? ` — ${b.template_name}` : ''} (${b.allocated_parts}/${b.batch_parts})`,
             };
           }),
         );

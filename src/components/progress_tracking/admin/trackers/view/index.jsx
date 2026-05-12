@@ -32,6 +32,7 @@ const TrackersView = () => {
   const [evidenceType, setEvidenceType] = useState('link');
   const [activeStepId, setActiveStepId] = useState(null);
   const [batchTagDraft, setBatchTagDraft] = useState('');
+  const [batchTagNameDraft, setBatchTagNameDraft] = useState('');
   const [savingBatchTag, setSavingBatchTag] = useState(false);
   const [partsToAdd, setPartsToAdd] = useState('');
   const [allocatingParts, setAllocatingParts] = useState(false);
@@ -65,12 +66,15 @@ const TrackersView = () => {
         : NaN;
     if (!Number.isFinite(raw) || raw <= 0) {
       setBatchTagDraft('');
+      setBatchTagNameDraft('');
       return;
     }
     const steps = tracker?.steps || [];
     const step = steps.find((s) => s.batch_id != null && Number(s.batch_id) === raw);
     const tn = step?.batch?.tag_number;
     setBatchTagDraft(tn != null && String(tn).trim() !== '' ? String(tn).trim() : '');
+    const tnm = step?.batch?.tag_name;
+    setBatchTagNameDraft(tnm != null && String(tnm).trim() !== '' ? String(tnm).trim() : '');
   }, [batchIdFromUrl, tracker]);
 
   const batchFilterOptions = useMemo(() => {
@@ -83,7 +87,17 @@ const TrackersView = () => {
       const tagRaw = s.batch?.tag_number;
       const tag =
         tagRaw != null && String(tagRaw).trim() !== '' ? String(tagRaw).trim() : null;
-      if (!map.has(bid)) map.set(bid, { batch_id: bid, batch_number: bn, tag_number: tag });
+      const nameRaw = s.batch?.tag_name;
+      const tname =
+        nameRaw != null && String(nameRaw).trim() !== '' ? String(nameRaw).trim() : null;
+      if (!map.has(bid)) {
+        map.set(bid, {
+          batch_id: bid,
+          batch_number: bn,
+          tag_number: tag,
+          tag_name: tname,
+        });
+      }
     }
     return Array.from(map.values()).sort((a, b) => a.batch_number - b.batch_number);
   }, [tracker]);
@@ -155,6 +169,7 @@ const TrackersView = () => {
     try {
       await axiosInstance.patch(`/progress/batches/${raw}`, {
         tag_number: batchTagDraft.trim() || null,
+        tag_name: batchTagNameDraft.trim() || null,
       });
       await fetchData();
     } catch (e) {
@@ -340,10 +355,15 @@ const TrackersView = () => {
                       color: '#1e40af',
                       border: '1px solid #bfdbfe',
                     }}
-                    title={b.tag_number ? `Tag: ${b.tag_number}` : undefined}
+                    title={
+                      [b.tag_number, b.tag_name].filter(Boolean).length
+                        ? [b.tag_number, b.tag_name].filter(Boolean).join(' — ')
+                        : undefined
+                    }
                   >
                     #{b.batch_number}
                     {b.tag_number ? ` · ${b.tag_number}` : ''}
+                    {b.tag_name ? ` (${b.tag_name})` : ''}
                   </Link>
                 ))}
               </div>
@@ -365,13 +385,23 @@ const TrackersView = () => {
                     border: '1px solid #e2e8f0',
                   }}
                 >
-                  <div style={{ flex: '1 1 220px', minWidth: 180 }}>
+                  <div style={{ flex: '1 1 200px', minWidth: 160 }}>
                     <FormInput
-                      label="Batch tag (shared for all donations on this batch)"
+                      label="Tag number (shared on this batch)"
                       name="batch_tag"
                       value={batchTagDraft}
                       onChange={(e) => setBatchTagDraft(e.target.value)}
-                      placeholder="e.g. physical tag / reference number"
+                      placeholder="e.g. 441"
+                      disabled={savingBatchTag}
+                    />
+                  </div>
+                  <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                    <FormInput
+                      label="Tag name (optional label)"
+                      name="batch_tag_name"
+                      value={batchTagNameDraft}
+                      onChange={(e) => setBatchTagNameDraft(e.target.value)}
+                      placeholder="e.g. North pen"
                       disabled={savingBatchTag}
                     />
                   </div>
@@ -402,6 +432,9 @@ const TrackersView = () => {
                           (Batch #{s.batch?.batch_number ?? s.batch_id}
                           {s.batch?.tag_number != null && String(s.batch.tag_number).trim() !== ''
                             ? ` · ${String(s.batch.tag_number).trim()}`
+                            : ''}
+                          {s.batch?.tag_name != null && String(s.batch.tag_name).trim() !== ''
+                            ? ` (${String(s.batch.tag_name).trim()})`
                             : ''}
                           )
                         </span>

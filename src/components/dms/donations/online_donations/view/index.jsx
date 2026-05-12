@@ -49,6 +49,7 @@ const ViewOnlineDonation = () => {
   const [progressEvidenceType, setProgressEvidenceType] = useState('link');
   const [activeProgressStepId, setActiveProgressStepId] = useState(null);
   const [batchTagDraft, setBatchTagDraft] = useState('');
+  const [batchTagNameDraft, setBatchTagNameDraft] = useState('');
   const [savingBatchTag, setSavingBatchTag] = useState(false);
   const [partsToAddByTracker, setPartsToAddByTracker] = useState({});
   const [allocatingPartsTrackerId, setAllocatingPartsTrackerId] = useState(null);
@@ -68,10 +69,15 @@ const ViewOnlineDonation = () => {
           tagRaw != null && String(tagRaw).trim() !== ''
             ? String(tagRaw).trim()
             : null;
+        const nameRaw = s?.batch?.tag_name;
+        const tname =
+          nameRaw != null && String(nameRaw).trim() !== ''
+            ? String(nameRaw).trim()
+            : null;
         if (!map.has(bid)) {
           map.set(bid, {
             value: String(bid),
-            label: `${tplName} · #${bn}${tag ? ` · ${tag}` : ''}`,
+            label: `${tplName} · #${bn}${tag ? ` · ${tag}` : ''}${tname ? ` (${tname})` : ''}`,
           });
         }
       }
@@ -117,25 +123,30 @@ const ViewOnlineDonation = () => {
   useEffect(() => {
     if (selectedBatchId === 'all') {
       setBatchTagDraft('');
+      setBatchTagNameDraft('');
       return;
     }
     const bid = Number(selectedBatchId);
     if (!Number.isFinite(bid) || bid <= 0) {
       setBatchTagDraft('');
+      setBatchTagNameDraft('');
       return;
     }
     let tag = '';
-    for (const tr of progressTrackers || []) {
-      const step = (tr?.steps || []).find(
-        (s) => s?.batch_id != null && Number(s.batch_id) === bid,
-      );
-      const tn = step?.batch?.tag_number;
-      if (tn != null && String(tn).trim() !== '') {
-        tag = String(tn).trim();
-        break;
+    let tname = '';
+    outer: for (const tr of progressTrackers || []) {
+      for (const s of tr?.steps || []) {
+        if (s?.batch_id != null && Number(s.batch_id) === bid && s.batch) {
+          const tn = s.batch.tag_number;
+          if (tn != null && String(tn).trim() !== '') tag = String(tn).trim();
+          const nm = s.batch.tag_name;
+          if (nm != null && String(nm).trim() !== '') tname = String(nm).trim();
+          break outer;
+        }
       }
     }
     setBatchTagDraft(tag);
+    setBatchTagNameDraft(tname);
   }, [selectedBatchId, progressTrackers]);
 
   const saveBatchTagFromDonation = async () => {
@@ -147,6 +158,7 @@ const ViewOnlineDonation = () => {
     try {
       await axiosInstance.patch(`/progress/batches/${bid}`, {
         tag_number: batchTagDraft.trim() || null,
+        tag_name: batchTagNameDraft.trim() || null,
       });
       await fetchProgressData();
     } catch (e) {
@@ -767,13 +779,23 @@ const ViewOnlineDonation = () => {
                       border: '1px solid #e2e8f0',
                     }}
                   >
-                    <div style={{ flex: '1 1 220px', minWidth: 180 }}>
+                    <div style={{ flex: '1 1 200px', minWidth: 160 }}>
                       <FormInput
-                        label="Batch tag (shared for all donations on this batch)"
+                        label="Tag number (shared on this batch)"
                         name="donation_batch_tag"
                         value={batchTagDraft}
                         onChange={(e) => setBatchTagDraft(e.target.value)}
-                        placeholder="e.g. physical tag / reference number"
+                        placeholder="e.g. 441"
+                        disabled={savingBatchTag || savingProgressStep}
+                      />
+                    </div>
+                    <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                      <FormInput
+                        label="Tag name (optional)"
+                        name="donation_batch_tag_name"
+                        value={batchTagNameDraft}
+                        onChange={(e) => setBatchTagNameDraft(e.target.value)}
+                        placeholder="e.g. North pen"
                         disabled={savingBatchTag || savingProgressStep}
                       />
                     </div>
@@ -892,6 +914,9 @@ const ViewOnlineDonation = () => {
                                       (Batch #{s?.batch?.batch_number ?? s.batch_id}
                                       {s.batch?.tag_number != null && String(s.batch.tag_number).trim() !== ''
                                         ? ` · ${String(s.batch.tag_number).trim()}`
+                                        : ''}
+                                      {s.batch?.tag_name != null && String(s.batch.tag_name).trim() !== ''
+                                        ? ` (${String(s.batch.tag_name).trim()})`
                                         : ''}
                                       )
                                     </span>
