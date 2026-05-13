@@ -240,7 +240,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
         borderRadius: 6,
         borderSkipped: false,
         statusKey: statusKey,
-        barPercentage: 0.8,
+        barPercentage: 0.9,
         categoryPercentage: 0.9,
         barThickness: filteredProjects.length === 1 ? 40 : 'flex',
         maxBarThickness: 45
@@ -464,6 +464,7 @@ const TaskReports = () => {
   const [hiddenDepartmentBarDepartments, setHiddenDepartmentBarDepartments] = useState(new Set());
   const [hiddenBarStatuses, setHiddenBarStatuses] = useState(new Set());
   const [hiddenUserBarStatuses, setHiddenUserBarStatuses] = useState(new Set());
+  const [userReportSearchQuery, setUserReportSearchQuery] = useState('');
 
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
@@ -495,6 +496,19 @@ const TaskReports = () => {
     const avgRate = Math.round(avgRateRaw);
     return { members, totalTasks, completed, inProgress, overdue, avgRate };
   }, [filteredTeamMembers]);
+
+  const filteredUserReportUsers = useMemo(() => {
+    if (!taskAggregates.users) return [];
+
+    if (!userReportSearchQuery.trim()) return taskAggregates.users;
+
+    const query = userReportSearchQuery.toLowerCase();
+    return taskAggregates.users.filter(user => {
+      const userName = (user.label || user.name || '').toLowerCase();
+      const userRole = (user.role || '').toLowerCase();
+      return userName.includes(query) || userRole.includes(query);
+    });
+  }, [taskAggregates.users, userReportSearchQuery]);
 
   const currentDeptFromPath = useMemo(() => {
     const path = location.pathname || '';
@@ -1050,10 +1064,10 @@ const TaskReports = () => {
         hoverBorderWidth: 3,
         borderRadius: 6,
         borderSkipped: false,
-        barPercentage: 0.6,
-        categoryPercentage: 0.5,
+        barPercentage: 0.85,
+        categoryPercentage: 0.7,
         barThickness: 'flex',
-        maxBarThickness: 60
+        maxBarThickness: 80
       }));
 
       const data = {
@@ -1343,13 +1357,13 @@ const TaskReports = () => {
       }
     }
 
-    if (taskAggregates.users.length > 0 && userBarChartRef.current) {
-      const labels = taskAggregates.users.map(u => u.label);
+    if (filteredUserReportUsers.length > 0 && userBarChartRef.current) {
+      const labels = filteredUserReportUsers.map(u => u.label);
 
       // Calculate total tasks per status across all users
       const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
         const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
-        const total = taskAggregates.users.reduce((sum, user) => {
+        const total = filteredUserReportUsers.reduce((sum, user) => {
           return sum + (user.statuses && user.statuses[statusKey] ? user.statuses[statusKey] : 0);
         }, 0);
         return { statusLabel, statusKey, index, total };
@@ -1361,7 +1375,7 @@ const TaskReports = () => {
       // Create a dataset only for statuses with actual data
       const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
         label: statusLabel,
-        data: taskAggregates.users.map(u => {
+        data: filteredUserReportUsers.map(u => {
           return u.statuses && u.statuses[statusKey] ? u.statuses[statusKey] : 0;
         }),
         backgroundColor: STATUS_COLORS[index],
@@ -1433,7 +1447,7 @@ const TaskReports = () => {
                   },
                   afterLabel: function (context) {
                     const userIndex = context.dataIndex;
-                    const user = taskAggregates.users[userIndex];
+                    const user = filteredUserReportUsers[userIndex];
 
                     if (!user || !user.tasks || user.tasks.length === 0) {
                       return null;
@@ -1657,7 +1671,7 @@ const TaskReports = () => {
         });
       }
     }
-  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses, hiddenDoughnutStatuses, hiddenDepartmentBarDepartments]);
+  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses, hiddenDoughnutStatuses, hiddenDepartmentBarDepartments, filteredUserReportUsers]);
 
   useEffect(() => {
     return () => {
@@ -1748,8 +1762,8 @@ const TaskReports = () => {
                     onChange={(e) => setViewType(e.target.value)}
                   >
                     <option value="all">All Tasks</option>
-                    <option value="created">Created by Me</option>
-                    <option value="assigned">Assigned to Me</option>
+                    <option value="created">Created by You</option>
+                    <option value="assigned">Assigned to You</option>
                   </select>
                 </div>
               )}
@@ -2012,15 +2026,35 @@ const TaskReports = () => {
                 <div className="task-dashboard-reports-grid">
                   <ProjectProgramWiseReport projects={taskAggregates.projects} />
                   <div className="task-report-card task-report-card--user-report">
-                    <div className="task-report-card-header">
-                      <h2 className="task-report-card-title">User-wise Task Report</h2>
+                    <div className="task-report-card-header task-report-card-header--with-filter">
+                      <div className="task-report-header-left">
+                        <h2 className="task-report-card-title">User-wise Task Report</h2>
+                        <div className="task-report-filter-inline">
+                          <input
+                            type="text"
+                            className="task-report-category-filter"
+                            placeholder="Search users..."
+                            value={userReportSearchQuery}
+                            onChange={(e) => setUserReportSearchQuery(e.target.value)}
+                          />
+                          {userReportSearchQuery && (
+                            <button
+                              className="task-report-filter-clear-inline"
+                              onClick={() => setUserReportSearchQuery('')}
+                              title="Clear Filter"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </div>
                     <div className="task-report-card-chart task-report-card-chart--wide">
                       <div className="task-report-slider-container">
                         <div 
                           className="task-report-chart-inner" 
                           style={{ 
-                            width: `${Math.max(100, (taskAggregates.users?.length || 0) * 100)}px`,
+                            width: `${Math.max(100, (filteredUserReportUsers?.length || 0) * 100)}px`,
                             minWidth: '100%',
                             height: '380px' 
                           }}
@@ -2034,7 +2068,7 @@ const TaskReports = () => {
                         // Calculate total count for each status
                         const statusTotals = STATUS_LABELS.map((label, index) => {
                           const statusKey = label.toLowerCase().replace(/\s+/g, '_');
-                          const total = taskAggregates.users.reduce((sum, user) => {
+                          const total = filteredUserReportUsers.reduce((sum, user) => {
                             return sum + (user.statuses && user.statuses[statusKey] ? user.statuses[statusKey] : 0);
                           }, 0);
                           return { label, index, total };

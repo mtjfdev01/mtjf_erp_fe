@@ -25,6 +25,7 @@ const TaskActionBar = ({
   approvalRequiredUserIds,
   approvalsMeta,
   currentUserHasActedOnApproval,
+  approvalLoading = false,
 }) => {
   const [isQuickOpen, setIsQuickOpen] = useState(false);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
@@ -74,9 +75,17 @@ const TaskActionBar = ({
   );
 
   const availableButtons = useMemo(() => {
+    // Don't show any buttons while approval data is loading (prevents blinking)
+    if (approvalLoading) {
+      return [];
+    }
     const rawRole = String(userRole || '').toLowerCase();
     const isAdminRole = rawRole === 'super_admin' || rawRole === 'admin';
     const isAssigneeUser = isAssignee === true;
+    const approverIds = Array.isArray(approvalRequiredUserIds)
+      ? approvalRequiredUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0)
+      : [];
+    const isConfiguredApprover = currentUserId != null && approverIds.includes(Number(currentUserId));
 
     let baseButtons = STATUS_BUTTON_CONFIG[normalizedStatus] || [];
 
@@ -118,14 +127,14 @@ const TaskActionBar = ({
       baseButtons = STATUS_BUTTON_CONFIG.PENDING_APPROVAL || [];
     }
 
-    if (normalizedStatus === 'PENDING_APPROVAL' && !canApprove) {
+    if (normalizedStatus === 'PENDING_APPROVAL' && !canApprove && !isConfiguredApprover) {
       return [];
     }
 
     return baseButtons.filter((btn) =>
       isStatusActionAvailable(btn.action, availabilityContext),
     );
-  }, [normalizedStatus, normalizedWorkflow, canApprove, availabilityContext]);
+  }, [normalizedStatus, normalizedWorkflow, canApprove, availabilityContext, approvalLoading]);
 
   const visibleQuickActions = useMemo(
     () =>

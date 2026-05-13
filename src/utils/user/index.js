@@ -78,7 +78,12 @@ export const departmentRoles = {
     { value: 'fund_raising', label: 'Fund Raising' },
     { value: 'hr', label: 'HR' },
     { value: 'meal', label: 'Meal' },
-    { value: 'health', label: 'Health' }
+    { value: 'health', label: 'Health' },
+    { value: 'executive_office', label: 'Executive Office'},
+    { value: 'ceo', label: 'CEO'},
+    { value: 'internal_audit', label: 'Internal Audit'},
+    { value: 'crd', label: 'CRD'},
+    { value: 'aas_lab', label: 'Aas Lab'},
   ];
   
   export const bloodGroups = [

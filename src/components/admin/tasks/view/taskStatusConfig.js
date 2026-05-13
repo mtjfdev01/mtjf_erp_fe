@@ -165,6 +165,9 @@ export const isStatusActionAvailable = (action, context) => {
       return isAssignee && (perms.canUpdate || perms.canView) && !isAdminRole;
     case 'APPROVE':
     case 'REJECT':
+      if (currentStatusRaw === 'approved' || currentStatusRaw === 'closed') {
+        return false;
+      }
       if (approverIds.length === 0) return false;
       if (!isConfiguredApprover) return false;
       if (hasActedOnApproval) return false;

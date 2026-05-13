@@ -214,10 +214,10 @@ const TasksList = () => {
     return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t)) : [];
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, user?.department, isManager]);
 
-  // Load approvals immediately for users with approval permissions
+  // Load approvals immediately for all logged-in users
   const fetchApprovals = useCallback(async () => {
-    // Only fetch approvals once, and only if user has approval permissions
-    if (approvalsLoaded || !currentUserId || !taskPerms.canApprove) {
+    // Only fetch approvals if we have a current user
+    if (!currentUserId) {
       return;
     }
 
@@ -238,7 +238,7 @@ const TasksList = () => {
     return () => {
       cancelled = true;
     };
-  }, [currentUserId, taskPerms.canApprove, approvalsLoaded]);
+  }, [currentUserId]);
 
   const approvalRequestsForUser = useMemo(() => {
     if (!currentUserId) return [];
@@ -278,16 +278,21 @@ const TasksList = () => {
         : 'pending';
       const statusLower = String(approval.approval_status || '').toLowerCase();
 
+      // Check if overall task is already fully approved or closed
+      const isTaskFullyApproved = statusLower === 'approved' || statusLower === 'closed';
+
       // Include tasks where:
-      // 1. Status is pending_approval (awaiting decision)
-      // 2. Status is rejected and user's decision is still pending (can still act)
-      // 3. User has already made a decision (approved/rejected) - show for visibility
-      const isPendingAction =
-        statusLower === 'pending_approval' ||
-        (statusLower === 'rejected' && myDecision === 'pending');
+      // 1. Task is NOT fully approved/closed AND status is pending_approval OR rejected AND user hasn't acted yet
+      // 2. User has already made a decision (approved/rejected) - show for visibility
+      let isPendingAction = false;
+      if (!isTaskFullyApproved && myDecision === 'pending') {
+        if (statusLower === 'pending_approval' || statusLower === 'rejected') {
+          isPendingAction = true;
+        }
+      }
       const hasUserActed = myDecision !== 'pending';
 
-      // Include task if it needs action OR user has already participated
+      // Only include task if it needs action OR user has already participated
       if (!isPendingAction && !hasUserActed) {
         return;
       }
@@ -298,6 +303,7 @@ const TasksList = () => {
         _approvalStatus: statusLower,
         _myDecision: myDecision,
         _isPendingAction: isPendingAction,
+        _isTaskFullyApproved: isTaskFullyApproved,
       });
     });
 
@@ -307,12 +313,16 @@ const TasksList = () => {
       if (!a._isPendingAction && b._isPendingAction) return 1;
       return 0;
     });
-  }, [myApprovals, tasks, currentUserId]);
+  }, [myApprovals, currentUserId]);
+
+  const approvalTasks = useMemo(() => {
+    return Array.isArray(approvalRequestsForUser) ? approvalRequestsForUser : [];
+  }, [approvalRequestsForUser]);
 
   const otherTasks = useMemo(() => {
     if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
 
-    // Get regular other tasks (not assigned to current user or team)
+    // Get regular other tasks (not assigned to current user or team AND not an approval task for this user)
     const regularOtherTasks = Array.isArray(tasks) ? tasks.filter((t) => {
       const assignedToMe = isTaskAssignedToCurrentUser(t);
       if (assignedToMe) return false;
@@ -320,23 +330,15 @@ const TasksList = () => {
       const assignedToTeam = isManager && isTaskAssignedToTeam(t);
       if (assignedToTeam) return false;
 
+      // Also exclude tasks that are in approvalTasks
+      const isApprovalTask = approvalTasks.some(at => Number(at.id) === Number(t.id));
+      if (isApprovalTask) return false;
+
       return true;
     }) : [];
 
-    // Get approval tasks (tasks user has approved/rejected or needs to approve)
-    // These should be included in "Other Tasks" tab with existing task card design
-    // Only include approval tasks if myApprovals has been loaded
-    const approvalTasksToAdd = Array.isArray(approvalRequestsForUser) ? approvalRequestsForUser.filter(t => {
-      const taskId = Number(t.id);
-      // Check if already in regularOtherTasks to avoid duplicates
-      const alreadyIncluded = regularOtherTasks.some(rt => Number(rt.id) === taskId);
-      return !alreadyIncluded;
-    }) : [];
-
-    // Combine: approval tasks first (for visibility), then regular other tasks
-    // All tasks use the same existing task card design via renderTaskCard()
-    return [...approvalTasksToAdd, ...regularOtherTasks];
-  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager, approvalRequestsForUser]);
+    return regularOtherTasks;
+  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager, approvalTasks]);
 
   // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
   useEffect(() => {
@@ -399,7 +401,12 @@ const TasksList = () => {
     fetchTasks();
   }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department, currentDeptFromPath]);
 
-  // Load approvals immediately for users with approval permissions
+  // Reset approvalsLoaded when we navigate to this page to refresh data
+  useEffect(() => {
+    setApprovalsLoaded(false);
+  }, [location.pathname]);
+
+  // Load approvals immediately for all logged-in users
   useEffect(() => {
     fetchApprovals();
   }, [fetchApprovals]);
@@ -413,7 +420,7 @@ const TasksList = () => {
   };
   const clearAllFilters = () => {
     setSearchInput('');
-    setFilters({ search: '', department: '', status: '', priority: '' });
+    setFilters({ search: '', department: '', status: '', priority: '', user_name: '' });
     setCurrentPage(1);
   };
 
@@ -1117,7 +1124,6 @@ const TasksList = () => {
               {/* Approval Banner - Only shown if there are actual pending approvals */}
               {(() => {
                 try {
-                  if (!taskPerms.canApprove) return null;
                   if (!approvalsLoaded) return null; // Wait until approvals are loaded
                   if (!Array.isArray(approvalRequestsForUser)) return null;
                   
@@ -1203,8 +1209,16 @@ const TasksList = () => {
                       onClick={() => setActiveTab('assigned_to_me')}
                     >
                       <FiUserCheck className="tab-icon" />
-                      <span className="tab-text">My Tasks</span>
+                      <span className="tab-text"> Assign to me</span>
                       <span className="tab-count">{myTasks.length}</span>
+                    </button>
+                    <button
+                      className={`task-tab-btn ${activeTab === 'other_tasks' ? 'active active--other' : ''}`}
+                      onClick={() => setActiveTab('other_tasks')}
+                    >
+                      <FiList className="tab-icon" />
+                      <span className="tab-text">Assign to other</span>
+                      <span className="tab-count">{otherTasks.length}</span>
                     </button>
                     {isManager && (
                       <button
@@ -1212,17 +1226,17 @@ const TasksList = () => {
                         onClick={() => setActiveTab('assigned_to_team')}
                       >
                         <FiUsers className="tab-icon" />
-                        <span className="tab-text">Team Tasks</span>
+                        <span className="tab-text">Assign to team</span>
                         <span className="tab-count">{teamTasks.length}</span>
                       </button>
                     )}
                     <button
-                      className={`task-tab-btn ${activeTab === 'other_tasks' ? 'active active--other' : ''}`}
-                      onClick={() => setActiveTab('other_tasks')}
+                      className={`task-tab-btn ${activeTab === 'approval_tasks' ? 'active active--approval' : ''}`}
+                      onClick={() => setActiveTab('approval_tasks')}
                     >
-                      <FiList className="tab-icon" />
-                      <span className="tab-text">Other Tasks</span>
-                      <span className="tab-count">{otherTasks.length}</span>
+                      <FiThumbsUp className="tab-icon" />
+                      <span className="tab-text">Approval Tasks</span>
+                      <span className="tab-count">{approvalTasks.length}</span>
                     </button>
                   </div>
                 </div>
@@ -1249,6 +1263,19 @@ const TasksList = () => {
                         <div className="empty-tab-state">
                           <FiUsers className="empty-icon" />
                           <p>No tasks assigned to your team members.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {activeTab === 'approval_tasks' && (
+                    <div className="tasks-group fade-in">
+                      {approvalTasks.length > 0 ? (
+                        approvalTasks.map((t) => renderTaskCard(t))
+                      ) : (
+                        <div className="empty-tab-state">
+                          <FiThumbsUp className="empty-icon" />
+                          <p>No approval tasks found.</p>
                         </div>
                       )}
                     </div>

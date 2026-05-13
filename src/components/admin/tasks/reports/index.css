@@ -892,10 +892,6 @@
   cursor: pointer;
 }
 
-.task-report-card-chart--wide:hover canvas {
-  transform: scale(1.01);
-}
-
 .task-report-card-chart--compact {
   height: 240px;
 }
@@ -1092,14 +1088,15 @@ canvas[ref*="Canvas"] + div,
   border-radius: 10px;
   border: 1.5px solid #e2e8f0;
   background: #ffffff;
-  font-size: 0.875rem;
-  font-weight: 500;
+  font-size: 0.65rem;
+  font-weight: 800;
   color: #0f172a;
   transition: all 0.2s ease;
   cursor: pointer;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   width: 100%;
   box-sizing: border-box;
+  text-transform: uppercase;
 }
 
 .task-filter-select:hover {

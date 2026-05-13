@@ -41,7 +41,7 @@ const ViewTask = () => {
   const [showProgressHistory, setShowProgressHistory] = useState(false);
   const [approvalState, setApprovalState] = useState(null);
   const [approvalLoaded, setApprovalLoaded] = useState(false);
-  const [approvalLoading, setApprovalLoading] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(true);
 
   const getAttachmentHref = (urlStr) => {
     if (!urlStr) return '#';
@@ -183,9 +183,9 @@ const ViewTask = () => {
     resolveUsers();
   }, [task?.id, approvalState]); // Only re-run when task ID changes or approval state is loaded
 
-  // Lazy load approval data only when needed
-  const loadApprovalData = useCallback(async () => {
-    if (approvalLoaded || approvalLoading) return;
+  // Lazy load approval data only when needed (with force option)
+  const loadApprovalData = useCallback(async (force = false) => {
+    if (!force && (approvalLoaded || approvalLoading)) return;
     
     setApprovalLoading(true);
     try {
@@ -198,7 +198,7 @@ const ViewTask = () => {
     } finally {
       setApprovalLoading(false);
     }
-  }, [id, approvalLoaded, approvalLoading]);
+  }, [id, approvalLoading]);
 
   const assignedUsers = useMemo(() => {
     if (!task || !Array.isArray(task.assigned_user_ids)) return [];
@@ -400,8 +400,17 @@ const ViewTask = () => {
   const hasApprovalPanel =
     isApprovalWorkflow && approvalRequiredIds && approvalRequiredIds.length > 0;
 
-  // Note: Approval data is now loaded on-demand when user performs approval action
-  // Removed auto-load useEffect to prevent unnecessary API calls on task view load
+  // Auto-load approval data whenever task is loaded and workflow is approval_required
+  useEffect(() => {
+    if (task) {
+      const isApproval = String(task.workflow_type).toLowerCase() === 'approval_required';
+      if (isApproval) {
+        loadApprovalData(true);
+      } else {
+        setApprovalLoading(false);
+      }
+    }
+  }, [task?.id]);
 
   const showCompletedDate =
     !!task?.completed_date &&
@@ -760,9 +769,13 @@ const ViewTask = () => {
     // Load approval data ONLY after user submits an approval action with a note
     // This ensures /tasks/:id/approval is called only on actual submission (not on button click)
     if (statusModalAction === 'APPROVE' || statusModalAction === 'REJECT' || statusModalAction === 'SUBMIT_APPROVAL') {
-      // Reset approval loaded state to allow fresh data fetch
+      // Mark that current user has acted on approval
+      if (statusModalAction === 'APPROVE' || statusModalAction === 'REJECT') {
+        setCurrentUserHasActedOnApproval(true);
+      }
+      // Reset approval loaded state and force a fresh data fetch
       setApprovalLoaded(false);
-      await loadApprovalData();
+      await loadApprovalData(true);
     }
   };
 
@@ -1108,6 +1121,7 @@ const ViewTask = () => {
                   approvalRequiredUserIds={task.approval_required_user_ids}
                   approvalsMeta={approvalState?.approvals_meta}
                   currentUserHasActedOnApproval={currentUserHasActedOnApproval}
+                  approvalLoading={approvalLoading}
                   onStatusAction={handleStatusActionClick}
                   onQuickAction={handleQuickAction}
                   disabled={statusActionLoading}
