@@ -49,10 +49,20 @@ const TrackersList = () => {
       if (res.data?.success) {
         const items = res.data.data || [];
         setBatchOptions(
-          items.map((b) => ({
-            value: String(b.id),
-            label: `Batch #${b.batch_number}${b.template_name ? ` — ${b.template_name}` : ''} (${b.allocated_parts}/${b.batch_parts})`,
-          })),
+          items.map((b) => {
+            const tag =
+              b.tag_number != null && String(b.tag_number).trim() !== ''
+                ? String(b.tag_number).trim()
+                : null;
+            const tname =
+              b.tag_name != null && String(b.tag_name).trim() !== ''
+                ? String(b.tag_name).trim()
+                : null;
+            return {
+              value: String(b.id),
+              label: `Batch #${b.batch_number}${tag ? ` · ${tag}` : ''}${tname ? ` (${tname})` : ''}${b.template_name ? ` — ${b.template_name}` : ''} (${b.allocated_parts}/${b.batch_parts})`,
+            };
+          }),
         );
       }
     } catch (e) {

@@ -139,7 +139,6 @@ const AddDonation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
-
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError('');
@@ -315,13 +314,25 @@ const AddDonation = () => {
         }))
       };
 
-      await axiosInstance.post('/donations', donationData);
+      const res = await axiosInstance.post('/donations', donationData);
+      const payload = res.data?.data;
+      const newDonationId =
+        payload &&
+        typeof payload === 'object' &&
+        Number.isFinite(Number(payload.id)) &&
+        Number(payload.id) > 0
+          ? Number(payload.id)
+          : null;
 
-      // Redirect to donations list after successful creation
+      // Progress tracking, batch tags, allocate parts — use the shared donation view.
+      if (newDonationId) {
+        navigate(`/donations/online_donations/view/${newDonationId}`);
+        return;
+      }
+
       if (donorIdFromUrl) {
         navigate(`/donations/online_donations/list?donor_id=${donorIdFromUrl}`);
-      }
-      else {
+      } else {
         navigate('/donations/online_donations/list');
       }
     } catch (err) {

@@ -48,6 +48,11 @@ const ViewOnlineDonation = () => {
   const [progressEvidenceTitle, setProgressEvidenceTitle] = useState('');
   const [progressEvidenceType, setProgressEvidenceType] = useState('link');
   const [activeProgressStepId, setActiveProgressStepId] = useState(null);
+  const [batchTagDraft, setBatchTagDraft] = useState('');
+  const [batchTagNameDraft, setBatchTagNameDraft] = useState('');
+  const [savingBatchTag, setSavingBatchTag] = useState(false);
+  const [partsToAddByTracker, setPartsToAddByTracker] = useState({});
+  const [allocatingPartsTrackerId, setAllocatingPartsTrackerId] = useState(null);
 
   /** Batches across every workflow tracker for this donation (batch_id is unique). */
   const donationBatchOptions = useMemo(() => {
@@ -59,10 +64,20 @@ const ViewOnlineDonation = () => {
         if (bid == null || !Number.isFinite(bid) || bid <= 0) continue;
         const bn =
           s?.batch?.batch_number != null ? Number(s.batch.batch_number) : bid;
+        const tagRaw = s?.batch?.tag_number;
+        const tag =
+          tagRaw != null && String(tagRaw).trim() !== ''
+            ? String(tagRaw).trim()
+            : null;
+        const nameRaw = s?.batch?.tag_name;
+        const tname =
+          nameRaw != null && String(nameRaw).trim() !== ''
+            ? String(nameRaw).trim()
+            : null;
         if (!map.has(bid)) {
           map.set(bid, {
             value: String(bid),
-            label: `${tplName} · #${bn}`,
+            label: `${tplName} · #${bn}${tag ? ` · ${tag}` : ''}${tname ? ` (${tname})` : ''}`,
           });
         }
       }
@@ -104,6 +119,54 @@ const ViewOnlineDonation = () => {
   useEffect(() => {
     setNote(donation?.note || '');
   }, [donation?.note]);
+
+  useEffect(() => {
+    if (selectedBatchId === 'all') {
+      setBatchTagDraft('');
+      setBatchTagNameDraft('');
+      return;
+    }
+    const bid = Number(selectedBatchId);
+    if (!Number.isFinite(bid) || bid <= 0) {
+      setBatchTagDraft('');
+      setBatchTagNameDraft('');
+      return;
+    }
+    let tag = '';
+    let tname = '';
+    outer: for (const tr of progressTrackers || []) {
+      for (const s of tr?.steps || []) {
+        if (s?.batch_id != null && Number(s.batch_id) === bid && s.batch) {
+          const tn = s.batch.tag_number;
+          if (tn != null && String(tn).trim() !== '') tag = String(tn).trim();
+          const nm = s.batch.tag_name;
+          if (nm != null && String(nm).trim() !== '') tname = String(nm).trim();
+          break outer;
+        }
+      }
+    }
+    setBatchTagDraft(tag);
+    setBatchTagNameDraft(tname);
+  }, [selectedBatchId, progressTrackers]);
+
+  const saveBatchTagFromDonation = async () => {
+    if (selectedBatchId === 'all') return;
+    const bid = Number(selectedBatchId);
+    if (!Number.isFinite(bid) || bid <= 0) return;
+    setSavingBatchTag(true);
+    setProgressSectionError('');
+    try {
+      await axiosInstance.patch(`/progress/batches/${bid}`, {
+        tag_number: batchTagDraft.trim() || null,
+        tag_name: batchTagNameDraft.trim() || null,
+      });
+      await fetchProgressData();
+    } catch (e) {
+      setProgressSectionError(e.response?.data?.message || 'Failed to update batch tag');
+    } finally {
+      setSavingBatchTag(false);
+    }
+  };
 
   const fetchProgressData = async () => {
     setLoadingProgress(true);
@@ -187,6 +250,25 @@ const ViewOnlineDonation = () => {
       console.error('Failed to create progress tracker', e);
     } finally {
       setCreatingTracker(false);
+    }
+  };
+
+  const allocateMoreParts = async (trackerId) => {
+    const raw = partsToAddByTracker?.[trackerId];
+    const n = Number(raw || 0);
+    if (!Number.isFinite(n) || n <= 0) return;
+    setAllocatingPartsTrackerId(trackerId);
+    setProgressSectionError('');
+    try {
+      await axiosInstance.post(`/progress/trackers/${trackerId}/allocate-parts`, {
+        parts_requested: n,
+      });
+      setPartsToAddByTracker((p) => ({ ...(p || {}), [trackerId]: '' }));
+      await fetchProgressData();
+    } catch (e) {
+      setProgressSectionError(e.response?.data?.message || 'Failed to allocate parts');
+    } finally {
+      setAllocatingPartsTrackerId(null);
     }
   };
 
@@ -683,6 +765,51 @@ const ViewOnlineDonation = () => {
                     ))}
                   </div>
                 )}
+                {donationBatchOptions.length > 0 && selectedBatchId !== 'all' && (
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: 10,
+                      alignItems: 'end',
+                      marginBottom: 12,
+                      padding: '10px 12px',
+                      background: '#f1f5f9',
+                      borderRadius: 8,
+                      border: '1px solid #e2e8f0',
+                    }}
+                  >
+                    <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                      <FormInput
+                        label="Tag number (shared on this batch)"
+                        name="donation_batch_tag"
+                        value={batchTagDraft}
+                        onChange={(e) => setBatchTagDraft(e.target.value)}
+                        placeholder="e.g. 441"
+                        disabled={savingBatchTag || savingProgressStep}
+                      />
+                    </div>
+                    <div style={{ flex: '1 1 200px', minWidth: 160 }}>
+                      <FormInput
+                        label="Tag name (optional)"
+                        name="donation_batch_tag_name"
+                        value={batchTagNameDraft}
+                        onChange={(e) => setBatchTagNameDraft(e.target.value)}
+                        placeholder="e.g. North pen"
+                        disabled={savingBatchTag || savingProgressStep}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="secondary_btn"
+                      onClick={saveBatchTagFromDonation}
+                      disabled={savingBatchTag || savingProgressStep}
+                      style={{ height: 40 }}
+                    >
+                      {savingBatchTag ? 'Saving…' : 'Save batch tag'}
+                    </button>
+                  </div>
+                )}
 
                 {totalProgressSteps > 0 ? (
                   <div style={{ display: 'grid', gap: '20px', maxHeight: 640, overflow: 'auto', paddingRight: 4 }}>
@@ -710,6 +837,34 @@ const ViewOnlineDonation = () => {
                                 <span style={{ marginLeft: 10 }}>Token: {tr.public_tracking_token}</span>
                               ) : null}
                             </div>
+                            {tr?.template?.is_batchable === true && (
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'end', marginTop: 10 }}>
+                                <div style={{ width: 160 }}>
+                                  <FormInput
+                                    label="Add parts"
+                                    name={`add_parts_${tr.id}`}
+                                    value={partsToAddByTracker?.[tr.id] ?? ''}
+                                    onChange={(e) =>
+                                      setPartsToAddByTracker((p) => ({
+                                        ...(p || {}),
+                                        [tr.id]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="e.g. 1"
+                                    disabled={allocatingPartsTrackerId === tr.id}
+                                  />
+                                </div>
+                                <button
+                                  type="button"
+                                  className="secondary_btn"
+                                  disabled={allocatingPartsTrackerId === tr.id}
+                                  onClick={() => allocateMoreParts(tr.id)}
+                                  style={{ height: 40 }}
+                                >
+                                  {allocatingPartsTrackerId === tr.id ? 'Allocating…' : 'Allocate'}
+                                </button>
+                              </div>
+                            )}
                           </div>
                           <div className="form-actions" style={{ flexWrap: 'wrap', gap: 8 }}>
                             <button
@@ -756,7 +911,14 @@ const ViewOnlineDonation = () => {
                                   {s.step_order}. {s.title}
                                   {s.batch_id != null && (
                                     <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 500, color: '#64748b' }}>
-                                      (Batch #{s?.batch?.batch_number ?? s.batch_id})
+                                      (Batch #{s?.batch?.batch_number ?? s.batch_id}
+                                      {s.batch?.tag_number != null && String(s.batch.tag_number).trim() !== ''
+                                        ? ` · ${String(s.batch.tag_number).trim()}`
+                                        : ''}
+                                      {s.batch?.tag_name != null && String(s.batch.tag_name).trim() !== ''
+                                        ? ` (${String(s.batch.tag_name).trim()})`
+                                        : ''}
+                                      )
                                     </span>
                                   )}
                                 </div>
