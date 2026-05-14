@@ -323,7 +323,7 @@ const UpdateTask = () => {
   const multiSelectParams = useMemo(() => ({ active: true }), []);
 
   
-  // Custom search function for assignees - excludes the logged-in user (task creator)
+  // Custom search function for assignees - allows self-assignment
   const searchAssignees = useMemo(() => {
     return async (searchTerm) => {
       try {
@@ -331,15 +331,14 @@ const UpdateTask = () => {
           params: { search: searchTerm, active: true }
         });
         const users = response.data.data || response.data || [];
-        // Filter out the logged-in user (task creator cannot assign to themselves)
-        const currentUserId = Number(user?.id);
-        return users.filter(userItem => Number(userItem.id) !== currentUserId);
+        // Allow assigning to self
+        return users;
       } catch (err) {
         console.error('Search error:', err);
         return [];
       }
     };
-  }, [user?.id]);
+  }, []);
   
   const canEditCompleted = taskPerms.canEditCompleted === true;
   

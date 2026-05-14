@@ -340,15 +340,14 @@ const AddTask = () => {
           params: { search: searchTerm, active: true }
         });
         const users = response.data.data || response.data || [];
-        // Filter out the logged-in user (task creator cannot assign to themselves)
-        const currentUserId = Number(user?.id);
-        return users.filter(userItem => Number(userItem.id) !== currentUserId);
+        // Allow assigning to self
+        return users;
       } catch (err) {
         console.error('Search error:', err);
         return [];
       }
     };
-  }, [user?.id]);
+  }, []);
 
   const handleProjectChange = (e) => {
     setForm(prev => ({ ...prev, project_name: e.target.value }));

@@ -54,6 +54,7 @@ const UserList = () => {
     'marketing',
     'audio_video',
     'fund_raising'
+
   ];
 
   const sortOptions = [

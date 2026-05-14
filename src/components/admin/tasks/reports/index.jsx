@@ -1371,7 +1371,8 @@ const TaskReports = () => {
       const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
         label: statusLabel,
         data: filteredUserReportUsers.map(u => {
-          return u.statuses && u.statuses[statusKey] ? u.statuses[statusKey] : 0;
+          const count = u.statuses && u.statuses[statusKey] ? u.statuses[statusKey] : 0;
+          return count > 0 ? count : null;
         }),
         backgroundColor: STATUS_COLORS[index],
         hoverBackgroundColor: STATUS_COLORS[index],
@@ -2020,7 +2021,7 @@ const TaskReports = () => {
                 </div>
                 <div className="task-dashboard-reports-grid">
                   <ProjectProgramWiseReport projects={taskAggregates.projects} />
-                  {/* <div className="task-report-card task-report-card--user-report">
+                  <div className="task-report-card task-report-card--user-report">
                     <div className="task-report-card-header task-report-card-header--with-filter">
                       <div className="task-report-header-left">
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
@@ -2101,7 +2102,7 @@ const TaskReports = () => {
                         });
                       })()}
                     </div>
-                  </div> */}
+                  </div> 
                   {rolePerms.isAdmin && (
                     <div className="task-report-card task-report-card--department-report">
                       <div className="task-report-card-header">
