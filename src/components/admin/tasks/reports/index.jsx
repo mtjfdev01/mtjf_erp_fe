@@ -2021,7 +2021,7 @@ const TaskReports = () => {
                 </div>
                 <div className="task-dashboard-reports-grid">
                   <ProjectProgramWiseReport projects={taskAggregates.projects} />
-                  <div className="task-report-card task-report-card--user-report">
+                  {/* <div className="task-report-card task-report-card--user-report">
                     <div className="task-report-card-header task-report-card-header--with-filter">
                       <div className="task-report-header-left">
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
@@ -2102,7 +2102,7 @@ const TaskReports = () => {
                         });
                       })()}
                     </div>
-                  </div> 
+                  </div>  */}
                   {rolePerms.isAdmin && (
                     <div className="task-report-card task-report-card--department-report">
                       <div className="task-report-card-header">
