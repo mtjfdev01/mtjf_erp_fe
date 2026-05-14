@@ -9,6 +9,7 @@ import FormTextarea from '../../../common/FormTextarea';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
+import { tasksBasePath } from '../../../../utils/admin';
 import '../../../../styles/variables.css';
 import './index.css';
 
@@ -629,19 +630,7 @@ const AddTask = () => {
       }
       setSubmitting(false);
       if (createdTaskId) {
-        const dept = department;
-        const viewBase = {
-          program: '/program/tasks/view',
-          store: '/store/tasks/view',
-          procurements: '/procurements/tasks/view',
-          accounts_and_finance: '/accounts_and_finance/tasks/view',
-          fund_raising: '/fund_raising/tasks/view',
-          admin: '/admin/tasks/view',
-          it: '/it/tasks/view',
-          hr: '/hr/tasks/view',
-          marketing: '/marketing/tasks/view',
-        }[dept] || '/admin/tasks/view';
-        navigate(`${viewBase}/${createdTaskId}`);
+        navigate(`${tasksBasePath()}/view/${createdTaskId}`);
       }
     }
   };

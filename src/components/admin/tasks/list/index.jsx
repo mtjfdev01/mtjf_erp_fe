@@ -10,13 +10,14 @@ import ActionMenu from '../../../common/ActionMenu';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
+import { tasksBasePath } from '../../../../utils/admin';
 import '../../../../styles/components.css';
 import './index.css';
 
 const TasksList = () => {
   const navigate = useNavigate();
-  const { user, permissions } = useAuth();
   const location = useLocation();
+  const { user, permissions } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -137,28 +138,11 @@ const TasksList = () => {
     }
   ];
 
-  const currentDeptFromPath = useMemo(() => {
-    const path = location.pathname || '';
-    const segs = path.split('/').filter(Boolean);
-    const first = segs[0] || '';
-    const known = new Set([
-      'program',
-      'store',
-      'procurements',
-      'accounts_and_finance',
-      'fund_raising',
-      'admin',
-      'it',
-      'hr',
-      'marketing',
-      'audio_video'
-    ]);
-    return known.has(first) ? first : '';
-  }, [location.pathname]);
+  const tasksRouteBase = useMemo(() => tasksBasePath(), []);
 
   const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, currentDeptFromPath || user?.department, user?.role),
-    [permissions, user?.department, user?.role, currentDeptFromPath],
+    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
+    [permissions, user?.department, user?.role],
   );
 
   const hoverText = (action) => {
@@ -348,15 +332,15 @@ const TasksList = () => {
       try {
         const scopedFilters = {
           ...filters,
-          department: filters.department || currentDeptFromPath
+          department: filters.department
         };
 
-        // Always use strict backend filtering if a department is selected (either via path or dropdown).
+        // Always use strict backend filtering if a department is selected in the dropdown.
         // This ensures that clicking "Program Tasks" in sidebar OR selecting "Program" from dropdown
         // shows ONLY tasks belonging to that department.
         const isStrictFilter = !!scopedFilters.department;
 
-        // Check if user-applied search filters are active (excluding department from URL path)
+        // Check if user-applied search filters are active
         // Only use /tasks/search when user actively searches or filters by status/priority/user_name
         const hasUserAppliedFilters =
           filters.search ||
@@ -375,7 +359,7 @@ const TasksList = () => {
           };
           res = await axiosInstance.post('/tasks/search', payload);
         } else {
-          // Use GET /tasks/list for default loading (including department from URL path)
+          // Use GET /tasks/list for default loading
           const params = {
             page: currentPage,
             pageSize,
@@ -399,7 +383,7 @@ const TasksList = () => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department, currentDeptFromPath]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department]);
 
   // Reset approvalsLoaded when we navigate to this page to refresh data
   useEffect(() => {
@@ -768,7 +752,7 @@ const TasksList = () => {
         icon: <FiEye />,
         label: 'View',
         color: '#45cc49ff',
-        onClick: canViewDetail ? () => navigate(`/admin/tasks/view/${task.id}`) : undefined,
+        onClick: canViewDetail ? () => navigate(`${tasksRouteBase}/view/${task.id}`) : undefined,
         visible: true,
         disabled: !canViewDetail,
         title: !canViewDetail ? hoverText('view') : 'View'
@@ -777,7 +761,7 @@ const TasksList = () => {
         icon: <FiEdit2 />,
         label: 'Edit',
         color: '#1e92f1ff',
-        onClick: ((status !== 'completed' || canEditCompleted) && canUpdate) ? () => navigate(`/admin/tasks/update/${task.id}`) : undefined,
+        onClick: ((status !== 'completed' || canEditCompleted) && canUpdate) ? () => navigate(`${tasksRouteBase}/update/${task.id}`) : undefined,
         visible: true,
         disabled: (status === 'completed' && !canEditCompleted) || !canUpdate,
         title: !canUpdate ? hoverText('update') : (status === 'completed' && !canEditCompleted ? hoverText('edit_completed') : 'Edit')
@@ -891,7 +875,7 @@ const TasksList = () => {
               <button
                 className="task-action-icon view"
                 title={hoverText('view')}
-                onClick={taskPerms.canViewDetail ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
+                onClick={taskPerms.canViewDetail ? () => navigate(`${tasksRouteBase}/view/${t.id}`) : undefined}
                 disabled={!taskPerms.canViewDetail}
               >
                 <FiEye />
@@ -899,7 +883,7 @@ const TasksList = () => {
               <button
                 className="task-action-icon edit"
                 title={hoverText('update')}
-                onClick={((status !== 'completed' || taskPerms.canEditCompleted) && taskPerms.canUpdate) ? () => navigate(`/admin/tasks/update/${t.id}`) : undefined}
+                onClick={((status !== 'completed' || taskPerms.canEditCompleted) && taskPerms.canUpdate) ? () => navigate(`${tasksRouteBase}/update/${t.id}`) : undefined}
                 disabled={(status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate}
               >
                 <FiEdit2 />
@@ -1063,7 +1047,7 @@ const TasksList = () => {
               <div className="filter-item select-item">
                 <FiUsers className="filter-icon" />
                 <select
-                  value={filters.department === null ? (currentDeptFromPath || '') : filters.department}
+                  value={filters.department === null ? '' : filters.department}
                   onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
                 >
                   <option value="">Department</option>
@@ -1109,7 +1093,7 @@ const TasksList = () => {
 
             <button
               className="tasks-add-btn"
-              onClick={taskPerms.canCreate ? () => navigate('/admin/tasks/add', { state: { defaultDepartment: currentDeptFromPath } }) : undefined}
+              onClick={taskPerms.canCreate ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } }) : undefined}
               disabled={!taskPerms.canCreate}
               title={hoverText('create')}
             >
@@ -1167,7 +1151,7 @@ const TasksList = () => {
                                 <li
                                   key={t.id}
                                   className="tasks-approval-item"
-                                  onClick={taskPerms.canView ? () => navigate(`/admin/tasks/view/${t.id}`) : undefined}
+                                  onClick={taskPerms.canView ? () => navigate(`${tasksRouteBase}/view/${t.id}`) : undefined}
                                 >
                                   <div className="tasks-approval-item-main">
                                     <span className="tasks-approval-title">

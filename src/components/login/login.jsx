@@ -44,52 +44,7 @@ const Login = () => {
         const userData = response.user;
         console.log('User data for redirection:', userData);
         
-        // Redirect based on department
-        switch (userData.department) {
-          case 'store':
-            console.log('Redirecting to store');
-            navigate('/store', { replace: true });
-            break;
-          case 'procurements':
-            console.log('Redirecting to procurements');
-            navigate('/procurements', { replace: true });
-            break;
-          case 'program':
-            console.log('Redirecting to program');
-            navigate('/program', { replace: true });
-            break;
-          case 'accounts_and_finance':
-            console.log('Redirecting to accounts-and-finance');
-            navigate('/accounts_and_finance', { replace: true });
-            break;
-          case 'admin':
-            console.log('Redirecting to admin');
-            navigate('/admin', { replace: true });
-            break;
-          case 'fund_raising':
-            console.log('Redirecting to fund_raising');
-            navigate('/fund_raising', { replace: true });
-            break;
-            case 'it':
-            console.log('Redirecting to it');
-            navigate('/it', { replace: true });
-            break;
-          case 'hr':
-            console.log('Redirecting to hr');
-            navigate('/hr', { replace: true });
-            break;
-          case 'marketing':
-            console.log('Redirecting to marketing');
-            navigate('/marketing', { replace: true });
-            break;
-          case 'audio_video':
-            console.log('Redirecting to audio_video');
-            navigate('/audio_video', { replace: true });
-            break;
-          default:
-            console.error('Invalid department:', userData.department);
-            setError('Invalid department');
-        }
+        navigate('/welcome', { replace: true });
       } else {
         console.error('No user data in response');
         setError('Login successful but user data not found');

@@ -8,6 +8,7 @@ import FormInput from '../../../common/FormInput';
 import FormTextarea from '../../../common/FormTextarea';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
+import { tasksBasePath } from '../../../../utils/admin';
 import { splitDescriptionAndMov } from '../../../../utils/movEncoding';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import '../../../../styles/variables.css';
@@ -313,7 +314,12 @@ const UpdateTask = () => {
       .join(' ');
   };
 
-  const taskPerms = useMemo(() => getTaskPermissions(permissions || {}), [permissions]);
+  const taskRouteBase = useMemo(() => tasksBasePath(), []);
+
+  const taskPerms = useMemo(
+    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
+    [permissions, user?.department, user?.role],
+  );
   const multiSelectParams = useMemo(() => ({ active: true }), []);
 
   
@@ -710,7 +716,7 @@ const UpdateTask = () => {
         }
       }
 
-      navigate(`/admin/tasks/view/${id}`);
+      navigate(`${taskRouteBase}/view/${id}`);
     } catch (e2) {
       setError(e2.response?.data?.message || 'Failed to update task.');
       toast.error(e2.response?.data?.message || 'Failed to update task.');

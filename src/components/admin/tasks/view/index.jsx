@@ -8,6 +8,7 @@ import FormInput from '../../../common/FormInput';
 import FormTextarea from '../../../common/FormTextarea';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
+import { tasksBasePath } from '../../../../utils/admin';
 import { splitDescriptionAndMov } from '../../../../utils/movEncoding';
 import PrimaryButton from '../../../common/buttons/primary';
 import TaskActionBar from './TaskActionBar';
@@ -210,17 +211,6 @@ const ViewTask = () => {
   const capitalize = (s) => {
     if (!s) return '';
     return String(s).split('_').map(w => w[0] ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
-  };
-  const getDeptTasksBasePath = (dept) => {
-    const map = {
-      program: '/program/tasks/list',
-      store: '/store/tasks/list',
-      procurements: '/procurements/tasks/list',
-      accounts_and_finance: '/accounts_and_finance/tasks/list',
-      fund_raising: '/fund_raising/tasks/list',
-      admin: '/admin/tasks/list'
-    };
-    return map[dept] || '/admin/tasks/list';
   };
   const formatDate = (d) => d ? new Date(d).toLocaleString() : '-';
 
@@ -506,6 +496,8 @@ const ViewTask = () => {
       </div>
     </div>
   );
+
+  const taskRouteBase = useMemo(() => tasksBasePath(), []);
 
   const taskPerms = useMemo(
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
@@ -1040,7 +1032,7 @@ const ViewTask = () => {
           showBackButton={true}
           onBackClick={handleBack}
           showEdit={taskPerms.canUpdate === true}
-          editPath={`/admin/tasks/update/${task.id}`}
+          editPath={`${taskRouteBase}/update/${task.id}`}
         />
         <div className="view-content2">
           {error && <div className="status-message status-message--error">{error}</div>}
@@ -1928,7 +1920,7 @@ const ViewTask = () => {
                                       key={t.id}
                                       className="related-task-item"
                                       onClick={() =>
-                                        navigate(`/admin/tasks/view/${t.id}`)
+                                        navigate(`${taskRouteBase}/view/${t.id}`)
                                       }
                                     >
                                       <div className="related-task-main">
@@ -2007,6 +1999,7 @@ const ViewTask = () => {
             taskId={task.id}
             actionKey={quickActionKey}
             userDepartment={user?.department}
+            taskRouteBase={taskRouteBase}
             onClose={() => {
               setQuickActionOpen(false);
               setQuickActionKey(null);

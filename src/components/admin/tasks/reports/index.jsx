@@ -4,7 +4,7 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { Chart, registerables } from 'chart.js';
 import axiosInstance from '../../../../utils/axios';
-import { departments, isTaskRouteDepartment } from '../../../../utils/admin';
+import { departments } from '../../../../utils/admin';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions, isSuperAdmin } from '../../../../utils/permissions';
 import ReloadButton from '../../../common/buttons/reload';
@@ -508,10 +508,9 @@ const TaskReports = () => {
     });
   }, [taskAggregates.users, userReportSearchQuery]);
 
-  /** Task dashboard scope: user's department when it has /{dept}/tasks routes; not derived from URL. */
+  /** Task dashboard scope: user's department (permissions resolved against it). */
   const tasksDepartmentFromUser = useMemo(() => {
     const d = String(user?.department || '').trim().toLowerCase();
-    if (!d || !isTaskRouteDepartment(d)) return '';
     return d;
   }, [user?.department]);
 

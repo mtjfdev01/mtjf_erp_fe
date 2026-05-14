@@ -17,6 +17,7 @@ const QuickActionModal = ({
   onClose,
   onCompleted,
   userDepartment,
+  taskRouteBase = '/tasks',
 }) => {
   const [formState, setFormState] = useState({
     assignee: '',
@@ -122,7 +123,7 @@ const QuickActionModal = ({
       const label = QUICK_ACTION_LABEL_MAP[actionKey] || 'Action';
       toast.success(`${label} submitted`);
       if (actionKey === 'GENERATE_REPORT' && taskId) {
-        navigate(`/admin/tasks/receipt/${taskId}`);
+        navigate(`${taskRouteBase}/receipt/${taskId}`);
       }
       onClose();
     } catch (e2) {

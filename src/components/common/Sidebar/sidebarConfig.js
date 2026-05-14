@@ -43,44 +43,12 @@ import {
   FiAlertCircle,
   FiBookmark
 } from 'react-icons/fi';
+import { departments } from '../../../utils/admin';
 
 const TASK_MODULE_KEYS = new Set(['tasks', 'tasking']);
 
-const TASK_ROUTE_MAP = {
-  admin: { label: 'Tasks', basePath: '/admin/tasks' },
-  program: { label: 'Tasks', basePath: '/program/tasks' },
-  store: { label: 'Tasks', basePath: '/store/tasks' },
-  procurements: { label: 'Tasks', basePath: '/procurements/tasks' },
-  accounts_and_finance: { label: 'Tasks', basePath: '/accounts_and_finance/tasks' },
-  fund_raising: { label: 'Tasks', basePath: '/fund_raising/tasks' },
-  it: { label: 'Tasks', basePath: '/it/tasks' },
-  hr: { label: 'Tasks', basePath: '/hr/tasks' },
-  marketing: { label: 'Tasks', basePath: '/marketing/tasks' },
-  audio_video: { label: 'Tasks', basePath: '/audio_video/tasks' },
-};
-
-/**
- * Dept-scoped tasks: `permissions.{dept}.tasks` (e.g. program.tasks).
- * UserPermissions "Tasking" module: `permissions.tasking.tasks` / `tasking.dashboard` — scope links to the user's department route when it exists in TASK_ROUTE_MAP.
- */
-const hasTaskAccessForDepartment = (permissions, departmentKey, user) => {
-  if (
-    canViewModule(permissions, departmentKey, 'tasks') ||
-    canViewModule(permissions, departmentKey, 'tasking')
-  ) {
-    return true;
-  }
-  const globalTaskingTasks = canViewModule(permissions, 'tasking', 'tasks');
-  const globalTaskingDash = canViewModule(permissions, 'tasking', 'dashboard');
-  if (
-    (globalTaskingTasks || globalTaskingDash) &&
-    user?.department === departmentKey &&
-    TASK_ROUTE_MAP[departmentKey]
-  ) {
-    return true;
-  }
-  return false;
-};
+const TASKS_LIST_PATH = '/tasks/list';
+const TASKS_DASHBOARD_PATH = '/tasks/dashboard';
 
 const hasGlobalTaskingAccess = (permissions) => (
   permissions?.tasks?.view === true ||
@@ -91,76 +59,37 @@ const hasGlobalTaskingAccess = (permissions) => (
   permissions?.tasking?.dashboard?.list_view === true
 );
 
-const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
-  const taskItems = Object.entries(TASK_ROUTE_MAP)
-    .filter(([departmentKey]) =>
-      includeAll || hasTaskAccessForDepartment(permissions, departmentKey, user),
-    )
-    .map(([departmentKey, routeConfig]) => ({
-      label: routeConfig.label,
-      path: `${routeConfig.basePath}/list`,
-      type: 'list',
-      module: 'tasks',
-      subItems: [
-        { label: 'Tasks List', path: `${routeConfig.basePath}/list`, type: 'list', icon: FiList },
-        { label: 'Tasks Dashboard', path: `${routeConfig.basePath}/reports`, type: 'list', icon: FiBarChart2 },
-      ],
-      meta: { department: departmentKey },
-      icon: FiCheckSquare,
-    }));
+const hasAnyDepartmentTaskAccess = (permissions) => {
+  if (!permissions) return false;
+  return departments.some(
+    (dept) =>
+      canViewModule(permissions, dept, 'tasks') ||
+      canViewModule(permissions, dept, 'tasking'),
+  );
+};
 
-  // Fallback: UserPermissions stores tasking under `permissions.tasking.*`, not `permissions.{dept}.tasks`.
-  // If the user's department has no tasks route (e.g. geographic), default to admin tasks URLs.
-  if (!includeAll && taskItems.length === 0 && hasGlobalTaskingAccess(permissions) && user) {
-    const fallbackRoute =
-      (user.department && TASK_ROUTE_MAP[user.department]) || TASK_ROUTE_MAP.admin;
-    const deptKey =
-      user.department && TASK_ROUTE_MAP[user.department] ? user.department : 'admin';
-    if (fallbackRoute) {
-      taskItems.push({
-        label: fallbackRoute.label,
-        path: `${fallbackRoute.basePath}/list`,
-        type: 'list',
-        module: 'tasks',
-        subItems: [
-          { label: 'Tasks List', path: `${fallbackRoute.basePath}/list`, type: 'list' },
-          { label: 'Tasks Dashboard', path: `${fallbackRoute.basePath}/reports`, type: 'list' },
-        ],
-        meta: { department: deptKey },
-      });
-    }
-  }
+const shouldShowUnifiedTasking = (permissions) =>
+  hasGlobalTaskingAccess(permissions) || hasAnyDepartmentTaskAccess(permissions);
 
-  if (taskItems.length === 0) {
+const buildUnifiedTaskingGroup = (user, permissions) => {
+  if (!user || !permissions || !shouldShowUnifiedTasking(permissions)) {
     return null;
   }
-
   return {
     id: 'tasking_global',
     label: 'Tasking',
     icon: FiCheckSquare,
-    items: taskItems,
-  };
-};
-
-/** Super admin: single Tasks section (no department-wise expansion); uses admin task routes. */
-const buildSuperAdminTaskingGroup = () => {
-  const base = TASK_ROUTE_MAP.admin.basePath;
-  return {
-    id: 'tasking_global',
-    label: 'Tasks',
-    icon: FiCheckSquare,
     items: [
       {
         label: 'Tasks List',
-        path: `${base}/list`,
+        path: TASKS_LIST_PATH,
         type: 'list',
         module: 'tasks',
         icon: FiList,
       },
       {
         label: 'Tasks Dashboard',
-        path: `${base}/reports`,
+        path: TASKS_DASHBOARD_PATH,
         type: 'list',
         module: 'tasks',
         icon: FiBarChart2,
@@ -169,16 +98,39 @@ const buildSuperAdminTaskingGroup = () => {
   };
 };
 
+/** Super admin: single Tasks section (flat `/tasks/...` routes). */
+const buildSuperAdminTaskingGroup = () => ({
+  id: 'tasking_global',
+  label: 'Tasks',
+  icon: FiCheckSquare,
+  items: [
+    {
+      label: 'Tasks List',
+      path: TASKS_LIST_PATH,
+      type: 'list',
+      module: 'tasks',
+      icon: FiList,
+    },
+    {
+      label: 'Tasks Dashboard',
+      path: TASKS_DASHBOARD_PATH,
+      type: 'list',
+      module: 'tasks',
+      icon: FiBarChart2,
+    },
+  ],
+});
+
 const programDepartmentItems = (isUser = false) => [
   {
     label: 'Tasking',
-    path: '/program/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems: [
-      { label: 'Tasking List', path: '/program/tasks/list', type: 'list', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/program/tasks/reports', type: 'list', icon: FiBarChart2 }
+      { label: 'Tasking List', path: '/tasks/list', type: 'list', icon: FiList },
+      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', icon: FiBarChart2 }
     ]
   },
   {
@@ -339,13 +291,13 @@ const programDepartmentItems = (isUser = false) => [
 const storeDepartmentItems = (isUser = false) => [
   {
     label: 'Tasking',
-    path: '/store/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasking',
     icon: FiCheckSquare,
     subItems:[
-      {label:'Tasking List',path:'/store/tasks/list',type:'list',module:'tasking', icon: FiList},
-      {label:'Tasking Dashboard',path:'/store/tasks/reports',type:'list',module:'tasking', icon: FiBarChart2}
+      {label:'Tasking List',path:'/tasks/list',type:'list',module:'tasking', icon: FiList},
+      {label:'Tasking Dashboard',path:'/tasks/dashboard',type:'list',module:'tasking', icon: FiBarChart2}
     ]
   },
   {
@@ -360,13 +312,13 @@ const storeDepartmentItems = (isUser = false) => [
 const procurementsDepartmentItems = (isUser = false) => [
   {
     label: 'Tasking',
-    path: '/procurements/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems:[
-      {label:'Tasking List',path:'/procurements/tasks/list',type:'list',module:'tasks', icon: FiList},
-      {label:'Tasking Dashboard',path:'/procurements/tasks/reports',type:'list',module:'tasks', icon: FiBarChart2}
+      {label:'Tasking List',path:'/tasks/list',type:'list',module:'tasks', icon: FiList},
+      {label:'Tasking Dashboard',path:'/tasks/dashboard',type:'list',module:'tasks', icon: FiBarChart2}
     ]
   },
   {
@@ -381,13 +333,13 @@ const procurementsDepartmentItems = (isUser = false) => [
 const accountsFinanceDepartmentItems = (isUser = false) => [
   {
     label: 'Tasking',
-    path: '/accounts_and_finance/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems:[
-      {label:'Tasking List',path:'/accounts_and_finance/tasks/list',type:'list',module:'tasks', icon: FiList},
-      {label:'Tasking Dashboard',path:'/accounts_and_finance/tasks/reports',type:'list',module:'tasks', icon: FiBarChart2}
+      {label:'Tasking List',path:'/tasks/list',type:'list',module:'tasks', icon: FiList},
+      {label:'Tasking Dashboard',path:'/tasks/dashboard',type:'list',module:'tasks', icon: FiBarChart2}
     ]
   },
   {
@@ -605,13 +557,13 @@ const hrDepartmentItems = (isUser = false) => [
   },
   {
     label: 'Tasking',
-    path: '/hr/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems: [
-      { label: 'Tasking List', path: '/hr/tasks/list', type: 'list', module: 'tasks', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/hr/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
+      { label: 'Tasking List', path: '/tasks/list', type: 'list', module: 'tasks', icon: FiList },
+      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
   // {
@@ -706,13 +658,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   // },
   {
     label: 'Tasking',
-    path: '/fund_raising/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems: [
-      { label: 'Tasking List', path: '/fund_raising/tasks/list', type: 'list', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/fund_raising/tasks/reports', type: 'list', icon: FiBarChart2 }
+      { label: 'Tasking List', path: '/tasks/list', type: 'list', icon: FiList },
+      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', icon: FiBarChart2 }
     ]
   },
   {
@@ -727,14 +679,14 @@ const fundRaisingDepartmentItems = (isUser = false) => [
 const taskingItems = (isUser = false) => [
   {
     label: 'Tasking List',
-    path: '/tasking/tasks/list',
+    path: TASKS_LIST_PATH,
     type: 'list',
     module: 'tasks',
     icon: FiList
   },
   {
     label: 'Tasking Dashboard',
-    path: '/tasking/tasks/reports',
+    path: TASKS_DASHBOARD_PATH,
     type: 'list',
     module: 'tasks',
     icon: FiBarChart2
@@ -745,13 +697,13 @@ const taskingItems = (isUser = false) => [
 const itDepartmentItems = () => [
   {
     label: 'Tasking',
-    path: '/it/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems: [
-      { label: 'Tasking List', path: '/it/tasks/list', type: 'list', module: 'tasks', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/it/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
+      { label: 'Tasking List', path: '/tasks/list', type: 'list', module: 'tasks', icon: FiList },
+      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
   // {
@@ -770,13 +722,13 @@ const itDepartmentItems = () => [
 const marketingDepartmentItems = () => [
   {
     label: 'Tasking',
-    path: '/marketing/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems: [
-      { label: 'Tasking List', path: '/marketing/tasks/list', type: 'list', module: 'tasks', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/marketing/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
+      { label: 'Tasking List', path: '/tasks/list', type: 'list', module: 'tasks', icon: FiList },
+      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
   // {
@@ -795,13 +747,13 @@ const marketingDepartmentItems = () => [
 const audioVideoDepartmentItems = () => [
   {
     label: 'Tasking',
-    path: '/audio_video/tasks/list',
+    path: '/tasks/list',
     type: 'list',
     module: 'tasks',
     icon: FiCheckSquare,
     subItems: [
-      { label: 'Tasking List', path: '/audio_video/tasks/list', type: 'list', module: 'tasks', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/audio_video/tasks/reports', type: 'list', module: 'tasks', icon: FiBarChart2 }
+      { label: 'Tasking List', path: '/tasks/list', type: 'list', module: 'tasks', icon: FiList },
+      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', module: 'tasks', icon: FiBarChart2 }
     ]
   },
   // {
@@ -1049,7 +1001,7 @@ export const getSidebarConfig = (user, permissions = null) => {
     })
     .filter((section) => section.items.length > 0);
 
-  const unifiedTaskingGroup = buildUnifiedTaskingGroup(user, permissions, false);
+  const unifiedTaskingGroup = buildUnifiedTaskingGroup(user, permissions);
   if (unifiedTaskingGroup) {
     sections.push(unifiedTaskingGroup);
   }

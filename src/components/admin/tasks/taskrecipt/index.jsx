@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
+import { tasksBasePath } from '../../../../utils/admin';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import './index.css';
@@ -12,6 +13,8 @@ const TaskReceipt = () => {
   const [usersById, setUsersById] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+
+  const taskRouteBase = useMemo(() => tasksBasePath(), []);
 
   useEffect(() => {
     const fetch = async () => {
@@ -195,7 +198,7 @@ const TaskReceipt = () => {
       <div className="view-wrapper">
         <PageHeader
           showBackButton={true}
-          backPath={`/admin/tasks/view/${task.id}`}
+          backPath={`${taskRouteBase}/view/${task.id}`}
         />
         <div className="view-content">
           <div className="task-receipt-page">

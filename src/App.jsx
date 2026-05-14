@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; // REQUIRED
 
@@ -168,6 +168,7 @@ import StepsList from './components/progress_tracking/admin/steps/list';
 import StepView from './components/progress_tracking/admin/steps/view';
 import EvidenceView from './components/progress_tracking/admin/evidence/view';
 import ProgressTemplateDashboard from './components/admin/dashboard/progress_template_dashboard';
+
 const App = () => {
   return (<React.Fragment>
             <Router> 
@@ -203,6 +204,7 @@ const App = () => {
                                 <Route path="/accounts_and_finance" element={<AccountsAndFinance />} />
                                 <Route path="/admin" element={<AdminDashboard />} />
                                 <Route path="/admin/progress-template-dashboard" element={<ProgressTemplateDashboard />} />
+                                <Route path="/welcome" element={<Program />} />
 
                                 {/* User Management Routes */}
                                 <Route path="/admin/users" element={<UserList />} />
@@ -436,86 +438,14 @@ const App = () => {
                                 <Route path="/dms/email_templates/add" element={<EmailTemplateForm />} />
                                 <Route path="/dms/email_templates/edit/:id" element={<EmailTemplateForm />} />
 
-                                {/* Tasks (Admin) */}
-                                <Route path="/admin/tasks/list" element={<TasksList />} />
-                                <Route path="/admin/tasks/add" element={<AddTask />} />
-                                <Route path="/admin/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/admin/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/admin/tasks/reports" element={<TaskReports />} />
-                                <Route path="/admin/tasks/receipt/:id" element={<TaskReceipt />} />
-                                
-                                {/* Tasks (Departmental Views) */}
-                                {/* Program Department Tasks */}
-                                <Route path="/program/tasks/list" element={<TasksList />} />
-                                <Route path="/program/tasks/add" element={<AddTask />} />
-                                <Route path="/program/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/program/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/program/tasks/reports" element={<TaskReports />} />
-                                <Route path="/program/tasks/receipt/:id" element={<TaskReceipt />} />
-                                
-                                {/* Store Department Tasks */}
-                                <Route path="/store/tasks/list" element={<TasksList />} />
-                                <Route path="/store/tasks/add" element={<AddTask />} />
-                                <Route path="/store/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/store/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/store/tasks/reports" element={<TaskReports />} />
-                                <Route path="/store/tasks/receipt/:id" element={<TaskReceipt />} />
-                                
-                                {/* Procurements Department Tasks */}
-                                <Route path="/procurements/tasks/list" element={<TasksList />} />
-                                <Route path="/procurements/tasks/add" element={<AddTask />} />
-                                <Route path="/procurements/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/procurements/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/procurements/tasks/reports" element={<TaskReports />} />
-                                <Route path="/procurements/tasks/receipt/:id" element={<TaskReceipt />} />
-                                
-                                {/* Accounts & Finance Department Tasks */}
-                                <Route path="/accounts_and_finance/tasks/list" element={<TasksList />} />
-                                <Route path="/accounts_and_finance/tasks/add" element={<AddTask />} />
-                                <Route path="/accounts_and_finance/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/accounts_and_finance/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/accounts_and_finance/tasks/reports" element={<TaskReports />} />
-                                <Route path="/accounts_and_finance/tasks/receipt/:id" element={<TaskReceipt />} />
-                                
-                                {/* Fund Raising Department Tasks */}
-                                <Route path="/fund_raising/tasks/list" element={<TasksList />} />
-                                <Route path="/fund_raising/tasks/add" element={<AddTask />} />
-                                <Route path="/fund_raising/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/fund_raising/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/fund_raising/tasks/reports" element={<TaskReports />} />
-                                <Route path="/fund_raising/tasks/receipt/:id" element={<TaskReceipt />} />
-
-                                {/* IT Department Tasks */}
-                                <Route path="/it/tasks/list" element={<TasksList />} />
-                                <Route path="/it/tasks/add" element={<AddTask />} />
-                                <Route path="/it/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/it/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/it/tasks/reports" element={<TaskReports />} />
-                                <Route path="/it/tasks/receipt/:id" element={<TaskReceipt />} />
-                                
-                                {/* HR Department Tasks */}
-                                <Route path="/hr/tasks/list" element={<TasksList />} />
-                                <Route path="/hr/tasks/add" element={<AddTask />} />
-                                <Route path="/hr/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/hr/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/hr/tasks/reports" element={<TaskReports />} />
-                                <Route path="/hr/tasks/receipt/:id" element={<TaskReceipt />} />
-
-                                {/* Marketing Department Tasks */}
-                                <Route path="/marketing/tasks/list" element={<TasksList />} />
-                                <Route path="/marketing/tasks/add" element={<AddTask />} />
-                                <Route path="/marketing/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/marketing/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/marketing/tasks/reports" element={<TaskReports />} />
-                                <Route path="/marketing/tasks/receipt/:id" element={<TaskReceipt />} />
-
-                                {/* Audio Video Department Tasks */}
-                                <Route path="/audio_video/tasks/list" element={<TasksList />} />
-                                <Route path="/audio_video/tasks/add" element={<AddTask />} />
-                                <Route path="/audio_video/tasks/update/:id" element={<UpdateTask />} />
-                                <Route path="/audio_video/tasks/view/:id" element={<ViewTask />} />
-                                <Route path="/audio_video/tasks/reports" element={<TaskReports />} />
-                                <Route path="/audio_video/tasks/receipt/:id" element={<TaskReceipt />} />
+                                {/* Tasks — flat routes for all users */}
+                                <Route path="/tasks/list" element={<TasksList />} />
+                                <Route path="/tasks/add" element={<AddTask />} />
+                                <Route path="/tasks/update/:id" element={<UpdateTask />} />
+                                <Route path="/tasks/view/:id" element={<ViewTask />} />
+                                <Route path="/tasks/dashboard" element={<TaskReports />} />
+                                <Route path="/tasks/reports" element={<Navigate to="/tasks/dashboard" replace />} />
+                                <Route path="/tasks/receipt/:id" element={<TaskReceipt />} />
                               </Routes>
                             </main>
                           </div>
