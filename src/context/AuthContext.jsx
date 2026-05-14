@@ -130,6 +130,7 @@ export const AuthProvider = ({ children }) => {
               
               if (response.data.permissions) {
                 setPermissions(response.data.permissions);
+                console.log('User permissions in auth context: ', response.data.permissions);
                 localStorage.setItem('user_permissions', JSON.stringify(response.data.permissions));
               }
             } else {

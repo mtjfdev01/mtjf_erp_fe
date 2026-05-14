@@ -547,7 +547,7 @@ async   function getLineChartData(departmentData) {
             showDownload={false}
             downloadFileName="donations-summary"
           /> */}
-          <ProgramApplicationCard from={deliverablesRange.from} to={deliverablesRange.to} />
+          {/* <ProgramApplicationCard from={deliverablesRange.from} to={deliverablesRange.to} />
           <DeliverablesOverallCard
             from={deliverablesRange.from}
             to={deliverablesRange.to}
@@ -558,9 +558,9 @@ async   function getLineChartData(departmentData) {
               <DashboardDateRangeProvider>
                 <DepartmentReportsSummary />
               </DashboardDateRangeProvider>
-              <FundraisingDashboard />
             </>
-          ) : null}
+          ) : null} */}
+                        <FundraisingDashboard />
         </div>
 
         {/* <div className="department-cards">{renderCards()}</div> */}

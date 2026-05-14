@@ -10,8 +10,8 @@ const Program = () => {
     <>
       <Navbar />
         <Welcome 
-          title="Welcome to the Program Section"
-          message="Here you can manage and view all program-related reports and activities."
+          title="Welcome to the MTJF Solutions"
+          message="Here you can manage and view everything related to Molana Tariq Jameel Foundation ."
         />
     </>
   );

@@ -7,6 +7,17 @@ import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
+import { useAuth } from '../../../../../context/AuthContext';
+
+/** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
+const COMM_PERMS = {
+  emailPaymentLinks: 'communication.email_payment_links.send',
+  emailThanks: 'communication.email_thanks.send',
+  emailCampaigns: 'communication.email_campaigns.send',
+  whatsappPaymentLinks: 'communication.whatsapp_payment_links.send',
+  whatsappThanks: 'communication.whatsapp_thanks.send',
+  whatsappCampaigns: 'communication.whatsapp_campaigns.send',
+};
 
 const PROGRESS_STEP_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -19,6 +30,7 @@ const PROGRESS_STEP_STATUS_OPTIONS = [
 const ViewOnlineDonation = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { hasAnyPermission } = useAuth();
   const [donation, setDonation] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -105,6 +117,22 @@ const ViewOnlineDonation = () => {
     () => visibleTrackerSections.reduce((n, sec) => n + sec.steps.length, 0),
     [visibleTrackerSections],
   );
+
+  const canSendComm = (path) => hasAnyPermission(['super_admin', path]);
+  const showEmailComm =
+    canSendComm(COMM_PERMS.emailPaymentLinks) ||
+    canSendComm(COMM_PERMS.emailThanks) ||
+    canSendComm(COMM_PERMS.emailCampaigns);
+  const showWhatsAppComm =
+    canSendComm(COMM_PERMS.whatsappPaymentLinks) ||
+    canSendComm(COMM_PERMS.whatsappThanks) ||
+    canSendComm(COMM_PERMS.whatsappCampaigns);
+  const showCommSection = showEmailComm || showWhatsAppComm;
+  const showInKindReceipt =
+    !!donation &&
+    (donation.donation_method === 'in_kind' ||
+      (donation.in_kind_items && donation.in_kind_items.length > 0));
+  const showCommActionsHeader = showCommSection || showInKindReceipt;
 
   useEffect(() => {
     fetchDonation();
@@ -1254,9 +1282,11 @@ const ViewOnlineDonation = () => {
             padding: '1.5rem',
             marginBottom: '1.5rem'
           }}>
-            <h3 className="view-section-title" style={{ marginBottom: '1rem' }}>
-              Communication Actions
-            </h3>
+            {showCommActionsHeader && (
+              <h3 className="view-section-title" style={{ marginBottom: '1rem' }}>
+                Communication Actions
+              </h3>
+            )}
             
             {messageStatus.message && (
               <div 
@@ -1271,134 +1301,206 @@ const ViewOnlineDonation = () => {
               </div>
             )}
             
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '1rem'
-            }}>
-              {/* Send Thanks Email */}
-              <button
-                onClick={sendThanksEmail}
-                disabled={sendingThanksEmail || !donation?.donor?.email}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: sendingThanksEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  opacity: sendingThanksEmail || !donation?.donor?.email ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!sendingThanksEmail && donation?.donor?.email) {
-                    e.target.style.backgroundColor = '#059669';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!sendingThanksEmail && donation?.donor?.email) {
-                    e.target.style.backgroundColor = '#10b981';
-                  }
-                }}
-              >
-                {sendingThanksEmail ? 'Sending...' : '📧 Send Thanks Email'}
-              </button>
-              
-              {/* Send Thanks WhatsApp */}
-              <button
-                onClick={sendThanksWhatsApp}
-                disabled={sendingThanksWhatsApp || !donation?.donor?.phone}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#25d366',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: sendingThanksWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  opacity: sendingThanksWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!sendingThanksWhatsApp && donation?.donor?.phone) {
-                    e.target.style.backgroundColor = '#20ba5a';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!sendingThanksWhatsApp && donation?.donor?.phone) {
-                    e.target.style.backgroundColor = '#25d366';
-                  }
-                }}
-              >
-                {sendingThanksWhatsApp ? 'Sending...' : '💬 Send Thanks WhatsApp'}
-              </button>
-              
-              {/* Send Link Email */}
-              <button
-                onClick={sendLinkEmail}
-                disabled={sendingLinkEmail || !donation?.donor?.email}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#3b82f6',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: sendingLinkEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  opacity: sendingLinkEmail || !donation?.donor?.email ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!sendingLinkEmail && donation?.donor?.email) {
-                    e.target.style.backgroundColor = '#2563eb';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!sendingLinkEmail && donation?.donor?.email) {
-                    e.target.style.backgroundColor = '#3b82f6';
-                  }
-                }}
-              >
-                {sendingLinkEmail ? 'Sending...' : '📧 Send Payment Link Email'}
-              </button>
-              
-              {/* Send Link WhatsApp */}
-              <button
-                onClick={sendLinkWhatsApp}
-                disabled={sendingLinkWhatsApp || !donation?.donor?.phone}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#25d366',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: sendingLinkWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  opacity: sendingLinkWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!sendingLinkWhatsApp && donation?.donor?.phone) {
-                    e.target.style.backgroundColor = '#20ba5a';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!sendingLinkWhatsApp && donation?.donor?.phone) {
-                    e.target.style.backgroundColor = '#25d366';
-                  }
-                }}
-              >
-                {sendingLinkWhatsApp ? 'Sending...' : '💬 Send Payment Link WhatsApp'}
-              </button>
+            {showCommSection && (
+              <>
+                {showEmailComm && (
+                  <div style={{ marginBottom: '1.25rem' }}>
+                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '15px', color: '#374151' }}>Email</h4>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '1rem',
+                    }}>
+                      {canSendComm(COMM_PERMS.emailPaymentLinks) && (
+                        <button
+                          type="button"
+                          onClick={sendLinkEmail}
+                          disabled={sendingLinkEmail || !donation?.donor?.email}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: sendingLinkEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            opacity: sendingLinkEmail || !donation?.donor?.email ? 0.6 : 1,
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!sendingLinkEmail && donation?.donor?.email) {
+                              e.target.style.backgroundColor = '#2563eb';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!sendingLinkEmail && donation?.donor?.email) {
+                              e.target.style.backgroundColor = '#3b82f6';
+                            }
+                          }}
+                        >
+                          {sendingLinkEmail ? 'Sending...' : '📧 Send Payment Link Email'}
+                        </button>
+                      )}
+                      {canSendComm(COMM_PERMS.emailThanks) && (
+                        <button
+                          type="button"
+                          onClick={sendThanksEmail}
+                          disabled={sendingThanksEmail || !donation?.donor?.email}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: '#10b981',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: sendingThanksEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            opacity: sendingThanksEmail || !donation?.donor?.email ? 0.6 : 1,
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!sendingThanksEmail && donation?.donor?.email) {
+                              e.target.style.backgroundColor = '#059669';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!sendingThanksEmail && donation?.donor?.email) {
+                              e.target.style.backgroundColor = '#10b981';
+                            }
+                          }}
+                        >
+                          {sendingThanksEmail ? 'Sending...' : '📧 Send Thanks Email'}
+                        </button>
+                      )}
+                      {canSendComm(COMM_PERMS.emailCampaigns) && (
+                        <div
+                          style={{
+                            gridColumn: '1 / -1',
+                            padding: '0.65rem 0.75rem',
+                            backgroundColor: '#f3f4f6',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            color: '#4b5563',
+                          }}
+                        >
+                          Email — Campaigns: send campaign email from the Campaigns module. This page only covers donation payment links and thanks.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {showWhatsAppComm && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '15px', color: '#374151' }}>WhatsApp</h4>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '1rem',
+                    }}>
+                      {canSendComm(COMM_PERMS.whatsappPaymentLinks) && (
+                        <button
+                          type="button"
+                          onClick={sendLinkWhatsApp}
+                          disabled={sendingLinkWhatsApp || !donation?.donor?.phone}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: '#25d366',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: sendingLinkWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            opacity: sendingLinkWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!sendingLinkWhatsApp && donation?.donor?.phone) {
+                              e.target.style.backgroundColor = '#20ba5a';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!sendingLinkWhatsApp && donation?.donor?.phone) {
+                              e.target.style.backgroundColor = '#25d366';
+                            }
+                          }}
+                        >
+                          {sendingLinkWhatsApp ? 'Sending...' : '💬 Send Payment Link WhatsApp'}
+                        </button>
+                      )}
+                      {canSendComm(COMM_PERMS.whatsappThanks) && (
+                        <button
+                          type="button"
+                          onClick={sendThanksWhatsApp}
+                          disabled={sendingThanksWhatsApp || !donation?.donor?.phone}
+                          style={{
+                            padding: '0.75rem 1.5rem',
+                            backgroundColor: '#25d366',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: sendingThanksWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            opacity: sendingThanksWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!sendingThanksWhatsApp && donation?.donor?.phone) {
+                              e.target.style.backgroundColor = '#20ba5a';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!sendingThanksWhatsApp && donation?.donor?.phone) {
+                              e.target.style.backgroundColor = '#25d366';
+                            }
+                          }}
+                        >
+                          {sendingThanksWhatsApp ? 'Sending...' : '💬 Send Thanks WhatsApp'}
+                        </button>
+                      )}
+                      {canSendComm(COMM_PERMS.whatsappCampaigns) && (
+                        <div
+                          style={{
+                            gridColumn: '1 / -1',
+                            padding: '0.65rem 0.75rem',
+                            backgroundColor: '#f3f4f6',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            color: '#4b5563',
+                          }}
+                        >
+                          WhatsApp — Campaigns: send campaign WhatsApp from the Campaigns module. This page only covers donation payment links and thanks.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {(!donation?.donor?.email && !donation?.donor?.phone) && (
+                  <p style={{
+                    marginTop: '0.75rem',
+                    fontSize: '13px',
+                    color: '#6b7280',
+                    fontStyle: 'italic',
+                  }}
+                  >
+                    Donor email and/or phone number are required to send messages.
+                  </p>
+                )}
+              </>
+            )}
 
-              {/* Send Receipt */}
-              {(donation?.donation_method === 'in_kind' || (donation?.in_kind_items && donation.in_kind_items.length > 0)) && (
+            {showInKindReceipt && (
+              <div style={{
+                marginTop: showCommSection ? '1rem' : 0,
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                gap: '1rem',
+              }}
+              >
                 <button
+                  type="button"
                   onClick={sendReceipt}
                   disabled={sendingReceipt || !donation?.donor?.email}
                   style={{
@@ -1426,18 +1528,7 @@ const ViewOnlineDonation = () => {
                 >
                   {sendingReceipt ? 'Sending...' : '🧾 Send Receipt'}
                 </button>
-              )}
-            </div>
-            
-            {(!donation?.donor?.email && !donation?.donor?.phone) && (
-              <p style={{ 
-                marginTop: '0.75rem', 
-                fontSize: '13px', 
-                color: '#6b7280',
-                fontStyle: 'italic'
-              }}>
-                ⚠️ Donor email and/or phone number are required to send messages.
-              </p>
+              </div>
             )}
 
             {/* Status Actions Section */}

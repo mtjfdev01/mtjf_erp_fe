@@ -194,7 +194,31 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         email_templates: {
           label: 'Email Templates',
           actions: ['create','list_view', 'view', 'update', 'delete', 'send']
-        }
+        },
+        email_payment_links: {
+          label: 'Email — Payment links',
+          actions: ['send']
+        },
+        email_thanks: {
+          label: 'Email — Thanks',
+          actions: ['send']
+        },
+        email_campaigns: {
+          label: 'Email — Campaigns',
+          actions: ['send']
+        },
+        whatsapp_payment_links: {
+          label: 'WhatsApp — Payment links',
+          actions: ['send']
+        },
+        whatsapp_thanks: {
+          label: 'WhatsApp — Thanks',
+          actions: ['send']
+        },
+        whatsapp_campaigns: {
+          label: 'WhatsApp — Campaigns',
+          actions: ['send']
+        },
       }
     },
     fund_raising: {

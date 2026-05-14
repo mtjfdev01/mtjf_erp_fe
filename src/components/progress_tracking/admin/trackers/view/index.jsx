@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
@@ -31,6 +32,7 @@ const TrackersView = () => {
   const [evidenceTitle, setEvidenceTitle] = useState('');
   const [evidenceType, setEvidenceType] = useState('link');
   const [activeStepId, setActiveStepId] = useState(null);
+  const [savingEvidenceStepId, setSavingEvidenceStepId] = useState(null);
   const [batchTagDraft, setBatchTagDraft] = useState('');
   const [batchTagNameDraft, setBatchTagNameDraft] = useState('');
   const [savingBatchTag, setSavingBatchTag] = useState(false);
@@ -125,12 +127,14 @@ const TrackersView = () => {
     }
   };
 
-  const addEvidence = async () => {
-    if (!activeStepId || !evidenceUrl) return;
+  const addEvidence = async (stepId) => {
+    const sid = stepId != null ? stepId : activeStepId;
+    if (!sid || !String(evidenceUrl || '').trim()) return;
     setSaving(true);
+    setSavingEvidenceStepId(sid);
     setActionError('');
     try {
-      await axiosInstance.post(`/progress/trackers/steps/${activeStepId}/evidence`, {
+      await axiosInstance.post(`/progress/trackers/steps/${sid}/evidence`, {
         file_url: evidenceUrl,
         file_type: evidenceType,
         title: evidenceTitle || null,
@@ -142,6 +146,7 @@ const TrackersView = () => {
       setActionError(e.response?.data?.message || 'Failed to add evidence');
     } finally {
       setSaving(false);
+      setSavingEvidenceStepId(null);
     }
   };
 
@@ -479,8 +484,16 @@ const TrackersView = () => {
                       onChange={(e) => { setActiveStepId(s.id); setEvidenceUrl(e.target.value); }}
                       placeholder="https://..."
                     />
-                    <button type="button" className="secondary_btn" onClick={() => { setActiveStepId(s.id); addEvidence(); }} disabled={saving}>
-                      Add Evidence
+                    <button
+                      type="button"
+                      className="secondary_btn"
+                      onClick={() => {
+                        flushSync(() => setActiveStepId(s.id));
+                        addEvidence(s.id);
+                      }}
+                      disabled={saving}
+                    >
+                      {savingEvidenceStepId === s.id ? 'Adding…' : 'Add Evidence'}
                     </button>
                   </div>
 

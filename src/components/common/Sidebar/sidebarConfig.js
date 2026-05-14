@@ -47,33 +47,55 @@ import {
 const TASK_MODULE_KEYS = new Set(['tasks', 'tasking']);
 
 const TASK_ROUTE_MAP = {
-  admin: { label: 'Admin Tasks', basePath: '/admin/tasks' },
-  program: { label: 'Program Tasks', basePath: '/program/tasks' },
-  store: { label: 'Store Tasks', basePath: '/store/tasks' },
-  procurements: { label: 'Procurements Tasks', basePath: '/procurements/tasks' },
-  accounts_and_finance: { label: 'Accounts & Finance Tasks', basePath: '/accounts_and_finance/tasks' },
-  fund_raising: { label: 'Fund Raising Tasks', basePath: '/fund_raising/tasks' },
-  it: { label: 'IT Tasks', basePath: '/it/tasks' },
-  hr: { label: 'HR Tasks', basePath: '/hr/tasks' },
-  marketing: { label: 'Marketing Tasks', basePath: '/marketing/tasks' },
-  audio_video: { label: 'Audio Video Tasks', basePath: '/audio_video/tasks' },
+  admin: { label: 'Tasks', basePath: '/admin/tasks' },
+  program: { label: 'Tasks', basePath: '/program/tasks' },
+  store: { label: 'Tasks', basePath: '/store/tasks' },
+  procurements: { label: 'Tasks', basePath: '/procurements/tasks' },
+  accounts_and_finance: { label: 'Tasks', basePath: '/accounts_and_finance/tasks' },
+  fund_raising: { label: 'Tasks', basePath: '/fund_raising/tasks' },
+  it: { label: 'Tasks', basePath: '/it/tasks' },
+  hr: { label: 'Tasks', basePath: '/hr/tasks' },
+  marketing: { label: 'Tasks', basePath: '/marketing/tasks' },
+  audio_video: { label: 'Tasks', basePath: '/audio_video/tasks' },
 };
 
-const hasTaskAccessForDepartment = (permissions, departmentKey) => (
-  canViewModule(permissions, departmentKey, 'tasks') ||
-  canViewModule(permissions, departmentKey, 'tasking')
-);
+/**
+ * Dept-scoped tasks: `permissions.{dept}.tasks` (e.g. program.tasks).
+ * UserPermissions "Tasking" module: `permissions.tasking.tasks` / `tasking.dashboard` — scope links to the user's department route when it exists in TASK_ROUTE_MAP.
+ */
+const hasTaskAccessForDepartment = (permissions, departmentKey, user) => {
+  if (
+    canViewModule(permissions, departmentKey, 'tasks') ||
+    canViewModule(permissions, departmentKey, 'tasking')
+  ) {
+    return true;
+  }
+  const globalTaskingTasks = canViewModule(permissions, 'tasking', 'tasks');
+  const globalTaskingDash = canViewModule(permissions, 'tasking', 'dashboard');
+  if (
+    (globalTaskingTasks || globalTaskingDash) &&
+    user?.department === departmentKey &&
+    TASK_ROUTE_MAP[departmentKey]
+  ) {
+    return true;
+  }
+  return false;
+};
 
 const hasGlobalTaskingAccess = (permissions) => (
   permissions?.tasks?.view === true ||
   permissions?.tasks?.list_view === true ||
   permissions?.tasking?.tasks?.view === true ||
-  permissions?.tasking?.tasks?.list_view === true
+  permissions?.tasking?.tasks?.list_view === true ||
+  permissions?.tasking?.dashboard?.view === true ||
+  permissions?.tasking?.dashboard?.list_view === true
 );
 
 const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
   const taskItems = Object.entries(TASK_ROUTE_MAP)
-    .filter(([departmentKey]) => includeAll || hasTaskAccessForDepartment(permissions, departmentKey))
+    .filter(([departmentKey]) =>
+      includeAll || hasTaskAccessForDepartment(permissions, departmentKey, user),
+    )
     .map(([departmentKey, routeConfig]) => ({
       label: routeConfig.label,
       path: `${routeConfig.basePath}/list`,
@@ -87,9 +109,13 @@ const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
       icon: FiCheckSquare,
     }));
 
-  // Fallback for users with generic tasking permission but no explicit department task flags.
-  if (!includeAll && taskItems.length === 0 && hasGlobalTaskingAccess(permissions) && user?.department) {
-    const fallbackRoute = TASK_ROUTE_MAP[user.department];
+  // Fallback: UserPermissions stores tasking under `permissions.tasking.*`, not `permissions.{dept}.tasks`.
+  // If the user's department has no tasks route (e.g. geographic), default to admin tasks URLs.
+  if (!includeAll && taskItems.length === 0 && hasGlobalTaskingAccess(permissions) && user) {
+    const fallbackRoute =
+      (user.department && TASK_ROUTE_MAP[user.department]) || TASK_ROUTE_MAP.admin;
+    const deptKey =
+      user.department && TASK_ROUTE_MAP[user.department] ? user.department : 'admin';
     if (fallbackRoute) {
       taskItems.push({
         label: fallbackRoute.label,
@@ -100,7 +126,7 @@ const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
           { label: 'Tasks List', path: `${fallbackRoute.basePath}/list`, type: 'list' },
           { label: 'Tasks Dashboard', path: `${fallbackRoute.basePath}/reports`, type: 'list' },
         ],
-        meta: { department: user.department },
+        meta: { department: deptKey },
       });
     }
   }
@@ -114,6 +140,32 @@ const buildUnifiedTaskingGroup = (user, permissions, includeAll = false) => {
     label: 'Tasking',
     icon: FiCheckSquare,
     items: taskItems,
+  };
+};
+
+/** Super admin: single Tasks section (no department-wise expansion); uses admin task routes. */
+const buildSuperAdminTaskingGroup = () => {
+  const base = TASK_ROUTE_MAP.admin.basePath;
+  return {
+    id: 'tasking_global',
+    label: 'Tasks',
+    icon: FiCheckSquare,
+    items: [
+      {
+        label: 'Tasks List',
+        path: `${base}/list`,
+        type: 'list',
+        module: 'tasks',
+        icon: FiList,
+      },
+      {
+        label: 'Tasks Dashboard',
+        path: `${base}/reports`,
+        type: 'list',
+        module: 'tasks',
+        icon: FiBarChart2,
+      },
+    ],
   };
 };
 
@@ -972,10 +1024,11 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
 
-  // Super admin: show Admin Panel only. It already aggregates Program, Store, DMS,
-  // Fund Raising, etc., so listing every department again duplicates the sidebar.
+  // Super admin: Admin Panel + one Tasks group (list + dashboard only; no per-department task rows).
   if (isSuperAdminRole || isSuperAdminPermission) {
-    return [departmentConfigs.admin(false)];
+    const sections = [departmentConfigs.admin(false)];
+    sections.push(buildSuperAdminTaskingGroup());
+    return sections;
   }
 
   // For non-super-admin users, sidebar is derived from permission map only.
