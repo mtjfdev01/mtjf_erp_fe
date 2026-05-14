@@ -1746,12 +1746,12 @@ const ViewTask = () => {
                     )}
 
                     <div className="task-notes-panel">
-                      <div
+                      {/* <div
                         className={`view-section${
                           isApproverView ? ' view-section--approver-primary' : ''
                         }`}
                       >
-                        <div className="activity-attachments-section">
+                         <div className="activity-attachments-section">
                           <h3 className="view-section-title">
                             <span>📂</span> Activity Attachments
                           </h3>
@@ -1814,12 +1814,12 @@ const ViewTask = () => {
                               </ul>
                             </div>
                           </div>
-                        </div>
+                        </div> 
                         {!isApproverView && (
                           <form onSubmit={addAttachment} className="task-attachments-form">
                             <div className="task-attachments-input-container">
                               <div className="form-group">
-                                {/* <label className="form-label">File</label> */}
+                                 <label className="form-label">File</label>
                                 <input
                                   type="file"
                                   className="form-input task-file-input"
@@ -1840,8 +1840,8 @@ const ViewTask = () => {
                               </PrimaryButton>
                             </div>
                           </form>
-                        )}
-                      </div>
+                        )} 
+                      </div> */}
 
                       <div
                         className={`view-section task-comments-panel${

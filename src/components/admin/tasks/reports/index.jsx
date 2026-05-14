@@ -1,13 +1,12 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
 import { FaUserCircle } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { Chart, registerables } from 'chart.js';
 import axiosInstance from '../../../../utils/axios';
-import { departments } from '../../../../utils/admin';
+import { departments, isTaskRouteDepartment } from '../../../../utils/admin';
 import { useAuth } from '../../../../context/AuthContext';
-import { getTaskPermissions } from '../../../../utils/permissions';
+import { getTaskPermissions, isSuperAdmin } from '../../../../utils/permissions';
 import ReloadButton from '../../../common/buttons/reload';
 import '../../../../styles/components.css';
 import './index.css';
@@ -441,7 +440,6 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
 const TaskReports = () => {
   const { user, permissions } = useAuth();
-  const location = useLocation();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
   const [viewType, setViewType] = useState('all'); // Default to 'all' for reports
@@ -510,28 +508,16 @@ const TaskReports = () => {
     });
   }, [taskAggregates.users, userReportSearchQuery]);
 
-  const currentDeptFromPath = useMemo(() => {
-    const path = location.pathname || '';
-    const segs = path.split('/').filter(Boolean);
-    const first = segs[0] || '';
-    const known = new Set([
-      'program',
-      'store',
-      'procurements',
-      'accounts_and_finance',
-      'fund_raising',
-      'admin',
-      'it',
-      'hr',
-      'marketing',
-      'audio_video'
-    ]);
-    return known.has(first) ? first : '';
-  }, [location.pathname]);
+  /** Task dashboard scope: user's department when it has /{dept}/tasks routes; not derived from URL. */
+  const tasksDepartmentFromUser = useMemo(() => {
+    const d = String(user?.department || '').trim().toLowerCase();
+    if (!d || !isTaskRouteDepartment(d)) return '';
+    return d;
+  }, [user?.department]);
 
   const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, currentDeptFromPath || user?.department, user?.role),
-    [permissions, user?.department, user?.role, currentDeptFromPath],
+    () => getTaskPermissions(permissions || {}, tasksDepartmentFromUser || user?.department, user?.role),
+    [permissions, user?.department, user?.role, tasksDepartmentFromUser],
   );
   const rolePerms = useMemo(() => {
     const r = String(user?.role || '').toLowerCase();
@@ -545,6 +531,18 @@ const TaskReports = () => {
       isAdmin
     };
   }, [taskPerms, user?.role]);
+
+  /** Org-wide task reports (all departments filter): super admins, or admin-role users in admin department. */
+  const isGeneralAdminDashboard = useMemo(() => {
+    const r = String(user?.role || '').toLowerCase();
+    const isRoleAdmin = r === 'super_admin' || r === 'admin';
+    if (!isRoleAdmin) return false;
+    return (
+      isSuperAdmin(permissions) ||
+      r === 'super_admin' ||
+      tasksDepartmentFromUser === 'admin'
+    );
+  }, [user?.role, permissions, tasksDepartmentFromUser]);
 
   const statsSummary = useMemo(() => {
     const total = taskStats?.total_tasks || 0;
@@ -874,17 +872,15 @@ const TaskReports = () => {
     try {
       const range = getDateRangeForDuration(duration);
 
-      // If we are in a specific department dashboard (e.g. /it/tasks/reports),
-      // we should always filter by that department.
-      // Exception: If we are in the general admin dashboard, show all departments by default.
-      const isGeneralAdminDashboard = currentDeptFromPath === 'admin' && rolePerms.isAdmin;
-      const department = isGeneralAdminDashboard ? (selectedDepartment || undefined) : (currentDeptFromPath || selectedDepartment || undefined);
+      // Department for stats: from user context (tasksDepartmentFromUser), not from URL.
+      // Org-wide when super admin / admin dept / permission super_admin; otherwise lock to user's routed department.
+      const department = isGeneralAdminDashboard ? (selectedDepartment || undefined) : (tasksDepartmentFromUser || selectedDepartment || undefined);
 
       let statsDepartment;
       if (isGeneralAdminDashboard) {
         statsDepartment = selectedDepartment || undefined;
-      } else if (currentDeptFromPath) {
-        statsDepartment = currentDeptFromPath;
+      } else if (tasksDepartmentFromUser) {
+        statsDepartment = tasksDepartmentFromUser;
       } else if (rolePerms.scope === 'org') {
         statsDepartment = department;
       } else if (rolePerms.scope === 'department' || rolePerms.scope === 'team') {
@@ -938,7 +934,7 @@ const TaskReports = () => {
     } finally {
       setTaskStatsLoading(false);
     }
-  }, [duration, selectedDepartment, rolePerms.scope, rolePerms.isAdmin, user?.department, user?.id, currentDeptFromPath, viewType, showTeamPerformance, getDateRangeForDuration]);
+  }, [duration, selectedDepartment, rolePerms.scope, rolePerms.isAdmin, user?.department, user?.id, tasksDepartmentFromUser, isGeneralAdminDashboard, permissions, viewType, showTeamPerformance, getDateRangeForDuration]);
 
   useEffect(() => {
     fetchTaskReports();
@@ -1768,7 +1764,7 @@ const TaskReports = () => {
                 </div>
               )}
 
-              {(rolePerms.isAdmin || rolePerms.scope === 'org') && (currentDeptFromPath === 'admin' || !currentDeptFromPath) && (
+              {(rolePerms.isAdmin || rolePerms.scope === 'org') && isGeneralAdminDashboard && (
                 <div className="task-filter-group">
                   <span className="task-filter-label">Department</span>
                   <select
@@ -2025,7 +2021,7 @@ const TaskReports = () => {
                 </div>
                 <div className="task-dashboard-reports-grid">
                   <ProjectProgramWiseReport projects={taskAggregates.projects} />
-                  <div className="task-report-card task-report-card--user-report">
+                  {/* <div className="task-report-card task-report-card--user-report">
                     <div className="task-report-card-header task-report-card-header--with-filter">
                       <div className="task-report-header-left">
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
@@ -2106,7 +2102,7 @@ const TaskReports = () => {
                         });
                       })()}
                     </div>
-                  </div>
+                  </div> */}
                   {rolePerms.isAdmin && (
                     <div className="task-report-card task-report-card--department-report">
                       <div className="task-report-card-header">
