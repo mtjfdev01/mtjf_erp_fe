@@ -71,7 +71,16 @@ const UpdateUser = () => {
     { value: 'it', label: 'IT' },
     { value: 'marketing', label: 'Marketing' },
     { value: 'audio_video', label: 'Audio Video' },
-    { value: 'fund_raising', label: 'Fund Raising' }
+    { value: 'fund_raising', label: 'Fund Raising' },
+    { value: 'meal', label: 'Meal' },
+    { value: 'health', label: 'Health' },
+    { value: 'executive_office', label: 'Executive Office'},
+    { value: 'ceo', label: 'CEO'},
+    { value: 'internal_audit', label: 'Internal Audit'},
+    { value: 'crd', label: 'CRD'},
+    { value: 'hr', label: 'HR'},
+    { value: 'aas_lab', label: 'Aas Lab'},
+    { value: 'admin', label: 'Admin'},
   ];
 
   const bloodGroups = [
@@ -88,7 +97,20 @@ const UpdateUser = () => {
   const roles = [
     { value: 'user', label: 'User' },
     { value: 'assistant_manager', label: 'Assistant Manager' },
-    { value: 'manager', label: 'Manager' }
+    { value: 'manager', label: 'Manager' },
+    { value: 'admin', label: 'Admin'},
+    { value: 'super_admin', label: 'Super Admin' },
+    { value: 'officer', label: 'Officer' },
+    { value: 'coordinator', label: 'Coordinator' },
+    { value: 'support', label: 'Support' },
+    { value: 'analyst', label: 'Analyst' },
+    { value: 'developer', label: 'Developer' },
+    { value: 'team_lead', label: 'Team Lead' },
+    { value: 'staff', label: 'Staff' }, 
+    { value: 'field_officer', label: 'Field Officer' },
+    { value: 'volunteer', label: 'Volunteer' },
+    { value: 'dept_head', label: 'Dept Head' }
+
   ];
 
   const genders = [
