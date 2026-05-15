@@ -266,7 +266,6 @@ const RegisterDonor = () => {
                 name="city"
                 value={form.city}
                 onChange={handleChange}
-                required
             />
             
             <FormInput
@@ -291,7 +290,6 @@ const RegisterDonor = () => {
                 name="cnic"
                 value={form.cnic}
                 onChange={handleChange}
-                required
             />
             </div>
             </div>
