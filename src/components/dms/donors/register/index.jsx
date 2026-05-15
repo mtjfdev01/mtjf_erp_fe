@@ -384,7 +384,6 @@ const RegisterDonor = () => {
                   name="password"
                   value={form.password}
                   onChange={handleChange}
-                  required
                   minLength="6"
                 />
                </div>
