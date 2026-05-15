@@ -70,7 +70,7 @@ const AddDonation = () => {
     on_behalf_names: '',
   });
 
-  const QURBANI_PROJECT_ID = 'qurbani-barai-mustehqeen';
+  const QURBANI_PROJECT_ID = 'qurbani-baraye-mustehqeen'; 
   const qurbaniProject = (projectCards || []).find((p) => p.id === QURBANI_PROJECT_ID) || null;
   const qurbaniInitiatives = qurbaniProject?.initiatives || [];
   const isQurbaniProject = form.project_id === QURBANI_PROJECT_ID;

@@ -12,6 +12,7 @@ import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import { DownloadCSV } from '../../../common/download';
+import DataImport from '../../../common/DataImport';
 import { FiEye, FiEdit, FiTrash2, FiUser, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
@@ -111,6 +112,11 @@ const DonorsList = () => {
   const canExportCsv = useMemo(() => {
     if (!permissions) return false;
     return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'csv_xport');
+  }, [permissions]);
+
+  const canImportCsv = useMemo(() => {
+    if (!permissions) return false;
+    return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'create');
   }, [permissions]);
 
   const canRevealPassword = useMemo(() => {
@@ -509,6 +515,14 @@ const DonorsList = () => {
                   columns={csvColumns}
                   buttonText="Download as CSV"
                   disabled={loading || donors.length === 0}
+                />
+              )}
+              {canImportCsv && (
+                <DataImport
+                  entityName="donors"
+                  buttonText="Import CSV"
+                  disabled={loading}
+                  onImportComplete={() => fetchDonors()}
                 />
               )}
             </div>
