@@ -324,6 +324,12 @@ const TasksList = () => {
     return regularOtherTasks;
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager, approvalTasks]);
 
+  useEffect(() => {
+    if (activeTab === 'approval_tasks' && approvalTasks.length === 0) {
+      setActiveTab('assigned_to_me');
+    }
+  }, [approvalTasks.length, activeTab]);
+
   // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
   useEffect(() => {
     const fetchTasks = async () => {
@@ -1214,14 +1220,16 @@ const TasksList = () => {
                         <span className="tab-count">{teamTasks.length}</span>
                       </button>
                     )}
-                    <button
-                      className={`task-tab-btn ${activeTab === 'approval_tasks' ? 'active active--approval' : ''}`}
-                      onClick={() => setActiveTab('approval_tasks')}
-                    >
-                      <FiThumbsUp className="tab-icon" />
-                      <span className="tab-text">Approval Tasks</span>
-                      <span className="tab-count">{approvalTasks.length}</span>
-                    </button>
+                    {approvalTasks.length > 0 && (
+                      <button
+                        className={`task-tab-btn ${activeTab === 'approval_tasks' ? 'active active--approval' : ''}`}
+                        onClick={() => setActiveTab('approval_tasks')}
+                      >
+                        <FiThumbsUp className="tab-icon" />
+                        <span className="tab-text">Approval Tasks</span>
+                        <span className="tab-count">{approvalTasks.length}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
 
