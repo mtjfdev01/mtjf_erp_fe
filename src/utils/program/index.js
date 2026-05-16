@@ -296,7 +296,7 @@ export const projectCards = [
     initiatives: [
       { id: 'community-feed-family', title: 'Feed a Family for whole month', subtitle: 'Per Family', price: 8500,
         description: 'The monthly ration for deserving families includes essential food items necessary for their sustenance. This support helps alleviate food insecurity and ensures that these families have access to nutritious meals on a regular basis.',
-        duration: '1-Year'
+        duration: '1-Year' 
       },
       { id: 'community-ramzan-ration', title: 'Ramadan Ration', subtitle: 'Per Family', price: 9600,
         description: 'The monthly ration for deserving families includes essential food items necessary for their sustenance. This support helps alleviate food insecurity and ensures that these families have access to nutritious meals on a regular basis.',
