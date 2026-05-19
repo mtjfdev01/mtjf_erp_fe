@@ -431,7 +431,8 @@ const adminDepartmentItems = () => [
       {label: "volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
       {label: "surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
       {label: "events", path: "/dms/events/list", type: "list", icon: FiCalendar},
-      {label: "campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag}
+      {label: "campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
+      {label: "appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle}
     ]
   },
   {
@@ -649,6 +650,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'campaigns',
     icon: FiFlag
+  },
+  {
+    label: 'Appeals',
+    path: '/dms/appeals/list',
+    type: 'list',
+    module: 'appeals',
+    icon: FiAlertCircle
   },
   // {
   //   label: 'Reports',
