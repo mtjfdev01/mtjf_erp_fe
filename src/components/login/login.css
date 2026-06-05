@@ -127,3 +127,20 @@ html, body {
 .password-toggle-icon:hover {
   color: #2563eb;
 }
+
+.login-footer {
+  margin: 1.5rem 0 0;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.login-footer a {
+  color: #64748b;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.login-footer a:hover {
+  color: #2563eb;
+  text-decoration: underline;
+}

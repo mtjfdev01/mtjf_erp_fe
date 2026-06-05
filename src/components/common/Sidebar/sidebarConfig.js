@@ -41,7 +41,8 @@ import {
   FiPackage,
   FiCreditCard,
   FiAlertCircle,
-  FiBookmark
+  FiBookmark,
+  FiRepeat
 } from 'react-icons/fi';
 import { departments } from '../../../utils/admin';
 
@@ -432,7 +433,9 @@ const adminDepartmentItems = () => [
       {label: "surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
       {label: "events", path: "/dms/events/list", type: "list", icon: FiCalendar},
       {label: "campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
-      {label: "appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle}
+      {label: "appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
+      {label: "social_media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
+      {label: "recurring_donations", path: "/dms/recurring-donations/list", type: "list", icon: FiRepeat}
     ]
   },
   {
@@ -657,6 +660,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'appeals',
     icon: FiAlertCircle
+  },
+  {
+    label: 'Social Media',
+    path: '/dms/social-posts/list',
+    type: 'list',
+    module: 'social_posts',
+    icon: FiFileText
+  },
+  {
+    label: 'Recurring Donations',
+    path: '/dms/recurring-donations/list',
+    type: 'list',
+    module: 'recurring_donations',
+    icon: FiRepeat
   },
   // {
   //   label: 'Reports',
