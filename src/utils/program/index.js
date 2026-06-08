@@ -262,20 +262,20 @@ export const projectCards = [
     ]
   },
   {
-     id: 'qurbani-barai-mustehqeen', 
-     title: "Qurbani Barai Mustehqeen",
+     id: 'qurbani-baraye-mustehqeen', 
+     title: "Qurbani Baraye Mustehqeen",
      price: 15000,
      new: false, 
      category: "Zakat", 
      initiatives:[
       {
-        id: 'qurbani-barai-mustehqeen-1', title: 'Cow Share', subtitle: 'Cow Share', price: 24500, templateCode: "cow_share",
+        id: 'qurbani-baraye-mustehqeen-1', title: 'Cow Share', subtitle: 'Cow Share', price: 24500, templateCode: "cow_share",
       },
       {
-        id: 'qurbani-barai-mustehqeen-2', title: 'Full Cow', subtitle: 'Full Cow', price: 171500, templateCode: "cow",
+        id: 'qurbani-baraye-mustehqeen-2', title: 'Full Cow', subtitle: 'Full Cow', price: 171500, templateCode: "cow",
       },
       {
-        id: 'qurbani-barai-mustehqeen-3', title: 'Goat', subtitle: 'Goat', price: 58000, templateCode: "goat",
+        id: 'qurbani-baraye-mustehqeen-3', title: 'Goat', subtitle: 'Goat', price: 58000, templateCode: "goat",
       }
      ]
      },
@@ -296,7 +296,7 @@ export const projectCards = [
     initiatives: [
       { id: 'community-feed-family', title: 'Feed a Family for whole month', subtitle: 'Per Family', price: 8500,
         description: 'The monthly ration for deserving families includes essential food items necessary for their sustenance. This support helps alleviate food insecurity and ensures that these families have access to nutritious meals on a regular basis.',
-        duration: '1-Year'
+        duration: '1-Year' 
       },
       { id: 'community-ramzan-ration', title: 'Ramadan Ration', subtitle: 'Per Family', price: 9600,
         description: 'The monthly ration for deserving families includes essential food items necessary for their sustenance. This support helps alleviate food insecurity and ensures that these families have access to nutritious meals on a regular basis.',

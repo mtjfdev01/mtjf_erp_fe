@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './login.css';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
@@ -104,6 +104,9 @@ const Login = () => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <p className="login-footer">
+          <Link to="/privacy-policy">Privacy Policy</Link>
+        </p>
       </div>
     </div>
   );

@@ -7,6 +7,8 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Card from '../../../common/Card';
 import Modal from '../../../common/Modal';
+import DonorAuditHistory from '../shared/DonorAuditHistory';
+import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit, FiTrash2, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 
@@ -236,6 +238,29 @@ const ViewDonor = () => {
               />
             </div>
           )}
+
+          <div className="view-section" style={{ marginTop: '24px' }}>
+            <h3 className="view-section-title">System information</h3>
+            <div className="view-grid">
+              <div className="view-item">
+                <span className="view-item-label">Created by</span>
+                <span className="view-item-value">
+                  {donor.created_by ? formatAuditActor(donor.created_by) : '—'}
+                </span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Last updated by</span>
+                <span className="view-item-value">
+                  {donor.updated_by ? formatAuditActor(donor.updated_by) : '—'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="view-section">
+            <h3 className="view-section-title">Change history</h3>
+            <DonorAuditHistory donorId={id} />
+          </div>
 
           {/* Action Buttons */}
           <div className="form-actions" style={{ marginTop: '30px' }}>

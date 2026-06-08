@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css'; // REQUIRED
 
 import Login from './components/login/login';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 import Store from './components/store/Store';
 import Procurements from './components/procurements/Procurements';
 import Program from './components/program/Program';
@@ -122,7 +123,9 @@ import JobsList from './components/admin/hr/careers/jobs/list/index';
 import AddJob from './components/admin/hr/careers/jobs/add/index';
 import ViewJob from './components/admin/hr/careers/jobs/view/index';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
-import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
+import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
+import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
@@ -180,6 +183,7 @@ const App = () => {
                         {/* Sidebar - only show on protected routes */}
                         <Routes>
                     <Route path="/" element={<Login />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route
                       path="/*"
                       element={
@@ -376,6 +380,16 @@ const App = () => {
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/donations/online_donations/update/:id" element={<UpdateOnlineDonation />} />
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
+
+                                {/* Recurring Donations (Stripe subscriptions) */}
+                                <Route path="/dms/recurring-donations/list" element={<RecurringDonationsList />} />
+                                <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
+
+                                {/* Social Posts (Buffer) */}
+                                <Route path="/dms/social-posts/list" element={<SocialPostsList />} />
+                                <Route path="/dms/social-posts/add" element={<SocialPostAdd />} />
+                                <Route path="/dms/social-posts/view/:id" element={<SocialPostView />} />
+                                <Route path="/dms/social-posts/edit/:id" element={<SocialPostEdit />} />
                                 
                                 {/* Donors Routes */}
                                 <Route path="/dms/donors/list" element={<DonorsList />} />
@@ -432,6 +446,12 @@ const App = () => {
                                 <Route path="/dms/campaigns/add" element={<AddCampaign />} />
                                 <Route path="/dms/campaigns/view/:id" element={<ViewCampaign />} />
                                 <Route path="/dms/campaigns/edit/:id" element={<EditCampaign />} />
+
+                                {/* Appeals */}
+                                <Route path="/dms/appeals/list" element={<AppealsList />} />
+                                <Route path="/dms/appeals/add" element={<AddAppeal />} />
+                                <Route path="/dms/appeals/view/:id" element={<ViewAppeal />} />
+                                <Route path="/dms/appeals/edit/:id" element={<EditAppeal />} />
 
                                 {/* Email Template Routes */}
                                 <Route path="/dms/email_templates/list" element={<EmailTemplateList />} />

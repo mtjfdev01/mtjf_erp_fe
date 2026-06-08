@@ -251,6 +251,34 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         dashboard: {
           label: 'Dashboard',
           actions: ['view']
+        },
+        appeals: {
+          label: 'Urgent Appeals',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        recurring_donations: {
+          label: 'Recurring Donations',
+          actions: ['list_view', 'view']
+        },
+        social_posts: {
+          label: 'Social Posts',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        campaigns: {
+          label: 'Campaigns',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        surveys: {
+          label: 'Surveys',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        events: {
+          label: 'Events',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        volunteers: {
+          label: 'Volunteers',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
         }
       } 
     },

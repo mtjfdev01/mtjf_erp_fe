@@ -15,7 +15,7 @@ const donationTypeOptions = [
   { value: 'general', label: 'General' },
   { value: 'fidya', label: 'Fidya' },
   { value: 'kaffarah', label: 'Kaffarah' },
-  { value: 'qurbani-barai-mustehqeen', label: 'Qurbani Barai Mustehqeen' },
+  { value: 'qurbani-baraye-mustehqeen', label: 'Qurbani Baraye Mustehqeen' },
 ];
 
 const donationMethodOptions = [

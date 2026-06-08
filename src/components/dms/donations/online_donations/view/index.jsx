@@ -7,6 +7,7 @@ import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
+import DonationAuditHistory from '../../shared/DonationAuditHistory';
 import { useAuth } from '../../../../../context/AuthContext';
 
 /** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
@@ -46,6 +47,7 @@ const ViewOnlineDonation = () => {
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [noteStatus, setNoteStatus] = useState({ type: '', message: '' });
+  const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [fetchingProviderStatus, setFetchingProviderStatus] = useState(false);
   const [providerStatusData, setProviderStatusData] = useState(null);
   const [progressTrackers, setProgressTrackers] = useState([]);
@@ -330,6 +332,7 @@ const ViewOnlineDonation = () => {
       const response = await axiosInstance.patch(`/donations/${id}/note`, { note });
       if (response.data.success) {
         setDonation(response.data.data);
+        setAuditRefreshKey((k) => k + 1);
         setNoteStatus({ type: 'success', message: 'Note saved successfully.' });
         setTimeout(() => setNoteStatus({ type: '', message: '' }), 4000);
       } else {
@@ -537,8 +540,8 @@ const ViewOnlineDonation = () => {
           type: 'success',
           message: response.data.message || 'Donation marked as completed successfully!',
         });
-        // Refresh donation data
         await fetchDonation();
+        setAuditRefreshKey((k) => k + 1);
         setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
       } else {
         setMessageStatus({
@@ -574,8 +577,8 @@ const ViewOnlineDonation = () => {
           type: 'success',
           message: response.data.message || 'Donation marked as failed successfully!',
         });
-        // Refresh donation data
         await fetchDonation();
+        setAuditRefreshKey((k) => k + 1);
         setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
       } else {
         setMessageStatus({
@@ -1130,6 +1133,11 @@ const ViewOnlineDonation = () => {
                 {savingNote ? 'Saving...' : 'Save Note'}
               </button>
             </div>
+          </div>
+
+          <div className="view-section">
+            <h3 className="view-section-title">Change history</h3>
+            <DonationAuditHistory donationId={id} refreshKey={auditRefreshKey} />
           </div>
 
           <div className="view-section">

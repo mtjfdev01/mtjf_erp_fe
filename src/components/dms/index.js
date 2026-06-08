@@ -4,3 +4,4 @@ export * from './volunteers';
 export * from './surveys';
 export * from './events';
 export * from './campaigns';
+export * from './appeals';

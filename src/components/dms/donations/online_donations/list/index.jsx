@@ -37,6 +37,7 @@ const OnlineDonationsList = () => {
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
   const [workflowTemplates, setWorkflowTemplates] = useState([]);
+  const [appealsList, setAppealsList] = useState([]);
   
   // Report generation state
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -74,6 +75,7 @@ const OnlineDonationsList = () => {
     end_date: '',
     amount: '',
     ref: [],
+    appeal_id: [],
     price_operator: '',
     donor_id: '',
     donor_search: '',
@@ -109,12 +111,20 @@ const OnlineDonationsList = () => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlDonorId]);
 
-  // Load workflow templates for filtering
+  // Load workflow templates and appeals for filtering
   useEffect(() => {
     const run = async () => {
       try {
-        const res = await axiosInstance.get('/progress/workflow-templates');
-        if (res.data?.success) setWorkflowTemplates(res.data.data || []);
+        const [templatesRes, appealsRes] = await Promise.all([
+          axiosInstance.get('/progress/workflow-templates'),
+          axiosInstance.get('/appeals'),
+        ]);
+        if (templatesRes.data?.success) {
+          setWorkflowTemplates(templatesRes.data.data || []);
+        }
+        if (appealsRes.data?.success) {
+          setAppealsList(appealsRes.data.data || []);
+        }
       } catch (_) {
         // non-blocking
       }
@@ -256,12 +266,14 @@ const OnlineDonationsList = () => {
           //multiselect filters like key will col name and value will be in a array and we will use IN operator in Backend 
           // 1 ref filter
           multiselectFilters: (() => {
-           if(appliedFilters.ref && appliedFilters.ref.length > 0) {
-            return {
-              ref: appliedFilters.ref,
-              }
+            const ms = {};
+            if (appliedFilters.ref?.length > 0) {
+              ms.ref = appliedFilters.ref;
             }
-            return {};
+            if (appliedFilters.appeal_id?.length > 0) {
+              ms.appeal_id = appliedFilters.appeal_id;
+            }
+            return ms;
           })(),
         relationsFilters: relationsFiltersPayload,
         hybrid_filters:[ {
@@ -555,6 +567,14 @@ const OnlineDonationsList = () => {
     { value: 'MTJ-1234567890', label: 'MTJ-1234567890' },
     { value: 'MTJ-1234567891', label: 'MTJ-1234567891' },
   ];
+
+  const appealFilterOptions = useMemo(() => {
+    const fromApi = (appealsList || []).map((a) => ({
+      value: String(a.id),
+      label: a.title || `Appeal #${a.id}`,
+    }));
+    return [{ value: '__none__', label: 'No appeal linked' }, ...fromApi];
+  }, [appealsList]);
   const donationTypeOptions = [
     { value: 'zakat', label: 'Zakat' },
     { value: 'sadqa', label: 'Sadqa' },
@@ -757,7 +777,15 @@ const OnlineDonationsList = () => {
               onChange={(value) => handleFilterChange('ref', value)} // value is an array of selected values
               placeholder="Select Campaigns"
             />
-            
+
+            <MultiSelect
+              name="appeal_id"
+              label="Appeal"
+              options={appealFilterOptions}
+              value={tempFilters.appeal_id}
+              onChange={(value) => handleFilterChange('appeal_id', value)}
+              placeholder="Select appeals"
+            />
             
             <DropdownFilter
               filterKey="donation_type"

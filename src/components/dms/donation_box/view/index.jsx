@@ -4,6 +4,8 @@ import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { FiDollarSign } from 'react-icons/fi';
+import DonationBoxAuditHistory from '../shared/DonationBoxAuditHistory';
+import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 
 const ViewDonationBox = () => {
   const { id } = useParams();
@@ -200,21 +202,38 @@ const ViewDonationBox = () => {
           </div>
 
           <div className="view-section">
-            <h3 className="view-section-title">System Information</h3>
+            <h3 className="view-section-title">System information</h3>
             <div className="view-grid">
               <div className="view-item">
-                <span className="view-item-label">Created At</span>
+                <span className="view-item-label">Created at</span>
                 <span className="view-item-value">{formatDate(donationBox.created_at)}</span>
               </div>
               <div className="view-item">
-                <span className="view-item-label">Updated At</span>
+                <span className="view-item-label">Created by</span>
+                <span className="view-item-value">
+                  {donationBox.created_by
+                    ? formatAuditActor(donationBox.created_by)
+                    : '—'}
+                </span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Last updated at</span>
                 <span className="view-item-value">{formatDate(donationBox.updated_at)}</span>
               </div>
               <div className="view-item">
-                <span className="view-item-label">Record ID</span>
-                <span className="view-item-value">{donationBox.id}</span>
+                <span className="view-item-label">Last updated by</span>
+                <span className="view-item-value">
+                  {donationBox.updated_by
+                    ? formatAuditActor(donationBox.updated_by)
+                    : '—'}
+                </span>
               </div>
             </div>
+          </div>
+
+          <div className="view-section">
+            <h3 className="view-section-title">Change history</h3>
+            <DonationBoxAuditHistory donationBoxId={id} />
           </div>
 
           {/* View Collections Button */}
