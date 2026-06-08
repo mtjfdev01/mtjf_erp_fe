@@ -1297,10 +1297,10 @@ const ViewTask = () => {
 
                 {initialAttachments.length > 0 && (
                   <div className="view-section">
-                    <h3 className="view-section-title">
+                    {/* <h3 className="view-section-title">
                       <span>📎</span> Task Attachments (Initial)
-                    </h3>
-                    <div className="view-grid">
+                    </h3> */}
+                    {/* <div className="view-grid">
                       <div className="view-item task-attachments-item">
                         <ul className="attachments-list">
                           {initialAttachments.map((a) => {
@@ -1357,7 +1357,7 @@ const ViewTask = () => {
                           })}
                         </ul>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 )}
 
