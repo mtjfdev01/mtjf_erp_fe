@@ -4,6 +4,7 @@ import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
+import Loader from '../../../common/loader/Loader';
 import FormInput from '../../../common/FormInput';
 import FormTextarea from '../../../common/FormTextarea';
 import { useAuth } from '../../../../context/AuthContext';
@@ -967,23 +968,7 @@ const ViewTask = () => {
 
   const backDeptForLoading = user?.department || (task && task.department);
 
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div className="view-wrapper task-view-wrapper">
-          <PageHeader 
-            title="View Task"
-            showBackButton={true}
-            onBackClick={handleBack}
-          />
-          <div className="loading">Loading...</div>
-        </div>
-      </>
-    );
-  }
-
-  if (!task) {
+  if (!task && !loading) {
     return (
       <>
         <Navbar />
@@ -1026,18 +1011,20 @@ const ViewTask = () => {
   return (
     <>
       <Navbar />
+      <Loader loading={loading} />
       <div className="view-wrapper task-view-wrapper">
         <PageHeader 
           title="Task Details"
           showBackButton={true}
           onBackClick={handleBack}
-          showEdit={taskPerms.canUpdate === true}
-          editPath={`${taskRouteBase}/update/${task.id}`}
+          showEdit={!loading && task && taskPerms.canUpdate === true}
+          editPath={!loading && task ? `${taskRouteBase}/update/${task.id}` : ''}
         />
-        <div className="view-content2">
-          {error && <div className="status-message status-message--error">{error}</div>}
+        {!loading && task && (
+          <div className="view-content2">
+            {error && <div className="status-message status-message--error">{error}</div>}
 
-          <div className="task-receipt-page">
+            <div className="task-receipt-page">
             <div className="receipt-container">
               <div className="receipt-header">
                 <div className="receipt-title">
@@ -2011,6 +1998,7 @@ const ViewTask = () => {
             }}
           />
         </div>
+        )}
       </div>
     </>
   );

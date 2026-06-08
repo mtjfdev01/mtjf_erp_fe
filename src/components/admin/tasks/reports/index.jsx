@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { FaUserCircle } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
+import Loader from '../../../common/loader/Loader';
 import { Chart, registerables } from 'chart.js';
 import axiosInstance from '../../../../utils/axios';
 import { departments } from '../../../../utils/admin';
@@ -1808,9 +1809,11 @@ const TaskReports = () => {
   return (
     <>
       <Navbar />
-      <div className="task-report-container">
-        <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
-        <div className="task-dashboard-shell">
+      <Loader loading={taskStatsLoading} />
+      {!taskStatsLoading && (
+        <div className="task-report-container">
+          <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
+          <div className="task-dashboard-shell">
           <div className="task-dashboard-layout">
             <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
             </div>
@@ -2248,7 +2251,7 @@ const TaskReports = () => {
                         <div className="task-team-member-stats">
                           <div className="task-team-stat-item task-team-stat-item--total">
                             <div className="task-team-stat-value">{member.count}</div>
-                            <div className="task-team-stat-label">Tasks</div>
+                            <div className="task-team-stat-label">Total Tasks</div>
                           </div>
                           <div className="task-team-stat-item task-team-stat-item--in-progress">
                             <div className="task-team-stat-value">{member.in_progress_count || 0}</div>
@@ -2282,9 +2285,9 @@ const TaskReports = () => {
                           >
                             📋 View Details ({member.count} Tasks)
                           </button>
-                          <button className="task-team-message-btn">
+                          {/* <button className="task-team-message-btn">
                             💬 Message
-                          </button>
+                          </button> */}
                         </div>
                       </div>
                     ))
@@ -2299,6 +2302,7 @@ const TaskReports = () => {
           </div>
         </div>
       </div>
+    )}
 
       {/* Task Details Popup*/}
       {showMemberTasksModal && selectedMemberTasks && (

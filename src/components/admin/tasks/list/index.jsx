@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
+import Loader from '../../../common/loader/Loader';
 import Pagination from '../../../common/Pagination';
 import ActionMenu from '../../../common/ActionMenu';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
@@ -27,6 +28,11 @@ const TasksList = () => {
   const [sortOrder, setSortOrder] = useState('DESC');
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [categoryCounts, setCategoryCounts] = useState({
+    assigned_to_me: 0,
+    assigned_to_team: 0,
+    other_tasks: 0
+  });
   const [filters, setFilters] = useState({
     search: '',
     department: '', // Default to empty string for "All Departments"
@@ -382,6 +388,9 @@ const TasksList = () => {
         setTasks(list);
         setTotalItems(res.data.pagination?.total || 0);
         setTotalPages(res.data.pagination?.totalPages || 1);
+        if (res.data.categoryCounts) {
+          setCategoryCounts(res.data.categoryCounts);
+        }
       } catch (e) {
         setError(e.response?.data?.message || 'Failed to fetch tasks.');
       } finally {
@@ -1021,6 +1030,7 @@ const TasksList = () => {
   return (
     <>
       <Navbar />
+      <Loader loading={loading} />
       <div className="list-wrapper">
         <PageHeader
           title="Tasks"
@@ -1106,11 +1116,6 @@ const TasksList = () => {
               <FiPlus />
             </button>
           </div>
-
-          {loading ? (
-            <div className="status-message">Loading tasks...</div>
-          ) : (
-            <>
               {/* Approval Banner - Only shown if there are actual pending approvals */}
               {(() => {
                 try {
@@ -1301,10 +1306,8 @@ const TasksList = () => {
                   sortOptions={sortOptions}
                 />
               )}
-            </>
-          )}
+            </div>
         </div>
-      </div>
     </>
   );
 };
