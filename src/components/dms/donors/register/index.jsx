@@ -88,7 +88,7 @@ const RegisterDonor = () => {
         postal_code: form.postal_code,
         cnic: form.cnic,
         notes: form.notes,
-        assigned_user_id: assignedUser?.id || null,
+        assigned_to_user_id: assignedUser?.id || null,
         referrer_user_id: referrerUser?.id || null,
         source: form.source
       };

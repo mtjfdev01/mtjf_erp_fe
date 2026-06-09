@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import './login.css';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
 import mtjfLogo from '../../assets/mtjf_logo.png';
+import OfflineModeControls from '../common/OfflineModeControls';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -51,7 +52,15 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Login error in component:', error.response || error);
-      setError(error.response?.data?.message || 'Login failed. Please try again.');
+      if (!error.response) {
+        setError(
+          'Unable to reach the server. Check your internet connection and try again.',
+        );
+      } else if (error.response.status === 401 || error.response.status === 403) {
+        setError(error.response?.data?.message || 'Invalid email or password.');
+      } else {
+        setError(error.response?.data?.message || 'Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -104,6 +113,7 @@ const Login = () => {
             {loading ? 'Logging in...' : 'Login'}
           </button>
         </form>
+        <OfflineModeControls />
         <p className="login-footer">
           <Link to="/privacy-policy">Privacy Policy</Link>
         </p>

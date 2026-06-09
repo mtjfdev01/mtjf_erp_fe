@@ -6,6 +6,7 @@ import PageHeader from '../../../../common/PageHeader';
 import { FiBox, FiMapPin, FiCalendar, FiDollarSign, FiUser } from 'react-icons/fi';
 import DonationBoxDonationAuditHistory from '../shared/DonationBoxDonationAuditHistory';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
+import { isLocalId } from '../../../../../offline/handlers';
 
 const ViewDonationBoxDonation = () => {
   const { id } = useParams();
@@ -16,16 +17,13 @@ const ViewDonationBoxDonation = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Get donation data from location state first (from list navigation)
     const donationData = location.state?.donation;
-    
-    if (donationData) {
-      // Use data passed from list (faster, no API call)
+
+    if (donationData && !isLocalId(id)) {
       setDonation(donationData);
       setError('');
       setLoading(false);
     } else {
-      // If no data passed, fetch from API (direct URL access)
       fetchDonation();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -137,6 +135,19 @@ const ViewDonationBoxDonation = () => {
           backPath={getBackPath()}
         />
         <div className="view-content">
+          {isLocalId(id) && (
+            <div
+              className="status-message"
+              style={{
+                marginBottom: 16,
+                background: '#fef3c7',
+                border: '1px solid #fcd34d',
+                color: '#92400e',
+              }}
+            >
+              This collection is saved locally and pending sync.
+            </div>
+          )}
           {/* Collection Information Section */}
           <div className="view-section">
             <h3 className="view-section-title">
@@ -298,10 +309,12 @@ const ViewDonationBoxDonation = () => {
             </div>
           </div>
 
-          <div className="view-section">
-            <h3 className="view-section-title">Change history</h3>
-            <DonationBoxDonationAuditHistory collectionId={id} />
-          </div>
+          {!isLocalId(id) && (
+            <div className="view-section">
+              <h3 className="view-section-title">Change history</h3>
+              <DonationBoxDonationAuditHistory collectionId={id} />
+            </div>
+          )}
 
           {/* Action Buttons */}
           <div style={{ 

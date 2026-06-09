@@ -1,4 +1,12 @@
 import axios from 'axios';
+import { getOfflineMode } from '../offline/mode';
+import { canHandleOffline, handleOfflineRequest } from '../offline/handlers';
+import { prepareOfflineConfig } from '../offline/prepareOfflineRequest';
+import {
+  mustReachServerWhenOffline,
+  createOfflineBlockedError,
+  OFFLINE_BLOCKED_MESSAGE,
+} from '../offline/networkPolicy';
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
@@ -12,8 +20,46 @@ const axiosInstance = axios.create({
 // Add a request interceptor to handle CORS preflight
 axiosInstance.interceptors.request.use(
   (config) => {
+    if (getOfflineMode()) {
+      if (canHandleOffline(config)) {
+        config.adapter = async (cfg) => {
+          const prepared = prepareOfflineConfig(cfg);
+          try {
+            const payload = await handleOfflineRequest(prepared);
+            return {
+              data: payload,
+              status: 200,
+              statusText: 'OK',
+              headers: { 'x-dms-offline': '1' },
+              config: prepared,
+            };
+          } catch (err) {
+            const error = new Error(err?.message || 'Offline request failed');
+            error.response = {
+              data: { success: false, message: err?.message || 'Offline request failed' },
+              status: 400,
+              statusText: 'Bad Request',
+              headers: { 'x-dms-offline': '1' },
+            };
+            error.config = prepared;
+            throw error;
+          }
+        };
+      } else if (!mustReachServerWhenOffline(config)) {
+        config.adapter = async (cfg) => {
+          throw createOfflineBlockedError(cfg, OFFLINE_BLOCKED_MESSAGE);
+        };
+      }
+      // else: login / sync — pass through to the server unchanged
+    }
+
     // Ensure credentials are included
     config.withCredentials = true;
+
+    // Let the browser set multipart boundary (required for file uploads)
+    if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+      delete config.headers['Content-Type'];
+    }
     
     // Add CORS headers for preflight requests
     if (config.method === 'options') {

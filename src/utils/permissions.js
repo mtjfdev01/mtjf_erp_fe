@@ -219,6 +219,33 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
  * // Multiple permissions (OR logic - returns true if user has ANY)
  * hasAnyPermission(permissions, ['fund_raising.donations.create', 'super_admin', 'fund_raising_manager'])
  */
+export const DATA_SCOPE_TYPES = ['self', 'team', 'department', 'org'];
+
+/**
+ * Per-module data scope from permissions JSON (defaults to self).
+ */
+export const getModuleDataScope = (permissions, department, module) => {
+  if (!permissions || !department || !module) {
+    return 'self';
+  }
+  const modulePerms = permissions[department]?.[module];
+  if (!modulePerms || typeof modulePerms !== 'object') {
+    return 'self';
+  }
+  if (modulePerms.view_all === true) {
+    return 'org';
+  }
+  const scope = modulePerms.scope;
+  return DATA_SCOPE_TYPES.includes(scope) ? scope : 'self';
+};
+
+/**
+ * Whether the user can see all records in a module (auditor / org scope).
+ */
+export const hasModuleViewAll = (permissions, department, module) => {
+  return getModuleDataScope(permissions, department, module) === 'org';
+};
+
 export const hasAnyPermission = (permissions, requiredPermissions) => {
   if (!permissions || !requiredPermissions) {
     return false;
@@ -249,7 +276,10 @@ export default {
   getAccessibleModules,
   getModulePermissions,
   hasPermissionByPath,
-  hasAnyPermission
+  hasAnyPermission,
+  getModuleDataScope,
+  hasModuleViewAll,
+  DATA_SCOPE_TYPES,
 };
 
   // // Single permission

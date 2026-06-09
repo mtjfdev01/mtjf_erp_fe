@@ -317,14 +317,14 @@ const AddDonation = () => {
       const res = await axiosInstance.post('/donations', donationData);
       const payload = res.data?.data;
       const newDonationId =
-        payload &&
-        typeof payload === 'object' &&
-        Number.isFinite(Number(payload.id)) &&
-        Number(payload.id) > 0
-          ? Number(payload.id)
+        payload && typeof payload === 'object'
+          ? String(payload.id || payload.local_id || '').startsWith('local_')
+            ? String(payload.id || payload.local_id)
+            : Number.isFinite(Number(payload.id)) && Number(payload.id) > 0
+              ? Number(payload.id)
+              : null
           : null;
 
-      // Progress tracking, batch tags, allocate parts — use the shared donation view.
       if (newDonationId) {
         navigate(`/donations/online_donations/view/${newDonationId}`);
         return;

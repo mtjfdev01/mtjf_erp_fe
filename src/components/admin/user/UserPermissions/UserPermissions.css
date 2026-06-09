@@ -280,6 +280,32 @@
 }
 
 /* Footer */
+.submodule-scope-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.scope-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+}
+
+.scope-select {
+  flex: 1;
+  max-width: 280px;
+  padding: 6px 10px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 13px;
+  background: #fff;
+}
+
 .user-permissions-footer {
   display: flex;
   justify-content: flex-end;

@@ -37,7 +37,10 @@ const CreateUser = () => {
     emergency_contact: '',
     blood_group: bloodGroups[2].value,
     password: '',
+    manager_id: '',
   });
+
+  const [managerOptions, setManagerOptions] = useState([{ value: '', label: 'No manager' }]);
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -61,6 +64,25 @@ const CreateUser = () => {
   const [citiesList, setCitiesList] = useState([]);
 
   const isFundRaising = form.department === 'fund_raising';
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const res = await axiosInstance.get('/users/options');
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        setManagerOptions([
+          { value: '', label: 'No manager' },
+          ...list.map((u) => ({
+            value: String(u.id),
+            label: u.full_name || u.email,
+          })),
+        ]);
+      } catch (err) {
+        console.error('Error fetching manager options:', err);
+      }
+    };
+    fetchManagers();
+  }, []);
 
   // Fetch countries on mount
   useEffect(() => {
@@ -295,7 +317,8 @@ const CreateUser = () => {
       // Create payload with user data and permissions
       const payload = {
         ...sanitizedForm,
-        permissions: userPermissions
+        permissions: userPermissions,
+        manager_id: form.manager_id ? Number(form.manager_id) : null,
       };
 
       // Include geographic assignments for fund_raising department
@@ -486,6 +509,14 @@ const CreateUser = () => {
                 options={availableRoles}
                 onChange={handleChange}
                 required
+              />
+
+              <FormSelect
+                name="manager_id"
+                label="Reports to (Manager)"
+                value={form.manager_id}
+                options={managerOptions}
+                onChange={handleChange}
               />
 
               <FormInput

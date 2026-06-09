@@ -511,7 +511,8 @@ const adminDepartmentItems = () => [
     icon: FiUserCheck,
     subItems: [
       { label: 'Jobs', path: '/hr/careers/jobs/list', type: 'list', icon: FiBriefcase },
-      { label: 'Applications', path: '/hr/career/applications/list', type: 'list', icon: FiFileText }
+      { label: 'Applications', path: '/hr/career/applications/list', type: 'list', icon: FiFileText },
+      { label: 'Resume Collection', path: '/hr/resume-collection/list', type: 'list', icon: FiFileText }
     ]
   },
   {
@@ -558,6 +559,17 @@ const hrDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'applications',
     icon: FiFileText
+  },
+  {
+    label: 'Resume Collection',
+    path: '/hr/resume-collection/list',
+    type: 'list',
+    module: 'resume_collection',
+    icon: FiFileText,
+    subItems: [
+      { label: 'Collection List', path: '/hr/resume-collection/list', type: 'list', icon: FiList },
+      { label: 'Upload Resume', path: '/hr/resume-collection/add', type: 'list', icon: FiPlusCircle }
+    ]
   },
   {
     label: 'Tasking',
@@ -674,6 +686,17 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'recurring_donations',
     icon: FiRepeat
+  },
+  {
+    label: 'Receipt Templates',
+    path: '/dms/receipt_templates/list',
+    type: 'list',
+    module: 'receipt_templates',
+    icon: FiFileText,
+    subItems: [
+      { label: 'Templates List', path: '/dms/receipt_templates/list', type: 'list', icon: FiList },
+      { label: 'Add Template', path: '/dms/receipt_templates/add', type: 'list', icon: FiPlusCircle }
+    ]
   },
   // {
   //   label: 'Reports',

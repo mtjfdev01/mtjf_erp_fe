@@ -9,6 +9,7 @@ import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import DonationAuditHistory from '../../shared/DonationAuditHistory';
 import { useAuth } from '../../../../../context/AuthContext';
+import { isLocalId } from '../../../../../offline/handlers';
 
 /** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
 const COMM_PERMS = {
@@ -135,13 +136,14 @@ const ViewOnlineDonation = () => {
     (donation.donation_method === 'in_kind' ||
       (donation.in_kind_items && donation.in_kind_items.length > 0));
   const showCommActionsHeader = showCommSection || showInKindReceipt;
+  const isPendingOffline = isLocalId(id);
 
   useEffect(() => {
     fetchDonation();
   }, [id]);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || isLocalId(id)) return;
     fetchProgressData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
@@ -530,10 +532,12 @@ const ViewOnlineDonation = () => {
     setMessageStatus({ type: '', message: '' });
     
     try {
-      const response = await axiosInstance.post(`/donations/status-action`, { 
-        donation_id: parseInt(id), 
-        status: 'completed' 
-      });
+      const response = isLocalId(id)
+        ? await axiosInstance.patch(`/donations/${id}`, { status: 'completed' })
+        : await axiosInstance.post(`/donations/status-action`, {
+            donation_id: parseInt(id, 10),
+            status: 'completed',
+          });
       
       if (response.data.success) {
         setMessageStatus({
@@ -567,10 +571,12 @@ const ViewOnlineDonation = () => {
     setMessageStatus({ type: '', message: '' });
     
     try {
-      const response = await axiosInstance.post(`/donations/status-action`, { 
-        donation_id: parseInt(id), 
-        status: 'failed' 
-      });
+      const response = isLocalId(id)
+        ? await axiosInstance.patch(`/donations/${id}`, { status: 'failed' })
+        : await axiosInstance.post(`/donations/status-action`, {
+            donation_id: parseInt(id, 10),
+            status: 'failed',
+          });
       
       if (response.data.success) {
         setMessageStatus({
@@ -707,6 +713,21 @@ const ViewOnlineDonation = () => {
           backPath="/donations/online_donations/list"
         />
         <div className="view-content">
+          {isPendingOffline && (
+            <div
+              className="status-message"
+              style={{
+                marginBottom: 16,
+                background: '#fef3c7',
+                border: '1px solid #fcd34d',
+                color: '#92400e',
+              }}
+            >
+              This donation is saved locally and pending sync. Email, WhatsApp, receipts, and
+              provider status are unavailable until it is synced.
+            </div>
+          )}
+          {!isPendingOffline && (
           <div className="view-section">
             <h3 className="view-section-title">Progress Tracking</h3>
 
@@ -1044,6 +1065,7 @@ const ViewOnlineDonation = () => {
               </div>
             )}
           </div>
+          )}
 
           <div className="view-section">
             <h3 className="view-section-title">Donation Details</h3>
@@ -1135,10 +1157,12 @@ const ViewOnlineDonation = () => {
             </div>
           </div>
 
-          <div className="view-section">
-            <h3 className="view-section-title">Change history</h3>
-            <DonationAuditHistory donationId={id} refreshKey={auditRefreshKey} />
-          </div>
+          {!isPendingOffline && (
+            <div className="view-section">
+              <h3 className="view-section-title">Change history</h3>
+              <DonationAuditHistory donationId={id} refreshKey={auditRefreshKey} />
+            </div>
+          )}
 
           <div className="view-section">
             <h3 className="view-section-title">Donor Information</h3>
@@ -1283,6 +1307,7 @@ const ViewOnlineDonation = () => {
             </div>
           </div> */}
           {/* Communication Actions Section */}
+          {!isPendingOffline && (
           <div className="view-section" style={{ 
             backgroundColor: '#f9fafb', 
             border: '1px solid #e5e7eb', 
@@ -1709,6 +1734,46 @@ const ViewOnlineDonation = () => {
               </div>
             )}
           </div>
+          )}
+          {isPendingOffline && (
+            <div className="view-section" style={{
+              backgroundColor: '#f9fafb',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              padding: '1.5rem',
+              marginBottom: '1.5rem',
+            }}>
+              <h3 className="view-section-title" style={{ marginBottom: '1rem' }}>
+                Status Actions
+              </h3>
+              {messageStatus.message && (
+                <div
+                  className={`status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
+                  style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: '6px' }}
+                >
+                  {messageStatus.message}
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+                <button
+                  type="button"
+                  onClick={markAsCompleted}
+                  disabled={markingCompleted || donation?.status === 'completed'}
+                  className="primary_btn"
+                >
+                  {markingCompleted ? 'Updating...' : 'Mark as completed'}
+                </button>
+                <button
+                  type="button"
+                  onClick={markAsFailed}
+                  disabled={markingFailed || donation?.status === 'failed'}
+                  className="secondary_btn"
+                >
+                  {markingFailed ? 'Updating...' : 'Mark as failed'}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </>

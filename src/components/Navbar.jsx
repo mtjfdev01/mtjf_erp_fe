@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { FiChevronDown, FiLogOut, FiUser } from 'react-icons/fi';
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
+import OfflineModeControls from './common/OfflineModeControls';
 import './Navbar.css';
 import mtjfLogo from '../assets/mtjf_logo.png';
 
@@ -41,6 +42,7 @@ const Navbar = () => {
           <h2>Operations Report</h2>
         </div>
         <div className="navbar-actions" ref={menuRef}>
+          <OfflineModeControls compact />
           <button
             type="button"
             className="navbar-user-trigger"

@@ -16,6 +16,7 @@ import DataImport from '../../../common/DataImport';
 import { FiEye, FiEdit, FiTrash2, FiUser, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
+import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
 
 const DonorsList = () => {
   const navigate = useNavigate();
@@ -208,6 +209,14 @@ const DonorsList = () => {
   useEffect(() => {
     fetchDonors();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
+
+  useOfflineDataRefresh(() => fetchDonors(), [
+    currentPage,
+    pageSize,
+    sortField,
+    sortOrder,
+    appliedFilters,
+  ]);
 
   const fetchDonors = async () => {
     try {
@@ -559,7 +568,24 @@ const DonorsList = () => {
                       </td>
                       <td>
                         <div className="donor-info">
-                          <div className="donor-name">{donor.name}</div>
+                          <div className="donor-name">
+                            {donor.name}
+                            {donor._pending_sync && (
+                              <span
+                                style={{
+                                  marginLeft: 8,
+                                  fontSize: '0.7rem',
+                                  fontWeight: 700,
+                                  color: '#b45309',
+                                  background: '#fef3c7',
+                                  padding: '2px 6px',
+                                  borderRadius: 4,
+                                }}
+                              >
+                                Pending sync
+                              </span>
+                            )}
+                          </div>
                           {donor.donor_type === 'csr' && donor.company_name && (
                             <div className="company-name">{donor.company_name}</div>
                           )}

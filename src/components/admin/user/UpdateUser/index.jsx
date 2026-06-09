@@ -32,7 +32,10 @@ const UpdateUser = () => {
     joining_date: '',
     emergency_contact: '',
     blood_group: '',
+    manager_id: '',
   });
+
+  const [managerOptions, setManagerOptions] = useState([]);
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -120,6 +123,25 @@ const UpdateUser = () => {
   ];
 
   const isFundRaising = form.department === 'fund_raising';
+
+  useEffect(() => {
+    const fetchManagers = async () => {
+      try {
+        const res = await axiosInstance.get('/users/options');
+        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+        setManagerOptions([
+          { value: '', label: 'No manager' },
+          ...list.map((u) => ({
+            value: String(u.id),
+            label: u.full_name || u.email,
+          })),
+        ]);
+      } catch (err) {
+        console.error('Error fetching manager options:', err);
+      }
+    };
+    fetchManagers();
+  }, []);
 
   // Fetch countries on mount
   useEffect(() => {
@@ -266,6 +288,7 @@ const UpdateUser = () => {
         joining_date: userData.joining_date || '',
         emergency_contact: userData.emergency_contact || '',
         blood_group: userData.blood_group || '',
+        manager_id: userData.manager_id ? String(userData.manager_id) : '',
       });
 
       // Load geographic assignments from saved user data
@@ -423,6 +446,7 @@ const UpdateUser = () => {
       const payload = {
         ...form,
         email: form.email.trim().toLowerCase(),
+        manager_id: form.manager_id ? Number(form.manager_id) : null,
       };
 
       // Include geographic assignments for fund_raising department
@@ -594,6 +618,14 @@ const UpdateUser = () => {
                 options={roles}
                 onChange={handleChange}
                 required
+              />
+
+              <FormSelect
+                name="manager_id"
+                label="Reports to (Manager)"
+                value={form.manager_id}
+                options={managerOptions}
+                onChange={handleChange}
               />
 
               <FormInput

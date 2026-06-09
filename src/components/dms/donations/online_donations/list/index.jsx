@@ -13,6 +13,7 @@ import HybridDropdown from '../../../../common/HybridDropdown';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
+import useOfflineDataRefresh from '../../../../../hooks/useOfflineDataRefresh';
 
 import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -20,6 +21,7 @@ import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
 import MultiSelect from '../../../../common/MultiSelect';
+import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
 
 const OnlineDonationsList = () => {
   const navigate = useNavigate();
@@ -222,6 +224,14 @@ const OnlineDonationsList = () => {
     fetchDonations();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
+  useOfflineDataRefresh(() => fetchDonations(), [
+    currentPage,
+    pageSize,
+    sortField,
+    sortOrder,
+    appliedFilters,
+  ]);
+
   const fetchDonations = async () => {
     try {
       setLoading(true);
@@ -232,6 +242,12 @@ const OnlineDonationsList = () => {
       const relationsFiltersPayload = appliedFilters.relationsFilters || {};
       
       // Prepare filter payload
+      const routeSourceFilter = isOfflineRoute
+        ? { _donation_source_not: 'website' }
+        : isOnlineRoute
+          ? { donation_source: appliedFilters.donation_source || 'website' }
+          : {};
+
       const filterPayload = {
         pagination: {
           page: currentPage,
@@ -245,7 +261,10 @@ const OnlineDonationsList = () => {
           status: appliedFilters.status,
           donation_type: appliedFilters.donation_type,
           donation_method: appliedFilters.donation_method,
-          donation_source: appliedFilters.donation_source,
+          donation_source: isOfflineRoute
+            ? undefined
+            : appliedFilters.donation_source,
+          ...routeSourceFilter,
           progress_workflow_template_id: appliedFilters.progress_workflow_template_id || undefined,
           orderId: appliedFilters.orderId,
           
@@ -711,7 +730,7 @@ const OnlineDonationsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader 
-          title="Donations Listing" 
+          title={isOfflineRoute ? 'Offline Donations' : 'Donations Listing'}
           showBackButton={urlDonorId ? true :false} 
           backPath={urlDonorId ? `/dms/donors/view/${urlDonorId}` : null}
           showAdd={true}
@@ -960,7 +979,10 @@ const OnlineDonationsList = () => {
                     </td>
                     <td>
                       <div className="amount-info">
-                        <div className="amount-value">{formatAmount(donation.amount, donation.currency)}</div>
+                        <div className="amount-value">
+                          {formatAmount(donation.amount, donation.currency)}
+                          <OfflinePendingBadge show={donation._pending_sync} />
+                        </div>
                         {donation.item_price && (
                           <div className="item-price hide-on-mobile">
                             Item: {formatAmount(donation.item_price, donation.currency)}

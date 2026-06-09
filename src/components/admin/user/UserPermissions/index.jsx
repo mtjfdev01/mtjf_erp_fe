@@ -14,7 +14,13 @@ const mergeFundRaisingDonorPermissions = (rawPermissions) => {
   if (!next.fund_raising) return next;
   const fr = next.fund_raising;
   const actions = ['create', 'list_view', 'view', 'update', 'delete', 'csv_xport'];
-  const merged = {};
+  const merged = {
+    scope: fr.donors?.scope || fr.online_donors?.scope || fr.offline_donors?.scope || 'self',
+    view_all:
+      fr.donors?.view_all === true ||
+      fr.online_donors?.view_all === true ||
+      fr.offline_donors?.view_all === true,
+  };
   actions.forEach((a) => {
     merged[a] =
       fr.donors?.[a] === true ||
@@ -279,6 +285,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         volunteers: {
           label: 'Volunteers',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        receipt_templates: {
+          label: 'Receipt Templates',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
         }
       } 
     },
@@ -300,6 +310,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         applications: {
           label: 'Applications',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        resume_collection: {
+          label: 'Resume Collection',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         }
       }
@@ -357,6 +371,33 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     },
   };
 
+  const SCOPE_OPTIONS = [
+    { value: 'self', label: 'Own records only' },
+    { value: 'team', label: 'Team (self + direct reports)' },
+    { value: 'department', label: 'Whole department' },
+    { value: 'org', label: 'All records in module' },
+  ];
+
+  const getSubmoduleScope = (moduleKey, submoduleKey) => {
+    const modulePerms = permissions[moduleKey]?.[submoduleKey];
+    if (modulePerms?.view_all === true) return 'org';
+    return modulePerms?.scope || 'self';
+  };
+
+  const handleScopeChange = (moduleKey, submoduleKey, scopeValue) => {
+    setPermissions((prev) => {
+      const next = { ...prev };
+      if (!next[moduleKey]) next[moduleKey] = {};
+      if (!next[moduleKey][submoduleKey]) next[moduleKey][submoduleKey] = {};
+      next[moduleKey][submoduleKey] = {
+        ...next[moduleKey][submoduleKey],
+        scope: scopeValue,
+        view_all: scopeValue === 'org',
+      };
+      return next;
+    });
+  };
+
   // Action labels
   const actionLabels = {
     list_view: 'List View',
@@ -376,6 +417,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       initialPermissions[moduleKey] = {};
       Object.keys(moduleStructure[moduleKey].submodules).forEach(submoduleKey => {
         initialPermissions[moduleKey][submoduleKey] = {};
+        initialPermissions[moduleKey][submoduleKey] = {
+          scope: 'self',
+          view_all: false,
+        };
         moduleStructure[moduleKey].submodules[submoduleKey].actions.forEach(action => {
           initialPermissions[moduleKey][submoduleKey][action] = false;
         });
@@ -629,7 +674,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
                   <label className="super-admin-checkbox">
                       <input
                         type="checkbox"
-                        checked= {user?.permissions?.permissions?.super_admin || false}
+                        checked={permissions?.super_admin === true}
                         onChange={(e) => handleSuperAdminToggle(e.target.checked)}
                       />
                     <span className="checkmark"></span>
@@ -695,9 +740,28 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
                                     onChange={(e) => handlePermissionChange(moduleKey, submoduleKey, action, e.target.checked)}
                                   />
                                   <span className="checkmark"></span>
-                                  <span className="action-label">{actionLabels[action]}</span>
+                                  <span className="action-label">{actionLabels[action] || action}</span>
                                 </label>
                               ))}
+                            </div>
+                            <div className="submodule-scope-row">
+                              <label className="scope-label" htmlFor={`scope-${moduleKey}-${submoduleKey}`}>
+                                Data access:
+                              </label>
+                              <select
+                                id={`scope-${moduleKey}-${submoduleKey}`}
+                                className="scope-select"
+                                value={getSubmoduleScope(moduleKey, submoduleKey)}
+                                onChange={(e) =>
+                                  handleScopeChange(moduleKey, submoduleKey, e.target.value)
+                                }
+                              >
+                                {SCOPE_OPTIONS.map((opt) => (
+                                  <option key={opt.value} value={opt.value}>
+                                    {opt.label}
+                                  </option>
+                                ))}
+                              </select>
                             </div>
                           </div>
                         );

@@ -15,6 +15,7 @@ import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import { OfflineProvider } from './context/OfflineContext';
 import { SummaryProvider } from './context/SummaryContext';
 import { InKindItemsProvider } from './context/InKindItemsContext';
 import { NotificationProvider } from './context/NotificationContext';
@@ -122,6 +123,9 @@ import AdminApplicationView from './components/admin/hr/career/applications/view
 import JobsList from './components/admin/hr/careers/jobs/list/index';
 import AddJob from './components/admin/hr/careers/jobs/add/index';
 import ViewJob from './components/admin/hr/careers/jobs/view/index';
+import ResumeCollectionList from './components/admin/hr/resume_collection/list';
+import ResumeCollectionAdd from './components/admin/hr/resume_collection/add';
+import ResumeCollectionView from './components/admin/hr/resume_collection/view';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
 import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
@@ -137,6 +141,9 @@ import FundRaising from './components/dms/fund_raising';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
+import ReceiptTemplateList from './components/dms/receipt_templates/list';
+import ReceiptTemplateForm from './components/dms/receipt_templates/form';
+import ViewReceiptTemplate from './components/dms/receipt_templates/view';
 import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
@@ -176,6 +183,7 @@ const App = () => {
   return (<React.Fragment>
             <Router> 
               <AuthProvider>
+                <OfflineProvider>
                 <NotificationProvider>
                   <SummaryProvider>
                     <InKindItemsProvider>
@@ -358,7 +366,11 @@ const App = () => {
                                 {/* Jobs Routes */}
                                 <Route path="/hr/careers/jobs/list" element={<JobsList />} />
                                 <Route path="/hr/careers/jobs/add" element={<AddJob />} />
-                                <Route path="/hr/careers/jobs/view/:id" element={<ViewJob />} /> 
+                                <Route path="/hr/careers/jobs/view/:id" element={<ViewJob />} />
+
+                                <Route path="/hr/resume-collection/list" element={<ResumeCollectionList />} />
+                                <Route path="/hr/resume-collection/add" element={<ResumeCollectionAdd />} />
+                                <Route path="/hr/resume-collection/view/:id" element={<ResumeCollectionView />} />
                                 
                                 {/* Fund Raising Welcome */}
                                 <Route path="/fund_raising" element={<FundRaising />} />
@@ -458,6 +470,12 @@ const App = () => {
                                 <Route path="/dms/email_templates/add" element={<EmailTemplateForm />} />
                                 <Route path="/dms/email_templates/edit/:id" element={<EmailTemplateForm />} />
 
+                                {/* Receipt Template Routes */}
+                                <Route path="/dms/receipt_templates/list" element={<ReceiptTemplateList />} />
+                                <Route path="/dms/receipt_templates/add" element={<ReceiptTemplateForm />} />
+                                <Route path="/dms/receipt_templates/edit/:id" element={<ReceiptTemplateForm />} />
+                                <Route path="/dms/receipt_templates/view/:id" element={<ViewReceiptTemplate />} />
+
                                 {/* Tasks — flat routes for all users */}
                                 <Route path="/tasks/list" element={<TasksList />} />
                                 <Route path="/tasks/add" element={<AddTask />} />
@@ -476,6 +494,7 @@ const App = () => {
                     </InKindItemsProvider>
                   </SummaryProvider>
                 </NotificationProvider>
+                </OfflineProvider>
             </AuthProvider>
             </Router>
             <ToastContainer />

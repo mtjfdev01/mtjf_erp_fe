@@ -10,8 +10,10 @@ import { DownloadCSV } from '../../../../common/download';
 import { SearchFilter, DateFilter, DateRangeFilter } from '../../../../common/filters';
 import { ClearButton, SearchButton } from '../../../../common/filters/index';
 import FormInput from '../../../../common/FormInput';
+import useOfflineDataRefresh from '../../../../../hooks/useOfflineDataRefresh';
 
 import { FiEye, FiTrash2, FiDollarSign, FiCalendar, FiBox, FiTrendingUp } from 'react-icons/fi';
+import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
 
 const DonationBoxDonationsList = () => {
   const navigate = useNavigate();
@@ -109,6 +111,15 @@ const DonationBoxDonationsList = () => {
     fetchDonations();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters, donationBoxId]);
 
+  useOfflineDataRefresh(() => fetchDonations(), [
+    currentPage,
+    pageSize,
+    sortField,
+    sortOrder,
+    appliedFilters,
+    donationBoxId,
+  ]);
+
   const fetchDonationBoxInfo = async () => {
     try {
       const response = await axiosInstance.get(`/donation-box/${donationBoxId}`);
@@ -190,7 +201,7 @@ const DonationBoxDonationsList = () => {
   const handleDeleteConfirm = async () => {
     if (donationToDelete) {
       try {
-        await axiosInstance.delete(`/dms/donation-box-donations/${donationToDelete.id}`);
+        await axiosInstance.delete(`/donation-box-donation/${donationToDelete.id}`);
         fetchDonations();
       } catch (err) {
         setError(err.response?.data?.message || 'Failed to delete donation');
@@ -503,6 +514,7 @@ const DonationBoxDonationsList = () => {
                       }}>
                         {/* <FiDollarSign style={{ display: 'inline', marginRight: '3px' }} /> */}
                         {formatAmount(donation.collection_amount)}
+                        <OfflinePendingBadge show={donation._pending_sync} />
                       </div>
                     </td>
                     <td>

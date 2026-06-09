@@ -117,7 +117,6 @@ const AddDonationBoxDonation = () => {
       setDonationBox(null);
     }
   };
-useEffect(()=>{},[id])
   useEffect(() => {
     if (id) {
       fetchDonationBox(id);
