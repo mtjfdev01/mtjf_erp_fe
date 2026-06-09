@@ -415,7 +415,7 @@
   .form-content,
   .list-content,
   .view-content {
-    padding: 1.5rem;
+    padding: 0;
   }
   
   .store-container {

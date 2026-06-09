@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { FaUserCircle } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
+import Loader from '../../../common/loader/Loader';
 import { Chart, registerables } from 'chart.js';
 import axiosInstance from '../../../../utils/axios';
 import { departments } from '../../../../utils/admin';
@@ -73,9 +74,9 @@ const STATUS_COLORS = [
   '#fccf3a',
   '#A281C7',
   '#61C0AA',
-  '#ef4444',
+  '#f10a1d',
   '#0feb42',
-  '#E88073',
+  '#6B7280',
   '#f10a1d'
 ];
 
@@ -910,8 +911,8 @@ const TaskReports = () => {
         view_type: apiViewType
       };
 
-      // Ensure user_id is passed when explicitly filtering by 'created' or 'assigned'
-      if (apiViewType === 'created' || apiViewType === 'assigned') {
+      // Ensure user_id is passed when explicitly filtering by any view type
+      if (apiViewType) {
         reportsParams.user_id = user?.id;
       }
 
@@ -1760,6 +1761,8 @@ const TaskReports = () => {
                     <option value="all">All Tasks</option>
                     <option value="created">Created by You</option>
                     <option value="assigned">Assigned to You</option>
+                    <option value="assigned_to_team">Assigned to Team</option>
+                    <option value="approval_tasks">Approval Tasks</option>
                   </select>
                 </div>
               )}
@@ -1808,9 +1811,11 @@ const TaskReports = () => {
   return (
     <>
       <Navbar />
-      <div className="task-report-container">
-        <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
-        <div className="task-dashboard-shell">
+      <Loader loading={taskStatsLoading} />
+      {!taskStatsLoading && (
+        <div className="task-report-container">
+          <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
+          <div className="task-dashboard-shell">
           <div className="task-dashboard-layout">
             <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
             </div>
@@ -1846,7 +1851,7 @@ const TaskReports = () => {
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--ended">
-                        <div className="task-stat-label">Completed Tasks</div>
+                        <div className="task-stat-label">Closed Tasks</div>
                         <div className="task-stat-value">
                           {statsSummary.ended}/{statsSummary.total}
                         </div>
@@ -2248,7 +2253,7 @@ const TaskReports = () => {
                         <div className="task-team-member-stats">
                           <div className="task-team-stat-item task-team-stat-item--total">
                             <div className="task-team-stat-value">{member.count}</div>
-                            <div className="task-team-stat-label">Tasks</div>
+                            <div className="task-team-stat-label">Total Tasks</div>
                           </div>
                           <div className="task-team-stat-item task-team-stat-item--in-progress">
                             <div className="task-team-stat-value">{member.in_progress_count || 0}</div>
@@ -2282,9 +2287,9 @@ const TaskReports = () => {
                           >
                             📋 View Details ({member.count} Tasks)
                           </button>
-                          <button className="task-team-message-btn">
+                          {/* <button className="task-team-message-btn">
                             💬 Message
-                          </button>
+                          </button> */}
                         </div>
                       </div>
                     ))
@@ -2299,6 +2304,7 @@ const TaskReports = () => {
           </div>
         </div>
       </div>
+    )}
 
       {/* Task Details Popup*/}
       {showMemberTasksModal && selectedMemberTasks && (

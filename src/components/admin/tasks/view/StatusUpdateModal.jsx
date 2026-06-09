@@ -104,9 +104,9 @@ const StatusUpdateModal = ({
             </p>
             {showNoteField && (
               <div className="form-group">
-                <label className="form-label">
+                {/* <label className="form-label">
                   Note
-                </label>
+                </label> */}
                 <textarea
                   className="form-input"
                   value={notes}
@@ -128,6 +128,7 @@ const StatusUpdateModal = ({
               Cancel
             </button>
             <PrimaryButton
+              style={{ color: '#ffffff' }}
               type="submit"
               disabled={loading}
               loading={loading}

@@ -1127,7 +1127,7 @@ const UpdateTask = () => {
               )}
             </div>
 
-            <div className="add-task-section">
+            {/* <div className="add-task-section">
               <div className="add-task-section-title">6. Attachments</div>
               <div className="add-task-attachment-toggle">
                 {!showAttachmentTrigger ? (
@@ -1179,7 +1179,7 @@ const UpdateTask = () => {
                   </div>
                 )}
               </div>
-            </div>
+            </div> */}
 
             <div className="add-task-footer">
               <button
