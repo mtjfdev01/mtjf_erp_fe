@@ -23,7 +23,7 @@ const TasksList = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(30);
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('DESC');
   const [totalItems, setTotalItems] = useState(0);
@@ -387,7 +387,7 @@ const TasksList = () => {
         const list = res.data.data || [];
         setTasks(list);
         setTotalItems(res.data.pagination?.total || 0);
-        setTotalPages(res.data.pagination?.totalPages || 1);
+        setTotalPages(res.data.pagination?.totalPages || Math.ceil(totalItems / pageSize));
         if (res.data.categoryCounts) {
           setCategoryCounts(res.data.categoryCounts);
         }
@@ -1204,7 +1204,7 @@ const TasksList = () => {
                       onClick={() => setActiveTab('assigned_to_me')}
                     >
                       <FiUserCheck className="tab-icon" />
-                      <span className="tab-text"> Assign to me</span>
+                      <span className="tab-text"> Assigned to me</span>
                       <span className="tab-count">{myTasks.length}</span>
                     </button>
                     <button
@@ -1212,7 +1212,7 @@ const TasksList = () => {
                       onClick={() => setActiveTab('other_tasks')}
                     >
                       <FiList className="tab-icon" />
-                      <span className="tab-text">Assign to other</span>
+                      <span className="tab-text"> Created by me</span>
                       <span className="tab-count">{otherTasks.length}</span>
                     </button>
                     {isManager && (
@@ -1221,7 +1221,7 @@ const TasksList = () => {
                         onClick={() => setActiveTab('assigned_to_team')}
                       >
                         <FiUsers className="tab-icon" />
-                        <span className="tab-text">Assign to team</span>
+                        <span className="tab-text"> Assigned to team</span>
                         <span className="tab-count">{teamTasks.length}</span>
                       </button>
                     )}

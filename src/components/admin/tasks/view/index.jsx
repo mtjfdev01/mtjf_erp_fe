@@ -1876,6 +1876,7 @@ const ViewTask = () => {
                             />
                             <div className="form-actions">
                               <PrimaryButton
+                                style={{ color: '#ffffff' }}
                                 type="submit"
                                 disabled={savingComment || !canInteractWithNotes}
                                 loading={savingComment}

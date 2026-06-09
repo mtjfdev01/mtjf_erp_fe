@@ -74,9 +74,9 @@ const STATUS_COLORS = [
   '#fccf3a',
   '#A281C7',
   '#61C0AA',
-  '#ef4444',
+  '#f10a1d',
   '#0feb42',
-  '#E88073',
+  '#6B7280',
   '#f10a1d'
 ];
 
@@ -911,8 +911,8 @@ const TaskReports = () => {
         view_type: apiViewType
       };
 
-      // Ensure user_id is passed when explicitly filtering by 'created' or 'assigned'
-      if (apiViewType === 'created' || apiViewType === 'assigned') {
+      // Ensure user_id is passed when explicitly filtering by any view type
+      if (apiViewType) {
         reportsParams.user_id = user?.id;
       }
 
@@ -1761,6 +1761,8 @@ const TaskReports = () => {
                     <option value="all">All Tasks</option>
                     <option value="created">Created by You</option>
                     <option value="assigned">Assigned to You</option>
+                    <option value="assigned_to_team">Assigned to Team</option>
+                    <option value="approval_tasks">Approval Tasks</option>
                   </select>
                 </div>
               )}
@@ -1849,7 +1851,7 @@ const TaskReports = () => {
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--ended">
-                        <div className="task-stat-label">Completed Tasks</div>
+                        <div className="task-stat-label">Closed Tasks</div>
                         <div className="task-stat-value">
                           {statsSummary.ended}/{statsSummary.total}
                         </div>
