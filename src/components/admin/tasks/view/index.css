@@ -260,6 +260,7 @@
   align-items: center;
   gap: 0.875rem;
   flex-wrap: wrap;
+  padding-left: 0.5rem;
 }
 
 .task-view-status-banner-inline strong {
@@ -646,6 +647,7 @@
   justify-content: space-between;
   margin-top: 10px;
   font-size: 12px;
+  text-transform: uppercase;
 }
 
 @media (max-width: 768px) {
@@ -1283,7 +1285,7 @@
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .task-comments-panel .comments-list {

@@ -246,7 +246,7 @@ const ViewTask = () => {
     const rawId = t.id != null ? String(t.id) : '';
     if (!rawId) return '-';
     const padded = rawId.padStart(4, '0');
-    return `#TASK-${padded}`;
+    return `#ID: ${padded}`;
   };
 
   const getDueInfo = (rawDate, statusRaw) => {
@@ -1038,7 +1038,7 @@ const ViewTask = () => {
               <div className="task-view-status-actions-row">
                 <div className="task-view-status-banner-inline">
                   <div className="task-view-status-banner-main">
-                    <strong>Task Status:</strong>
+                    <strong>Status:</strong>
                     {canChangeStatusInline ? (
                       <div className="status-dropdown">
                         <button
