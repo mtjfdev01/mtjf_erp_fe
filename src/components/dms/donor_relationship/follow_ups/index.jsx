@@ -7,7 +7,8 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { PrimaryButton } from '../../../common/buttons';
 import Pagination from '../../../common/Pagination';
-import { formatActivityType, formatDateTime } from '../shared/constants';
+import { formatActivityType, formatDateTime, canMutateFollowup } from '../shared/constants';
+import FollowupEditModal from '../shared/FollowupEditModal';
 import '../donor-relationship.css';
 
 const BUCKETS = [
@@ -35,6 +36,7 @@ const FollowUpsList = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+  const [editingFollowup, setEditingFollowup] = useState(null);
 
   useEffect(() => {
     fetchFollowups();
@@ -121,7 +123,9 @@ const FollowUpsList = () => {
         ) : records.length === 0 ? (
           <p>No follow-ups in this bucket.</p>
         ) : (
-          records.map((row) => (
+          records.map((row) => {
+            const { canEdit, locked } = canMutateFollowup(permissions, row);
+            return (
             <div key={row.id} className="donor-relationship-card">
               <div className="donor-relationship-card__header">
                 <div>
@@ -130,6 +134,7 @@ const FollowUpsList = () => {
                   </div>
                   <div className="donor-relationship-card__meta">
                     {row.followup_title} · Due {formatDateTime(row.due_datetime)}
+                    {locked && !permissions?.super_admin ? ' · Locked' : ''}
                   </div>
                 </div>
                 <span className={`donor-relationship-status ${row.status}`}>
@@ -152,6 +157,15 @@ const FollowUpsList = () => {
                 </div>
               )}
               <div className="donor-relationship-actions">
+                {canEdit && (
+                  <button
+                    type="button"
+                    className="primary_btn"
+                    onClick={() => setEditingFollowup(row)}
+                  >
+                    Edit
+                  </button>
+                )}
                 <PrimaryButton type="button" onClick={() => openAddInteraction(row.donor_id)}>
                   Add interaction
                 </PrimaryButton>
@@ -173,8 +187,16 @@ const FollowUpsList = () => {
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         )}
+
+        <FollowupEditModal
+          open={!!editingFollowup}
+          followup={editingFollowup}
+          onClose={() => setEditingFollowup(null)}
+          onSaved={() => fetchFollowups()}
+        />
 
         <Pagination
           currentPage={page}

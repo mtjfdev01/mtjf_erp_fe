@@ -119,7 +119,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         donor_relationship: {
           label: 'Donor Relationship',
-          actions: ['create', 'list_view', 'view', 'manage_overview']
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'manage_overview']
         }
       } 
     },
