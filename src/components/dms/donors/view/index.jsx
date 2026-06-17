@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
-import { fundRaisingDonorsHas } from '../../../../utils/permissions';
+import { fundRaisingDonorsHas, canViewModule, hasModuleAccess } from '../../../../utils/permissions';
+import '../../donor_relationship/donor-relationship.css';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Card from '../../../common/Card';
 import Modal from '../../../common/Modal';
 import DonorAuditHistory from '../shared/DonorAuditHistory';
+import DonorCommunication from '../../donor_relationship/shared/DonorCommunication';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 import { FiUser, FiMail, FiPhone, FiMapPin, FiCalendar, FiEdit, FiTrash2, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
@@ -15,7 +17,11 @@ import { BsFillBuildingsFill } from "react-icons/bs";
 const ViewDonor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { permissions } = useAuth();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const flashMessage = location.state?.flashMessage || '';
+  const { permissions, user } = useAuth();
+  const [activeTab, setActiveTab] = useState('overview');
   const [donor, setDonor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -23,6 +29,22 @@ const ViewDonor = () => {
   const [revealedPassword, setRevealedPassword] = useState('');
   const [revealError, setRevealError] = useState('');
   const [revealLoading, setRevealLoading] = useState(false);
+
+  const showDonorJourney = useMemo(() => {
+    if (!donor || !permissions) return false;
+    if (permissions.super_admin || permissions.fund_raising_manager) return true;
+    if (hasModuleAccess(permissions, 'fund_raising', 'donor_relationship')) return true;
+    if (canViewModule(permissions, 'fund_raising', 'donor_relationship')) return true;
+    const assigned = donor.assigned_to;
+    const assignedId = typeof assigned === 'object' ? assigned?.id : assigned;
+    return !!(user?.id && assignedId && Number(assignedId) === Number(user.id));
+  }, [donor, permissions, user]);
+
+  useEffect(() => {
+    if (searchParams.get('tab') === 'journey' || flashMessage) {
+      setActiveTab('journey');
+    }
+  }, [searchParams, flashMessage]);
 
   useEffect(() => {
     fetchDonor();
@@ -164,6 +186,33 @@ const ViewDonor = () => {
         />
         
         <div className="list-content">
+          {flashMessage && (
+            <div className="reconciliation-summary" style={{ marginBottom: 16 }}>
+              {flashMessage}
+            </div>
+          )}
+
+          {showDonorJourney && (
+            <div className="donor-view-tabs">
+              <button
+                type="button"
+                className={activeTab === 'overview' ? 'active' : ''}
+                onClick={() => setActiveTab('overview')}
+              >
+                Overview
+              </button>
+              <button
+                type="button"
+                className={activeTab === 'journey' ? 'active' : ''}
+                onClick={() => setActiveTab('journey')}
+              >
+                Relationship Journey
+              </button>
+            </div>
+          )}
+
+          {(activeTab === 'overview' || !showDonorJourney) && (
+          <>
           {/* Donor Type and Basic Info */}
           <div className="card-grid">
             <Card
@@ -309,6 +358,12 @@ const ViewDonor = () => {
               Add Donation
             </button>
           </div>
+          </>
+          )}
+
+          {showDonorJourney && activeTab === 'journey' && (
+            <DonorCommunication donorId={id} donor={donor} />
+          )}
         </div>
       </div>
 

@@ -1,10 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import FormInput from '../../../../common/FormInput';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
+import DataImport from '../../../../common/DataImport';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
+import { useAuth } from '../../../../../context/AuthContext';
+import { hasPermission } from '../../../../../utils/permissions';
 
 const AddDonationBoxDonation = () => {
   const { id } = useParams();
@@ -19,6 +22,15 @@ const AddDonationBoxDonation = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [donationBox, setDonationBox] = useState(null);
+  const { permissions } = useAuth();
+
+  const canImportCsv = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'donation_box_donations', 'create')
+    );
+  }, [permissions]);
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -213,6 +225,41 @@ const AddDonationBoxDonation = () => {
               />
             </div>
           </div>
+
+          {canImportCsv && (
+            <div
+              className="form-section"
+              style={{
+                marginTop: '8px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                border: '1px solid #e5e7eb',
+                background: '#f8fafc',
+              }}
+            >
+              <h3 style={{ margin: '0 0 8px', fontSize: '14px', color: '#333' }}>
+                Bulk import collections
+              </h3>
+              <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#64748b' }}>
+                Upload a CSV to add many collection rows at once.
+                {donationBox?.key_no
+                  ? ` Use key_no "${donationBox.key_no}" in the file for this box.`
+                  : ' Include donation_box_id or key_no per row.'}
+              </p>
+              <DataImport
+                entityName="donation_box_donations"
+                buttonText="Import CSV"
+                disabled={isSubmitting}
+                onImportComplete={() => {
+                  if (form.donation_box_id) {
+                    navigate(`/dms/donation-box-donations/list/${form.donation_box_id}`);
+                  } else {
+                    navigate('/dms/donation-box-donations/list');
+                  }
+                }}
+              />
+            </div>
+          )}
 
           <div className="form-actions">
             <button 

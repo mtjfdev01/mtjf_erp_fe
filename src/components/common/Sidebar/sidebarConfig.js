@@ -42,7 +42,8 @@ import {
   FiCreditCard,
   FiAlertCircle,
   FiBookmark,
-  FiRepeat
+  FiRepeat,
+  FiRefreshCw
 } from 'react-icons/fi';
 import { departments } from '../../../utils/admin';
 
@@ -435,7 +436,9 @@ const adminDepartmentItems = () => [
       {label: "campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
       {label: "appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
       {label: "social_media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
-      {label: "recurring_donations", path: "/dms/recurring-donations/list", type: "list", icon: FiRepeat}
+      {label: "recurring_donations", path: "/dms/recurring-donations/list", type: "list", icon: FiRepeat},
+      {label: "reconciliation", path: "/dms/reconciliation/list", type: "list", icon: FiRefreshCw},
+      {label: "donor_relationship", path: "/dms/donor-relationship/follow-ups", type: "list", icon: FiUsers}
     ]
   },
   {
@@ -688,6 +691,25 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiRepeat
   },
   {
+    label: 'Reconciliation',
+    path: '/dms/reconciliation/list',
+    type: 'list',
+    module: 'reconciliation',
+    icon: FiRefreshCw
+  },
+  {
+    label: 'Donor Relationship',
+    path: '/dms/donor-relationship/follow-ups',
+    type: 'list',
+    module: 'donor_relationship',
+    icon: FiUsers,
+    subItems: [
+      { label: 'My Follow-ups', path: '/dms/donor-relationship/follow-ups', type: 'list', icon: FiList },
+      { label: 'Add Interaction', path: '/dms/donor-relationship/add', type: 'list', icon: FiPlusCircle },
+      { label: 'Management Overview', path: '/dms/donor-relationship/overview', type: 'list', icon: FiBarChart2 },
+    ],
+  },
+  {
     label: 'Receipt Templates',
     path: '/dms/receipt_templates/list',
     type: 'list',
@@ -839,24 +861,24 @@ const allDepartmentItems = (isUser = false) => [
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   },
-  {
-    id: 'store',
-    label: 'Store Department',
-    icon: FiArchive,
-    items: storeDepartmentItems(isUser)
-  },
-  {
-    id: 'procurements',
-    label: 'Procurements Department',
-    icon: FiShoppingCart,
-    items: procurementsDepartmentItems(isUser)
-  },
-  {
-    id: 'accounts_and_finance',
-    label: 'Accounts & Finance',
-    icon: FiDollarSign,
-    items: accountsFinanceDepartmentItems(isUser)
-  },
+  // {
+  //   id: 'store',
+  //   label: 'Store Department',
+  //   icon: FiArchive,
+  //   items: storeDepartmentItems(isUser)
+  // },
+  // {
+  //   id: 'procurements',
+  //   label: 'Procurements Department',
+  //   icon: FiShoppingCart,
+  //   items: procurementsDepartmentItems(isUser)
+  // },
+  // {
+  //   id: 'accounts_and_finance',
+  //   label: 'Accounts & Finance',
+  //   icon: FiDollarSign,
+  //   items: accountsFinanceDepartmentItems(isUser)
+  // },
   {
     id: 'admin',
     label: 'Admin Panel',
@@ -899,12 +921,12 @@ const allDepartmentItems = (isUser = false) => [
     icon: FiTrendingUp,
     items: marketingDepartmentItems(isUser)
   },
-  {
-    id: 'audio_video',
-    label: 'Audio Video',
-    icon: FiVideo,
-    items: audioVideoDepartmentItems(isUser)
-  },
+  // {
+  //   id: 'audio_video',
+  //   label: 'Audio Video',
+  //   icon: FiVideo,
+  //   items: audioVideoDepartmentItems(isUser)
+  // },
   {
     id: 'email_templates',
     label: 'Communication',
@@ -923,26 +945,26 @@ const departmentConfigs = {
     items: programDepartmentItems(isUser)
   }),
   
-  store: (isUser = false) => ({
-    id: 'store',
-    label: 'Store Department',
-    icon: FiArchive,
-    items: storeDepartmentItems(isUser)
-  }),
+  // store: (isUser = false) => ({
+  //   id: 'store',
+  //   label: 'Store Department',
+  //   icon: FiArchive,
+  //   items: storeDepartmentItems(isUser)
+  // }),
   
-  procurements: (isUser = false) => ({
-    id: 'procurements',
-    label: 'Procurements Department',
-    icon: FiShoppingCart,
-    items: procurementsDepartmentItems(isUser)
-  }),
+  // procurements: (isUser = false) => ({
+  //   id: 'procurements',
+  //   label: 'Procurements Department',
+  //   icon: FiShoppingCart,
+  //   items: procurementsDepartmentItems(isUser)
+  // }),
   
-  accounts_and_finance: (isUser = false) => ({
-    id: 'accounts_and_finance',
-    label: 'Accounts & Finance',
-    icon: FiDollarSign,
-    items: accountsFinanceDepartmentItems(isUser)
-  }),
+  // accounts_and_finance: (isUser = false) => ({
+  //   id: 'accounts_and_finance',
+  //   label: 'Accounts & Finance',
+  //   icon: FiDollarSign,
+  //   items: accountsFinanceDepartmentItems(isUser)
+  // }),
   
   admin: (isUser = false) => ({
     id: 'admin',

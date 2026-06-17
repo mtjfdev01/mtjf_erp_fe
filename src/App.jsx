@@ -138,6 +138,12 @@ import AddDonationBoxDonation from './components/dms/donations/donation_box/add'
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
+import { ReconciliationList, ReconciliationAdd, ReconciliationView } from './components/dms/reconciliation';
+import {
+  FollowUpsList,
+  AddDonorInteraction,
+  ManagementOverview,
+} from './components/dms/donor_relationship';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
@@ -475,6 +481,14 @@ const App = () => {
                                 <Route path="/dms/receipt_templates/add" element={<ReceiptTemplateForm />} />
                                 <Route path="/dms/receipt_templates/edit/:id" element={<ReceiptTemplateForm />} />
                                 <Route path="/dms/receipt_templates/view/:id" element={<ViewReceiptTemplate />} />
+
+                                <Route path="/dms/reconciliation/list" element={<ReconciliationList />} />
+                                <Route path="/dms/reconciliation/add" element={<ReconciliationAdd />} />
+                                <Route path="/dms/reconciliation/view/:id" element={<ReconciliationView />} />
+
+                                <Route path="/dms/donor-relationship/follow-ups" element={<FollowUpsList />} />
+                                <Route path="/dms/donor-relationship/add" element={<AddDonorInteraction />} />
+                                <Route path="/dms/donor-relationship/overview" element={<ManagementOverview />} />
 
                                 {/* Tasks — flat routes for all users */}
                                 <Route path="/tasks/list" element={<TasksList />} />
