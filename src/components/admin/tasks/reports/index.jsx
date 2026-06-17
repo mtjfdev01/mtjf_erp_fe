@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { FaUserCircle } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
@@ -25,7 +25,7 @@ const getResponsiveTooltipSizes = () => {
       boxWidth: 6,
       boxHeight: 6,
       boxPadding: 1,
-      caretPadding: 3,
+      // caretPadding: 3,
       caretSize: 4,
       bodySpacing: 2
     };
@@ -120,16 +120,32 @@ const DEPARTMENT_COLORS = [
   '#FF9F40', '#4D5360', '#C9CBCF', '#8E5EA2', '#3CBA9F'
 ];
 
+const downloadCsv = (rows, fileName) => {
+  const csvContent = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.setAttribute('href', url);
+  link.setAttribute('download', fileName);
+  link.style.display = 'none';
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
+};
+
 function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
   const drawLabels = (chart) => {
     const ctx = chart.ctx;
+    const dataset = chart.data.datasets[0];
+    const total = dataset.data.reduce((sum, value) => sum + value, 0);
+
     chart.data.datasets.forEach((dataset, i) => {
       const meta = chart.getDatasetMeta(i);
       meta.data.forEach((arc, index) => {
         const value = dataset.data[index];
         if (value === 0 || !arc) return;
         
-        const total = dataset.data.reduce((a, b) => a + b, 0);
         const percentage = Math.round((value / total) * 100);
         
         ctx.save();
@@ -137,13 +153,28 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 12px Inter, sans-serif';
-        ctx.fillText(value.toString(), center.x, center.y - 6);
-        ctx.font = '10px Inter, sans-serif';
-        ctx.fillText(`(${percentage}%)`, center.x, center.y + 8);
+        ctx.font = '600 12px Inter, sans-serif';
+        ctx.fillText(value.toString(), center.x, center.y - 8);
+        ctx.font = '500 10px Inter, sans-serif';
+        ctx.fillText(`(${percentage}%)`, center.x, center.y + 12);
         ctx.restore();
       });
     });
+
+    if (total > 0) {
+      ctx.save();
+      const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+      const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#0f172a';
+      ctx.font = '600 26px Inter, sans-serif';
+      ctx.fillText(total.toString(), centerX, centerY - 8);
+      ctx.font = '600 12px Inter, sans-serif';
+      ctx.fillStyle = '#64748b';
+      ctx.fillText('Total Tasks', centerX, centerY + 16);
+      ctx.restore();
+    }
   };
 
   if (chartInstanceRef.current) {
@@ -158,6 +189,15 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '50%',
+      layout: {
+        padding: {
+          top: 12,
+          bottom: 12,
+          left: 12,
+          right: 12
+        }
+      },
       plugins: { 
         legend: { display: false },
         tooltip: {
@@ -166,7 +206,7 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
               const label = context.label || '';
               const value = context.parsed || 0;
               const total = context.dataset.data.reduce((a, b) => a + b, 0);
-              const percentage = Math.round((value / total) * 100);
+              const percentage = total ? Math.round((value / total) * 100) : 0;
               return `${label}: ${value} (${percentage}%)`;
             }
           }
@@ -187,11 +227,15 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
-    let list = projects;
-    
+    let list = Array.isArray(projects) ? [...projects] : [];
+    list.sort((a, b) => {
+      const diff = (Number(b.count) || 0) - (Number(a.count) || 0);
+      return diff !== 0 ? diff : String(a.label || '').localeCompare(String(b.label || ''));
+    });
+
     if (projectCategory !== 'all') {
-      list = list.filter(p => {
-        const projectName = p.label;
+      list = list.filter((p) => {
+        const projectName = String(p.label || '');
         if (projectCategory === 'project') {
           return PROJECTS_LIST.includes(projectName);
         } else if (projectCategory === 'program') {
@@ -200,7 +244,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
         return true;
       });
     }
-    
+
     return list;
   }, [projects, projectCategory]);
 
@@ -214,16 +258,15 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
   useEffect(() => {
     if (filteredProjects.length > 0 && projectBarChartRef.current) {
-      const labels = filteredProjects.map(p => p.label);
+        const labels = filteredProjects.map((p) => p.label);
 
-      const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
-        const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
-        const total = filteredProjects.reduce((sum, project) => {
-          return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
-        }, 0);
-        return { statusLabel, statusKey, index, total };
-      });
-
+        const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
+          const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
+          const total = filteredProjects.reduce((sum, project) => {
+            return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
+          }, 0);
+          return { statusLabel, statusKey, index, total };
+        });
       const activeStatuses = statusTotals.filter(item => item.total > 0);
 
       const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
@@ -235,9 +278,6 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
         hoverBackgroundColor: STATUS_COLORS[index],
         borderColor: '#ffffff',
         hoverBorderColor: '#ffffff',
-        borderWidth: 2.5,
-        hoverBorderWidth: 3,
-        borderRadius: 6,
         borderSkipped: false,
         statusKey: statusKey,
         barPercentage: 0.9,
@@ -261,6 +301,13 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
               indexAxis: 'y',
               responsive: true,
               maintainAspectRatio: false,
+              layout: {
+                padding: {
+                  right: 96,
+                  top: 14,
+                  bottom: 14
+                }
+              },
               plugins: {
                 legend: {
                   display: true,
@@ -301,24 +348,33 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
                       const project = filteredProjects[projectIndex];
                       if (!project || !project.tasks || project.tasks.length === 0) return null;
                       const currentStatus = context.dataset.statusKey;
-                      const statusTasks = project.tasks.filter(t => (t.status || 'open') === currentStatus);
+                      const statusTasks = project.tasks.filter((t) => (t.status || 'open') === currentStatus);
                       if (statusTasks.length === 0) return null;
-                      const taskDetails = statusTasks.slice(0, 5).map(t => {
+                      const taskDetails = statusTasks.slice(0, 5).map((t) => {
                         const assignees = t.assignee_names || 'Unassigned';
-                        const dept = String(t.department || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ');
+                        const dept = String(t.department || 'Unassigned')
+                          .split('_')
+                          .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+                          .join(' ');
                         return `• ${t.title}\n  👤 ${assignees}\n  🏢 ${dept}`;
                       });
                       const remaining = statusTasks.length > 5 ? `\n... and ${statusTasks.length - 5} more task(s)` : '';
                       return '\n📝 Task Details:\n' + taskDetails.join('\n') + remaining;
                     }
                   }
-                },
+                }
               },
               scales: {
                 x: {
                   stacked: true,
                   beginAtZero: true,
-                  grid: { display: true, color: 'rgba(0, 0, 0, 0.04)', lineWidth: 1, drawBorder: false, borderDash: [4, 4] },
+                  grid: {
+                    display: true,
+                    color: 'rgba(0, 0, 0, 0.04)',
+                    lineWidth: 1,
+                    drawBorder: false,
+                    borderDash: [4, 4]
+                  },
                   ticks: {
                     precision: 0,
                     font: { size: 11, weight: '600', family: "'Inter', sans-serif" },
@@ -356,41 +412,52 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
               }
             },
             plugins: [{
-              id: 'totalLabels',
+              id: 'segmentLabels',
               afterDatasetsDraw: (chart) => {
                 const { ctx } = chart;
-                const isHorizontal = chart.config.options.indexAxis === 'y';
-                const chartWidth = chart.width;
-                let badgeWidth = 36, badgeHeight = 22, cornerRadius = 5, fontSize = 12, padding = 8;
-                if (chartWidth < 480) { badgeWidth = 28; badgeHeight = 18; cornerRadius = 4; fontSize = 10; padding = 6; }
-                const lastDatasetIndex = chart.data.datasets.length - 1;
-                if (lastDatasetIndex < 0) return;
-                const meta = chart.getDatasetMeta(lastDatasetIndex);
-                meta.data.forEach((bar, index) => {
-                  let total = 0;
-                  chart.data.datasets.forEach((dataset, dsIdx) => {
-                    const dsMeta = chart.getDatasetMeta(dsIdx);
-                    if (!dsMeta.hidden) total += (dataset.data[index] || 0);
-                  });
-                  if (total > 0 && bar) {
+                chart.data.datasets.forEach((dataset) => {
+                  const meta = chart.getDatasetMeta(chart.data.datasets.indexOf(dataset));
+                  meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    if (!value || value === 0) return;
+                    const base = bar.base !== undefined ? bar.base : bar.x - bar.width;
+                    const width = Math.abs((bar.x || 0) - base) || bar.width || 0;
+                    if (width < 18) return;
+                    const x = base + width / 2;
                     ctx.save();
-                    let x = isHorizontal ? bar.x + padding : bar.x - badgeWidth / 2;
-                    let y = isHorizontal ? bar.y - badgeHeight / 2 : bar.y - badgeHeight - padding;
-                    if (x < 0) x = 4;
-                    if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
-                    if (y < 0) y = 4;
-                    if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)'; ctx.shadowBlur = 6;
                     ctx.fillStyle = '#ffffff';
-                    ctx.beginPath();
-                    ctx.roundRect(x, y, badgeWidth, badgeHeight, cornerRadius);
-                    ctx.fill();
-                    ctx.fillStyle = '#0f172a'; ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
+                    ctx.font = '600 12px Inter, sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(String(value), x, bar.y);
                     ctx.restore();
-                  }
+                  });
                 });
+              }
+            }, {
+              id: 'totalColumn',
+              afterDatasetsDraw: (chart) => {
+                const { ctx } = chart;
+                const rightPadding = chart.options.layout?.padding?.right || 96;
+                const drawX = chart.width - rightPadding / 2;
+                const totals = chart.data.labels.map((_, idx) => {
+                  return chart.data.datasets.reduce((sum, dataset) => {
+                    return sum + (dataset.data[idx] || 0);
+                  }, 0);
+                });
+                ctx.save();
+                ctx.font = '600 13px Inter, sans-serif';
+                ctx.fillStyle = '#7F8C8D';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('Total', drawX, 16);
+                totals.forEach((total, idx) => {
+                  const bar = chart.getDatasetMeta(0).data[idx];
+                  if (!bar) return;
+                  const y = bar.y;
+                  ctx.fillText(String(total), drawX, y);
+                });
+                ctx.restore();
               }
             }]
           }
@@ -405,11 +472,42 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
     };
   }, [filteredProjects]);
 
+  const handleExportProjectReport = useCallback(() => {
+    if (!filteredProjects || filteredProjects.length === 0) return;
+
+    const rows = [
+      [
+        'Project / Program',
+        'Open',
+        'In Progress',
+        'Pending Approval',
+        'Approved',
+        'Rejected',
+        'Completed',
+        'Closed',
+        'Cancelled',
+        'Total'
+      ],
+    ];
+
+    filteredProjects.forEach((project) => {
+      const statuses = project.statuses || {};
+      const counts = STATUS_LABELS.map((label) => statuses[label.toLowerCase().replace(/\s+/g, '_')] || 0);
+      const total = counts.reduce((sum, value) => sum + value, 0);
+      rows.push([project.label, ...counts, total]);
+    });
+
+    downloadCsv(rows, `project_program_task_report_${new Date().toISOString().slice(0, 10)}.csv`);
+  }, [filteredProjects]);
+
   return (
     <div className="task-report-card task-report-card--project-report">
       <div className="task-report-card-header task-report-card-header--with-filter">
         <div className="task-report-header-left">
+          <FaProjectDiagram className="task-status-overview-icon"/>
           <h2 className="task-report-card-title">Project/Program-wise Task Report</h2>
+        </div>
+        <div className="task-report-header-right">
           <div className="task-report-filter-inline">
             <select
               className="task-report-category-filter"
@@ -430,6 +528,14 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
               </button>
             )}
           </div>
+          <button
+            className="task-report-export-button"
+            onClick={handleExportProjectReport}
+            title="Export report"
+            type="button"
+          >
+            <FaDownload /> Export
+          </button>
         </div>
       </div>
       <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: `${dynamicHeight}px` }}>
@@ -508,6 +614,90 @@ const TaskReports = () => {
       return userName.includes(query) || userRole.includes(query);
     });
   }, [taskAggregates.users, userReportSearchQuery]);
+
+  const handleExportUserReport = useCallback(() => {
+    if (!filteredUserReportUsers || filteredUserReportUsers.length === 0) return;
+
+    const rows = [
+      [
+        'User',
+        'Role',
+        'Open',
+        'In Progress',
+        'Pending Approval',
+        'Approved',
+        'Rejected',
+        'Completed',
+        'Closed',
+        'Cancelled',
+        'Total'
+      ]
+    ];
+
+    filteredUserReportUsers.forEach((userEntry) => {
+      const statuses = userEntry.statuses || {};
+      const counts = STATUS_LABELS.map((label) => statuses[label.toLowerCase().replace(/\s+/g, '_')] || 0);
+      const total = counts.reduce((sum, value) => sum + value, 0);
+      rows.push([userEntry.label || userEntry.name || 'Unknown', userEntry.role || '', ...counts, total]);
+    });
+
+    downloadCsv(rows, `user_task_report_${new Date().toISOString().slice(0, 10)}.csv`);
+  }, [filteredUserReportUsers]);
+
+  const handleExportDepartmentReport = useCallback(() => {
+    if (!taskStats?.department_status_breakdown) return;
+
+    const statusKeys = [
+      'open',
+      'in_progress',
+      'pending_approval',
+      'approved',
+      'rejected',
+      'completed',
+      'closed',
+      'cancelled'
+    ];
+
+    const visibleDepartments = Object.keys(taskStats.department_status_breakdown).filter((dept) => {
+      if (hiddenDepartmentBarDepartments.has(dept)) return false;
+      const statusData = taskStats.department_status_breakdown[dept] || {};
+      return statusKeys.some((status) => {
+        const entry = statusData[status];
+        const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+        return count > 0;
+      });
+    });
+
+    if (visibleDepartments.length === 0) return;
+
+    const rows = [
+      [
+        'Department',
+        'Open',
+        'In Progress',
+        'Pending Approval',
+        'Approved',
+        'Rejected',
+        'Completed',
+        'Closed',
+        'Cancelled',
+        'Total'
+      ]
+    ];
+
+    visibleDepartments.forEach((dept) => {
+      const statusData = taskStats.department_status_breakdown[dept] || {};
+      const counts = statusKeys.map((status) => {
+        const entry = statusData[status];
+        return entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+      });
+      const total = counts.reduce((sum, value) => sum + value, 0);
+      const formattedDept = String(dept || 'Unassigned').split('_').map((w) => w ? w.toUpperCase() : '').join(' ');
+      rows.push([formattedDept, ...counts, total]);
+    });
+
+    downloadCsv(rows, `department_task_report_${new Date().toISOString().slice(0, 10)}.csv`);
+  }, [taskStats, hiddenDepartmentBarDepartments]);
 
   /** Task dashboard scope: user's department (permissions resolved against it). */
   const tasksDepartmentFromUser = useMemo(() => {
@@ -1056,9 +1246,7 @@ const TaskReports = () => {
         hoverBackgroundColor: STATUS_COLORS[index],
         borderColor: '#ffffff',
         hoverBorderColor: '#ffffff',
-        borderWidth: 2.5,
-        hoverBorderWidth: 3,
-        borderRadius: 6,
+        borderRadius: 4,
         borderSkipped: false,
         barPercentage: 0.85,
         categoryPercentage: 0.7,
@@ -1086,15 +1274,16 @@ const TaskReports = () => {
                 display: true,
                 position: 'bottom',
                 align: 'center',
+                itemSpacing: 20,
                 labels: {
                   boxWidth: 14,
                   boxHeight: 14,
                   font: {
-                    size: 11,
+                    size: 10,
                     weight: '600',
                     family: "'Inter', sans-serif"
                   },
-                  padding: 16,
+                  padding: 18,
                   usePointStyle: true,
                   pointStyle: 'rectRounded',
                   color: '#475569',
@@ -1268,7 +1457,7 @@ const TaskReports = () => {
                 // Extra small screens
                 badgeWidth = 22;
                 badgeHeight = 15;
-                cornerRadius = 3;
+                // cornerRadius = 3;
                 fontSize = 9;
                 padding = 4;
               } else if (chartWidth < 768) {
@@ -1282,7 +1471,7 @@ const TaskReports = () => {
                 // Medium and larger screens
                 badgeWidth = 26;
                 badgeHeight = 17;
-                cornerRadius = 3;
+                // cornerRadius = 3;
                 fontSize = 10;
                 padding = 5;
               }
@@ -1387,7 +1576,7 @@ const TaskReports = () => {
         barPercentage: 0.55,
         categoryPercentage: 0.65,
         barThickness: 'flex',
-        maxBarThickness: 45
+        maxBarThickness: 40
       }));
 
       const data = {
@@ -1498,7 +1687,7 @@ const TaskReports = () => {
                 stacked: true,
                 grid: {
                   display: true,
-                  color: 'rgba(0, 0, 0, 0.04)',
+                  color: 'rgba(222, 15, 15, 0.04)',
                   lineWidth: 1,
                   drawBorder: false,
                   borderDash: [4, 4]
@@ -1630,7 +1819,6 @@ const TaskReports = () => {
                   ctx.shadowBlur = 6;
                   ctx.shadowOffsetX = 0;
                   ctx.shadowOffsetY = 2;
-
                   ctx.fillStyle = '#ffffff';
 
                   // Rounded rectangle
@@ -1810,12 +1998,12 @@ const TaskReports = () => {
 
   return (
     <>
-      <Navbar />
+      <Navbar/>
       <Loader loading={taskStatsLoading} />
       {!taskStatsLoading && (
         <div className="task-report-container">
           <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
-          <div className="task-dashboard-shell">
+          <div className="task-dashboard-shell">                
           <div className="task-dashboard-layout">
             <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
             </div>
@@ -1841,28 +2029,33 @@ const TaskReports = () => {
                     </div> */}
                     <div className="task-dashboard-cards">
                       <div className="task-stat-card task-stat-card--total">
+                        <FaLayerGroup className="task-stat-icon--total task-stat-icon"/>
                         <div className="task-stat-label">Total Tasks</div>
                         <div className="task-stat-value">{statsSummary.total}</div>
                       </div>
                       <div className="task-stat-card task-stat-card--pending task-stat-card--active">
+                        <FaHourglassHalf className="task-stat-icon--pending task-stat-icon"/>
                         <div className="task-stat-label">Pending Tasks</div>
                         <div className="task-stat-value">
                           {statsSummary.pending}/{statsSummary.total}
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--ended">
+                        <FaLock className="task-stat-icon--ended task-stat-icon"/>
                         <div className="task-stat-label">Closed Tasks</div>
                         <div className="task-stat-value">
                           {statsSummary.ended}/{statsSummary.total}
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--overdue">
+                        <FaExclamationTriangle className="task-stat-icon--overdue task-stat-icon"/>
                         <div className="task-stat-label">Overdue Tasks</div>
                         <div className="task-stat-value">
                           {statsSummary.overdue}/{statsSummary.total}
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--completion">
+                        <FaChartLine className="task-stat-icon--completion task-stat-icon"/>
                         <div className="task-stat-label">Completion Rate</div>
                         <div className="task-stat-value">
                           {`${Number(statsSummary.completionRate || 0).toFixed(1)}%`}
@@ -1876,52 +2069,61 @@ const TaskReports = () => {
                     <div className="task-dashboard-bottom-left">
                       <div className="task-report-card task-report-card--status-overview">
                         <div className="task-report-card-header">
+                          <FaChartPie className="task-status-overview-icon"/>
                           <h2 className="task-report-card-title">Status Overview</h2>
                         </div>
                         <div className="task-status-grid">
                           <div className="task-status-card task-status-card--open">
+                            <FaFolderOpen className="task-status-icon"/>
                             <div className="task-status-label">Open</div>
                             <div className="task-status-value">
                               {statsSummary.open}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--in-progress">
+                            <FaSpinner className="task-status-icon"/>
                             <div className="task-status-label">In Progress</div>
                             <div className="task-status-value">
                               {statsSummary.inProgress}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--pending-approval">
+                            <FaUserClock className="task-status-icon"/>
                             <div className="task-status-label">Pending Approval</div>
                             <div className="task-status-value">
                               {statsSummary.pendingApproval}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--approved">
+                            <FaCheckDouble className="task-status-icon"/>
                             <div className="task-status-label">Approved</div>
                             <div className="task-status-value">
                               {statsSummary.approved}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--rejected">
+                            <FaTimesCircle className="task-status-icon"/>
                             <div className="task-status-label">Rejected</div>
                             <div className="task-status-value">
                               {statsSummary.rejected}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--completed">
+                            <FaCheckCircle className="task-status-icon"/>
                             <div className="task-status-label">Completed</div>
                             <div className="task-status-value">
                               {statsSummary.completed}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--closed">
+                            <FaLock className="task-status-icon"/>
                             <div className="task-status-label">Closed</div>
                             <div className="task-status-value">
                               {statsSummary.closed}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--cancelled">
+                            <FaBan className="task-status-icon"/>
                             <div className="task-status-label">Cancelled</div>
                             <div className="task-status-value">
                               {statsSummary.cancelled}/{statsSummary.total}
@@ -1929,31 +2131,35 @@ const TaskReports = () => {
                           </div>
                         </div>
                       </div>
-
                       <div className="task-report-card task-report-card--priority-overview">
                         <div className="task-report-card-header">
+                          <FaFlag className="task-status-overview-icon"/>
                           <h2 className="task-report-card-title">Priority Overview</h2>
                         </div>
                         <div className="task-priority-grid">
                           <div className="task-status-card task-status-card--priority-low">
+                            <FaArrowDown className="task-status-icon"/>
                             <div className="task-status-label">Low</div>
                             <div className="task-status-value">
                               {prioritySummary.low}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--priority-medium">
+                            <FaGripLines className="task-status-icon"/>
                             <div className="task-status-label">Medium</div>
                             <div className="task-status-value">
                               {prioritySummary.medium}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--priority-high">
+                            <FaArrowUp className="task-status-icon"/>
                             <div className="task-status-label">High</div>
                             <div className="task-status-value">
                               {prioritySummary.high}/{statsSummary.total}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--priority-critical">
+                            <FaExclamationCircle className="task-status-icon"/>
                             <div className="task-status-label">Critical</div>
                             <div className="task-status-value">
                               {prioritySummary.critical}/{statsSummary.total}
@@ -1961,18 +2167,17 @@ const TaskReports = () => {
                           </div>
                         </div>
                       </div>
-
                     </div>
                   </div>
                   <div className="task-dashboard-column">
                     <div className="task-report-card task-report-card--task-progress">
                       <div className="task-report-card-header">
+                        <FaChartLine className="task-status-overview-icon"/>
                         <h2 className="task-report-card-title">Task Progress</h2>
                       </div>
                       <div className="task-report-card-chart task-report-card-chart--wide">
                         <canvas ref={completionRateChartRef}></canvas>
-                      </div>
-                      <div className="task-progress-legend">
+                        <div className="task-progress-legend task-progress-legend--task-progress-card">
                         {(() => {
                           const allStatusValues = [
                             statsSummary.open || 0,
@@ -2010,26 +2215,34 @@ const TaskReports = () => {
                                     opacity: isHidden ? 0.4 : 1
                                   }}
                                 />
-                                <span className="task-progress-legend-label">
-                                  {label}: {count}
-                                </span>
+                                <div className="task-progress-legend-body">
+                                  <span className="task-progress-legend-label">
+                                    {label}
+                                  </span>
+                                  <span className="task-progress-legend-value">
+                                    {count}
+                                  </span>
+                                </div>
                               </div>
                             );
                           });
                         })()}
                       </div>
+                      </div>
                       {taskStatsLoading && <div className="loading">Loading task progress...</div>}
                       {taskStatsError && <div className="error">{taskStatsError}</div>}
                     </div>
-
                   </div>
                 </div>
                 <div className="task-dashboard-reports-grid">
                   <ProjectProgramWiseReport projects={taskAggregates.projects} />
-                  {/* <div className="task-report-card task-report-card--user-report">
+                  <div className="task-report-card task-report-card--user-report">
                     <div className="task-report-card-header task-report-card-header--with-filter">
                       <div className="task-report-header-left">
+                        <FaUsers className="task-status-overview-icon"/>
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
+                      </div>
+                      <div className="task-report-header-right">
                         <div className="task-report-filter-inline">
                           <input
                             type="text"
@@ -2048,6 +2261,14 @@ const TaskReports = () => {
                             </button>
                           )}
                         </div>
+                        <button
+                          className="task-report-export-button"
+                          onClick={handleExportUserReport}
+                          title="Export user report"
+                          type="button"
+                        >
+                          <FaDownload /> Export
+                        </button>  
                       </div>
                     </div>
                     <div className="task-report-card-chart task-report-card-chart--wide">
@@ -2107,11 +2328,24 @@ const TaskReports = () => {
                         });
                       })()}
                     </div>
-                  </div>  */}
+                  </div>  
                   {rolePerms.isAdmin && (
                     <div className="task-report-card task-report-card--department-report">
-                      <div className="task-report-card-header">
-                        <h2 className="task-report-card-title">Department-wise Task Report</h2>
+                      <div className="task-report-card-header task-report-card-header--with-filter">
+                        <div className="task-report-header-left">
+                          <FaBuilding className="task-status-overview-icon"/>
+                          <h2 className="task-report-card-title">Department-wise Task Report</h2>
+                        </div>
+                        <div className="task-report-header-right">
+                          <button
+                            className="task-report-export-button"
+                            onClick={handleExportDepartmentReport}
+                            title="Export department report"
+                            type="button"
+                          >
+                            <FaDownload /> Export
+                          </button>
+                        </div>
                       </div>
                       <div className="task-report-card-chart task-report-card-chart--wide">
                         <div className="task-report-slider-container">
@@ -2181,8 +2415,7 @@ const TaskReports = () => {
                     <div className={`task-team-search-wrapper ${mobileSearchOpen ? 'task-team-search-wrapper--open' : ''}`}>
                       <span
                         className="task-team-search-icon"
-                        onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-                      >🔍</span>
+                        onClick={() => setMobileSearchOpen(!mobileSearchOpen)}>🔍</span>
                       <input
                         type="text"
                         className="task-team-search-input"

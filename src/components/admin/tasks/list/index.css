@@ -75,9 +75,9 @@
 .task-card-status-bar span {
   display: block;
   transform: rotate(-90deg);
-  white-space: nowrap;
+  /* white-space: nowrap; */
   position: absolute;
-  width: max-content;
+  /* width: max-content; */
   color: #ffffff;
   left: 50%;
   top: 50%;
@@ -290,10 +290,15 @@
   line-height: 1.3;
   display: -webkit-box;
   line-clamp: 2;
-  -webkit-line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: normal;
   word-break: break-word;
+  flex: 1 1 0;
+  min-width: 0;
+  max-height: calc(1.3em * 2);
 }
 
 .task-card-meta {
@@ -578,7 +583,7 @@
 @media (max-width: 1400px) {
   .task-card-content {
     flex-wrap: wrap;
-    gap: 1.25rem;
+    gap: 0.75rem;
   }
 
   .task-card-main {
@@ -798,7 +803,11 @@
 }
 
 .task-card-header-row {
-  display: block;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  min-width: 0;
 }
 
 .task-card-meta-left {
