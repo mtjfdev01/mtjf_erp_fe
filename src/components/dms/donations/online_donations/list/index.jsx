@@ -580,11 +580,24 @@ const OnlineDonationsList = () => {
     { value: 'general', label: 'General' }
   ];
 
-  const donationMethodOptions = [
-    { value: 'meezan', label: 'Meezan Bank' },
-    { value: 'blinq', label: 'Blinq' },
-    { value: 'payfast', label: 'Payfast' }
-  ];
+  const donationMethodOptions = useMemo(() => {
+    if (isOfflineRoute) {
+      return [
+        { value: 'cash', label: 'Cash' },
+        { value: 'cheque', label: 'Cheque' },
+        { value: 'bank_transfer', label: 'Bank Transfer' },
+        { value: 'credit_card', label: 'Credit Card' },
+        { value: 'online', label: 'Online' },
+        { value: 'in_kind', label: 'In Kind' },
+        { value: 'reconciliation', label: 'Reconciliation' },
+      ];
+    }
+    return [
+      { value: 'meezan', label: 'Meezan Bank' },
+      { value: 'blinq', label: 'Blinq' },
+      { value: 'payfast', label: 'Payfast' },
+    ];
+  }, [isOfflineRoute]);
 
   const donationSourceOptions = [
     { value: 'website', label: 'Website' },

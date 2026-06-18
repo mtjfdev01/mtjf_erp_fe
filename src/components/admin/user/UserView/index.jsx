@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
+import { useAuth } from '../../../../context/AuthContext';
+import { hasPermission } from '../../../../utils/permissions';
+import Modal from '../../../common/Modal';
+import { FiKey } from 'react-icons/fi';
 import '../../../../styles/variables.css';
 import '../../../../styles/components.css';
 import Navbar from '../../../Navbar';
@@ -18,9 +22,19 @@ const ViewField = ({ label, value, className = '' }) => (
 
 const UserView = () => {
   const { id } = useParams();
+  const { permissions } = useAuth();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [revealModalOpen, setRevealModalOpen] = useState(false);
+  const [revealedPassword, setRevealedPassword] = useState('');
+  const [revealError, setRevealError] = useState('');
+  const [revealLoading, setRevealLoading] = useState(false);
+
+  const canRevealPassword =
+    permissions?.super_admin === true ||
+    permissions?.read_only_super_admin === true ||
+    hasPermission(permissions, 'admin', 'users', 'update');
 
   useEffect(() => {
     fetchUser();
@@ -43,6 +57,31 @@ const UserView = () => {
       console.error('Error fetching user:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const closeRevealModal = () => {
+    setRevealModalOpen(false);
+    setRevealedPassword('');
+    setRevealError('');
+    setRevealLoading(false);
+  };
+
+  const handleRevealPassword = async () => {
+    try {
+      setRevealError('');
+      setRevealLoading(true);
+      setRevealModalOpen(true);
+      const res = await axiosInstance.get(`/users/${id}/reveal-password`);
+      const password = res?.data?.data?.password || '';
+      setRevealedPassword(password);
+      if (!password) {
+        setRevealError(res?.data?.message || 'No password returned.');
+      }
+    } catch (err) {
+      setRevealError(err.response?.data?.message || 'Failed to reveal password');
+    } finally {
+      setRevealLoading(false);
     }
   };
 
@@ -244,8 +283,35 @@ const UserView = () => {
               </div>
             </div>
           )}
+
+          {canRevealPassword && (
+            <div className="form-actions" style={{ marginTop: '24px' }}>
+              <button
+                type="button"
+                className="primary_btn"
+                onClick={handleRevealPassword}
+                style={{ backgroundColor: '#111827' }}
+                title="Reveal user password (admin only)"
+              >
+                <FiKey style={{ marginRight: '8px' }} />
+                Reveal Password
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      <Modal
+        open={revealModalOpen}
+        onClose={closeRevealModal}
+        title={`User Password — ${getFullName(user)}`}
+        details={{
+          Status: revealLoading ? 'Loading...' : revealError ? 'Error' : 'Success',
+          ...(revealError ? { Message: revealError } : {}),
+          ...(revealedPassword ? { Password: revealedPassword } : {}),
+          Note: 'Password is shown for operational use only. Close this dialog when done.',
+        }}
+      />
     </>
   );
 };

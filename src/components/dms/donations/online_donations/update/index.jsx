@@ -30,6 +30,7 @@ const donationMethodOptions = [
   { value: 'stripe', label: 'Stripe' },
   { value: 'stripe_embed', label: 'Stripe (embed)' },
   { value: 'in_kind', label: 'In Kind' },
+  { value: 'reconciliation', label: 'Reconciliation' },
 ];
 
 const donationSourceOptions = [
