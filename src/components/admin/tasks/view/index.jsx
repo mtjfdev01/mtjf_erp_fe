@@ -600,6 +600,11 @@ const ViewTask = () => {
     return assignedUsers.some((u) => u && Number(u.id) === Number(user.id));
   }, [user, assignedUsers]);
 
+  const isCurrentUserCreator = useMemo(() => {
+    if (!user || !task) return false;
+    return Number(task.created_by_id) === Number(user.id);
+  }, [user, task]);
+
   const canEditMovChecklist = useMemo(() => {
     if (!task || !user) return false;
     
@@ -1109,29 +1114,40 @@ const ViewTask = () => {
               </div>
 
               {renderRecurrenceInfo()}
-
               <div className="receipt-body">
                 {isTaskOverdueAfterToday() ? (
                   renderReminderBanner(
                     'Task is overdue',
-                    primaryAssigneeName
-                      ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
-                      : 'This task is now overdue. Please review and complete it as soon as possible.'
+                    isCurrentUserAssignee ? (
+                      primaryAssigneeName
+                        ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
+                        : 'This task is now overdue. Please review and complete it as soon as possible.'
+                    ) : (
+                      `The assignee ${primaryAssigneeName} has not completed the task; please review and follow up`
+                    )
                   )
                 ) : isTaskOverdueToday() ? (
                   renderReminderBanner(
                     'Overdue Today',
-                    primaryAssigneeName
-                      ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
-                      : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.',
+                    isCurrentUserAssignee ? (
+                      primaryAssigneeName
+                        ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
+                    ) : (
+                      `The assignee ${primaryAssigneeName} has not completed the task; please review and follow up`
+                    ),
                     true
                   )
                 ) : isTaskDueTodayBeforeNoon() ? (
                   renderReminderBanner(
                     'Due Today',
-                    primaryAssigneeName
-                      ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
-                      : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.',
+                    isCurrentUserAssignee ? (
+                      primaryAssigneeName
+                        ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
+                    ) : (
+                      'This task is due today; please check in with the assignee if needed.'
+                    ),
                     true
                   )
                 ) : null}

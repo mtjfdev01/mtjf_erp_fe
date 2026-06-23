@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
@@ -2037,21 +2037,21 @@ const TaskReports = () => {
                         <FaHourglassHalf className="task-stat-icon--pending task-stat-icon"/>
                         <div className="task-stat-label">Pending Tasks</div>
                         <div className="task-stat-value">
-                          {statsSummary.pending}/{statsSummary.total}
+                          {statsSummary.pending}
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--ended">
                         <FaLock className="task-stat-icon--ended task-stat-icon"/>
                         <div className="task-stat-label">Closed Tasks</div>
                         <div className="task-stat-value">
-                          {statsSummary.ended}/{statsSummary.total}
+                          {statsSummary.ended}
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--overdue">
                         <FaExclamationTriangle className="task-stat-icon--overdue task-stat-icon"/>
                         <div className="task-stat-label">Overdue Tasks</div>
                         <div className="task-stat-value">
-                          {statsSummary.overdue}/{statsSummary.total}
+                          {statsSummary.overdue}
                         </div>
                       </div>
                       <div className="task-stat-card task-stat-card--completion">
@@ -2077,56 +2077,56 @@ const TaskReports = () => {
                             <FaFolderOpen className="task-status-icon"/>
                             <div className="task-status-label">Open</div>
                             <div className="task-status-value">
-                              {statsSummary.open}/{statsSummary.total}
+                              {statsSummary.open}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--in-progress">
                             <FaSpinner className="task-status-icon"/>
                             <div className="task-status-label">In Progress</div>
                             <div className="task-status-value">
-                              {statsSummary.inProgress}/{statsSummary.total}
+                              {statsSummary.inProgress}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--pending-approval">
                             <FaUserClock className="task-status-icon"/>
                             <div className="task-status-label">Pending Approval</div>
                             <div className="task-status-value">
-                              {statsSummary.pendingApproval}/{statsSummary.total}
+                              {statsSummary.pendingApproval}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--approved">
                             <FaCheckDouble className="task-status-icon"/>
                             <div className="task-status-label">Approved</div>
                             <div className="task-status-value">
-                              {statsSummary.approved}/{statsSummary.total}
+                              {statsSummary.approved}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--rejected">
                             <FaTimesCircle className="task-status-icon"/>
                             <div className="task-status-label">Rejected</div>
                             <div className="task-status-value">
-                              {statsSummary.rejected}/{statsSummary.total}
+                              {statsSummary.rejected}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--completed">
                             <FaCheckCircle className="task-status-icon"/>
                             <div className="task-status-label">Completed</div>
                             <div className="task-status-value">
-                              {statsSummary.completed}/{statsSummary.total}
+                              {statsSummary.completed}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--closed">
                             <FaLock className="task-status-icon"/>
                             <div className="task-status-label">Closed</div>
                             <div className="task-status-value">
-                              {statsSummary.closed}/{statsSummary.total}
+                              {statsSummary.closed}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--cancelled">
                             <FaBan className="task-status-icon"/>
                             <div className="task-status-label">Cancelled</div>
                             <div className="task-status-value">
-                              {statsSummary.cancelled}/{statsSummary.total}
+                              {statsSummary.cancelled}
                             </div>
                           </div>
                         </div>
@@ -2141,28 +2141,28 @@ const TaskReports = () => {
                             <FaArrowDown className="task-status-icon"/>
                             <div className="task-status-label">Low</div>
                             <div className="task-status-value">
-                              {prioritySummary.low}/{statsSummary.total}
+                              {prioritySummary.low}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--priority-medium">
                             <FaGripLines className="task-status-icon"/>
                             <div className="task-status-label">Medium</div>
                             <div className="task-status-value">
-                              {prioritySummary.medium}/{statsSummary.total}
+                              {prioritySummary.medium}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--priority-high">
                             <FaArrowUp className="task-status-icon"/>
                             <div className="task-status-label">High</div>
                             <div className="task-status-value">
-                              {prioritySummary.high}/{statsSummary.total}
+                              {prioritySummary.high}
                             </div>
                           </div>
                           <div className="task-status-card task-status-card--priority-critical">
                             <FaExclamationCircle className="task-status-icon"/>
                             <div className="task-status-label">Critical</div>
                             <div className="task-status-value">
-                              {prioritySummary.critical}/{statsSummary.total}
+                              {prioritySummary.critical}
                             </div>
                           </div>
                         </div>
@@ -2408,7 +2408,8 @@ const TaskReports = () => {
               <div className="task-report-card task-report-card--team-performance">
                 <div className="task-report-card-header">
                   <div className="task-report-card-title-group">
-                    <span className="task-report-card-icon">👥</span>
+                    {/* <span className="task-report-card-icon">👥</span> */}
+                    <FaUserClock className="task-report-card-icon" />
                     <h2 className="task-report-card-title">Team Performance Dashboard</h2>
                   </div>
                   <div className="task-team-header-actions">
@@ -2432,38 +2433,44 @@ const TaskReports = () => {
 
                 <div className="task-team-summary">
                   <div className="task-team-summary-item">
-                    <div className="task-team-summary-value"><div className="stat-icon">👥</div>
+                    <div className="task-team-summary-value" >
+                      <FaUserClock className="stat-icon" style={{ color: '#808e9b' }} />
                       {teamSummary.members}
-                      <div className="task-team-summary-label" style={{ color: '#059669' }}>Team Members</div>
+                      <div className="task-team-summary-label">Team Members</div>
                     </div>
 
                   </div>
                   <div className="task-team-summary-item">
-                    <div className="task-team-summary-value"><div className="stat-icon">📋</div>
+                    <div className="task-team-summary-value">
+                      <FaClipboard className="stat-icon" style={{ color: '#077af5' }} />
                       {teamSummary.totalTasks}
-                      <div className="task-team-summary-label" style={{ color: '#077af5' }}>Total Tasks</div>
+                      <div className="task-team-summary-label">Total Tasks</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
-                    <div className="task-team-summary-value"><div className="stat-icon">🔄</div>
+                    <div className="task-team-summary-value">
+                      <FaSpinner className="stat-icon" style={{ color: '#fccf3a' }} />
                       {teamSummary.inProgress}
-                      <div className="task-team-summary-label" style={{ color: '#fccf3a' }}>In Progress</div>
+                      <div className="task-team-summary-label">In Progress</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
-                    <div className="task-team-summary-value"><div className="stat-icon">✅</div>
+                    <div className="task-team-summary-value">
+                      <FaCheckCircle className="stat-icon" style={{ color: '#0feb42' }} />
                       {teamSummary.completed}
-                      <div className="task-team-summary-label" style={{ color: '#0feb42' }}>Completed</div>
+                      <div className="task-team-summary-label">Completed</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
-                    <div className="task-team-summary-value"><div className="stat-icon">⚠️</div>
-                      {teamSummary.overdue}<div className="task-team-summary-label" style={{ color: '#FF6384' }}>Overdue</div>
+                    <div className="task-team-summary-value">
+                      <FaExclamationTriangle className="stat-icon" style={{ color: '#ff3f34' }} />
+                      {teamSummary.overdue}<div className="task-team-summary-label">Overdue</div>
                     </div>
                   </div>
                   <div className="task-team-summary-item">
-                    <div className="task-team-summary-value"><div className="stat-icon">📊</div>
-                      {teamSummary.avgRate}%<div className="task-team-summary-label" style={{ color: '#077af5' }}>Avg Completion</div>
+                    <div className="task-team-summary-value">
+                      <FaChartLine className="stat-icon" style={{ color: '#077af5' }} />
+                      {teamSummary.avgRate}%<div className="task-team-summary-label">Avg Completion</div>
                     </div>
                   </div>
                 </div>

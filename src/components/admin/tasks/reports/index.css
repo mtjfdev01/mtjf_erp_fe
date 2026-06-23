@@ -879,11 +879,11 @@
 
 .task-report-card-header {
   display: flex;
-  /* justify-content: space-between; */
+  justify-content: space-between;
   gap: 1rem;
   align-items: center;
   padding: 0.35rem 0.5rem;
-  background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%);
+  /* background: linear-gradient(135deg, #f8fafc 0%, #ffffff 100%); */
   border-bottom: 1px solid #e8ecf4;
   position: relative;
 }
@@ -1491,13 +1491,11 @@ canvas[ref*="Canvas"] + div,
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
 }
 .stat-icon {
-    width: 40px;
-    height: 40px;
+    font-size: 1.75rem;
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0 auto 12px;
-    font-size: 28px;
 }
 
 .task-team-summary-value { 
@@ -1514,7 +1512,7 @@ canvas[ref*="Canvas"] + div,
 
 .task-team-summary-label { 
   font-size: 0.75rem; 
-  /* color: #94a3b8; */
+  color: #485460;
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.025em;
@@ -3025,9 +3023,7 @@ canvas[ref*="Canvas"] + div,
   }
 
   .stat-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 22px;
+    font-size: 1.75rem;
     margin-bottom: 12px;
   }
 
@@ -3250,9 +3246,7 @@ canvas[ref*="Canvas"] + div,
   }
 
   .stat-icon {
-    width: 28px;
-    height: 28px;
-    font-size: 20px;
+    font-size: 1.75rem;
     margin-bottom: 10px;
   }
 
@@ -3467,9 +3461,7 @@ canvas[ref*="Canvas"] + div,
   }
 
   .stat-icon {
-    width: 24px;
-    height: 24px;
-    font-size: 18px;
+    font-size: 1.75rem;
     margin-bottom: 8px;
   }
 

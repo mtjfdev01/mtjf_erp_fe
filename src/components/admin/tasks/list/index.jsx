@@ -1212,7 +1212,7 @@ const TasksList = () => {
                       onClick={() => setActiveTab('other_tasks')}
                     >
                       <FiList className="tab-icon" />
-                      <span className="tab-text"> Created by me</span>
+                      <span className="tab-text"> Assigned to others</span>
                       <span className="tab-count">{otherTasks.length}</span>
                     </button>
                     {isManager && (
