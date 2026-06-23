@@ -138,6 +138,12 @@ import AddDonationBoxDonation from './components/dms/donations/donation_box/add'
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
 import FundRaising from './components/dms/fund_raising';
+import ReconciliationList from './components/dms/reconciliation/list';
+import ReconciliationAdd from './components/dms/reconciliation/add';
+import ReconciliationView from './components/dms/reconciliation/view';
+import FollowUpsList from './components/dms/donor_relationship/follow_ups';
+import AddDonorInteraction from './components/dms/donor_relationship/add';
+import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
@@ -475,6 +481,14 @@ const App = () => {
                                 <Route path="/dms/receipt_templates/add" element={<ReceiptTemplateForm />} />
                                 <Route path="/dms/receipt_templates/edit/:id" element={<ReceiptTemplateForm />} />
                                 <Route path="/dms/receipt_templates/view/:id" element={<ViewReceiptTemplate />} />
+
+                                <Route path="/dms/reconciliation/list" element={<ReconciliationList />} />
+                                <Route path="/dms/reconciliation/add" element={<ReconciliationAdd />} />
+                                <Route path="/dms/reconciliation/view/:id" element={<ReconciliationView />} />
+
+                                <Route path="/dms/donor-relationship/follow-ups" element={<FollowUpsList />} />
+                                <Route path="/dms/donor-relationship/add" element={<AddDonorInteraction />} />
+                                <Route path="/dms/donor-relationship/overview" element={<ManagementOverview />} />
 
                                 {/* Tasks — flat routes for all users */}
                                 <Route path="/tasks/list" element={<TasksList />} />

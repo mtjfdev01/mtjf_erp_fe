@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
@@ -6,7 +6,10 @@ import PageHeader from '../../../../common/PageHeader';
 import ActionMenu from '../../../../common/ActionMenu';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
 import Pagination from '../../../../common/Pagination';
+import DataImport from '../../../../common/DataImport';
 import { DownloadCSV } from '../../../../common/download';
+import { useAuth } from '../../../../../context/AuthContext';
+import { hasPermission } from '../../../../../utils/permissions';
 import { SearchFilter, DateFilter, DateRangeFilter } from '../../../../common/filters';
 import { ClearButton, SearchButton } from '../../../../common/filters/index';
 import FormInput from '../../../../common/FormInput';
@@ -18,6 +21,7 @@ import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
 const DonationBoxDonationsList = () => {
   const navigate = useNavigate();
   const { id: donationBoxId } = useParams(); // Get donation box ID from URL if present
+  const { permissions } = useAuth();
   const [donations, setDonations] = useState([]);
   const [donationBoxInfo, setDonationBoxInfo] = useState(null); // Store donation box info if filtering by ID
   const [loading, setLoading] = useState(true);
@@ -296,6 +300,14 @@ const DonationBoxDonationsList = () => {
     return null;
   };
 
+  const canImportCsv = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'donation_box_donations', 'create')
+    );
+  }, [permissions]);
+
   if (loading && !donations.length) {
     return (
       <>
@@ -328,7 +340,24 @@ const DonationBoxDonationsList = () => {
         
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
-          
+
+          {canImportCsv && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: '16px',
+              }}
+            >
+              <DataImport
+                entityName="donation_box_donations"
+                buttonText="Import CSV"
+                disabled={loading}
+                onImportComplete={() => fetchDonations()}
+              />
+            </div>
+          )}
+
           {/* Donation Box Info Card (only when filtering by specific box) */}
           {/* {donationBoxId && donationBoxInfo && (
             <div style={{ 

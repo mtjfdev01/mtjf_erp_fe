@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -6,7 +6,10 @@ import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
+import DataImport from '../../../common/DataImport';
 import { DownloadCSV } from '../../../common/download';
+import { useAuth } from '../../../../context/AuthContext';
+import { hasPermission } from '../../../../utils/permissions';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../common/filters';
 import { ClearButton } from '../../../common/filters/index';
 import { SearchButton } from '../../../common/filters/index';
@@ -16,6 +19,7 @@ import { FiEye, FiTrash2, FiBox, FiMapPin } from 'react-icons/fi';
 
 const DonationBoxList = () => {
   const navigate = useNavigate();
+  const { permissions } = useAuth();
   const [donationBoxes, setDonationBoxes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -224,6 +228,14 @@ const DonationBoxList = () => {
     return <span className={`box-type-badge ${typeInfo.class}`}>{typeInfo.text}</span>;
   };
 
+  const canImportCsv = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'donation_box', 'create')
+    );
+  }, [permissions]);
+
   const getActionMenuItems = (donationBox) => [
     {
       icon: <FiEye />,
@@ -381,7 +393,24 @@ const DonationBoxList = () => {
         
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
-          
+
+          {canImportCsv && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                marginBottom: '16px',
+              }}
+            >
+              <DataImport
+                entityName="donation_box"
+                buttonText="Import CSV"
+                disabled={loading}
+                onImportComplete={() => fetchDonationBoxes()}
+              />
+            </div>
+          )}
+
           {/* Filters Section */}
           {/* <div className="filters-section" style={{ 
             display: 'flex', 

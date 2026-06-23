@@ -14,6 +14,7 @@ import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 import useOfflineDataRefresh from '../../../../../hooks/useOfflineDataRefresh';
+import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
 
 import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -38,8 +39,11 @@ const OnlineDonationsList = () => {
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
-  const [workflowTemplates, setWorkflowTemplates] = useState([]);
-  const [appealsList, setAppealsList] = useState([]);
+
+  const { data: filterLookupData } = useMultipleEntityOptions([
+    'workflow_templates',
+    'appeals',
+  ]);
   
   // Report generation state
   const [generatingReport, setGeneratingReport] = useState(false);
@@ -112,27 +116,6 @@ const OnlineDonationsList = () => {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlDonorId]);
-
-  // Load workflow templates and appeals for filtering
-  useEffect(() => {
-    const run = async () => {
-      try {
-        const [templatesRes, appealsRes] = await Promise.all([
-          axiosInstance.get('/progress/workflow-templates'),
-          axiosInstance.get('/appeals'),
-        ]);
-        if (templatesRes.data?.success) {
-          setWorkflowTemplates(templatesRes.data.data || []);
-        }
-        if (appealsRes.data?.success) {
-          setAppealsList(appealsRes.data.data || []);
-        }
-      } catch (_) {
-        // non-blocking
-      }
-    };
-    run();
-  }, []);
 
   // Universal filter change handler - Updates temporary filters only
   const handleFilterChange = (key, value) => {
@@ -588,23 +571,33 @@ const OnlineDonationsList = () => {
   ];
 
   const appealFilterOptions = useMemo(() => {
-    const fromApi = (appealsList || []).map((a) => ({
-      value: String(a.id),
-      label: a.title || `Appeal #${a.id}`,
-    }));
+    const fromApi = filterLookupData.appeals || [];
     return [{ value: '__none__', label: 'No appeal linked' }, ...fromApi];
-  }, [appealsList]);
+  }, [filterLookupData.appeals]);
   const donationTypeOptions = [
     { value: 'zakat', label: 'Zakat' },
     { value: 'sadqa', label: 'Sadqa' },
     { value: 'general', label: 'General' }
   ];
 
-  const donationMethodOptions = [
-    { value: 'meezan', label: 'Meezan Bank' },
-    { value: 'blinq', label: 'Blinq' },
-    { value: 'payfast', label: 'Payfast' }
-  ];
+  const donationMethodOptions = useMemo(() => {
+    if (isOfflineRoute) {
+      return [
+        { value: 'cash', label: 'Cash' },
+        { value: 'cheque', label: 'Cheque' },
+        { value: 'bank_transfer', label: 'Bank Transfer' },
+        { value: 'credit_card', label: 'Credit Card' },
+        { value: 'online', label: 'Online' },
+        { value: 'in_kind', label: 'In Kind' },
+        { value: 'reconciliation', label: 'Reconciliation' },
+      ];
+    }
+    return [
+      { value: 'meezan', label: 'Meezan Bank' },
+      { value: 'blinq', label: 'Blinq' },
+      { value: 'payfast', label: 'Payfast' },
+    ];
+  }, [isOfflineRoute]);
 
   const donationSourceOptions = [
     { value: 'website', label: 'Website' },
@@ -619,12 +612,9 @@ const OnlineDonationsList = () => {
   ];
 
   const workflowTemplateOptions = useMemo(() => {
-    const opts = (workflowTemplates || []).map((t) => ({
-      value: String(t.id),
-      label: t.name || t.code || String(t.id),
-    }));
+    const opts = filterLookupData.workflow_templates || [];
     return [{ value: '', label: 'All Templates' }, ...opts];
-  }, [workflowTemplates]);
+  }, [filterLookupData.workflow_templates]);
 
   const priceRangeOptions = [
     { value: '', label: 'Any Amount' },

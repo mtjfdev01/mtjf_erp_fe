@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -6,8 +6,11 @@ import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
+import DataImport from '../../../common/DataImport';
 import { SearchFilter, DropdownFilter } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import { useAuth } from '../../../../context/AuthContext';
+import { hasPermission } from '../../../../utils/permissions';
 import { FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
 
 const StatusBadge = ({ status }) => {
@@ -22,6 +25,7 @@ const StatusBadge = ({ status }) => {
 
 const VolunteersList = () => {
   const navigate = useNavigate();
+  const { permissions } = useAuth();
   const [volunteers, setVolunteers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -129,6 +133,14 @@ const VolunteersList = () => {
 
   const formatLabel = (str) => (str || '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 
+  const canImportCsv = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'volunteers', 'create')
+    );
+  }, [permissions]);
+
   if (loading) {
     return (
       <>
@@ -155,6 +167,14 @@ const VolunteersList = () => {
             <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end', marginTop: '20px', width: '100%' }}>
               <SearchButton onClick={handleApplyFilters} text="Search" loading={loading} />
               <ClearButton onClick={handleClearFilters} text="Clear" />
+              {canImportCsv && (
+                <DataImport
+                  entityName="volunteers"
+                  buttonText="Import CSV"
+                  disabled={loading}
+                  onImportComplete={() => fetchVolunteers()}
+                />
+              )}
             </div>
           </div>
 
