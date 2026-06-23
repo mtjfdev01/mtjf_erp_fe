@@ -5,8 +5,9 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter, DropdownFilter } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { FiEye, FiRepeat } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
@@ -28,6 +29,7 @@ const RecurringDonationsList = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
@@ -156,10 +158,14 @@ const RecurringDonationsList = () => {
           title="Recurring Donations"
           subtitle="Stripe subscriptions and installment history"
           icon={<FiRepeat />}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
         />
 
         {error && <div className="error-message">{error}</div>}
 
+        <CollapsibleFilters open={filtersOpen}>
         <div className="filters-section">
           <SearchFilter
             value={tempFilters.search}
@@ -181,6 +187,7 @@ const RecurringDonationsList = () => {
           <SearchButton onClick={handleApplyFilters} />
           <ClearButton onClick={handleClearFilters} />
         </div>
+        </CollapsibleFilters>
 
         <div className="table-container">
           <table className="data-table">

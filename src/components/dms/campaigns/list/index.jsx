@@ -6,8 +6,9 @@ import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter, DropdownFilter, DateRangeFilter } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, DateRangeFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { FiEye, FiEdit, FiTrash2, FiDollarSign, FiStar } from 'react-icons/fi';
 
 const CampaignsList = () => {
@@ -17,6 +18,7 @@ const CampaignsList = () => {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [campaignToDelete, setCampaignToDelete] = useState(null);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -196,6 +198,9 @@ const CampaignsList = () => {
         <PageHeader
           title="Campaigns"
           showBackButton={false}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
           showAdd={true}
           addPath="/dms/campaigns/add"
         />
@@ -203,15 +208,8 @@ const CampaignsList = () => {
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
 
-          <div className="filters-section" style={{
-            display: 'flex',
-            gap: '20px',
-            flexWrap: 'wrap',
-            marginBottom: '20px',
-            padding: '20px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px'
-          }}>
+          <CollapsibleFilters open={filtersOpen}>
+          <div className="filters-section">
             <SearchFilter
               filterKey="search"
               label="Search"
@@ -248,6 +246,7 @@ const CampaignsList = () => {
               <ClearButton onClick={handleClearFilters} text="Clear" />
             </div>
           </div>
+          </CollapsibleFilters>
 
           <div className="table-container">
             <table className="data-table">

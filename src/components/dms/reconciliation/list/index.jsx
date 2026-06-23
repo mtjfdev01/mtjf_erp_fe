@@ -5,8 +5,9 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import Pagination from '../../../common/Pagination';
-import { DropdownFilter, DateRangeFilter } from '../../../common/filters';
+import { DropdownFilter, DateRangeFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
 import { FiEye } from 'react-icons/fi';
@@ -42,6 +43,7 @@ const ReconciliationList = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -126,11 +128,15 @@ const ReconciliationList = () => {
         <PageHeader
           title="Bank Reconciliation"
           showBackButton={false}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
           showAdd={canUpload}
           addPath="/dms/reconciliation/add"
           addTitle="Upload bank statement"
         />
 
+        <CollapsibleFilters open={filtersOpen}>
         <div className="filters-section reconciliation-filters">
           <div className="filters-row">
             <DropdownFilter
@@ -150,6 +156,7 @@ const ReconciliationList = () => {
             <ClearButton onClick={handleClearFilters} />
           </div>
         </div>
+        </CollapsibleFilters>
 
         {error && <div className="error-message">{error}</div>}
 

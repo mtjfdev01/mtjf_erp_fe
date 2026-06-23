@@ -9,8 +9,9 @@ import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Modal from '../../../common/Modal';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { DownloadCSV } from '../../../common/download';
 import DataImport from '../../../common/DataImport';
 import { FiEye, FiEdit, FiTrash2, FiUser, FiKey } from 'react-icons/fi';
@@ -23,6 +24,7 @@ const DonorsList = () => {
   const { permissions } = useAuth();
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donorToDelete, setDonorToDelete] = useState(null);
@@ -414,7 +416,10 @@ const DonorsList = () => {
       <div className="list-wrapper">
         <PageHeader 
           title="Registered Donors" 
-          showBackButton={false} 
+          showBackButton={false}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
           showAdd={true}
           addPath='/dms/donors/add'
         />
@@ -423,15 +428,8 @@ const DonorsList = () => {
           {error && <div className="status-message status-message--error">{error}</div>}
           
           {/* Filters Section */}
-          <div className="filters-section" style={{ 
-            display: 'flex', 
-            gap: '20px', 
-            flexWrap: 'wrap', 
-            marginBottom: '20px',
-            padding: '20px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px'
-          }}>
+          <CollapsibleFilters open={filtersOpen}>
+          <div className="filters-section">
             <SearchFilter
               filterKey="search"
               label="Search"
@@ -536,6 +534,7 @@ const DonorsList = () => {
               )}
             </div>
           </div>
+          </CollapsibleFilters>
           
           <div className="table-container">
             <table className="data-table">

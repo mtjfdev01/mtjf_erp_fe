@@ -10,6 +10,7 @@ import FormSelect from '../../../../common/FormSelect';
 import DonationAuditHistory from '../../shared/DonationAuditHistory';
 import { useAuth } from '../../../../../context/AuthContext';
 import { isLocalId } from '../../../../../offline/handlers';
+import './index.css';
 
 /** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
 const COMM_PERMS = {
@@ -727,7 +728,7 @@ const ViewOnlineDonation = () => {
               provider status are unavailable until it is synced.
             </div>
           )}
-          {!isPendingOffline && (
+          {/* {!isPendingOffline && (
           <div className="view-section">
             <h3 className="view-section-title">Progress Tracking</h3>
 
@@ -1065,7 +1066,7 @@ const ViewOnlineDonation = () => {
               </div>
             )}
           </div>
-          )}
+          )} */}
 
           <div className="view-section">
             <h3 className="view-section-title">Donation Details</h3>
@@ -1308,13 +1309,7 @@ const ViewOnlineDonation = () => {
           </div> */}
           {/* Communication Actions Section */}
           {!isPendingOffline && (
-          <div className="view-section" style={{ 
-            backgroundColor: '#f9fafb', 
-            border: '1px solid #e5e7eb', 
-            borderRadius: '8px',
-            padding: '1.5rem',
-            marginBottom: '1.5rem'
-          }}>
+          <div className="view-section donation-view-actions-panel">
             {showCommActionsHeader && (
               <h3 className="view-section-title" style={{ marginBottom: '1rem' }}>
                 Communication Actions
@@ -1323,12 +1318,7 @@ const ViewOnlineDonation = () => {
             
             {messageStatus.message && (
               <div 
-                className={`status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
-                style={{ 
-                  marginBottom: '1rem',
-                  padding: '0.75rem 1rem',
-                  borderRadius: '6px'
-                }}
+                className={`status-message donation-view-status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
               >
                 {messageStatus.message}
               </div>
@@ -1337,40 +1327,15 @@ const ViewOnlineDonation = () => {
             {showCommSection && (
               <>
                 {showEmailComm && (
-                  <div style={{ marginBottom: '1.25rem' }}>
-                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '15px', color: '#374151' }}>Email</h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                      gap: '1rem',
-                    }}>
+                  <div className="donation-view-subsection">
+                    <h4 className="donation-view-subsection-title">Email</h4>
+                    <div className="donation-view-action-grid">
                       {canSendComm(COMM_PERMS.emailPaymentLinks) && (
                         <button
                           type="button"
+                          className="donation-action-btn donation-action-btn--blue"
                           onClick={sendLinkEmail}
                           disabled={sendingLinkEmail || !donation?.donor?.email}
-                          style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: '#3b82f6',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: sendingLinkEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            opacity: sendingLinkEmail || !donation?.donor?.email ? 0.6 : 1,
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!sendingLinkEmail && donation?.donor?.email) {
-                              e.target.style.backgroundColor = '#2563eb';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!sendingLinkEmail && donation?.donor?.email) {
-                              e.target.style.backgroundColor = '#3b82f6';
-                            }
-                          }}
                         >
                           {sendingLinkEmail ? 'Sending...' : '📧 Send Payment Link Email'}
                         </button>
@@ -1378,45 +1343,15 @@ const ViewOnlineDonation = () => {
                       {canSendComm(COMM_PERMS.emailThanks) && (
                         <button
                           type="button"
+                          className="donation-action-btn donation-action-btn--green"
                           onClick={sendThanksEmail}
                           disabled={sendingThanksEmail || !donation?.donor?.email}
-                          style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: '#10b981',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: sendingThanksEmail || !donation?.donor?.email ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            opacity: sendingThanksEmail || !donation?.donor?.email ? 0.6 : 1,
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!sendingThanksEmail && donation?.donor?.email) {
-                              e.target.style.backgroundColor = '#059669';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!sendingThanksEmail && donation?.donor?.email) {
-                              e.target.style.backgroundColor = '#10b981';
-                            }
-                          }}
                         >
                           {sendingThanksEmail ? 'Sending...' : '📧 Send Thanks Email'}
                         </button>
                       )}
                       {canSendComm(COMM_PERMS.emailCampaigns) && (
-                        <div
-                          style={{
-                            gridColumn: '1 / -1',
-                            padding: '0.65rem 0.75rem',
-                            backgroundColor: '#f3f4f6',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            color: '#4b5563',
-                          }}
-                        >
+                        <div className="donation-view-info-note">
                           Email — Campaigns: send campaign email from the Campaigns module. This page only covers donation payment links and thanks.
                         </div>
                       )}
@@ -1424,40 +1359,15 @@ const ViewOnlineDonation = () => {
                   </div>
                 )}
                 {showWhatsAppComm && (
-                  <div style={{ marginBottom: '1rem' }}>
-                    <h4 style={{ margin: '0 0 0.75rem 0', fontSize: '15px', color: '#374151' }}>WhatsApp</h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                      gap: '1rem',
-                    }}>
+                  <div className="donation-view-subsection">
+                    <h4 className="donation-view-subsection-title">WhatsApp</h4>
+                    <div className="donation-view-action-grid">
                       {canSendComm(COMM_PERMS.whatsappPaymentLinks) && (
                         <button
                           type="button"
+                          className="donation-action-btn donation-action-btn--whatsapp"
                           onClick={sendLinkWhatsApp}
                           disabled={sendingLinkWhatsApp || !donation?.donor?.phone}
-                          style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: '#25d366',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: sendingLinkWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            opacity: sendingLinkWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!sendingLinkWhatsApp && donation?.donor?.phone) {
-                              e.target.style.backgroundColor = '#20ba5a';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!sendingLinkWhatsApp && donation?.donor?.phone) {
-                              e.target.style.backgroundColor = '#25d366';
-                            }
-                          }}
                         >
                           {sendingLinkWhatsApp ? 'Sending...' : '💬 Send Payment Link WhatsApp'}
                         </button>
@@ -1465,45 +1375,15 @@ const ViewOnlineDonation = () => {
                       {canSendComm(COMM_PERMS.whatsappThanks) && (
                         <button
                           type="button"
+                          className="donation-action-btn donation-action-btn--whatsapp"
                           onClick={sendThanksWhatsApp}
                           disabled={sendingThanksWhatsApp || !donation?.donor?.phone}
-                          style={{
-                            padding: '0.75rem 1.5rem',
-                            backgroundColor: '#25d366',
-                            color: 'white',
-                            border: 'none',
-                            borderRadius: '6px',
-                            cursor: sendingThanksWhatsApp || !donation?.donor?.phone ? 'not-allowed' : 'pointer',
-                            fontSize: '14px',
-                            fontWeight: '500',
-                            opacity: sendingThanksWhatsApp || !donation?.donor?.phone ? 0.6 : 1,
-                            transition: 'all 0.2s',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!sendingThanksWhatsApp && donation?.donor?.phone) {
-                              e.target.style.backgroundColor = '#20ba5a';
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!sendingThanksWhatsApp && donation?.donor?.phone) {
-                              e.target.style.backgroundColor = '#25d366';
-                            }
-                          }}
                         >
                           {sendingThanksWhatsApp ? 'Sending...' : '💬 Send Thanks WhatsApp'}
                         </button>
                       )}
                       {canSendComm(COMM_PERMS.whatsappCampaigns) && (
-                        <div
-                          style={{
-                            gridColumn: '1 / -1',
-                            padding: '0.65rem 0.75rem',
-                            backgroundColor: '#f3f4f6',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            color: '#4b5563',
-                          }}
-                        >
+                        <div className="donation-view-info-note">
                           WhatsApp — Campaigns: send campaign WhatsApp from the Campaigns module. This page only covers donation payment links and thanks.
                         </div>
                       )}
@@ -1511,13 +1391,7 @@ const ViewOnlineDonation = () => {
                   </div>
                 )}
                 {(!donation?.donor?.email && !donation?.donor?.phone) && (
-                  <p style={{
-                    marginTop: '0.75rem',
-                    fontSize: '13px',
-                    color: '#6b7280',
-                    fontStyle: 'italic',
-                  }}
-                  >
+                  <p className="donation-view-hint-text">
                     Donor email and/or phone number are required to send messages.
                   </p>
                 )}
@@ -1525,39 +1399,12 @@ const ViewOnlineDonation = () => {
             )}
 
             {showInKindReceipt && (
-              <div style={{
-                marginTop: showCommSection ? '1rem' : 0,
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '1rem',
-              }}
-              >
+              <div className={`donation-view-action-grid${showCommSection ? ' donation-view-action-grid--spaced' : ''}`}>
                 <button
                   type="button"
+                  className="donation-action-btn donation-action-btn--amber"
                   onClick={sendReceipt}
                   disabled={sendingReceipt || !donation?.donor?.email}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#f59e0b',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: sendingReceipt || !donation?.donor?.email ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    opacity: sendingReceipt || !donation?.donor?.email ? 0.6 : 1,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!sendingReceipt && donation?.donor?.email) {
-                      e.target.style.backgroundColor = '#d97706';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!sendingReceipt && donation?.donor?.email) {
-                      e.target.style.backgroundColor = '#f59e0b';
-                    }
-                  }}
                 >
                   {sendingReceipt ? 'Sending...' : '🧾 Send Receipt'}
                 </button>
@@ -1565,42 +1412,18 @@ const ViewOnlineDonation = () => {
             )}
 
             {/* Status Actions Section */}
-            <h3 className="view-section-title" style={{ marginTop: '2rem', marginBottom: '1rem' }}>
+            <h3 className="view-section-title donation-view-section-title--spaced">
               Status Actions
             </h3>
             
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-              gap: '1rem'
-            }}>
+            <div className="donation-view-action-grid">
               {/* Get Provider Status */}
               {supportsProviderStatus && (
                 <button
+                  type="button"
+                  className="donation-action-btn donation-action-btn--indigo"
                   onClick={fetchProviderStatus}
                   disabled={fetchingProviderStatus}
-                  style={{
-                    padding: '0.75rem 1.5rem',
-                    backgroundColor: '#6366f1',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: fetchingProviderStatus ? 'not-allowed' : 'pointer',
-                    fontSize: '14px',
-                    fontWeight: '500',
-                    opacity: fetchingProviderStatus ? 0.6 : 1,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={(e) => {
-                    if (!fetchingProviderStatus) {
-                      e.target.style.backgroundColor = '#4f46e5';
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (!fetchingProviderStatus) {
-                      e.target.style.backgroundColor = '#6366f1';
-                    }
-                  }}
                 >
                   {fetchingProviderStatus ? 'Checking...' : `🔄 Get Status from ${donation?.donation_method?.toUpperCase()}`}
                 </button>
@@ -1608,60 +1431,20 @@ const ViewOnlineDonation = () => {
 
               {/* Mark As Completed */}
               <button
+                type="button"
+                className="donation-action-btn donation-action-btn--green"
                 onClick={markAsCompleted}
                 disabled={markingCompleted || donation?.status === 'completed'}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#10b981',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: markingCompleted || donation?.status === 'completed' ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  opacity: markingCompleted || donation?.status === 'completed' ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!markingCompleted && donation?.status !== 'completed') {
-                    e.target.style.backgroundColor = '#059669';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!markingCompleted && donation?.status !== 'completed') {
-                    e.target.style.backgroundColor = '#10b981';
-                  }
-                }}
               >
                 {markingCompleted ? 'Updating...' : '✅ Mark As Completed'} 
               </button>
               
               {/* Mark As Failed */}
               <button
+                type="button"
+                className="donation-action-btn donation-action-btn--red"
                 onClick={markAsFailed}
                 disabled={markingFailed || donation?.status === 'failed'}
-                style={{
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: '#ef4444',
-                  color: 'white',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: markingFailed || donation?.status === 'failed' ? 'not-allowed' : 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  opacity: markingFailed || donation?.status === 'failed' ? 0.6 : 1,
-                  transition: 'all 0.2s',
-                }}
-                onMouseEnter={(e) => {
-                  if (!markingFailed && donation?.status !== 'failed') {
-                    e.target.style.backgroundColor = '#dc2626';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!markingFailed && donation?.status !== 'failed') {
-                    e.target.style.backgroundColor = '#ef4444';
-                  }
-                }}
               >
                 {markingFailed ? 'Updating...' : '❌ Mark As Failed'}
               </button>
@@ -1669,14 +1452,8 @@ const ViewOnlineDonation = () => {
 
             {/* Provider Status Response */}
             {providerStatusData && (
-              <div style={{
-                marginTop: '1.5rem',
-                padding: '1rem 1.25rem',
-                backgroundColor: '#f0f9ff',
-                border: '1px solid #bae6fd',
-                borderRadius: '8px',
-              }}>
-                <h4 style={{ margin: '0 0 0.75rem 0', color: '#0369a1', fontSize: '15px' }}>
+              <div className="donation-view-provider-panel">
+                <h4 className="donation-view-provider-title">
                   Provider Response ({providerStatusData.provider?.toUpperCase()})
                 </h4>
 
@@ -1695,10 +1472,7 @@ const ViewOnlineDonation = () => {
                   </div>
                   <div className="view-item">
                     <span className="view-item-label">DB Updated</span>
-                    <span className="view-item-value" style={{
-                      color: providerStatusData.dbUpdated ? '#059669' : '#6b7280',
-                      fontWeight: 500
-                    }}>
+                    <span className={`view-item-value ${providerStatusData.dbUpdated ? 'donation-view-sync-yes' : 'donation-view-sync-no'}`}>
                       {providerStatusData.dbUpdated ? 'Yes - status synced' : 'No - already in sync'}
                     </span>
                   </div>
@@ -1707,25 +1481,16 @@ const ViewOnlineDonation = () => {
                 {/* Show provider-specific details */}
                 {providerStatusData.details && Object.keys(providerStatusData.details).length > 0 && (
                   <div style={{ marginTop: '0.75rem' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#0369a1', display: 'block', marginBottom: '0.5rem' }}>
+                    <span className="donation-view-provider-label">
                       Details:
                     </span>
-                    <div style={{
-                      backgroundColor: '#ffffff',
-                      border: '1px solid #e0f2fe',
-                      borderRadius: '6px',
-                      padding: '0.75rem',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                      lineHeight: '1.6',
-                      overflowX: 'auto',
-                    }}>
+                    <div className="donation-view-provider-details">
                       {Object.entries(providerStatusData.details)
                         .filter(([, value]) => value !== null && value !== undefined && value !== '')
                         .map(([key, value]) => (
-                          <div key={key} style={{ display: 'flex', gap: '0.5rem' }}>
-                            <span style={{ color: '#6b7280', minWidth: '180px' }}>{key}:</span>
-                            <span style={{ color: '#111827', fontWeight: 500 }}>{String(value)}</span>
+                          <div key={key} className="donation-view-detail-row">
+                            <span className="donation-view-detail-key">{key}:</span>
+                            <span className="donation-view-detail-value">{String(value)}</span>
                           </div>
                         ))}
                     </div>
@@ -1736,25 +1501,18 @@ const ViewOnlineDonation = () => {
           </div>
           )}
           {isPendingOffline && (
-            <div className="view-section" style={{
-              backgroundColor: '#f9fafb',
-              border: '1px solid #e5e7eb',
-              borderRadius: '8px',
-              padding: '1.5rem',
-              marginBottom: '1.5rem',
-            }}>
+            <div className="view-section donation-view-actions-panel">
               <h3 className="view-section-title" style={{ marginBottom: '1rem' }}>
                 Status Actions
               </h3>
               {messageStatus.message && (
                 <div
-                  className={`status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
-                  style={{ marginBottom: '1rem', padding: '0.75rem 1rem', borderRadius: '6px' }}
+                  className={`status-message donation-view-status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
                 >
                   {messageStatus.message}
                 </div>
               )}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem' }}>
+              <div className="donation-view-action-grid">
                 <button
                   type="button"
                   onClick={markAsCompleted}

@@ -257,7 +257,7 @@ const AddDonationBox = () => {
         <form onSubmit={handleSubmit} className="form">
           {/* Box Identification */}
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Box Identification</h3>
+            <h3 className="form-section-heading">Box Identification</h3>
             <div className="form-grid-2">
 
               <FormInput
@@ -295,7 +295,7 @@ const AddDonationBox = () => {
 
           {/* Location Information */}
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Location Information</h3>
+            <h3 className="form-section-heading">Location Information</h3>
             <div className="form-grid-2">
               <FormSelect
                 label="Country"
@@ -395,7 +395,7 @@ const AddDonationBox = () => {
 
           {/* Shop Details */}
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Shop Details</h3>
+            <h3 className="form-section-heading">Shop Details</h3>
             <div className="form-grid-2">
               <FormInput
                 label="Shop Name"

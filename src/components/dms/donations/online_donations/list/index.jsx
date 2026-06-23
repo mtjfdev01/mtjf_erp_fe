@@ -6,7 +6,7 @@ import '../../../../../styles/components.css';
 // import { truncate } from '../../../../../utils/functions/column_function';
 import Pagination from '../../../../common/Pagination';
 import { DownloadCSV } from '../../../../common/download';
-import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../../common/filters';
+import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters } from '../../../../common/filters';
 import { ClearButton } from '../../../../common/filters/index';
 import { SearchButton } from '../../../../common/filters/index';
 import HybridDropdown from '../../../../common/HybridDropdown';
@@ -14,6 +14,7 @@ import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 import useOfflineDataRefresh from '../../../../../hooks/useOfflineDataRefresh';
+import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
 import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
 
 import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
@@ -39,6 +40,7 @@ const OnlineDonationsList = () => {
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const { data: filterLookupData } = useMultipleEntityOptions([
     'workflow_templates',
@@ -723,6 +725,9 @@ const OnlineDonationsList = () => {
           title={isOfflineRoute ? 'Offline Donations' : 'Donations Listing'}
           showBackButton={urlDonorId ? true :false} 
           backPath={urlDonorId ? `/dms/donors/view/${urlDonorId}` : null}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
           showAdd={true}
           addPath='/donations/online_donations/add'
         />
@@ -740,14 +745,8 @@ const OnlineDonationsList = () => {
           )}
           
           {/* Filters Section */}
-          <div className="filters-section" style={{ 
-            display: 'flex', 
-            gap: '20px', 
-            flexWrap: 'wrap', 
-            padding: '20px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px'
-          }}>
+          <CollapsibleFilters open={filtersOpen}>
+          <div className="filters-section">
             {/* Only show Search filter if not filtered via URL query param */}
             {!urlDonorId && (
               <SearchFilter
@@ -930,7 +929,7 @@ const OnlineDonationsList = () => {
               />
             </div>
           </div>
-                        {/* <FiDollarSign style={{ fontSize: '20px', color: '#28a745' }} /> */}
+          </CollapsibleFilters>
            <div style={{marginLeft: '10px'}}>
                 <div style={{ fontSize: '14px', color: '#6c757d', marginBottom: '2px' , marginLeft: '10px'}}>
                   Total Donation Amount

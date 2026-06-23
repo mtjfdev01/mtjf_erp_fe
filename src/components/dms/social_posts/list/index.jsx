@@ -6,8 +6,9 @@ import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter, DropdownFilter } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 
 import { FiEye, FiRepeat, FiRefreshCw, FiTrash2 } from 'react-icons/fi';
 
@@ -25,6 +26,7 @@ const SocialPostsList = () => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [rowToDelete, setRowToDelete] = useState(null);
@@ -227,6 +229,9 @@ const SocialPostsList = () => {
           title="Social Posts"
           subtitle="Create and schedule posts through Buffer"
           showBackButton={false}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
           showAdd={true}
           addPath="/dms/social-posts/add"
         />
@@ -241,6 +246,7 @@ const SocialPostsList = () => {
           </div>
         )}
 
+        <CollapsibleFilters open={filtersOpen}>
         <div className="filters-section">
           <SearchFilter
             value={tempFilters.search}
@@ -258,6 +264,7 @@ const SocialPostsList = () => {
           <SearchButton onClick={handleApplyFilters} />
           <ClearButton onClick={handleClearFilters} />
         </div>
+        </CollapsibleFilters>
 
         <div className="table-container">
           <table className="data-table">
