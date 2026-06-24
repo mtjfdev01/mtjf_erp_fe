@@ -108,31 +108,13 @@ const ViewReceiptTemplate = () => {
               title={`Receipt template preview: ${template.name}`}
               srcDoc={template.raw_html || ''}
               sandbox=""
-              style={{
-                width: '100%',
-                minHeight: '480px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                background: '#fff',
-              }}
+              className="theme-preview-frame"
             />
           </div>
 
           <div className="view-section">
             <h3 className="view-section-title">Raw HTML</h3>
-            <pre
-              style={{
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '8px',
-                padding: '16px',
-                fontSize: '13px',
-                maxHeight: '400px',
-                overflow: 'auto',
-              }}
-            >
+            <pre className="theme-code-pre">
               {template.raw_html}
             </pre>
           </div>

@@ -72,7 +72,7 @@ const Login = () => {
         <div className="login-logo">
           <img src={mtjfLogo} alt="MTJF Logo" style={{ height: '100%', width: '100%', display: 'block', marginTop: '3%'     }} />
         </div>
-        <h2 className="login-title">MTJ Foundation</h2>
+        <h2 className="login-title">Donor Management System</h2>
         <p className="login-subtitle">Sign in to your account</p>
         <form onSubmit={handleSubmit} className="login-form">
           {error && <div className="login-error">{error}</div>}

@@ -5,14 +5,16 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter } from '../../../common/filters';
+import { SearchFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters/index';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { FiEye, FiEdit2, FiTrash2, FiPlus } from 'react-icons/fi';
 
 const ReceiptTemplateList = () => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
   const [error, setError] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -117,21 +119,19 @@ const ReceiptTemplateList = () => {
       <div className="list-content">
         <PageHeader
           title="Receipt Templates"
-          actions={
-            <button
-              type="button"
-              className="primary-btn"
-              onClick={() => navigate('/dms/receipt_templates/add')}
-            >
-              <FiPlus /> Add Template
-            </button>
-          }
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
+          showAdd
+          addPath="/dms/receipt_templates/add"
+          addTitle="Add Template"
         />
 
         {error && (
           <div className="status-message status-message--error">{error}</div>
         )}
 
+        <CollapsibleFilters open={filtersOpen}>
         <div className="filters-container card">
           <div className="filters-grid">
             <SearchFilter
@@ -146,6 +146,7 @@ const ReceiptTemplateList = () => {
             <ClearButton onClick={handleClearFilters} />
           </div>
         </div>
+        </CollapsibleFilters>
 
         <div className="table-container card">
           {loading ? (

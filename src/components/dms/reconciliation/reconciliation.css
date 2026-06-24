@@ -1,6 +1,6 @@
 .reconciliation-upload-card {
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--color-bg-primary);
+  border: 1px solid var(--color-border);
   border-radius: 8px;
   padding: 0;
   margin-bottom: 20px;
@@ -13,7 +13,7 @@
 .reconciliation-section-title {
   margin-top: 0;
   margin-bottom: 16px;
-  color: #333;
+  color: var(--color-text-primary);
 }
 
 .reconciliation-filters {

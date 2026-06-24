@@ -153,7 +153,7 @@ const AddDonationBoxDonation = () => {
         <form onSubmit={handleSubmit} className="form">
           {/* Donation Box Selection */}
           {!id ?<> <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Donation Box Information</h3>
+            <h3 className="form-section-heading">Donation Box Information</h3>
             <div className="form-grid-2"> 
               <SearchableDropdown
                 label="Search Donation Box"
@@ -194,13 +194,13 @@ const AddDonationBoxDonation = () => {
             </div>
           </div>
           </> : <>
-          <h3>Add Donation for:  <small style={{color:"green"}}>{donationBox?.key_no} </small></h3>
+          <h3 className="form-section-heading">Add Donation for: <small style={{ color: 'var(--color-success)' }}>{donationBox?.key_no}</small></h3>
           </>
           }
 
           {/* Collection Details */}
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Collection Details</h3>
+            <h3 className="form-section-heading">Collection Details</h3>
             <div className="form-grid-2">
               <FormInput
                 label="Collection Amount"
@@ -237,9 +237,7 @@ const AddDonationBoxDonation = () => {
                 background: '#f8fafc',
               }}
             >
-              <h3 style={{ margin: '0 0 8px', fontSize: '14px', color: '#333' }}>
-                Bulk import collections
-              </h3>
+              <h3 className="form-section-heading form-section-heading--compact">Bulk import collections</h3>
               <p style={{ margin: '0 0 10px', fontSize: '13px', color: '#64748b' }}>
                 Upload a CSV to add many collection rows at once.
                 {donationBox?.key_no

@@ -6,7 +6,8 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
 import FormInput from '../../../common/FormInput';
-import FormTextarea from '../../../common/FormTextarea';
+import MentionCommentInput from './MentionCommentInput';
+import TaskDueRemindersPanel from './TaskDueRemindersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
 import { tasksBasePath } from '../../../../utils/admin';
@@ -35,7 +36,8 @@ const ViewTask = () => {
   const [error, setError] = useState('');
   const [attachment, setAttachment] = useState({ file: null });
   const [attachmentDescription, setAttachmentDescription] = useState('');
-  const [comment, setComment] = useState({ content: '' });
+  const [comment, setComment] = useState({ content: '', mentioned_user_ids: [] });
+  const [commentFormKey, setCommentFormKey] = useState(0);
   const [savingAttachment, setSavingAttachment] = useState(false);
   const [savingComment, setSavingComment] = useState(false);
   const [relatedTasks, setRelatedTasks] = useState([]);
@@ -691,6 +693,10 @@ const ViewTask = () => {
     setComment((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleMentionedUsersChange = (mentionedUserIds) => {
+    setComment((prev) => ({ ...prev, mentioned_user_ids: mentionedUserIds }));
+  };
+
   const addAttachment = async (e) => {
     e.preventDefault();
     setSavingAttachment(true);
@@ -729,9 +735,13 @@ const ViewTask = () => {
     setSavingComment(true);
     setError('');
     try {
-      const res = await axiosInstance.post(`/tasks/${id}/comments`, comment);
+      const res = await axiosInstance.post(`/tasks/${id}/comments`, {
+        content: comment.content,
+        mentioned_user_ids: comment.mentioned_user_ids || [],
+      });
       setTask((prev) => ({ ...prev, comments: [...(prev.comments || []), res.data.data] }));
-      setComment({ content: '' });
+      setComment({ content: '', mentioned_user_ids: [] });
+      setCommentFormKey((k) => k + 1);
       toast.success('Comment added.');
     } catch (e2) {
       setError(e2.response?.data?.message || 'Failed to add comment.');
@@ -1858,6 +1868,13 @@ const ViewTask = () => {
                         )} 
                       </div> */}
 
+                      <TaskDueRemindersPanel
+                        taskId={task.id}
+                        dueDate={task.due_date}
+                        isAssignee={isCurrentUserAssignee}
+                        disabled={!canInteractWithNotes}
+                      />
+
                       <div
                         className={`view-section task-comments-panel${
                           isApproverView ? ' view-section--approver-secondary' : ''
@@ -1903,12 +1920,15 @@ const ViewTask = () => {
                         </div>
                         {!isApproverView && (
                           <form onSubmit={addComment} className="task-comments-form">
-                            <FormTextarea
-                              placeholder="Add Comment"
+                            <MentionCommentInput
+                              key={commentFormKey}
                               name="content"
                               value={comment.content}
+                              mentionedUserIds={comment.mentioned_user_ids}
                               onChange={handleCommentChange}
+                              onMentionedUsersChange={handleMentionedUsersChange}
                               disabled={!canInteractWithNotes}
+                              placeholder="Add Comment (type @ to mention someone)"
                             />
                             <div className="form-actions">
                               <PrimaryButton

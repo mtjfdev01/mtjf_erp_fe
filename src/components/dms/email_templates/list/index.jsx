@@ -6,14 +6,16 @@ import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter } from '../../../common/filters';
+import { SearchFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters/index';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { FiEye, FiEdit2, FiTrash2, FiPlus, FiMail } from 'react-icons/fi';
 
 const EmailTemplateList = () => {
   const navigate = useNavigate();
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
   const [error, setError] = useState('');
   
   // Pagination state
@@ -106,14 +108,16 @@ const EmailTemplateList = () => {
       <Navbar />
       <div className="list-content">
         <PageHeader 
-          title="Email Templates" 
-          actions={
-            <button className="primary-btn" onClick={() => navigate('/dms/email_templates/add')}>
-              <FiPlus /> Add Template
-            </button>
-          }
+          title="Email Templates"
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
+          showAdd
+          addPath="/dms/email_templates/add"
+          addTitle="Add Template"
         />
 
+        <CollapsibleFilters open={filtersOpen}>
         <div className="filters-container card">
           <div className="filters-grid">
             <SearchFilter 
@@ -141,6 +145,7 @@ const EmailTemplateList = () => {
             <ClearButton onClick={handleClearFilters} />
           </div>
         </div>
+        </CollapsibleFilters>
 
         <div className="table-container card">
           {loading ? (

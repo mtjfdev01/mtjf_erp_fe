@@ -256,7 +256,7 @@ const UpdateOnlineDonation = () => {
           {error && <div className="status-message status-message--error">{error}</div>}
 
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Donation details</h3>
+            <h3 className="form-section-heading">Donation details</h3>
             <div className="form-grid-2">
               <FormInput
                 label="Amount"
@@ -326,7 +326,7 @@ const UpdateOnlineDonation = () => {
 
           {isCheque && (
             <div className="form-section">
-              <h3 style={{ marginBottom: '15px', color: '#333' }}>Cheque</h3>
+              <h3 className="form-section-heading">Cheque</h3>
               <div className="form-grid-2">
                 <FormInput
                   label="Cheque number"
@@ -348,7 +348,7 @@ const UpdateOnlineDonation = () => {
           )}
 
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Location &amp; project</h3>
+            <h3 className="form-section-heading">Location &amp; project</h3>
             <div className="form-grid-2">
               <FormInput label="Country" name="country" value={form.country} onChange={handleChange} />
               <FormInput label="City" name="city" value={form.city} onChange={handleChange} />
@@ -383,7 +383,7 @@ const UpdateOnlineDonation = () => {
           </div>
 
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Bank / reference</h3>
+            <h3 className="form-section-heading">Bank / reference</h3>
             <div className="form-grid-2">
               <FormInput label="Bank" name="bank" value={form.bank} onChange={handleChange} />
               <FormInput

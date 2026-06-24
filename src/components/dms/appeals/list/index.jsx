@@ -5,8 +5,9 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
-import { SearchFilter, DropdownFilter } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { FiEye, FiEdit, FiTrash2, FiAlertCircle, FiStar } from 'react-icons/fi';
 
 const AppealsList = () => {
@@ -18,6 +19,7 @@ const AppealsList = () => {
   const [appealToDelete, setAppealToDelete] = useState(null);
   const [tempFilters, setTempFilters] = useState({ search: '', status: '', category: '' });
   const [appliedFilters, setAppliedFilters] = useState({ search: '', status: '', category: '' });
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const statusOptions = [
     { value: 'draft', label: 'Draft' },
@@ -126,11 +128,12 @@ const AppealsList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Urgent Appeals" showBackButton={false} showAdd addPath="/dms/appeals/add" />
+        <PageHeader title="Urgent Appeals" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd addPath="/dms/appeals/add" />
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
 
-          <div className="filters-section" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+          <CollapsibleFilters open={filtersOpen}>
+          <div className="filters-section">
             <SearchFilter filterKey="search" label="Search" filters={tempFilters} onFilterChange={handleFilterChange} placeholder="Search by title..." />
             <DropdownFilter filterKey="status" label="Status" data={statusOptions} filters={tempFilters} onFilterChange={handleFilterChange} placeholder="All Statuses" />
             <DropdownFilter filterKey="category" label="Category" data={categoryOptions} filters={tempFilters} onFilterChange={handleFilterChange} placeholder="All Categories" />
@@ -139,6 +142,7 @@ const AppealsList = () => {
               <ClearButton onClick={handleClearFilters} text="Clear" />
             </div>
           </div>
+          </CollapsibleFilters>
 
           <div className="table-container">
             <table className="data-table">

@@ -538,7 +538,7 @@ const AddDonation = () => {
 
           {/* Donation Details */}
           <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Donation Details</h3>
+            <h3 className="form-section-heading">Donation Details</h3>
             <div className="form-grid-2">
               <FormInput
                 label="Amount"
@@ -710,7 +710,7 @@ const AddDonation = () => {
            {isInKindSelected && (
              <div className='form-section'>
                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                 <h3 style={{ color: '#2563eb', borderBottom: '2px solid #e5e7eb', paddingBottom: '0.5rem', margin: 0 }}>
+                 <h3 className="form-section-heading form-section-heading--accent" style={{ margin: 0 }}>
                    In-Kind Donation Details
                  </h3>
                </div>
@@ -928,7 +928,7 @@ const AddDonation = () => {
           {/* Project Information */}
           <div className="form-section">
             <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
-              <h3 style={{ margin: 0, color: '#333' }}>Project Information (Optional)</h3>
+              <h3 className="form-section-heading" style={{ margin: 0 }}>Project Information (Optional)</h3>
               {!isQurbaniProject && (
                 <button
                   type="button"
@@ -1105,7 +1105,7 @@ const AddDonation = () => {
 
           {/* Payment Details */}
           {/* <div className="form-section">
-            <h3 style={{ marginBottom: '15px', color: '#333' }}>Payment Details (Optional)</h3>
+            <h3 className="form-section-heading">Payment Details (Optional)</h3>
             <div className="form-grid-2">
               <FormInput
                 label="Order ID"

@@ -7,8 +7,9 @@ import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
 import DataImport from '../../../common/DataImport';
-import { SearchFilter, DropdownFilter } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
 import { FiEye, FiEdit, FiTrash2 } from 'react-icons/fi';
@@ -31,6 +32,7 @@ const VolunteersList = () => {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [volunteerToDelete, setVolunteerToDelete] = useState(null);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -154,11 +156,12 @@ const VolunteersList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Registered Volunteers" showBackButton={false} showAdd={true} addPath="/dms/volunteers/add" />
+        <PageHeader title="Registered Volunteers" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd={true} addPath="/dms/volunteers/add" />
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
 
-          <div className="filters-section" style={{ display: 'flex', gap: '20px', flexWrap: 'wrap', marginBottom: '20px', padding: '20px', backgroundColor: '#f9fafb', borderRadius: '8px' }}>
+          <CollapsibleFilters open={filtersOpen}>
+          <div className="filters-section">
             <SearchFilter filterKey="search" label="Search" filters={tempFilters} onFilterChange={handleFilterChange} placeholder="Search by name, email, phone, CNIC..." />
             <DropdownFilter filterKey="status" label="Status" data={statusOptions} filters={tempFilters} onFilterChange={handleFilterChange} placeholder="All Statuses" />
             <DropdownFilter filterKey="gender" label="Gender" data={genderOptions} filters={tempFilters} onFilterChange={handleFilterChange} placeholder="All" />
@@ -177,6 +180,7 @@ const VolunteersList = () => {
               )}
             </div>
           </div>
+          </CollapsibleFilters>
 
           <div className="table-container">
             <table className="data-table">

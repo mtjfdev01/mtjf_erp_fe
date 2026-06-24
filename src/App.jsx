@@ -15,6 +15,7 @@ import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { OfflineProvider } from './context/OfflineContext';
 import { SummaryProvider } from './context/SummaryContext';
 import { InKindItemsProvider } from './context/InKindItemsContext';
@@ -184,10 +185,12 @@ import StepsList from './components/progress_tracking/admin/steps/list';
 import StepView from './components/progress_tracking/admin/steps/view';
 import EvidenceView from './components/progress_tracking/admin/evidence/view';
 import ProgressTemplateDashboard from './components/admin/dashboard/progress_template_dashboard';
+import './styles/screen-theme.css';
 
 const App = () => {
   return (<React.Fragment>
             <Router> 
+              <ThemeProvider>
               <AuthProvider>
                 <OfflineProvider>
                 <NotificationProvider>
@@ -510,6 +513,7 @@ const App = () => {
                 </NotificationProvider>
                 </OfflineProvider>
             </AuthProvider>
+              </ThemeProvider>
             </Router>
             <ToastContainer />
           </React.Fragment>
