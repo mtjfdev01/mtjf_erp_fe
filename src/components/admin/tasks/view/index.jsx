@@ -1180,14 +1180,14 @@ const ViewTask = () => {
               {renderRecurrenceInfo()}
               <div className="receipt-body">
 
-                <div className="view-section">
-                  <h3 className="view-section-title">
+                <div className="task-view-section">
+                  <h3 className="task-task-view-section-title">
                     <span>📝</span> Description
                   </h3>
-                  <div className="view-grid">
-                    <div className="view-item task-description-item">
+                  <div className="task-view-grid">
+                    <div className="task-view-item task-description-item">
                       {rawDescription ? (
-                        <span className="view-item-value task-description-text">
+                        <span className="task-view-item-value task-description-text">
                           {shouldTruncateDescription ? (
                             showFullDescription ? (
                               <>
@@ -1220,19 +1220,19 @@ const ViewTask = () => {
                           )}
                         </span>
                       ) : (
-                        <span className="view-item-value task-description-text">-</span>
+                        <span className="task-view-item-value task-description-text">-</span>
                       )}
                     </div>
                   </div>
                 </div>
-                <div className="view-section">
-                  <h3 className="view-section-title">
+                <div className="task-view-section">
+                  <h3 className="task-task-view-section-title">
                     <span>✅</span> {isApproverView
                       ? 'Progress & Means of Verification'
                       : 'Check the box to update progress'}
                   </h3>
-                    <div className="view-grid task-progress-layout">
-                    <div className="view-item task-progress-item">
+                    <div className="task-view-grid task-progress-layout">
+                    <div className="task-view-item task-progress-item">
                       {movLines.length > 0 ? (
                         <ProgressUpdate
                           taskId={task.id}
@@ -1265,7 +1265,7 @@ const ViewTask = () => {
                       )}
                     </div>
                     {(showProgressHistory || progressActivities.length > 0) && (
-                      <div className="view-item">
+                      <div className="task-view-item">
                         <div className="task-progress-history">
                           <div className="task-progress-history-title">
                             🔄 Progress history
@@ -1342,12 +1342,12 @@ const ViewTask = () => {
                 </div>
 
                 {initialAttachments.length > 0 && (
-                  <div className="view-section">
-                    {/* <h3 className="view-section-title">
+                  <div className="task-view-section">
+                    {/* <h3 className="task-task-view-section-title">
                       <span>📎</span> Task Attachments (Initial)
                     </h3> */}
-                    {/* <div className="view-grid">
-                      <div className="view-item task-attachments-item">
+                    {/* <div className="task-view-grid">
+                      <div className="task-view-item task-attachments-item">
                         <ul className="attachments-list">
                           {initialAttachments.map((a) => {
                             const rawType = a.file_type || '';
@@ -1410,75 +1410,75 @@ const ViewTask = () => {
                 <div className="view-layout">
                   <div className="view-layout-main">
                     <div
-                      className={`view-section${
-                        isApproverView ? ' view-section--approver-secondary' : ''
+                      className={`task-view-section${
+                        isApproverView ? ' task-view-section--approver-secondary' : ''
                       }`}
                     >
-                      <h3 className="view-section-title">
+                      <h3 className="task-task-view-section-title">
                         <span>ℹ️</span> Task Information
                       </h3>
-                      <div className="view-grid view-grid--info">
-                        <div className="view-item">
-                          <span className="view-item-label">Status</span>
-                          <span className="view-item-value">{getStatusBadge(task.status)}</span>
+                      <div className="task-view-grid task-view-grid--info">
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Status</span>
+                          <span className="task-view-item-value">{getStatusBadge(task.status)}</span>
                         </div> 
-                        <div className="view-item">
-                          <span className="view-item-label">Priority</span>
-                          <span className="view-item-value">
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Priority</span>
+                          <span className="task-view-item-value">
                             <span className={`priority-badge priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
                               {capitalize(task.priority)}
                             </span>
                           </span>
                         </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Task Type</span>
-                          <span className="view-item-value">{taskTypeLabel}</span>
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Task Type</span>
+                          <span className="task-view-item-value">{taskTypeLabel}</span>
                         </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Workflow</span>
-                          <span className="view-item-value">{capitalize(task.workflow_type)}</span>
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Workflow</span>
+                          <span className="task-view-item-value">{capitalize(task.workflow_type)}</span>
                         </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Created By</span>
-                          <span className="view-item-value">{getUserDisplayName(task.created_by)}</span>
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Created By</span>
+                          <span className="task-view-item-value">{getUserDisplayName(task.created_by)}</span>
                         </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Project/Program</span>
-                          <span className="view-item-value">{task.project_name || '-'}</span>
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Project/Program</span>
+                          <span className="task-view-item-value">{task.project_name || '-'}</span>
                         </div>
                         {isApprovalWorkflow &&
                           ['approved', 'rejected'].includes(String(task?.status || '').toLowerCase()) &&
                           task?.approved_by && (
-                            <div className="view-item">
-                              <span className="view-item-label">
+                            <div className="task-view-item">
+                              <span className="task-view-item-label">
                                 {String(task?.status || '').toLowerCase() === 'rejected' ? 'Rejected By' : 'Approved By'}
                               </span>
-                              <span className="view-item-value">{getUserDisplayName(task.approved_by)}</span>
+                              <span className="task-view-item-value">{getUserDisplayName(task.approved_by)}</span>
                             </div>
                           )}
                       </div>
                     </div>
 
                     <div
-                      className={`view-section${
-                        isApproverView ? ' view-section--approver-secondary' : ''
+                      className={`task-view-section${
+                        isApproverView ? ' task-view-section--approver-secondary' : ''
                       }`}
                     >
-                      <h3 className="view-section-title">
+                      <h3 className="task-task-view-section-title">
                         <span>📅</span> Timeline
                       </h3>
-                      <div className="view-grid view-grid--info">
-                        <div className="view-item">
-                          <span className="view-item-label">Created Date</span>
-                          <span className="view-item-value">{formatDateOnly(task.created_at)}</span>
+                      <div className="task-view-grid task-view-grid--info">
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Created Date</span>
+                          <span className="task-view-item-value">{formatDateOnly(task.created_at)}</span>
                         </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Start Date</span>
-                          <span className="view-item-value">{formatDateOnly(task.start_date)}</span>
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Start Date</span>
+                          <span className="task-view-item-value">{formatDateOnly(task.start_date)}</span>
                         </div>
-                        <div className="view-item">
-                          <span className="view-item-label">Due Date</span>
-                          <span className="view-item-value">
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Due Date</span>
+                          <span className="task-view-item-value">
                             {formatDateOnly(task.due_date)}
                             {dueInfo && (
                               <span
@@ -1490,18 +1490,18 @@ const ViewTask = () => {
                           </span>
                         </div>
                         {showCompletedDate && (
-                          <div className="view-item">
-                            <span className="view-item-label">Completed Date</span>
-                            <span className="view-item-value">
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Completed Date</span>
+                            <span className="task-view-item-value">
                               {formatDateOnly(task.completed_date)}
                             </span>
                           </div>
                         )}
                         {isRecurringTask && (
                           <>
-                            <div className="view-item">
-                              <span className="view-item-label">Recurrence</span>
-                              <span className="view-item-value">
+                            <div className="task-view-item">
+                              <span className="task-view-item-label">Recurrence</span>
+                              <span className="task-view-item-value">
                                 {task.recurrence_rule
                                   ? task.recurrence_rule.includes(' days')
                                     ? `Every ${task.recurrence_rule}`
@@ -1509,9 +1509,9 @@ const ViewTask = () => {
                                   : '-'}
                               </span>
                             </div>
-                            <div className="view-item">
-                              <span className="view-item-label">Next Recurrence</span>
-                              <span className="view-item-value">{formatDateOnly(task.recurrence_next_date)}</span>
+                            <div className="task-view-item">
+                              <span className="task-view-item-label">Next Recurrence</span>
+                              <span className="task-view-item-value">{formatDateOnly(task.recurrence_next_date)}</span>
                             </div>
                           </>
                         )}
@@ -1519,12 +1519,12 @@ const ViewTask = () => {
                     </div>
 
                     {!isApproverView && dependencies.length > 0 && (
-                      <div className="view-section">
-                        <h3 className="view-section-title">
+                      <div className="task-view-section">
+                        <h3 className="task-task-view-section-title">
                           <span>🔗</span> Dependencies
                         </h3>
-                        <div className="view-grid">
-                          <div className="view-item">
+                        <div className="task-view-grid">
+                          <div className="task-view-item">
                             <ul className="dependencies-list">
                               {dependencies.map((dep) => {
                                 const key = dep.id || dep.task_id || dep;
@@ -1547,8 +1547,8 @@ const ViewTask = () => {
                       </div>
                     )}
 
-                    <div className="view-section">
-                      <h3 className="view-section-title">
+                    <div className="task-view-section">
+                      <h3 className="task-task-view-section-title">
                         <span>👥</span> Team & Assignment
                         </h3>
                       <div className="team-assignment">
@@ -1620,17 +1620,17 @@ const ViewTask = () => {
                     </div>
                     {hasApprovalPanel && (
                       <div
-                        className={`view-section${
-                          isApproverView ? ' view-section--approver-primary' : ''
+                        className={`task-view-section${
+                          isApproverView ? ' task-view-section--approver-primary' : ''
                         }`}
                       >
-                        <h3 className="view-section-title">
+                        <h3 className="task-task-view-section-title">
                           <span>🛡️</span> Approval
                         </h3>
-                        <div className="view-grid">
-                          <div className="view-item">
-                            <span className="view-item-label">Approvers</span>
-                            <span className="view-item-value">
+                        <div className="task-view-grid">
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Approvers</span>
+                            <span className="task-view-item-value">
                               <ul className="approval-list">
                                 {approvalRows.map((row) => (
                                   <li key={row.id} className="approval-list-item">
@@ -1651,8 +1651,8 @@ const ViewTask = () => {
                       </div>
                     )}
                     {!isApproverView && reassignmentActivities.length > 0 && (
-                      <div className="view-section">
-                        <h3 className="view-section-title">
+                      <div className="task-view-section">
+                        <h3 className="task-task-view-section-title">
                           <span>🔄</span> Reassignment History
                         </h3>
                         <div className="reassignment-list">
@@ -1772,16 +1772,16 @@ const ViewTask = () => {
 
                     <div className="task-notes-panel">
                       {/* <div
-                        className={`view-section${
-                          isApproverView ? ' view-section--approver-primary' : ''
+                        className={`task-view-section${
+                          isApproverView ? ' task-view-section--approver-primary' : ''
                         }`}
                       >
                          <div className="activity-attachments-section">
-                          <h3 className="view-section-title">
+                          <h3 className="task-task-view-section-title">
                             <span>📂</span> Activity Attachments
                           </h3>
-                          <div className="view-grid">
-                            <div className="view-item task-attachments-item">
+                          <div className="task-view-grid">
+                            <div className="task-view-item task-attachments-item">
                               <ul className="attachments-list">
                                 {activityAttachments.map((a) => {
                                   const rawType = a.file_type || '';
@@ -1876,15 +1876,15 @@ const ViewTask = () => {
                       />
 
                       <div
-                        className={`view-section task-comments-panel${
-                          isApproverView ? ' view-section--approver-secondary' : ''
+                        className={`task-view-section task-comments-panel${
+                          isApproverView ? ' task-view-section--approver-secondary' : ''
                         }`}
                       >
-                        <h3 className="view-section-title">
+                        <h3 className="task-task-view-section-title">
                           <span>💬</span> {isApproverView ? 'Comments & Activity' : 'Comments & Activity'}
                         </h3>
-                        <div className="view-grid">
-                          <div className="view-item task-comments-item">
+                        <div className="task-view-grid">
+                          <div className="task-view-item task-comments-item">
                             <ul className="comments-list">
                               {(task.comments || []).map((c) => {
                                 const hasAuthor = !!c.author;
@@ -1946,12 +1946,12 @@ const ViewTask = () => {
                       </div>
 
                       {!isApproverView && (relatedLoading || relatedTasks.length > 0) && (
-                        <div className="view-section">
-                          <h3 className="view-section-title">
+                        <div className="task-view-section">
+                          <h3 className="task-task-view-section-title">
                             <span>🔗</span> Related tasks
                           </h3>
-                          <div className="view-grid">
-                            <div className="view-item">
+                          <div className="task-view-grid">
+                            <div className="task-view-item">
                               {relatedLoading && (
                                 <div className="status-message">
                                   Loading related tasks...

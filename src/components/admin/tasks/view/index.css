@@ -20,7 +20,7 @@
   font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
 }
 
-.task-receipt-page .view-section {
+.task-receipt-page .task-view-section {
   background: #ffffff;
   border: 1px solid #e5e7eb;
   border-radius: 12px;
@@ -31,11 +31,11 @@
   border-left: 6px solid green;
 }
 
-.task-receipt-page .view-section:hover {
+.task-receipt-page .task-view-section:hover {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-.task-receipt-page h3.view-section-title {
+.task-receipt-page h3.task-task-view-section-title {
   font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -47,33 +47,35 @@
   gap: 0.5rem;
 }
 
-.view-grid {
+.task-view-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
   gap: 1.5rem;
 }
 
-.view-grid-2 {
+.task-view-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1.5rem;
 }
 
 /* Two column layout specifically for Task Information */
-.view-grid--info {
+.task-view-grid--info {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 1rem;
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 768px) {
-  .view-grid--info {
+  .task-view-grid--info {
     grid-template-columns: 1fr;
     gap: 1.25rem;
+   
   }
 }
 
-.view-item {
+.task-view-item {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -84,7 +86,7 @@
   gap: 0.3rem;
 }
 
-.view-item-label {
+.task-view-item-label {
   font-weight: 800;
   color: #6b7280;
   font-size: 0.65rem;
@@ -92,11 +94,11 @@
   letter-spacing: 0.025em;
 }
 
-.view-item-label::after {
+.task-view-item-label::after {
   display: none;
 }
 
-.view-item-value {
+.task-view-item-value {
   font-weight: 500;
   color: #111827;
   font-size: 0.95rem;
@@ -110,9 +112,10 @@
 }
 
 .task-description-text {
-  font-size: 1rem;
+  font-size: 0.9rem;
   color: #374151;
   line-height: 1.6;
+  margin-top: 0.75rem;
 }
 
 .initial-attachments-main-section {
@@ -139,7 +142,7 @@
   flex-direction: column;
 }
 
-.task-notes-panel .view-section {
+.task-notes-panel .task-view-section {
   margin-bottom: 0;
 }
 
@@ -340,7 +343,7 @@
 .status-dropdown-menu {
   position: absolute;
   top: calc(100% + 0.5rem);
-  right: 0;
+  left: 0;
   min-width: 200px;
   border-radius: 0.75rem;
   background-color: #ffffff;
@@ -805,7 +808,7 @@
     justify-content: center;
   }
   
-  .view-grid {
+  .task-view-grid {
     grid-template-columns: 1fr;
   }
 
@@ -827,7 +830,7 @@
   flex-direction: column;
 }
 
-.task-notes-panel .view-section {
+.task-notes-panel .task-view-section {
   margin-bottom: var(--spacing-lg);
 }
 
@@ -1280,7 +1283,7 @@
 
 /* Separation for Activity Attachments */
 
-.activity-attachments-section .view-section-title {
+.activity-attachments-section .task-task-view-section-title {
   color: #1e40af !important;
   display: flex;
   align-items: center;
@@ -1665,6 +1668,7 @@
   grid-template-columns: minmax(0, 1.7fr) minmax(0, 1.2fr);
   gap: 1.25rem;
   align-items: flex-start;
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 1024px) {
@@ -1894,6 +1898,7 @@
   align-items: flex-start;
   gap: 0.75rem;
   flex-direction: row;
+  margin-top: 0.75rem;
 }
 
 @media (max-width: 640px) {
@@ -2391,7 +2396,6 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 1rem;
   padding: 0.5rem 0.75rem;
   background: #f8fafc;
   border-radius: 8px;

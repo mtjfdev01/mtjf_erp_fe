@@ -649,16 +649,6 @@
   }
 }
 
-.tasks-row--overdue {
-  /* border-left: 4px solid #ef4444; */
-  background-color: #fff1f211;
-}
-
-.tasks-row--overdue .task-card-dates {
-  background-color: #fff1f2;
-  border-color: #fecaca;
-}
-
 .reassign-modal-confirm {
   padding: 0.6rem 1.2rem;
   background-color: #30AEE3;
