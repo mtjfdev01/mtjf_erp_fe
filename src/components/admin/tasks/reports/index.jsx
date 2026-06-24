@@ -148,15 +148,40 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
         
         const percentage = Math.round((value / total) * 100);
         
+        // Calculate arc length to determine if label fits
+        const startAngle = arc.startAngle;
+        const endAngle = arc.endAngle;
+        const arcLength = endAngle - startAngle;
+        
+        // Only draw label if arc is large enough (at least 12 degrees)
+        if (arcLength < 0.21) { // ~12 degrees in radians
+          return;
+        }
+        
         ctx.save();
         const center = arc.getCenterPoint();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
-        ctx.font = '600 12px Inter, sans-serif';
-        ctx.fillText(value.toString(), center.x, center.y - 8);
-        ctx.font = '500 10px Inter, sans-serif';
-        ctx.fillText(`(${percentage}%)`, center.x, center.y + 12);
+        
+        // Text shadow for better readability
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+        ctx.shadowBlur = 2;
+        ctx.shadowOffsetX = 1;
+        ctx.shadowOffsetY = 1;
+        
+        // Only draw value if percentage > 2%, otherwise skip to save space
+        if (percentage >= 2) {
+          ctx.font = '600 11px Inter, sans-serif';
+          ctx.fillText(value.toString(), center.x, center.y - 6);
+          ctx.font = '500 9px Inter, sans-serif';
+          ctx.fillText(`(${percentage}%)`, center.x, center.y + 8);
+        } else if (percentage >= 1) {
+          // For very small percentages, only show the value
+          ctx.font = '600 10px Inter, sans-serif';
+          ctx.fillText(value.toString(), center.x, center.y);
+        }
+        
         ctx.restore();
       });
     });
@@ -168,21 +193,23 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = '#0f172a';
-      ctx.font = '600 26px Inter, sans-serif';
+      ctx.font = '600 24px Inter, sans-serif';
       ctx.fillText(total.toString(), centerX, centerY - 8);
-      ctx.font = '600 12px Inter, sans-serif';
+      ctx.font = '600 11px Inter, sans-serif';
       ctx.fillStyle = '#64748b';
-      ctx.fillText('Total Tasks', centerX, centerY + 16);
+      ctx.fillText('Total Tasks', centerX, centerY + 14);
       ctx.restore();
     }
   };
 
+  // If chart already exists, update it
   if (chartInstanceRef.current) {
     chartInstanceRef.current.data = data;
-    chartInstanceRef.current.update();
+    chartInstanceRef.current.update('none'); // Use 'none' to prevent animation issues
     return;
   }
 
+  // Create new chart
   chartInstanceRef.current = new Chart(ctx, {
     type: 'doughnut',
     data,
@@ -192,10 +219,10 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
       cutout: '50%',
       layout: {
         padding: {
-          top: 12,
-          bottom: 12,
-          left: 12,
-          right: 12
+          top: 16,
+          bottom: 16,
+          left: 16,
+          right: 16
         }
       },
       plugins: { 
@@ -422,11 +449,16 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
                     if (!value || value === 0) return;
                     const base = bar.base !== undefined ? bar.base : bar.x - bar.width;
                     const width = Math.abs((bar.x || 0) - base) || bar.width || 0;
-                    if (width < 18) return;
+                    if (width < 10) return;  // Reduced from 18px to 10px
                     const x = base + width / 2;
                     ctx.save();
                     ctx.fillStyle = '#ffffff';
-                    ctx.font = '600 12px Inter, sans-serif';
+                    // Adjust font size based on bar width
+                    if (width >= 18) {
+                      ctx.font = '600 12px Inter, sans-serif';
+                    } else {
+                      ctx.font = '600 10px Inter, sans-serif';
+                    }
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.fillText(String(value), x, bar.y);
@@ -1345,30 +1377,7 @@ const TaskReports = () => {
                   }
                 }
               },
-              datalabels: {
-                anchor: 'end',
-                align: 'end',
-                offset: 4,
-                font: {
-                  size: 10,
-                  weight: '700',
-                  family: "'Inter', sans-serif"
-                },
-                color: '#ffffff',
-                formatter: (value) => {
-                  return value > 0 ? value : null;
-                },
-                display: (context) => {
-                  // Don't display labels for hidden datasets
-                  const meta = context.chart.getDatasetMeta(context.datasetIndex);
-                  if (meta.hidden) return false;
 
-                  const value = context.dataset.data[context.dataIndex];
-                  return value > 0;
-                },
-                textShadowColor: 'rgba(0, 0, 0, 0.4)',
-                textShadowBlur: 3
-              }
             },
             scales: {
               x: {
@@ -1537,7 +1546,94 @@ const TaskReports = () => {
                 });
               });
             }
-          }]
+          },
+            {
+              id: 'segmentLabels',
+              afterDatasetsDraw: (chart) => {
+                const { ctx } = chart;
+                const isHorizontal = chart.options.indexAxis === 'y';
+                ctx.save();
+
+                // Pre-calculate topmost position for each bar
+                const barTopPositions = new Map();
+                chart.data.datasets.forEach((_, dsIdx) => {
+                  const meta = chart.getDatasetMeta(dsIdx);
+                  if (meta.hidden) return;
+                  meta.data.forEach((bar, idx) => {
+                    if (bar) {
+                      let pos;
+                      if (isHorizontal) {
+                        // For horizontal bars, rightmost is "top"
+                        pos = Math.max(bar.x, bar.base);
+                      } else {
+                        // For vertical bars, topmost is smallest y
+                        pos = Math.min(bar.y, bar.base);
+                      }
+                      
+                      const existing = barTopPositions.get(idx);
+                      if (existing === undefined) {
+                        barTopPositions.set(idx, pos);
+                      } else {
+                        barTopPositions.set(idx, isHorizontal ? Math.max(existing, pos) : Math.min(existing, pos));
+                      }
+                    }
+                  });
+                });
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                  const meta = chart.getDatasetMeta(datasetIndex);
+                  if (meta.hidden) return;
+
+                  meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    if (value <= 0 || !bar) return;
+
+                    // Skip the topmost segment of each bar
+                    const topPos = barTopPositions.get(index);
+                    if (topPos !== undefined) {
+                      if (isHorizontal) {
+                        if (Math.max(bar.x, bar.base) === topPos) return;
+                      } else {
+                        if (Math.min(bar.y, bar.base) === topPos) return;
+                      }
+                    }
+
+                    let centerX, centerY, segmentSize;
+                    if (isHorizontal) {
+                      // Horizontal bar (y-axis)
+                      centerX = (bar.base + bar.x) / 2;
+                      centerY = bar.y;
+                      segmentSize = Math.abs(bar.x - bar.base); // width
+                    } else {
+                      // Vertical bar (x-axis)
+                      centerX = bar.x;
+                      centerY = (bar.base + bar.y) / 2;
+                      segmentSize = Math.abs(bar.y - bar.base); // height
+                    }
+
+                    // Check if segment is large enough to show label
+                    if (segmentSize < 12) return;
+
+                    // Draw the segment label
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '600 10px "Inter", sans-serif';
+                    
+                    // Text shadow for readability
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                    ctx.shadowBlur = 3;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    
+                    ctx.fillText(value, centerX, centerY);
+                  });
+                });
+
+                ctx.restore();
+              }
+            }
+          ]
         });
       }
     }
@@ -1657,30 +1753,7 @@ const TaskReports = () => {
                   }
                 }
               },
-              datalabels: {
-                anchor: 'end',
-                align: 'end',
-                offset: 4,
-                font: {
-                  size: 10,
-                  weight: '700',
-                  family: "'Inter', sans-serif"
-                },
-                color: '#ffffff',
-                formatter: (value) => {
-                  return value > 0 ? value : null;
-                },
-                display: (context) => {
-                  // Don't display labels for hidden datasets
-                  const meta = context.chart.getDatasetMeta(context.datasetIndex);
-                  if (meta.hidden) return false;
 
-                  const value = context.dataset.data[context.dataIndex];
-                  return value > 0;
-                },
-                textShadowColor: 'rgba(0, 0, 0, 0.4)',
-                textShadowBlur: 3
-              }
             },
             scales: {
               x: {
@@ -1724,7 +1797,7 @@ const TaskReports = () => {
                     }, 0);
                   });
                   const max = Math.max(...totals);
-                  return Math.ceil(max * 1.18);
+                  return Math.ceil(max * 1.3);
                 }
               },
               y: {
@@ -1755,104 +1828,171 @@ const TaskReports = () => {
               easing: 'easeOutQuart'
             }
           },
-          plugins: [{
-            id: 'totalLabels',
-            afterDatasetsDraw: (chart) => {
-              const { ctx } = chart;
-              const chartWidth = chart.width;
+          plugins: [
+            {
+              id: 'totalLabels',
+              afterDatasetsDraw: (chart) => {
+                const { ctx } = chart;
+                const chartWidth = chart.width;
+                const chartArea = chart.chartArea;
 
-              // Dynamic badge sizing based on chart width for responsiveness
-              let badgeWidth, badgeHeight, cornerRadius, fontSize, padding;
+                // Dynamic font sizing based on chart width for responsiveness
+                let fontSize;
 
-              if (chartWidth < 480) {
-                badgeWidth = 28;
-                badgeHeight = 18;
-                cornerRadius = 4;
-                fontSize = 10;
-                padding = 6;
-              } else if (chartWidth < 768) {
-                badgeWidth = 32;
-                badgeHeight = 20;
-                cornerRadius = 4;
-                fontSize = 11;
-                padding = 6;
-              } else {
-                badgeWidth = 36;
-                badgeHeight = 22;
-                cornerRadius = 5;
-                fontSize = 12;
-                padding = 8;
-              }
+                if (chartWidth < 480) {
+                  fontSize = 10;
+                } else if (chartWidth < 768) {
+                  fontSize = 11;
+                } else {
+                  fontSize = 12;
+                }
 
-              // Only process the last dataset to show total at the top
-              const lastDatasetIndex = chart.data.datasets.length - 1;
-              if (lastDatasetIndex < 0) return;
-
-              const meta = chart.getDatasetMeta(lastDatasetIndex);
-
-              meta.data.forEach((bar, index) => {
-                // Calculate total for this bar across only VISIBLE datasets
-                let total = 0;
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                  // Only count if dataset is visible (not hidden via legend)
-                  const dsMeta = chart.getDatasetMeta(datasetIndex);
-                  if (!dsMeta.hidden) {
-                    total += (dataset.data[index] || 0);
-                  }
+                // Find the topmost y position across all datasets for each bar
+                const barTopY = new Map();
+                chart.data.datasets.forEach((_, datasetIndex) => {
+                  const meta = chart.getDatasetMeta(datasetIndex);
+                  meta.data.forEach((bar, index) => {
+                    if (bar) {
+                      const currentTop = bar.y;
+                      const existingTop = barTopY.get(index);
+                      if (existingTop === undefined || currentTop < existingTop) {
+                        barTopY.set(index, currentTop);
+                      }
+                    }
+                  });
                 });
 
-                if (total > 0 && bar) {
-                  ctx.save();
+                // Draw total labels using the topmost position
+                for (const [index, topY] of barTopY) {
+                  // Calculate total for this bar across only VISIBLE datasets
+                  let total = 0;
+                  chart.data.datasets.forEach((dataset, datasetIndex) => {
+                    // Only count if dataset is visible (not hidden via legend)
+                    const dsMeta = chart.getDatasetMeta(datasetIndex);
+                    if (!dsMeta.hidden) {
+                      total += (dataset.data[index] || 0);
+                    }
+                  });
 
-                  // Position badge above the bar (top)
-                  let x = bar.x - badgeWidth / 2;
-                  let y = bar.y - badgeHeight - padding;
+                  if (total > 0) {
+                    ctx.save();
 
-                  // Ensure badge stays within chart boundaries
-                  if (x < 0) x = 4;
-                  if (x + badgeWidth > chart.width) x = chart.width - badgeWidth - 4;
-                  if (y < 0) y = 4;
-                  if (y + badgeHeight > chart.height) y = chart.height - badgeHeight - 4;
+                    // Get x position from the first dataset's bar
+                    const firstMeta = chart.getDatasetMeta(0);
+                    const bar = firstMeta.data[index];
+                    if (!bar) {
+                      ctx.restore();
+                      continue;
+                    }
 
-                  // Draw badge background with shadow
-                  ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-                  ctx.shadowBlur = 6;
-                  ctx.shadowOffsetX = 0;
-                  ctx.shadowOffsetY = 2;
-                  ctx.fillStyle = '#ffffff';
+                    // Position text above the bar (top)
+                    let x = bar.x;
+                    let y = topY - 18;
 
-                  // Rounded rectangle
-                  ctx.beginPath();
-                  ctx.moveTo(x + cornerRadius, y);
-                  ctx.lineTo(x + badgeWidth - cornerRadius, y);
-                  ctx.quadraticCurveTo(x + badgeWidth, y, x + badgeWidth, y + cornerRadius);
-                  ctx.lineTo(x + badgeWidth, y + badgeHeight - cornerRadius);
-                  ctx.quadraticCurveTo(x + badgeWidth, y + badgeHeight, x + badgeWidth - cornerRadius, y + badgeHeight);
-                  ctx.lineTo(x + cornerRadius, y + badgeHeight);
-                  ctx.quadraticCurveTo(x, y + badgeHeight, x, y + badgeHeight - cornerRadius);
-                  ctx.lineTo(x, y + cornerRadius);
-                  ctx.quadraticCurveTo(x, y, x + cornerRadius, y);
-                  ctx.closePath();
-                  ctx.fill();
+                    // Ensure text stays within chart boundaries
+                    if (x < chartArea.left) x = chartArea.left + 20;
+                    if (x > chartArea.right) x = chartArea.right - 20;
+                    if (y < chartArea.top) y = chartArea.top + fontSize + 4;
 
-                  // Reset shadow
-                  ctx.shadowColor = 'transparent';
-                  ctx.shadowBlur = 0;
-                  ctx.shadowOffsetX = 0;
-                  ctx.shadowOffsetY = 0;
+                    // Draw total value text only - no background
+                    ctx.fillStyle = '#0f172a';
+                    ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'bottom';
+                    ctx.fillText(total, x, y);
 
-                  // Draw total value text
-                  ctx.fillStyle = '#0f172a';
-                  ctx.font = `600 ${fontSize}px 'Inter', sans-serif`;
-                  ctx.textAlign = 'center';
-                  ctx.textBaseline = 'middle';
-                  ctx.fillText(total, x + badgeWidth / 2, y + badgeHeight / 2);
-
-                  ctx.restore();
+                    ctx.restore();
+                  }
                 }
-              });
+              }
+            },
+            {
+              id: 'segmentLabels',
+              afterDatasetsDraw: (chart) => {
+                const { ctx } = chart;
+                const isHorizontal = chart.options.indexAxis === 'y';
+                ctx.save();
+
+                // Pre-calculate topmost position for each bar
+                const barTopPositions = new Map();
+                chart.data.datasets.forEach((_, dsIdx) => {
+                  const meta = chart.getDatasetMeta(dsIdx);
+                  if (meta.hidden) return;
+                  meta.data.forEach((bar, idx) => {
+                    if (bar) {
+                      let pos;
+                      if (isHorizontal) {
+                        // For horizontal bars, rightmost is "top"
+                        pos = Math.max(bar.x, bar.base);
+                      } else {
+                        // For vertical bars, topmost is smallest y
+                        pos = Math.min(bar.y, bar.base);
+                      }
+                      
+                      const existing = barTopPositions.get(idx);
+                      if (existing === undefined) {
+                        barTopPositions.set(idx, pos);
+                      } else {
+                        barTopPositions.set(idx, isHorizontal ? Math.max(existing, pos) : Math.min(existing, pos));
+                      }
+                    }
+                  });
+                });
+
+                chart.data.datasets.forEach((dataset, datasetIndex) => {
+                  const meta = chart.getDatasetMeta(datasetIndex);
+                  if (meta.hidden) return;
+
+                  meta.data.forEach((bar, index) => {
+                    const value = dataset.data[index];
+                    if (value <= 0 || !bar) return;
+
+                    // Skip the topmost segment of each bar
+                    const topPos = barTopPositions.get(index);
+                    if (topPos !== undefined) {
+                      if (isHorizontal) {
+                        if (Math.max(bar.x, bar.base) === topPos) return;
+                      } else {
+                        if (Math.min(bar.y, bar.base) === topPos) return;
+                      }
+                    }
+
+                    let centerX, centerY, segmentSize;
+                    if (isHorizontal) {
+                      // Horizontal bar (y-axis)
+                      centerX = (bar.base + bar.x) / 2;
+                      centerY = bar.y;
+                      segmentSize = Math.abs(bar.x - bar.base); // width
+                    } else {
+                      // Vertical bar (x-axis)
+                      centerX = bar.x;
+                      centerY = (bar.base + bar.y) / 2;
+                      segmentSize = Math.abs(bar.y - bar.base); // height
+                    }
+
+                    // Check if segment is large enough to show label
+                    if (segmentSize < 12) return;
+
+                    // Draw the segment label
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = '#ffffff';
+                    ctx.font = '600 10px "Inter", sans-serif';
+                    
+                    // Text shadow for readability
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
+                    ctx.shadowBlur = 3;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
+                    
+                    ctx.fillText(value, centerX, centerY);
+                  });
+                });
+
+                ctx.restore();
+              }
             }
-          }]
+          ]
         });
       }
     }

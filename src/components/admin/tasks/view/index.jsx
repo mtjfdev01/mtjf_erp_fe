@@ -20,6 +20,7 @@ import QuickActionModal from './QuickActionModal';
 import { STATUS_TRANSITION_MAP, QUICK_ACTION_LABEL_MAP } from './taskStatusConfig';
 import '../../../../styles/variables.css';
 import './index.css';
+import { FaExclamationTriangle } from 'react-icons/fa';
 
 const ViewTask = () => {
   const { id } = useParams();
@@ -44,6 +45,7 @@ const ViewTask = () => {
   const [approvalState, setApprovalState] = useState(null);
   const [approvalLoaded, setApprovalLoaded] = useState(false);
   const [approvalLoading, setApprovalLoading] = useState(true);
+  const [showMovCompletionPrompt, setShowMovCompletionPrompt] = useState(false);
 
   const getAttachmentHref = (urlStr) => {
     if (!urlStr) return '#';
@@ -284,8 +286,16 @@ const ViewTask = () => {
       return { label: `Due in ${diffDays} day${diffDays === 1 ? '' : 's'}`, variant: 'normal' };
     }
   };
+
+  const taskRouteBase = useMemo(() => tasksBasePath(), []);
+
+  const taskPerms = useMemo(
+    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
+    [permissions, user?.department, user?.role],
+  );
+  
   const handleBack = useCallback(() => {
-    navigate(-1);
+    navigate(-1); // Go back in browser history to preserve search params (including activeTab)
   }, [navigate]);
   const getUserDisplayName = (u) => {
     if (!u) return '-';
@@ -488,21 +498,23 @@ const ViewTask = () => {
     );
   };
 
-  const renderReminderBanner = (title, message, isWarning = false) => (
-    <div className={`overdue-reminder${isWarning ? ' overdue-reminder--warning' : ''}`}>
-      <div className="overdue-reminder-icon">!</div>
-      <div className="overdue-reminder-content">
-        <div className="overdue-reminder-title">{title}</div>
-        <div className="overdue-reminder-text">{message}</div>
-      </div>
+  const renderReminderBanner = (title, message, isWarning = false, isCompact = false) => (
+    <div className={`overdue-reminder${isWarning ? ' overdue-reminder--warning' : ''}${isCompact ? ' overdue-reminder--compact' : ''}`}>
+      <FaExclamationTriangle className="overdue-reminder-icon" />
+       
+      {!isCompact && (
+        <div className="overdue-reminder-content">
+          <div className="overdue-reminder-title">{title}</div>
+          <div className="overdue-reminder-text">{message}</div>
+        </div>
+      )}
+      {isCompact && (
+        <div className="overdue-reminder-content--compact">
+          <span className="overdue-reminder-title--compact">{title}</span>
+          <span className="overdue-reminder-text--compact">{message}</span>
+        </div>
+      )}
     </div>
-  );
-
-  const taskRouteBase = useMemo(() => tasksBasePath(), []);
-
-  const taskPerms = useMemo(
-    () => getTaskPermissions(permissions || {}, user?.department, user?.role),
-    [permissions, user?.department, user?.role],
   );
   const canApprove = taskPerms.canApprove === true;
 
@@ -1032,13 +1044,13 @@ const ViewTask = () => {
             <div className="task-receipt-page">
             <div className="receipt-container">
               <div className="receipt-header">
-                <div className="receipt-title">
-                  <div className="receipt-logo">📋</div>
+                <div className="view-details-title">
+                  <div className="view-details-logo">📋</div>
                   <div>
                     <h1>{task.title || 'Task Title'}</h1>
                   </div>
                 </div>
-                <div className="task-id">{formatTaskId(task)}</div>
+                <div className="view-details-task-id">{formatTaskId(task)}</div>
               </div>
               <div className="task-view-status-actions-row">
                 <div className="task-view-status-banner-inline">
@@ -1085,10 +1097,52 @@ const ViewTask = () => {
                         )}
                       </div>
                     ) : (
-                      <span className="receipt-status-badge">{statusLabel}</span>
+                      <span className="view-action-status-badge">{statusLabel}</span>
                     )}
                   </div>
                 </div>
+
+                {/* Overdue/Reminder Banner in compact mode */}
+                {isTaskOverdueAfterToday() ? (
+                  renderReminderBanner(
+                    'Task is overdue',
+                    isCurrentUserAssignee ? (
+                      primaryAssigneeName
+                        ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
+                        : 'This task is now overdue. Please review and complete it as soon as possible.'
+                    ) : (
+                      `assignee ${primaryAssigneeName} has not completed; please review and follow up`
+                    ),
+                    false,
+                    true
+                  )
+                ) : isTaskOverdueToday() ? (
+                  renderReminderBanner(
+                    'Overdue Today',
+                    isCurrentUserAssignee ? (
+                      primaryAssigneeName
+                        ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
+                    ) : (
+                      `assignee ${primaryAssigneeName} has not completed; please review and follow up`
+                    ),
+                    true,
+                    true
+                  )
+                ) : isTaskDueTodayBeforeNoon() ? (
+                  renderReminderBanner(
+                    'Due Today',
+                    isCurrentUserAssignee ? (
+                      primaryAssigneeName
+                        ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
+                    ) : (
+                      'This task is due today; please check in with the assignee if needed.'
+                    ),
+                    true,
+                    true
+                  )
+                ) : null}
 
                 <TaskActionBar
                   taskId={task.id}
@@ -1115,42 +1169,6 @@ const ViewTask = () => {
 
               {renderRecurrenceInfo()}
               <div className="receipt-body">
-                {isTaskOverdueAfterToday() ? (
-                  renderReminderBanner(
-                    'Task is overdue',
-                    isCurrentUserAssignee ? (
-                      primaryAssigneeName
-                        ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
-                        : 'This task is now overdue. Please review and complete it as soon as possible.'
-                    ) : (
-                      `The assignee ${primaryAssigneeName} has not completed the task; please review and follow up`
-                    )
-                  )
-                ) : isTaskOverdueToday() ? (
-                  renderReminderBanner(
-                    'Overdue Today',
-                    isCurrentUserAssignee ? (
-                      primaryAssigneeName
-                        ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
-                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
-                    ) : (
-                      `The assignee ${primaryAssigneeName} has not completed the task; please review and follow up`
-                    ),
-                    true
-                  )
-                ) : isTaskDueTodayBeforeNoon() ? (
-                  renderReminderBanner(
-                    'Due Today',
-                    isCurrentUserAssignee ? (
-                      primaryAssigneeName
-                        ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
-                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
-                    ) : (
-                      'This task is due today; please check in with the assignee if needed.'
-                    ),
-                    true
-                  )
-                ) : null}
 
                 <div className="view-section">
                   <h3 className="view-section-title">
@@ -1214,6 +1232,8 @@ const ViewTask = () => {
                           canEdit={canEditMovChecklist}
                           currentUser={user}
                           progressActivities={task.activities || []}
+                          taskStatus={task.status}
+                          onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
                           onUpdate={(progress, notes, updatedTask) => {
                             if (updatedTask) {
                               setTask(updatedTask);
@@ -1997,6 +2017,61 @@ const ViewTask = () => {
               setStatusActionLoading(false);
             }}
           />
+
+          {/* MOV Completion Prompt */}
+          {showMovCompletionPrompt && (
+            <div className="status-modal-backdrop" role="dialog" aria-modal="true">
+              <div className="status-modal">
+                <div className="status-modal-header">
+                  <h3 className="status-modal-title">All MOV Items Completed</h3>
+                </div>
+                <div className="status-modal-body">
+                  <p className="status-modal-text">
+                    All MOV items are completed. Do you want to change the task status to Completed?
+                  </p>
+                </div>
+                <div className="status-modal-footer">
+                  <button
+                    type="button"
+                    className="task-status-modal-cancel"
+                    onClick={() => setShowMovCompletionPrompt(false)}
+                  >
+                    No
+                  </button>
+                  <PrimaryButton
+                    style={{ color: '#ffffff' }}
+                    type="button"
+                    onClick={async () => {
+                      // Change task status to Completed
+                      try {
+                        const payload = { status: 'completed', notes: 'All MOV items completed' };
+                        await axiosInstance.post(`/tasks/${task.id}/status-transition`, payload);
+                        const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
+                        const updatedTask = refreshed.data?.data || null;
+                        if (updatedTask) {
+                          setTask(updatedTask);
+                        }
+                        toast.success('Task marked as Completed');
+                        setShowMovCompletionPrompt(false);
+                        
+                        // If task is approval-based, show Submit for Approval modal
+                        if (String(task.workflow_type).toLowerCase() === 'approval_required') {
+                          setStatusModalAction('SUBMIT_APPROVAL');
+                          setStatusModalOpen(true);
+                        }
+                      } catch (e) {
+                        const msg = e.response?.data?.message || 'Failed to update status.';
+                        setError(msg);
+                        toast.error(msg);
+                      }
+                    }}
+                  >
+                    Yes
+                  </PrimaryButton>
+                </div>
+              </div>
+            </div>
+          )}
 
           <QuickActionModal
             isOpen={quickActionOpen}

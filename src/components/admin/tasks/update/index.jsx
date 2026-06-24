@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
@@ -315,6 +315,10 @@ const UpdateTask = () => {
   };
 
   const taskRouteBase = useMemo(() => tasksBasePath(), []);
+
+  const handleBack = useCallback(() => {
+    navigate(`${taskRouteBase}/list`); // Navigate to tasks list at /tasks/list instead of previous page
+  }, [navigate, taskRouteBase]);
 
   const taskPerms = useMemo(
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
@@ -715,7 +719,7 @@ const UpdateTask = () => {
         }
       }
 
-      navigate(`${taskRouteBase}/view/${id}`);
+      navigate(`${taskRouteBase}/view/${id}`, { replace: true });
     } catch (e2) {
       setError(e2.response?.data?.message || 'Failed to update task.');
       toast.error(e2.response?.data?.message || 'Failed to update task.');
@@ -730,7 +734,7 @@ const UpdateTask = () => {
         <Navbar />
         <div className="add-task-page">
           <div className="add-task-card">
-            <PageHeader title="Update Task" showBackButton={true} />
+            <PageHeader title="Update Task" showBackButton={true} onBackClick={handleBack} />
             <div className="status-message">Loading task...</div>
           </div>
         </div>
@@ -743,7 +747,7 @@ const UpdateTask = () => {
       <Navbar />
       <div className="add-task-page">
         <div className="add-task-card">
-          <PageHeader title="Update Task" showBackButton={true} />
+          <PageHeader title="Update Task" showBackButton={true} onBackClick={handleBack} />
           {error && <div className="status-message status-message--error">{error}</div>}
           <form onSubmit={handleSubmit}>
             <div className="add-task-section">

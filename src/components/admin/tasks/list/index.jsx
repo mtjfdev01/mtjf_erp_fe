@@ -19,13 +19,17 @@ const TasksList = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permissions } = useAuth();
+  
+  // Initialize state from URL search params
+  const searchParams = new URLSearchParams(location.search);
+  
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(30);
-  const [sortField, setSortField] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState('DESC');
+  const [currentPage, setCurrentPage] = useState(() => Number(searchParams.get('page')) || 1);
+  const [pageSize, setPageSize] = useState(() => Number(searchParams.get('pageSize')) || 30);
+  const [sortField, setSortField] = useState(() => searchParams.get('sortField') || 'created_at');
+  const [sortOrder, setSortOrder] = useState(() => searchParams.get('sortOrder') || 'DESC');
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [categoryCounts, setCategoryCounts] = useState({
@@ -34,21 +38,43 @@ const TasksList = () => {
     other_tasks: 0
   });
   const [filters, setFilters] = useState({
-    search: '',
-    department: '', // Default to empty string for "All Departments"
-    status: '',
-    priority: '',
-    user_name: '' // User name search filter (like User Management)
+    search: searchParams.get('search') || '',
+    department: searchParams.get('department') || '', 
+    status: searchParams.get('status') || '',
+    priority: searchParams.get('priority') || '',
+    user_name: searchParams.get('user_name') || ''
   });
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
   const [isSearchPending, setIsSearchPending] = useState(false);
   const [myApprovals, setMyApprovals] = useState([]);
-  const [activeTab, setActiveTab] = useState('assigned_to_me');
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('activeTab') || 'assigned_to_me');
   const [approvalsLoaded, setApprovalsLoaded] = useState(false);
   const [hasInteractedWithApprovals, setHasInteractedWithApprovals] = useState(false);
   const [showApprovalBanner, setShowApprovalBanner] = useState(false);
 
   const currentUserId = user?.id ? Number(user.id) : null;
+
+  // Sync state to URL search params
+  useEffect(() => {
+    const params = new URLSearchParams();
+    
+    if (currentPage !== 1) params.set('page', currentPage);
+    if (pageSize !== 30) params.set('pageSize', pageSize);
+    if (sortField !== 'created_at') params.set('sortField', sortField);
+    if (sortOrder !== 'DESC') params.set('sortOrder', sortOrder);
+    if (filters.search) params.set('search', filters.search);
+    if (filters.department) params.set('department', filters.department);
+    if (filters.status) params.set('status', filters.status);
+    if (filters.priority) params.set('priority', filters.priority);
+    if (filters.user_name) params.set('user_name', filters.user_name);
+    if (activeTab !== 'assigned_to_me') params.set('activeTab', activeTab);
+    
+    // Navigate with updated params
+    navigate({
+      pathname: location.pathname,
+      search: params.toString()
+    }, { replace: true });
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, activeTab, navigate, location.pathname]);
 
   const isManager = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
@@ -421,6 +447,10 @@ const TasksList = () => {
     setSearchInput('');
     setFilters({ search: '', department: '', status: '', priority: '', user_name: '' });
     setCurrentPage(1);
+    setPageSize(30);
+    setSortField('created_at');
+    setSortOrder('DESC');
+    setActiveTab('assigned_to_me');
   };
 
   const formatDate = (d) => {
@@ -508,7 +538,7 @@ const TasksList = () => {
     };
     const cls = statusClassMap[status] || 'status-registered';
     const label = capitalize(status) || 'Pending';
-    return <span className={`task-status-badge ${cls}`}>{label}</span>;
+    return <span className={`task-list-status-badge ${cls}`}>{label}</span>;
   };
 
   const renderAssignees = (t) => {
@@ -1116,84 +1146,7 @@ const TasksList = () => {
               <FiPlus />
             </button>
           </div>
-              {/* Approval Banner - Only shown if there are actual pending approvals */}
-              {(() => {
-                try {
-                  if (!approvalsLoaded) return null; // Wait until approvals are loaded
-                  if (!Array.isArray(approvalRequestsForUser)) return null;
-                  
-                  const pendingApprovals = approvalRequestsForUser.filter(t => t && t._isPendingAction === true);
-                  if (!pendingApprovals || pendingApprovals.length === 0) return null;
-                  
-                  return (
-                    <div className="approval-wrapper">
-                      {/* Show either compact pill OR expanded banner */}
-                      {!showApprovalBanner ? (
-                        <div className="approval-pill-container">
-                          <button 
-                            className="approval-pill"
-                            onClick={() => setShowApprovalBanner(true)}
-                          >
-                            <div className="approval-pill-content">
-                              <span className="approval-pill-text">Pending Your Approval</span>
-                              <div className="approval-pill-icon-wrapper">
-                                <div className="approval-pill-icon">
-                                  <FiClipboard />
-                                </div>
-                                <span className="approval-pill-count">{pendingApprovals.length}</span>
-                              </div>
-                            </div>
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="tasks-approval-banner">
-                          <div className="tasks-approval-pill">
-                            <div className="tasks-approval-header">
-                              <span className="tasks-approval-label">Approval requests</span>
-                              <button 
-                                className="approval-close-btn"
-                                onClick={() => setShowApprovalBanner(false)}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                            <ul className="tasks-approval-list">
-                              {pendingApprovals.map((t) => (
-                                <li
-                                  key={t.id}
-                                  className="tasks-approval-item"
-                                  onClick={taskPerms.canView ? () => navigate(`${tasksRouteBase}/view/${t.id}`) : undefined}
-                                >
-                                  <div className="tasks-approval-item-main">
-                                    <span className="tasks-approval-title">
-                                      {t.title || `Task #${t.id}`}
-                                    </span>
-                                    <span className="tasks-approval-sub">
-                                      Pending your review
-                                      {(t.priority || t.due_date) && (
-                                        <>
-                                          {' • '}
-                                          {t.priority ? capitalize(t.priority) : null}
-                                          {t.priority && t.due_date ? ' • ' : ''}
-                                          {t.due_date ? `Due ${formatDate(t.due_date)}` : null}
-                                        </>
-                                      )}
-                                    </span>
-                                  </div>
-                                  <span className="tasks-approval-meta">View</span>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  );
-                } catch (error) {
-                  // Silently fail if there's an error with approval banner
-                  return null;
-                }
-              })()}
+
               {error && <div className="status-message status-message--error">{error}</div>}
 
               <div className="task-card-list">
@@ -1233,6 +1186,21 @@ const TasksList = () => {
                         <FiThumbsUp className="tab-icon" />
                         <span className="tab-text">Approval Tasks</span>
                         <span className="tab-count">{approvalTasks.length}</span>
+                        {/* Pending approval badge */}
+                        {(() => {
+                          try {
+                            if (!approvalsLoaded || !Array.isArray(approvalRequestsForUser)) return null;
+                            const pendingCount = approvalRequestsForUser.filter(t => t && t._isPendingAction === true).length;
+                            if (pendingCount === 0) return null;
+                            return (
+                              <span className="approval-pending-badge" title={`${pendingCount} pending approval`}>
+                                {pendingCount}
+                              </span>
+                            );
+                          } catch {
+                            return null;
+                          }
+                        })()}
                       </button>
                     )}
                   </div>
