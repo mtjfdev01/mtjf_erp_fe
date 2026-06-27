@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useRef, useEffect } from 'react';
+import React, { useCallback, useMemo, useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
@@ -417,6 +417,10 @@ const AddTask = () => {
     return dueDate.toISOString().split('T')[0];
   };
 
+  const handleBack = useCallback(() => {
+    navigate(`${tasksBasePath()}/list`); // Navigate back to tasks list at /tasks/list
+  }, [navigate]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const next = {
@@ -629,7 +633,7 @@ const AddTask = () => {
       }
       setSubmitting(false);
       if (createdTaskId) {
-        navigate(`${tasksBasePath()}/view/${createdTaskId}`);
+        navigate(`${tasksBasePath()}/view/${createdTaskId}`, { replace: true }); // Replace history entry so back goes to list
       }
     }
   };
@@ -639,7 +643,7 @@ const AddTask = () => {
       <Navbar />
       <div className="add-task-page">
         <div className="add-task-card">
-          <PageHeader title="Add Task" showBackButton={true} />
+          <PageHeader title="Add Task" showBackButton={true} onBackClick={handleBack} />
           {error && <div className="status-message status-message--error">{error}</div>}
           {submitting && (
             <div className="add-task-submitting-overlay">
