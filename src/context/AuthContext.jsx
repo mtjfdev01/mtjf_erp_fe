@@ -315,6 +315,11 @@ export const AuthProvider = ({ children }) => {
    * @example
    * // Multiple permissions (OR logic - returns true if user has ANY)
    * hasAnyPermission(['fund_raising.donations.create', 'super_admin', 'fund_raising_manager'])
+   *
+   * @example
+   * // Donation receipt preview / email
+   * hasAnyPermission(['super_admin', 'communication.donation_receipts.view'])
+   * hasAnyPermission(['super_admin', 'communication.donation_receipts.send'])
    */
   const hasAnyPermission = (requiredPermissions) => {
     if (!permissions || !requiredPermissions) {

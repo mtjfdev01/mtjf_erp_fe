@@ -8,6 +8,7 @@ import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import DonationAuditHistory from '../../shared/DonationAuditHistory';
+import DonationReceiptModal from '../../shared/DonationReceiptModal';
 import { useAuth } from '../../../../../context/AuthContext';
 import { isLocalId } from '../../../../../offline/handlers';
 import './index.css';
@@ -20,6 +21,8 @@ const COMM_PERMS = {
   whatsappPaymentLinks: 'communication.whatsapp_payment_links.send',
   whatsappThanks: 'communication.whatsapp_thanks.send',
   whatsappCampaigns: 'communication.whatsapp_campaigns.send',
+  donationReceiptsView: 'communication.donation_receipts.view',
+  donationReceiptsSend: 'communication.donation_receipts.send',
 };
 
 const PROGRESS_STEP_STATUS_OPTIONS = [
@@ -42,7 +45,7 @@ const ViewOnlineDonation = () => {
   const [sendingThanksWhatsApp, setSendingThanksWhatsApp] = useState(false);
   const [sendingLinkEmail, setSendingLinkEmail] = useState(false);
   const [sendingLinkWhatsApp, setSendingLinkWhatsApp] = useState(false);
-  const [sendingReceipt, setSendingReceipt] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [messageStatus, setMessageStatus] = useState({ type: '', message: '' });
   const [markingCompleted, setMarkingCompleted] = useState(false);
   const [markingFailed, setMarkingFailed] = useState(false);
@@ -132,11 +135,10 @@ const ViewOnlineDonation = () => {
     canSendComm(COMM_PERMS.whatsappThanks) ||
     canSendComm(COMM_PERMS.whatsappCampaigns);
   const showCommSection = showEmailComm || showWhatsAppComm;
-  const showInKindReceipt =
-    !!donation &&
-    (donation.donation_method === 'in_kind' ||
-      (donation.in_kind_items && donation.in_kind_items.length > 0));
-  const showCommActionsHeader = showCommSection || showInKindReceipt;
+  const showCommActionsHeader = showCommSection;
+  const canViewReceipt = canSendComm(COMM_PERMS.donationReceiptsView);
+  const canSendReceiptEmail = canSendComm(COMM_PERMS.donationReceiptsSend);
+  const showReceiptSection = canViewReceipt || canSendReceiptEmail;
   const isPendingOffline = isLocalId(id);
 
   useEffect(() => {
@@ -491,38 +493,6 @@ const ViewOnlineDonation = () => {
       console.error('Error sending link WhatsApp:', err);
     } finally {
       setSendingLinkWhatsApp(false);
-    }
-  };
-
-  const sendReceipt = async () => {
-    if (!id) return;
-
-    setSendingReceipt(true);
-    setMessageStatus({ type: '', message: '' });
-
-    try {
-      const response = await axiosInstance.post(`/donations/sendDonationReceipt/${id}`);
-
-      if (response.data.success) {
-        setMessageStatus({
-          type: 'success',
-          message: response.data.message || 'Receipt sent successfully!',
-        });
-        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
-      } else {
-        setMessageStatus({
-          type: 'error',
-          message: response.data.message || 'Failed to send receipt',
-        });
-      }
-    } catch (err) {
-      setMessageStatus({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to send receipt. Please try again.',
-      });
-      console.error('Error sending receipt:', err);
-    } finally {
-      setSendingReceipt(false);
     }
   };
 
@@ -1398,17 +1368,21 @@ const ViewOnlineDonation = () => {
               </>
             )}
 
-            {showInKindReceipt && (
-              <div className={`donation-view-action-grid${showCommSection ? ' donation-view-action-grid--spaced' : ''}`}>
-                <button
-                  type="button"
-                  className="donation-action-btn donation-action-btn--amber"
-                  onClick={sendReceipt}
-                  disabled={sendingReceipt || !donation?.donor?.email}
-                >
-                  {sendingReceipt ? 'Sending...' : '🧾 Send Receipt'}
-                </button>
-              </div>
+            {showReceiptSection && (
+              <>
+            <h3 className="view-section-title donation-view-section-title--spaced">
+              Receipt
+            </h3>
+            <div className="donation-view-action-grid">
+              <button
+                type="button"
+                className="donation-action-btn donation-action-btn--amber"
+                onClick={() => setShowReceiptModal(true)}
+              >
+                🧾 Receipt
+              </button>
+            </div>
+              </>
             )}
 
             {/* Status Actions Section */}
@@ -1534,6 +1508,21 @@ const ViewOnlineDonation = () => {
           )}
         </div>
       </div>
+
+      <DonationReceiptModal
+        isOpen={showReceiptModal}
+        onClose={() => setShowReceiptModal(false)}
+        donationId={id}
+        donation={donation}
+        canPreview={canViewReceipt}
+        canSendEmail={canSendReceiptEmail}
+        onStatusMessage={(status) => {
+          setMessageStatus(status);
+          if (status.type === 'success') {
+            setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
+          }
+        }}
+      />
     </>
   );
 };
