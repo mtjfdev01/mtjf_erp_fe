@@ -1,32 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
 import PrimaryButton from '../../../common/buttons/primary';
-import FormSelect from '../../../common/FormSelect';
 import FormInput from '../../../common/FormInput';
 import './TaskDueRemindersPanel.css';
-
-const OFFSET_PRESETS = [
-  { value: '0', label: 'Due day (0 days before)' },
-  { value: '1', label: '1 day before due' },
-  { value: '2', label: '2 days before due' },
-  { value: '3', label: '3 days before due' },
-  { value: '7', label: '7 days before due' },
-  { value: '14', label: '14 days before due' },
-  { value: 'custom', label: 'Custom days…' },
-];
-
-const HOUR_OPTIONS = Array.from({ length: 24 }, (_, hour) => {
-  const label =
-    hour === 0
-      ? '12:00 AM'
-      : hour < 12
-        ? `${hour}:00 AM`
-        : hour === 12
-          ? '12:00 PM'
-          : `${hour - 12}:00 PM`;
-  return { value: String(hour), label };
-});
 
 const formatRemindDate = (value) => {
   if (!value) return '—';
@@ -36,20 +13,35 @@ const formatRemindDate = (value) => {
   return `${d}/${m}/${y}`;
 };
 
-const offsetLabel = (days) => {
-  const n = Number(days);
-  if (n === 0) return 'due day';
-  if (n === 1) return '1 day before due';
-  return `${n} days before due`;
+const formatHourLabel = (hour) => {
+  const h = Number(hour);
+  if (!Number.isFinite(h)) return '—';
+  if (h === 0) return '12:00 AM';
+  if (h < 12) return `${h}:00 AM`;
+  if (h === 12) return '12:00 PM';
+  return `${h - 12}:00 PM`;
+};
+
+const parseTimeHour = (timeValue) => {
+  if (!timeValue || typeof timeValue !== 'string') return null;
+  const [hourPart] = timeValue.split(':');
+  const hour = parseInt(hourPart, 10);
+  if (!Number.isFinite(hour) || hour < 0 || hour > 23) return null;
+  return hour;
+};
+
+const defaultRemindDate = () => {
+  const d = new Date();
+  d.setDate(d.getDate() + 1);
+  return d.toISOString().slice(0, 10);
 };
 
 const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [offsetPreset, setOffsetPreset] = useState('1');
-  const [customOffsetDays, setCustomOffsetDays] = useState('');
-  const [remindAtHour, setRemindAtHour] = useState('10');
+  const [remindOnDate, setRemindOnDate] = useState(defaultRemindDate);
+  const [remindAtTime, setRemindAtTime] = useState('10:00');
 
   const hasDueDate = Boolean(dueDate);
 
@@ -70,34 +62,31 @@ const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
     loadReminders();
   }, [loadReminders]);
 
-  const resolvedOffsetDays = useMemo(() => {
-    if (offsetPreset === 'custom') {
-      const n = parseInt(customOffsetDays, 10);
-      return Number.isFinite(n) && n >= 0 ? n : null;
-    }
-    return parseInt(offsetPreset, 10);
-  }, [offsetPreset, customOffsetDays]);
-
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!hasDueDate) {
       toast.error('Set a due date on this task first.');
       return;
     }
-    if (resolvedOffsetDays === null) {
-      toast.error('Enter a valid number of days (0 or more).');
+    if (!remindOnDate) {
+      toast.error('Select a reminder date.');
+      return;
+    }
+    const hour = parseTimeHour(remindAtTime);
+    if (hour === null) {
+      toast.error('Select a valid reminder time.');
       return;
     }
 
     setSaving(true);
     try {
       await axiosInstance.post(`/tasks/${taskId}/due-reminders`, {
-        offset_days: resolvedOffsetDays,
-        remind_at_hour: parseInt(remindAtHour, 10),
+        remind_on_date: remindOnDate,
+        remind_at_hour: hour,
       });
       toast.success('Reminder added.');
-      setOffsetPreset('1');
-      setCustomOffsetDays('');
+      setRemindOnDate(defaultRemindDate());
+      setRemindAtTime('10:00');
       await loadReminders();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to add reminder');
@@ -126,8 +115,14 @@ const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
         <span>⏰</span> Due date email reminders
       </h3>
       <p className="task-due-reminders-note">
-        Emails are sent on the scheduled day and hour (<strong>Asia/Karachi</strong>).
-        Each reminder is sent once, then removed.
+        Pick any date and time (<strong>Asia/Karachi</strong>). Email is sent during
+        that hour. Each reminder is sent once, then removed.
+        {hasDueDate && (
+          <>
+            {' '}
+            Task due: <strong>{formatRemindDate(dueDate)}</strong>
+          </>
+        )}
       </p>
 
       {!hasDueDate && (
@@ -139,33 +134,23 @@ const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
       {hasDueDate && (
         <form onSubmit={handleAdd} className="task-due-reminders-form">
           <div className="task-due-reminders-form-row">
-            <FormSelect
-              label="When"
-              name="offset_preset"
-              value={offsetPreset}
-              onChange={(e) => setOffsetPreset(e.target.value)}
-              options={OFFSET_PRESETS}
+            <FormInput
+              label="Reminder date"
+              name="remind_on_date"
+              type="date"
+              value={remindOnDate}
+              onChange={(e) => setRemindOnDate(e.target.value)}
               disabled={disabled || saving}
+              required
             />
-            {offsetPreset === 'custom' && (
-              <FormInput
-                label="Days before due"
-                name="custom_offset_days"
-                type="number"
-                min={0}
-                value={customOffsetDays}
-                onChange={(e) => setCustomOffsetDays(e.target.value)}
-                disabled={disabled || saving}
-                placeholder="e.g. 5"
-              />
-            )}
-            <FormSelect
-              label="Time (PKT)"
-              name="remind_at_hour"
-              value={remindAtHour}
-              onChange={(e) => setRemindAtHour(e.target.value)}
-              options={HOUR_OPTIONS}
+            <FormInput
+              label="Reminder time (PKT)"
+              name="remind_at_time"
+              type="time"
+              value={remindAtTime}
+              onChange={(e) => setRemindAtTime(e.target.value)}
               disabled={disabled || saving}
+              required
             />
           </div>
           <div className="form-actions">
@@ -188,33 +173,28 @@ const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
         )}
         {!loading && reminders.length > 0 && (
           <ul className="task-due-reminders-list">
-            {reminders.map((r) => {
-              const hourOpt = HOUR_OPTIONS.find(
-                (o) => o.value === String(r.remind_at_hour),
-              );
-              return (
-                <li key={r.id} className="task-due-reminder-item">
-                  <div className="task-due-reminder-item__main">
-                    <span className="task-due-reminder-item__when">
-                      {formatRemindDate(r.remind_on_date)} at{' '}
-                      {hourOpt?.label || `${r.remind_at_hour}:00`}
-                    </span>
-                    <span className="task-due-reminder-item__meta">
-                      {offsetLabel(r.offset_days)}
-                    </span>
-                  </div>
-                  {!disabled && (
-                    <button
-                      type="button"
-                      className="task-due-reminder-item__remove"
-                      onClick={() => handleDelete(r.id)}
-                    >
-                      Remove
-                    </button>
-                  )}
-                </li>
-              );
-            })}
+            {reminders.map((r) => (
+              <li key={r.id} className="task-due-reminder-item">
+                <div className="task-due-reminder-item__main">
+                  <span className="task-due-reminder-item__when">
+                    {formatRemindDate(r.remind_on_date)} at{' '}
+                    {formatHourLabel(r.remind_at_hour)}
+                  </span>
+                  <span className="task-due-reminder-item__meta">
+                    Scheduled email reminder
+                  </span>
+                </div>
+                {!disabled && (
+                  <button
+                    type="button"
+                    className="task-due-reminder-item__remove"
+                    onClick={() => handleDelete(r.id)}
+                  >
+                    Remove
+                  </button>
+                )}
+              </li>
+            ))}
           </ul>
         )}
       </div>
