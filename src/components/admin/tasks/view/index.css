@@ -184,7 +184,7 @@
   box-sizing: border-box;
 }
 
-.task-view-wrapper .receipt-container {
+.task-view-wrapper .task-view-receipt-container {
   max-width: 100%;
   width: 100%;
   margin: 0 auto;
@@ -199,7 +199,7 @@
   max-width: 100%;
 }
 
-.receipt-header {
+.task-view-receipt-header {
   background: linear-gradient(135deg, var(--primary-color), #1e4a8e);
   color: #ffffff;
   padding: 25px 30px;
@@ -280,7 +280,7 @@
   gap: 0.75rem;
 }
 
-.view-action-status-badge {
+.view-action-status-badge-dropdown {
   background: rgba(255, 255, 255, 0.2);
   padding: 0.3rem 0.7rem;
   border-radius: 8px;
@@ -291,6 +291,8 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
 }
+
+
 
 .status-dropdown {
   position: relative;
@@ -382,6 +384,19 @@
 .status-dropdown-item:hover {
   background-color: #f3f4f6;
   padding-left: 1.25rem;
+}
+
+
+.task-view-status-badge{
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  /* border-radius: var(--border-radius-full); */
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: white;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  border-radius: 8px;
 }
 
 .status-dropdown-item--active {
@@ -668,7 +683,7 @@
 }
 
 @media (max-width: 768px) {
-  .receipt-header {
+  .task-view-receipt-header {
     flex-direction: column;
     gap: 1.25rem;
     text-align: center;
@@ -1066,7 +1081,7 @@
   flex-wrap: wrap;
 }
 
-.priority-badge {
+.task-view-priority-badge {
   display: inline-flex;
   align-items: center;
   padding: 0.25rem 0.55rem;
@@ -1076,22 +1091,22 @@
   letter-spacing: 0.04em;
 }
 
-.priority-badge--low {
+.task-view-priority-badge--low {
   background-color: #ecfdf3;
   color: #166534;
 }
 
-.priority-badge--medium {
+.task-view-priority-badge--medium {
   background-color: #eff6ff;
   color: #1d4ed8;
 }
 
-.priority-badge--high {
+.task-view-priority-badge--high {
   background-color: #fef3c7;
   color: #92400e;
 }
 
-.priority-badge--critical {
+.task-view-priority-badge--critical {
   background-color: #fee2e2;
   color: #b91c1c;
 }

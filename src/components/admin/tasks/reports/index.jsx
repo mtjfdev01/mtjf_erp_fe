@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard, FaEllipsisH, FaChevronLeft, FaChevronRight, FaChevronUp, FaChevronDown } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
@@ -11,6 +11,7 @@ import { getTaskPermissions, isSuperAdmin } from '../../../../utils/permissions'
 import ReloadButton from '../../../common/buttons/reload';
 import '../../../../styles/components.css';
 import './index.css';
+import TeamPerformance from './team-performance';
 
 Chart.register(...registerables);
 
@@ -54,6 +55,50 @@ const getResponsiveTooltipSizes = () => {
       caretPadding: 5,
       caretSize: 5,
       bodySpacing: 3
+    };
+  }
+};
+
+const getResponsiveChartSizes = () => {
+  const width = window.innerWidth;
+  if (width < 480) {
+    return {
+      tickFontSize: 8,
+      labelFontSize: 8,
+      legendLabelFontSize: 9,
+      titleFontSize: 10,
+      boxWidth: 8,
+      boxHeight: 8,
+      legendPadding: 8,
+      chartPadding: { right: 60, top: 8, bottom: 8 },
+      barThickness: 30,
+      maxBarThickness: 35
+    };
+  } else if (width < 768) {
+    return {
+      tickFontSize: 9,
+      labelFontSize: 9,
+      legendLabelFontSize: 10,
+      titleFontSize: 11,
+      boxWidth: 10,
+      boxHeight: 10,
+      legendPadding: 12,
+      chartPadding: { right: 80, top: 10, bottom: 10 },
+      barThickness: 35,
+      maxBarThickness: 40
+    };
+  } else {
+    return {
+      tickFontSize: 12,
+      labelFontSize: 11,
+      legendLabelFontSize: 11,
+      titleFontSize: 13,
+      boxWidth: 14,
+      boxHeight: 14,
+      legendPadding: 16,
+      chartPadding: { right: 96, top: 14, bottom: 14 },
+      barThickness: 'flex',
+      maxBarThickness: 45
     };
   }
 };
@@ -120,6 +165,26 @@ const DEPARTMENT_COLORS = [
   '#FF9F40', '#4D5360', '#C9CBCF', '#8E5EA2', '#3CBA9F'
 ];
 
+// Custom hook for click outside detection
+const useClickOutside = (ref, handler) => {
+  useEffect(() => {
+    const listener = (event) => {
+      if (!ref.current || ref.current.contains(event.target)) {
+        return;
+      }
+      handler(event);
+    };
+
+    document.addEventListener('mousedown', listener);
+    document.addEventListener('touchstart', listener);
+
+    return () => {
+      document.removeEventListener('mousedown', listener);
+      document.removeEventListener('touchstart', listener);
+    };
+  }, [ref, handler]);
+};
+
 const downloadCsv = (rows, fileName) => {
   const csvContent = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -134,7 +199,7 @@ const downloadCsv = (rows, fileName) => {
   URL.revokeObjectURL(url);
 };
 
-function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef) {
+function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, isMobile) {
   const drawLabels = (chart) => {
     const ctx = chart.ctx;
     const dataset = chart.data.datasets[0];
@@ -251,6 +316,53 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
   const [projectCategory, setProjectCategory] = useState('all');
   const projectBarChartRef = useRef(null);
   const projectBarChartInstance = useRef(null);
+  const headerRef = useRef(null);
+  const projectReportSliderRef = useRef(null);
+  const [showHeaderFilters, setShowHeaderFilters] = useState(false);
+  const [canScrollUp, setCanScrollUp] = useState(false);
+  const [canScrollDown, setCanScrollDown] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+
+  const checkScrollability = () => {
+    if (projectReportSliderRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = projectReportSliderRef.current;
+      setCanScrollUp(scrollTop > 0);
+      setCanScrollDown(scrollTop + clientHeight < scrollHeight);
+    }
+  };
+
+  const handleScroll = (ref, direction, isVertical = true) => {
+    if (ref.current) {
+      const scrollAmount = 300;
+      if (isVertical) {
+        if (direction === 'left') { // Up
+          ref.current.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+        } else { // Down
+          ref.current.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        }
+      } else {
+        if (direction === 'left') {
+          ref.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+          ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      }
+      // Check scrollability after scroll
+      setTimeout(checkScrollability, 100);
+    }
+  };
+
+  useClickOutside(headerRef, () => setShowHeaderFilters(false));
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+      setScreenWidth(window.innerWidth);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const filteredProjects = useMemo(() => {
     if (!projects) return [];
@@ -275,17 +387,31 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
     return list;
   }, [projects, projectCategory]);
 
+  useEffect(() => {
+    const slider = projectReportSliderRef.current;
+    if (slider) {
+      slider.addEventListener('scroll', checkScrollability);
+      checkScrollability();
+      
+      return () => slider.removeEventListener('scroll', checkScrollability);
+    }
+  }, [filteredProjects]);
+
   const dynamicHeight = useMemo(() => {
     const projectCount = filteredProjects.length;
-    if (projectCount === 0) return 380;
-    // Base height for legend and axes + per-project height
-    const calculated = projectCount * 55 + 150;
-    return Math.max(380, Math.min(calculated, 800)); // Cap at 800px
-  }, [filteredProjects.length]);
+    const perProjectHeight = screenWidth < 480 ? 45 : screenWidth < 768 ? 50 : 55;
+    const baseHeight = screenWidth < 480 ? 120 : screenWidth < 768 ? 135 : 150;
+    const minHeight = screenWidth < 480 ? 320 : screenWidth < 768 ? 350 : 380;
+    const maxHeight = screenWidth < 480 ? 600 : screenWidth < 768 ? 700 : 800;
+    if (projectCount === 0) return minHeight;
+    const calculated = projectCount * perProjectHeight + baseHeight;
+    return Math.max(minHeight, Math.min(calculated, maxHeight));
+  }, [filteredProjects.length, screenWidth]);
 
   useEffect(() => {
     if (filteredProjects.length > 0 && projectBarChartRef.current) {
         const labels = filteredProjects.map((p) => p.label);
+        const chartSizes = getResponsiveChartSizes();
 
         const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
           const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
@@ -309,14 +435,56 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
         statusKey: statusKey,
         barPercentage: 0.9,
         categoryPercentage: 0.9,
-        barThickness: filteredProjects.length === 1 ? 40 : 'flex',
-        maxBarThickness: 45
+        barThickness: filteredProjects.length === 1 ? chartSizes.maxBarThickness : chartSizes.barThickness,
+        maxBarThickness: chartSizes.maxBarThickness
       }));
 
       const data = { labels, datasets };
       
       if (projectBarChartInstance.current) {
         projectBarChartInstance.current.data = data;
+        // Update responsive sizes with guards
+        if (projectBarChartInstance.current.options.plugins) {
+          if (projectBarChartInstance.current.options.plugins.legend) {
+            projectBarChartInstance.current.options.plugins.legend.display = !isMobile;
+            if (projectBarChartInstance.current.options.plugins.legend.labels) {
+              projectBarChartInstance.current.options.plugins.legend.labels.boxWidth = chartSizes.boxWidth;
+              projectBarChartInstance.current.options.plugins.legend.labels.boxHeight = chartSizes.boxHeight;
+              if (!projectBarChartInstance.current.options.plugins.legend.labels.font) {
+                projectBarChartInstance.current.options.plugins.legend.labels.font = {};
+              }
+              projectBarChartInstance.current.options.plugins.legend.labels.font.size = chartSizes.legendLabelFontSize;
+              projectBarChartInstance.current.options.plugins.legend.labels.padding = chartSizes.legendPadding;
+            }
+          }
+        }
+        if (projectBarChartInstance.current.options.layout) {
+          projectBarChartInstance.current.options.layout.padding = chartSizes.chartPadding;
+        }
+        if (projectBarChartInstance.current.options.scales) {
+          if (projectBarChartInstance.current.options.scales.x) {
+            if (projectBarChartInstance.current.options.scales.x.ticks) {
+              if (!projectBarChartInstance.current.options.scales.x.ticks.font) {
+                projectBarChartInstance.current.options.scales.x.ticks.font = {};
+              }
+              projectBarChartInstance.current.options.scales.x.ticks.font.size = chartSizes.tickFontSize;
+            }
+            if (projectBarChartInstance.current.options.scales.x.title) {
+              if (!projectBarChartInstance.current.options.scales.x.title.font) {
+                projectBarChartInstance.current.options.scales.x.title.font = {};
+              }
+              projectBarChartInstance.current.options.scales.x.title.font.size = chartSizes.titleFontSize;
+            }
+          }
+          if (projectBarChartInstance.current.options.scales.y) {
+            if (projectBarChartInstance.current.options.scales.y.ticks) {
+              if (!projectBarChartInstance.current.options.scales.y.ticks.font) {
+                projectBarChartInstance.current.options.scales.y.ticks.font = {};
+              }
+              projectBarChartInstance.current.options.scales.y.ticks.font.size = chartSizes.tickFontSize;
+            }
+          }
+        }
         projectBarChartInstance.current.update();
       } else {
         projectBarChartInstance.current = new Chart(
@@ -329,22 +497,18 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
               responsive: true,
               maintainAspectRatio: false,
               layout: {
-                padding: {
-                  right: 96,
-                  top: 14,
-                  bottom: 14
-                }
+                padding: chartSizes.chartPadding
               },
               plugins: {
                 legend: {
-                  display: true,
+                  display: !isMobile,
                   position: 'bottom',
                   align: 'center',
                   labels: {
-                    boxWidth: 14,
-                    boxHeight: 14,
-                    font: { size: 11, weight: '600', family: "'Inter', sans-serif" },
-                    padding: 16,
+                    boxWidth: chartSizes.boxWidth,
+                    boxHeight: chartSizes.boxHeight,
+                    font: { size: chartSizes.legendLabelFontSize, weight: '600', family: "'Inter', sans-serif" },
+                    padding: chartSizes.legendPadding,
                     usePointStyle: true,
                     pointStyle: 'rectRounded',
                     color: '#475569'
@@ -391,7 +555,15 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
                   }
                 }
               },
-              scales: {
+            layout: {
+              padding: {
+                bottom: screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30,
+                top: 10,
+                left: 10,
+                right: 10
+              }
+            },
+            scales: {
                 x: {
                   stacked: true,
                   beginAtZero: true,
@@ -502,7 +674,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
         projectBarChartInstance.current = null;
       }
     };
-  }, [filteredProjects]);
+  }, [filteredProjects, isMobile, screenWidth]);
 
   const handleExportProjectReport = useCallback(() => {
     if (!filteredProjects || filteredProjects.length === 0) return;
@@ -534,12 +706,12 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
   return (
     <div className="task-report-card task-report-card--project-report">
-      <div className="task-report-card-header task-report-card-header--with-filter">
+      <div className="task-report-card-header task-report-card-header--with-filter" ref={headerRef}>
         <div className="task-report-header-left">
           <FaProjectDiagram className="task-status-overview-icon"/>
           <h2 className="task-report-card-title">Project/Program-wise Task Report</h2>
         </div>
-        <div className="task-report-header-right">
+        <div className={`task-report-header-right ${showHeaderFilters ? 'task-report-header-right--visible' : ''}`}>
           <div className="task-report-filter-inline">
             <select
               className="task-report-category-filter"
@@ -569,9 +741,48 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
             <FaDownload /> Export
           </button>
         </div>
+        <button
+          className="task-report-header-menu-button"
+          onClick={() => setShowHeaderFilters(!showHeaderFilters)}
+          title={showHeaderFilters ? "Hide filters" : "Show filters"}
+          type="button"
+        >
+          <FaEllipsisH />
+        </button>
       </div>
-      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: `${dynamicHeight}px` }}>
-        <canvas ref={projectBarChartRef}></canvas>
+      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: 'auto', position: 'relative' }}>
+        <div className="task-report-slider-wrapper task-report-slider-wrapper--vertical">
+          {canScrollUp && (
+            <button 
+              className="task-report-slider-button task-report-slider-button--left"
+              onClick={() => handleScroll(projectReportSliderRef, 'left', true)}
+              type="button"
+            >
+              <FaChevronUp />
+            </button>
+          )}
+          <div className="task-report-slider-container task-report-slider-container--vertical" ref={projectReportSliderRef}>
+            <div 
+              className="task-report-chart-inner" 
+              style={{ 
+                width: '100%',
+                minWidth: '100%',
+                height: `${dynamicHeight}px` 
+              }}
+            >
+              <canvas ref={projectBarChartRef}></canvas>
+            </div>
+          </div>
+          {canScrollDown && (
+            <button 
+              className="task-report-slider-button task-report-slider-button--right"
+              onClick={() => handleScroll(projectReportSliderRef, 'right', true)}
+              type="button"
+            >
+              <FaChevronDown />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -588,13 +799,65 @@ const TaskReports = () => {
   const [taskStatsError, setTaskStatsError] = useState(null);
   const [taskAggregates, setTaskAggregates] = useState({ users: [], projects: [], avgCompletionDays: null });
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [teamSearchQuery, setTeamSearchQuery] = useState('');
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [showTeamPerformance, setShowTeamPerformance] = useState(false);
-  const [selectedMemberTasks, setSelectedMemberTasks] = useState(null);
-  const [showMemberTasksModal, setShowMemberTasksModal] = useState(false);
-  const [memberTasksLoading, setMemberTasksLoading] = useState(false);
   const [showFilterPopover, setShowFilterPopover] = useState(false);
+  const [showUserReportFilters, setShowUserReportFilters] = useState(false);
+  const [showDeptReportFilters, setShowDeptReportFilters] = useState(false);
+  const userReportHeaderRef = useRef(null);
+  const deptReportHeaderRef = useRef(null);
+  const userReportSliderRef = useRef(null);
+  const deptReportSliderRef = useRef(null);
+  const projectReportSliderRef = useRef(null);
+  const [userCanScrollLeft, setUserCanScrollLeft] = useState(false);
+  const [userCanScrollRight, setUserCanScrollRight] = useState(false);
+  const [deptCanScrollLeft, setDeptCanScrollLeft] = useState(false);
+  const [deptCanScrollRight, setDeptCanScrollRight] = useState(false);
+  const [screenWidth, setScreenWidth] = useState(window.innerWidth);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
+
+  const checkUserScrollability = () => {
+    if (userReportSliderRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = userReportSliderRef.current;
+      setUserCanScrollLeft(scrollLeft > 0);
+      setUserCanScrollRight(scrollLeft + clientWidth < scrollWidth);
+    }
+  };
+
+  const checkDeptScrollability = () => {
+    if (deptReportSliderRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = deptReportSliderRef.current;
+      setDeptCanScrollLeft(scrollLeft > 0);
+      setDeptCanScrollRight(scrollLeft + clientWidth < scrollWidth);
+    }
+  };
+
+  const handleScroll = (ref, direction, isVertical = true) => {
+    if (ref.current) {
+      const scrollAmount = 300;
+      if (isVertical) {
+        if (direction === 'left') { // Up
+          ref.current.scrollBy({ top: -scrollAmount, behavior: 'smooth' });
+        } else { // Down
+          ref.current.scrollBy({ top: scrollAmount, behavior: 'smooth' });
+        }
+      } else {
+        if (direction === 'left') {
+          ref.current.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+          ref.current.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      }
+      // Check scrollability after scroll
+      setTimeout(() => {
+        checkUserScrollability();
+        checkDeptScrollability();
+      }, 100);
+    }
+  };
+
+  useClickOutside(userReportHeaderRef, () => setShowUserReportFilters(false));
+  useClickOutside(deptReportHeaderRef, () => setShowDeptReportFilters(false));
+
   const [hiddenDepartments, setHiddenDepartments] = useState(new Set());
   const [hiddenStatuses, setHiddenStatuses] = useState(new Set());
   const [hiddenDoughnutStatuses, setHiddenDoughnutStatuses] = useState(new Set());
@@ -602,37 +865,6 @@ const TaskReports = () => {
   const [hiddenBarStatuses, setHiddenBarStatuses] = useState(new Set());
   const [hiddenUserBarStatuses, setHiddenUserBarStatuses] = useState(new Set());
   const [userReportSearchQuery, setUserReportSearchQuery] = useState('');
-
-  const filteredTeamMembers = useMemo(() => {
-    if (!taskAggregates.users) return [];
-
-    // Exclude the logged-in user from team performance
-    const currentUserId = Number(user?.id);
-    const teamWithoutCurrentUser = taskAggregates.users.filter(member => {
-      const memberId = Number(member.id || member.user_id || member.userId);
-      return memberId !== currentUserId;
-    });
-
-    if (!teamSearchQuery.trim()) return teamWithoutCurrentUser;
-
-    const query = teamSearchQuery.toLowerCase();
-    return teamWithoutCurrentUser.filter(member =>
-      member.label.toLowerCase().includes(query) ||
-      (member.role && member.role.toLowerCase().includes(query))
-    );
-  }, [taskAggregates.users, teamSearchQuery, user?.id]);
-
-  const teamSummary = useMemo(() => {
-    const list = filteredTeamMembers;
-    const members = list.length;
-    const totalTasks = list.reduce((sum, m) => sum + (Number(m.count) || 0), 0);
-    const completed = list.reduce((sum, m) => sum + (Number(m.completed_count) || 0), 0);
-    const inProgress = list.reduce((sum, m) => sum + (Number(m.in_progress_count) || 0), 0);
-    const overdue = list.reduce((sum, m) => sum + (Number(m.overdue_count) || 0), 0);
-    const avgRateRaw = members > 0 ? (list.reduce((s, m) => s + (Number(m.rate) || 0), 0) / members) : 0;
-    const avgRate = Math.round(avgRateRaw);
-    return { members, totalTasks, completed, inProgress, overdue, avgRate };
-  }, [filteredTeamMembers]);
 
   const filteredUserReportUsers = useMemo(() => {
     if (!taskAggregates.users) return [];
@@ -646,6 +878,28 @@ const TaskReports = () => {
       return userName.includes(query) || userRole.includes(query);
     });
   }, [taskAggregates.users, userReportSearchQuery]);
+
+  // User report scrollability
+  useEffect(() => {
+    const slider = userReportSliderRef.current;
+    if (slider) {
+      slider.addEventListener('scroll', checkUserScrollability);
+      checkUserScrollability();
+      
+      return () => slider.removeEventListener('scroll', checkUserScrollability);
+    }
+  }, [filteredUserReportUsers]);
+
+  // Department report scrollability
+  useEffect(() => {
+    const slider = deptReportSliderRef.current;
+    if (slider) {
+      slider.addEventListener('scroll', checkDeptScrollability);
+      checkDeptScrollability();
+      
+      return () => slider.removeEventListener('scroll', checkDeptScrollability);
+    }
+  }, [taskStats]);
 
   const handleExportUserReport = useCallback(() => {
     if (!filteredUserReportUsers || filteredUserReportUsers.length === 0) return;
@@ -860,28 +1114,6 @@ const TaskReports = () => {
     }
   }, [duration]);
 
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    const parts = name.split(' ');
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name.slice(0, 2).toUpperCase();
-  };
-
-  const getStatusConfig = (status, task) => {
-    const s = (status || 'open').toLowerCase();
-    if (s === 'completed' || s === 'closed') return { icon: '✓', label: 'Completed', class: 'completed' };
-    if (s === 'in_progress') return { icon: '🔄', label: 'In Progress', class: 'in-progress' };
-    if (s === 'overdue' || (task.due_date && new Date(task.due_date) < new Date() && s !== 'completed' && s !== 'closed'))
-      return { icon: '⚠️', label: 'Overdue', class: 'overdue' };
-    return { icon: '⏳', label: String(status).split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' '), class: s.replace('_', '-') };
-  };
-
-  const getOverdueDays = (dueDate) => {
-    if (!dueDate) return 0;
-    const diff = new Date() - new Date(dueDate);
-    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
-  };
-
   const toggleDepartmentVisibility = (dept) => {
     const newHidden = new Set(hiddenDepartments);
     if (newHidden.has(dept)) {
@@ -943,47 +1175,6 @@ const TaskReports = () => {
     }
   };
 
-  const handleShowMemberTasks = async (member) => {
-    setSelectedMemberTasks({ member, tasks: [] });
-    setShowMemberTasksModal(true);
-    setMemberTasksLoading(true);
-
-    try {
-      const range = getDateRangeForDuration(duration);
-      const memberId = member.id || member.user_id || member.userId;
-
-      if (!memberId) {
-        setMemberTasksLoading(false);
-        return;
-      }
-
-      const payload = {
-        pagination: { page: 1, pageSize: 100 },
-        filters: {
-          start_date: range.from,
-          end_date: range.to,
-          assignee_id: memberId
-        }
-      };
-
-      const res = await axiosInstance.post('/tasks/search', payload);
-      const tasks = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data?.data?.data)
-          ? res.data.data.data
-          : [];
-
-      setSelectedMemberTasks(prev => ({
-        ...prev,
-        tasks
-      }));
-    } catch (err) {
-      console.error('Error fetching member tasks:', err);
-    } finally {
-      setMemberTasksLoading(false);
-    }
-  };
-
   const completionRateChartRef = useRef(null);
   const completionRateChartInstance = useRef(null);
   const userBarChartRef = useRef(null);
@@ -1000,6 +1191,8 @@ const TaskReports = () => {
 
   useEffect(() => {
     const handleResize = () => {
+      setScreenWidth(window.innerWidth);
+      setIsMobile(window.innerWidth <= 768);
       if (completionRateChartInstance.current) completionRateChartInstance.current.update();
       if (userBarChartInstance.current) userBarChartInstance.current.update();
       if (departmentChartRef.current) departmentChartRef.current.update();
@@ -1211,10 +1404,13 @@ const TaskReports = () => {
         }]
       };
       
+      const chartSizes = getResponsiveChartSizes();
       createOrUpdateDoughnutChart(
         completionRateChartRef.current.getContext('2d'),
         completionData,
-        completionRateChartInstance
+        completionRateChartInstance,
+        chartSizes,
+        isMobile
       );
     }
 
@@ -1266,25 +1462,41 @@ const TaskReports = () => {
       // Filter out statuses with zero total across all departments
       const activeStatuses = statusTotals.filter(item => item.total > 0);
 
+      const chartSizes = getResponsiveChartSizes();
+
       // Create datasets only for statuses with actual data
-      const datasets = activeStatuses.map(({ status, index }) => ({
-        label: STATUS_LABELS[index],
-        data: visibleDepts.map(dept => {
-          const entry = taskStats.department_status_breakdown[dept][status];
-          const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
-          return count > 0 ? count : null;
-        }),
-        backgroundColor: STATUS_COLORS[index],
-        hoverBackgroundColor: STATUS_COLORS[index],
-        borderColor: '#ffffff',
-        hoverBorderColor: '#ffffff',
-        borderRadius: 4,
-        borderSkipped: false,
-        barPercentage: 0.85,
-        categoryPercentage: 0.7,
-        barThickness: 'flex',
-        maxBarThickness: 80
-      }));
+      // Calculate responsive bar settings based on screen size - EVEN MORE SPACING!
+              const getBarSettings = () => {
+                if (screenWidth < 480) {
+                  return { barPercentage: 0.3, categoryPercentage: 0.3, maxBarThickness: 18 };
+                } else if (screenWidth < 768) {
+                  return { barPercentage: 0.35, categoryPercentage: 0.35, maxBarThickness: 22 };
+                } else if (screenWidth < 1024) {
+                  return { barPercentage: 0.4, categoryPercentage: 0.4, maxBarThickness: 28 };
+                } else {
+                  return { barPercentage: 0.5, categoryPercentage: 0.5, maxBarThickness: chartSizes.maxBarThickness };
+                }
+              };
+              const barSettings = getBarSettings();
+              
+              const datasets = activeStatuses.map(({ status, index }) => ({
+                label: STATUS_LABELS[index],
+                data: visibleDepts.map(dept => {
+                  const entry = taskStats.department_status_breakdown[dept][status];
+                  const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+                  return count > 0 ? count : null;
+                }),
+                backgroundColor: STATUS_COLORS[index],
+                hoverBackgroundColor: STATUS_COLORS[index],
+                borderColor: '#ffffff',
+                hoverBorderColor: '#ffffff',
+                borderRadius: 4,
+                borderSkipped: false,
+                barPercentage: barSettings.barPercentage,
+                categoryPercentage: barSettings.categoryPercentage,
+                barThickness: screenWidth < 480 ? 15 : screenWidth < 768 ? 18 : screenWidth < 1024 ? 22 : chartSizes.barThickness,
+                maxBarThickness: barSettings.maxBarThickness
+              }));
 
       const data = {
         labels,
@@ -1293,6 +1505,57 @@ const TaskReports = () => {
 
       if (departmentChartRef.current) {
         departmentChartRef.current.data = data;
+        // Update responsive sizes with guards
+        if (!departmentChartRef.current.options.layout) {
+          departmentChartRef.current.options.layout = {};
+        }
+        if (!departmentChartRef.current.options.layout.padding) {
+          departmentChartRef.current.options.layout.padding = {};
+        }
+        departmentChartRef.current.options.layout.padding.bottom = screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30;
+        departmentChartRef.current.options.layout.padding.top = 10;
+        departmentChartRef.current.options.layout.padding.left = 10;
+        departmentChartRef.current.options.layout.padding.right = 10;
+        
+        if (departmentChartRef.current.options.plugins) {
+          if (departmentChartRef.current.options.plugins.legend) {
+            departmentChartRef.current.options.plugins.legend.display = !isMobile;
+            if (departmentChartRef.current.options.plugins.legend.labels) {
+              departmentChartRef.current.options.plugins.legend.labels.boxWidth = chartSizes.boxWidth;
+              departmentChartRef.current.options.plugins.legend.labels.boxHeight = chartSizes.boxHeight;
+              if (!departmentChartRef.current.options.plugins.legend.labels.font) {
+                departmentChartRef.current.options.plugins.legend.labels.font = {};
+              }
+              departmentChartRef.current.options.plugins.legend.labels.font.size = chartSizes.legendLabelFontSize;
+              departmentChartRef.current.options.plugins.legend.labels.padding = chartSizes.legendPadding;
+            }
+          }
+          if (departmentChartRef.current.options.scales) {
+            if (departmentChartRef.current.options.scales.x) {
+              if (departmentChartRef.current.options.scales.x.ticks) {
+                if (!departmentChartRef.current.options.scales.x.ticks.font) {
+                  departmentChartRef.current.options.scales.x.ticks.font = {};
+                }
+                departmentChartRef.current.options.scales.x.ticks.font.size = chartSizes.tickFontSize;
+                departmentChartRef.current.options.scales.x.ticks.padding = 15;
+              }
+              if (departmentChartRef.current.options.scales.x.title) {
+                if (!departmentChartRef.current.options.scales.x.title.font) {
+                  departmentChartRef.current.options.scales.x.title.font = {};
+                }
+                departmentChartRef.current.options.scales.x.title.font.size = chartSizes.titleFontSize;
+              }
+            }
+            if (departmentChartRef.current.options.scales.y) {
+              if (departmentChartRef.current.options.scales.y.ticks) {
+                if (!departmentChartRef.current.options.scales.y.ticks.font) {
+                  departmentChartRef.current.options.scales.y.ticks.font = {};
+                }
+                departmentChartRef.current.options.scales.y.ticks.font.size = chartSizes.tickFontSize;
+              }
+            }
+          }
+        }
         departmentChartRef.current.update();
       } else {
         departmentChartRef.current = new Chart(departmentCanvasRef.current.getContext('2d'), {
@@ -1303,19 +1566,19 @@ const TaskReports = () => {
             maintainAspectRatio: false,
             plugins: {
               legend: {
-                display: true,
+                display: !isMobile,
                 position: 'bottom',
                 align: 'center',
                 itemSpacing: 20,
                 labels: {
-                  boxWidth: 14,
-                  boxHeight: 14,
+                  boxWidth: chartSizes.boxWidth,
+                  boxHeight: chartSizes.boxHeight,
                   font: {
-                    size: 10,
+                    size: chartSizes.legendLabelFontSize,
                     weight: '600',
                     family: "'Inter', sans-serif"
                   },
-                  padding: 18,
+                  padding: chartSizes.legendPadding,
                   usePointStyle: true,
                   pointStyle: 'rectRounded',
                   color: '#475569',
@@ -1379,6 +1642,14 @@ const TaskReports = () => {
               },
 
             },
+            layout: {
+              padding: {
+                bottom: screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30,
+                top: 10,
+                left: 10,
+                right: 10
+              }
+            },
             scales: {
               x: {
                 stacked: false,
@@ -1390,14 +1661,14 @@ const TaskReports = () => {
                 },
                 ticks: {
                   font: {
-                    size: 11,
+                    size: chartSizes.tickFontSize,
                     weight: '600',
                     family: "'Inter', sans-serif"
                   },
                   color: '#475569',
                   maxRotation: 45,
                   minRotation: 45,
-                  padding: 10
+                  padding: 15
                 }
               },
               y: {
@@ -1415,7 +1686,7 @@ const TaskReports = () => {
                 },
                 ticks: {
                   font: {
-                    size: 11,
+                    size: chartSizes.tickFontSize,
                     weight: '600',
                     family: "'Inter', sans-serif"
                   },
@@ -1429,7 +1700,7 @@ const TaskReports = () => {
                   display: true,
                   text: 'Number of Tasks',
                   font: {
-                    size: 13,
+                    size: chartSizes.titleFontSize,
                     weight: '700',
                     family: "'Inter', sans-serif"
                   },
@@ -1547,92 +1818,7 @@ const TaskReports = () => {
               });
             }
           },
-            {
-              id: 'segmentLabels',
-              afterDatasetsDraw: (chart) => {
-                const { ctx } = chart;
-                const isHorizontal = chart.options.indexAxis === 'y';
-                ctx.save();
 
-                // Pre-calculate topmost position for each bar
-                const barTopPositions = new Map();
-                chart.data.datasets.forEach((_, dsIdx) => {
-                  const meta = chart.getDatasetMeta(dsIdx);
-                  if (meta.hidden) return;
-                  meta.data.forEach((bar, idx) => {
-                    if (bar) {
-                      let pos;
-                      if (isHorizontal) {
-                        // For horizontal bars, rightmost is "top"
-                        pos = Math.max(bar.x, bar.base);
-                      } else {
-                        // For vertical bars, topmost is smallest y
-                        pos = Math.min(bar.y, bar.base);
-                      }
-                      
-                      const existing = barTopPositions.get(idx);
-                      if (existing === undefined) {
-                        barTopPositions.set(idx, pos);
-                      } else {
-                        barTopPositions.set(idx, isHorizontal ? Math.max(existing, pos) : Math.min(existing, pos));
-                      }
-                    }
-                  });
-                });
-
-                chart.data.datasets.forEach((dataset, datasetIndex) => {
-                  const meta = chart.getDatasetMeta(datasetIndex);
-                  if (meta.hidden) return;
-
-                  meta.data.forEach((bar, index) => {
-                    const value = dataset.data[index];
-                    if (value <= 0 || !bar) return;
-
-                    // Skip the topmost segment of each bar
-                    const topPos = barTopPositions.get(index);
-                    if (topPos !== undefined) {
-                      if (isHorizontal) {
-                        if (Math.max(bar.x, bar.base) === topPos) return;
-                      } else {
-                        if (Math.min(bar.y, bar.base) === topPos) return;
-                      }
-                    }
-
-                    let centerX, centerY, segmentSize;
-                    if (isHorizontal) {
-                      // Horizontal bar (y-axis)
-                      centerX = (bar.base + bar.x) / 2;
-                      centerY = bar.y;
-                      segmentSize = Math.abs(bar.x - bar.base); // width
-                    } else {
-                      // Vertical bar (x-axis)
-                      centerX = bar.x;
-                      centerY = (bar.base + bar.y) / 2;
-                      segmentSize = Math.abs(bar.y - bar.base); // height
-                    }
-
-                    // Check if segment is large enough to show label
-                    if (segmentSize < 12) return;
-
-                    // Draw the segment label
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillStyle = '#ffffff';
-                    ctx.font = '600 10px "Inter", sans-serif';
-                    
-                    // Text shadow for readability
-                    ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
-                    ctx.shadowBlur = 3;
-                    ctx.shadowOffsetX = 0;
-                    ctx.shadowOffsetY = 0;
-                    
-                    ctx.fillText(value, centerX, centerY);
-                  });
-                });
-
-                ctx.restore();
-              }
-            }
           ]
         });
       }
@@ -1640,6 +1826,7 @@ const TaskReports = () => {
 
     if (filteredUserReportUsers.length > 0 && userBarChartRef.current) {
       const labels = filteredUserReportUsers.map(u => u.label);
+      const chartSizes = getResponsiveChartSizes();
 
       // Calculate total tasks per status across all users
       const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
@@ -1653,6 +1840,20 @@ const TaskReports = () => {
       // Filter out statuses with zero tasks
       const activeStatuses = statusTotals.filter(item => item.total > 0);
 
+      // Calculate responsive bar settings for user report too!
+      const getUserBarSettings = () => {
+        if (screenWidth < 480) {
+          return { barPercentage: 0.3, categoryPercentage: 0.3, maxBarThickness: 18 };
+        } else if (screenWidth < 768) {
+          return { barPercentage: 0.35, categoryPercentage: 0.35, maxBarThickness: 22 };
+        } else if (screenWidth < 1024) {
+          return { barPercentage: 0.4, categoryPercentage: 0.4, maxBarThickness: 28 };
+        } else {
+          return { barPercentage: 0.5, categoryPercentage: 0.5, maxBarThickness: chartSizes.maxBarThickness };
+        }
+      };
+      const userBarSettings = getUserBarSettings();
+      
       // Create a dataset only for statuses with actual data
       const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
         label: statusLabel,
@@ -1669,10 +1870,10 @@ const TaskReports = () => {
         borderRadius: 0,
         borderSkipped: false,
         statusKey: statusKey,
-        barPercentage: 0.55,
-        categoryPercentage: 0.65,
-        barThickness: 'flex',
-        maxBarThickness: 40
+        barPercentage: userBarSettings.barPercentage,
+        categoryPercentage: userBarSettings.categoryPercentage,
+        barThickness: screenWidth < 480 ? 15 : screenWidth < 768 ? 18 : screenWidth < 1024 ? 22 : chartSizes.barThickness,
+        maxBarThickness: userBarSettings.maxBarThickness
       }));
 
       const data = {
@@ -1682,6 +1883,43 @@ const TaskReports = () => {
 
       if (userBarChartInstance.current) {
         userBarChartInstance.current.data = data;
+        // Update responsive sizes with guards
+        if (!userBarChartInstance.current.options.layout) {
+          userBarChartInstance.current.options.layout = {};
+        }
+        if (!userBarChartInstance.current.options.layout.padding) {
+          userBarChartInstance.current.options.layout.padding = {};
+        }
+        userBarChartInstance.current.options.layout.padding.bottom = screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30;
+        userBarChartInstance.current.options.layout.padding.top = 10;
+        userBarChartInstance.current.options.layout.padding.left = 10;
+        userBarChartInstance.current.options.layout.padding.right = 10;
+        
+        if (userBarChartInstance.current.options.scales) {
+          if (userBarChartInstance.current.options.scales.x) {
+            if (userBarChartInstance.current.options.scales.x.ticks) {
+              if (!userBarChartInstance.current.options.scales.x.ticks.font) {
+                userBarChartInstance.current.options.scales.x.ticks.font = {};
+              }
+              userBarChartInstance.current.options.scales.x.ticks.font.size = chartSizes.tickFontSize;
+              userBarChartInstance.current.options.scales.x.ticks.padding = 15;
+            }
+            if (userBarChartInstance.current.options.scales.x.title) {
+              if (!userBarChartInstance.current.options.scales.x.title.font) {
+                userBarChartInstance.current.options.scales.x.title.font = {};
+              }
+              userBarChartInstance.current.options.scales.x.title.font.size = chartSizes.titleFontSize;
+            }
+          }
+          if (userBarChartInstance.current.options.scales.y) {
+            if (userBarChartInstance.current.options.scales.y.ticks) {
+              if (!userBarChartInstance.current.options.scales.y.ticks.font) {
+                userBarChartInstance.current.options.scales.y.ticks.font = {};
+              }
+              userBarChartInstance.current.options.scales.y.ticks.font.size = chartSizes.tickFontSize;
+            }
+          }
+        }
         userBarChartInstance.current.update();
       } else {
         userBarChartInstance.current = new Chart(userBarChartRef.current.getContext('2d'), {
@@ -1755,6 +1993,14 @@ const TaskReports = () => {
               },
 
             },
+            layout: {
+              padding: {
+                bottom: screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30,
+                top: 10,
+                left: 10,
+                right: 10
+              }
+            },
             scales: {
               x: {
                 stacked: true,
@@ -1770,7 +2016,7 @@ const TaskReports = () => {
                 },
                 ticks: {
                   font: {
-                    size: 11,
+                    size: chartSizes.tickFontSize,
                     weight: '600',
                     family: "'Inter', sans-serif"
                   },
@@ -1783,7 +2029,7 @@ const TaskReports = () => {
                   display: true,
                   text: 'Number of Tasks',
                   font: {
-                    size: 13,
+                    size: chartSizes.titleFontSize,
                     weight: '700',
                     family: "'Inter', sans-serif"
                   },
@@ -1813,7 +2059,7 @@ const TaskReports = () => {
                 ticks: {
                   autoSkip: false,
                   font: {
-                    size: 12,
+                    size: chartSizes.tickFontSize,
                     weight: '700',
                     family: "'Inter', sans-serif"
                   },
@@ -1996,7 +2242,7 @@ const TaskReports = () => {
         });
       }
     }
-  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses, hiddenDoughnutStatuses, hiddenDepartmentBarDepartments, filteredUserReportUsers]);
+  }, [taskStats, taskAggregates, statsSummary, rolePerms.isAdmin, hiddenDepartments, hiddenStatuses, hiddenDoughnutStatuses, hiddenDepartmentBarDepartments, filteredUserReportUsers, screenWidth]);
 
   useEffect(() => {
     return () => {
@@ -2310,6 +2556,7 @@ const TaskReports = () => {
                     </div>
                   </div>
                   <div className="task-dashboard-column">
+                    {/* Task Progress Section */}
                     <div className="task-report-card task-report-card--task-progress">
                       <div className="task-report-card-header">
                         <FaChartLine className="task-status-overview-icon"/>
@@ -2317,7 +2564,7 @@ const TaskReports = () => {
                       </div>
                       <div className="task-report-card-chart task-report-card-chart--wide">
                         <canvas ref={completionRateChartRef}></canvas>
-                        <div className="task-progress-legend task-progress-legend--task-progress-card">
+                        <div className="task-progress-legend--task-progress">
                         {(() => {
                           const allStatusValues = [
                             statsSummary.open || 0,
@@ -2340,7 +2587,7 @@ const TaskReports = () => {
                             return (
                               <div
                                 key={label}
-                                className="task-progress-legend-item"
+                                className="task-progress-legend-item--task-progress"
                                 onClick={() => toggleDonutStatusVisibility(label)}
                                 style={{
                                   cursor: 'pointer',
@@ -2355,11 +2602,11 @@ const TaskReports = () => {
                                     opacity: isHidden ? 0.4 : 1
                                   }}
                                 />
-                                <div className="task-progress-legend-body">
-                                  <span className="task-progress-legend-label">
+                                <div className="task-progress-legend-body--task-progress">
+                                  <span className="task-progress-legend-label--task-progress">
                                     {label}
                                   </span>
-                                  <span className="task-progress-legend-value">
+                                  <span className="task-progress-legend-value--task-progress">
                                     {count}
                                   </span>
                                 </div>
@@ -2374,15 +2621,18 @@ const TaskReports = () => {
                     </div>
                   </div>
                 </div>
+                {/* ========== Reports Grid ========== */}
                 <div className="task-dashboard-reports-grid">
+                  {/* Project/Program-wise Task Report */}
                   <ProjectProgramWiseReport projects={taskAggregates.projects} />
+                  {/* User-wise Task Report */}
                   <div className="task-report-card task-report-card--user-report">
-                    <div className="task-report-card-header task-report-card-header--with-filter">
+                    <div className="task-report-card-header task-report-card-header--with-filter" ref={userReportHeaderRef}>
                       <div className="task-report-header-left">
                         <FaUsers className="task-status-overview-icon"/>
                         <h2 className="task-report-card-title">User-wise Task Report</h2>
                       </div>
-                      <div className="task-report-header-right">
+                      <div className={`task-report-header-right ${showUserReportFilters ? 'task-report-header-right--visible' : ''}`}>
                         <div className="task-report-filter-inline">
                           <input
                             type="text"
@@ -2410,22 +2660,50 @@ const TaskReports = () => {
                           <FaDownload /> Export
                         </button>  
                       </div>
+                      <button
+                        className="task-report-header-menu-button"
+                        onClick={() => setShowUserReportFilters(!showUserReportFilters)}
+                        title={showUserReportFilters ? "Hide filters" : "Show filters"}
+                        type="button"
+                      >
+                        <FaEllipsisH />
+                      </button>
                     </div>
                     <div className="task-report-card-chart task-report-card-chart--wide">
-                      <div className="task-report-slider-container">
-                        <div 
-                          className="task-report-chart-inner" 
-                          style={{ 
-                            width: `${Math.max(100, (filteredUserReportUsers?.length || 0) * 100)}px`,
-                            minWidth: '100%',
-                            height: '380px' 
-                          }}
-                        >
-                          <canvas ref={userBarChartRef}></canvas>
+                      <div className="task-report-slider-wrapper">
+                        {userCanScrollLeft && (
+                          <button 
+                            className="task-report-slider-button task-report-slider-button--left"
+                            onClick={() => handleScroll(userReportSliderRef, 'left', false)}
+                            type="button"
+                          >
+                            <FaChevronLeft />
+                          </button>
+                        )}
+                        <div className="task-report-slider-container" ref={userReportSliderRef}>
+                          <div 
+                            className="task-report-chart-inner" 
+                            style={{ 
+                              width: `${Math.max(100, (filteredUserReportUsers?.length || 0) * (screenWidth < 480 ? 150 : screenWidth < 768 ? 180 : screenWidth < 1024 ? 200 : 220))}px`,
+                              minWidth: '100%',
+                              height: screenWidth < 480 ? '380px' : screenWidth < 768 ? '420px' : screenWidth < 1024 ? '450px' : '480px' 
+                            }}
+                          >
+                            <canvas ref={userBarChartRef}></canvas>
+                          </div>
                         </div>
+                        {userCanScrollRight && (
+                          <button 
+                            className="task-report-slider-button task-report-slider-button--right"
+                            onClick={() => handleScroll(userReportSliderRef, 'right', false)}
+                            type="button"
+                          >
+                            <FaChevronRight />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div className="task-progress-legend task-progress-legend--sticky" style={{ marginTop: '0.5rem' }}>
+                    <div className="task-progress-legend--user-report" style={{ marginTop: '0.5rem' }}>
                       {(() => {
                         // Calculate total count for each status
                         const statusTotals = STATUS_LABELS.map((label, index) => {
@@ -2445,7 +2723,7 @@ const TaskReports = () => {
                           return (
                             <div
                               key={label}
-                              className="task-progress-legend-item"
+                              className="task-progress-legend-item--user-report"
                               onClick={() => toggleUserBarStatusVisibility(label)}
                               style={{
                                 cursor: 'pointer',
@@ -2460,7 +2738,7 @@ const TaskReports = () => {
                                   opacity: isHidden ? 0.4 : 1
                                 }}
                               />
-                              <span className="task-progress-legend-label">
+                              <span className="task-progress-legend-label--user-report">
                                 {label}: {total}
                               </span>
                             </div>
@@ -2469,14 +2747,15 @@ const TaskReports = () => {
                       })()}
                     </div>
                   </div>  
+                  {/* Department-wise Task Report (Only for Admin) */}
                   {rolePerms.isAdmin && (
                     <div className="task-report-card task-report-card--department-report">
-                      <div className="task-report-card-header task-report-card-header--with-filter">
+                      <div className="task-report-card-header task-report-card-header--with-filter" ref={deptReportHeaderRef}>
                         <div className="task-report-header-left">
                           <FaBuilding className="task-status-overview-icon"/>
                           <h2 className="task-report-card-title">Department-wise Task Report</h2>
                         </div>
-                        <div className="task-report-header-right">
+                        <div className={`task-report-header-right ${showDeptReportFilters ? 'task-report-header-right--visible' : ''}`}>
                           <button
                             className="task-report-export-button"
                             onClick={handleExportDepartmentReport}
@@ -2486,22 +2765,50 @@ const TaskReports = () => {
                             <FaDownload /> Export
                           </button>
                         </div>
+                        <button
+                          className="task-report-header-menu-button"
+                          onClick={() => setShowDeptReportFilters(!showDeptReportFilters)}
+                          title={showDeptReportFilters ? "Hide filters" : "Show filters"}
+                          type="button"
+                        >
+                          <FaEllipsisH />
+                        </button>
                       </div>
                       <div className="task-report-card-chart task-report-card-chart--wide">
-                        <div className="task-report-slider-container">
-                          <div 
-                            className="task-report-chart-inner" 
-                            style={{ 
-                              width: `${Math.max(100, (Object.keys(taskStats?.department_breakdown || {}).length || 0) * 120)}px`,
-                              minWidth: '100%',
-                              height: '380px' 
-                            }}
-                          >
-                            <canvas ref={departmentCanvasRef}></canvas>
+                        <div className="task-report-slider-wrapper">
+                          {deptCanScrollLeft && (
+                            <button 
+                              className="task-report-slider-button task-report-slider-button--left"
+                              onClick={() => handleScroll(deptReportSliderRef, 'left', false)}
+                              type="button"
+                            >
+                              <FaChevronLeft />
+                            </button>
+                          )}
+                          <div className="task-report-slider-container" ref={deptReportSliderRef}>
+                            <div 
+                              className="task-report-chart-inner" 
+                              style={{ 
+                                width: `${Math.max(100, (Object.keys(taskStats?.department_breakdown || {}).length || 0) * (screenWidth < 480 ? 150 : screenWidth < 768 ? 180 : screenWidth < 1024 ? 200 : 220))}px`,
+                                minWidth: '100%',
+                                height: screenWidth < 480 ? '380px' : screenWidth < 768 ? '420px' : screenWidth < 1024 ? '450px' : '480px' 
+                              }}
+                            >
+                              <canvas ref={departmentCanvasRef}></canvas>
+                            </div>
                           </div>
+                          {deptCanScrollRight && (
+                            <button 
+                              className="task-report-slider-button task-report-slider-button--right"
+                              onClick={() => handleScroll(deptReportSliderRef, 'right', false)}
+                              type="button"
+                            >
+                              <FaChevronRight />
+                            </button>
+                          )}
                         </div>
                       </div>
-                      <div className="task-progress-legend task-progress-legend--sticky" style={{ marginTop: '0.5rem' }}>
+                      <div className="task-progress-legend--department-report" style={{ marginTop: '0.5rem' }}>
                         {taskStats?.department_breakdown && (() => {
                           // Create consistent color map for legend items
                           const deptColorMap = {};
@@ -2516,7 +2823,7 @@ const TaskReports = () => {
                             return (
                               <div
                                 key={dept}
-                                className="task-progress-legend-item"
+                                className="task-progress-legend-item--department-report"
                                 onClick={() => toggleBarDepartmentVisibility(dept)}
                                 style={{
                                   cursor: 'pointer',
@@ -2531,7 +2838,7 @@ const TaskReports = () => {
                                     opacity: isHidden ? 0.4 : 1
                                   }}
                                 />
-                                <span className="task-progress-legend-label">
+                                <span className="task-progress-legend-label--department-report">
                                   {String(dept || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}: {count}
                                 </span>
                               </div>
@@ -2544,259 +2851,17 @@ const TaskReports = () => {
                 </div>
               </>
             ) : (
-              /* Team Performance Dashboard (Screenshot 1) */
-              <div className="task-report-card task-report-card--team-performance">
-                <div className="task-report-card-header">
-                  <div className="task-report-card-title-group">
-                    {/* <span className="task-report-card-icon">👥</span> */}
-                    <FaUserClock className="task-report-card-icon" />
-                    <h2 className="task-report-card-title">Team Performance Dashboard</h2>
-                  </div>
-                  <div className="task-team-header-actions">
-                    <div className={`task-team-search-wrapper ${mobileSearchOpen ? 'task-team-search-wrapper--open' : ''}`}>
-                      <span
-                        className="task-team-search-icon"
-                        onClick={() => setMobileSearchOpen(!mobileSearchOpen)}>🔍</span>
-                      <input
-                        type="text"
-                        className="task-team-search-input"
-                        placeholder="Search team members..."
-                        value={teamSearchQuery}
-                        onChange={(e) => setTeamSearchQuery(e.target.value)}
-                      />
-                    </div>
-                    <span className="task-team-active-badge">
-                      {filteredTeamMembers.length} Active Members
-                    </span>
-                  </div>
-                </div>
-
-                <div className="task-team-summary">
-                  <div className="task-team-summary-item">
-                    <div className="task-team-summary-value" >
-                      <FaUserClock className="stat-icon" style={{ color: '#808e9b' }} />
-                      {teamSummary.members}
-                      <div className="task-team-summary-label">Team Members</div>
-                    </div>
-
-                  </div>
-                  <div className="task-team-summary-item">
-                    <div className="task-team-summary-value">
-                      <FaClipboard className="stat-icon" style={{ color: '#077af5' }} />
-                      {teamSummary.totalTasks}
-                      <div className="task-team-summary-label">Total Tasks</div>
-                    </div>
-                  </div>
-                  <div className="task-team-summary-item">
-                    <div className="task-team-summary-value">
-                      <FaSpinner className="stat-icon" style={{ color: '#fccf3a' }} />
-                      {teamSummary.inProgress}
-                      <div className="task-team-summary-label">In Progress</div>
-                    </div>
-                  </div>
-                  <div className="task-team-summary-item">
-                    <div className="task-team-summary-value">
-                      <FaCheckCircle className="stat-icon" style={{ color: '#0feb42' }} />
-                      {teamSummary.completed}
-                      <div className="task-team-summary-label">Completed</div>
-                    </div>
-                  </div>
-                  <div className="task-team-summary-item">
-                    <div className="task-team-summary-value">
-                      <FaExclamationTriangle className="stat-icon" style={{ color: '#ff3f34' }} />
-                      {teamSummary.overdue}<div className="task-team-summary-label">Overdue</div>
-                    </div>
-                  </div>
-                  <div className="task-team-summary-item">
-                    <div className="task-team-summary-value">
-                      <FaChartLine className="stat-icon" style={{ color: '#077af5' }} />
-                      {teamSummary.avgRate}%<div className="task-team-summary-label">Avg Completion</div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="task-team-grid">
-                  {filteredTeamMembers.length > 0 ? (
-                    filteredTeamMembers.map((member, index) => (
-                      <div key={index} className="task-team-member-card">
-                        <div className="task-team-member-header">
-                          <div className="task-team-member-avatar">
-                            <FaUserCircle size={40} />
-                          </div>
-                          <div className="task-team-member-info">
-                            <div className="task-team-member-name">{member.label}</div>
-                            <div className="task-team-member-role">
-                              {String(member.role || 'User').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="task-team-member-stats">
-                          <div className="task-team-stat-item task-team-stat-item--total">
-                            <div className="task-team-stat-value">{member.count}</div>
-                            <div className="task-team-stat-label">Total Tasks</div>
-                          </div>
-                          <div className="task-team-stat-item task-team-stat-item--in-progress">
-                            <div className="task-team-stat-value">{member.in_progress_count || 0}</div>
-                            <div className="task-team-stat-label">In Progress</div>
-                          </div>
-                          <div className="task-team-stat-item task-team-stat-item--completed">
-                            <div className="task-team-stat-value">{member.completed_count || 0}</div>
-                            <div className="task-team-stat-label">Completed</div>
-                          </div>
-                          <div className="task-team-stat-item task-team-stat-item--overdue">
-                            <div className="task-team-stat-value">{member.overdue_count || 0}</div>
-                            <div className="task-team-stat-label">Overdue</div>
-                          </div>
-                        </div>
-                        <div className="task-team-member-progress-group">
-                          <div className="task-team-member-progress-label">
-                            <span>📈 Completion Rate</span>
-                            <span>{member.rate || 0}%</span>
-                          </div>
-                          <div className="task-team-member-progress-container">
-                            <div
-                              className="task-team-member-progress-bar"
-                              style={{ width: `${member.rate || 0}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                        <div className="task-team-member-footer-actions">
-                          <button
-                            className="task-team-view-details-btn"
-                            onClick={() => handleShowMemberTasks(member)}
-                          >
-                            📋 View Details ({member.count} Tasks)
-                          </button>
-                          {/* <button className="task-team-message-btn">
-                            💬 Message
-                          </button> */}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="task-team-empty-search">
-                      No team members found matching "{teamSearchQuery}"
-                    </div>
-                  )}
-                </div>
-              </div>
+              <TeamPerformance
+                taskAggregates={taskAggregates}
+                currentUser={user}
+                duration={duration}
+                getDateRangeForDuration={getDateRangeForDuration}
+              />
             )}
           </div>
         </div>
       </div>
     )}
-
-      {/* Task Details Popup*/}
-      {showMemberTasksModal && selectedMemberTasks && (
-        <div className="task-team-modal-overlay" onClick={() => setShowMemberTasksModal(false)}>
-          <div className="task-team-modal-content" onClick={e => e.stopPropagation()}>
-            <div className="task-team-modal-header">
-              <div className="task-team-modal-header-left">
-                <div className="task-team-modal-avatar">
-                  {getInitials(selectedMemberTasks.member.label || selectedMemberTasks.member.name)}
-                </div>
-                <div className="task-team-modal-user-info">
-                  <h3 className="task-team-modal-user-name">{selectedMemberTasks.member.label || selectedMemberTasks.member.name || 'User'}</h3>
-                  <span className="task-team-modal-user-role">{selectedMemberTasks.member.role || 'User'}</span>
-                </div>
-              </div>
-              <div className="task-team-modal-header-right">
-                <button className="task-team-modal-close" onClick={() => setShowMemberTasksModal(false)}>×</button>
-              </div>
-            </div>
-
-            <div className="task-team-modal-body">
-              <div className="task-team-modal-stats">
-                <div className="task-team-modal-stat-item">
-                  <div className="task-team-modal-stat-value">{selectedMemberTasks.member.count}</div>
-                  <div className="task-team-modal-stat-label">Total Tasks</div>
-                </div>
-                <div className="task-team-modal-stat-item">
-                  <div className="task-team-modal-stat-value task-team-modal-stat-value--in-progress">
-                    {selectedMemberTasks.member.in_progress_count || 0}
-                  </div>
-                  <div className="task-team-modal-stat-label">In Progress</div>
-                </div>
-                <div className="task-team-modal-stat-item">
-                  <div className="task-team-modal-stat-value task-team-modal-stat-value--completed">
-                    {selectedMemberTasks.member.completed_count || 0}
-                  </div>
-                  <div className="task-team-modal-stat-label">Completed</div>
-                </div>
-                <div className="task-team-modal-stat-item">
-                  <div className="task-team-modal-stat-value task-team-modal-stat-value--overdue">
-                    {selectedMemberTasks.member.overdue_count || 0}
-                  </div>
-                  <div className="task-team-modal-stat-label">Pending/Overdue</div>
-                </div>
-                <div className="task-team-modal-stat-item">
-                  <div className="task-team-modal-stat-value">{selectedMemberTasks.member.rate || 0}%</div>
-                  <div className="task-team-modal-stat-label">Completion Rate</div>
-                </div>
-              </div>
-
-              <div className="task-team-modal-task-list-section">
-                <h4 className="task-team-modal-section-title">📋 Task List ({selectedMemberTasks.tasks.length} Tasks)</h4>
-                <div className="task-team-modal-task-list">
-                  {memberTasksLoading ? (
-                    <div className="task-team-modal-loading">
-                      <div className="task-loading-spinner"></div>
-                      <p>Loading member tasks...</p>
-                    </div>
-                  ) : selectedMemberTasks.tasks.length > 0 ? (
-                    selectedMemberTasks.tasks.map((task, idx) => {
-                      const statusConfig = getStatusConfig(task.status, task);
-                      const overdueDays = getOverdueDays(task.due_date);
-
-                      return (
-                        <div key={idx} className={`task-team-modal-task-item status-${statusConfig.class}`}>
-                          <div className="task-team-modal-task-main">
-                            <div className="task-team-modal-task-title">{task.title}</div>
-                            <div className={`task-team-modal-task-status task-team-modal-task-status--${statusConfig.class}`}>
-                              {statusConfig.icon} {statusConfig.label}
-                            </div>
-                          </div>
-                          <div className="task-team-modal-task-details">
-                            <div className="task-team-modal-task-detail-item">
-                              Priority: <span className={`priority-${(task.priority || 'medium').toLowerCase()}`}>{(task.priority || 'MEDIUM').toUpperCase()}</span>
-                            </div>
-                            <div className="task-team-modal-task-detail-item">
-                              Department: {task.department || 'N/A'}
-                            </div>
-                            <div className="task-team-modal-task-detail-item">
-                              Due Date: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
-                            </div>
-
-                            {statusConfig.class === 'completed' && (task.completed_date || task.completed_at) && (
-                              <div className="task-team-modal-task-detail-item">
-                                Completed: {new Date(task.completed_date || task.completed_at).toLocaleDateString()}
-                              </div>
-                            )}
-
-                            {statusConfig.class === 'in-progress' && task.progress !== undefined && (
-                              <div className="task-team-modal-task-detail-item">
-                                Progress: {task.progress}%
-                              </div>
-                            )}
-
-                            {statusConfig.class === 'overdue' && overdueDays > 0 && (
-                              <div className="task-team-modal-task-detail-item">
-                                Days Overdue: {overdueDays}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="task-team-modal-empty">No tasks found for this member.</div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 };
