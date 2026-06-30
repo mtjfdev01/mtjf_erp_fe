@@ -333,7 +333,7 @@ const ViewTask = () => {
     const cls = statusClassMap[statusStr] || 'status-registered';
     const normalized = statusStr ? statusStr.replace(/_/g, ' ') : 'pending';
     const label = normalized.toUpperCase();
-    return <span className={`status-badge ${cls}`}>{label}</span>;
+    return <span className={`task-view-status-badge ${cls}`}>{label}</span>;
   };
 
   const getTaskTypeValue = (t) => {
@@ -1052,8 +1052,8 @@ const ViewTask = () => {
             {error && <div className="status-message status-message--error">{error}</div>}
 
             <div className="task-receipt-page">
-            <div className="receipt-container">
-              <div className="receipt-header">
+            <div className="task-view-receipt-container">
+              <div className="task-view-receipt-header">
                 <div className="view-details-title">
                   <div className="view-details-logo">📋</div>
                   <div>
@@ -1107,7 +1107,7 @@ const ViewTask = () => {
                         )}
                       </div>
                     ) : (
-                      <span className="view-action-status-badge">{statusLabel}</span>
+                      <span className="view-action-status-badge-dropdown">{statusLabel}</span>
                     )}
                   </div>
                 </div>
@@ -1425,7 +1425,7 @@ const ViewTask = () => {
                         <div className="task-view-item">
                           <span className="task-view-item-label">Priority</span>
                           <span className="task-view-item-value">
-                            <span className={`priority-badge priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
+                            <span className={`task-view-priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
                               {capitalize(task.priority)}
                             </span>
                           </span>

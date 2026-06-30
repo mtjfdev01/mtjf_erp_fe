@@ -357,10 +357,11 @@ const TasksList = () => {
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager, approvalTasks]);
 
   useEffect(() => {
-    if (activeTab === 'approval_tasks' && approvalTasks.length === 0) {
+    // Only reset activeTab if approvals are fully loaded and approvalTasks is actually empty
+    if (approvalsLoaded && activeTab === 'approval_tasks' && approvalTasks.length === 0) {
       setActiveTab('assigned_to_me');
     }
-  }, [approvalTasks.length, activeTab]);
+  }, [approvalTasks.length, activeTab, approvalsLoaded]);
 
   // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
   useEffect(() => {
@@ -523,28 +524,28 @@ const TasksList = () => {
   const getStatusBadge = (statusRaw) => {
     const status = String(statusRaw || '').toLowerCase();
     const statusClassMap = {
-      pending: 'status-pending',
-      pending_approval: 'status-pink',
-      draft: 'status-pending',
-      failed: 'status-failed',
-      rejected: 'status-failed',
-      completed: 'status-completed',
-      approved: 'status-approved',
-      registered: 'status-registered',
-      open: 'status-registered',
-      in_progress: 'status-pending',
-      cancelled: 'status-failed',
-      closed: 'status-closed'
+      open: 'tl-status-open',
+      in_progress: 'tl-status-in_progress',
+      completed: 'tl-status-completed',
+      closed: 'tl-status-closed',
+      pending_approval: 'tl-status-pending_approval',
+      rejected: 'tl-status-rejected',
+      cancelled: 'tl-status-cancelled',
+      approved: 'tl-status-approved',
+      pending: 'tl-status-in_progress',
+      draft: 'tl-status-open',
+      failed: 'tl-status-rejected',
+      registered: 'tl-status-open'
     };
-    const cls = statusClassMap[status] || 'status-registered';
+    const cls = statusClassMap[status] || 'tl-status-open';
     const label = capitalize(status) || 'Pending';
-    return <span className={`task-list-status-badge ${cls}`}>{label}</span>;
+    return <span className={`tl-task-list-status-badge ${cls}`}>{label}</span>;
   };
 
   const renderAssignees = (t) => {
     const meta = Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : [];
     if (meta.length === 0) {
-      return <span className="person-badge">-</span>;
+      return <span className="tl-person-badge">-</span>;
     }
 
     const getInitials = (displayName) => {
@@ -595,8 +596,8 @@ const TasksList = () => {
     };
 
     return (
-      <div className="task-card-assignees-group">
-        <div className="avatar-stack">
+      <div className="tl-task-card-assignees-group">
+        <div className="tl-avatar-stack">
           {meta.slice(0, maxAvatars).map((user, idx) => {
             const info =
               Array.isArray(details) && details.length > 0
@@ -609,31 +610,31 @@ const TasksList = () => {
             return (
               <div
                 key={user.user_id || idx}
-                className="tasks-assignee-trigger"
+                className="tl-tasks-assignee-trigger"
                 onClick={(e) => handleAssigneeClick(e, t, user.user_id)}
               >
                 <div
-                  className="avatar-circle"
+                  className="tl-avatar-circle"
                   title={displayName || 'User'}
                   style={{ zIndex: meta.length - idx, backgroundColor: getAvatarColor(colorBase) }}
                 >
                   {initials}
                 </div>
                 {isOpen && (
-                  <div className="tasks-assignee-popover">
+                  <div className="tl-tasks-assignee-popover">
                     {info ? (
-                      <ul className="tasks-assignee-list">
-                        <li className="tasks-assignee-list-item">
-                          <div className="tasks-assignee-name">{info.name}</div>
+                      <ul className="tl-tasks-assignee-list">
+                        <li className="tl-tasks-assignee-list-item">
+                          <div className="tl-tasks-assignee-name">{info.name}</div>
                           {info.department && (
-                            <div className="tasks-assignee-department">
+                            <div className="tl-tasks-assignee-department">
                               {capitalize(info.department)}
                             </div>
                           )}
                         </li>
                       </ul>
                     ) : (
-                      <div className="tasks-assignee-empty">No assignee details</div>
+                      <div className="tl-tasks-assignee-empty">No assignee details</div>
                     )}
                   </div>
                 )}
@@ -641,12 +642,12 @@ const TasksList = () => {
             );
           })}
           {extraCount > 0 && (
-            <div className="avatar-circle avatar-extra" style={{ zIndex: 0 }}>
+            <div className="tl-avatar-circle tl-avatar-extra" style={{ zIndex: 0 }}>
               +{extraCount}
             </div>
           )}
         </div>
-        <span className="assignee-text-label">
+        <span className="tl-assignee-text-label">
           {meta.length === 1 ? 'Single User' : 'Multiple Users'}
         </span>
       </div>
@@ -831,43 +832,45 @@ const TasksList = () => {
       isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
 
     return (
-      <div key={t.id} className={`task-card task-card--${status} ${isTaskOverdue(t) ? 'tasks-row--overdue' : ''}`}>
-        <div className={`task-card-status-bar status-bg-${status}`}>
+      <div key={t.id} className={`tl-task-card tl-task-card--${status} ${isTaskOverdue(t) ? 'tl-tasks-row--overdue' : ''}`}>
+        <div className={`tl-task-card-status-bar tl-status-bg-${status}`}>
           <span>{capitalize(status)}</span>
         </div>
-        <div className="task-card-content">
-          <div className="task-card-main">
-            <div className="task-card-header-row">
-              <h3 className="task-card-title">{t.title}</h3>
-              <span className={`priority-badge priority-${t.priority} mobile-priority`}>{capitalize(t.priority)}</span>
+        <div className="tl-task-card-content">
+          <div className="tl-task-card-main">
+            <div className="tl-task-card-header-row">
+              <h4 className="tl-task-card-title">{t.title}</h4>
+              <span className={`tl-priority-badge tl-priority-${t.priority} tl-mobile-priority`}>{capitalize(t.priority)}</span>
             </div>
 
-            <div className="task-card-meta">
-              <div className="task-card-meta-left">
-                <span className="task-card-dept">
+            <div className="tl-task-card-meta">
+              <div className="tl-task-card-meta-left">
+                <span className="tl-task-card-dept">
                   {Array.isArray(t.assigned_users_meta) && t.assigned_users_meta.length > 0
                     ? [...new Set(t.assigned_users_meta.map(m => m.department).filter(Boolean))]
                       .map(d => capitalize(d))
                       .join(', ')
                     : capitalize(t.department)}
                 </span>
-                <div className="task-card-assignee-mobile">
-                  {/* <span className="assignee-label">Assignee: </span> */}
+                <div className="tl-task-card-assignee-mobile">
+                  {/* <span className="tl-assignee-label">Assignee: </span> */}
                   {renderAssignees(t)}
                 </div>
               </div>
 
-              <div className="task-card-actions-mobile">
-                <ActionMenu actions={getActionMenuItems(t)} trigger={<FiMoreHorizontal className="more-icon" />} />
+              <div className="tl-task-card-actions-mobile">
+                <ActionMenu actions={getActionMenuItems(t)} trigger={<FiMoreHorizontal className="tl-more-icon" />} />
               </div>
             </div>
           </div>
 
-          <div className="task-card-badges desktop-only">
-            <span className={`priority-badge priority-${t.priority}`}>{capitalize(t.priority)}</span>
-            {getStatusBadge(t.status)}
+          <div className="tl-task-card-badges tl-desktop-only">
+            <div className="tl-task-card-badges-row">
+              <span className={`tl-priority-badge tl-priority-${t.priority}`}>{capitalize(t.priority)}</span>
+              {getStatusBadge(t.status)}
+            </div>
             {(canUpdate || canChangeAsAssignee) && (
-              <div className="tasks-quick-status">
+              <div className="tl-tasks-quick-status">
                 <select
                   value=""
                   onChange={(e) => {
@@ -886,39 +889,39 @@ const TasksList = () => {
             )}
           </div>
 
-          <div className="task-card-right desktop-only">
-            <div className="task-card-dates">
-              <div className="date-row">
+          <div className="tl-task-card-right tl-desktop-only">
+            <div className="tl-task-card-dates">
+              <div className="tl-date-row">
                 <span>Started on:</span>
                 <span>{formatDate(t.start_date)}</span>
               </div>
-              <div className="date-row due-date">
+              <div className="tl-date-row tl-due-date">
                 <span>{formatDate(t.due_date)}</span>
                 {getDueInfo(t.due_date, t.status) && (
-                  <span className={`overdue-text overdue-${getDueInfo(t.due_date, t.status).variant}`}>
+                  <span className={`tl-overdue-text tl-overdue-${getDueInfo(t.due_date, t.status).variant}`}>
                     {getDueInfo(t.due_date, t.status).label.startsWith('-') ? '→ ' : ''}
                     {getDueInfo(t.due_date, t.status).label.replace('-', '').replace('In ', '')}
                   </span>
                 )}
               </div>
-              <div className="task-date-tooltip">
-                <div className="tooltip-item">
-                  <span className="tooltip-label">Created:</span>
-                  <span className="tooltip-value">{formatDate(t.created_at)}</span>
+              <div className="tl-task-date-tooltip">
+                <div className="tl-tooltip-item">
+                  <span className="tl-tooltip-label">Created:</span>
+                  <span className="tl-tooltip-value">{formatDate(t.created_at)}</span>
                 </div>
-                <div className="tooltip-item">
-                  <span className="tooltip-label">Started:</span>
-                  <span className="tooltip-value">{formatDate(t.start_date)}</span>
+                <div className="tl-tooltip-item">
+                  <span className="tl-tooltip-label">Started:</span>
+                  <span className="tl-tooltip-value">{formatDate(t.start_date)}</span>
                 </div>
-                <div className="tooltip-item">
-                  <span className="tooltip-label">Due:</span>
-                  <span className="tooltip-value">{formatDate(t.due_date)}</span>
+                <div className="tl-tooltip-item">
+                  <span className="tl-tooltip-label">Due:</span>
+                  <span className="tl-tooltip-value">{formatDate(t.due_date)}</span>
                 </div>
               </div>
             </div>
-            <div className="task-card-actions">
+            <div className="tl-task-card-actions">
               <button
-                className="task-action-icon view"
+                className="tl-task-action-icon tl-view"
                 title={hoverText('view')}
                 onClick={taskPerms.canViewDetail ? () => navigate(`${tasksRouteBase}/view/${t.id}`) : undefined}
                 disabled={!taskPerms.canViewDetail}
@@ -926,7 +929,7 @@ const TasksList = () => {
                 <FiEye />
               </button>
               <button
-                className="task-action-icon edit"
+                className="tl-task-action-icon tl-edit"
                 title={hoverText('update')}
                 onClick={((status !== 'completed' || taskPerms.canEditCompleted) && taskPerms.canUpdate) ? () => navigate(`${tasksRouteBase}/update/${t.id}`) : undefined}
                 disabled={(status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate}
@@ -934,7 +937,7 @@ const TasksList = () => {
                 <FiEdit2 />
               </button>
               <button
-                className="task-action-icon delete"
+                className="tl-task-action-icon tl-delete"
                 title={hoverText('delete')}
                 onClick={taskPerms.canDelete ? () => deleteTask(t) : undefined}
                 disabled={!taskPerms.canDelete}
@@ -1061,17 +1064,17 @@ const TasksList = () => {
     <>
       <Navbar />
       <Loader loading={loading} />
-      <div className="list-wrapper">
+      <div className="tl-list-wrapper">
         <PageHeader
-          title="Tasks"
+          title="Tasks List"
           showBackButton={false}
           showAdd={false}
         />
-        <div className="list-content">
-          <div className="tasks-filter-container">
-            <div className="tasks-filter-main">
-              <div className="filter-item search-item">
-                <FiSearch className="filter-icon" />
+        <div className="tl-list-content">
+          <div className="tl-tasks-filter-container">
+            <div className="tl-tasks-filter-main">
+              <div className="tl-filter-item tl-search-item">
+                <FiSearch className="tl-filter-icon" />
                 <input
                   type="text"
                   placeholder={isSearchPending ? 'Searching...' : 'Search tasks...'}
@@ -1080,8 +1083,8 @@ const TasksList = () => {
                 />
               </div>
 
-              <div className="filter-item search-item">
-                <FiSearch className="filter-icon" />
+              <div className="tl-filter-item tl-search-item">
+                <FiSearch className="tl-filter-icon" />
                 <input
                   type="text"
                   placeholder="Search users..."
@@ -1090,8 +1093,8 @@ const TasksList = () => {
                 />
               </div>
 
-              <div className="filter-item select-item">
-                <FiUsers className="filter-icon" />
+              <div className="tl-filter-item tl-select-item">
+                <FiUsers className="tl-filter-icon" />
                 <select
                   value={filters.department === null ? '' : filters.department}
                   onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
@@ -1101,11 +1104,11 @@ const TasksList = () => {
                     <option key={opt.value} value={opt.value} style={{ textTransform: 'uppercase' }}>{opt.label}</option>
                   ))}
                 </select>
-                <FiChevronDown className="chevron-icon" />
+                <FiChevronDown className="tl-chevron-icon" />
               </div>
 
-              <div className="filter-item select-item">
-                <FiClock className="filter-icon" />
+              <div className="tl-filter-item tl-select-item">
+                <FiClock className="tl-filter-icon" />
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
@@ -1115,11 +1118,11 @@ const TasksList = () => {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
-                <FiChevronDown className="chevron-icon" />
+                <FiChevronDown className="tl-chevron-icon" />
               </div>
 
-              <div className="filter-item select-item">
-                <FiList className="filter-icon" />
+              <div className="tl-filter-item tl-select-item">
+                <FiList className="tl-filter-icon" />
                 <select
                   value={filters.priority}
                   onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
@@ -1129,16 +1132,16 @@ const TasksList = () => {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
-                <FiChevronDown className="chevron-icon" />
+                <FiChevronDown className="tl-chevron-icon" />
               </div>
 
-              <button className="filter-clear-btn" onClick={clearAllFilters} disabled={loading}>
+              <button className="tl-filter-clear-btn" onClick={clearAllFilters} disabled={loading}>
                 Clear
               </button>
             </div>
 
             <button
-              className="tasks-add-btn"
+              className="tl-tasks-add-btn"
               onClick={taskPerms.canCreate ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } }) : undefined}
               disabled={!taskPerms.canCreate}
               title={hoverText('create')}
@@ -1147,45 +1150,45 @@ const TasksList = () => {
             </button>
           </div>
 
-              {error && <div className="status-message status-message--error">{error}</div>}
+              {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
 
-              <div className="task-card-list">
-                <div className="task-tabs-container">
-                  <div className="task-tabs">
+              <div className="tl-task-card-list">
+                <div className="tl-task-tabs-container">
+                  <div className="tl-task-tabs">
                     <button
-                      className={`task-tab-btn ${activeTab === 'assigned_to_me' ? 'active active--mine' : ''}`}
+                      className={`tl-task-tab-btn ${activeTab === 'assigned_to_me' ? 'tl-active tl-active--mine' : ''}`}
                       onClick={() => setActiveTab('assigned_to_me')}
                     >
-                      <FiUserCheck className="tab-icon" />
-                      <span className="tab-text"> Assigned to me</span>
-                      <span className="tab-count">{myTasks.length}</span>
+                      <FiUserCheck className="tl-tab-icon" />
+                      <span className="tl-tab-text"> Assigned to me</span>
+                      <span className="tl-tab-count">{myTasks.length}</span>
                     </button>
                     <button
-                      className={`task-tab-btn ${activeTab === 'other_tasks' ? 'active active--other' : ''}`}
+                      className={`tl-task-tab-btn ${activeTab === 'other_tasks' ? 'tl-active tl-active--other' : ''}`}
                       onClick={() => setActiveTab('other_tasks')}
                     >
-                      <FiList className="tab-icon" />
-                      <span className="tab-text"> Assigned to others</span>
-                      <span className="tab-count">{otherTasks.length}</span>
+                      <FiList className="tl-tab-icon" />
+                      <span className="tl-tab-text"> Assigned to others</span>
+                      <span className="tl-tab-count">{otherTasks.length}</span>
                     </button>
                     {isManager && (
                       <button
-                        className={`task-tab-btn ${activeTab === 'assigned_to_team' ? 'active active--team' : ''}`}
+                        className={`tl-task-tab-btn ${activeTab === 'assigned_to_team' ? 'tl-active tl-active--team' : ''}`}
                         onClick={() => setActiveTab('assigned_to_team')}
                       >
-                        <FiUsers className="tab-icon" />
-                        <span className="tab-text"> Assigned to team</span>
-                        <span className="tab-count">{teamTasks.length}</span>
+                        <FiUsers className="tl-tab-icon" />
+                        <span className="tl-tab-text"> Assigned to team</span>
+                        <span className="tl-tab-count">{teamTasks.length}</span>
                       </button>
                     )}
                     {approvalTasks.length > 0 && (
                       <button
-                        className={`task-tab-btn ${activeTab === 'approval_tasks' ? 'active active--approval' : ''}`}
+                        className={`tl-task-tab-btn ${activeTab === 'approval_tasks' ? 'tl-active tl-active--approval' : ''}`}
                         onClick={() => setActiveTab('approval_tasks')}
                       >
-                        <FiThumbsUp className="tab-icon" />
-                        <span className="tab-text">Approval Tasks</span>
-                        <span className="tab-count">{approvalTasks.length}</span>
+                        <FiThumbsUp className="tl-tab-icon" />
+                        <span className="tl-tab-text">Approval Tasks</span>
+                        <span className="tl-tab-count">{approvalTasks.length}</span>
                         {/* Pending approval badge */}
                         {(() => {
                           try {
@@ -1193,7 +1196,7 @@ const TasksList = () => {
                             const pendingCount = approvalRequestsForUser.filter(t => t && t._isPendingAction === true).length;
                             if (pendingCount === 0) return null;
                             return (
-                              <span className="approval-pending-badge" title={`${pendingCount} pending approval`}>
+                              <span className="tl-approval-pending-badge" title={`${pendingCount} pending approval`}>
                                 {pendingCount}
                               </span>
                             );
@@ -1206,14 +1209,14 @@ const TasksList = () => {
                   </div>
                 </div>
 
-                <div className="tab-content-wrapper">
+                <div className="tl-tab-content-wrapper">
                   {activeTab === 'assigned_to_me' && (
-                    <div className="tasks-group fade-in">
+                    <div className="tl-tasks-group tl-fade-in">
                       {myTasks.length > 0 ? (
                         myTasks.map((t) => renderTaskCard(t))
                       ) : (
-                        <div className="empty-tab-state">
-                          <FiUserCheck className="empty-icon" />
+                        <div className="tl-empty-tab-state">
+                          <FiUserCheck className="tl-empty-icon" />
                           <p>No tasks assigned to you at the moment.</p>
                         </div>
                       )}
@@ -1221,12 +1224,12 @@ const TasksList = () => {
                   )}
 
                   {activeTab === 'assigned_to_team' && isManager && (
-                    <div className="tasks-group fade-in">
+                    <div className="tl-tasks-group tl-fade-in">
                       {teamTasks.length > 0 ? (
                         teamTasks.map((t) => renderTaskCard(t))
                       ) : (
-                        <div className="empty-tab-state">
-                          <FiUsers className="empty-icon" />
+                        <div className="tl-empty-tab-state">
+                          <FiUsers className="tl-empty-icon" />
                           <p>No tasks assigned to your team members.</p>
                         </div>
                       )}
@@ -1234,12 +1237,12 @@ const TasksList = () => {
                   )}
 
                   {activeTab === 'approval_tasks' && (
-                    <div className="tasks-group fade-in">
+                    <div className="tl-tasks-group tl-fade-in">
                       {approvalTasks.length > 0 ? (
                         approvalTasks.map((t) => renderTaskCard(t))
                       ) : (
-                        <div className="empty-tab-state">
-                          <FiThumbsUp className="empty-icon" />
+                        <div className="tl-empty-tab-state">
+                          <FiThumbsUp className="tl-empty-icon" />
                           <p>No approval tasks found.</p>
                         </div>
                       )}
@@ -1247,12 +1250,12 @@ const TasksList = () => {
                   )}
 
                   {activeTab === 'other_tasks' && (
-                    <div className="tasks-group fade-in">
+                    <div className="tl-tasks-group tl-fade-in">
                       {otherTasks.length > 0 ? (
                         otherTasks.map((t) => renderTaskCard(t))
                       ) : (
-                        <div className="empty-tab-state">
-                          <FiList className="empty-icon" />
+                        <div className="tl-empty-tab-state">
+                          <FiList className="tl-empty-icon" />
                           <p>No other tasks found.</p>
                         </div>
                       )}
