@@ -29,6 +29,7 @@ const CreateUser = () => {
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
+    user_code: '',
     email: '',
     phone: '',
     dob: '',
@@ -196,6 +197,7 @@ const CreateUser = () => {
       // Create payload with user data and permissions
       const payload = {
         ...sanitizedForm,
+        user_code: sanitizedForm.user_code?.trim() || null,
         permissions: userPermissions,
         manager_id: form.manager_id ? Number(form.manager_id) : null,
       };
@@ -219,6 +221,7 @@ const CreateUser = () => {
       setForm({
         first_name: '',
         last_name: '',
+        user_code: '',
         email: '',
         phone: '',
         dob: '',
@@ -280,6 +283,14 @@ const CreateUser = () => {
                 value={form.last_name}
                 onChange={handleChange}
                 required
+              />
+
+              <FormInput
+                name="user_code"
+                label="User Code"
+                value={form.user_code}
+                onChange={handleChange}
+                placeholder="Optional — permanent record id"
               />
 
               <FormInput

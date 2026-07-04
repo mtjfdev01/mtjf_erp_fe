@@ -181,6 +181,11 @@ const UserView = () => {
               <p className="user-view-email">{user.email || '—'}</p>
             </div>
             <div className="user-view-summary-badges">
+              {user.user_code ? (
+                <span className="user-view-badge user-view-badge--code">
+                  {user.user_code}
+                </span>
+              ) : null}
               <span className="user-view-badge user-view-badge--department">
                 {formatLabel(user.department)}
               </span>
@@ -212,6 +217,7 @@ const UserView = () => {
           <div className="view-section">
             <h3 className="view-section-title">Work Information</h3>
             <div className="view-grid">
+              <ViewField label="User Code" value={user.user_code || '—'} />
               <ViewField label="Department" value={formatLabel(user.department)} />
               <ViewField label="Role" value={formatLabel(user.role)} />
               <ViewField label="Joining Date" value={formatDate(user.joining_date)} />

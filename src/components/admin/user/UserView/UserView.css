@@ -49,6 +49,12 @@
   color: #1d4ed8;
 }
 
+.user-view-badge--code {
+  background: #fef3c7;
+  color: #b45309;
+  font-family: ui-monospace, monospace;
+}
+
 .user-view-badge--role {
   background: #ede9fe;
   color: #6d28d9;

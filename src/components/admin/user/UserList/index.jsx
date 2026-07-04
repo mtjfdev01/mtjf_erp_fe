@@ -59,6 +59,7 @@ const UserList = () => {
   const sortOptions = [
     { value: 'first_name', label: 'First Name' },
     { value: 'last_name', label: 'Last Name' },
+    { value: 'user_code', label: 'User Code' },
     { value: 'email', label: 'Email' },
     { value: 'department', label: 'Department' },
     { value: 'role', label: 'Role' },
@@ -331,6 +332,7 @@ const UserList = () => {
             <thead>
               <tr>
                 <th>Name</th>
+                <th className="hide-on-mobile">User Code</th>
                 <th className="hide-on-mobile">Email</th>
                 <th>Department</th>
                 <th className="hide-on-mobile">Role</th>
@@ -341,6 +343,7 @@ const UserList = () => {
               {displayUsers.map((user) => (
                 <tr key={user.id}>
                   <td>{user.first_name} {user.last_name}</td>
+                  <td className="hide-on-mobile">{user.user_code || '—'}</td>
                   <td className="hide-on-mobile">{user.email}</td>
                   <td>{formatDepartment(user.department)}</td>
                   <td className="hide-on-mobile">{user.role.charAt(0).toUpperCase() + user.role.slice(1)}</td>

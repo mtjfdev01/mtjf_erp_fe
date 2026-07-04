@@ -17,6 +17,7 @@ import {
   toUserGeographicPayload,
 } from '../../../../utils/geographicAssignment';
 import { toast } from 'react-toastify';
+import { departmentRoles, defaultRoles } from '../../../../utils/user';
 import './UpdateUser.css';
 
 const UpdateUser = () => {
@@ -26,6 +27,7 @@ const UpdateUser = () => {
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
+    user_code: '',
     email: '',
     phone: '',
     dob: '',
@@ -58,6 +60,7 @@ const UpdateUser = () => {
     EMPTY_GEOGRAPHIC_ASSIGNMENTS,
   );
   const [geographicOff, setGeographicOff] = useState(false);
+  const [availableRoles, setAvailableRoles] = useState(defaultRoles);
 
   const departments = [
     { value: 'store', label: 'Store' },
@@ -90,24 +93,8 @@ const UpdateUser = () => {
     { value: 'O-', label: 'O-' }
   ];
 
-  const roles = [
-    { value: 'user', label: 'User' },
-    { value: 'assistant_manager', label: 'Assistant Manager' },
-    { value: 'manager', label: 'Manager' },
-    { value: 'admin', label: 'Admin'},
-    { value: 'super_admin', label: 'Super Admin' },
-    { value: 'officer', label: 'Officer' },
-    { value: 'coordinator', label: 'Coordinator' },
-    { value: 'support', label: 'Support' },
-    { value: 'analyst', label: 'Analyst' },
-    { value: 'developer', label: 'Developer' },
-    { value: 'team_lead', label: 'Team Lead' },
-    { value: 'staff', label: 'Staff' }, 
-    { value: 'field_officer', label: 'Field Officer' },
-    { value: 'volunteer', label: 'Volunteer' },
-    { value: 'dept_head', label: 'Dept Head' }
-
-  ];
+  const rolesForDepartment = (department) =>
+    departmentRoles[department] || defaultRoles;
 
   const genders = [
     { value: 'male', label: 'Male' },
@@ -151,6 +138,7 @@ const UpdateUser = () => {
       setForm({
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
+        user_code: userData.user_code || '',
         email: userData.email || '',
         phone: userData.phone || '',
         dob: userData.dob || '',
@@ -167,6 +155,9 @@ const UpdateUser = () => {
 
       setGeographicAssignments(normalizeGeographicAssignments(userData));
       setGeographicOff(userData.geographic_off === true);
+
+      const roles = rolesForDepartment(userData.department || '');
+      setAvailableRoles(roles);
 
       console.log('Form data set:', form);
     } catch (err) {
@@ -185,13 +176,25 @@ const UpdateUser = () => {
 
   const handleChange = e => {
     const { name, value } = e.target;
-    setForm({ ...form, [name]: value });
-    
-    if (name === 'department' && value !== 'fund_raising') {
-      setGeographicAssignments(EMPTY_GEOGRAPHIC_ASSIGNMENTS);
-      setGeographicOff(false);
+
+    if (name === 'department') {
+      const roles = rolesForDepartment(value);
+      setAvailableRoles(roles);
+      const roleStillValid = roles.some((r) => r.value === form.role);
+      setForm({
+        ...form,
+        department: value,
+        role: roleStillValid ? form.role : roles[0]?.value || 'user',
+      });
+
+      if (value !== 'fund_raising') {
+        setGeographicAssignments(EMPTY_GEOGRAPHIC_ASSIGNMENTS);
+        setGeographicOff(false);
+      }
+    } else {
+      setForm({ ...form, [name]: value });
     }
-    
+
     if (error) setError('');
   };
 
@@ -307,6 +310,7 @@ const UpdateUser = () => {
       const payload = {
         ...form,
         email: form.email.trim().toLowerCase(),
+        user_code: form.user_code?.trim() || null,
         manager_id: form.manager_id ? Number(form.manager_id) : null,
       };
 
@@ -403,6 +407,14 @@ const UpdateUser = () => {
               />
 
               <FormInput
+                name="user_code"
+                label="User Code"
+                value={form.user_code}
+                onChange={handleChange}
+                placeholder="Permanent record id (unchanged on transfer)"
+              />
+
+              <FormInput
                 name="email"
                 label="Email"
                 type="email"
@@ -469,7 +481,7 @@ const UpdateUser = () => {
                 name="role"
                 label="Role"
                 value={form.role}
-                options={roles}
+                options={availableRoles}
                 onChange={handleChange}
                 required
               />

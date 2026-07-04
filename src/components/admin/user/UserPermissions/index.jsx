@@ -301,6 +301,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'WhatsApp — Campaigns',
           actions: ['send']
         },
+        donation_receipts: {
+          label: 'Donation Receipts',
+          actions: ['view', 'send']
+        },
       }
     },
  
