@@ -401,9 +401,9 @@ const App = () => {
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
                                 
                                 {/* Donations Routes */}
-                                <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
+                                <Route path="/donations/online_donations/list" element={<OnlineDonationsList key="online-donations-list" />} />
                                 <Route path="/donations/allotments/pending" element={<PendingAllotmentsList />} />
-                                <Route path="/donations/offline_donations/list" element={<OnlineDonationsList />} />
+                                <Route path="/donations/offline_donations/list" element={<OnlineDonationsList key="offline-donations-list" />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/donations/online_donations/update/:id" element={<UpdateOnlineDonation />} />
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
@@ -421,6 +421,7 @@ const App = () => {
                                 {/* Donors Routes */}
                                 <Route path="/dms/donors/list" element={<DonorsList />} />
                                 <Route path="/dms/donors/view/:id" element={<ViewDonor />} />
+                                <Route path="/dms/donors/:donorId/donations" element={<OnlineDonationsList key="donor-donations-list" />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
                                 <Route path="/dms/donors/edit/:id" element={<EditDonor />} />
 

@@ -76,7 +76,7 @@ const ViewDonor = () => {
   };
 
   const handleViewDonations = () => {
-    navigate(`/donations/online_donations/list?donor_id=${id}`);
+    navigate(`/dms/donors/${id}/donations`);
   };
 
   const handleAddDonation = () => {

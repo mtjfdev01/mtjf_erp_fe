@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
@@ -29,7 +29,10 @@ const OnlineDonationsList = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const urlDonorId = searchParams.get('donor_id'); // Get donor_id from URL query param
+  const { donorId: routeDonorId } = useParams();
+  // Dedicated donor donations page, or legacy ?donor_id= query
+  const urlDonorId = routeDonorId || searchParams.get('donor_id');
+  const isDonorDonationsRoute = Boolean(routeDonorId);
   const isOnlineRoute = location.pathname.includes('/donations/online_donations');
   const isOfflineRoute = location.pathname.includes('/donations/offline_donations');
   
@@ -57,9 +60,16 @@ const OnlineDonationsList = () => {
     type: 'daily'
   });
   
+  // Separate storage for donor donations page so it does not pollute general list filters
+  const listStoragePrefix = isDonorDonationsRoute
+    ? `donations-donor-${routeDonorId}-list`
+    : isOfflineRoute
+      ? 'donations-offline-list'
+      : 'donations-online-list';
+
   // Pagination state — persisted so it survives navigation
   const [paginationState, setPaginationState] = usePersistedFilters(
-    'donations-online-list:pagination',
+    `${listStoragePrefix}:pagination`,
     { currentPage: 1, pageSize: 10, sortField: 'created_at', sortOrder: 'DESC' }
   );
   const { currentPage, pageSize, sortField, sortOrder } = paginationState;
@@ -97,25 +107,33 @@ const OnlineDonationsList = () => {
 
   // Filter state - persisted across navigation via sessionStorage
   const [tempFilters, setTempFilters, clearTempFilters] = usePersistedFilters(
-    'donations-online-list:temp', EMPTY_FILTERS
+    `${listStoragePrefix}:temp`, EMPTY_FILTERS
   );
   const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
-    'donations-online-list:applied', EMPTY_FILTERS
+    `${listStoragePrefix}:applied`, EMPTY_FILTERS
   );
 
-  // Initialize donor_id from URL on mount
+  // Donor page: lock donor_id from route. General list: clear donor scope so sidebar list is full.
   useEffect(() => {
     if (urlDonorId) {
-      // Set donor_id from URL query param
-      setTempFilters(prev => ({
+      setTempFilters((prev) => ({
         ...prev,
-        donor_id: urlDonorId
+        donor_id: urlDonorId,
       }));
-      setAppliedFilters(prev => ({
+      setAppliedFilters((prev) => ({
         ...prev,
-        donor_id: urlDonorId
+        donor_id: urlDonorId,
       }));
+      return;
     }
+
+    setSelectedDonor(null);
+    setTempFilters((prev) =>
+      prev.donor_id ? { ...prev, donor_id: '', donor_search: '' } : prev,
+    );
+    setAppliedFilters((prev) =>
+      prev.donor_id ? { ...prev, donor_id: '', donor_search: '' } : prev,
+    );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlDonorId]);
 
@@ -726,14 +744,24 @@ const OnlineDonationsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader 
-          title={isOfflineRoute ? 'Offline Donations' : 'Donations Listing'}
+          title={
+            isDonorDonationsRoute || urlDonorId
+              ? 'Donor Donations'
+              : isOfflineRoute
+                ? 'Offline Donations'
+                : 'Donations Listing'
+          }
           showBackButton={urlDonorId ? true :false} 
           backPath={urlDonorId ? `/dms/donors/view/${urlDonorId}` : null}
           showFilterToggle
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
           showAdd={true}
-          addPath='/donations/online_donations/add'
+          addPath={
+            urlDonorId
+              ? `/donations/online_donations/add?donor_id=${urlDonorId}`
+              : '/donations/online_donations/add'
+          }
         />
         
         <div className="list-content">
