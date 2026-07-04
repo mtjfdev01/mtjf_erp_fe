@@ -14,6 +14,7 @@ const AuditHistoryTimeline = ({
   getFieldLabel = (field) => field,
   formatActor = (user) => (user ? `User #${user.id}` : 'System'),
   formatValue = (v) => (v == null || v === '' ? '—' : String(v)),
+  renderEntryExtra = null,
 }) => {
   if (loading) {
     return <p className="audit-timeline__muted">Loading change history…</p>;
@@ -59,6 +60,7 @@ const AuditHistoryTimeline = ({
               ))}
             </ul>
           )}
+          {typeof renderEntryExtra === 'function' ? renderEntryExtra(entry) : null}
         </li>
       ))}
     </ul>

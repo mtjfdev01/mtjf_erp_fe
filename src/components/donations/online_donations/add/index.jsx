@@ -279,8 +279,8 @@ const AddDonation = () => {
         date: form.date,
         donation_type: form.donation_type,
         donation_method: form.donation_method,
-        source: form.source,
-        collection_center: form.collection_center || null,
+        // API field is donation_source (not `source`); empty → website default
+        donation_source: String(form.source || '').trim() || 'website',
         status: form.status,
         project_id: form.project_id || null,
         project_name: form.project_name,

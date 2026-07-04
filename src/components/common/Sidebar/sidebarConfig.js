@@ -10,6 +10,7 @@ import {
   FiPlusCircle,
   FiClipboard,
   FiCheckSquare,
+  FiCheckCircle,
   FiList,
   FiBarChart2,
   FiFileText,
@@ -495,6 +496,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'online_donations',
     icon: BiSolidDonateHeart
+  },
+  {
+    label: 'Allotment Approvals',
+    path: '/donations/allotments/pending',
+    type: 'list',
+    module: 'donation_allotments',
+    icon: FiCheckCircle,
   },
   // {
   //   label: 'Offline Donations',

@@ -292,6 +292,18 @@ const ViewDonor = () => {
             <h3 className="view-section-title">System information</h3>
             <div className="view-grid">
               <div className="view-item">
+                <span className="view-item-label">Assigned to (Fundraising)</span>
+                <span className="view-item-value">
+                  {donor.assigned_to ? formatAuditActor(donor.assigned_to) : 'Unassigned'}
+                </span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Referrer</span>
+                <span className="view-item-value">
+                  {donor.referred_by ? formatAuditActor(donor.referred_by) : '—'}
+                </span>
+              </div>
+              <div className="view-item">
                 <span className="view-item-label">Created by</span>
                 <span className="view-item-value">
                   {donor.created_by ? formatAuditActor(donor.created_by) : '—'}

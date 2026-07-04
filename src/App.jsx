@@ -22,6 +22,7 @@ import { InKindItemsProvider } from './context/InKindItemsContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
 import UserView from './components/admin/user/UserView';
+import ProfileRedirect from './components/profile/ProfileRedirect';
 import ApplicationReportsList from './components/program/applications_report/application_reports_list';
 import CreateApplicationReport from './components/program/applications_report/create_application_report';
 import UpdateApplicationReport from './components/program/applications_report/update_application_report';
@@ -128,6 +129,7 @@ import ResumeCollectionList from './components/admin/hr/resume_collection/list';
 import ResumeCollectionAdd from './components/admin/hr/resume_collection/add';
 import ResumeCollectionView from './components/admin/hr/resume_collection/view';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
+import PendingAllotmentsList from './components/dms/donations/allotments/pending';
 import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
@@ -135,6 +137,7 @@ import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
 import ViewDonationBox from './components/dms/donation_box/view';
+import EditDonationBox from './components/dms/donation_box/edit';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
@@ -231,6 +234,7 @@ const App = () => {
                                 <Route path="/admin/users" element={<UserList />} />
                                 <Route path="/admin/users/create" element={<CreateUser />} />
                                 <Route path="/admin/users/edit/:id" element={<UpdateUser />} />
+                                <Route path="/profile" element={<ProfileRedirect />} />
                                 <Route path="/users/:id" element={<UserView />} />
                                 
                                 {/* Store Report Routes - Nested under /store */}
@@ -388,6 +392,7 @@ const App = () => {
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
+                                <Route path="/dms/donation_box/edit/:id" element={<EditDonationBox />} />
                                 <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/add/:id" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
@@ -397,6 +402,7 @@ const App = () => {
                                 
                                 {/* Donations Routes */}
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList />} />
+                                <Route path="/donations/allotments/pending" element={<PendingAllotmentsList />} />
                                 <Route path="/donations/offline_donations/list" element={<OnlineDonationsList />} />
                                 <Route path="/donations/online_donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/donations/online_donations/update/:id" element={<UpdateOnlineDonation />} />

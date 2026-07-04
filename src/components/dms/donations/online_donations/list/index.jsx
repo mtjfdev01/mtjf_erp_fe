@@ -223,15 +223,19 @@ const OnlineDonationsList = () => {
       
       // Always include donor_id from URL if present
       const donorIdForFilter = urlDonorId || appliedFilters.donor_id;
+      // Donor-scoped list: all sources for that donor (not online/offline route defaults)
+      const isDonorScopedList = Boolean(donorIdForFilter);
       // Use relationsFilters directly from applied filters
       const relationsFiltersPayload = appliedFilters.relationsFilters || {};
       
       // Prepare filter payload
-      const routeSourceFilter = isOfflineRoute
-        ? { _donation_source_not: 'website' }
-        : isOnlineRoute
-          ? { donation_source: appliedFilters.donation_source || 'website' }
-          : {};
+      const routeSourceFilter = isDonorScopedList
+        ? {}
+        : isOfflineRoute
+          ? { _donation_source_not: 'website' }
+          : isOnlineRoute
+            ? { donation_source: appliedFilters.donation_source || 'website' }
+            : {};
 
       const filterPayload = {
         pagination: {
@@ -246,7 +250,7 @@ const OnlineDonationsList = () => {
           status: appliedFilters.status,
           donation_type: appliedFilters.donation_type,
           donation_method: appliedFilters.donation_method,
-          donation_source: isOfflineRoute
+          donation_source: isDonorScopedList || isOfflineRoute
             ? undefined
             : appliedFilters.donation_source,
           ...routeSourceFilter,

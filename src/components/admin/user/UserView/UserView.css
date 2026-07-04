@@ -108,3 +108,277 @@
     font-size: 1.25rem;
   }
 }
+
+/* Performance dashboard */
+.user-perf-dashboard .perf-profile-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+}
+
+.perf-profile-card__name {
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.perf-profile-card__email {
+  margin: 0 0 0.75rem;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.perf-profile-card__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.perf-profile-card__meta {
+  flex: 1 1 280px;
+  min-width: 240px;
+}
+
+.perf-section {
+  margin-bottom: 1.5rem;
+}
+
+.perf-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.perf-metrics-grid--dms {
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+.perf-metric-card {
+  padding: 0.9rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  background: var(--color-bg-secondary, #fff);
+}
+
+.perf-metric-card__label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary, #64748b);
+  margin-bottom: 0.35rem;
+}
+
+.perf-metric-card__value {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--color-text-primary, #0f172a);
+}
+
+.perf-metric-card--green { border-left: 4px solid #22c55e; }
+.perf-metric-card--amber { border-left: 4px solid #f59e0b; }
+.perf-metric-card--red { border-left: 4px solid #ef4444; }
+.perf-metric-card--blue { border-left: 4px solid #3b82f6; }
+.perf-metric-card--indigo { border-left: 4px solid #6366f1; }
+.perf-metric-card--violet { border-left: 4px solid #8b5cf6; }
+.perf-metric-card--score { border-left: 4px solid #0ea5e9; background: linear-gradient(135deg, #f0f9ff, #fff); }
+
+.perf-task-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.perf-progress-block {
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+}
+
+.perf-progress-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.perf-progress-bar {
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.perf-progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+  border-radius: 999px;
+}
+
+.perf-muted {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--color-text-secondary);
+}
+
+.perf-breakdown-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+}
+
+.perf-breakdown-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.perf-two-col {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.perf-chart-wrap {
+  height: 260px;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg-secondary);
+}
+
+.perf-subtitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.perf-subtitle--danger {
+  color: #b91c1c;
+}
+
+.perf-priority-list {
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.perf-priority-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.65rem 0.9rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.perf-priority-row:last-child {
+  border-bottom: none;
+}
+
+.perf-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+
+.perf-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.perf-table th,
+.perf-table td {
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.perf-table th {
+  background: var(--color-bg-secondary);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.perf-table-empty {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 1.5rem !important;
+}
+
+.perf-remarks {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perf-row-overdue {
+  background: #fef2f2;
+}
+
+.perf-table-btn {
+  padding: 0.25rem 0.5rem;
+  min-width: auto;
+}
+
+.perf-status-badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.perf-status-badge--completed,
+.perf-status-badge--closed,
+.perf-status-badge--approved {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.perf-status-badge--in-progress,
+.perf-status-badge--open {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.perf-status-badge--pending-approval,
+.perf-status-badge--blocked {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.perf-status-badge--rejected,
+.perf-status-badge--cancelled {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.perf-details-toggle {
+  background: none;
+  border: none;
+  color: #2563eb;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+
+@media (max-width: 900px) {
+  .perf-task-summary,
+  .perf-two-col {
+    grid-template-columns: 1fr;
+  }
+}

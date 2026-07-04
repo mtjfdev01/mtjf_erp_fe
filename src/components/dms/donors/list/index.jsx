@@ -11,6 +11,7 @@ import Modal from '../../../common/Modal';
 import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
+import SearchableDropdown from '../../../common/SearchableDropdown';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { DownloadCSV } from '../../../common/download';
 import DataImport from '../../../common/DataImport';
@@ -19,9 +20,21 @@ import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
 
+const DONOR_ASSIGNED_FILTER_ALL = {
+  id: '__all__',
+  first_name: 'Select all',
+  filterValue: '',
+};
+
+const DONOR_ASSIGNED_FILTER_ME = {
+  id: '__me__',
+  first_name: 'Me',
+  filterValue: 'me',
+};
+
 const DonorsList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
   const { filtersOpen, toggleFilters } = useFiltersPanel();
@@ -33,6 +46,7 @@ const DonorsList = () => {
   const [revealedPassword, setRevealedPassword] = useState('');
   const [revealError, setRevealError] = useState('');
   const [revealLoading, setRevealLoading] = useState(false);
+  const [selectedAssignedUser, setSelectedAssignedUser] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -52,7 +66,9 @@ const DonorsList = () => {
     end_date: '',
     source: '',
     multi_time_donors: null,
-    recurring: null
+    recurring: null,
+    is_mature_donor: null,
+    assigned_to_user_id: '',
   });
 
   // Applied filters - Actually sent to API
@@ -65,8 +81,56 @@ const DonorsList = () => {
     end_date: '',
     source: '',
     multi_time_donors: null,
-    recurring: null
+    recurring: null,
+    is_mature_donor: null,
+    assigned_to_user_id: '',
   });
+
+  const canSearchAssignees = useMemo(() => {
+    if (!permissions) return false;
+    if (permissions.super_admin === true) return true;
+    if (permissions.fund_raising_manager === true) return true;
+    const role = String(user?.role || '').toLowerCase();
+    return [
+      'manager',
+      'assistant_manager',
+      'team_lead',
+      'department_head',
+      'director',
+    ].includes(role);
+  }, [permissions, user]);
+
+  const assignedFilterStaticOptions = useMemo(
+    () => [DONOR_ASSIGNED_FILTER_ALL, DONOR_ASSIGNED_FILTER_ME],
+    [],
+  );
+
+  const searchAssignedUsers = async (term) => {
+    const trimmed = String(term || '').trim();
+    const query = trimmed.toLowerCase();
+    const matchedStatic = query
+      ? assignedFilterStaticOptions.filter((option) =>
+          option.first_name.toLowerCase().includes(query),
+        )
+      : assignedFilterStaticOptions;
+
+    if (!canSearchAssignees || trimmed.length < 2) {
+      return matchedStatic;
+    }
+
+    const response = await axiosInstance.get('/users/options', {
+      params: {
+        department: 'fund_raising',
+        search: term,
+        assignment_scope: 'donor_assigned_filter',
+      },
+    });
+    const users = Array.isArray(response.data)
+      ? response.data
+      : response.data?.data || [];
+
+    return [...matchedStatic, ...users];
+  };
 
   // Universal filter change handler - Updates temporary filters only
   const handleFilterChange = (key, value) => {
@@ -91,10 +155,35 @@ const DonorsList = () => {
         value = false;
       }
     }
+    if (key === 'is_mature_donor') {
+      if (value === '' || value === null || value === undefined) {
+        value = null;
+      } else if (value === 'true' || value === true) {
+        value = true;
+      } else if (value === 'false' || value === false) {
+        value = false;
+      }
+    }
     setTempFilters(prev => ({
       ...prev,
       [key]: value
     }));
+  };
+
+  const handleAssignedUserSelect = (item) => {
+    setSelectedAssignedUser(item);
+    if (item?.filterValue !== undefined) {
+      handleFilterChange('assigned_to_user_id', item.filterValue);
+      return;
+    }
+    if (item?.id) {
+      handleFilterChange('assigned_to_user_id', item.id);
+    }
+  };
+
+  const handleAssignedUserClear = () => {
+    setSelectedAssignedUser(null);
+    handleFilterChange('assigned_to_user_id', '');
   };
 
   // Apply filters - Triggered by Search button
@@ -194,8 +283,12 @@ const DonorsList = () => {
       end_date: '',
       source: '',
       multi_time_donors: null,
-      recurring: null
+      recurring: null,
+      is_mature_donor: null,
+      assigned_to_user_id: '',
     };
+    
+    setSelectedAssignedUser(null);
     
     // Check if filters are already empty
     const filtersAreEmpty = JSON.stringify(appliedFilters) === JSON.stringify(emptyFilters);
@@ -238,8 +331,18 @@ const DonorsList = () => {
       if (params.recurring === null || params.recurring === undefined) {
         delete params.recurring;
       }
+      if (params.is_mature_donor === null || params.is_mature_donor === undefined) {
+        delete params.is_mature_donor;
+      }
       if (!params.source) {
         delete params.source;
+      }
+      if (
+        params.assigned_to_user_id === null ||
+        params.assigned_to_user_id === undefined ||
+        params.assigned_to_user_id === ''
+      ) {
+        delete params.assigned_to_user_id;
       }
       
       const response = await axiosInstance.get('/donors', { params }); 
@@ -379,6 +482,11 @@ const DonorsList = () => {
     { value: 'false', label: 'No' },
   ];
 
+  const matureDonorOptions = [
+    { value: 'true', label: 'Mature (has completed donation)' },
+    { value: 'false', label: 'Prospect (no completed donation)' },
+  ];
+
   const recurringOptions = [
     { value: 'true', label: 'Yes' },
     { value: 'false', label: 'No' },
@@ -475,12 +583,57 @@ const DonorsList = () => {
             />
             
             <DropdownFilter
+              filterKey="is_mature_donor"
+              label="Mature Donor"
+              data={matureDonorOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All"
+            />
+
+            <DropdownFilter
               filterKey="recurring"
               label="Recurring Donors"
               data={recurringOptions}
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All"
+            />
+
+            <SearchableDropdown
+              label="Donor Assigned"
+              placeholder={
+                canSearchAssignees
+                  ? 'Select all, Me, or type to search users...'
+                  : 'Select all or Me...'
+              }
+              staticOptions={assignedFilterStaticOptions}
+              onSearch={searchAssignedUsers}
+              onSelect={handleAssignedUserSelect}
+              onClear={handleAssignedUserClear}
+              value={selectedAssignedUser}
+              displayKey="first_name"
+              debounceDelay={400}
+              minSearchLength={2}
+              allowResearch={true}
+              renderOption={(assignee, index) => (
+                <>
+                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                    {assignee.first_name}
+                    {assignee.last_name ? ` ${assignee.last_name}` : ''}
+                  </div>
+                  {assignee.email && (
+                    <div style={{ fontSize: '12px', color: '#666' }}>
+                      {assignee.email}
+                    </div>
+                  )}
+                  {assignee.department && (
+                    <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+                      {assignee.department} • {assignee.role || 'User'}
+                    </div>
+                  )}
+                </>
+              )}
             />
                
             {/* <DateFilter

@@ -5,6 +5,7 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
+import SearchableDropdown from '../../../common/SearchableDropdown';
 import Modal from '../../../common/Modal';
 import { FiKey } from 'react-icons/fi';
 
@@ -48,6 +49,8 @@ const EditDonor = () => {
   const [pwValue, setPwValue] = useState('');
   const [pwLoading, setPwLoading] = useState(false);
   const [pwError, setPwError] = useState('');
+  const [assignedUser, setAssignedUser] = useState(null);
+  const [referrerUser, setReferrerUser] = useState(null);
 
   useEffect(() => {
     fetchDonor();
@@ -85,6 +88,8 @@ const EditDonor = () => {
         company_email: d.company_email || '',
         is_active: d.is_active !== false,
       });
+      setAssignedUser(d.assigned_to || null);
+      setReferrerUser(d.referred_by || null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load donor');
     } finally {
@@ -102,6 +107,68 @@ const EditDonor = () => {
   const handleToggleActive = () => {
     setForm((prev) => ({ ...prev, is_active: !prev.is_active }));
   };
+
+  const handleUserSelect = (user) => {
+    setAssignedUser(user);
+  };
+
+  const handleUserClear = () => {
+    setAssignedUser(null);
+  };
+
+  const handleReferrerSelect = (user) => {
+    setReferrerUser(user);
+  };
+
+  const handleReferrerClear = () => {
+    setReferrerUser(null);
+  };
+
+  const renderUserOption = (user, index) => (
+    <div
+      key={user.id}
+      className="searchable-dropdown__option"
+      onClick={() => handleUserSelect(user)}
+      style={{
+        padding: '12px',
+        borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+        {user.first_name} {user.last_name}
+      </div>
+      <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+      {user.department && (
+        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+          {user.department} • {user.role || 'User'}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderReferrerOption = (user, index) => (
+    <div
+      key={user.id}
+      className="searchable-dropdown__option"
+      onClick={() => handleReferrerSelect(user)}
+      style={{
+        padding: '12px',
+        borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+        {user.first_name} {user.last_name}
+      </div>
+      <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+      {user.department && (
+        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+          {user.department} • {user.role || 'User'}
+        </div>
+      )}
+    </div>
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -148,6 +215,9 @@ const EditDonor = () => {
         payload.first_name = null;
         payload.last_name = null;
       }
+
+      payload.assigned_to_user_id = assignedUser?.id ?? null;
+      payload.referrer_user_id = referrerUser?.id ?? null;
 
       const res = await axiosInstance.patch(`/donors/${id}`, payload);
       if (!res.data?.success) throw new Error(res.data?.message || 'Failed to update donor');
@@ -288,6 +358,38 @@ const EditDonor = () => {
 
           <div className="form-section">
             <FormInput label="Notes" type="textarea" name="notes" value={form.notes} onChange={handleChange} rows="3" />
+          </div>
+
+          <div className="form-section">
+            <SearchableDropdown
+              label="Assign to Fundraising User (Optional)"
+              placeholder="Search users by name or email..."
+              apiEndpoint="/users"
+              onSelect={handleUserSelect}
+              onClear={handleUserClear}
+              value={assignedUser}
+              displayKey="first_name"
+              debounceDelay={500}
+              minSearchLength={2}
+              allowResearch={true}
+              renderOption={renderUserOption}
+            />
+          </div>
+
+          <div className="form-section">
+            <SearchableDropdown
+              label="Referrer (Optional)"
+              placeholder="Search users by name or email..."
+              apiEndpoint="/users"
+              onSelect={handleReferrerSelect}
+              onClear={handleReferrerClear}
+              value={referrerUser}
+              displayKey="first_name"
+              debounceDelay={500}
+              minSearchLength={2}
+              allowResearch={true}
+              renderOption={renderReferrerOption}
+            />
           </div>
 
           <div className="form-section">

@@ -110,6 +110,7 @@ export const DONATION_BOX_AUDIT_ACTION_LABELS = {
   updated: 'Updated',
   status_changed: 'Status changed',
   archived: 'Archived',
+  shop_relocated: 'Relocated to new shop',
 };
 
 export const DONATION_BOX_AUDIT_SOURCE_LABELS = {

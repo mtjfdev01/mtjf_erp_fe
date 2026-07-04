@@ -117,6 +117,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Bank Reconciliation',
           actions: ['create', 'list_view', 'view']
         },
+        donation_allotments: {
+          label: 'Donation Allotments',
+          actions: ['create', 'list_view', 'view', 'approve']
+        },
         donor_relationship: {
           label: 'Donor Relationship',
           actions: ['create', 'list_view', 'view', 'update', 'delete', 'manage_overview']
@@ -424,6 +428,8 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     send:'Send',
     receive:'Receive',
     csv_xport:'CSV Export',
+    approve: 'Approve / Reject',
+    manage_overview: 'Manage Overview',
   };
 
   const initializePermissions = () => {

@@ -8,6 +8,7 @@ import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import DonationAuditHistory from '../../shared/DonationAuditHistory';
+import DonationAllotmentPanel from '../../shared/DonationAllotmentPanel';
 import DonationReceiptModal from '../../shared/DonationReceiptModal';
 import { useAuth } from '../../../../../context/AuthContext';
 import { isLocalId } from '../../../../../offline/handlers';
@@ -1472,6 +1473,12 @@ const ViewOnlineDonation = () => {
                 )}
               </div>
             )}
+
+            <DonationAllotmentPanel
+              donationId={id}
+              donation={donation}
+              onUpdated={fetchDonation}
+            />
           </div>
           )}
           {isPendingOffline && (

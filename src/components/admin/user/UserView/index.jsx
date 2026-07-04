@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { Chart, registerables } from 'chart.js';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
 import Modal from '../../../common/Modal';
-import { FiKey } from 'react-icons/fi';
+import { FiKey, FiExternalLink } from 'react-icons/fi';
 import '../../../../styles/variables.css';
 import '../../../../styles/components.css';
 import Navbar from '../../../Navbar';
@@ -13,23 +14,114 @@ import { GEO_TYPE_LABELS } from '../../../../utils/geographicAssignment';
 import '../GeographicAssignmentPicker/GeographicAssignmentPicker.css';
 import './UserView.css';
 
-const ViewField = ({ label, value, className = '' }) => (
-  <div className={`view-item ${className}`.trim()}>
-    <span className="view-item-label">{label}</span>
-    <span className="view-item-value">{value ?? '—'}</span>
+Chart.register(...registerables);
+
+const formatLabel = (value) => {
+  if (!value) return '—';
+  return String(value)
+    .split('_')
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return '—';
+  return new Date(dateString).toLocaleDateString();
+};
+
+const formatManager = (manager) => {
+  if (!manager) return '—';
+  const name = [manager.first_name, manager.last_name].filter(Boolean).join(' ');
+  return name || manager.email || `User #${manager.id}`;
+};
+
+const formatAmount = (amount) => {
+  if (amount == null || Number.isNaN(Number(amount))) return '—';
+  return `Rs. ${Number(amount).toLocaleString()}`;
+};
+
+const MetricCard = ({ label, value, accent = 'blue' }) => (
+  <div className={`perf-metric-card perf-metric-card--${accent}`}>
+    <span className="perf-metric-card__label">{label}</span>
+    <strong className="perf-metric-card__value">{value}</strong>
   </div>
 );
 
+const StatusBadge = ({ status }) => (
+  <span className={`perf-status-badge perf-status-badge--${String(status || 'open').replace(/_/g, '-')}`}>
+    {formatLabel(status)}
+  </span>
+);
+
+const TaskTrendChart = ({ monthlyTrend }) => {
+  const canvasRef = useRef(null);
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    if (chartRef.current) chartRef.current.destroy();
+
+    const labels = (monthlyTrend || []).map((r) => r.month);
+    chartRef.current = new Chart(canvasRef.current, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          {
+            label: 'Completed',
+            data: (monthlyTrend || []).map((r) => r.completed),
+            backgroundColor: '#22c55e',
+          },
+          {
+            label: 'Pending',
+            data: (monthlyTrend || []).map((r) => r.pending),
+            backgroundColor: '#f59e0b',
+          },
+          {
+            label: 'Overdue',
+            data: (monthlyTrend || []).map((r) => r.overdue),
+            backgroundColor: '#ef4444',
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { position: 'bottom' } },
+        scales: {
+          x: { stacked: true },
+          y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } },
+        },
+      },
+    });
+
+    return () => {
+      if (chartRef.current) chartRef.current.destroy();
+    };
+  }, [monthlyTrend]);
+
+  return (
+    <div className="perf-chart-wrap">
+      <canvas ref={canvasRef} />
+    </div>
+  );
+};
+
 const UserView = () => {
   const { id } = useParams();
-  const { permissions } = useAuth();
-  const [user, setUser] = useState(null);
+  const navigate = useNavigate();
+  const { user: authUser, permissions } = useAuth();
+  const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
   const [revealModalOpen, setRevealModalOpen] = useState(false);
   const [revealedPassword, setRevealedPassword] = useState('');
   const [revealError, setRevealError] = useState('');
   const [revealLoading, setRevealLoading] = useState(false);
+
+  const isOwnProfile = authUser?.id && Number(authUser.id) === Number(id);
+  const backPath = isOwnProfile ? '/welcome' : '/admin/users';
 
   const canRevealPassword =
     permissions?.super_admin === true ||
@@ -37,34 +129,20 @@ const UserView = () => {
     hasPermission(permissions, 'admin', 'users', 'update');
 
   useEffect(() => {
-    fetchUser();
+    fetchDashboard();
   }, [id]);
 
-  const fetchUser = async () => {
+  const fetchDashboard = async () => {
     try {
       setLoading(true);
-      const response = await axiosInstance.get(`/users/${id}`);
-      setUser(response.data);
+      const response = await axiosInstance.get(`/users/${id}/performance-dashboard`);
+      setDashboard(response.data?.data || null);
       setError('');
     } catch (err) {
-      if (err.response?.status === 403) {
-        setError('You do not have permission to view this user.');
-      } else if (err.response?.status === 404) {
-        setError('User not found.');
-      } else {
-        setError('Failed to fetch user data. Please try again.');
-      }
-      console.error('Error fetching user:', err);
+      setError(err.response?.data?.message || 'Failed to load performance dashboard.');
     } finally {
       setLoading(false);
     }
-  };
-
-  const closeRevealModal = () => {
-    setRevealModalOpen(false);
-    setRevealedPassword('');
-    setRevealError('');
-    setRevealLoading(false);
   };
 
   const handleRevealPassword = async () => {
@@ -75,9 +153,7 @@ const UserView = () => {
       const res = await axiosInstance.get(`/users/${id}/reveal-password`);
       const password = res?.data?.data?.password || '';
       setRevealedPassword(password);
-      if (!password) {
-        setRevealError(res?.data?.message || 'No password returned.');
-      }
+      if (!password) setRevealError(res?.data?.message || 'No password returned.');
     } catch (err) {
       setRevealError(err.response?.data?.message || 'Failed to reveal password');
     } finally {
@@ -85,220 +161,257 @@ const UserView = () => {
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return '—';
-    return new Date(dateString).toLocaleDateString();
-  };
-
-  const formatLabel = (value) => {
-    if (!value) return '—';
-    return value
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
-  const formatGender = (gender) => {
-    if (!gender) return '—';
-    return gender.charAt(0).toUpperCase() + gender.slice(1);
-  };
-
-  const formatManagerName = (manager, managerId) => {
-    if (manager) {
-      const name = [manager.first_name, manager.last_name].filter(Boolean).join(' ');
-      return name || manager.email || `User #${manager.id}`;
-    }
-    if (managerId) return `User #${managerId}`;
-    return '—';
-  };
-
-  const getFullName = (userData) => {
-    const name = [userData?.first_name, userData?.last_name].filter(Boolean).join(' ');
-    return name || userData?.email || 'User Details';
-  };
-
-  const isFundRaising = user?.department === 'fund_raising';
-
   if (loading) {
     return (
       <>
         <Navbar />
         <div className="view-wrapper">
-          <PageHeader title="User Details" backPath="/admin/users" />
-          <div className="view-content">
-            <div className="status-message">Loading user data...</div>
-          </div>
+          <PageHeader title="My Performance" backPath={backPath} />
+          <div className="view-content"><div className="status-message">Loading dashboard…</div></div>
         </div>
       </>
     );
   }
 
-  if (error) {
+  if (error || !dashboard) {
     return (
       <>
         <Navbar />
         <div className="view-wrapper">
-          <PageHeader title="User Details" backPath="/admin/users" />
+          <PageHeader title="My Performance" backPath={backPath} />
           <div className="view-content">
-            <div className="status-message status-message--error">{error}</div>
+            <div className="status-message status-message--error">{error || 'Dashboard unavailable'}</div>
           </div>
         </div>
       </>
     );
   }
 
-  if (!user) {
-    return (
-      <>
-        <Navbar />
-        <div className="view-wrapper">
-          <PageHeader title="User Details" backPath="/admin/users" />
-          <div className="view-content">
-            <div className="status-message status-message--error">User not found</div>
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  const geographicAssignments = user.geographic_assignments || [];
+  const { profile, overview, tasks, dms } = dashboard;
 
   return (
     <>
       <Navbar />
-      <div className="view-wrapper">
+      <div className="view-wrapper user-perf-dashboard">
         <PageHeader
-          title={getFullName(user)}
-          backPath="/admin/users"
-          showEdit
-          editPath={`/admin/users/edit/${user.id}`}
+          title={isOwnProfile ? 'My Performance Dashboard' : `${profile.name} — Performance`}
+          backPath={backPath}
+          showEdit={!isOwnProfile}
+          editPath={`/admin/users/edit/${profile.id}`}
         />
 
         <div className="view-content">
-          <div className="user-view-summary">
-            <div className="user-view-summary-main">
-              <h2 className="user-view-name">{getFullName(user)}</h2>
-              <p className="user-view-email">{user.email || '—'}</p>
-            </div>
-            <div className="user-view-summary-badges">
-              {user.user_code ? (
-                <span className="user-view-badge user-view-badge--code">
-                  {user.user_code}
+          {/* 1. Profile Summary */}
+          <section className="perf-profile-card">
+            <div className="perf-profile-card__main">
+              <h2 className="perf-profile-card__name">{profile.name}</h2>
+              <p className="perf-profile-card__email">{profile.email}</p>
+              <div className="perf-profile-card__chips">
+                {profile.user_code && <span className="user-view-badge user-view-badge--code">{profile.user_code}</span>}
+                <span className="user-view-badge user-view-badge--department">{formatLabel(profile.department)}</span>
+                <span className="user-view-badge user-view-badge--role">{formatLabel(profile.role)}</span>
+                <span className={`user-view-badge ${profile.is_active ? 'user-view-badge--active' : 'user-view-badge--inactive'}`}>
+                  {profile.is_active ? 'Active' : 'Inactive'}
                 </span>
-              ) : null}
-              <span className="user-view-badge user-view-badge--department">
-                {formatLabel(user.department)}
-              </span>
-              <span className="user-view-badge user-view-badge--role">
-                {formatLabel(user.role)}
-              </span>
-              <span
-                className={`user-view-badge ${
-                  user.isActive ? 'user-view-badge--active' : 'user-view-badge--inactive'
-                }`}
-              >
-                {user.isActive ? 'Active' : 'Inactive'}
-              </span>
-            </div>
-          </div>
-
-          <div className="view-section">
-            <h3 className="view-section-title">Personal Information</h3>
-            <div className="view-grid">
-              <ViewField label="First Name" value={user.first_name || '—'} />
-              <ViewField label="Last Name" value={user.last_name || '—'} />
-              <ViewField label="Date of Birth" value={formatDate(user.dob)} />
-              <ViewField label="Gender" value={formatGender(user.gender)} />
-              <ViewField label="Blood Group" value={user.blood_group || '—'} />
-              <ViewField label="CNIC" value={user.cnic || '—'} />
-            </div>
-          </div>
-
-          <div className="view-section">
-            <h3 className="view-section-title">Work Information</h3>
-            <div className="view-grid">
-              <ViewField label="User Code" value={user.user_code || '—'} />
-              <ViewField label="Department" value={formatLabel(user.department)} />
-              <ViewField label="Role" value={formatLabel(user.role)} />
-              <ViewField label="Joining Date" value={formatDate(user.joining_date)} />
-              <ViewField
-                label="Manager"
-                value={formatManagerName(user.manager, user.manager_id)}
-              />
-              <ViewField label="Account Status" value={user.isActive ? 'Active' : 'Inactive'} />
-            </div>
-          </div>
-
-          <div className="view-section">
-            <h3 className="view-section-title">Contact Information</h3>
-            <div className="view-grid">
-              <ViewField label="Email" value={user.email || '—'} />
-              <ViewField label="Phone" value={user.phone || '—'} />
-              <ViewField label="Emergency Contact" value={user.emergency_contact || '—'} />
-              <ViewField label="Address" value={user.address || '—'} className="view-item--full" />
-            </div>
-          </div>
-
-          {isFundRaising && (
-            <div className="view-section">
-              <h3 className="view-section-title">Geographic Assignment</h3>
-              <div className="user-view-geo-panel">
-                <div className="view-grid">
-                  <ViewField
-                    label="Geographic Filter"
-                    value={
-                      user.geographic_off ? (
-                        <span className="user-view-badge user-view-badge--geo-off">Disabled</span>
-                      ) : (
-                        <span className="user-view-badge user-view-badge--geo-on">Enabled</span>
-                      )
-                    }
-                  />
-                  <ViewField
-                    label="Assigned Areas"
-                    value={
-                      geographicAssignments.length > 0
-                        ? `${geographicAssignments.length} location(s)`
-                        : 'None assigned'
-                    }
-                  />
-                </div>
-
-                {geographicAssignments.length > 0 ? (
-                  <div className="geo-assignment-chips user-view-geo-chips">
-                    {geographicAssignments.map((item) => (
-                      <span
-                        key={`${item.type}:${item.id}`}
-                        className="geo-assignment-chip user-view-geo-chip"
-                      >
-                        <span className="geo-assignment-chip-type">
-                          {GEO_TYPE_LABELS[item.type] || item.type}
-                        </span>
-                        <span>{item.name}</span>
-                        {item.breadcrumb ? (
-                          <span className="user-view-geo-breadcrumb">({item.breadcrumb})</span>
-                        ) : null}
-                      </span>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="geo-assignment-empty">
-                    No geographic areas assigned to this user.
-                  </p>
-                )}
               </div>
             </div>
+            <div className="perf-profile-card__meta view-grid">
+              <div className="view-item">
+                <span className="view-item-label">Branch / Location</span>
+                <span className="view-item-value">{profile.branch_location || '—'}</span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Reporting Manager</span>
+                <span className="view-item-value">{formatManager(profile.manager)}</span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Joined</span>
+                <span className="view-item-value">{formatDate(profile.joining_date)}</span>
+              </div>
+            </div>
+          </section>
+
+          {/* 2. Performance Overview */}
+          <section className="perf-section">
+            <h3 className="view-section-title">Performance Overview</h3>
+            <div className="perf-metrics-grid">
+              <MetricCard label="Completed Tasks" value={overview.completed_tasks} accent="green" />
+              <MetricCard label="Pending Tasks" value={overview.pending_tasks} accent="amber" />
+              <MetricCard label="Overdue Tasks" value={overview.overdue_tasks} accent="red" />
+              <MetricCard label="Total Assigned" value={overview.total_assigned_tasks} accent="blue" />
+              <MetricCard label="Donations Processed" value={overview.donations_processed} accent="indigo" />
+              <MetricCard label="Donor Follow-ups" value={overview.donor_followups} accent="violet" />
+              <MetricCard label="Performance Score" value={`${overview.performance_score}%`} accent="score" />
+            </div>
+          </section>
+
+          {/* 3. Tasking Performance */}
+          <section className="perf-section view-section">
+            <h3 className="view-section-title">Tasking Performance</h3>
+            <div className="perf-task-summary">
+              <div className="perf-progress-block">
+                <div className="perf-progress-header">
+                  <span>Task completion</span>
+                  <strong>{tasks.completion_rate}%</strong>
+                </div>
+                <div className="perf-progress-bar">
+                  <div className="perf-progress-bar__fill" style={{ width: `${tasks.completion_rate}%` }} />
+                </div>
+                {tasks.avg_completion_days != null && (
+                  <p className="perf-muted">Avg completion time: {tasks.avg_completion_days} day(s)</p>
+                )}
+              </div>
+              <div className="perf-breakdown-grid">
+                {Object.entries(tasks.by_status || {}).map(([status, count]) => (
+                  <div key={status} className="perf-breakdown-item">
+                    <StatusBadge status={status} />
+                    <span>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="perf-two-col">
+              <div>
+                <h4 className="perf-subtitle">Monthly task trend</h4>
+                <TaskTrendChart monthlyTrend={tasks.monthly_trend} />
+              </div>
+              <div>
+                <h4 className="perf-subtitle">Priority breakdown</h4>
+                <div className="perf-priority-list">
+                  {Object.entries(tasks.by_priority || {}).map(([priority, count]) => (
+                    <div key={priority} className="perf-priority-row">
+                      <span>{formatLabel(priority)}</span>
+                      <strong>{count}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <h4 className="perf-subtitle">Recent assigned tasks</h4>
+            <div className="perf-table-wrap">
+              <table className="perf-table">
+                <thead>
+                  <tr>
+                    <th>Task</th>
+                    <th>Priority</th>
+                    <th>Assigned</th>
+                    <th>Due</th>
+                    <th>Status</th>
+                    <th>Remarks</th>
+                    <th />
+                  </tr>
+                </thead>
+                <tbody>
+                  {(tasks.recent_tasks || []).length === 0 ? (
+                    <tr><td colSpan={7} className="perf-table-empty">No tasks assigned yet</td></tr>
+                  ) : (
+                    tasks.recent_tasks.map((task) => (
+                      <tr key={task.id}>
+                        <td>{task.title}</td>
+                        <td>{formatLabel(task.priority)}</td>
+                        <td>{formatDate(task.assigned_date)}</td>
+                        <td>{formatDate(task.due_date)}</td>
+                        <td><StatusBadge status={task.status} /></td>
+                        <td className="perf-remarks">{task.remarks || '—'}</td>
+                        <td>
+                          <button type="button" className="secondary_btn perf-table-btn" onClick={() => navigate(`/tasks/view/${task.id}`)}>
+                            <FiExternalLink />
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {(tasks.overdue_task_list || []).length > 0 && (
+              <>
+                <h4 className="perf-subtitle perf-subtitle--danger">Overdue tasks</h4>
+                <div className="perf-table-wrap">
+                  <table className="perf-table">
+                    <thead>
+                      <tr>
+                        <th>Task</th>
+                        <th>Priority</th>
+                        <th>Due</th>
+                        <th>Remarks</th>
+                        <th />
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {tasks.overdue_task_list.map((task) => (
+                        <tr key={task.id} className="perf-row-overdue">
+                          <td>{task.title}</td>
+                          <td>{formatLabel(task.priority)}</td>
+                          <td>{formatDate(task.due_date)}</td>
+                          <td className="perf-remarks">{task.remarks || '—'}</td>
+                          <td>
+                            <button type="button" className="secondary_btn perf-table-btn" onClick={() => navigate(`/tasks/view/${task.id}`)}>
+                              Open
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* 4. DMS Performance */}
+          {dms?.available ? (
+            <section className="perf-section view-section">
+              <h3 className="view-section-title">DMS Performance</h3>
+              <div className="perf-metrics-grid perf-metrics-grid--dms">
+                <MetricCard label="Donors Added" value={dms.donors_added} />
+                <MetricCard label="Donors Assigned" value={dms.donors_assigned} />
+                <MetricCard label="Donations Entered" value={dms.donations_entered} />
+                <MetricCard label="Donations Completed" value={dms.donations_completed} />
+                <MetricCard label="Donation Amount Handled" value={formatAmount(dms.donation_amount_handled)} accent="indigo" />
+                <MetricCard label="Donation Boxes Managed" value={dms.donation_boxes_managed} />
+                <MetricCard label="Box Collections Submitted" value={dms.box_collections_submitted} />
+                <MetricCard label="Follow-ups Completed" value={dms.followups_completed} accent="green" />
+                <MetricCard label="Pending Follow-ups" value={dms.pending_followups} accent="amber" />
+                <MetricCard label="Interactions Logged" value={dms.donor_interactions_logged} />
+                <MetricCard label="Approved Allotments" value={dms.approved_donation_allotments} />
+                <MetricCard label="Pending Allotment Approvals" value={dms.pending_allotment_approvals} accent="red" />
+                <MetricCard label="Pending Donation Recovery" value={dms.donations_pending_recovery} accent="red" />
+              </div>
+            </section>
+          ) : (
+            <section className="perf-section view-section">
+              <h3 className="view-section-title">DMS Performance</h3>
+              <p className="perf-muted">DMS metrics are available for Fund Raising department users.</p>
+            </section>
           )}
 
-          {canRevealPassword && (
+          {/* Collapsible profile details */}
+          <section className="view-section">
+            <button type="button" className="perf-details-toggle" onClick={() => setShowDetails((v) => !v)}>
+              {showDetails ? 'Hide' : 'Show'} full profile details
+            </button>
+            {showDetails && profile.geographic_assignments?.length > 0 && (
+              <div className="user-view-geo-panel" style={{ marginTop: '1rem' }}>
+                <h4 className="perf-subtitle">Geographic assignment</h4>
+                <div className="geo-assignment-chips user-view-geo-chips">
+                  {profile.geographic_assignments.map((item) => (
+                    <span key={`${item.type}:${item.id}`} className="geo-assignment-chip user-view-geo-chip">
+                      <span className="geo-assignment-chip-type">{GEO_TYPE_LABELS[item.type] || item.type}</span>
+                      <span>{item.name}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {canRevealPassword && !isOwnProfile && (
             <div className="form-actions" style={{ marginTop: '24px' }}>
-              <button
-                type="button"
-                className="primary_btn"
-                onClick={handleRevealPassword}
-                style={{ backgroundColor: '#111827' }}
-                title="Reveal user password (admin only)"
-              >
+              <button type="button" className="primary_btn" onClick={handleRevealPassword} style={{ backgroundColor: '#111827' }}>
                 <FiKey style={{ marginRight: '8px' }} />
                 Reveal Password
               </button>
@@ -309,13 +422,12 @@ const UserView = () => {
 
       <Modal
         open={revealModalOpen}
-        onClose={closeRevealModal}
-        title={`User Password — ${getFullName(user)}`}
+        onClose={() => setRevealModalOpen(false)}
+        title={`User Password — ${profile.name}`}
         details={{
           Status: revealLoading ? 'Loading...' : revealError ? 'Error' : 'Success',
           ...(revealError ? { Message: revealError } : {}),
           ...(revealedPassword ? { Password: revealedPassword } : {}),
-          Note: 'Password is shown for operational use only. Close this dialog when done.',
         }}
       />
     </>

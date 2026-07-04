@@ -245,6 +245,35 @@
   color: var(--navbar-text);
 }
 
+.navbar-user-menu__link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px 14px;
+  background-color: var(--navbar-meta-bg);
+  color: var(--navbar-text);
+  border: 1px solid var(--navbar-menu-border);
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.navbar-user-menu__link:hover {
+  background-color: var(--navbar-menu-border);
+  transform: translateY(-1px);
+}
+
+.navbar-user-menu__link:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
 .logout-button {
   width: 100%;
   display: flex;

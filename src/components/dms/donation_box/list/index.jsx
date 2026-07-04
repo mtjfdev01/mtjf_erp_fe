@@ -7,15 +7,35 @@ import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
 import DataImport from '../../../common/DataImport';
-import { DownloadCSV } from '../../../common/download';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
-import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter } from '../../../common/filters';
-import { ClearButton } from '../../../common/filters/index';
-import { SearchButton } from '../../../common/filters/index';
-import HybridDropdown from '../../../common/HybridDropdown';
+import {
+  SearchFilter,
+  DropdownFilter,
+  DateFilter,
+  DateRangeFilter,
+  CollapsibleFilters,
+} from '../../../common/filters';
+import { ClearButton, SearchButton } from '../../../common/filters/index';
+import SearchableDropdown from '../../../common/SearchableDropdown';
+import usePersistedFilters from '../../../../hooks/usePersistedFilters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 
-import { FiEye, FiTrash2, FiBox, FiMapPin } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
+
+const EMPTY_FILTERS = {
+  search: '',
+  status: '',
+  box_type: '',
+  frequency: '',
+  region_id: '',
+  city_id: '',
+  route_id: '',
+  assigned_user_id: '',
+  date: '',
+  start_date: '',
+  end_date: '',
+};
 
 const DonationBoxList = () => {
   const navigate = useNavigate();
@@ -25,40 +45,39 @@ const DonationBoxList = () => {
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [boxToDelete, setBoxToDelete] = useState(null);
-  
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [regions, setRegions] = useState([]);
+  const [cities, setCities] = useState([]);
+  const [selectedAssignee, setSelectedAssignee] = useState(null);
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
+
+  const [paginationState, setPaginationState] = usePersistedFilters(
+    'donation-box-list:pagination',
+    { currentPage: 1, pageSize: 10, sortField: 'created_at', sortOrder: 'DESC' },
+  );
+  const { currentPage, pageSize, sortField, sortOrder } = paginationState;
+  const setCurrentPage = (v) =>
+    setPaginationState((prev) => ({
+      ...prev,
+      currentPage: typeof v === 'function' ? v(prev.currentPage) : v,
+    }));
+  const setPageSize = (v) =>
+    setPaginationState((prev) => ({ ...prev, pageSize: v, currentPage: 1 }));
+  const setSortField = (v) =>
+    setPaginationState((prev) => ({ ...prev, sortField: v, currentPage: 1 }));
+  const setSortOrder = (v) =>
+    setPaginationState((prev) => ({ ...prev, sortOrder: v, currentPage: 1 }));
+
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
-  const [sortField, setSortField] = useState('created_at');
-  const [sortOrder, setSortOrder] = useState('DESC');
 
-  // Filter state - Temporary filters (not applied until search button is clicked)
-  const [tempFilters, setTempFilters] = useState({
-    search: '',
-    status: '',
-    box_type: '',
-    region: '',
-    city: '',
-    date: '',
-    start_date: '',
-    end_date: '',
-    frd_officer: ''
-  });
-
-  // Applied filters - Actually sent to API
-  const [appliedFilters, setAppliedFilters] = useState({
-    search: '',
-    status: '',
-    box_type: '',
-    region: '',
-    city: '',
-    date: '',
-    start_date: '',
-    end_date: '',
-    frd_officer: ''
-  });
+  const [tempFilters, setTempFilters, clearTempFilters] = usePersistedFilters(
+    'donation-box-list:temp',
+    EMPTY_FILTERS,
+  );
+  const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
+    'donation-box-list:applied',
+    EMPTY_FILTERS,
+  );
 
   // Universal filter change handler - Updates temporary filters only
   const handleFilterChange = (key, value) => {
@@ -83,64 +102,102 @@ const DonationBoxList = () => {
     }
   };
 
-  // Clear filters - Triggered by Clear button
   const handleClearFilters = () => {
-    const emptyFilters = {
-      search: '',
-      status: '',
-      box_type: '',
-      region: '',
-      city: '',
-      date: '',
-      start_date: '',
-      end_date: '',
-      frd_officer: ''
-    };
-    
-    // Check if filters are already empty
-    const filtersAreEmpty = JSON.stringify(appliedFilters) === JSON.stringify(emptyFilters);
-    
+    const filtersAreEmpty =
+      JSON.stringify(appliedFilters) === JSON.stringify(EMPTY_FILTERS);
+
     if (!filtersAreEmpty) {
-      // Only clear and call API if there are active filters
-      setTempFilters(emptyFilters);
-      setAppliedFilters(emptyFilters);
+      clearTempFilters();
+      clearAppliedFilters();
+      setSelectedAssignee(null);
+      setCities([]);
       setCurrentPage(1);
     }
+  };
+
+  useEffect(() => {
+    const loadRegions = async () => {
+      try {
+        const response = await axiosInstance.get('/regions?country_id=1');
+        if (response.data?.success) {
+          setRegions(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error loading regions:', err);
+      }
+    };
+    loadRegions();
+  }, []);
+
+  useEffect(() => {
+    const loadCities = async () => {
+      if (!tempFilters.region_id) {
+        setCities([]);
+        return;
+      }
+      try {
+        const response = await axiosInstance.get(
+          `/cities?region_id=${tempFilters.region_id}`,
+        );
+        if (response.data?.success) {
+          setCities(response.data.data || []);
+        }
+      } catch (err) {
+        console.error('Error loading cities:', err);
+        setCities([]);
+      }
+    };
+    loadCities();
+  }, [tempFilters.region_id]);
+
+  const handleRegionChange = (key, value) => {
+    setTempFilters((prev) => ({
+      ...prev,
+      region_id: value,
+      city_id: '',
+      route_id: '',
+    }));
+  };
+
+  const handleAssigneeSelect = (user) => {
+    setSelectedAssignee(user);
+    setTempFilters((prev) => ({
+      ...prev,
+      assigned_user_id: user?.id ? String(user.id) : '',
+    }));
+  };
+
+  const handleAssigneeClear = () => {
+    setSelectedAssignee(null);
+    setTempFilters((prev) => ({ ...prev, assigned_user_id: '' }));
   };
 
   useEffect(() => {
     fetchDonationBoxes();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
+  const buildListParams = () => {
+    const params = {
+      page: currentPage,
+      pageSize,
+      sortField,
+      sortOrder,
+      ...appliedFilters,
+    };
+    Object.keys(params).forEach((key) => {
+      if (params[key] === '' || params[key] == null) {
+        delete params[key];
+      }
+    });
+    return params;
+  };
+
   const fetchDonationBoxes = async () => {
     try {
       setLoading(true);
-      
-      // Prepare filter payload
-      const filterPayload = {
-        pagination: {
-          page: currentPage,
-          pageSize: pageSize,
-          sortField: sortField,
-          sortOrder: sortOrder
-        },
-        filters: {
-          // Basic filters
-          search: appliedFilters.search,
-          status: appliedFilters.status,
-          box_type: appliedFilters.box_type,
-          region: appliedFilters.region,
-          city: appliedFilters.city,
-          frd_officer: appliedFilters.frd_officer,
-          
-          // Date filters
-          date: appliedFilters.date,
-          start_date: appliedFilters.start_date,
-          end_date: appliedFilters.end_date
-        }
-      };
-      
-      const response = await axiosInstance.get('/donation-box', filterPayload);  
+      const response = await axiosInstance.get('/donation-box', {
+        params: buildListParams(),
+      });
       if (response.data.success) {
         setDonationBoxes(response.data.data || []);
         setTotalItems(response.data.pagination?.total || 0);
@@ -236,6 +293,15 @@ const DonationBoxList = () => {
     );
   }, [permissions]);
 
+  const canUpdateBox = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'donation_box', 'update')
+    );
+  }, [permissions]);
+
   const getActionMenuItems = (donationBox) => [
     {
       icon: <FiEye />,
@@ -243,6 +309,13 @@ const DonationBoxList = () => {
       color: '#4CAF50',
       onClick: () => navigate(`/dms/donation_box/view/${donationBox.id}`),
       visible: true
+    },
+    {
+      icon: <FiEdit2 />,
+      label: 'Update / Relocate',
+      color: '#2196F3',
+      onClick: () => navigate(`/dms/donation_box/edit/${donationBox.id}`),
+      visible: canUpdateBox
     },
     {
       icon: <FiTrash2 />,
@@ -256,14 +329,12 @@ const DonationBoxList = () => {
   const sortOptions = [
     { value: 'created_at', label: 'Created Date' },
     { value: 'active_since', label: 'Active Since' },
-    { value: 'box_id_no', label: 'Box ID' },
+    { value: 'key_no', label: 'Key No' },
     { value: 'shop_name', label: 'Shop Name' },
     { value: 'box_type', label: 'Box Type' },
     { value: 'status', label: 'Status' },
-    { value: 'region', label: 'Region' }
   ];
 
-  // Filter options
   const statusOptions = [
     { value: 'active', label: 'Active' },
     { value: 'inactive', label: 'Inactive' },
@@ -277,93 +348,40 @@ const DonationBoxList = () => {
     { value: 'small', label: 'Small' },
     { value: 'medium', label: 'Medium' },
     { value: 'large', label: 'Large' },
-    { value: 'medium_star', label: 'Medium/Star' },
-    { value: 'premium', label: 'Premium' },
-    { value: 'standard', label: 'Standard' }
+    { value: 'custom', label: 'Custom' },
   ];
 
-  const regionOptions = [
-    { value: 'karachi', label: 'Karachi' },
-    { value: 'lahore', label: 'Lahore' },
-    { value: 'islamabad', label: 'Islamabad' },
-    { value: 'rawalpindi', label: 'Rawalpindi' },
-    { value: 'faisalabad', label: 'Faisalabad' },
-    { value: 'multan', label: 'Multan' },
-    { value: 'peshawar', label: 'Peshawar' },
-    { value: 'quetta', label: 'Quetta' },
-    { value: 'hyderabad', label: 'Hyderabad' },
-    { value: 'sukkur', label: 'Sukkur' }
+  const frequencyOptions = [
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'bi-weekly', label: 'Bi-weekly' },
+    { value: 'monthly', label: 'Monthly' },
+    { value: 'quarterly', label: 'Quarterly' },
+    { value: 'as-needed', label: 'As needed' },
   ];
 
-  const cityOptions = [
-    { value: 'karachi', label: 'Karachi' },
-    { value: 'lahore', label: 'Lahore' },
-    { value: 'islamabad', label: 'Islamabad' },
-    { value: 'rawalpindi', label: 'Rawalpindi' },
-    { value: 'faisalabad', label: 'Faisalabad' },
-    { value: 'multan', label: 'Multan' },
-    { value: 'peshawar', label: 'Peshawar' },
-    { value: 'quetta', label: 'Quetta' },
-    { value: 'hyderabad', label: 'Hyderabad' },
-    { value: 'sukkur', label: 'Sukkur' }
-  ];
+  const regionOptions = useMemo(
+    () => regions.map((r) => ({ value: String(r.id), label: r.name })),
+    [regions],
+  );
 
-  const frdOfficerOptions = [
-    { value: 'faisal_maqbool', label: 'Faisal Maqbool' },
-    { value: 'ahmed_khan', label: 'Ahmed Khan' },
-    { value: 'sara_ahmed', label: 'Sara Ahmed' },
-    { value: 'muhammad_ali', label: 'Muhammad Ali' },
-    { value: 'fatima_raza', label: 'Fatima Raza' },
-    { value: 'hassan_malik', label: 'Hassan Malik' }
-  ];
+  const cityOptions = useMemo(
+    () => cities.map((c) => ({ value: String(c.id), label: c.name })),
+    [cities],
+  );
 
-  // CSV Download Configuration
-  const csvColumns = [
-    { key: 'id', label: 'ID' },
-    { key: 'box_id_no', label: 'Box ID' },
-    { key: 'key_no', label: 'Key No' },
-    { key: 'region', label: 'Region' },
-    { key: 'city', label: 'City' },
-    { key: 'frd_officer_reference', label: 'FRD Officer' },
-    { key: 'shop_name', label: 'Shop Name' },
-    { key: 'shopkeeper', label: 'Shopkeeper' },
-    { key: 'cell_no', label: 'Cell No' },
-    { key: 'landmark_marketplace', label: 'Landmark' },
-    { key: 'route', label: 'Route' },
-    { key: 'box_type', label: 'Box Type' },
-    { key: 'active_since', label: 'Active Since' },
-    { key: 'status', label: 'Status' },
-    { key: 'created_at', label: 'Created Date' }
-  ];
-
-  // Prepare CSV data with formatted values
-  const prepareCSVData = () => {
-    return donationBoxes.map(box => ({
-      ...box,
-      box_id_no: box.box_id_no || '-',
-      key_no: box.key_no || '-',
-      region: box.region || '-',
-      city: box.city || '-',
-      frd_officer_reference: box.frd_officer_reference || '-',
-      shop_name: box.shop_name || '-',
-      shopkeeper: box.shopkeeper || '-',
-      cell_no: box.cell_no || '-',
-      landmark_marketplace: box.landmark_marketplace || '-',
-      route: box.route || '-',
-      box_type: box.box_type || '-',
-      active_since: box.active_since ? new Date(box.active_since).toLocaleDateString() : '-',
-      status: box.status || 'pending',
-      created_at: box.created_at ? new Date(box.created_at).toLocaleDateString() : '-'
-    }));
+  const getLocationLabel = (box) => {
+    const cityName =
+      box?.city?.name ||
+      box?.route?.cities?.find((c) => c.id === box.city_id)?.name ||
+      box.city ||
+      '';
+    const regionName = box?.route?.region?.name || box.region || '';
+    if (cityName && regionName) return `${cityName}, ${regionName}`;
+    return cityName || regionName || '—';
   };
 
-  // Generate filename with current date
-  const getCSVFilename = () => {
-    const today = new Date().toISOString().split('T')[0];
-    return `donation-boxes-${today}`;
-  };
-
-  if (loading) {
+  if (loading && donationBoxes.length === 0) {
     return (
       <>
         <Navbar />
@@ -384,15 +402,109 @@ const DonationBoxList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader 
-          title="Donation Boxes" 
-          showBackButton={false} 
+        <PageHeader
+          title="Donation Boxes"
+          showBackButton={false}
+          showFilterToggle
+          filtersOpen={filtersOpen}
+          onFilterToggle={toggleFilters}
           showAdd={true}
-          addPath='/dms/donation_box/add'
+          addPath="/dms/donation_box/add"
         />
-        
+
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
+
+          <CollapsibleFilters open={filtersOpen}>
+            <div className="filters-section">
+              <SearchFilter
+                filterKey="search"
+                label="Search"
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="Search by key no, shop name, shopkeeper, route..."
+              />
+
+              <DropdownFilter
+                filterKey="status"
+                label="Status"
+                data={statusOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Status"
+              />
+
+              <DropdownFilter
+                filterKey="box_type"
+                label="Box Type"
+                data={boxTypeOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Types"
+              />
+
+              <DropdownFilter
+                filterKey="frequency"
+                label="Collection Frequency"
+                data={frequencyOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Frequencies"
+              />
+
+              <DropdownFilter
+                filterKey="region_id"
+                label="Region"
+                data={regionOptions}
+                filters={tempFilters}
+                onFilterChange={handleRegionChange}
+                placeholder="All Regions"
+              />
+
+              <DropdownFilter
+                filterKey="city_id"
+                label="City"
+                data={tempFilters.region_id ? cityOptions : []}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder={tempFilters.region_id ? 'All Cities' : 'Select region first'}
+              />
+
+              <SearchableDropdown
+                label="Assigned Officer"
+                placeholder="Search fundraising users..."
+                apiEndpoint="/users/options"
+                apiParams={{ department: 'fund_raising' }}
+                onSelect={handleAssigneeSelect}
+                onClear={handleAssigneeClear}
+                value={selectedAssignee}
+                displayKey="first_name"
+                debounceDelay={400}
+                minSearchLength={2}
+                allowResearch
+              />
+
+              <DateFilter
+                filterKey="date"
+                label="Active Since (exact)"
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+              />
+
+              <DateRangeFilter
+                startKey="start_date"
+                endKey="end_date"
+                label="Active Since Range"
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+              />
+
+              <div className="filters-actions">
+                <SearchButton onClick={handleApplyFilters} text="Search" loading={loading} />
+                <ClearButton onClick={handleClearFilters} text="Clear" />
+              </div>
+            </div>
+          </CollapsibleFilters>
 
           {canImportCsv && (
             <div
@@ -411,103 +523,6 @@ const DonationBoxList = () => {
             </div>
           )}
 
-          {/* Filters Section */}
-          {/* <div className="filters-section" style={{ 
-            display: 'flex', 
-            gap: '20px', 
-            flexWrap: 'wrap', 
-            marginBottom: '20px',
-            padding: '20px',
-            backgroundColor: '#f9fafb',
-            borderRadius: '8px'
-          }}>
-            <SearchFilter
-              filterKey="search"
-              label="Search"
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="Search by box ID, shop name, shopkeeper..."
-            />
-            
-            <DropdownFilter
-              filterKey="status"
-              label="Status"
-              data={statusOptions}
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="All Status"
-            />
-            
-            <DropdownFilter
-              filterKey="box_type"
-              label="Box Type"
-              data={boxTypeOptions}
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="All Types"
-            />
-            
-            <DropdownFilter
-              filterKey="region"
-              label="Region"
-              data={regionOptions}
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="All Regions"
-            />
-            
-            <DropdownFilter
-              filterKey="city"
-              label="City"
-              data={cityOptions}
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="All Cities"
-            />
-            
-            <HybridDropdown
-              label="FRD Officer"
-              placeholder="Type or select officer..."
-              options={frdOfficerOptions}
-              value={tempFilters.frd_officer}
-              onChange={(value) => handleFilterChange('frd_officer', value)}
-              allowCustom={true}
-            />
-            
-            <DateFilter
-              filterKey="date"
-              label="Specific Date"
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-            />
-            
-            <DateRangeFilter
-              startKey="start_date"
-              endKey="end_date"
-              label="Date Range"
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-            />
-            
-            <div style={{ 
-              display: 'flex', 
-              gap: '10px', 
-              alignItems: 'flex-end',
-              marginTop: '20px',
-              width: '100%'
-            }}>
-              <SearchButton
-                onClick={handleApplyFilters}
-                text="Search"
-                loading={loading}
-              />
-              <ClearButton
-                onClick={handleClearFilters}
-                text="Clear"
-              />
-            </div>
-          </div> */}
-          
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -528,9 +543,9 @@ const DonationBoxList = () => {
                   <tr key={box.id}>
                     <td>
                       <div className="box-info">
-                        <div className="box-id">{box.box_id_no}</div>
-                        {box.key_no && (
-                          <div className="box-key hide-on-mobile">Key: {box.key_no}</div>
+                        <div className="box-id">{box.key_no || `BOX-${box.id}`}</div>
+                        {box.route?.name && (
+                          <div className="box-key hide-on-mobile">Route: {box.route.name}</div>
                         )}
                       </div>
                     </td>
@@ -544,7 +559,7 @@ const DonationBoxList = () => {
                     </td>
                     <td>
                       <div className="location-info">
-                        <div className="location-main">{box.city}, {box.region}</div>
+                        <div className="location-main">{getLocationLabel(box)}</div>
                         {box.landmark_marketplace && (
                           <div className="location-landmark hide-on-mobile">{box.landmark_marketplace}</div>
                         )}
@@ -563,18 +578,7 @@ const DonationBoxList = () => {
               </tbody>
             </table>
           </div>
-          
-          {/* <div className="list-header">
-            <DownloadCSV
-              data={prepareCSVData()}
-              filename={getCSVFilename()}
-              columns={csvColumns}
-              buttonText="Export to CSV"
-              onDownloadStart={() => console.log('Downloading donation boxes CSV...')}
-              onDownloadComplete={() => console.log('Download complete!')}
-            />
-          </div> */}
-          
+
           {totalItems > 0 && (
             <Pagination
               currentPage={currentPage}

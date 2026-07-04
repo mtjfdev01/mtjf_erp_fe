@@ -496,9 +496,6 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
               indexAxis: 'y',
               responsive: true,
               maintainAspectRatio: false,
-              layout: {
-                padding: chartSizes.chartPadding
-              },
               plugins: {
                 legend: {
                   display: !isMobile,
@@ -555,8 +552,9 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
                   }
                 }
               },
-            layout: {
+              layout: {
               padding: {
+                ...chartSizes.chartPadding,
                 bottom: screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30,
                 top: 10,
                 left: 10,
