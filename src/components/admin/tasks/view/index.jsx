@@ -108,14 +108,14 @@ const ViewTask = () => {
         : [];
       const idsFromMeta = Array.isArray(task.assigned_users_meta)
         ? task.assigned_users_meta
-            .map((m) => m?.user_id)
-            .filter((n) => Number.isInteger(n) && n > 0)
+          .map((m) => m?.user_id)
+          .filter((n) => Number.isInteger(n) && n > 0)
         : [];
-      
+
       const idsFromApprovers = Array.isArray(task.approval_required_user_ids)
         ? task.approval_required_user_ids
-            .map((n) => Number(n))
-            .filter((n) => Number.isInteger(n) && n > 0)
+          .map((n) => Number(n))
+          .filter((n) => Number.isInteger(n) && n > 0)
         : [];
 
       const approvalsMetaRaw = Array.isArray(approvalState?.approvals_meta)
@@ -192,7 +192,7 @@ const ViewTask = () => {
   // Lazy load approval data only when needed (with force option)
   const loadApprovalData = useCallback(async (force = false) => {
     if (!force && (approvalLoaded || approvalLoading)) return;
-    
+
     setApprovalLoading(true);
     try {
       const approvalRes = await axiosInstance.get(`/tasks/${id}/approval`);
@@ -222,7 +222,7 @@ const ViewTask = () => {
   const parseAsLocal = (dateInput) => {
     if (!dateInput) return new Date(NaN);
     if (dateInput instanceof Date) return new Date(dateInput);
-    
+
     // If it's a date string from backend (YYYY-MM-DD), parse as local midnight
     if (typeof dateInput === 'string' && dateInput.includes('-') && !dateInput.includes('T') && !dateInput.includes(':')) {
       const [year, month, day] = dateInput.split('-').map(Number);
@@ -236,7 +236,7 @@ const ViewTask = () => {
     // Use string parsing to avoid timezone shift for "YYYY-MM-DD" dates
     const d = parseAsLocal(date);
     if (Number.isNaN(d.getTime())) return 'N/A';
-    
+
     return d.toLocaleDateString('en-GB', {
       day: '2-digit',
       month: 'short',
@@ -273,7 +273,7 @@ const ViewTask = () => {
     if (now > dueNoon) {
       const diffMs = startOfNowDay.getTime() - startOfDueDay.getTime();
       const overdueDays = Math.round(diffMs / 86400000);
-      
+
       if (overdueDays === 0) {
         return { label: 'Overdue today', variant: 'warning' };
       }
@@ -295,7 +295,7 @@ const ViewTask = () => {
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
     [permissions, user?.department, user?.role],
   );
-  
+
   const handleBack = useCallback(() => {
     navigate(-1); // Go back in browser history to preserve search params (including activeTab)
   }, [navigate]);
@@ -353,8 +353,8 @@ const ViewTask = () => {
     taskTypeValueFinal === 'recurring'
       ? 'Recurring Task'
       : taskTypeValueFinal === 'project_linked'
-      ? 'Project-linked Task'
-      : 'One-time Task';
+        ? 'Project-linked Task'
+        : 'One-time Task';
 
   const isApprovalWorkflow =
     String(task?.workflow_type || '').toLowerCase() === 'approval_required';
@@ -362,8 +362,8 @@ const ViewTask = () => {
 
   const approvalRequiredIds = Array.isArray(task?.approval_required_user_ids)
     ? task.approval_required_user_ids
-        .map((n) => Number(n))
-        .filter((n) => Number.isInteger(n) && n > 0)
+      .map((n) => Number(n))
+      .filter((n) => Number.isInteger(n) && n > 0)
     : [];
 
   const approvalsMetaRaw = Array.isArray(approvalState?.approvals_meta)
@@ -503,7 +503,7 @@ const ViewTask = () => {
   const renderReminderBanner = (title, message, isWarning = false, isCompact = false) => (
     <div className={`overdue-reminder${isWarning ? ' overdue-reminder--warning' : ''}${isCompact ? ' overdue-reminder--compact' : ''}`}>
       <FaExclamationTriangle className="overdue-reminder-icon" />
-       
+
       {!isCompact && (
         <div className="overdue-reminder-content">
           <div className="overdue-reminder-title">{title}</div>
@@ -621,30 +621,53 @@ const ViewTask = () => {
 
   const canEditMovChecklist = useMemo(() => {
     if (!task || !user) return false;
-    
+
     // Check if task is in a terminal or approval state where MOV cannot be edited
     // MOV editing is blocked when task is:
     // - Completed/Closed/Cancelled/Rejected (terminal states)
     // - Pending Approval/Approved (approval workflow states, should be read-only)
     const sVal = String(task.status || '').toLowerCase();
     if (['completed', 'closed', 'cancelled', 'rejected', 'pending_approval', 'approved'].includes(sVal)) return false;
-    
+
     // ROLE-BASED RESTRICTION: Task creators CANNOT interact with MOV checkboxes
     // Only assignees can check/uncheck MOV items
+    // const isTaskCreator = Number(task.created_by_id) === Number(user?.id);
+    // if (isTaskCreator) {
+    //   return false; // Block task creators from MOV interaction
+    // }
+
+
+
+    // // Check if user is assignee
+    // const isAssignee = Array.isArray(task.assigned_user_ids) && task.assigned_user_ids.includes(user?.id);
+
+    // // ONLY assignees can check/uncheck MOV items (with view permission)
+    // // Task creators, admins, dept leaders, and others CANNOT modify MOV checkboxes
+    // if (isAssignee) {
+    //   return taskPerms?.canView === true;
+    // }
+
+
     const isTaskCreator = Number(task.created_by_id) === Number(user?.id);
-    if (isTaskCreator) {
-      return false; // Block task creators from MOV interaction
-    }
-    
+
     // Check if user is assignee
-    const isAssignee = Array.isArray(task.assigned_user_ids) && task.assigned_user_ids.includes(user?.id);
-    
-    // ONLY assignees can check/uncheck MOV items (with view permission)
-    // Task creators, admins, dept leaders, and others CANNOT modify MOV checkboxes
+    const isAssignee =
+      Array.isArray(task.assigned_user_ids) &&
+      task.assigned_user_ids.some(id => Number(id) === Number(user?.id));
+
+    // Block task creators only if they are NOT assigned to the task
+    if (isTaskCreator && !isAssignee) {
+      return false;
+    }
+
+    // ONLY assignees can check/uncheck MOV items
     if (isAssignee) {
       return taskPerms?.canView === true;
     }
-    
+
+
+
+
     return false;
   }, [task, user, taskPerms]);
 
@@ -919,15 +942,15 @@ const ViewTask = () => {
       if (!a) return false;
       const actionStr = String(a.action || '').toLowerCase();
       const detailObj = a.details && typeof a.details === 'object' ? a.details : {};
-      
-      const isProgressAction = 
-        actionStr === 'progress_updated' || 
-        actionStr === 'progress_update' || 
-        actionStr === 'update_progress' || 
+
+      const isProgressAction =
+        actionStr === 'progress_updated' ||
+        actionStr === 'progress_update' ||
+        actionStr === 'update_progress' ||
         actionStr.includes('progress');
 
       const hasProgressValue = detailObj && detailObj.progress != null;
-      const notesMatch = typeof detailObj.notes === 'string' && 
+      const notesMatch = typeof detailObj.notes === 'string' &&
         detailObj.notes.toLowerCase().includes('checklist items completed');
 
       return isProgressAction || hasProgressValue || notesMatch;
@@ -1000,7 +1023,7 @@ const ViewTask = () => {
       <>
         <Navbar />
         <div className="view-wrapper task-view-wrapper">
-          <PageHeader 
+          <PageHeader
             title="View Task"
             showBackButton={true}
             onBackClick={handleBack}
@@ -1019,15 +1042,15 @@ const ViewTask = () => {
   const rawDescription = String(baseDescription || '').trim();
   const movLinesFromField = Array.isArray(task?.mov_items)
     ? task.mov_items
-        .map((t) => String(t || '').trim())
-        .filter((t) => t.length > 0)
+      .map((t) => String(t || '').trim())
+      .filter((t) => t.length > 0)
     : [];
   const movLines =
     movLinesFromField.length > 0
       ? movLinesFromField
       : movFromDescription && movFromDescription.length > 0
-      ? movFromDescription
-      : [];
+        ? movFromDescription
+        : [];
   const shouldTruncateDescription = rawDescription.length > 200;
   const descriptionMidpoint = shouldTruncateDescription
     ? Math.floor(rawDescription.length / 2)
@@ -1040,7 +1063,7 @@ const ViewTask = () => {
       <Navbar />
       <Loader loading={loading} />
       <div className="view-wrapper task-view-wrapper">
-        <PageHeader 
+        <PageHeader
           title="Task Details"
           showBackButton={true}
           onBackClick={handleBack}
@@ -1052,301 +1075,299 @@ const ViewTask = () => {
             {error && <div className="status-message status-message--error">{error}</div>}
 
             <div className="task-receipt-page">
-            <div className="task-view-receipt-container">
-              <div className="task-view-receipt-header">
-                <div className="view-details-title">
-                  <div className="view-details-logo">📋</div>
-                  <div>
-                    <h1>{task.title || 'Task Title'}</h1>
-                  </div>
-                </div>
-                <div className="view-details-task-id">{formatTaskId(task)}</div>
-              </div>
-              <div className="task-view-status-actions-row">
-                <div className="task-view-status-banner-inline">
-                  <div className="task-view-status-banner-main">
-                    <strong>Status:</strong>
-                    {canChangeStatusInline ? (
-                      <div className="status-dropdown">
-                        <button
-                          type="button"
-                          className="status-dropdown-toggle"
-                          onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                          disabled={statusActionLoading}
-                        >
-                          <span className="status-dropdown-label">{statusLabel}</span>
-                          <span className="status-dropdown-arrow">▾</span>
-                        </button>
-                        {statusDropdownOpen && (
-                          <div className="status-dropdown-menu">
-                            {inlineStatusOptions.map((opt) => {
-                              const isActive =
-                                String(task.status || '').toLowerCase() === opt.value;
-                              return (
-                                <button
-                                  key={opt.value}
-                                  type="button"
-                                  className={`status-dropdown-item${
-                                    isActive ? ' status-dropdown-item--active' : ''
-                                  }`}
-                                  onClick={() => handleInlineStatusChange(opt.value)}
-                                  disabled={statusActionLoading}
-                                >
-                                  <span
-                                    className={`status-dropdown-check${
-                                      isActive ? ' status-dropdown-check--checked' : ''
-                                    }`}
-                                  />
-                                  <span className="status-dropdown-item-label">
-                                    {opt.label}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <span className="view-action-status-badge-dropdown">{statusLabel}</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Overdue/Reminder Banner in compact mode */}
-                {isTaskOverdueAfterToday() ? (
-                  renderReminderBanner(
-                    'Task is overdue',
-                    isCurrentUserAssignee ? (
-                      primaryAssigneeName
-                        ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
-                        : 'This task is now overdue. Please review and complete it as soon as possible.'
-                    ) : (
-                      `assignee ${primaryAssigneeName} has not completed; please review and follow up`
-                    ),
-                    false,
-                    true
-                  )
-                ) : isTaskOverdueToday() ? (
-                  renderReminderBanner(
-                    'Overdue Today',
-                    isCurrentUserAssignee ? (
-                      primaryAssigneeName
-                        ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
-                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
-                    ) : (
-                      `assignee ${primaryAssigneeName} has not completed; please review and follow up`
-                    ),
-                    true,
-                    true
-                  )
-                ) : isTaskDueTodayBeforeNoon() ? (
-                  renderReminderBanner(
-                    'Due Today',
-                    isCurrentUserAssignee ? (
-                      primaryAssigneeName
-                        ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
-                        : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
-                    ) : (
-                      'This task is due today; please check in with the assignee if needed.'
-                    ),
-                    true,
-                    true
-                  )
-                ) : null}
-
-                <TaskActionBar
-                  taskId={task.id}
-                  currentStatus={task.status}
-                  permissions={taskPerms}
-                  userDepartment={user?.department}
-                  taskDepartment={task.department}
-                  workflowType={task.workflow_type}
-                  userRole={user?.role}
-                  isAssignee={isCurrentUserAssignee}
-                  currentUserId={user?.id}
-                  createdByUserId={task.created_by_id}
-                  reportedById={task.reported_by_id}
-                  approvalRequiredUserIds={task.approval_required_user_ids}
-                  approvalsMeta={approvalState?.approvals_meta}
-                  currentUserHasActedOnApproval={currentUserHasActedOnApproval}
-                  approvalLoading={approvalLoading}
-                  onStatusAction={handleStatusActionClick}
-                  onQuickAction={handleQuickAction}
-                  disabled={statusActionLoading}
-                  align="top"
-                />
-              </div>
-
-              {renderRecurrenceInfo()}
-              <div className="receipt-body">
-
-                <div className="task-view-section">
-                  <h3 className="task-task-view-section-title">
-                    <span>📝</span> Description
-                  </h3>
-                  <div className="task-view-grid">
-                    <div className="task-view-item task-description-item">
-                      {rawDescription ? (
-                        <span className="task-view-item-value task-description-text">
-                          {shouldTruncateDescription ? (
-                            showFullDescription ? (
-                              <>
-                                {rawDescription}{' '}
-                                <button
-                                  type="button"
-                                  className="task-description-read-more"
-                                  onClick={() => setShowFullDescription(false)}
-                                >
-                                  View Less
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {descriptionFirstHalf}
-                                {descriptionSecondHalf && '... '}
-                                {descriptionSecondHalf && (
-                                  <button
-                                    type="button"
-                                    className="task-description-read-more"
-                                    onClick={() => setShowFullDescription(true)}
-                                  >
-                                    Read More
-                                  </button>
-                                )}
-                              </>
-                            )
-                          ) : (
-                            rawDescription
-                          )}
-                        </span>
-                      ) : (
-                        <span className="task-view-item-value task-description-text">-</span>
-                      )}
+              <div className="task-view-receipt-container">
+                <div className="task-view-receipt-header">
+                  <div className="view-details-title">
+                    <div className="view-details-logo">📋</div>
+                    <div>
+                      <h1>{task.title || 'Task Title'}</h1>
                     </div>
                   </div>
+                  <div className="view-details-task-id">{formatTaskId(task)}</div>
                 </div>
-                <div className="task-view-section">
-                  <h3 className="task-task-view-section-title">
-                    <span>✅</span> {isApproverView
-                      ? 'Progress & Means of Verification'
-                      : 'Check the box to update progress'}
-                  </h3>
-                    <div className="task-view-grid task-progress-layout">
-                    <div className="task-view-item task-progress-item">
-                      {movLines.length > 0 ? (
-                        <ProgressUpdate
-                          taskId={task.id}
-                          currentProgress={task.progress || 0}
-                          lastProgressNotes={task.last_progress_notes}
-                          movLines={movLines}
-                          canEdit={canEditMovChecklist}
-                          currentUser={user}
-                          progressActivities={task.activities || []}
-                          taskStatus={task.status}
-                          onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
-                          onUpdate={(progress, notes, updatedTask) => {
-                            if (updatedTask) {
-                              setTask(updatedTask);
-                            } else {
-                              setTask((prev) => ({
-                                ...prev,
-                                progress,
-                                last_progress_notes: notes,
-                              }));
-                            }
-                            setShowProgressHistory(true);
-                          }}
-                        />
-                      ) : (
-                        <div className="task-progress-empty">
-                          No Means of Verification (MOV) checklist items have been defined for this
-                          task.
-                        </div>
-                      )}
-                    </div>
-                    {(showProgressHistory || progressActivities.length > 0) && (
-                      <div className="task-view-item">
-                        <div className="task-progress-history">
-                          <div className="task-progress-history-title">
-                            🔄 Progress history
-                          </div>
-                          {progressActivities.length > 0 ? (
-                            <ul className="task-progress-history-list">
-                              {progressActivities.map((a) => {
-                                const when =
-                                  a && a.created_at
-                                    ? formatDateOnly(a.created_at)
-                                    : '';
-                                const details =
-                                  a && a.details && typeof a.details === 'object'
-                                    ? a.details
-                                    : {};
-                                const value =
-                                  details && details.progress != null
-                                    ? `${details.progress}%`
-                                    : '';
-                                const notes =
-                                  details && typeof details.notes === 'string'
-                                    ? details.notes
-                                        .replace(/\s*\[indices:[\d,]+\]/, '')
-                                        .replace(/\s*\[ownership:[^\]]+\]/, '')
-                                        .trim()
-                                    : '';
-                                const performer =
-                                  a && a.performed_by ? a.performed_by : null;
-                                const author =
-                                  (performer &&
-                                    (performer.name ||
-                                      performer.full_name ||
-                                      performer.username ||
-                                      performer.email)) ||
-                                  'System';
+                <div className="task-view-status-actions-row">
+                  <div className="task-view-status-banner-inline">
+                    <div className="task-view-status-banner-main">
+                      <strong>Status:</strong>
+                      {canChangeStatusInline ? (
+                        <div className="status-dropdown">
+                          <button
+                            type="button"
+                            className="status-dropdown-toggle"
+                            onClick={() => setStatusDropdownOpen((prev) => !prev)}
+                            disabled={statusActionLoading}
+                          >
+                            <span className="status-dropdown-label">{statusLabel}</span>
+                            <span className="status-dropdown-arrow">▾</span>
+                          </button>
+                          {statusDropdownOpen && (
+                            <div className="status-dropdown-menu">
+                              {inlineStatusOptions.map((opt) => {
+                                const isActive =
+                                  String(task.status || '').toLowerCase() === opt.value;
                                 return (
-                                  <li
-                                    key={a.id}
-                                    className="task-progress-history-item"
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    className={`status-dropdown-item${isActive ? ' status-dropdown-item--active' : ''
+                                      }`}
+                                    onClick={() => handleInlineStatusChange(opt.value)}
+                                    disabled={statusActionLoading}
                                   >
-                                    <div className="task-progress-history-header">
-                                      <span className="task-progress-history-author">
-                                        {author}
-                                      </span>
-                                      <span className="task-progress-history-date">
-                                        {when}
-                                      </span>
-                                    </div>
-                                    <div className="task-progress-history-body">
-                                      {value && (
-                                        <span className="task-progress-history-progress">
-                                          {value}
-                                        </span>
-                                      )}
-                                      {notes && (
-                                        <span className="task-progress-history-notes">
-                                          {notes}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </li>
+                                    <span
+                                      className={`status-dropdown-check${isActive ? ' status-dropdown-check--checked' : ''
+                                        }`}
+                                    />
+                                    <span className="status-dropdown-item-label">
+                                      {opt.label}
+                                    </span>
+                                  </button>
                                 );
                               })}
-                            </ul>
-                          ) : (
-                            <div className="task-progress-history-empty">
-                              No progress history yet.
                             </div>
                           )}
                         </div>
-                      </div>
-                    )}
+                      ) : (
+                        <span className="view-action-status-badge-dropdown">{statusLabel}</span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Overdue/Reminder Banner in compact mode */}
+                  {isTaskOverdueAfterToday() ? (
+                    renderReminderBanner(
+                      'Task is overdue',
+                      isCurrentUserAssignee ? (
+                        primaryAssigneeName
+                          ? `Hi ${primaryAssigneeName}, this task is now overdue. Please review and complete it as soon as possible.`
+                          : 'This task is now overdue. Please review and complete it as soon as possible.'
+                      ) : (
+                        `assignee ${primaryAssigneeName} has not completed; please review and follow up`
+                      ),
+                      false,
+                      true
+                    )
+                  ) : isTaskOverdueToday() ? (
+                    renderReminderBanner(
+                      'Overdue Today',
+                      isCurrentUserAssignee ? (
+                        primaryAssigneeName
+                          ? `Hi ${primaryAssigneeName}, This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                          : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
+                      ) : (
+                        `assignee ${primaryAssigneeName} has not completed; please review and follow up`
+                      ),
+                      true,
+                      true
+                    )
+                  ) : isTaskDueTodayBeforeNoon() ? (
+                    renderReminderBanner(
+                      'Due Today',
+                      isCurrentUserAssignee ? (
+                        primaryAssigneeName
+                          ? `Hi ${primaryAssigneeName}, this task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.`
+                          : 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
+                      ) : (
+                        'This task is due today; please check in with the assignee if needed.'
+                      ),
+                      true,
+                      true
+                    )
+                  ) : null}
+
+                  <TaskActionBar
+                    taskId={task.id}
+                    currentStatus={task.status}
+                    permissions={taskPerms}
+                    userDepartment={user?.department}
+                    taskDepartment={task.department}
+                    workflowType={task.workflow_type}
+                    userRole={user?.role}
+                    isAssignee={isCurrentUserAssignee}
+                    currentUserId={user?.id}
+                    createdByUserId={task.created_by_id}
+                    reportedById={task.reported_by_id}
+                    approvalRequiredUserIds={task.approval_required_user_ids}
+                    approvalsMeta={approvalState?.approvals_meta}
+                    currentUserHasActedOnApproval={currentUserHasActedOnApproval}
+                    approvalLoading={approvalLoading}
+                    onStatusAction={handleStatusActionClick}
+                    onQuickAction={handleQuickAction}
+                    disabled={statusActionLoading}
+                    align="top"
+                  />
                 </div>
 
-                {initialAttachments.length > 0 && (
+                {renderRecurrenceInfo()}
+                <div className="receipt-body">
+
                   <div className="task-view-section">
-                    {/* <h3 className="task-task-view-section-title">
+                    <h3 className="task-task-view-section-title">
+                      <span>📝</span> Description
+                    </h3>
+                    <div className="task-view-grid">
+                      <div className="task-view-item task-description-item">
+                        {rawDescription ? (
+                          <span className="task-view-item-value task-description-text">
+                            {shouldTruncateDescription ? (
+                              showFullDescription ? (
+                                <>
+                                  {rawDescription}{' '}
+                                  <button
+                                    type="button"
+                                    className="task-description-read-more"
+                                    onClick={() => setShowFullDescription(false)}
+                                  >
+                                    View Less
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  {descriptionFirstHalf}
+                                  {descriptionSecondHalf && '... '}
+                                  {descriptionSecondHalf && (
+                                    <button
+                                      type="button"
+                                      className="task-description-read-more"
+                                      onClick={() => setShowFullDescription(true)}
+                                    >
+                                      Read More
+                                    </button>
+                                  )}
+                                </>
+                              )
+                            ) : (
+                              rawDescription
+                            )}
+                          </span>
+                        ) : (
+                          <span className="task-view-item-value task-description-text">-</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="task-view-section">
+                    <h3 className="task-task-view-section-title">
+                      <span>✅</span> {isApproverView
+                        ? 'Progress & Means of Verification'
+                        : 'Check the box to update progress'}
+                    </h3>
+                    <div className="task-view-grid task-progress-layout">
+                      <div className="task-view-item task-progress-item">
+                        {movLines.length > 0 ? (
+                          <ProgressUpdate
+                            taskId={task.id}
+                            currentProgress={task.progress || 0}
+                            lastProgressNotes={task.last_progress_notes}
+                            movLines={movLines}
+                            canEdit={canEditMovChecklist}
+                            currentUser={user}
+                            progressActivities={task.activities || []}
+                            taskStatus={task.status}
+                            onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
+                            onUpdate={(progress, notes, updatedTask) => {
+                              if (updatedTask) {
+                                setTask(updatedTask);
+                              } else {
+                                setTask((prev) => ({
+                                  ...prev,
+                                  progress,
+                                  last_progress_notes: notes,
+                                }));
+                              }
+                              setShowProgressHistory(true);
+                            }}
+                          />
+                        ) : (
+                          <div className="task-progress-empty">
+                            No Means of Verification (MOV) checklist items have been defined for this
+                            task.
+                          </div>
+                        )}
+                      </div>
+                      {(showProgressHistory || progressActivities.length > 0) && (
+                        <div className="task-view-item">
+                          <div className="task-progress-history">
+                            <div className="task-progress-history-title">
+                              🔄 Progress history
+                            </div>
+                            {progressActivities.length > 0 ? (
+                              <ul className="task-progress-history-list">
+                                {progressActivities.map((a) => {
+                                  const when =
+                                    a && a.created_at
+                                      ? formatDateOnly(a.created_at)
+                                      : '';
+                                  const details =
+                                    a && a.details && typeof a.details === 'object'
+                                      ? a.details
+                                      : {};
+                                  const value =
+                                    details && details.progress != null
+                                      ? `${details.progress}%`
+                                      : '';
+                                  const notes =
+                                    details && typeof details.notes === 'string'
+                                      ? details.notes
+                                        .replace(/\s*\[indices:[\d,]+\]/, '')
+                                        .replace(/\s*\[ownership:[^\]]+\]/, '')
+                                        .trim()
+                                      : '';
+                                  const performer =
+                                    a && a.performed_by ? a.performed_by : null;
+                                  const author =
+                                    (performer &&
+                                      (performer.name ||
+                                        performer.full_name ||
+                                        performer.username ||
+                                        performer.email)) ||
+                                    'System';
+                                  return (
+                                    <li
+                                      key={a.id}
+                                      className="task-progress-history-item"
+                                    >
+                                      <div className="task-progress-history-header">
+                                        <span className="task-progress-history-author">
+                                          {author}
+                                        </span>
+                                        <span className="task-progress-history-date">
+                                          {when}
+                                        </span>
+                                      </div>
+                                      <div className="task-progress-history-body">
+                                        {value && (
+                                          <span className="task-progress-history-progress">
+                                            {value}
+                                          </span>
+                                        )}
+                                        {notes && (
+                                          <span className="task-progress-history-notes">
+                                            {notes}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <div className="task-progress-history-empty">
+                                No progress history yet.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {initialAttachments.length > 0 && (
+                    <div className="task-view-section">
+                      {/* <h3 className="task-task-view-section-title">
                       <span>📎</span> Task Attachments (Initial)
                     </h3> */}
-                    {/* <div className="task-view-grid">
+                      {/* <div className="task-view-grid">
                       <div className="task-view-item task-attachments-item">
                         <ul className="attachments-list">
                           {initialAttachments.map((a) => {
@@ -1404,374 +1425,370 @@ const ViewTask = () => {
                         </ul>
                       </div>
                     </div> */}
-                  </div>
-                )}
+                    </div>
+                  )}
 
-                <div className="view-layout">
-                  <div className="view-layout-main">
-                    <div
-                      className={`task-view-section${
-                        isApproverView ? ' task-view-section--approver-secondary' : ''
-                      }`}
-                    >
-                      <h3 className="task-task-view-section-title">
-                        <span>ℹ️</span> Task Information
-                      </h3>
-                      <div className="task-view-grid task-view-grid--info">
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Status</span>
-                          <span className="task-view-item-value">{getStatusBadge(task.status)}</span>
-                        </div> 
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Priority</span>
-                          <span className="task-view-item-value">
-                            <span className={`task-view-priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
-                              {capitalize(task.priority)}
-                            </span>
-                          </span>
-                        </div>
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Task Type</span>
-                          <span className="task-view-item-value">{taskTypeLabel}</span>
-                        </div>
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Workflow</span>
-                          <span className="task-view-item-value">{capitalize(task.workflow_type)}</span>
-                        </div>
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Created By</span>
-                          <span className="task-view-item-value">{getUserDisplayName(task.created_by)}</span>
-                        </div>
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Project/Program</span>
-                          <span className="task-view-item-value">{task.project_name || '-'}</span>
-                        </div>
-                        {isApprovalWorkflow &&
-                          ['approved', 'rejected'].includes(String(task?.status || '').toLowerCase()) &&
-                          task?.approved_by && (
-                            <div className="task-view-item">
-                              <span className="task-view-item-label">
-                                {String(task?.status || '').toLowerCase() === 'rejected' ? 'Rejected By' : 'Approved By'}
+                  <div className="view-layout">
+                    <div className="view-layout-main">
+                      <div
+                        className={`task-view-section${isApproverView ? ' task-view-section--approver-secondary' : ''
+                          }`}
+                      >
+                        <h3 className="task-task-view-section-title">
+                          <span>ℹ️</span> Task Information
+                        </h3>
+                        <div className="task-view-grid task-view-grid--info">
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Status</span>
+                            <span className="task-view-item-value">{getStatusBadge(task.status)}</span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Priority</span>
+                            <span className="task-view-item-value">
+                              <span className={`task-view-priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
+                                {capitalize(task.priority)}
                               </span>
-                              <span className="task-view-item-value">{getUserDisplayName(task.approved_by)}</span>
+                            </span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Task Type</span>
+                            <span className="task-view-item-value">{taskTypeLabel}</span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Workflow</span>
+                            <span className="task-view-item-value">{capitalize(task.workflow_type)}</span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Created By</span>
+                            <span className="task-view-item-value">{getUserDisplayName(task.created_by)}</span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Project/Program</span>
+                            <span className="task-view-item-value">{task.project_name || '-'}</span>
+                          </div>
+                          {isApprovalWorkflow &&
+                            ['approved', 'rejected'].includes(String(task?.status || '').toLowerCase()) &&
+                            task?.approved_by && (
+                              <div className="task-view-item">
+                                <span className="task-view-item-label">
+                                  {String(task?.status || '').toLowerCase() === 'rejected' ? 'Rejected By' : 'Approved By'}
+                                </span>
+                                <span className="task-view-item-value">{getUserDisplayName(task.approved_by)}</span>
+                              </div>
+                            )}
+                        </div>
+                      </div>
+
+                      <div
+                        className={`task-view-section${isApproverView ? ' task-view-section--approver-secondary' : ''
+                          }`}
+                      >
+                        <h3 className="task-task-view-section-title">
+                          <span>📅</span> Timeline
+                        </h3>
+                        <div className="task-view-grid task-view-grid--info">
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Created Date</span>
+                            <span className="task-view-item-value">{formatDateOnly(task.created_at)}</span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Start Date</span>
+                            <span className="task-view-item-value">{formatDateOnly(task.start_date)}</span>
+                          </div>
+                          <div className="task-view-item">
+                            <span className="task-view-item-label">Due Date</span>
+                            <span className="task-view-item-value">
+                              {formatDateOnly(task.due_date)}
+                              {dueInfo && (
+                                <span
+                                  className={`task-due-badge task-due-badge--${dueInfo.variant}`}
+                                >
+                                  {dueInfo.label}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          {showCompletedDate && (
+                            <div className="task-view-item">
+                              <span className="task-view-item-label">Completed Date</span>
+                              <span className="task-view-item-value">
+                                {formatDateOnly(task.completed_date)}
+                              </span>
                             </div>
                           )}
+                          {isRecurringTask && (
+                            <>
+                              <div className="task-view-item">
+                                <span className="task-view-item-label">Recurrence</span>
+                                <span className="task-view-item-value">
+                                  {task.recurrence_rule
+                                    ? task.recurrence_rule.includes(' days')
+                                      ? `Every ${task.recurrence_rule}`
+                                      : task.recurrence_rule[0].toUpperCase() + task.recurrence_rule.slice(1)
+                                    : '-'}
+                                </span>
+                              </div>
+                              <div className="task-view-item">
+                                <span className="task-view-item-label">Next Recurrence</span>
+                                <span className="task-view-item-value">{formatDateOnly(task.recurrence_next_date)}</span>
+                              </div>
+                            </>
+                          )}
+                        </div>
                       </div>
-                    </div>
 
-                    <div
-                      className={`task-view-section${
-                        isApproverView ? ' task-view-section--approver-secondary' : ''
-                      }`}
-                    >
-                      <h3 className="task-task-view-section-title">
-                        <span>📅</span> Timeline
-                      </h3>
-                      <div className="task-view-grid task-view-grid--info">
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Created Date</span>
-                          <span className="task-view-item-value">{formatDateOnly(task.created_at)}</span>
-                        </div>
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Start Date</span>
-                          <span className="task-view-item-value">{formatDateOnly(task.start_date)}</span>
-                        </div>
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Due Date</span>
-                          <span className="task-view-item-value">
-                            {formatDateOnly(task.due_date)}
-                            {dueInfo && (
-                              <span
-                                className={`task-due-badge task-due-badge--${dueInfo.variant}`}
-                              >
-                                {dueInfo.label}
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                        {showCompletedDate && (
-                          <div className="task-view-item">
-                            <span className="task-view-item-label">Completed Date</span>
-                            <span className="task-view-item-value">
-                              {formatDateOnly(task.completed_date)}
-                            </span>
+                      {!isApproverView && dependencies.length > 0 && (
+                        <div className="task-view-section">
+                          <h3 className="task-task-view-section-title">
+                            <span>🔗</span> Dependencies
+                          </h3>
+                          <div className="task-view-grid">
+                            <div className="task-view-item">
+                              <ul className="dependencies-list">
+                                {dependencies.map((dep) => {
+                                  const key = dep.id || dep.task_id || dep;
+                                  const title = dep.title || dep.name || `Task #${key}`;
+                                  const depStatusLabel = dep.status ? capitalize(dep.status) : '';
+                                  return (
+                                    <li key={key} className="dependencies-item">
+                                      <span className="dependencies-title">{title}</span>
+                                      {depStatusLabel && (
+                                        <span className="dependencies-status">
+                                          {depStatusLabel}
+                                        </span>
+                                      )}
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
                           </div>
-                        )}
-                        {isRecurringTask && (
-                          <>
-                            <div className="task-view-item">
-                              <span className="task-view-item-label">Recurrence</span>
-                              <span className="task-view-item-value">
-                                {task.recurrence_rule
-                                  ? task.recurrence_rule.includes(' days')
-                                    ? `Every ${task.recurrence_rule}`
-                                    : task.recurrence_rule[0].toUpperCase() + task.recurrence_rule.slice(1)
-                                  : '-'}
-                              </span>
-                            </div>
-                            <div className="task-view-item">
-                              <span className="task-view-item-label">Next Recurrence</span>
-                              <span className="task-view-item-value">{formatDateOnly(task.recurrence_next_date)}</span>
-                            </div>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                        </div>
+                      )}
 
-                    {!isApproverView && dependencies.length > 0 && (
                       <div className="task-view-section">
                         <h3 className="task-task-view-section-title">
-                          <span>🔗</span> Dependencies
+                          <span>👥</span> Team & Assignment
                         </h3>
-                        <div className="task-view-grid">
-                          <div className="task-view-item">
-                            <ul className="dependencies-list">
-                              {dependencies.map((dep) => {
-                                const key = dep.id || dep.task_id || dep;
-                                const title = dep.title || dep.name || `Task #${key}`;
-                                const depStatusLabel = dep.status ? capitalize(dep.status) : '';
-                                return (
-                                  <li key={key} className="dependencies-item">
-                                    <span className="dependencies-title">{title}</span>
-                                    {depStatusLabel && (
-                                      <span className="dependencies-status">
-                                        {depStatusLabel}
-                                      </span>
-                                    )}
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="task-view-section">
-                      <h3 className="task-task-view-section-title">
-                        <span>👥</span> Team & Assignment
-                        </h3>
-                      <div className="team-assignment">
-                        <div className="team-assignment-main">
-                          <span className="team-assignment-label">Assigned:</span>
-                          {assignedUsers && assignedUsers.length > 0 ? (
-                            <div className="team-assignment-pill-list">
-                              {assignedUsers.map((u) => {
-                                const meta = assignedUsersMeta.find(
-                                  (m) => m?.user_id === u.id,
-                                );
-                                const deptLabel = meta?.department
-                                  ? meta.department
+                        <div className="team-assignment">
+                          <div className="team-assignment-main">
+                            <span className="team-assignment-label">Assigned:</span>
+                            {assignedUsers && assignedUsers.length > 0 ? (
+                              <div className="team-assignment-pill-list">
+                                {assignedUsers.map((u) => {
+                                  const meta = assignedUsersMeta.find(
+                                    (m) => m?.user_id === u.id,
+                                  );
+                                  const deptLabel = meta?.department
+                                    ? meta.department
                                       .split('_')
                                       .map((w) =>
                                         w ? w[0].toUpperCase() + w.slice(1) : '',
                                       )
                                       .join(' ')
-                                  : '';
-                                const nameLabel = getUserDisplayName(u);
-                                const fullLabel = deptLabel
-                                  ? `${nameLabel} - ${deptLabel}`
-                                  : nameLabel;
-                                const initials = (() => {
-                                  const full = nameLabel || '';
-                                  const parts = full.split(' ').filter(Boolean);
-                                  if (parts.length === 0) return '';
-                                  if (parts.length === 1) {
-                                    return parts[0][0].toUpperCase();
-                                  }
-                                  return `${parts[0][0]}${
-                                    parts[parts.length - 1][0]
-                                  }`.toUpperCase();
-                                })();
-                                return (
-                                  <div
-                                    key={u.id}
-                                    className="team-assignment-pill-row"
-                                  >
-                                    <div className="team-assignment-avatar">
-                                      <span className="team-assignment-avatar-initial">
-                                        {initials}
+                                    : '';
+                                  const nameLabel = getUserDisplayName(u);
+                                  const fullLabel = deptLabel
+                                    ? `${nameLabel} - ${deptLabel}`
+                                    : nameLabel;
+                                  const initials = (() => {
+                                    const full = nameLabel || '';
+                                    const parts = full.split(' ').filter(Boolean);
+                                    if (parts.length === 0) return '';
+                                    if (parts.length === 1) {
+                                      return parts[0][0].toUpperCase();
+                                    }
+                                    return `${parts[0][0]}${parts[parts.length - 1][0]
+                                      }`.toUpperCase();
+                                  })();
+                                  return (
+                                    <div
+                                      key={u.id}
+                                      className="team-assignment-pill-row"
+                                    >
+                                      <div className="team-assignment-avatar">
+                                        <span className="team-assignment-avatar-initial">
+                                          {initials}
+                                        </span>
+                                      </div>
+                                      <span className="team-assignment-pill">
+                                        {fullLabel}
                                       </span>
                                     </div>
-                                    <span className="team-assignment-pill">
-                                      {fullLabel}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <span className="person-badge">-</span>
-                          )}
-                        </div>
-                        <div className="team-assignment-meta">
-                          <div className="collaboration-summary">
-                            <span className="collaboration-count">
-                              {assignedUsers.length}
-                            </span>
-                            <span className="collaboration-label">
-                              {assignedUsers.length === 1
-                                ? 'Person assigned'
-                                : 'People assigned'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    {hasApprovalPanel && (
-                      <div
-                        className={`task-view-section${
-                          isApproverView ? ' task-view-section--approver-primary' : ''
-                        }`}
-                      >
-                        <h3 className="task-task-view-section-title">
-                          <span>🛡️</span> Approval
-                        </h3>
-                        <div className="task-view-grid">
-                          <div className="task-view-item">
-                            <span className="task-view-item-label">Approvers</span>
-                            <span className="task-view-item-value">
-                              <ul className="approval-list">
-                                {approvalRows.map((row) => (
-                                  <li key={row.id} className="approval-list-item">
-                                    <span className="approval-list-name">
-                                      {row.name}
-                                    </span>
-                                    <span
-                                      className={`approval-status-badge approval-status-badge--${row.decision}`}
-                                    >
-                                      {row.decisionLabel}
-                                    </span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    {!isApproverView && reassignmentActivities.length > 0 && (
-                      <div className="task-view-section">
-                        <h3 className="task-task-view-section-title">
-                          <span>🔄</span> Reassignment History
-                        </h3>
-                        <div className="reassignment-list">
-                          {reassignmentActivities.map((act, index) => {
-                            const rawDetails = act.details;
-                            let fromItems = [];
-                            let toItems = [];
-
-                            if (Array.isArray(rawDetails)) {
-                              fromItems = rawDetails.filter((d) => d && d.type === 'from');
-                              toItems = rawDetails.filter((d) => d && d.type === 'to');
-                            } else if (rawDetails && typeof rawDetails === 'object') {
-                              const fromIds = Array.isArray(rawDetails.from_assigned_user_ids)
-                                ? rawDetails.from_assigned_user_ids
-                                : [];
-                              const fromMeta = Array.isArray(rawDetails.from_assigned_users_meta)
-                                ? rawDetails.from_assigned_users_meta
-                                : [];
-                              const toIds = Array.isArray(rawDetails.to_assigned_user_ids)
-                                ? rawDetails.to_assigned_user_ids
-                                : [];
-                              const toMeta = Array.isArray(rawDetails.to_assigned_users_meta)
-                                ? rawDetails.to_assigned_users_meta
-                                : [];
-
-                              fromItems = fromIds.map((fromId) => {
-                                const meta = fromMeta.find((m) => m && Number(m.user_id) === Number(fromId));
-                                return {
-                                  type: 'from',
-                                  user_id: fromId,
-                                  department: meta?.department || null,
-                                };
-                              });
-
-                              toItems = toIds.map((toId) => {
-                                const meta = toMeta.find((m) => m && Number(m.user_id) === Number(toId));
-                                return {
-                                  type: 'to',
-                                  user_id: toId,
-                                  department: meta?.department || null,
-                                };
-                              });
-                            }
-
-                            const formatDept = (dept) => {
-                              if (!dept) return '';
-                              return String(dept)
-                                .split('_')
-                                .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
-                                .join(' ');
-                            };
-
-                            const fromLabel =
-                              fromItems.length > 0
-                                ? fromItems
-                                    .map((i) => {
-                                      const deptLabel = formatDept(i.department);
-                                      const nameLabel = getUserNameFromId(i.user_id);
-                                      return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
-                                    })
-                                    .join(', ')
-                                : '-';
-
-                            const toLabel =
-                              toItems.length > 0
-                                ? toItems
-                                    .map((i) => {
-                                      const deptLabel = formatDept(i.department);
-                                      const nameLabel = getUserNameFromId(i.user_id);
-                                      return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
-                                    })
-                                    .join(', ')
-                                : '-';
-
-                            const performer = act && act.performed_by ? act.performed_by : null;
-                            const byLabel =
-                              (performer &&
-                                (performer.name ||
-                                  performer.full_name ||
-                                  performer.username ||
-                                  performer.email)) ||
-                              '-';
-
-                            const when = act.created_at ? formatDateOnly(act.created_at) : '-';
-
-                            return (
-                              <div key={act.id || index} className="reassignment-row">
-                                <div className="reassignment-timestamp">
-                                  {when}
-                                </div>
-                                <div className="reassignment-details">
-                                  <div className="reassignment-line">
-                                    <span className="reassignment-label">From:</span>
-                                    <span className="reassignment-value">{fromLabel}</span>
-                                  </div>
-                                  <div className="reassignment-line">
-                                    <span className="reassignment-label">To:</span>
-                                    <span className="reassignment-value">{toLabel}</span>
-                                  </div>
-                                  <div className="reassignment-line">
-                                    <span className="reassignment-label">By:</span>
-                                    <span className="reassignment-value">{byLabel}</span>
-                                  </div>
-                                </div>
+                                  );
+                                })}
                               </div>
-                            );
-                          })}
+                            ) : (
+                              <span className="person-badge">-</span>
+                            )}
+                          </div>
+                          <div className="team-assignment-meta">
+                            <div className="collaboration-summary">
+                              <span className="collaboration-count">
+                                {assignedUsers.length}
+                              </span>
+                              <span className="collaboration-label">
+                                {assignedUsers.length === 1
+                                  ? 'Person assigned'
+                                  : 'People assigned'}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </div>
+                      {hasApprovalPanel && (
+                        <div
+                          className={`task-view-section${isApproverView ? ' task-view-section--approver-primary' : ''
+                            }`}
+                        >
+                          <h3 className="task-task-view-section-title">
+                            <span>🛡️</span> Approval
+                          </h3>
+                          <div className="task-view-grid">
+                            <div className="task-view-item">
+                              <span className="task-view-item-label">Approvers</span>
+                              <span className="task-view-item-value">
+                                <ul className="approval-list">
+                                  {approvalRows.map((row) => (
+                                    <li key={row.id} className="approval-list-item">
+                                      <span className="approval-list-name">
+                                        {row.name}
+                                      </span>
+                                      <span
+                                        className={`approval-status-badge approval-status-badge--${row.decision}`}
+                                      >
+                                        {row.decisionLabel}
+                                      </span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      {!isApproverView && reassignmentActivities.length > 0 && (
+                        <div className="task-view-section">
+                          <h3 className="task-task-view-section-title">
+                            <span>🔄</span> Reassignment History
+                          </h3>
+                          <div className="reassignment-list">
+                            {reassignmentActivities.map((act, index) => {
+                              const rawDetails = act.details;
+                              let fromItems = [];
+                              let toItems = [];
 
-                  <div className="view-layout-side">
-                    {!isApproverView && (
-                      <TimeTracker taskId={task.id} taskStatus={task.status} />
-                    )}
+                              if (Array.isArray(rawDetails)) {
+                                fromItems = rawDetails.filter((d) => d && d.type === 'from');
+                                toItems = rawDetails.filter((d) => d && d.type === 'to');
+                              } else if (rawDetails && typeof rawDetails === 'object') {
+                                const fromIds = Array.isArray(rawDetails.from_assigned_user_ids)
+                                  ? rawDetails.from_assigned_user_ids
+                                  : [];
+                                const fromMeta = Array.isArray(rawDetails.from_assigned_users_meta)
+                                  ? rawDetails.from_assigned_users_meta
+                                  : [];
+                                const toIds = Array.isArray(rawDetails.to_assigned_user_ids)
+                                  ? rawDetails.to_assigned_user_ids
+                                  : [];
+                                const toMeta = Array.isArray(rawDetails.to_assigned_users_meta)
+                                  ? rawDetails.to_assigned_users_meta
+                                  : [];
 
-                    <div className="task-notes-panel">
-                      {/* <div
+                                fromItems = fromIds.map((fromId) => {
+                                  const meta = fromMeta.find((m) => m && Number(m.user_id) === Number(fromId));
+                                  return {
+                                    type: 'from',
+                                    user_id: fromId,
+                                    department: meta?.department || null,
+                                  };
+                                });
+
+                                toItems = toIds.map((toId) => {
+                                  const meta = toMeta.find((m) => m && Number(m.user_id) === Number(toId));
+                                  return {
+                                    type: 'to',
+                                    user_id: toId,
+                                    department: meta?.department || null,
+                                  };
+                                });
+                              }
+
+                              const formatDept = (dept) => {
+                                if (!dept) return '';
+                                return String(dept)
+                                  .split('_')
+                                  .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+                                  .join(' ');
+                              };
+
+                              const fromLabel =
+                                fromItems.length > 0
+                                  ? fromItems
+                                    .map((i) => {
+                                      const deptLabel = formatDept(i.department);
+                                      const nameLabel = getUserNameFromId(i.user_id);
+                                      return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
+                                    })
+                                    .join(', ')
+                                  : '-';
+
+                              const toLabel =
+                                toItems.length > 0
+                                  ? toItems
+                                    .map((i) => {
+                                      const deptLabel = formatDept(i.department);
+                                      const nameLabel = getUserNameFromId(i.user_id);
+                                      return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
+                                    })
+                                    .join(', ')
+                                  : '-';
+
+                              const performer = act && act.performed_by ? act.performed_by : null;
+                              const byLabel =
+                                (performer &&
+                                  (performer.name ||
+                                    performer.full_name ||
+                                    performer.username ||
+                                    performer.email)) ||
+                                '-';
+
+                              const when = act.created_at ? formatDateOnly(act.created_at) : '-';
+
+                              return (
+                                <div key={act.id || index} className="reassignment-row">
+                                  <div className="reassignment-timestamp">
+                                    {when}
+                                  </div>
+                                  <div className="reassignment-details">
+                                    <div className="reassignment-line">
+                                      <span className="reassignment-label">From:</span>
+                                      <span className="reassignment-value">{fromLabel}</span>
+                                    </div>
+                                    <div className="reassignment-line">
+                                      <span className="reassignment-label">To:</span>
+                                      <span className="reassignment-value">{toLabel}</span>
+                                    </div>
+                                    <div className="reassignment-line">
+                                      <span className="reassignment-label">By:</span>
+                                      <span className="reassignment-value">{byLabel}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="view-layout-side">
+                      {!isApproverView && (
+                        <TimeTracker taskId={task.id} taskStatus={task.status} />
+                      )}
+
+                      <div className="task-notes-panel">
+                        {/* <div
                         className={`task-view-section${
                           isApproverView ? ' task-view-section--approver-primary' : ''
                         }`}
@@ -1868,248 +1885,247 @@ const ViewTask = () => {
                         )} 
                       </div> */}
 
-                      <TaskDueRemindersPanel
-                        taskId={task.id}
-                        dueDate={task.due_date}
-                        isAssignee={isCurrentUserAssignee}
-                        disabled={!canInteractWithNotes}
-                      />
+                        <TaskDueRemindersPanel
+                          taskId={task.id}
+                          dueDate={task.due_date}
+                          isAssignee={isCurrentUserAssignee}
+                          disabled={!canInteractWithNotes}
+                        />
 
-                      <div
-                        className={`task-view-section task-comments-panel${
-                          isApproverView ? ' task-view-section--approver-secondary' : ''
-                        }`}
-                      >
-                        <h3 className="task-task-view-section-title">
-                          <span>💬</span> {isApproverView ? 'Comments & Activity' : 'Comments & Activity'}
-                        </h3>
-                        <div className="task-view-grid">
-                          <div className="task-view-item task-comments-item">
-                            <ul className="comments-list">
-                              {(task.comments || []).map((c) => {
-                                const hasAuthor = !!c.author;
-                                const authorName = hasAuthor ? getUserDisplayName(c.author) : 'System';
-                                const initial = authorName && authorName !== 'System' ? authorName.charAt(0).toUpperCase() : 'S';
-                                const commentTypeClass = hasAuthor ? 'comment-item--user' : 'comment-item--system';
-                                return (
-                                  <li key={c.id} className={`comment-item ${commentTypeClass}`}>
-                                    <div className="comment-avatar">
-                                      <span className="comment-avatar-initial">
-                                        {initial}
-                                      </span>
-                                    </div>
-                                    <div className="comment-body">
-                                      <div className="comment-header">
-                                        <span className="comment-author">
-                                          {authorName}
-                                        </span>
-                                        <span className="comment-date">
-                                          {formatDateOnly(c.created_at)}
-                                        </span>
-                                      </div>
-                                      <div className="comment-content">
-                                        {c.content}
-                                      </div>
-                                    </div>
-                                  </li>
-                                );
-                              })}
-                              {(!task.comments || task.comments.length === 0) && <li>No comments</li>}
-                            </ul>
-                          </div>
-                        </div>
-                        {!isApproverView && (
-                          <form onSubmit={addComment} className="task-comments-form">
-                            <MentionCommentInput
-                              key={commentFormKey}
-                              name="content"
-                              value={comment.content}
-                              mentionedUserIds={comment.mentioned_user_ids}
-                              onChange={handleCommentChange}
-                              onMentionedUsersChange={handleMentionedUsersChange}
-                              disabled={!canInteractWithNotes}
-                              placeholder="Add Comment (type @ to mention someone)"
-                            />
-                            <div className="form-actions">
-                              <PrimaryButton
-                                style={{ color: '#ffffff' }}
-                                type="submit"
-                                disabled={savingComment || !canInteractWithNotes}
-                                loading={savingComment}
-                                loadingText="Posting...."
-                              >
-                                Post Comment
-                              </PrimaryButton>
-                            </div>
-                          </form>
-                        )}
-                      </div>
-
-                      {!isApproverView && (relatedLoading || relatedTasks.length > 0) && (
-                        <div className="task-view-section">
+                        <div
+                          className={`task-view-section task-comments-panel${isApproverView ? ' task-view-section--approver-secondary' : ''
+                            }`}
+                        >
                           <h3 className="task-task-view-section-title">
-                            <span>🔗</span> Related tasks
+                            <span>💬</span> {isApproverView ? 'Comments & Activity' : 'Comments & Activity'}
                           </h3>
                           <div className="task-view-grid">
-                            <div className="task-view-item">
-                              {relatedLoading && (
-                                <div className="status-message">
-                                  Loading related tasks...
-                                </div>
-                              )}
-                              {!relatedLoading && relatedTasks.length > 0 && (
-                                <ul className="related-tasks-list">
-                                  {relatedTasks.map((t) => (
-                                    <li
-                                      key={t.id}
-                                      className="related-task-item"
-                                      onClick={() =>
-                                        navigate(`${taskRouteBase}/view/${t.id}`)
-                                      }
-                                    >
-                                      <div className="related-task-main">
-                                        <div className="related-task-title">
-                                          {t.title}
+                            <div className="task-view-item task-comments-item">
+                              <ul className="comments-list">
+                                {(task.comments || []).map((c) => {
+                                  const hasAuthor = !!c.author;
+                                  const authorName = hasAuthor ? getUserDisplayName(c.author) : 'System';
+                                  const initial = authorName && authorName !== 'System' ? authorName.charAt(0).toUpperCase() : 'S';
+                                  const commentTypeClass = hasAuthor ? 'comment-item--user' : 'comment-item--system';
+                                  return (
+                                    <li key={c.id} className={`comment-item ${commentTypeClass}`}>
+                                      <div className="comment-avatar">
+                                        <span className="comment-avatar-initial">
+                                          {initial}
+                                        </span>
+                                      </div>
+                                      <div className="comment-body">
+                                        <div className="comment-header">
+                                          <span className="comment-author">
+                                            {authorName}
+                                          </span>
+                                          <span className="comment-date">
+                                            {formatDateOnly(c.created_at)}
+                                          </span>
                                         </div>
-                                        <div className="related-task-meta">
-                                          <span className="related-task-status">
-                                            {getStatusBadge(t.status)}
-                                          </span>
-                                          <span className="related-task-dept">
-                                            {capitalize(t.department)}
-                                          </span>
+                                        <div className="comment-content">
+                                          {c.content}
                                         </div>
                                       </div>
                                     </li>
-                                  ))}
-                                </ul>
-                              )}
-                              {!relatedLoading && relatedTasks.length === 0 && (
-                                <div className="status-message">
-                                  No related tasks
-                                </div>
-                              )}
+                                  );
+                                })}
+                                {(!task.comments || task.comments.length === 0) && <li>No comments</li>}
+                              </ul>
                             </div>
                           </div>
+                          {!isApproverView && (
+                            <form onSubmit={addComment} className="task-comments-form">
+                              <MentionCommentInput
+                                key={commentFormKey}
+                                name="content"
+                                value={comment.content}
+                                mentionedUserIds={comment.mentioned_user_ids}
+                                onChange={handleCommentChange}
+                                onMentionedUsersChange={handleMentionedUsersChange}
+                                disabled={!canInteractWithNotes}
+                                placeholder="Add Comment (type @ to mention someone)"
+                              />
+                              <div className="form-actions">
+                                <PrimaryButton
+                                  style={{ color: '#ffffff' }}
+                                  type="submit"
+                                  disabled={savingComment || !canInteractWithNotes}
+                                  loading={savingComment}
+                                  loadingText="Posting...."
+                                >
+                                  Post Comment
+                                </PrimaryButton>
+                              </div>
+                            </form>
+                          )}
                         </div>
-                      )}
+
+                        {!isApproverView && (relatedLoading || relatedTasks.length > 0) && (
+                          <div className="task-view-section">
+                            <h3 className="task-task-view-section-title">
+                              <span>🔗</span> Related tasks
+                            </h3>
+                            <div className="task-view-grid">
+                              <div className="task-view-item">
+                                {relatedLoading && (
+                                  <div className="status-message">
+                                    Loading related tasks...
+                                  </div>
+                                )}
+                                {!relatedLoading && relatedTasks.length > 0 && (
+                                  <ul className="related-tasks-list">
+                                    {relatedTasks.map((t) => (
+                                      <li
+                                        key={t.id}
+                                        className="related-task-item"
+                                        onClick={() =>
+                                          navigate(`${taskRouteBase}/view/${t.id}`)
+                                        }
+                                      >
+                                        <div className="related-task-main">
+                                          <div className="related-task-title">
+                                            {t.title}
+                                          </div>
+                                          <div className="related-task-meta">
+                                            <span className="related-task-status">
+                                              {getStatusBadge(t.status)}
+                                            </span>
+                                            <span className="related-task-dept">
+                                              {capitalize(t.department)}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                )}
+                                {!relatedLoading && relatedTasks.length === 0 && (
+                                  <div className="status-message">
+                                    No related tasks
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="receipt-footer">
+                    <div>MTJ Foundation • Task Management System</div>
+                    <div className="metadata">
+                      <span>Task ID: {formatTaskId(task)}</span>
+                      <span>
+                        Department: {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0
+                          ? [...new Set(task.assigned_users_meta.map(m => m ? m.department : null).filter(Boolean))]
+                            .map(d => capitalize(d))
+                            .join(', ')
+                          : capitalize(task.department)}
+                      </span>
+                      <span>
+                        Last updated:{' '}
+                        {formatDate(task.updated_at || task.created_at)}
+                      </span>
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
 
-                <div className="receipt-footer">
-                  <div>MTJ Foundation • Task Management System</div>
-                  <div className="metadata">
-                    <span>Task ID: {formatTaskId(task)}</span>
-                    <span>
-                      Department: {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0
-                        ? [...new Set(task.assigned_users_meta.map(m => m ? m.department : null).filter(Boolean))]
-                            .map(d => capitalize(d))
-                            .join(', ')
-                        : capitalize(task.department)}
-                    </span>
-                    <span>
-                      Last updated:{' '}
-                      {formatDate(task.updated_at || task.created_at)}
-                    </span>
+            <StatusUpdateModal
+              isOpen={statusModalOpen}
+              taskId={task.id}
+              action={statusModalAction}
+              onClose={() => {
+                setStatusModalOpen(false);
+                setStatusModalAction(null);
+              }}
+              onUpdated={(updated) => {
+                if (
+                  statusModalAction === 'APPROVE' ||
+                  statusModalAction === 'REJECT'
+                ) {
+                  setCurrentUserHasActedOnApproval(true);
+                }
+                handleStatusUpdated(updated);
+                setStatusActionLoading(false);
+              }}
+            />
+
+            {/* MOV Completion Prompt */}
+            {showMovCompletionPrompt && (
+              <div className="status-modal-backdrop" role="dialog" aria-modal="true">
+                <div className="status-modal">
+                  <div className="status-modal-header">
+                    <h3 className="status-modal-title">All MOV Items Completed</h3>
+                  </div>
+                  <div className="status-modal-body">
+                    <p className="status-modal-text">
+                      All MOV items are completed. Do you want to change the task status to Completed?
+                    </p>
+                  </div>
+                  <div className="status-modal-footer">
+                    <button
+                      type="button"
+                      className="task-status-modal-cancel"
+                      onClick={() => setShowMovCompletionPrompt(false)}
+                    >
+                      No
+                    </button>
+                    <PrimaryButton
+                      style={{ color: '#ffffff' }}
+                      type="button"
+                      onClick={async () => {
+                        // Change task status to Completed
+                        try {
+                          const payload = { status: 'completed', notes: 'All MOV items completed' };
+                          await axiosInstance.post(`/tasks/${task.id}/status-transition`, payload);
+                          const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
+                          const updatedTask = refreshed.data?.data || null;
+                          if (updatedTask) {
+                            setTask(updatedTask);
+                          }
+                          toast.success('Task marked as Completed');
+                          setShowMovCompletionPrompt(false);
+
+                          // If task is approval-based, show Submit for Approval modal
+                          if (String(task.workflow_type).toLowerCase() === 'approval_required') {
+                            setStatusModalAction('SUBMIT_APPROVAL');
+                            setStatusModalOpen(true);
+                          }
+                        } catch (e) {
+                          const msg = e.response?.data?.message || 'Failed to update status.';
+                          setError(msg);
+                          toast.error(msg);
+                        }
+                      }}
+                    >
+                      Yes
+                    </PrimaryButton>
                   </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            <QuickActionModal
+              isOpen={quickActionOpen}
+              taskId={task.id}
+              actionKey={quickActionKey}
+              userDepartment={user?.department}
+              taskRouteBase={taskRouteBase}
+              onClose={() => {
+                setQuickActionOpen(false);
+                setQuickActionKey(null);
+              }}
+              onCompleted={(actionKey, updatedTask) => {
+                if (updatedTask) {
+                  setTask(updatedTask);
+                }
+              }}
+            />
           </div>
-
-          <StatusUpdateModal
-            isOpen={statusModalOpen}
-            taskId={task.id}
-            action={statusModalAction}
-            onClose={() => {
-              setStatusModalOpen(false);
-              setStatusModalAction(null);
-            }}
-            onUpdated={(updated) => {
-              if (
-                statusModalAction === 'APPROVE' ||
-                statusModalAction === 'REJECT'
-              ) {
-                setCurrentUserHasActedOnApproval(true);
-              }
-              handleStatusUpdated(updated);
-              setStatusActionLoading(false);
-            }}
-          />
-
-          {/* MOV Completion Prompt */}
-          {showMovCompletionPrompt && (
-            <div className="status-modal-backdrop" role="dialog" aria-modal="true">
-              <div className="status-modal">
-                <div className="status-modal-header">
-                  <h3 className="status-modal-title">All MOV Items Completed</h3>
-                </div>
-                <div className="status-modal-body">
-                  <p className="status-modal-text">
-                    All MOV items are completed. Do you want to change the task status to Completed?
-                  </p>
-                </div>
-                <div className="status-modal-footer">
-                  <button
-                    type="button"
-                    className="task-status-modal-cancel"
-                    onClick={() => setShowMovCompletionPrompt(false)}
-                  >
-                    No
-                  </button>
-                  <PrimaryButton
-                    style={{ color: '#ffffff' }}
-                    type="button"
-                    onClick={async () => {
-                      // Change task status to Completed
-                      try {
-                        const payload = { status: 'completed', notes: 'All MOV items completed' };
-                        await axiosInstance.post(`/tasks/${task.id}/status-transition`, payload);
-                        const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
-                        const updatedTask = refreshed.data?.data || null;
-                        if (updatedTask) {
-                          setTask(updatedTask);
-                        }
-                        toast.success('Task marked as Completed');
-                        setShowMovCompletionPrompt(false);
-                        
-                        // If task is approval-based, show Submit for Approval modal
-                        if (String(task.workflow_type).toLowerCase() === 'approval_required') {
-                          setStatusModalAction('SUBMIT_APPROVAL');
-                          setStatusModalOpen(true);
-                        }
-                      } catch (e) {
-                        const msg = e.response?.data?.message || 'Failed to update status.';
-                        setError(msg);
-                        toast.error(msg);
-                      }
-                    }}
-                  >
-                    Yes
-                  </PrimaryButton>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <QuickActionModal
-            isOpen={quickActionOpen}
-            taskId={task.id}
-            actionKey={quickActionKey}
-            userDepartment={user?.department}
-            taskRouteBase={taskRouteBase}
-            onClose={() => {
-              setQuickActionOpen(false);
-              setQuickActionKey(null);
-            }}
-            onCompleted={(actionKey, updatedTask) => {
-              if (updatedTask) {
-                setTask(updatedTask);
-              }
-            }}
-          />
-        </div>
         )}
       </div>
     </>
