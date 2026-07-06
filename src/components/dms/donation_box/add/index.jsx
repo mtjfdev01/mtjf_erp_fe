@@ -8,6 +8,12 @@ import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import HybridDropdown from '../../../common/HybridDropdown';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
+import LocationMapPicker from '../../../common/LocationMapPicker';
+import {
+  DEFAULT_COLLECTION_RADIUS_METERS,
+  radiusFormToMeters,
+  validateCollectionRadiusMeters,
+} from '../../../../utils/geolocation';
 
 const AddDonationBox = () => {
   const navigate = useNavigate();
@@ -34,11 +40,15 @@ const AddDonationBox = () => {
     box_type: 'medium',
     active_since: new Date().toISOString().split('T')[0],
     status: 'active',
-    collection_frequency: 'weekly'
+    collection_frequency: 'weekly',
+    require_collection_location: true,
+    location_radius_value: '100',
+    location_radius_unit: 'm',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [deviceLocation, setDeviceLocation] = useState(null);
   
   // State for cascading dropdowns
   const [regions, setRegions] = useState([]);
@@ -127,9 +137,10 @@ const AddDonationBox = () => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    console.log(`Form field changed: ${name} = ${value}`);
-    setForm({ ...form, [name]: value });
+    const { name, value, type, checked } = e.target;
+    const nextValue = type === 'checkbox' ? checked : value;
+    console.log(`Form field changed: ${name} = ${nextValue}`);
+    setForm({ ...form, [name]: nextValue });
     
     // Handle cascading dropdowns
     if (name === 'region') {
@@ -157,6 +168,14 @@ const AddDonationBox = () => {
     setIsSubmitting(true);
     
     try {
+      if (form.require_collection_location && !deviceLocation) {
+        setError('Please select the exact box location on the map.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const location = deviceLocation;
+
       // Prepare donation box data
       const donationBoxData = {
         key_no: form.key_no || null,
@@ -171,8 +190,28 @@ const AddDonationBox = () => {
         box_type: form.box_type,
         active_since: form.active_since,
         status: form.status,
-        collection_frequency: form.collection_frequency
+        collection_frequency: form.collection_frequency,
+        require_collection_location: form.require_collection_location,
       };
+
+      if (form.require_collection_location && location) {
+        const locationRadiusMeters = radiusFormToMeters(
+          form.location_radius_value,
+          form.location_radius_unit,
+        );
+        const radiusError = validateCollectionRadiusMeters(locationRadiusMeters);
+        if (radiusError) {
+          setError(radiusError);
+          setIsSubmitting(false);
+          return;
+        }
+
+        donationBoxData.registration_latitude = location.latitude;
+        donationBoxData.registration_longitude = location.longitude;
+        donationBoxData.registration_location_name = location.location_name || null;
+        donationBoxData.registration_location_details = location.location_details || null;
+        donationBoxData.location_radius_meters = locationRadiusMeters;
+      }
 
       console.log('Submitting donation box data:', donationBoxData);
       console.log('Assigned users:', assignedUsers);
@@ -426,6 +465,69 @@ const AddDonationBox = () => {
               />
 
             </div>
+          </div>
+
+          <div className="form-section">
+            <h3 className="form-section-heading">Box GPS coordinates</h3>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', marginBottom: '12px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                name="require_collection_location"
+                checked={form.require_collection_location}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (!e.target.checked) {
+                    setDeviceLocation(null);
+                  }
+                }}
+                style={{ marginTop: '3px' }}
+              />
+              <span>
+                <strong>Require on-site collection</strong>
+                <span style={{ display: 'block', fontSize: '13px', color: '#64748b', marginTop: '4px' }}>
+                  When enabled, save exact GPS from Google Maps. Collections must be within the margin you set below (default {DEFAULT_COLLECTION_RADIUS_METERS}m — good for shops or large offices).
+                  Uncheck for boxes that can be collected from anywhere.
+                </span>
+              </span>
+            </label>
+            {form.require_collection_location && (
+              <>
+              <div className="form-grid-2" style={{ marginBottom: '16px' }}>
+                <FormInput
+                  label="Collection margin"
+                  type="number"
+                  name="location_radius_value"
+                  value={form.location_radius_value}
+                  onChange={handleChange}
+                  required
+                  min={form.location_radius_unit === 'km' ? '0.01' : '10'}
+                  max={form.location_radius_unit === 'km' ? '10' : '10000'}
+                  step={form.location_radius_unit === 'km' ? '0.1' : '1'}
+                  placeholder={form.location_radius_unit === 'km' ? 'e.g. 0.1' : 'e.g. 100'}
+                />
+                <FormSelect
+                  label="Margin unit"
+                  name="location_radius_unit"
+                  value={form.location_radius_unit}
+                  onChange={handleChange}
+                  options={[
+                    { value: 'm', label: 'Meters (m)' },
+                    { value: 'km', label: 'Kilometers (km)' },
+                  ]}
+                  required
+                />
+              </div>
+              <p style={{ margin: '0 0 12px', fontSize: '13px', color: '#64748b' }}>
+                Example: set <strong>100 m</strong> for a large office or plaza around the registered pin.
+              </p>
+              <LocationMapPicker
+                value={deviceLocation}
+                onChange={setDeviceLocation}
+                axiosInstance={axiosInstance}
+                disabled={isSubmitting}
+              />
+              </>
+            )}
           </div>
 
           <div className="form-actions">

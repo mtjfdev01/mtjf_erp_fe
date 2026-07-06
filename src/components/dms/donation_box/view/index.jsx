@@ -6,6 +6,8 @@ import PageHeader from '../../../common/PageHeader';
 import { FiDollarSign } from 'react-icons/fi';
 import DonationBoxAuditHistory from '../shared/DonationBoxAuditHistory';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
+import { formatRadiusDisplay, getGoogleMapsUrl } from '../../../../utils/geolocation';
+import LocationDetailsSummary from '../../../common/LocationMapPicker/LocationDetailsSummary';
 
 const ViewDonationBox = () => {
   const { id } = useParams();
@@ -180,6 +182,52 @@ const ViewDonationBox = () => {
                 <span className="view-item-label">Route</span>
                 <span className="view-item-value">{donationBox?.route?.name || '-'}</span>
               </div>
+              <div className="view-item">
+                <span className="view-item-label">On-site collection (GPS)</span>
+                <span className="view-item-value">
+                  {donationBox.require_collection_location === false
+                    ? 'No — collect from anywhere'
+                    : 'Yes — device GPS required'}
+                </span>
+              </div>
+              {donationBox.require_collection_location !== false && (
+                <>
+              <div className="view-item view-item--full">
+                <span className="view-item-label">GPS location details</span>
+                <span className="view-item-value">
+                  <LocationDetailsSummary
+                    details={donationBox.registration_location_details}
+                    latitude={donationBox.registration_latitude}
+                    longitude={donationBox.registration_longitude}
+                    title="Registered coordinates"
+                  />
+                </span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Collection margin</span>
+                <span className="view-item-value">
+                  {formatRadiusDisplay(donationBox.location_radius_meters || 100)}
+                </span>
+              </div>
+              {donationBox.registration_latitude != null && donationBox.registration_longitude != null && (
+              <div className="view-item">
+                <span className="view-item-label">Map</span>
+                <span className="view-item-value">
+                  <a
+                    href={getGoogleMapsUrl(
+                      donationBox.registration_latitude,
+                      donationBox.registration_longitude,
+                    )}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Open registered location in Google Maps
+                  </a>
+                </span>
+              </div>
+              )}
+                </>
+              )}
             </div>
           </div>
 

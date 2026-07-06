@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { CollectionLocationMap } from '../../../../common/LocationMapPicker';
 import axiosInstance from '../../../../../utils/axios';
 import FormInput from '../../../../common/FormInput';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
@@ -8,6 +9,7 @@ import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import { useAuth } from '../../../../../context/AuthContext';
 import { hasPermission } from '../../../../../utils/permissions';
+import { DEFAULT_COLLECTION_RADIUS_METERS, getCurrentDeviceLocationWithName } from '../../../../../utils/geolocation';
 
 const AddDonationBoxDonation = () => {
   const { id } = useParams();
@@ -32,19 +34,40 @@ const AddDonationBoxDonation = () => {
     );
   }, [permissions]);
 
+  const canBypassLocation = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'donation_box_donations', 'bypass_location')
+    );
+  }, [permissions]);
+
+  const activeBox = form.donation_box || donationBox;
+  const boxRequiresGps = activeBox?.require_collection_location !== false;
+  const needsDeviceGps = boxRequiresGps && !canBypassLocation;
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError('');
   };
 
   // Handle donation box selection from searchable dropdown
-  const handleDonationBoxSelect = (donationBox) => {
+  const handleDonationBoxSelect = async (selectedBox) => {
     setForm({
       ...form,
-      donation_box_id: donationBox.id,
-      donation_box: donationBox
+      donation_box_id: selectedBox.id,
+      donation_box: selectedBox,
     });
     if (error) setError('');
+
+    try {
+      const response = await axiosInstance.get(`/donation-box/${selectedBox.id}`);
+      if (response.data?.success) {
+        setDonationBox(response.data.data);
+      }
+    } catch (err) {
+      console.error('Error fetching donation box details:', err);
+    }
   };
 
   // Clear donation box selection
@@ -96,8 +119,16 @@ const AddDonationBoxDonation = () => {
       const donationData = {
         donation_box_id: form.donation_box_id,
         collection_amount: amount,
-        collection_date: form.collection_date
+        collection_date: form.collection_date,
       };
+
+      if (needsDeviceGps) {
+        const location = await getCurrentDeviceLocationWithName(axiosInstance);
+        donationData.collector_latitude = location.latitude;
+        donationData.collector_longitude = location.longitude;
+        donationData.collector_location_name = location.location_name || null;
+        donationData.collector_location_details = location.location_details || null;
+      }
 
       await axiosInstance.post('/donation-box-donation', donationData); 
 
@@ -224,7 +255,38 @@ const AddDonationBoxDonation = () => {
                 max={new Date().toISOString().split('T')[0]}
               />
             </div>
+            {needsDeviceGps && (
+              <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#64748b' }}>
+                Your device GPS (Google Maps) will be checked against this box&apos;s registered shop location when you submit.
+              </p>
+            )}
+            {!boxRequiresGps && (
+              <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#0369a1' }}>
+                This box allows collection from anywhere — no device GPS check.
+              </p>
+            )}
+            {boxRequiresGps && canBypassLocation && (
+              <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#0369a1' }}>
+                GPS check bypass is enabled for your account.
+              </p>
+            )}
           </div>
+
+          {needsDeviceGps && (
+            <div className="form-section">
+              <h3 className="form-section-heading">Location verification</h3>
+              <CollectionLocationMap
+                boxLocation={{
+                  latitude: activeBox?.registration_latitude,
+                  longitude: activeBox?.registration_longitude,
+                  location_name: activeBox?.registration_location_name,
+                  location_details: activeBox?.registration_location_details,
+                }}
+                radiusMeters={activeBox?.location_radius_meters || DEFAULT_COLLECTION_RADIUS_METERS}
+                axiosInstance={axiosInstance}
+              />
+            </div>
+          )}
 
           {canImportCsv && (
             <div

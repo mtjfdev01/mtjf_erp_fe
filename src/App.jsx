@@ -171,7 +171,7 @@ import CitiesList from './components/dms/geographic/cities/list';
 import AddCity from './components/dms/geographic/cities/add';
 import RoutesList from './components/dms/geographic/routes/list';
 import AddRoute from './components/dms/geographic/routes/add';
-import TasksList from './components/admin/tasks/list';
+import TasksPage from './components/admin/tasks';
 import AddTask from './components/admin/tasks/add';
 import UpdateTask from './components/admin/tasks/update';
 import ViewTask from './components/admin/tasks/view';
@@ -501,7 +501,7 @@ const App = () => {
                                 <Route path="/dms/donor-relationship/overview" element={<ManagementOverview />} />
 
                                 {/* Tasks — flat routes for all users */}
-                                <Route path="/tasks/list" element={<TasksList />} />
+                                <Route path="/tasks/list" element={<TasksPage />} />
                                 <Route path="/tasks/add" element={<AddTask />} />
                                 <Route path="/tasks/update/:id" element={<UpdateTask />} />
                                 <Route path="/tasks/view/:id" element={<ViewTask />} />

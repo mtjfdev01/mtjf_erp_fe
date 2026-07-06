@@ -14,8 +14,10 @@ import { getTaskPermissions } from '../../../../utils/permissions';
 import { tasksBasePath } from '../../../../utils/admin';
 import '../../../../styles/components.css';
 import './index.css';
+import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
+import TaskAssigneeFilter, { formatAssigneeLabel } from '../shared/TaskAssigneeFilter';
 
-const TasksList = () => {
+const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permissions } = useAuth();
@@ -42,7 +44,17 @@ const TasksList = () => {
     department: searchParams.get('department') || '', 
     status: searchParams.get('status') || '',
     priority: searchParams.get('priority') || '',
-    user_name: searchParams.get('user_name') || ''
+  });
+  const [assignedUser, setAssignedUser] = useState(() => {
+    const assigneeId = searchParams.get('assignee_id');
+    if (!assigneeId || !Number.isFinite(Number(assigneeId))) return null;
+    const label = (searchParams.get('user_label') || '').trim();
+    const parts = label.split(' ').filter(Boolean);
+    return {
+      id: Number(assigneeId),
+      first_name: parts[0] || '',
+      last_name: parts.slice(1).join(' ') || '',
+    };
   });
   const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
   const [isSearchPending, setIsSearchPending] = useState(false);
@@ -53,6 +65,30 @@ const TasksList = () => {
   const [showApprovalBanner, setShowApprovalBanner] = useState(false);
 
   const currentUserId = user?.id ? Number(user.id) : null;
+
+  useEffect(() => {
+    const assigneeId = searchParams.get('assignee_id');
+    if (!assigneeId || !Number.isFinite(Number(assigneeId))) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axiosInstance.get(
+          `/users/by-ids?ids=${encodeURIComponent(assigneeId)}`,
+        );
+        const users = Array.isArray(res.data) ? res.data : [];
+        if (!cancelled && users[0]) {
+          setAssignedUser(users[0]);
+        }
+      } catch {
+        // URL assignee could not be loaded; filter stays empty
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Sync state to URL search params
   useEffect(() => {
@@ -66,7 +102,11 @@ const TasksList = () => {
     if (filters.department) params.set('department', filters.department);
     if (filters.status) params.set('status', filters.status);
     if (filters.priority) params.set('priority', filters.priority);
-    if (filters.user_name) params.set('user_name', filters.user_name);
+    if (assignedUser?.id) {
+      params.set('assignee_id', String(assignedUser.id));
+      const label = formatAssigneeLabel(assignedUser);
+      if (label) params.set('user_label', label);
+    }
     if (activeTab !== 'assigned_to_me') params.set('activeTab', activeTab);
     
     // Navigate with updated params
@@ -74,7 +114,7 @@ const TasksList = () => {
       pathname: location.pathname,
       search: params.toString()
     }, { replace: true });
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, activeTab, navigate, location.pathname]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, assignedUser?.id, activeTab, navigate, location.pathname]);
 
   const isManager = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
@@ -114,7 +154,7 @@ const TasksList = () => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.department, filters.status, filters.priority, filters.user_name]);
+  }, [filters.search, filters.department, filters.status, filters.priority, assignedUser?.id]);
 
   useEffect(() => {
     return () => {
@@ -379,21 +419,25 @@ const TasksList = () => {
         // shows ONLY tasks belonging to that department.
         const isStrictFilter = !!scopedFilters.department;
 
+        const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
+
         // Check if user-applied search filters are active
-        // Only use /tasks/search when user actively searches or filters by status/priority/user_name
         const hasUserAppliedFilters =
           filters.search ||
           filters.status ||
           filters.priority ||
-          filters.user_name;
+          assigneeId;
 
         let res;
 
         if (hasUserAppliedFilters) {
-          // Use POST /tasks/search when user applies search/status/priority/user_name filters
+          // Use POST /tasks/search when user applies search/status/priority/user filters
           const payload = {
             pagination: { page: currentPage, pageSize, sortField, sortOrder },
-            filters: scopedFilters,
+            filters: {
+              ...scopedFilters,
+              assignee_id: assigneeId,
+            },
             strictDepartment: isStrictFilter
           };
           res = await axiosInstance.post('/tasks/search', payload);
@@ -405,7 +449,7 @@ const TasksList = () => {
             sortField,
             sortOrder,
             department: scopedFilters.department || undefined,
-            user_name: scopedFilters.user_name || undefined,
+            assignee_id: assigneeId,
             strictDepartment: isStrictFilter
           };
           res = await axiosInstance.get('/tasks/list', { params });
@@ -425,7 +469,7 @@ const TasksList = () => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, filters.user_name, taskPerms.reportScope, user?.department]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, assignedUser?.id, taskPerms.reportScope, user?.department]);
 
   // Reset approvalsLoaded when we navigate to this page to refresh data
   useEffect(() => {
@@ -446,7 +490,8 @@ const TasksList = () => {
   };
   const clearAllFilters = () => {
     setSearchInput('');
-    setFilters({ search: '', department: '', status: '', priority: '', user_name: '' });
+    setAssignedUser(null);
+    setFilters({ search: '', department: '', status: '', priority: '' });
     setCurrentPage(1);
     setPageSize(30);
     setSortField('created_at');
@@ -1083,15 +1128,12 @@ const TasksList = () => {
                 />
               </div>
 
-              <div className="tl-filter-item tl-search-item">
-                <FiSearch className="tl-filter-icon" />
-                <input
-                  type="text"
-                  placeholder="Search users..."
-                  value={filters.user_name}
-                  onChange={(e) => setFilters(prev => ({ ...prev, user_name: e.target.value }))}
-                />
-              </div>
+              <TaskAssigneeFilter
+                value={assignedUser}
+                onSelect={setAssignedUser}
+                onClear={() => setAssignedUser(null)}
+                placeholder="Filter by assignee..."
+              />
 
               <div className="tl-filter-item tl-select-item">
                 <FiUsers className="tl-filter-icon" />
@@ -1140,7 +1182,10 @@ const TasksList = () => {
               </button>
             </div>
 
-            <button
+            <div className="tl-tasks-toolbar-right">
+              <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
+
+              <button
               className="tl-tasks-add-btn"
               onClick={taskPerms.canCreate ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } }) : undefined}
               disabled={!taskPerms.canCreate}
@@ -1148,6 +1193,7 @@ const TasksList = () => {
             >
               <FiPlus />
             </button>
+            </div>
           </div>
 
               {error && <div className="tl-status-message tl-status-message--error">{error}</div>}

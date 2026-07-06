@@ -4,6 +4,8 @@ import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import { FiBox, FiMapPin, FiCalendar, FiDollarSign, FiUser } from 'react-icons/fi';
+import LocationDetailsSummary from '../../../../common/LocationMapPicker/LocationDetailsSummary';
+import { getGoogleMapsUrl } from '../../../../../utils/geolocation';
 import DonationBoxDonationAuditHistory from '../shared/DonationBoxDonationAuditHistory';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import { isLocalId } from '../../../../../offline/handlers';
@@ -186,6 +188,45 @@ const ViewDonationBoxDonation = () => {
               </div>
             </div>
           </div>
+
+          {(donation.collector_latitude != null || donation.collector_location_details) && (
+            <div className="view-section">
+              <h3 className="view-section-title">
+                <FiMapPin style={{ display: 'inline', marginRight: '8px' }} />
+                Collector GPS location
+              </h3>
+              <div className="view-grid">
+                <div className="view-item view-item--full">
+                  <span className="view-item-label">Location at collection</span>
+                  <span className="view-item-value">
+                    <LocationDetailsSummary
+                      details={donation.collector_location_details}
+                      latitude={donation.collector_latitude}
+                      longitude={donation.collector_longitude}
+                      title="Collector coordinates"
+                    />
+                  </span>
+                </div>
+                {donation.collector_latitude != null && donation.collector_longitude != null && (
+                  <div className="view-item">
+                    <span className="view-item-label">Map</span>
+                    <span className="view-item-value">
+                      <a
+                        href={getGoogleMapsUrl(
+                          donation.collector_latitude,
+                          donation.collector_longitude,
+                        )}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Open in Google Maps
+                      </a>
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Donation Box Information Section */}
           {donationBox && (

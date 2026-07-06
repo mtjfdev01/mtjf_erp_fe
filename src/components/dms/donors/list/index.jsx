@@ -483,8 +483,8 @@ const DonorsList = () => {
   ];
 
   const matureDonorOptions = [
-    { value: 'true', label: 'Mature (has completed donation)' },
-    { value: 'false', label: 'Prospect (no completed donation)' },
+    { value: 'true', label: 'Matured Donors' },
+    { value: 'false', label: 'Not matured (no completed donation)' },
   ];
 
   const recurringOptions = [
@@ -584,11 +584,11 @@ const DonorsList = () => {
             
             <DropdownFilter
               filterKey="is_mature_donor"
-              label="Mature Donor"
+              label="Matured Donors"
               data={matureDonorOptions}
               filters={tempFilters}
               onFilterChange={handleFilterChange}
-              placeholder="All"
+              placeholder="All donors"
             />
 
             <DropdownFilter

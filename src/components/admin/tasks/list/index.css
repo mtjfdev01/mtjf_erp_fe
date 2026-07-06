@@ -903,6 +903,14 @@
   overflow-x: auto; /* Add horizontal scroll for filters if they overflow */
 }
 
+.tl-tasks-toolbar-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
 .tl-tasks-filter-main {
   display: flex;
   align-items: center;

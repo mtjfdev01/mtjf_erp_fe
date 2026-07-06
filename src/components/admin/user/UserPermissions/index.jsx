@@ -67,7 +67,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         donation_box_donations: {
           label: 'Donation Box Donations',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'bypass_location']
         },
         donors: {
           label: 'Donors',

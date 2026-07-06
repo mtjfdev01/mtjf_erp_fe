@@ -24,6 +24,7 @@
   max-width: 100%;
   margin-left: 22%;
   padding: var(--spacing-lg);
+  padding-bottom: 0;
   background: var(--color-bg-secondary);
   min-height: 100vh;
   transition: margin-left 0.3s ease;
@@ -48,6 +49,7 @@
   .app-main {
     margin-left: 0;
     padding: var(--spacing-md);
+    padding-bottom: 0;
     padding-top: 4rem; /* Space for hamburger icon */
   }
   
