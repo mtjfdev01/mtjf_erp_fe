@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiUserCheck, FiUsers, FiList } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
@@ -8,12 +7,16 @@ import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
-import { tasksBasePath } from '../../../../utils/admin';
 import TaskViewModal from '../view/TaskViewModal';
+import TaskFormModal from './TaskFormModal';
 import TaskCardMenu from './TaskCardMenu';
 import BoardColumnPicker from './BoardColumnPicker';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
 import TaskAssigneeFilter from '../shared/TaskAssigneeFilter';
+import {
+  TASK_DEPARTMENT_OPTIONS,
+  TASK_PROJECT_PROGRAM_OPTIONS,
+} from '../shared/taskFilterOptions';
 import {
   BOARD_COLUMNS,
   BOARD_COLUMN_IDS,
@@ -25,18 +28,20 @@ import {
 import './index.css';
 
 const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
-  const navigate = useNavigate();
   const { user, permissions } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
+  const [projectFilter, setProjectFilter] = useState('');
   const [assignedUser, setAssignedUser] = useState(null);
   const [activeTab, setActiveTab] = useState('assigned_to_me');
   const [draggingTaskId, setDraggingTaskId] = useState(null);
   const [dropColumnId, setDropColumnId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  const [taskFormModal, setTaskFormModal] = useState({ mode: null, taskId: null });
   const [didDrag, setDidDrag] = useState(false);
   const [openMenuTaskId, setOpenMenuTaskId] = useState(null);
   const [menuSubmenu, setMenuSubmenu] = useState(null);
@@ -64,7 +69,6 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
     setVisibleColumnIds(loadVisibleColumnIds(currentUserId));
   }, [currentUserId]);
 
-  const tasksRouteBase = useMemo(() => tasksBasePath(), []);
   const taskPerms = useMemo(
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
     [permissions, user?.department, user?.role],
@@ -194,48 +198,53 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
     };
   }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, isManager]);
 
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const taskSearch = searchInput.trim() || undefined;
-        const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
-        const hasServerFilters = taskSearch || assigneeId;
+  const fetchTasks = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const taskSearch = searchInput.trim() || undefined;
+      const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
+      const hasServerFilters = taskSearch || assigneeId || departmentFilter || projectFilter;
 
-        let res;
-        if (hasServerFilters) {
-          res = await axiosInstance.post('/tasks/search', {
-            pagination: {
-              page: 1,
-              pageSize: 200,
-              sortField: 'updated_at',
-              sortOrder: 'DESC',
-            },
-            filters: {
-              search: taskSearch,
-              assignee_id: assigneeId,
-            },
-          });
-        } else {
-          res = await axiosInstance.get('/tasks/list', {
-            params: {
-              page: 1,
-              pageSize: 200,
-              sortField: 'updated_at',
-              sortOrder: 'DESC',
-            },
-          });
-        }
-        setTasks(res.data?.data || []);
-      } catch (e) {
-        setError(e.response?.data?.message || 'Failed to fetch tasks.');
-      } finally {
-        setLoading(false);
+      let res;
+      if (hasServerFilters) {
+        res = await axiosInstance.post('/tasks/search', {
+          pagination: {
+            page: 1,
+            pageSize: 200,
+            sortField: 'updated_at',
+            sortOrder: 'DESC',
+          },
+          filters: {
+            search: taskSearch,
+            assignee_id: assigneeId,
+            department: departmentFilter || undefined,
+            project_name: projectFilter || undefined,
+          },
+        });
+      } else {
+        res = await axiosInstance.get('/tasks/list', {
+          params: {
+            page: 1,
+            pageSize: 200,
+            sortField: 'updated_at',
+            sortOrder: 'DESC',
+            department: departmentFilter || undefined,
+            project_name: projectFilter || undefined,
+          },
+        });
       }
-    };
+      setTasks(res.data?.data || []);
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to fetch tasks.');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchInput, assignedUser?.id, departmentFilter, projectFilter]);
+
+  useEffect(() => {
     fetchTasks();
-  }, [searchInput, assignedUser?.id]);
+  }, [fetchTasks]);
 
   const canChangeStatus = useCallback(
     (task) => {
@@ -345,6 +354,25 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
     setSelectedTaskId(taskId);
   };
 
+  const openTaskFormModal = (mode, taskId = null) => {
+    setTaskFormModal({ mode, taskId });
+    setOpenMenuTaskId(null);
+    setMenuSubmenu(null);
+  };
+
+  const closeTaskFormModal = () => {
+    setTaskFormModal({ mode: null, taskId: null });
+  };
+
+  const handleTaskFormSaved = async (savedTask) => {
+    closeTaskFormModal();
+    if (!savedTask?.id) {
+      await fetchTasks();
+      return;
+    }
+    await fetchTasks();
+  };
+
   const handleTaskUpdatedFromModal = (updated) => {
     if (!updated?.id) return;
     setTasks((prev) =>
@@ -432,97 +460,138 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
       <Navbar />
       <Loader loading={loading} />
       <div className="trello-board-wrapper">
-        <PageHeader title="Tasks Board" showBackButton={false} showAdd={false} />
+        {/* <PageHeader title="Tasks Board" showBackButton={false} showAdd={false} /> */}
         <div className="trello-board-content">
           <div className="trello-board-toolbar">
-            <div className="trello-board-search">
-              <FiSearch />
-              <input
-                type="text"
-                placeholder="Search tasks..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-              />
-            </div>
-
-            <TaskAssigneeFilter
-              value={assignedUser}
-              onSelect={setAssignedUser}
-              onClear={() => setAssignedUser(null)}
-              placeholder="Filter by assignee..."
-            />
-
-            <div className="trello-board-tabs">
-              <button
-                type="button"
-                className={`trello-board-tab ${activeTab === 'assigned_to_me' ? 'trello-board-tab--active' : ''}`}
-                onClick={() => setActiveTab('assigned_to_me')}
-              >
-                <FiUserCheck />
-                Assigned to me
-                <span className="trello-board-tab-count">{tabCounts.assigned_to_me}</span>
-              </button>
-              <button
-                type="button"
-                className={`trello-board-tab ${activeTab === 'other_tasks' ? 'trello-board-tab--active' : ''}`}
-                onClick={() => setActiveTab('other_tasks')}
-              >
-                <FiList />
-                Others
-                <span className="trello-board-tab-count">{tabCounts.other_tasks}</span>
-              </button>
-              {isManager && (
+            <div className="trello-board-toolbar-top">
+              <div className="tl-scope-switch" role="tablist" aria-label="Task scope">
                 <button
                   type="button"
-                  className={`trello-board-tab ${activeTab === 'assigned_to_team' ? 'trello-board-tab--active' : ''}`}
-                  onClick={() => setActiveTab('assigned_to_team')}
+                  role="tab"
+                  aria-selected={activeTab === 'assigned_to_me'}
+                  className={`tl-scope-switch__btn ${activeTab === 'assigned_to_me' ? 'is-active is-mine' : ''}`}
+                  onClick={() => setActiveTab('assigned_to_me')}
+                  title="Assigned to me"
                 >
-                  <FiUsers />
-                  Team
-                  <span className="trello-board-tab-count">{tabCounts.assigned_to_team}</span>
+                  <FiUserCheck />
+                  <span className="tl-scope-switch__label">Me</span>
+                  <span className="tl-scope-switch__count">{tabCounts.assigned_to_me}</span>
                 </button>
-              )}
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'other_tasks'}
+                  className={`tl-scope-switch__btn ${activeTab === 'other_tasks' ? 'is-active is-other' : ''}`}
+                  onClick={() => setActiveTab('other_tasks')}
+                  title="Assigned to others"
+                >
+                  <FiList />
+                  <span className="tl-scope-switch__label">Others</span>
+                  <span className="tl-scope-switch__count">{tabCounts.other_tasks}</span>
+                </button>
+                {isManager && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'assigned_to_team'}
+                    className={`tl-scope-switch__btn ${activeTab === 'assigned_to_team' ? 'is-active is-team' : ''}`}
+                    onClick={() => setActiveTab('assigned_to_team')}
+                    title="Assigned to team"
+                  >
+                    <FiUsers />
+                    <span className="tl-scope-switch__label">Team</span>
+                    <span className="tl-scope-switch__count">{tabCounts.assigned_to_team}</span>
+                  </button>
+                )}
+              </div>
+
+              <div className="trello-board-toolbar-assignee">
+                <TaskAssigneeFilter
+                  value={assignedUser}
+                  onSelect={setAssignedUser}
+                  onClear={() => setAssignedUser(null)}
+                  placeholder="Filter by assignee..."
+                />
+              </div>
+
+              <div className="trello-board-toolbar-right">
+                <BoardColumnPicker
+                  open={columnPickerOpen}
+                  onToggle={() => setColumnPickerOpen((prev) => !prev)}
+                  onClose={() => setColumnPickerOpen(false)}
+                  visibleColumnIds={visibleColumnIds}
+                  columnCounts={columnCounts}
+                  onToggleColumn={handleToggleColumnVisibility}
+                  onShowAll={handleShowAllColumns}
+                  onHideAll={handleHideAllColumns}
+                />
+
+                <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
+
+                <button
+                  type="button"
+                  className="trello-board-add-btn"
+                  title="Add task"
+                  disabled={!taskPerms.canCreate}
+                  onClick={
+                    taskPerms.canCreate
+                      ? () => openTaskFormModal('add')
+                      : undefined
+                  }
+                >
+                  <FiPlus />
+                </button>
+              </div>
             </div>
 
-            <div className="trello-board-toolbar-right">
-              <BoardColumnPicker
-                open={columnPickerOpen}
-                onToggle={() => setColumnPickerOpen((prev) => !prev)}
-                onClose={() => setColumnPickerOpen(false)}
-                visibleColumnIds={visibleColumnIds}
-                columnCounts={columnCounts}
-                onToggleColumn={handleToggleColumnVisibility}
-                onShowAll={handleShowAllColumns}
-                onHideAll={handleHideAllColumns}
-              />
+            <div className="trello-board-toolbar-filters">
+              <div className="trello-board-search">
+                <FiSearch />
+                <input
+                  type="text"
+                  placeholder="Search tasks..."
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                />
+              </div>
 
-              <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
+              <div className="trello-board-select-filter">
+                <select
+                  value={departmentFilter}
+                  onChange={(e) => setDepartmentFilter(e.target.value)}
+                  aria-label="Filter by department"
+                >
+                  <option value="">Department</option>
+                  {TASK_DEPARTMENT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <button
-                type="button"
-                className="trello-board-add-btn"
-                title="Add task"
-                disabled={!taskPerms.canCreate}
-                onClick={
-                  taskPerms.canCreate
-                    ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } })
-                    : undefined
-                }
-              >
-                <FiPlus />
-              </button>
+              <div className="trello-board-select-filter trello-board-select-filter--project">
+                <select
+                  value={projectFilter}
+                  onChange={(e) => setProjectFilter(e.target.value)}
+                  aria-label="Filter by project or program"
+                >
+                  <option value="">Project / Program</option>
+                  {TASK_PROJECT_PROGRAM_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
 
-          <p className="trello-board-hint">
+          {/* <p className="trello-board-hint">
             Drag cards or use ⋮ menu to move status. Click a card to open details.
-          </p>
+          </p> */}
 
           {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
-
-          {!loading && visibleTasks.length === 0 && (
-            <div className="trello-board-empty">No tasks in this view.</div>
-          )}
 
           {!loading && visibleBoardColumns.length === 0 && (
             <div className="trello-board-empty">
@@ -530,6 +599,11 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
             </div>
           )}
 
+          {!loading && visibleBoardColumns.length > 0 && visibleTasks.length === 0 && (
+            <div className="trello-board-empty">No tasks in this view.</div>
+          )}
+
+          {(loading || visibleTasks.length > 0) && visibleBoardColumns.length > 0 && (
           <div className="trello-board-scroll">
             <div className="trello-board-columns">
               {visibleBoardColumns.map((column) => (
@@ -603,7 +677,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
                               onSubmenu={setMenuSubmenu}
                               onClose={closeCardMenu}
                               onView={() => openTaskModal(task.id)}
-                              onEdit={() => navigate(`${tasksRouteBase}/update/${task.id}`)}
+                              onEdit={() => openTaskFormModal('update', task.id)}
                               onDelete={() => deleteTask(task)}
                               onMoveTo={(status) => handleStatusChange(task, status)}
                               onColorChange={(colorId) => handleCardColorChange(task.id, colorId)}
@@ -632,6 +706,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
               ))}
             </div>
           </div>
+          )}
         </div>
       </div>
 
@@ -640,6 +715,14 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
         onClose={() => setSelectedTaskId(null)}
         onTaskUpdated={handleTaskUpdatedFromModal}
         onOpenTask={setSelectedTaskId}
+      />
+
+      <TaskFormModal
+        mode={taskFormModal.mode}
+        taskId={taskFormModal.taskId}
+        defaultDepartment={user?.department}
+        onClose={closeTaskFormModal}
+        onSaved={handleTaskFormSaved}
       />
     </>
   );

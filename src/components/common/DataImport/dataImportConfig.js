@@ -183,6 +183,43 @@ export const ENTITY_IMPORT_CONFIG = {
       comments: 'Imported via CSV',
     },
   },
+  users: {
+    label: 'Users',
+    templateFilename: 'users-import-template',
+    description:
+      'Import ERP users. Required: first_name, last_name, email, department, role. Optional password defaults to ChangeMe@123. Department/role must match system enum values (e.g. fund_raising, user).',
+    headers: [
+      'first_name',
+      'last_name',
+      'email',
+      'department',
+      'role',
+      'password',
+      'phone',
+      'user_code',
+      'dob',
+      'address',
+      'cnic',
+      'gender',
+      'joining_date',
+      'emergency_contact',
+      'blood_group',
+      'isActive',
+      'manager_id',
+    ],
+    sampleRow: {
+      first_name: 'Sample',
+      last_name: 'User',
+      email: 'sample.user@example.com',
+      department: 'fund_raising',
+      role: 'user',
+      password: 'ChangeMe@123',
+      phone: '03001234567',
+      gender: 'male',
+      blood_group: 'B+',
+      isActive: 'true',
+    },
+  },
 };
 
 export const getImportConfig = (entityName) => {

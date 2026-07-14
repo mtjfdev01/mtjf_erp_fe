@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal, FiClipboard } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal, FiClipboard, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw } from 'react-icons/fi';
+import { HiOutlineSwitchHorizontal } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -16,8 +17,12 @@ import '../../../../styles/components.css';
 import './index.css';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
 import TaskAssigneeFilter, { formatAssigneeLabel } from '../shared/TaskAssigneeFilter';
+import {
+  TASK_DEPARTMENT_OPTIONS,
+  TASK_PROJECT_PROGRAM_OPTIONS,
+} from '../shared/taskFilterOptions';
 
-const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
+const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permissions } = useAuth();
@@ -42,6 +47,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
     department: searchParams.get('department') || '', 
+    project_name: searchParams.get('project_name') || '',
     status: searchParams.get('status') || '',
     priority: searchParams.get('priority') || '',
   });
@@ -100,6 +106,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
     if (sortOrder !== 'DESC') params.set('sortOrder', sortOrder);
     if (filters.search) params.set('search', filters.search);
     if (filters.department) params.set('department', filters.department);
+    if (filters.project_name) params.set('project_name', filters.project_name);
     if (filters.status) params.set('status', filters.status);
     if (filters.priority) params.set('priority', filters.priority);
     if (assignedUser?.id) {
@@ -114,7 +121,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
       pathname: location.pathname,
       search: params.toString()
     }, { replace: true });
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, assignedUser?.id, activeTab, navigate, location.pathname]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id, activeTab, navigate, location.pathname]);
 
   const isManager = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
@@ -154,7 +161,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.department, filters.status, filters.priority, assignedUser?.id]);
+  }, [filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id]);
 
   useEffect(() => {
     return () => {
@@ -170,18 +177,15 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
       placeholder: 'All Departments',
       value: filters.department,
       label: 'Department',
-      options: [
-        'store',
-        'procurements',
-        'accounts_and_finance',
-        'program',
-        'it',
-        'hr',
-        'marketing',
-        'audio_video',
-        'fund_raising',
-        'admin'
-      ].map((dept) => ({ value: dept, label: dept.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') }))
+      options: TASK_DEPARTMENT_OPTIONS
+    },
+    {
+      key: 'project_name',
+      type: 'select',
+      placeholder: 'All Projects/Programs',
+      value: filters.project_name,
+      label: 'Project / Program',
+      options: TASK_PROJECT_PROGRAM_OPTIONS,
     },
     {
       key: 'status',
@@ -469,7 +473,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.status, filters.priority, assignedUser?.id, taskPerms.reportScope, user?.department]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id, taskPerms.reportScope, user?.department]);
 
   // Reset approvalsLoaded when we navigate to this page to refresh data
   useEffect(() => {
@@ -491,7 +495,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
   const clearAllFilters = () => {
     setSearchInput('');
     setAssignedUser(null);
-    setFilters({ search: '', department: '', status: '', priority: '' });
+    setFilters({ search: '', department: '', project_name: '', status: '', priority: '' });
     setCurrentPage(1);
     setPageSize(30);
     setSortField('created_at');
@@ -566,31 +570,111 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
     }
   };
 
-  const getStatusBadge = (statusRaw) => {
-    const status = String(statusRaw || '').toLowerCase();
-    const statusClassMap = {
-      open: 'tl-status-open',
-      in_progress: 'tl-status-in_progress',
-      completed: 'tl-status-completed',
-      closed: 'tl-status-closed',
-      pending_approval: 'tl-status-pending_approval',
-      rejected: 'tl-status-rejected',
-      cancelled: 'tl-status-cancelled',
-      approved: 'tl-status-approved',
-      pending: 'tl-status-in_progress',
-      draft: 'tl-status-open',
-      failed: 'tl-status-rejected',
-      registered: 'tl-status-open'
-    };
-    const cls = statusClassMap[status] || 'tl-status-open';
-    const label = capitalize(status) || 'Pending';
-    return <span className={`tl-task-list-status-badge ${cls}`}>{label}</span>;
+  const formatTaskId = (t) => {
+    const id = t?.id;
+    if (id == null) return '#—';
+    return `#${String(id).padStart(5, '0')}`;
   };
+
+  const getTaskDeptLabel = (t) => {
+    if (Array.isArray(t.assigned_users_meta) && t.assigned_users_meta.length > 0) {
+      const depts = [...new Set(t.assigned_users_meta.map((m) => m.department).filter(Boolean))];
+      if (depts.length > 0) return depts.map((d) => capitalize(d)).join(', ');
+    }
+    return capitalize(t.department) || '—';
+  };
+
+  const getPrimaryAssigneeName = (t) => {
+    const meta = Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : [];
+    if (meta.length === 0) return '—';
+    const details = assigneeDetailsCache[t.id];
+    if (Array.isArray(details) && details[0]?.name) return details[0].name;
+    if (meta[0]?.name) return meta[0].name;
+    return 'User';
+  };
+
+  const getAgeDisplay = (task) => {
+    const dueInfo = getDueInfo(task.due_date, task.status);
+    if (!dueInfo) return '—';
+    if (dueInfo.label === 'Overdue today') return ' Overdue today';
+    if (dueInfo.variant === 'danger' && dueInfo.label.startsWith('-')) {
+      const days = dueInfo.label.replace('-', '').trim();
+      return `${days}`;
+    }
+    return '—';
+  };
+
+  const getStatusSubtext = (t) => {
+    const status = String(t.status || '').toLowerCase();
+    if (['completed', 'closed', 'approved'].includes(status)) {
+      const when = t.completed_date || t.updated_at;
+      return when ? `Completed on ${formatDate(when)}` : capitalize(status);
+    }
+    if (status === 'in_progress') return 'In Progress';
+    return capitalize(status);
+  };
+
+  const renderStatusIcon = (statusRaw) => {
+    const status = String(statusRaw || '').toLowerCase();
+    if (['completed', 'closed', 'approved'].includes(status)) {
+      return <FiCheckCircle className="tl-tasks-list-status-icon tl-tasks-list-status-icon--done" aria-hidden />;
+    }
+    return <FiClock className="tl-tasks-list-status-icon tl-tasks-list-status-icon--active" aria-hidden />;
+  };
+
+  const renderPriorityCell = (priority) => {
+    const p = String(priority || 'medium').toLowerCase();
+    const Icon = p === 'high' || p === 'critical' ? FiArrowUp : p === 'low' ? FiArrowDown : FiMinus;
+    return (
+      <span className={`tl-tasks-list-priority-pill tl-tasks-list-priority-pill--${p === 'critical' ? 'high' : p}`}>
+        <Icon aria-hidden />
+        {capitalize(p)}
+      </span>
+    );
+  };
+
+  const renderStatusCell = (t) => {
+    const status = String(t.status || '').toLowerCase();
+    const label = (capitalize(status) || 'Pending').toUpperCase();
+    return (
+      <div className="tl-tasks-list-status-cell">
+        <span className={`tl-tasks-list-status-pill tl-tasks-list-status-pill--${status}`}>
+          <span className="tl-tasks-list-status-pill-dot" aria-hidden />
+          {label}
+        </span>
+        {/* <span className="tl-tasks-list-status-sub">{getStatusSubtext(t)}</span> */}
+      </div>
+    );
+  };
+
+  const renderTableHeader = () => (
+    <thead>
+      <tr>
+        <th>Task</th>
+        <th className="hide-on-mobile">Assignment</th>
+        <th className="tl-tasks-col-center tl-tasks-col-priority">Priority / Status</th>
+        <th className="hide-on-mobile tl-tasks-col-center">Dates</th>
+        <th className="hide-until-large">Age</th>
+        <th className="table-actions tl-tasks-col-center">Actions</th>
+      </tr>
+    </thead>
+  );
+
+  const renderTasksTable = (rows) => (
+    <div className="table-container">
+      <table className="data-table tl-tasks-data-table">
+        {renderTableHeader()}
+        <tbody>
+          {rows.map((t) => renderTaskCard(t))}
+        </tbody>
+      </table>
+    </div>
+  );
 
   const renderAssignees = (t) => {
     const meta = Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : [];
     if (meta.length === 0) {
-      return <span className="tl-person-badge">-</span>;
+      return <span className="tl-person-badge">—</span>;
     }
 
     const getInitials = (displayName) => {
@@ -641,60 +725,65 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
     };
 
     return (
-      <div className="tl-task-card-assignees-group">
-        <div className="tl-avatar-stack">
-          {meta.slice(0, maxAvatars).map((user, idx) => {
-            const info =
-              Array.isArray(details) && details.length > 0
-                ? details.find((d) => d.id === user.user_id)
-                : null;
-            const displayName = getDisplayName(user, info);
-            const initials = getInitials(displayName);
-            const colorBase = displayName;
-            const isOpen = openAssigneeTaskId === t.id && openAssigneeUserId === user.user_id;
-            return (
-              <div
-                key={user.user_id || idx}
-                className="tl-tasks-assignee-trigger"
-                onClick={(e) => handleAssigneeClick(e, t, user.user_id)}
-              >
+      <div className="tl-tasks-list-assignment-cell">
+        <div className="tl-task-card-assignees-group">
+          <div className="tl-avatar-stack">
+            {meta.slice(0, maxAvatars).map((user, idx) => {
+              const info =
+                Array.isArray(details) && details.length > 0
+                  ? details.find((d) => d.id === user.user_id)
+                  : null;
+              const displayName = getDisplayName(user, info);
+              const initials = getInitials(displayName);
+              const colorBase = displayName;
+              const isOpen = openAssigneeTaskId === t.id && openAssigneeUserId === user.user_id;
+              return (
                 <div
-                  className="tl-avatar-circle"
-                  title={displayName || 'User'}
-                  style={{ zIndex: meta.length - idx, backgroundColor: getAvatarColor(colorBase) }}
+                  key={user.user_id || idx}
+                  className="tl-tasks-assignee-trigger"
+                  onClick={(e) => handleAssigneeClick(e, t, user.user_id)}
                 >
-                  {initials}
-                </div>
-                {isOpen && (
-                  <div className="tl-tasks-assignee-popover">
-                    {info ? (
-                      <ul className="tl-tasks-assignee-list">
-                        <li className="tl-tasks-assignee-list-item">
-                          <div className="tl-tasks-assignee-name">{info.name}</div>
-                          {info.department && (
-                            <div className="tl-tasks-assignee-department">
-                              {capitalize(info.department)}
-                            </div>
-                          )}
-                        </li>
-                      </ul>
-                    ) : (
-                      <div className="tl-tasks-assignee-empty">No assignee details</div>
-                    )}
+                  <div
+                    className="tl-avatar-circle"
+                    title={displayName || 'User'}
+                    style={{ zIndex: meta.length - idx, backgroundColor: getAvatarColor(colorBase) }}
+                  >
+                    {initials}
                   </div>
-                )}
+                  {isOpen && (
+                    <div className="tl-tasks-assignee-popover">
+                      {info ? (
+                        <ul className="tl-tasks-assignee-list">
+                          <li className="tl-tasks-assignee-list-item">
+                            <div className="tl-tasks-assignee-name">{info.name}</div>
+                            {info.department && (
+                              <div className="tl-tasks-assignee-department">
+                                {capitalize(info.department)}
+                              </div>
+                            )}
+                          </li>
+                        </ul>
+                      ) : (
+                        <div className="tl-tasks-assignee-empty">No assignee details</div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {extraCount > 0 && (
+              <div className="tl-avatar-circle tl-avatar-extra" style={{ zIndex: 0 }}>
+                +{extraCount}
               </div>
-            );
-          })}
-          {extraCount > 0 && (
-            <div className="tl-avatar-circle tl-avatar-extra" style={{ zIndex: 0 }}>
-              +{extraCount}
-            </div>
-          )}
+            )}
+          </div>
         </div>
-        <span className="tl-assignee-text-label">
-          {meta.length === 1 ? 'Single User' : 'Multiple Users'}
-        </span>
+        <div className="tl-tasks-list-assignment-info">
+          <span className="tl-assignee-text-label">
+            {meta.length === 1 ? 'Single User' : 'Multiple Users'}
+          </span>
+          <span className="tl-tasks-list-assignment-name">{getPrimaryAssigneeName(t)}</span>
+        </div>
       </div>
     );
   };
@@ -833,10 +922,10 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
     const canUpdate = taskPerms.canUpdate === true;
     const canDelete = taskPerms.canDelete === true;
     const canEditCompleted = taskPerms.canEditCompleted === true;
-
-    // Hide reassign action in list for Department Head and Manager roles
-    // (it's already available in Quick Actions for these roles)
-    const showReassignInList = taskPerms.canAssign === true && !isDeptHeadOrManager;
+    const isAssignee = isTaskAssignedToCurrentUser(task);
+    const canChangeAsAssignee =
+      isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
+    const canChangeStatus = canUpdate || canChangeAsAssignee;
 
     return [
       {
@@ -858,6 +947,33 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
         title: !canUpdate ? hoverText('update') : (status === 'completed' && !canEditCompleted ? hoverText('edit_completed') : 'Edit')
       },
       {
+        icon: <FiPlay />,
+        label: 'Start',
+        color: '#2563eb',
+        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'in_progress') : undefined,
+        visible: canChangeStatus,
+        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        title: 'Start'
+      },
+      {
+        icon: <FiCheckCircle />,
+        label: 'Complete',
+        color: '#16a34a',
+        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'completed') : undefined,
+        visible: canChangeStatus,
+        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        title: 'Complete'
+      },
+      {
+        icon: <FiRotateCcw />,
+        label: 'Reopen',
+        color: '#ca8a04',
+        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'open') : undefined,
+        visible: canChangeStatus,
+        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        title: 'Reopen'
+      },
+      {
         icon: <FiTrash2 />,
         label: 'Delete',
         color: '#f4291bff',
@@ -875,130 +991,170 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
     const isAssignee = isTaskAssignedToCurrentUser(t);
     const canChangeAsAssignee =
       isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
+    const overdue = isTaskOverdue(t);
+    const title = String(t.title || '');
+    const titleDesktop = title.length > 30 ? `${title.slice(0, 30)}...` : title;
+    const titleLarge = title.length > 60 ? `${title.slice(0, 60)}...` : title;
 
     return (
-      <div key={t.id} className={`tl-task-card tl-task-card--${status} ${isTaskOverdue(t) ? 'tl-tasks-row--overdue' : ''}`}>
-        <div className={`tl-task-card-status-bar tl-status-bg-${status}`}>
-          <span>{capitalize(status)}</span>
-        </div>
-        <div className="tl-task-card-content">
-          <div className="tl-task-card-main">
-            <div className="tl-task-card-header-row">
-              <h4 className="tl-task-card-title">{t.title}</h4>
-              <span className={`tl-priority-badge tl-priority-${t.priority} tl-mobile-priority`}>{capitalize(t.priority)}</span>
-            </div>
-
-            <div className="tl-task-card-meta">
-              <div className="tl-task-card-meta-left">
-                <span className="tl-task-card-dept">
-                  {Array.isArray(t.assigned_users_meta) && t.assigned_users_meta.length > 0
-                    ? [...new Set(t.assigned_users_meta.map(m => m.department).filter(Boolean))]
-                      .map(d => capitalize(d))
-                      .join(', ')
-                    : capitalize(t.department)}
-                </span>
-                <div className="tl-task-card-assignee-mobile">
-                  {/* <span className="tl-assignee-label">Assignee: </span> */}
-                  {renderAssignees(t)}
-                </div>
-              </div>
-
-              <div className="tl-task-card-actions-mobile">
-                <ActionMenu actions={getActionMenuItems(t)} trigger={<FiMoreHorizontal className="tl-more-icon" />} />
-              </div>
+      <tr
+        key={t.id}
+        className={`tl-tasks-data-row tl-task-card--${status} ${overdue ? 'tl-tasks-row--overdue' : ''}`}
+      >
+        <td>
+          <div className="tl-tasks-list-col tl-tasks-list-col--task">
+            {/* {renderStatusIcon(t.status)} */}
+            <div className="tl-tasks-list-col-task-body">
+              <div className="tl-tasks-list-row-title tl-tasks-list-row-title--desktop">{titleDesktop}</div>
+              <div className="tl-tasks-list-row-title tl-tasks-list-row-title--large">{titleLarge}</div>
+              <span className="tl-tasks-list-dept-tag">{getTaskDeptLabel(t)}</span>
             </div>
           </div>
-
-          <div className="tl-task-card-badges tl-desktop-only">
-            <div className="tl-task-card-badges-row">
-              <span className={`tl-priority-badge tl-priority-${t.priority}`}>{capitalize(t.priority)}</span>
-              {getStatusBadge(t.status)}
+          <div className="tl-tasks-list-row-mobile-meta show-on-mobile">
+            <div className="tl-tasks-list-row-mobile-assignee">{renderAssignees(t)}</div>
+            <div className="tl-tasks-list-row-mobile-dates">
+              <span>Started: {formatDate(t.start_date)}</span>
+              <span className={overdue ? 'tl-tasks-list-due-overdue' : ''}>Due: {formatDate(t.due_date)}</span>
+              {getAgeDisplay(t) !== '—' && (
+                <span className="tl-tasks-list-age-overdue">{getAgeDisplay(t)}</span>
+              )}
             </div>
+          </div>
+        </td>
+
+        <td className="hide-on-mobile">
+          {renderAssignees(t)}
+        </td>
+
+        <td className="tl-tasks-col-center tl-tasks-col-priority">
+          <div className="tl-tasks-list-priority-status">
+            {renderPriorityCell(t.priority)}
+            {renderStatusCell(t)}
+          </div>
+        </td>
+
+        <td className="hide-on-mobile tl-tasks-col-center">
+          <div className="tl-tasks-list-dates">
+            <div className="tl-tasks-list-dates__row">
+              <span className="tl-tasks-list-dates__label">
+                <FiPlay aria-hidden />
+                Start
+              </span>
+              <span className="tl-tasks-list-dates__value">{formatDate(t.start_date)}</span>
+            </div>
+            <div className={`tl-tasks-list-dates__row ${overdue ? 'tl-tasks-list-dates__row--overdue' : ''}`}>
+              <span className="tl-tasks-list-dates__label">
+                <FiClock aria-hidden />
+                Due
+              </span>
+              <span className="tl-tasks-list-dates__value">{formatDate(t.due_date)}</span>
+            </div>
+          </div>
+        </td>
+
+        <td className={`hide-until-large ${overdue ? 'tl-tasks-list-age-overdue' : ''}`}>
+          {getAgeDisplay(t)}
+        </td>
+
+        <td className="table-actions tl-tasks-col-center">
+          <div className="tl-task-card-actions tl-tasks-list-desktop-only">
+            <button
+              className="tl-task-action-icon tl-view"
+              title={hoverText('view')}
+              onClick={taskPerms.canViewDetail ? () => navigate(`${tasksRouteBase}/view/${t.id}`) : undefined}
+              disabled={!taskPerms.canViewDetail}
+            >
+              <FiEye />
+            </button>
+            <button
+              className="tl-task-action-icon tl-edit"
+              title={hoverText('update')}
+              onClick={((status !== 'completed' || taskPerms.canEditCompleted) && taskPerms.canUpdate) ? () => navigate(`${tasksRouteBase}/update/${t.id}`) : undefined}
+              disabled={(status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate}
+            >
+              <FiEdit2 />
+            </button>
             {(canUpdate || canChangeAsAssignee) && (
-              <div className="tl-tasks-quick-status">
-                <select
-                  value=""
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!value) return;
-                    handleQuickStatusChange(t, value);
-                  }}
+              <div className="tl-tasks-status-menu">
+                <button
+                  type="button"
+                  className="tl-task-action-icon tl-status"
+                  title="Update status"
                   disabled={statusUpdatingId === t.id}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenStatusMenuId((id) => (id === t.id ? null : t.id));
+                  }}
                 >
-                  <option value="">Quick status...</option>
-                  <option value="in_progress">Start</option>
-                  <option value="completed">Complete</option>
-                  <option value="open">Reopen</option>
-                </select>
-              </div>
-            )}
-          </div>
-
-          <div className="tl-task-card-right tl-desktop-only">
-            <div className="tl-task-card-dates">
-              <div className="tl-date-row">
-                <span>Started on:</span>
-                <span>{formatDate(t.start_date)}</span>
-              </div>
-              <div className="tl-date-row tl-due-date">
-                <span>{formatDate(t.due_date)}</span>
-                {getDueInfo(t.due_date, t.status) && (
-                  <span className={`tl-overdue-text tl-overdue-${getDueInfo(t.due_date, t.status).variant}`}>
-                    {getDueInfo(t.due_date, t.status).label.startsWith('-') ? '→ ' : ''}
-                    {getDueInfo(t.due_date, t.status).label.replace('-', '').replace('In ', '')}
-                  </span>
+                  <HiOutlineSwitchHorizontal className={statusUpdatingId === t.id ? 'tl-tasks-status-spin' : ''} />
+                </button>
+                {openStatusMenuId === t.id && (
+                  <div className="tl-tasks-status-menu__dropdown" role="menu">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpenStatusMenuId(null);
+                        handleQuickStatusChange(t, 'in_progress');
+                      }}
+                    >
+                      Start
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpenStatusMenuId(null);
+                        handleQuickStatusChange(t, 'completed');
+                      }}
+                    >
+                      Complete
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        setOpenStatusMenuId(null);
+                        handleQuickStatusChange(t, 'open');
+                      }}
+                    >
+                      Reopen
+                    </button>
+                  </div>
                 )}
               </div>
-              <div className="tl-task-date-tooltip">
-                <div className="tl-tooltip-item">
-                  <span className="tl-tooltip-label">Created:</span>
-                  <span className="tl-tooltip-value">{formatDate(t.created_at)}</span>
-                </div>
-                <div className="tl-tooltip-item">
-                  <span className="tl-tooltip-label">Started:</span>
-                  <span className="tl-tooltip-value">{formatDate(t.start_date)}</span>
-                </div>
-                <div className="tl-tooltip-item">
-                  <span className="tl-tooltip-label">Due:</span>
-                  <span className="tl-tooltip-value">{formatDate(t.due_date)}</span>
-                </div>
-              </div>
-            </div>
-            <div className="tl-task-card-actions">
-              <button
-                className="tl-task-action-icon tl-view"
-                title={hoverText('view')}
-                onClick={taskPerms.canViewDetail ? () => navigate(`${tasksRouteBase}/view/${t.id}`) : undefined}
-                disabled={!taskPerms.canViewDetail}
-              >
-                <FiEye />
-              </button>
-              <button
-                className="tl-task-action-icon tl-edit"
-                title={hoverText('update')}
-                onClick={((status !== 'completed' || taskPerms.canEditCompleted) && taskPerms.canUpdate) ? () => navigate(`${tasksRouteBase}/update/${t.id}`) : undefined}
-                disabled={(status === 'completed' && !taskPerms.canEditCompleted) || !taskPerms.canUpdate}
-              >
-                <FiEdit2 />
-              </button>
-              <button
-                className="tl-task-action-icon tl-delete"
-                title={hoverText('delete')}
-                onClick={taskPerms.canDelete ? () => deleteTask(t) : undefined}
-                disabled={!taskPerms.canDelete}
-              >
-                <FiTrash2 />
-              </button>
-            </div>
+            )}
+            <button
+              className="tl-task-action-icon tl-delete"
+              title={hoverText('delete')}
+              onClick={taskPerms.canDelete ? () => deleteTask(t) : undefined}
+              disabled={!taskPerms.canDelete}
+            >
+              <FiTrash2 />
+            </button>
           </div>
-        </div>
-      </div>
+          <div className="tl-task-card-actions-mobile tl-tasks-list-mobile-only">
+            <ActionMenu actions={getActionMenuItems(t)} trigger={<FiMoreHorizontal className="tl-more-icon" />} />
+          </div>
+        </td>
+      </tr>
     );
   };
 
   const [selectedTaskIds, setSelectedTaskIds] = useState([]);
   const [bulkUpdating, setBulkUpdating] = useState(false);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
+  const [openStatusMenuId, setOpenStatusMenuId] = useState(null);
+
+  useEffect(() => {
+    if (openStatusMenuId == null) return undefined;
+    const onDocClick = (e) => {
+      if (e.target.closest?.('.tl-tasks-status-menu')) return;
+      setOpenStatusMenuId(null);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [openStatusMenuId]);
 
   const isSelected = (id) => selectedTaskIds.includes(id);
   const toggleSelected = (id) => {
@@ -1110,13 +1266,105 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
       <Navbar />
       <Loader loading={loading} />
       <div className="tl-list-wrapper">
-        <PageHeader
+        {/* <PageHeader
           title="Tasks List"
           showBackButton={false}
           showAdd={false}
-        />
+        /> */}
         <div className="tl-list-content">
           <div className="tl-tasks-filter-container">
+            <div className="tl-tasks-toolbar-top">
+              <div className="tl-scope-switch" role="tablist" aria-label="Task scope">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'assigned_to_me'}
+                  className={`tl-scope-switch__btn ${activeTab === 'assigned_to_me' ? 'is-active is-mine' : ''}`}
+                  onClick={() => setActiveTab('assigned_to_me')}
+                  title="Assigned to me"
+                >
+                  <FiUserCheck />
+                  <span className="tl-scope-switch__label">Me</span>
+                  <span className="tl-scope-switch__count">{myTasks.length}</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === 'other_tasks'}
+                  className={`tl-scope-switch__btn ${activeTab === 'other_tasks' ? 'is-active is-other' : ''}`}
+                  onClick={() => setActiveTab('other_tasks')}
+                  title="Assigned to others"
+                >
+                  <FiList />
+                  <span className="tl-scope-switch__label">Others</span>
+                  <span className="tl-scope-switch__count">{otherTasks.length}</span>
+                </button>
+                {isManager && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'assigned_to_team'}
+                    className={`tl-scope-switch__btn ${activeTab === 'assigned_to_team' ? 'is-active is-team' : ''}`}
+                    onClick={() => setActiveTab('assigned_to_team')}
+                    title="Assigned to team"
+                  >
+                    <FiUsers />
+                    <span className="tl-scope-switch__label">Team</span>
+                    <span className="tl-scope-switch__count">{teamTasks.length}</span>
+                  </button>
+                )}
+                {approvalTasks.length > 0 && (
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === 'approval_tasks'}
+                    className={`tl-scope-switch__btn ${activeTab === 'approval_tasks' ? 'is-active is-approval' : ''}`}
+                    onClick={() => setActiveTab('approval_tasks')}
+                    title="Approval tasks"
+                  >
+                    <FiThumbsUp />
+                    <span className="tl-scope-switch__label">Approvals</span>
+                    <span className="tl-scope-switch__count">{approvalTasks.length}</span>
+                    {(() => {
+                      try {
+                        if (!approvalsLoaded || !Array.isArray(approvalRequestsForUser)) return null;
+                        const pendingCount = approvalRequestsForUser.filter((t) => t && t._isPendingAction === true).length;
+                        if (pendingCount === 0) return null;
+                        return (
+                          <span className="tl-approval-pending-badge" title={`${pendingCount} pending approval`}>
+                            {pendingCount}
+                          </span>
+                        );
+                      } catch {
+                        return null;
+                      }
+                    })()}
+                  </button>
+                )}
+              </div>
+
+              <div className="tl-tasks-toolbar-assignee">
+                <TaskAssigneeFilter
+                  value={assignedUser}
+                  onSelect={setAssignedUser}
+                  onClear={() => setAssignedUser(null)}
+                  placeholder="Filter by assignee..."
+                />
+              </div>
+
+              <div className="tl-tasks-toolbar-right">
+                <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
+                <button
+                  className="tl-tasks-add-btn"
+                  onClick={taskPerms.canCreate ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } }) : undefined}
+                  disabled={!taskPerms.canCreate}
+                  title={hoverText('create')}
+                >
+                  <FiPlus />
+                </button>
+              </div>
+            </div>
+
             <div className="tl-tasks-filter-main">
               <div className="tl-filter-item tl-search-item">
                 <FiSearch className="tl-filter-icon" />
@@ -1127,13 +1375,6 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
                   onChange={(e) => handleSearchInputChange(e.target.value)}
                 />
               </div>
-
-              <TaskAssigneeFilter
-                value={assignedUser}
-                onSelect={setAssignedUser}
-                onClear={() => setAssignedUser(null)}
-                placeholder="Filter by assignee..."
-              />
 
               <div className="tl-filter-item tl-select-item">
                 <FiUsers className="tl-filter-icon" />
@@ -1150,13 +1391,27 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
               </div>
 
               <div className="tl-filter-item tl-select-item">
+                <FiClipboard className="tl-filter-icon" />
+                <select
+                  value={filters.project_name}
+                  onChange={(e) => setFilters(prev => ({ ...prev, project_name: e.target.value }))}
+                >
+                  <option value="">Project / Program</option>
+                  {filterConfig[2].options.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <FiChevronDown className="tl-chevron-icon" />
+              </div>
+
+              <div className="tl-filter-item tl-select-item">
                 <FiClock className="tl-filter-icon" />
                 <select
                   value={filters.status}
                   onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
                 >
                   <option value="">Status</option>
-                  {filterConfig[2].options.map(opt => (
+                  {filterConfig[3].options.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
@@ -1170,7 +1425,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
                   onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
                 >
                   <option value="">Priority</option>
-                  {filterConfig[3].options.map(opt => (
+                  {filterConfig[4].options.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
@@ -1181,85 +1436,16 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
                 Clear
               </button>
             </div>
-
-            <div className="tl-tasks-toolbar-right">
-              <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
-
-              <button
-              className="tl-tasks-add-btn"
-              onClick={taskPerms.canCreate ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } }) : undefined}
-              disabled={!taskPerms.canCreate}
-              title={hoverText('create')}
-            >
-              <FiPlus />
-            </button>
-            </div>
           </div>
 
               {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
 
               <div className="tl-task-card-list">
-                <div className="tl-task-tabs-container">
-                  <div className="tl-task-tabs">
-                    <button
-                      className={`tl-task-tab-btn ${activeTab === 'assigned_to_me' ? 'tl-active tl-active--mine' : ''}`}
-                      onClick={() => setActiveTab('assigned_to_me')}
-                    >
-                      <FiUserCheck className="tl-tab-icon" />
-                      <span className="tl-tab-text"> Assigned to me</span>
-                      <span className="tl-tab-count">{myTasks.length}</span>
-                    </button>
-                    <button
-                      className={`tl-task-tab-btn ${activeTab === 'other_tasks' ? 'tl-active tl-active--other' : ''}`}
-                      onClick={() => setActiveTab('other_tasks')}
-                    >
-                      <FiList className="tl-tab-icon" />
-                      <span className="tl-tab-text"> Assigned to others</span>
-                      <span className="tl-tab-count">{otherTasks.length}</span>
-                    </button>
-                    {isManager && (
-                      <button
-                        className={`tl-task-tab-btn ${activeTab === 'assigned_to_team' ? 'tl-active tl-active--team' : ''}`}
-                        onClick={() => setActiveTab('assigned_to_team')}
-                      >
-                        <FiUsers className="tl-tab-icon" />
-                        <span className="tl-tab-text"> Assigned to team</span>
-                        <span className="tl-tab-count">{teamTasks.length}</span>
-                      </button>
-                    )}
-                    {approvalTasks.length > 0 && (
-                      <button
-                        className={`tl-task-tab-btn ${activeTab === 'approval_tasks' ? 'tl-active tl-active--approval' : ''}`}
-                        onClick={() => setActiveTab('approval_tasks')}
-                      >
-                        <FiThumbsUp className="tl-tab-icon" />
-                        <span className="tl-tab-text">Approval Tasks</span>
-                        <span className="tl-tab-count">{approvalTasks.length}</span>
-                        {/* Pending approval badge */}
-                        {(() => {
-                          try {
-                            if (!approvalsLoaded || !Array.isArray(approvalRequestsForUser)) return null;
-                            const pendingCount = approvalRequestsForUser.filter(t => t && t._isPendingAction === true).length;
-                            if (pendingCount === 0) return null;
-                            return (
-                              <span className="tl-approval-pending-badge" title={`${pendingCount} pending approval`}>
-                                {pendingCount}
-                              </span>
-                            );
-                          } catch {
-                            return null;
-                          }
-                        })()}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
                 <div className="tl-tab-content-wrapper">
                   {activeTab === 'assigned_to_me' && (
                     <div className="tl-tasks-group tl-fade-in">
                       {myTasks.length > 0 ? (
-                        myTasks.map((t) => renderTaskCard(t))
+                        renderTasksTable(myTasks)
                       ) : (
                         <div className="tl-empty-tab-state">
                           <FiUserCheck className="tl-empty-icon" />
@@ -1272,7 +1458,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
                   {activeTab === 'assigned_to_team' && isManager && (
                     <div className="tl-tasks-group tl-fade-in">
                       {teamTasks.length > 0 ? (
-                        teamTasks.map((t) => renderTaskCard(t))
+                        renderTasksTable(teamTasks)
                       ) : (
                         <div className="tl-empty-tab-state">
                           <FiUsers className="tl-empty-icon" />
@@ -1285,7 +1471,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
                   {activeTab === 'approval_tasks' && (
                     <div className="tl-tasks-group tl-fade-in">
                       {approvalTasks.length > 0 ? (
-                        approvalTasks.map((t) => renderTaskCard(t))
+                        renderTasksTable(approvalTasks)
                       ) : (
                         <div className="tl-empty-tab-state">
                           <FiThumbsUp className="tl-empty-icon" />
@@ -1298,7 +1484,7 @@ const TasksList = ({ viewMode = 'list', onViewModeChange }) => {
                   {activeTab === 'other_tasks' && (
                     <div className="tl-tasks-group tl-fade-in">
                       {otherTasks.length > 0 ? (
-                        otherTasks.map((t) => renderTaskCard(t))
+                        renderTasksTable(otherTasks)
                       ) : (
                         <div className="tl-empty-tab-state">
                           <FiList className="tl-empty-icon" />

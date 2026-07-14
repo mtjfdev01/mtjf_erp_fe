@@ -1,11 +1,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  FiArrowLeft,
+  FiCheck,
+  FiEdit2,
+  FiEye,
+  FiMessageSquare,
+  FiPlus,
+  FiSend,
+  FiSliders,
+  FiUser,
+} from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
-import { PrimaryButton } from '../../../common/buttons';
 import Pagination from '../../../common/Pagination';
 import { formatActivityType, formatDateTime, canMutateFollowup } from '../shared/constants';
 import FollowupEditModal from '../shared/FollowupEditModal';
@@ -17,6 +27,11 @@ const BUCKETS = [
   { id: 'upcoming', label: 'Upcoming' },
   { id: 'completed', label: 'Completed' },
 ];
+
+const isIncomingBubble = (status) => {
+  const s = String(status || '').toLowerCase();
+  return s === 'completed' || s === 'closed';
+};
 
 const FollowUpsList = () => {
   const navigate = useNavigate();
@@ -37,6 +52,7 @@ const FollowUpsList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const [editingFollowup, setEditingFollowup] = useState(null);
+  const [showBuckets, setShowBuckets] = useState(true);
 
   useEffect(() => {
     fetchFollowups();
@@ -76,138 +92,243 @@ const FollowUpsList = () => {
     navigate(`/dms/donor-relationship/add${donorId ? `?donor_id=${donorId}` : ''}`);
   };
 
+  const activeBucketLabel = BUCKETS.find((b) => b.id === bucket)?.label || 'Follow-ups';
+
   return (
     <>
       <Navbar />
-      <div className="view-wrapper">
-        <PageHeader
-          title="My Donor Follow-ups"
-          showBackButton={false}
-          showAdd
-          addPath="/dms/donor-relationship/add"
-          addTitle="Add interaction"
-        />
-
-        {canViewOverview && (
-          <div style={{ marginBottom: 16 }}>
-            <button
-              type="button"
-              className="primary_btn"
-              onClick={() => navigate('/dms/donor-relationship/overview')}
-            >
-              Management overview
-            </button>
-          </div>
-        )}
-
-        <div className="donor-relationship-tabs">
-          {BUCKETS.map((b) => (
-            <button
-              key={b.id}
-              type="button"
-              className={bucket === b.id ? 'active' : ''}
-              onClick={() => {
-                setBucket(b.id);
-                setPage(1);
-              }}
-            >
-              {b.label}
-            </button>
-          ))}
+      <div className="view-wrapper followups-page">
+        <div className="followups-page__desktop-header">
+          <PageHeader
+            title="My Donor Follow-ups"
+            showBackButton={false}
+            showAdd
+            addPath="/dms/donor-relationship/add"
+            addTitle="Add interaction"
+          />
+          {canViewOverview && (
+            <div className="followups-page__overview">
+              <button
+                type="button"
+                className="primary_btn"
+                onClick={() => navigate('/dms/donor-relationship/overview')}
+              >
+                Management overview
+              </button>
+            </div>
+          )}
         </div>
 
-        {error && <div className="error-message">{error}</div>}
-
-        {loading ? (
-          <p>Loading…</p>
-        ) : records.length === 0 ? (
-          <p>No follow-ups in this bucket.</p>
-        ) : (
-          records.map((row) => {
-            const { canEdit, locked } = canMutateFollowup(permissions, row);
-            return (
-            <div key={row.id} className="donor-relationship-card">
-              <div className="donor-relationship-card__header">
-                <div>
-                  <div className="donor-relationship-card__title">
-                    {row.donor?.name || `Donor #${row.donor_id}`}
-                  </div>
-                  <div className="donor-relationship-card__meta">
-                    {row.followup_title} · Due {formatDateTime(row.due_datetime)}
-                    {locked && !permissions?.super_admin ? ' · Locked' : ''}
-                  </div>
-                </div>
-                <span className={`donor-relationship-status ${row.status}`}>
-                  {row.status?.replace(/_/g, ' ')}
-                </span>
-              </div>
-              {row.followup_reason && (
-                <div className="donor-relationship-card__section">
-                  <div className="donor-relationship-card__label">Reason</div>
-                  <div>{row.followup_reason}</div>
-                </div>
-              )}
-              {row.interaction && (
-                <div className="donor-relationship-card__section">
-                  <div className="donor-relationship-card__label">Last activity</div>
-                  <div>
-                    {formatActivityType(row.interaction.activity_type)} —{' '}
-                    {row.interaction.user_action_text?.slice(0, 120)}
-                  </div>
-                </div>
-              )}
-              <div className="donor-relationship-actions">
-                {canEdit && (
-                  <button
-                    type="button"
-                    className="primary_btn"
-                    onClick={() => setEditingFollowup(row)}
-                  >
-                    Edit
-                  </button>
-                )}
-                <PrimaryButton type="button" onClick={() => openAddInteraction(row.donor_id)}>
-                  Add interaction
-                </PrimaryButton>
-                {row.status !== 'completed' && (
-                  <button
-                    type="button"
-                    className="primary_btn"
-                    onClick={() => completeFollowup(row.id)}
-                  >
-                    Mark completed
-                  </button>
-                )}
-                <button
-                  type="button"
-                  className="primary_btn"
-                  onClick={() => navigate(`/dms/donors/view/${row.donor_id}`)}
-                >
-                  View donor
-                </button>
+        <div className="followups-chat">
+          <header className="followups-chat__header">
+            <div className="followups-chat__header-left">
+              <button
+                type="button"
+                className="followups-chat__icon-btn"
+                aria-label="Back"
+                onClick={() => navigate(-1)}
+              >
+                <FiArrowLeft />
+              </button>
+              <span className="followups-chat__avatar" aria-hidden>
+                <FiUser />
+              </span>
+              <div className="followups-chat__header-text">
+                <div className="followups-chat__header-title">My Follow-ups</div>
+                <div className="followups-chat__header-sub">{activeBucketLabel}</div>
               </div>
             </div>
-            );
-          })
-        )}
+            <button
+              type="button"
+              className="followups-chat__icon-btn"
+              aria-label="Toggle filters"
+              aria-expanded={showBuckets}
+              onClick={() => setShowBuckets((v) => !v)}
+            >
+              <FiSliders />
+            </button>
+          </header>
+
+          {showBuckets && (
+            <div className="followups-chat__buckets" role="tablist" aria-label="Follow-up buckets">
+              {BUCKETS.map((b) => (
+                <button
+                  key={b.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={bucket === b.id}
+                  className={bucket === b.id ? 'is-active' : ''}
+                  onClick={() => {
+                    setBucket(b.id);
+                    setPage(1);
+                  }}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {error && <div className="error-message followups-chat__error">{error}</div>}
+
+          <div className="followups-chat__thread">
+            {loading ? (
+              <p className="followups-chat__empty">Loading…</p>
+            ) : records.length === 0 ? (
+              <p className="followups-chat__empty">No follow-ups in this bucket.</p>
+            ) : (
+              records.map((row) => {
+                const { canEdit, locked } = canMutateFollowup(permissions, row);
+                const incoming = isIncomingBubble(row.status);
+                const donorName = row.donor?.name || `Donor #${row.donor_id}`;
+                return (
+                  <article
+                    key={row.id}
+                    className={`followups-bubble ${incoming ? 'followups-bubble--in' : 'followups-bubble--out'}`}
+                  >
+                    <div className="followups-bubble__body">
+                      <div className="followups-bubble__top">
+                        <button
+                          type="button"
+                          className="followups-bubble__donor"
+                          onClick={() => navigate(`/dms/donors/view/${row.donor_id}`)}
+                        >
+                          {donorName}
+                        </button>
+                        <span className={`donor-relationship-status ${row.status}`}>
+                          {row.status?.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+
+                      <div className="followups-bubble__title">{row.followup_title}</div>
+                      <div className="followups-bubble__meta">
+                        Due {formatDateTime(row.due_datetime)}
+                        {locked && !permissions?.super_admin ? ' · Locked' : ''}
+                      </div>
+
+                      {row.followup_reason && (
+                        <p className="followups-bubble__text">{row.followup_reason}</p>
+                      )}
+
+                      {row.interaction && (
+                        <p className="followups-bubble__activity">
+                          {formatActivityType(row.interaction.activity_type)}
+                          {row.interaction.user_action_text
+                            ? ` — ${row.interaction.user_action_text.slice(0, 120)}`
+                            : ''}
+                        </p>
+                      )}
+
+                      <div className="followups-bubble__actions">
+                        {canEdit && (
+                          <button
+                            type="button"
+                            className="followups-bubble__action"
+                            title="Edit"
+                            onClick={() => setEditingFollowup(row)}
+                          >
+                            <FiEdit2 />
+                            <span>Edit</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="followups-bubble__action"
+                          title="Add interaction"
+                          onClick={() => openAddInteraction(row.donor_id)}
+                        >
+                          <FiMessageSquare />
+                          <span>Interact</span>
+                        </button>
+                        {row.status !== 'completed' && (
+                          <button
+                            type="button"
+                            className="followups-bubble__action"
+                            title="Mark completed"
+                            onClick={() => completeFollowup(row.id)}
+                          >
+                            <FiCheck />
+                            <span>Done</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="followups-bubble__action"
+                          title="View donor"
+                          onClick={() => navigate(`/dms/donors/view/${row.donor_id}`)}
+                        >
+                          <FiEye />
+                          <span>Donor</span>
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+
+          <footer className="followups-chat__composer">
+            <div className="followups-chat__composer-tools">
+              <button
+                type="button"
+                className="followups-chat__composer-icon"
+                title="Add interaction"
+                aria-label="Add interaction"
+                onClick={() => openAddInteraction()}
+              >
+                <FiPlus />
+              </button>
+              {canViewOverview && (
+                <button
+                  type="button"
+                  className="followups-chat__composer-icon followups-chat__composer-icon--desktop"
+                  title="Management overview"
+                  aria-label="Management overview"
+                  onClick={() => navigate('/dms/donor-relationship/overview')}
+                >
+                  <FiSliders />
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              className="followups-chat__composer-input"
+              onClick={() => openAddInteraction()}
+            >
+              Add a new interaction…
+            </button>
+            <button
+              type="button"
+              className="followups-chat__composer-send"
+              title="Add interaction"
+              aria-label="Add interaction"
+              onClick={() => openAddInteraction()}
+            >
+              <FiSend />
+            </button>
+          </footer>
+        </div>
+
+        <div className="followups-page__pagination">
+          <Pagination
+            currentPage={page}
+            totalPages={totalPages}
+            totalItems={totalItems}
+            pageSize={pageSize}
+            onPageChange={setPage}
+            onPageSizeChange={(size) => {
+              setPageSize(size);
+              setPage(1);
+            }}
+          />
+        </div>
 
         <FollowupEditModal
           open={!!editingFollowup}
           followup={editingFollowup}
           onClose={() => setEditingFollowup(null)}
           onSaved={() => fetchFollowups()}
-        />
-
-        <Pagination
-          currentPage={page}
-          totalPages={totalPages}
-          totalItems={totalItems}
-          pageSize={pageSize}
-          onPageChange={setPage}
-          onPageSizeChange={(size) => {
-            setPageSize(size);
-            setPage(1);
-          }}
         />
       </div>
     </>

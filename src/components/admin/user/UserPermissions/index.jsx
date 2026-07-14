@@ -258,7 +258,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       submodules: {
         users: {
           label: 'Users',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
         },
         dashboard: {
           label: 'Dashboard',
@@ -308,6 +308,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         donation_receipts: {
           label: 'Donation Receipts',
           actions: ['view', 'send']
+        },
+        email_checklist: {
+          label: 'Email Checklist',
+          actions: ['list_view', 'update']
         },
       }
     },

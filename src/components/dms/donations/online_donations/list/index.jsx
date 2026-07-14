@@ -69,8 +69,8 @@ const OnlineDonationsList = () => {
 
   // Pagination state — persisted so it survives navigation
   const [paginationState, setPaginationState] = usePersistedFilters(
-    `${listStoragePrefix}:pagination`,
-    { currentPage: 1, pageSize: 10, sortField: 'created_at', sortOrder: 'DESC' }
+    `${listStoragePrefix}:pagination:v2`,
+    { currentPage: 1, pageSize: 10, sortField: 'id', sortOrder: 'DESC' }
   );
   const { currentPage, pageSize, sortField, sortOrder } = paginationState;
   const setCurrentPage = (v) => setPaginationState(prev => ({ ...prev, currentPage: typeof v === 'function' ? v(prev.currentPage) : v }));
@@ -571,6 +571,7 @@ const OnlineDonationsList = () => {
   ];
 
   const sortOptions = [
+    { value: 'id', label: 'ID' },
     { value: 'created_at', label: 'Created Date' },
     { value: 'date', label: 'Donation Date' },
     { value: 'amount', label: 'Amount' },

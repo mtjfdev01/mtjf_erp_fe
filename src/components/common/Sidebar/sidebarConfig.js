@@ -715,6 +715,13 @@ const emailTemplatesItems = () => [
       { label: 'Templates List', path: '/dms/email_templates/list', type: 'list', icon: FiList },
       { label: 'Add Template', path: '/dms/email_templates/add', type: 'list', icon: FiPlusCircle }
     ]
+  },
+  {
+    label: 'Email Checklist',
+    path: '/email-checklist',
+    type: 'list',
+    module: 'email_checklist',
+    icon: FiCheckSquare,
   }
 ];
 
@@ -911,10 +918,23 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
 
-  // Super admin: Admin Panel + one Tasks group (list + dashboard only; no per-department task rows).
+  // Super admin: Admin Panel + Tasks + Email Checklist (no full Communication menu).
   if (isSuperAdminRole || isSuperAdminPermission) {
     const sections = [departmentConfigs.admin(false)];
     sections.push(buildSuperAdminTaskingGroup());
+    sections.push({
+      id: 'communication_tools',
+      label: 'Communication',
+      icon: FiMail,
+      items: [
+        {
+          label: 'Email Checklist',
+          path: '/email-checklist',
+          type: 'list',
+          icon: FiCheckSquare,
+        },
+      ],
+    });
     return sections;
   }
 

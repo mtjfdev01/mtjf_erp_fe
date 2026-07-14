@@ -1,8 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import {
+  FiSend,
+  FiInbox,
+  FiUserCheck,
+  FiUsers,
+  FiTrendingUp,
+} from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import { useAuth } from '../../../../context/AuthContext';
+import './DonationAllotmentPanel.css';
 
 const STATUS_LABELS = {
   pending: { label: 'Pending approval', className: 'allotment-badge allotment-badge--pending' },
@@ -171,23 +179,29 @@ const DonationAllotmentPanel = ({ donationId, donation, onUpdated }) => {
   }
 
   return (
-    <div className="donation-view-subsection donation-allotment-panel">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-        <h3 className="view-section-title donation-view-section-title--spaced" style={{ margin: 0 }}>
-          Performance Allotment
-        </h3>
+    <div className="donation-allotment-panel">
+      <div className="donation-allotment-panel__header">
+        <div className="donation-allotment-panel__header-main">
+          <div className="donation-allotment-panel__header-icon" aria-hidden>
+            <FiTrendingUp />
+          </div>
+          <div>
+            <h3 className="donation-allotment-panel__title">Performance Allotment</h3>
+            <p className="donation-allotment-panel__subtitle">
+              Credit for this donation requires reporting manager approval before it counts toward KPIs.
+            </p>
+          </div>
+        </div>
         {showApprovalInbox && (
-          <Link to="/donations/allotments/pending" className="secondary_btn" style={{ textDecoration: 'none' }}>
-            Approval inbox{pendingInboxCount > 0 ? ` (${pendingInboxCount})` : ''}
+          <Link to="/donations/allotments/pending" className="donation-allotment-panel__inbox-btn">
+            <FiInbox />
+            Approval Inbox{pendingInboxCount > 0 ? ` (${pendingInboxCount})` : ''}
           </Link>
         )}
       </div>
-      <p className="donation-allotment-hint">
-        Credit for this donation requires reporting manager approval before it counts toward KPIs.
-      </p>
 
       {donation?.credited_to && (
-        <div className="view-item" style={{ marginBottom: '1rem' }}>
+        <div className="view-item donation-allotment-panel__credited">
           <span className="view-item-label">Credited to (approved)</span>
           <span className="view-item-value">{formatUser(donation.credited_to)}</span>
         </div>
@@ -197,7 +211,7 @@ const DonationAllotmentPanel = ({ donationId, donation, onUpdated }) => {
       {success && <div className="status-message status-message--success">{success}</div>}
 
       {loading ? (
-        <p>Loading allotments…</p>
+        <p className="donation-allotment-panel__hint">Loading allotments…</p>
       ) : (
         <>
           {allotments.length > 0 && (
@@ -248,16 +262,16 @@ const DonationAllotmentPanel = ({ donationId, donation, onUpdated }) => {
                     {canReview && (
                       <div className="donation-allotment-review">
                         <textarea
-                          className="form-textarea"
+                          className="donation-allotment-panel__textarea"
                           rows={2}
                           placeholder="Optional decision note"
                           value={decisionNote}
                           onChange={(e) => setDecisionNote(e.target.value)}
                         />
-                        <div className="donation-view-action-grid">
+                        <div className="donation-allotment-review__actions">
                           <button
                             type="button"
-                            className="donation-action-btn donation-action-btn--green"
+                            className="donation-allotment-panel__btn donation-allotment-panel__btn--approve"
                             disabled={reviewingId === row.id}
                             onClick={() => reviewAllotment(row.id, 'approve')}
                           >
@@ -265,7 +279,7 @@ const DonationAllotmentPanel = ({ donationId, donation, onUpdated }) => {
                           </button>
                           <button
                             type="button"
-                            className="donation-action-btn donation-action-btn--red"
+                            className="donation-allotment-panel__btn donation-allotment-panel__btn--reject"
                             disabled={reviewingId === row.id}
                             onClick={() => reviewAllotment(row.id, 'reject')}
                           >
@@ -281,62 +295,83 @@ const DonationAllotmentPanel = ({ donationId, donation, onUpdated }) => {
           )}
 
           {!hasApproved && (
-            <div className="donation-allotment-request">
-              <h4 className="donation-view-subsection-title">Request credit</h4>
-              <textarea
-                className="form-textarea"
-                rows={2}
-                placeholder="Optional note for your manager"
-                value={requestNote}
-                onChange={(e) => setRequestNote(e.target.value)}
-              />
-              <div className="donation-view-action-grid" style={{ marginTop: '0.75rem' }}>
-                <button
-                  type="button"
-                  className="donation-action-btn donation-action-btn--indigo"
-                  disabled={submitting}
-                  onClick={() => submitRequest(user?.id)}
-                >
-                  {submitting ? 'Submitting…' : 'Request credit for me'}
-                </button>
-              </div>
-              {isManager && (
-                <div style={{ marginTop: '1rem' }}>
-                  <SearchableDropdown
-                    label="Or request for team member"
-                    placeholder="Search fundraising users…"
-                    apiEndpoint="/users/options"
-                    apiParams={{
-                      assignment_scope: 'donor_assigned_filter',
-                      department: 'fund_raising',
-                    }}
-                    onSelect={(u) => setCreditUser(u)}
-                    onClear={() => setCreditUser(null)}
-                    value={creditUser}
-                    displayKey="first_name"
-                    debounceDelay={400}
-                    minSearchLength={2}
-                    allowResearch
-                    renderOption={(u, index, list) =>
-                      renderUserOption(u, index, list, setCreditUser)
-                    }
-                  />
+            <>
+              <div className="donation-allotment-panel__section">
+                <h4 className="donation-allotment-panel__section-title">
+                  <span className="donation-allotment-panel__section-icon donation-allotment-panel__section-icon--self" aria-hidden>
+                    <FiUserCheck />
+                  </span>
+                  Request credit
+                </h4>
+                <div className="donation-allotment-panel__row">
+                  <div className="donation-allotment-panel__row-field">
+                    <textarea
+                      className="donation-allotment-panel__textarea"
+                      rows={2}
+                      placeholder="Optional note for your manager"
+                      value={requestNote}
+                      onChange={(e) => setRequestNote(e.target.value)}
+                    />
+                  </div>
                   <button
                     type="button"
-                    className="donation-action-btn donation-action-btn--blue"
-                    style={{ marginTop: '0.5rem' }}
-                    disabled={submitting || !creditUser?.id}
-                    onClick={() => submitRequest(creditUser.id)}
+                    className="donation-allotment-panel__btn donation-allotment-panel__btn--primary"
+                    disabled={submitting}
+                    onClick={() => submitRequest(user?.id)}
                   >
-                    {submitting ? 'Submitting…' : 'Submit for selected user'}
+                    <FiSend />
+                    {submitting ? 'Submitting…' : 'Request credit for me'}
                   </button>
                 </div>
+              </div>
+
+              {isManager && (
+                <div className="donation-allotment-panel__section">
+                  <h4 className="donation-allotment-panel__section-title">
+                    <span className="donation-allotment-panel__section-icon donation-allotment-panel__section-icon--team" aria-hidden>
+                      <FiUsers />
+                    </span>
+                    Or request for team member
+                  </h4>
+                  <div className="donation-allotment-panel__row">
+                    <div className="donation-allotment-panel__row-field">
+                      <SearchableDropdown
+                        label="Or request for team member"
+                        placeholder="Search fundraising users..."
+                        apiEndpoint="/users/options"
+                        apiParams={{
+                          assignment_scope: 'donor_assigned_filter',
+                          department: 'fund_raising',
+                        }}
+                        onSelect={(u) => setCreditUser(u)}
+                        onClear={() => setCreditUser(null)}
+                        value={creditUser}
+                        displayKey="first_name"
+                        debounceDelay={400}
+                        minSearchLength={2}
+                        allowResearch
+                        renderOption={(u, index, list) =>
+                          renderUserOption(u, index, list, setCreditUser)
+                        }
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      className="donation-allotment-panel__btn donation-allotment-panel__btn--secondary"
+                      disabled={submitting || !creditUser?.id}
+                      onClick={() => submitRequest(creditUser.id)}
+                    >
+                      <FiUserCheck />
+                      {submitting ? 'Submitting…' : 'Submit for selected user'}
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
+            </>
           )}
 
           {pendingForMe.length > 0 && !hasApproved && (
-            <p className="donation-allotment-hint" style={{ marginTop: '1rem' }}>
+            <p className="donation-allotment-panel__hint">
               You have {pendingForMe.length} pending allotment
               {pendingForMe.length > 1 ? 's' : ''} awaiting your approval on this donation.
             </p>

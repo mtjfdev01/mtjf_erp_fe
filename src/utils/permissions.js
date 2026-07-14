@@ -88,6 +88,15 @@ export const canViewModule = (permissions, department, module) => {
     );
   }
 
+  // Communication sidebar section uses id `email_templates` but permissions live under `communication`
+  if (department === 'email_templates') {
+    const comm = permissions.communication;
+    if (!comm) return false;
+    const modulePermissions = comm[module];
+    if (!modulePermissions) return false;
+    return modulePermissions.view === true || modulePermissions.list_view === true;
+  }
+
   const modulePermissions = permissions[department]?.[module];
   if (!modulePermissions) {
     return false;

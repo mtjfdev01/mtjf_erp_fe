@@ -151,6 +151,7 @@ import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
+import EmailChecklist from './components/communication/email_checklist';
 import ReceiptTemplateList from './components/dms/receipt_templates/list';
 import ReceiptTemplateForm from './components/dms/receipt_templates/form';
 import ViewReceiptTemplate from './components/dms/receipt_templates/view';
@@ -484,6 +485,7 @@ const App = () => {
                                 {/* Email Template Routes */}
                                 <Route path="/dms/email_templates/list" element={<EmailTemplateList />} />
                                 <Route path="/dms/email_templates/add" element={<EmailTemplateForm />} />
+                                <Route path="/email-checklist" element={<EmailChecklist />} />
                                 <Route path="/dms/email_templates/edit/:id" element={<EmailTemplateForm />} />
 
                                 {/* Receipt Template Routes */}

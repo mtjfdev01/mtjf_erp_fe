@@ -69,6 +69,7 @@
   --table-border: #e5e7eb;
 
   /* Navbar */
+  --navbar-height: 64px;
   --navbar-bg: #ffffff;
   --navbar-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   --navbar-title-color: #0d6efd;
@@ -191,4 +192,16 @@ input,
 select,
 textarea {
   color-scheme: inherit;
+}
+
+@media screen and (max-width: 768px) {
+  :root {
+    --navbar-height: 56px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  :root {
+    --navbar-height: 50px;
+  }
 }
