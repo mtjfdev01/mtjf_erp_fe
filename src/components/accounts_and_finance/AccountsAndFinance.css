@@ -65,8 +65,6 @@
 
 /* Reports List Styles */
 .list-wrapper {
-  /* padding: 2rem; */
-  /* max-width: 1200px; */
   margin: 0 auto;
 }
 
@@ -284,7 +282,7 @@
     display: none;
   }
   
-  .list-wrapper,
+  /* .list-wrapper, */
   .form-wrapper,
   .view-wrapper {
     padding: 1rem;

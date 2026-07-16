@@ -16,6 +16,7 @@ import UserList from './components/admin/user/UserList';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { NavigationHistoryProvider } from './context/NavigationHistoryContext';
 import { OfflineProvider } from './context/OfflineContext';
 import { SummaryProvider } from './context/SummaryContext';
 import { InKindItemsProvider } from './context/InKindItemsContext';
@@ -146,6 +147,7 @@ import ReconciliationList from './components/dms/reconciliation/list';
 import ReconciliationAdd from './components/dms/reconciliation/add';
 import ReconciliationView from './components/dms/reconciliation/view';
 import FollowUpsList from './components/dms/donor_relationship/follow_ups';
+import InteractionsList from './components/dms/donor_relationship/interactions';
 import AddDonorInteraction from './components/dms/donor_relationship/add';
 import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
@@ -193,7 +195,8 @@ import './styles/screen-theme.css';
 
 const App = () => {
   return (<React.Fragment>
-            <Router> 
+            <Router>
+              <NavigationHistoryProvider>
               <ThemeProvider>
               <AuthProvider>
                 <OfflineProvider>
@@ -499,6 +502,7 @@ const App = () => {
                                 <Route path="/dms/reconciliation/view/:id" element={<ReconciliationView />} />
 
                                 <Route path="/dms/donor-relationship/follow-ups" element={<FollowUpsList />} />
+                                <Route path="/dms/donor-relationship/interactions" element={<InteractionsList />} />
                                 <Route path="/dms/donor-relationship/add" element={<AddDonorInteraction />} />
                                 <Route path="/dms/donor-relationship/overview" element={<ManagementOverview />} />
 
@@ -523,6 +527,7 @@ const App = () => {
                 </OfflineProvider>
             </AuthProvider>
               </ThemeProvider>
+              </NavigationHistoryProvider>
             </Router>
             <ToastContainer />
           </React.Fragment>

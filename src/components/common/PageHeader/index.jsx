@@ -1,15 +1,15 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
-import { MdEdit, MdAdd } from "react-icons/md";
-import { FaFilter } from "react-icons/fa6";
-
+import { MdEdit, MdAdd } from 'react-icons/md';
+import { FaFilter } from 'react-icons/fa6';
+import { useNavigationHistory } from '../../../context/NavigationHistoryContext';
 import './PageHeader.css';
 
-const PageHeader = ({ 
-  title, 
-  backPath, 
-  onBackClick, 
+const PageHeader = ({
+  title,
+  backPath,
+  onBackClick,
   showBackButton = true,
   className = '',
   showEdit = false,
@@ -22,18 +22,30 @@ const PageHeader = ({
   filtersOpen = false,
   onFilterToggle,
   filterTitle = 'Toggle filters',
-  rightElement
+  rightElement,
 }) => {
   const navigate = useNavigate();
+  const { canGoBack } = useNavigationHistory();
 
   const handleBackClick = () => {
     if (onBackClick) {
       onBackClick();
-    } else if (backPath) {
-      navigate(backPath);
-    } else {
-      navigate(-1); // Go back to previous page
+      return;
     }
+
+    // Prefer browser/in-app history when the user came from another app screen
+    if (canGoBack) {
+      navigate(-1);
+      return;
+    }
+
+    // No in-app history (direct link / refresh) → safe default
+    if (backPath) {
+      navigate(backPath);
+      return;
+    }
+
+    navigate('/welcome');
   };
 
   const handleEditClick = () => {
@@ -52,7 +64,8 @@ const PageHeader = ({
     <div className={`page-header ${className}`}>
       <div className="page-header-content">
         {showBackButton && (
-          <button 
+          <button
+            type="button"
             className="back-button"
             onClick={handleBackClick}
             title="Go back"
@@ -74,7 +87,8 @@ const PageHeader = ({
           </button>
         )}
         {showAdd && addPath && (
-          <button 
+          <button
+            type="button"
             className={`back-button ${addDisabled ? 'disabled' : ''}`}
             onClick={handleAddClick}
             title={addTitle}
@@ -84,7 +98,8 @@ const PageHeader = ({
           </button>
         )}
         {showEdit && editPath && (
-          <button 
+          <button
+            type="button"
             className="back-button"
             onClick={handleEditClick}
             title="Edit"
@@ -98,4 +113,4 @@ const PageHeader = ({
   );
 };
 
-export default PageHeader; 
+export default PageHeader;

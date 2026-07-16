@@ -6,9 +6,8 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
-import HybridDropdown from '../../../common/HybridDropdown';
 import Navbar from '../../../Navbar';
-// import '../../Store.css';
+import './index.css';
 
 const RegisterDonor = () => {
   const navigate = useNavigate();
@@ -18,10 +17,8 @@ const RegisterDonor = () => {
     email: '',
     password: '',
     phone: '',
-    // Individual fields
     first_name: '',
     last_name: '',
-    // CSR fields
     company_name: '',
     company_registration: '',
     contact_person: '',
@@ -29,14 +26,13 @@ const RegisterDonor = () => {
     company_address: '',
     company_phone: '',
     company_email: '',
-    // Common fields
     address: '',
     city: '',
     country: 'Pakistan',
     source: 'fund_raising',
     postal_code: '',
     cnic: '',
-    notes: ''
+    notes: '',
   });
   const [assignedUser, setAssignedUser] = useState(null);
   const [referrerUser, setReferrerUser] = useState(null);
@@ -48,35 +44,21 @@ const RegisterDonor = () => {
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (error) setError('');
-    if (donorSearchMessage && (e.target.name === 'email' || e.target.name === 'phone')) setDonorSearchMessage('');
+    if (donorSearchMessage && (e.target.name === 'email' || e.target.name === 'phone')) {
+      setDonorSearchMessage('');
+    }
   };
 
-  // Handle user selection
-  const handleUserSelect = (user) => {
-    setAssignedUser(user);
-  };
-
-  // Handle user clear
-  const handleUserClear = () => {
-    setAssignedUser(null);
-  };
-
-  // Handle referrer selection
-  const handleReferrerSelect = (user) => {
-    setReferrerUser(user);
-  };
-
-  // Handle referrer clear
-  const handleReferrerClear = () => {
-    setReferrerUser(null);
-  };
+  const handleUserSelect = (user) => setAssignedUser(user);
+  const handleUserClear = () => setAssignedUser(null);
+  const handleReferrerSelect = (user) => setReferrerUser(user);
+  const handleReferrerClear = () => setReferrerUser(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
     try {
-      // Prepare data based on donor type
       const donorData = {
         donor_type: form.donor_type,
         email: form.email,
@@ -90,7 +72,7 @@ const RegisterDonor = () => {
         notes: form.notes,
         assigned_to_user_id: assignedUser?.id || null,
         referrer_user_id: referrerUser?.id || null,
-        source: form.source
+        source: form.source,
       };
 
       if (form.donor_type === 'individual') {
@@ -109,10 +91,7 @@ const RegisterDonor = () => {
         donorData.company_email = form.company_email;
       }
 
-      console.log("donorData", donorData);
       await axiosInstance.post('/donors/register', donorData);
-
-      // Redirect to donors list after successful registration
       navigate('/dms/donors/list');
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to register donor. Please try again.');
@@ -154,40 +133,55 @@ const RegisterDonor = () => {
 
   const donorTypeOptions = [
     { value: 'individual', label: 'Individual Donor' },
-    { value: 'csr', label: 'CSR Donor (Corporate)' }
+    { value: 'csr', label: 'CSR Donor (Corporate)' },
   ];
+
+  const renderUserOption = (user, index, onSelect) => (
+    <div
+      key={user.id}
+      className="searchable-dropdown__option"
+      onClick={() => onSelect(user)}
+      style={{
+        padding: '12px',
+        borderBottom: '1px solid #eee',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+        {user.first_name} {user.last_name}
+      </div>
+      <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+      {user.department && (
+        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+          {user.department} • {user.role || 'User'}
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <>
       <Navbar />
-        <div className="form-content">
-          <PageHeader 
-            title="Register Donor" 
-            onBack={handleBack}
-          />
-          
+      <div className="list-wrapper">
+        <div className="list-content donor-register-page">
+          <PageHeader title="Register Donor" onBack={handleBack} />
+
           {error && (
-            <div className="status-message status-message--error">
-              {error}
-            </div>
+            <div className="status-message status-message--error">{error}</div>
           )}
 
-          <form onSubmit={handleSubmit} className="form">
-            {/* Donor Type Selection */}
-            <div className="form-section">
-              <FormSelect
-                label="Donor Type"
-                name="donor_type"
-                value={form.donor_type}
-                onChange={handleChange}
-                options={donorTypeOptions}
-                required
-              />
-            </div>
-
-            {/* Email & Phone - first */}
-            <div className="form-section">
-              <div className="form-grid-2">
+          <form onSubmit={handleSubmit} className="form donor-register-form">
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">1. Contact & Type</h3>
+              <div className="form-grid-3">
+                <FormSelect
+                  label="Donor Type"
+                  name="donor_type"
+                  value={form.donor_type}
+                  onChange={handleChange}
+                  options={donorTypeOptions}
+                  required
+                />
                 <FormInput
                   label="Email"
                   type="email"
@@ -205,28 +199,27 @@ const RegisterDonor = () => {
                   required
                 />
               </div>
-              <div className="form-section" style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', marginTop: '12px' }}>
+              <div className="donor-register-lookup">
                 <button
                   type="button"
                   className="primary_btn"
                   onClick={handleCheckDonorExists}
                   disabled={checkingDonor}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}
                   title="Check if a donor with this email or phone already exists"
                 >
-                  <FiSearch size={18} />
+                  <FiSearch size={16} />
                   {checkingDonor ? 'Checking...' : 'Check existing donor'}
                 </button>
                 {donorSearchMessage && (
-                  <span style={{ color: '#6b7280', fontSize: '14px' }}>{donorSearchMessage}</span>
+                  <span className="donor-register-lookup__msg">{donorSearchMessage}</span>
                 )}
               </div>
-            </div>
+            </section>
 
-            {/* Individual Donor Fields */}
-            {form.donor_type === 'individual' && ( <>
-              <div className="form-section">
-                <div className="form-grid-2">
+            {form.donor_type === 'individual' ? (
+              <section className="donor-register-card">
+                <h3 className="donor-register-card__title">2. Personal Details</h3>
+                <div className="form-grid-3">
                   <FormInput
                     label="First Name"
                     type="text"
@@ -235,7 +228,6 @@ const RegisterDonor = () => {
                     onChange={handleChange}
                     required
                   />
-                  
                   <FormInput
                     label="Last Name"
                     type="text"
@@ -244,62 +236,19 @@ const RegisterDonor = () => {
                     onChange={handleChange}
                     required
                   />
-
-                  
+                  <FormInput
+                    label="CNIC"
+                    type="text"
+                    name="cnic"
+                    value={form.cnic}
+                    onChange={handleChange}
+                  />
                 </div>
-              </div>
-                          {/* Address Information */}
-            <div className="form-section">
-
-            <div className="form-grid-2">
-            <FormInput
-                label="Address"
-                type="text"
-                name="address"
-                value={form.address}
-                onChange={handleChange}
-                required
-            />
-            <FormInput
-                label="City"
-                type="text"
-                name="city"
-                value={form.city}
-                onChange={handleChange}
-            />
-            
-            <FormInput
-                label="Country"
-                type="text"
-                name="country"
-                value={form.country}
-                onChange={handleChange}
-                required
-            />
-            
-            <FormInput
-                label="Postal Code"
-                type="text"
-                name="postal_code"
-                value={form.postal_code}
-                onChange={handleChange}
-            />
-            <FormInput
-                label="CNIC"
-                type="text"
-                name="cnic"
-                value={form.cnic}
-                onChange={handleChange}
-            />
-            </div>
-            </div>
-            </>
-            )}
-
-            {/* CSR Donor Fields */}
-            {form.donor_type === 'csr' && (<>
-              <div className="form-section">
-                <div className="form-grid-2">
+              </section>
+            ) : (
+              <section className="donor-register-card">
+                <h3 className="donor-register-card__title">2. Company Details</h3>
+                <div className="form-grid-3">
                   <FormInput
                     label="Company Name"
                     type="text"
@@ -308,22 +257,15 @@ const RegisterDonor = () => {
                     onChange={handleChange}
                     required
                   />
-                  
                   <FormInput
-                    label="Company Registration Number"
+                    label="Registration Number"
                     type="text"
                     name="company_registration"
                     value={form.company_registration}
                     onChange={handleChange}
                     placeholder="e.g., 123456789"
                   />
-                  
-                </div>
-            </div>      
-            <div className="form-section">
-
-                <div className="form-grid-2">
-                <FormInput
+                  <FormInput
                     label="Contact Person"
                     type="text"
                     name="contact_person"
@@ -339,7 +281,6 @@ const RegisterDonor = () => {
                     onChange={handleChange}
                     placeholder="e.g., CSR Manager"
                   />
-                  
                   <FormInput
                     label="Company Phone"
                     type="tel"
@@ -348,7 +289,6 @@ const RegisterDonor = () => {
                     onChange={handleChange}
                     required
                   />
-                  
                   <FormInput
                     label="Company Email"
                     type="email"
@@ -358,25 +298,66 @@ const RegisterDonor = () => {
                     required
                   />
                 </div>
-            </div>
-            <div className="form-section">
-                <div className="form-grid-2">
+                <div className="form-grid-2 donor-register-card__row">
+                  <FormInput
+                    label="Company Address"
+                    type="text"
+                    name="company_address"
+                    value={form.company_address}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormInput
+                    label="CNIC (optional)"
+                    type="text"
+                    name="cnic"
+                    value={form.cnic}
+                    onChange={handleChange}
+                  />
+                </div>
+              </section>
+            )}
+
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">3. Address</h3>
+              <div className="form-grid-2">
                 <FormInput
-                  label="Company Address"
+                  label="Address"
                   type="text"
-                  name="company_address"
-                  value={form.company_address}
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                  required={form.donor_type === 'individual'}
+                />
+                <FormInput
+                  label="City"
+                  type="text"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                />
+                <FormInput
+                  label="Country"
+                  type="text"
+                  name="country"
+                  value={form.country}
                   onChange={handleChange}
                   required
                 />
-                </div>
-                </div>
-            </>)}
+                <FormInput
+                  label="Postal Code"
+                  type="text"
+                  name="postal_code"
+                  value={form.postal_code}
+                  onChange={handleChange}
+                />
+              </div>
+            </section>
 
-             {/* Password */}
-             <div className="form-section">
-               <div className="form-grid-2">
-                 <FormInput
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">4. Access & Assignment</h3>
+              <div className="form-grid-2">
+                <FormInput
                   label="Password"
                   type="password"
                   name="password"
@@ -384,91 +365,48 @@ const RegisterDonor = () => {
                   onChange={handleChange}
                   minLength="6"
                 />
-               </div>
-             </div>
+                <FormInput
+                  label="Source"
+                  type="text"
+                  name="source"
+                  value={form.source}
+                  onChange={handleChange}
+                />
+                <SearchableDropdown
+                  label="Assign to User (Optional)"
+                  placeholder="Search users by name or email..."
+                  apiEndpoint="/users"
+                  onSelect={handleUserSelect}
+                  onClear={handleUserClear}
+                  value={assignedUser}
+                  displayKey="first_name"
+                  debounceDelay={500}
+                  minSearchLength={2}
+                  allowResearch={true}
+                  renderOption={(user, index) =>
+                    renderUserOption(user, index, handleUserSelect)
+                  }
+                />
+                <SearchableDropdown
+                  label="Referrer (Optional)"
+                  placeholder="Search users by name or email..."
+                  apiEndpoint="/users"
+                  onSelect={handleReferrerSelect}
+                  onClear={handleReferrerClear}
+                  value={referrerUser}
+                  displayKey="first_name"
+                  debounceDelay={500}
+                  minSearchLength={2}
+                  allowResearch={true}
+                  renderOption={(user, index) =>
+                    renderUserOption(user, index, handleReferrerSelect)
+                  }
+                />
+              </div>
+            </section>
 
-            {/* User Assignment */}
-            <div className="form-section">
-              <SearchableDropdown
-                label="Assign to User (Optional)"
-                placeholder="Search users by name or email..."
-                apiEndpoint="/users"
-                onSelect={handleUserSelect}
-                onClear={handleUserClear}
-                value={assignedUser}
-                displayKey="first_name"
-                debounceDelay={500}
-                minSearchLength={2}
-                allowResearch={true}
-                renderOption={(user, index) => (
-                  <div 
-                    key={user.id}
-                    className="searchable-dropdown__option"
-                    onClick={() => handleUserSelect(user)}
-                    style={{ 
-                      padding: '12px',
-                      borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                      {user.first_name} {user.last_name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      {user.email}
-                    </div>
-                    {user.department && (
-                      <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
-                        {user.department} • {user.role || 'User'}
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-
-            {/* Referrer User */}
-            <div className="form-section">
-              <SearchableDropdown
-                label="Referrer (Optional)"
-                placeholder="Search users by name or email..."
-                apiEndpoint="/users"
-                onSelect={handleReferrerSelect}
-                onClear={handleReferrerClear}
-                value={referrerUser}
-                displayKey="first_name"
-                debounceDelay={500}
-                minSearchLength={2}
-                allowResearch={true}
-                renderOption={(user, index) => (
-                  <div 
-                    key={user.id}
-                    className="searchable-dropdown__option"
-                    onClick={() => handleReferrerSelect(user)}
-                    style={{ 
-                      padding: '12px',
-                      borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                      {user.first_name} {user.last_name}
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>
-                      {user.email}
-                    </div>
-                    {user.department && (
-                      <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
-                        {user.department} • {user.role || 'User'}
-                      </div>
-                    )}
-                  </div>
-                )}
-              />
-            </div>
-
-            {/* Additional Information */}
-            <div className="form-section">
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">5. Notes</h3>
               <FormInput
                 label="Notes"
                 type="textarea"
@@ -478,19 +416,19 @@ const RegisterDonor = () => {
                 placeholder="Any additional information about the donor..."
                 rows="3"
               />
-            </div>
+            </section>
 
-            <div className="form-actions">
-              <button 
-                type="submit" 
-                className="primary_btn" 
-                disabled={isSubmitting}
-              >
+            <div className="form-actions donor-register-actions">
+              <button type="button" className="donor-register-cancel" onClick={handleBack}>
+                Cancel
+              </button>
+              <button type="submit" className="primary_btn" disabled={isSubmitting}>
                 {isSubmitting ? 'Registering...' : 'Register Donor'}
               </button>
             </div>
           </form>
         </div>
+      </div>
     </>
   );
 };

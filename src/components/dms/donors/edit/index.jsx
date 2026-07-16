@@ -8,6 +8,7 @@ import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import Modal from '../../../common/Modal';
 import { FiKey } from 'react-icons/fi';
+import '../register/index.css';
 
 const EditDonor = () => {
   const navigate = useNavigate();
@@ -30,10 +31,8 @@ const EditDonor = () => {
     country: '',
     postal_code: '',
     notes: '',
-    // Individual
     first_name: '',
     last_name: '',
-    // CSR
     company_name: '',
     company_registration: '',
     contact_person: '',
@@ -108,53 +107,19 @@ const EditDonor = () => {
     setForm((prev) => ({ ...prev, is_active: !prev.is_active }));
   };
 
-  const handleUserSelect = (user) => {
-    setAssignedUser(user);
-  };
+  const handleUserSelect = (user) => setAssignedUser(user);
+  const handleUserClear = () => setAssignedUser(null);
+  const handleReferrerSelect = (user) => setReferrerUser(user);
+  const handleReferrerClear = () => setReferrerUser(null);
 
-  const handleUserClear = () => {
-    setAssignedUser(null);
-  };
-
-  const handleReferrerSelect = (user) => {
-    setReferrerUser(user);
-  };
-
-  const handleReferrerClear = () => {
-    setReferrerUser(null);
-  };
-
-  const renderUserOption = (user, index) => (
+  const renderUserOption = (user, onSelect) => (
     <div
       key={user.id}
       className="searchable-dropdown__option"
-      onClick={() => handleUserSelect(user)}
+      onClick={() => onSelect(user)}
       style={{
         padding: '12px',
-        borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
-        cursor: 'pointer',
-      }}
-    >
-      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-        {user.first_name} {user.last_name}
-      </div>
-      <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
-      {user.department && (
-        <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
-          {user.department} • {user.role || 'User'}
-        </div>
-      )}
-    </div>
-  );
-
-  const renderReferrerOption = (user, index) => (
-    <div
-      key={user.id}
-      className="searchable-dropdown__option"
-      onClick={() => handleReferrerSelect(user)}
-      style={{
-        padding: '12px',
-        borderBottom: index < user.length - 1 ? '1px solid #eee' : 'none',
+        borderBottom: '1px solid #eee',
         cursor: 'pointer',
       }}
     >
@@ -194,7 +159,6 @@ const EditDonor = () => {
         payload.first_name = form.first_name;
         payload.last_name = form.last_name;
         payload.name = `${form.first_name || ''} ${form.last_name || ''}`.trim() || payload.name;
-        // Clear CSR fields
         payload.company_name = null;
         payload.company_registration = null;
         payload.contact_person = null;
@@ -211,7 +175,6 @@ const EditDonor = () => {
         payload.company_phone = form.company_phone;
         payload.company_email = form.company_email;
         payload.name = form.company_name || payload.name;
-        // Clear individual fields
         payload.first_name = null;
         payload.last_name = null;
       }
@@ -276,152 +239,256 @@ const EditDonor = () => {
   return (
     <>
       <Navbar />
-      <div className="form-content">
-        <PageHeader title="Edit Donor" onBack={handleBack} />
+      <div className="list-wrapper">
+        <div className="list-content donor-register-page">
+          <PageHeader title="Edit Donor" onBack={handleBack} />
 
-        {error && <div className="status-message status-message--error">{error}</div>}
+          {error && <div className="status-message status-message--error">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-section">
-            <FormSelect
-              label="Donor Type"
-              name="donor_type"
-              value={form.donor_type}
-              onChange={handleChange}
-              options={donorTypeOptions}
-              required
-            />
-          </div>
+          <form onSubmit={handleSubmit} className="form donor-register-form">
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">1. Contact & Type</h3>
+              <div className="form-grid-3">
+                <FormSelect
+                  label="Donor Type"
+                  name="donor_type"
+                  value={form.donor_type}
+                  onChange={handleChange}
+                  options={donorTypeOptions}
+                  required
+                />
+                <FormInput
+                  label="Email"
+                  type="email"
+                  name="email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
+                />
+                <FormInput
+                  label="Phone"
+                  type="tel"
+                  name="phone"
+                  value={form.phone}
+                  onChange={handleChange}
+                  required
+                />
+              </div>
+            </section>
 
-          <div className="form-section">
-            <div className="form-grid-2">
-              <FormInput label="Email" type="email" name="email" value={form.email} onChange={handleChange} required />
-              <FormInput label="Phone" type="tel" name="phone" value={form.phone} onChange={handleChange} required />
-            </div>
-          </div>
+            {form.donor_type === 'individual' ? (
+              <section className="donor-register-card">
+                <h3 className="donor-register-card__title">2. Personal Details</h3>
+                <div className="form-grid-3">
+                  <FormInput
+                    label="First Name"
+                    type="text"
+                    name="first_name"
+                    value={form.first_name}
+                    onChange={handleChange}
+                  />
+                  <FormInput
+                    label="Last Name"
+                    type="text"
+                    name="last_name"
+                    value={form.last_name}
+                    onChange={handleChange}
+                  />
+                  <FormInput
+                    label="CNIC"
+                    type="text"
+                    name="cnic"
+                    value={form.cnic}
+                    onChange={handleChange}
+                  />
+                </div>
+              </section>
+            ) : (
+              <section className="donor-register-card">
+                <h3 className="donor-register-card__title">2. Company Details</h3>
+                <div className="form-grid-3">
+                  <FormInput
+                    label="Company Name"
+                    type="text"
+                    name="company_name"
+                    value={form.company_name}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormInput
+                    label="Registration Number"
+                    type="text"
+                    name="company_registration"
+                    value={form.company_registration}
+                    onChange={handleChange}
+                  />
+                  <FormInput
+                    label="Contact Person"
+                    type="text"
+                    name="contact_person"
+                    value={form.contact_person}
+                    onChange={handleChange}
+                    required
+                  />
+                  <FormInput
+                    label="Designation"
+                    type="text"
+                    name="designation"
+                    value={form.designation}
+                    onChange={handleChange}
+                  />
+                  <FormInput
+                    label="Company Phone"
+                    type="tel"
+                    name="company_phone"
+                    value={form.company_phone}
+                    onChange={handleChange}
+                  />
+                  <FormInput
+                    label="Company Email"
+                    type="email"
+                    name="company_email"
+                    value={form.company_email}
+                    onChange={handleChange}
+                  />
+                </div>
+                <div className="form-grid-2 donor-register-card__row">
+                  <FormInput
+                    label="Company Address"
+                    type="text"
+                    name="company_address"
+                    value={form.company_address}
+                    onChange={handleChange}
+                  />
+                  <FormInput
+                    label="CNIC (optional)"
+                    type="text"
+                    name="cnic"
+                    value={form.cnic}
+                    onChange={handleChange}
+                  />
+                </div>
+              </section>
+            )}
 
-          {form.donor_type === 'individual' ? (
-            <div className="form-section">
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">3. Address</h3>
               <div className="form-grid-2">
-                <FormInput label="First Name" type="text" name="first_name" value={form.first_name} onChange={handleChange} />
-                <FormInput label="Last Name" type="text" name="last_name" value={form.last_name} onChange={handleChange} />
+                <FormInput
+                  label="Address"
+                  type="text"
+                  name="address"
+                  value={form.address}
+                  onChange={handleChange}
+                />
+                <FormInput
+                  label="City"
+                  type="text"
+                  name="city"
+                  value={form.city}
+                  onChange={handleChange}
+                />
+                <FormInput
+                  label="Country"
+                  type="text"
+                  name="country"
+                  value={form.country}
+                  onChange={handleChange}
+                />
+                <FormInput
+                  label="Postal Code"
+                  type="text"
+                  name="postal_code"
+                  value={form.postal_code}
+                  onChange={handleChange}
+                />
               </div>
-            </div>
-          ) : (
-            <>
-              <div className="form-section">
-                <div className="form-grid-2">
-                  <FormInput label="Company Name" type="text" name="company_name" value={form.company_name} onChange={handleChange} required />
-                  <FormInput label="Registration Number" type="text" name="company_registration" value={form.company_registration} onChange={handleChange} />
+            </section>
+
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">4. Access & Assignment</h3>
+              <div className="form-grid-2">
+                <FormInput
+                  label="Source"
+                  type="text"
+                  name="source"
+                  value={form.source}
+                  onChange={handleChange}
+                />
+                <div className="donor-edit-status-field">
+                  <span className="donor-edit-status-field__label">Status</span>
+                  <button
+                    type="button"
+                    className={`donor-edit-status-btn ${
+                      form.is_active ? 'donor-edit-status-btn--active' : 'donor-edit-status-btn--inactive'
+                    }`}
+                    onClick={handleToggleActive}
+                  >
+                    {form.is_active ? 'Active' : 'Inactive'}
+                  </button>
                 </div>
+                <SearchableDropdown
+                  label="Assign to Fundraising User (Optional)"
+                  placeholder="Search users by name or email..."
+                  apiEndpoint="/users"
+                  onSelect={handleUserSelect}
+                  onClear={handleUserClear}
+                  value={assignedUser}
+                  displayKey="first_name"
+                  debounceDelay={500}
+                  minSearchLength={2}
+                  allowResearch={true}
+                  renderOption={(user) => renderUserOption(user, handleUserSelect)}
+                />
+                <SearchableDropdown
+                  label="Referrer (Optional)"
+                  placeholder="Search users by name or email..."
+                  apiEndpoint="/users"
+                  onSelect={handleReferrerSelect}
+                  onClear={handleReferrerClear}
+                  value={referrerUser}
+                  displayKey="first_name"
+                  debounceDelay={500}
+                  minSearchLength={2}
+                  allowResearch={true}
+                  renderOption={(user) => renderUserOption(user, handleReferrerSelect)}
+                />
               </div>
-              <div className="form-section">
-                <div className="form-grid-2">
-                  <FormInput label="Contact Person" type="text" name="contact_person" value={form.contact_person} onChange={handleChange} required />
-                  <FormInput label="Designation" type="text" name="designation" value={form.designation} onChange={handleChange} />
-                </div>
+              <div className="donor-register-lookup">
+                <button
+                  type="button"
+                  className="donor-edit-reset-btn"
+                  onClick={handleResetPassword}
+                  title="Generate a new password and store it securely"
+                >
+                  <FiKey size={16} />
+                  Reset Password
+                </button>
               </div>
-              <div className="form-section">
-                <div className="form-grid-2">
-                  <FormInput label="Company Phone" type="tel" name="company_phone" value={form.company_phone} onChange={handleChange} />
-                  <FormInput label="Company Email" type="email" name="company_email" value={form.company_email} onChange={handleChange} />
-                </div>
-              </div>
-              <div className="form-section">
-                <div className="form-grid-2">
-                  <FormInput label="Company Address" type="text" name="company_address" value={form.company_address} onChange={handleChange} />
-                </div>
-              </div>
-            </>
-          )}
+            </section>
 
-          <div className="form-section">
-            <div className="form-grid-2">
-              <FormInput label="CNIC" type="text" name="cnic" value={form.cnic} onChange={handleChange} />
-              <FormInput label="Source" type="text" name="source" value={form.source} onChange={handleChange} />
-            </div>
-          </div>
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">5. Notes</h3>
+              <FormInput
+                label="Notes"
+                type="textarea"
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                rows="3"
+              />
+            </section>
 
-          <div className="form-section">
-            <div className="form-grid-2">
-              <FormInput label="Address" type="text" name="address" value={form.address} onChange={handleChange} />
-              <FormInput label="City" type="text" name="city" value={form.city} onChange={handleChange} />
-            </div>
-          </div>
-
-          <div className="form-section">
-            <div className="form-grid-2">
-              <FormInput label="Country" type="text" name="country" value={form.country} onChange={handleChange} />
-              <FormInput label="Postal Code" type="text" name="postal_code" value={form.postal_code} onChange={handleChange} />
-            </div>
-          </div>
-
-          <div className="form-section">
-            <FormInput label="Notes" type="textarea" name="notes" value={form.notes} onChange={handleChange} rows="3" />
-          </div>
-
-          <div className="form-section">
-            <SearchableDropdown
-              label="Assign to Fundraising User (Optional)"
-              placeholder="Search users by name or email..."
-              apiEndpoint="/users"
-              onSelect={handleUserSelect}
-              onClear={handleUserClear}
-              value={assignedUser}
-              displayKey="first_name"
-              debounceDelay={500}
-              minSearchLength={2}
-              allowResearch={true}
-              renderOption={renderUserOption}
-            />
-          </div>
-
-          <div className="form-section">
-            <SearchableDropdown
-              label="Referrer (Optional)"
-              placeholder="Search users by name or email..."
-              apiEndpoint="/users"
-              onSelect={handleReferrerSelect}
-              onClear={handleReferrerClear}
-              value={referrerUser}
-              displayKey="first_name"
-              debounceDelay={500}
-              minSearchLength={2}
-              allowResearch={true}
-              renderOption={renderReferrerOption}
-            />
-          </div>
-
-          <div className="form-section">
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="primary_btn"
-                onClick={handleToggleActive}
-                style={{ backgroundColor: form.is_active ? '#10b981' : '#6b7280' }}
-              >
-                {form.is_active ? 'Active' : 'Inactive'}
+            <div className="form-actions donor-register-actions">
+              <button type="button" className="donor-register-cancel" onClick={handleBack}>
+                Cancel
               </button>
-
-              <button
-                type="button"
-                className="primary_btn"
-                onClick={handleResetPassword}
-                style={{ backgroundColor: '#dc2626' }}
-                title="Generate a new password and store it securely"
-              >
-                <FiKey style={{ marginRight: '8px' }} />
-                Reset Password
+              <button type="submit" className="primary_btn" disabled={saving}>
+                {saving ? 'Saving...' : 'Save Changes'}
               </button>
             </div>
-          </div>
-
-          <div className="form-actions">
-            <button type="submit" className="primary_btn" disabled={saving}>
-              {saving ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        </form>
+          </form>
+        </div>
       </div>
 
       <Modal
@@ -440,4 +507,3 @@ const EditDonor = () => {
 };
 
 export default EditDonor;
-

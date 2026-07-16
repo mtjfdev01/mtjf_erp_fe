@@ -3,41 +3,92 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
-import { PrimaryButton } from '../../../common/buttons';
 import InteractionEditModal from './InteractionEditModal';
 import {
   formatActivityType,
   formatDateTime,
   canMutateInteraction,
+  RESPONSE_TYPE_OPTIONS,
 } from './constants';
+import {
+  FiPlus,
+  FiSearch,
+  FiFilter,
+  FiPhone,
+  FiMail,
+  FiEdit2,
+  FiTrash2,
+  FiMoreVertical,
+  FiCalendar,
+  FiFileText,
+} from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import '../donor-relationship.css';
 
-const formatAssignedTo = (assigned) => {
-  if (!assigned) return 'Unassigned';
-  if (typeof assigned === 'object') {
-    return assigned.name || assigned.email || `User #${assigned.id}`;
-  }
-  return `User #${assigned}`;
+const getActivityTone = (type) => {
+  const t = String(type || '').toLowerCase();
+  if (t === 'call') return 'call';
+  if (t === 'email') return 'email';
+  if (t === 'whatsapp') return 'whatsapp';
+  return 'note';
 };
 
-const formatCurrency = (value) => {
-  const amount = Number(value);
-  if (Number.isNaN(amount)) return '—';
-  return `PKR ${amount.toLocaleString()}`;
+const getActivityIcon = (type) => {
+  const tone = getActivityTone(type);
+  if (tone === 'call') return <FiPhone />;
+  if (tone === 'email') return <FiMail />;
+  if (tone === 'whatsapp') return <FaWhatsapp />;
+  return <FiFileText />;
 };
+
+const formatTime = (value) => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
+const formatDayLabel = (value) => {
+  if (!value) return 'Unknown date';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return 'Unknown date';
+  return d.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+};
+
+const dayKey = (value) => {
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return 'unknown';
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
+
+const formatResponseType = (value) =>
+  RESPONSE_TYPE_OPTIONS.find((o) => o.value === value)?.label ||
+  String(value || '').replace(/_/g, ' ');
 
 const DonorCommunication = ({ donorId, donor }) => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
-  const donorName = donor?.name;
   const canCreate = useMemo(
-    () => hasPermission(permissions, 'fund_raising', 'donor_relationship', 'create'),
+    () =>
+      permissions?.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'donor_relationship', 'create'),
     [permissions],
   );
   const [interactions, setInteractions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingInteraction, setEditingInteraction] = useState(null);
+  const [search, setSearch] = useState('');
+  const [showFilter, setShowFilter] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
 
   const loadInteractions = useCallback(async () => {
     if (!donorId) return;
@@ -63,18 +114,47 @@ const DonorCommunication = ({ donorId, donor }) => {
     loadInteractions();
   }, [loadInteractions]);
 
-  const nextFollowupAt = useMemo(() => {
-    const open = interactions.filter(
-      (item) =>
-        item.next_followup_datetime &&
-        ['need_followup', 'pending', 'rescheduled'].includes(item.status),
-    );
-    if (!open.length) return null;
-    return open
-      .map((item) => new Date(item.next_followup_datetime))
-      .filter((date) => !Number.isNaN(date.getTime()))
-      .sort((a, b) => a.getTime() - b.getTime())[0];
-  }, [interactions]);
+  const filteredInteractions = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return interactions.filter((item) => {
+      if (statusFilter !== 'all' && item.status !== statusFilter) return false;
+      if (!q) return true;
+      const haystack = [
+        formatActivityType(item.activity_type),
+        item.custom_activity_title,
+        item.user_action_text,
+        item.donor_response_text,
+        item.next_action_text,
+        item.created_by?.name,
+        item.created_by?.email,
+        item.status,
+        item.donor_response_type,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(q);
+    });
+  }, [interactions, search, statusFilter]);
+
+  const groupedByDay = useMemo(() => {
+    const groups = [];
+    const map = new Map();
+    filteredInteractions.forEach((item) => {
+      const key = dayKey(item.activity_datetime || item.created_at);
+      if (!map.has(key)) {
+        const group = {
+          key,
+          label: formatDayLabel(item.activity_datetime || item.created_at),
+          items: [],
+        };
+        map.set(key, group);
+        groups.push(group);
+      }
+      map.get(key).items.push(item);
+    });
+    return groups;
+  }, [filteredInteractions]);
 
   const handleDelete = async (item) => {
     const { canDelete } = canMutateInteraction(permissions, item);
@@ -91,141 +171,229 @@ const DonorCommunication = ({ donorId, donor }) => {
     }
   };
 
+  const statusOptions = useMemo(() => {
+    const set = new Set(interactions.map((i) => i.status).filter(Boolean));
+    return Array.from(set);
+  }, [interactions]);
+
   return (
-    <div className="view-section" style={{ marginTop: '8px' }}>
-      <div className="donor-journey-header">
-        <div>
-          <h3 className="view-section-title">Donor Relationship Journey</h3>
-          <p className="donor-journey-subtitle">
-            Interaction history, follow-ups, and next steps for {donorName || 'this donor'}.
+    <div className="donor-journey-panel">
+      <div className="donor-journey-panel__toolbar">
+        <div className="donor-journey-panel__heading">
+          <h3 className="donor-journey-panel__title">Donor Relationship Journey</h3>
+          <p className="donor-journey-panel__subtitle">
+            All interactions, follow-ups and responses.
           </p>
         </div>
-        {canCreate && (
-          <PrimaryButton
-            type="button"
-            onClick={() => navigate(`/dms/donor-relationship/add?donor_id=${donorId}`)}
-          >
-            Add interaction
-          </PrimaryButton>
-        )}
-      </div>
-
-      <div className="donor-relationship-summary">
-        <div className="donor-relationship-summary__item">
-          <strong>{formatAssignedTo(donor?.assigned_to)}</strong>
-          <span>Assigned to</span>
-        </div>
-        <div className="donor-relationship-summary__item">
-          <strong>{nextFollowupAt ? formatDateTime(nextFollowupAt) : '—'}</strong>
-          <span>Next follow-up</span>
-        </div>
-        <div className="donor-relationship-summary__item">
-          <strong>{formatCurrency(donor?.total_donated)}</strong>
-          <span>Total donated</span>
-        </div>
-        <div className="donor-relationship-summary__item">
-          <strong>{donor?.donation_count ?? 0}</strong>
-          <span>Donations</span>
+        <div className="donor-journey-panel__tools">
+          <div className="donor-journey-search">
+            <FiSearch />
+            <input
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search interactions..."
+              aria-label="Search interactions"
+            />
+          </div>
+          <div className="donor-journey-filter">
+            <button
+              type="button"
+              className={`donor-journey-filter__btn${showFilter ? ' is-open' : ''}`}
+              onClick={() => setShowFilter((v) => !v)}
+              aria-label="Filter interactions"
+              title="Filter"
+            >
+              <FiFilter />
+            </button>
+            {showFilter && (
+              <div className="donor-journey-filter__menu">
+                <button
+                  type="button"
+                  className={statusFilter === 'all' ? 'is-active' : ''}
+                  onClick={() => {
+                    setStatusFilter('all');
+                    setShowFilter(false);
+                  }}
+                >
+                  All statuses
+                </button>
+                {statusOptions.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={statusFilter === status ? 'is-active' : ''}
+                    onClick={() => {
+                      setStatusFilter(status);
+                      setShowFilter(false);
+                    }}
+                  >
+                    {String(status).replace(/_/g, ' ')}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          {canCreate && (
+            <button
+              type="button"
+              className="donor-journey-add-btn"
+              onClick={() => navigate(`/dms/donor-relationship/add?donor_id=${donorId}`)}
+            >
+              <FiPlus />
+              Add Interaction
+            </button>
+          )}
         </div>
       </div>
 
       {error && <div className="error-message">{error}</div>}
-      {loading && <p>Loading relationship journey…</p>}
+      {loading && <p className="donor-journey-empty">Loading relationship journey…</p>}
 
-      {!loading && interactions.length === 0 && !error && (
-        <p>No interactions recorded yet. Use &quot;Add interaction&quot; to log the first contact.</p>
+      {!loading && filteredInteractions.length === 0 && !error && (
+        <p className="donor-journey-empty">
+          {interactions.length === 0
+            ? 'No interactions recorded yet. Use “Add Interaction” to log the first contact.'
+            : 'No interactions match your search or filter.'}
+        </p>
       )}
 
-      {interactions.map((item) => {
-        const { canEdit, canDelete, locked } = canMutateInteraction(permissions, item);
-        return (
-          <div key={item.id} className="donor-relationship-card">
-            <div className="donor-relationship-card__header">
-              <div>
-                <div className="donor-relationship-card__title">
-                  {formatActivityType(item.activity_type)}
-                  {item.custom_activity_title ? ` — ${item.custom_activity_title}` : ''}
-                </div>
-                <div className="donor-relationship-card__meta">
-                  {formatDateTime(item.activity_datetime)} ·{' '}
-                  {item.created_by?.name || item.created_by?.email || 'Staff'}
-                  {locked && !permissions?.super_admin ? ' · Locked after completion' : ''}
-                </div>
-              </div>
-              <span className={`donor-relationship-status ${item.status}`}>
-                {item.status?.replace(/_/g, ' ')}
-              </span>
-            </div>
-
-            <div className="donor-journey-dialogue">
-              <div className="donor-journey-dialogue__panel donor-journey-dialogue__panel--donor">
-                <div className="donor-relationship-card__label">Donor response</div>
-                <div className="donor-journey-dialogue__content">
-                  {item.donor_response_text || (
-                    <span className="donor-journey-dialogue__empty">No response recorded</span>
-                  )}
-                </div>
-                {item.donor_response_type && (
-                  <div className="donor-journey-dialogue__tag">
-                    {item.donor_response_type.replace(/_/g, ' ')}
-                  </div>
-                )}
+      {!loading && groupedByDay.length > 0 && (
+        <div className="donor-journey-timeline">
+          {groupedByDay.map((group) => (
+            <div key={group.key} className="donor-journey-day">
+              <div className="donor-journey-day__marker">
+                <span>{group.label}</span>
               </div>
 
-              <div className="donor-journey-dialogue__panel donor-journey-dialogue__panel--team">
-                <div className="donor-relationship-card__label">Team activity</div>
-                <div className="donor-journey-dialogue__content">
-                  {item.user_action_text}
-                </div>
-                <div className="donor-journey-dialogue__tag">
-                  {item.created_by?.name || item.created_by?.email || 'Staff'}
-                </div>
-              </div>
-            </div>
+              {group.items.map((item) => {
+                const { canEdit, canDelete, locked } = canMutateInteraction(permissions, item);
+                const tone = getActivityTone(item.activity_type);
+                const isNoteLike = tone === 'note';
+                const staffName =
+                  item.created_by?.name || item.created_by?.email || 'Staff';
 
-            {(item.next_action_text || item.next_followup_datetime) && (
-              <div className="donor-journey-footer">
-                {item.next_action_text && (
-                  <div className="donor-relationship-card__section">
-                    <div className="donor-relationship-card__label">Next step</div>
-                    <div>{item.next_action_text}</div>
-                  </div>
-                )}
-                {item.next_followup_datetime && (
-                  <div className="donor-relationship-card__section">
-                    <div className="donor-relationship-card__label">Follow-up</div>
-                    <div>{formatDateTime(item.next_followup_datetime)}</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {(canEdit || canDelete) && (
-              <div className="donor-relationship-actions">
-                {canEdit && (
-                  <button
-                    type="button"
-                    className="primary_btn"
-                    onClick={() => setEditingInteraction(item)}
+                return (
+                  <article
+                    key={item.id}
+                    className={`donor-journey-item donor-journey-item--${tone}`}
                   >
-                    Edit
-                  </button>
-                )}
-                {canDelete && (
-                  <button
-                    type="button"
-                    className="primary_btn"
-                    style={{ backgroundColor: '#b91c1c' }}
-                    onClick={() => handleDelete(item)}
-                  >
-                    Delete
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        );
-      })}
+                    <div className={`donor-journey-item__dot donor-journey-item__dot--${tone}`}>
+                      {getActivityIcon(item.activity_type)}
+                    </div>
+
+                    <div className="donor-journey-card">
+                      <div className="donor-journey-card__header">
+                        <div className="donor-journey-card__heading">
+                          <span className={`donor-journey-card__type donor-journey-card__type--${tone}`}>
+                            {formatActivityType(item.activity_type)}
+                            {item.custom_activity_title ? ` — ${item.custom_activity_title}` : ''}
+                          </span>
+                          <span className="donor-journey-card__meta">
+                            {formatTime(item.activity_datetime)} by {staffName}
+                            {locked && !permissions?.super_admin ? ' · Locked' : ''}
+                          </span>
+                        </div>
+                        <div className="donor-journey-card__actions">
+                          {canEdit && (
+                            <button
+                              type="button"
+                              className="donor-journey-card__icon-btn"
+                              onClick={() => setEditingInteraction(item)}
+                              title="Edit"
+                              aria-label="Edit interaction"
+                            >
+                              <FiEdit2 />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              type="button"
+                              className="donor-journey-card__icon-btn donor-journey-card__icon-btn--danger"
+                              onClick={() => handleDelete(item)}
+                              title="Delete"
+                              aria-label="Delete interaction"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className="donor-journey-card__icon-btn"
+                            aria-label="More"
+                            title="More"
+                          >
+                            <FiMoreVertical />
+                          </button>
+                        </div>
+                      </div>
+
+                      {isNoteLike ? (
+                        <div className="donor-journey-card__note">
+                          {item.user_action_text || (
+                            <span className="donor-journey-dialogue__empty">No note text</span>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="donor-journey-card__shuttles">
+                          <div className={`donor-journey-shuttle donor-journey-shuttle--action-${tone}`}>
+                            <div className="donor-journey-shuttle__title">What did you do?</div>
+                            <div className="donor-journey-shuttle__text">
+                              {item.user_action_text || (
+                                <span className="donor-journey-dialogue__empty">Not recorded</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className={`donor-journey-shuttle donor-journey-shuttle--response-${tone}`}>
+                            <div className="donor-journey-shuttle__title">Donor Response</div>
+                            <div className="donor-journey-shuttle__text">
+                              {item.donor_response_text || (
+                                <span className="donor-journey-dialogue__empty">No response recorded</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="donor-journey-card__footer">
+                        <div className="donor-journey-card__footer-item">
+                          <span className="donor-journey-card__footer-label">Status</span>
+                          <span className={`donor-relationship-status ${item.status || ''}`}>
+                            {String(item.status || '—').replace(/_/g, ' ')}
+                          </span>
+                        </div>
+                        <div className="donor-journey-card__footer-item">
+                          <span className="donor-journey-card__footer-label">Follow-up</span>
+                          <span className="donor-journey-card__footer-value">
+                            {item.next_followup_datetime ? (
+                              <>
+                                <FiCalendar />
+                                {formatDateTime(item.next_followup_datetime)}
+                              </>
+                            ) : (
+                              '—'
+                            )}
+                          </span>
+                        </div>
+                        <div className="donor-journey-card__footer-item">
+                          <span className="donor-journey-card__footer-label">Response Type</span>
+                          {item.donor_response_type ? (
+                            <span className="donor-journey-response-pill">
+                              {formatResponseType(item.donor_response_type)}
+                            </span>
+                          ) : (
+                            <span className="donor-journey-card__footer-value">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
 
       <InteractionEditModal
         open={!!editingInteraction}

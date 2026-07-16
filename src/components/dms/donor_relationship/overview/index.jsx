@@ -66,6 +66,23 @@ const ManagementOverview = () => {
           backPath="/dms/donor-relationship/follow-ups"
         />
 
+        <div className="followups-page__overview">
+          <button
+            type="button"
+            className="secondary_btn"
+            onClick={() => navigate('/dms/donor-relationship/interactions')}
+          >
+            My interactions
+          </button>
+          <button
+            type="button"
+            className="secondary_btn"
+            onClick={() => navigate('/dms/donor-relationship/interactions?scope=team')}
+          >
+            Team interactions
+          </button>
+        </div>
+
         {error && <div className="error-message">{error}</div>}
         {loading && <p>Loading…</p>}
 

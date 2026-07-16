@@ -43,7 +43,8 @@ import {
   FiAlertCircle,
   FiBookmark,
   FiRepeat,
-  FiRefreshCw
+  FiRefreshCw,
+  FiMessageSquare,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -594,7 +595,7 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'donor_relationship',
     icon: FiUsers,
     subItems: [
-      { label: 'My Follow-ups', path: '/dms/donor-relationship/follow-ups', type: 'list', icon: FiList },
+      { label: 'Follow Ups & Interactions', path: '/dms/donor-relationship/follow-ups', type: 'list', icon: FiList },
       { label: 'Add Interaction', path: '/dms/donor-relationship/add', type: 'list', icon: FiPlusCircle },
       { label: 'Management Overview', path: '/dms/donor-relationship/overview', type: 'list', icon: FiBarChart2 },
     ],
