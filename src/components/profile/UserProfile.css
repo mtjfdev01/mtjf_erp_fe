@@ -1,0 +1,92 @@
+.user-profile-page .donor-crm-aside {
+  max-width: 720px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.user-profile-password-card .donor-crm-card__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-profile-password-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.user-profile-password-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+}
+
+.user-profile-password-form label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.user-profile-password-form input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 10px;
+  font-size: 14px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text, #0f172a);
+  box-sizing: border-box;
+}
+
+.user-profile-password-input-wrap {
+  position: relative;
+}
+
+.user-profile-password-input-wrap input {
+  padding-right: 2.75rem;
+}
+
+.user-profile-password-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  color: var(--color-text-secondary, #94a3b8);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.user-profile-password-toggle:hover {
+  color: var(--color-primary, #2563eb);
+}
+
+.user-profile-password-form input:focus {
+  outline: none;
+  border-color: var(--color-primary, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.user-profile-password-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-secondary, #64748b);
+}
+
+.user-profile-password-form .primary_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 4px;
+}

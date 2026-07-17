@@ -24,6 +24,7 @@ import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
 import UserView from './components/admin/user/UserView';
 import ProfileRedirect from './components/profile/ProfileRedirect';
+import UserProfile from './components/profile/UserProfile';
 import ApplicationReportsList from './components/program/applications_report/application_reports_list';
 import CreateApplicationReport from './components/program/applications_report/create_application_report';
 import UpdateApplicationReport from './components/program/applications_report/update_application_report';
@@ -238,7 +239,8 @@ const App = () => {
                                 <Route path="/admin/users" element={<UserList />} />
                                 <Route path="/admin/users/create" element={<CreateUser />} />
                                 <Route path="/admin/users/edit/:id" element={<UpdateUser />} />
-                                <Route path="/profile" element={<ProfileRedirect />} />
+                                <Route path="/profile" element={<UserProfile />} />
+                                <Route path="/my-performance" element={<ProfileRedirect />} />
                                 <Route path="/users/:id" element={<UserView />} />
                                 
                                 {/* Store Report Routes - Nested under /store */}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -6,6 +6,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import SearchableDropdown from '../../../common/SearchableDropdown';
 import { PrimaryButton } from '../../../common/buttons';
 import {
   ACTIVITY_TYPE_OPTIONS,
@@ -17,15 +18,14 @@ import '../donor-relationship.css';
 const AddDonorInteraction = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const preselectedDonorId = searchParams.get('donor_id') || '';
+  const donorIdFromUrl = searchParams.get('donor_id') || '';
 
-  const [donors, setDonors] = useState([]);
-  const [loadingDonors, setLoadingDonors] = useState(true);
+  const [selectedDonor, setSelectedDonor] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   const [form, setForm] = useState({
-    donor_id: preselectedDonorId,
+    donor_id: '',
     activity_type: 'call',
     custom_activity_title: '',
     user_action_text: '',
@@ -36,39 +36,35 @@ const AddDonorInteraction = () => {
     status: 'need_followup',
   });
 
-  const donorOptions = useMemo(
-    () => [
-      { value: '', label: 'Select donor' },
-      ...donors.map((d) => ({
-        value: String(d.id),
-        label: `${d.name || 'Unnamed'} (${d.phone || d.email || d.id})`,
-      })),
-    ],
-    [donors],
-  );
-
   useEffect(() => {
-    const loadDonors = async () => {
+    if (!donorIdFromUrl || selectedDonor) return;
+
+    const fetchDonor = async () => {
       try {
-        setLoadingDonors(true);
-        const res = await axiosInstance.get('/donor-relationship/assigned-donors');
-        if (res.data.success) {
-          setDonors(res.data.data || []);
+        const response = await axiosInstance.get(`/donors/${donorIdFromUrl}`);
+        if (response.data.success && response.data.data) {
+          const donor = response.data.data;
+          setSelectedDonor(donor);
+          setForm((prev) => ({ ...prev, donor_id: donor.id }));
         }
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load assigned donors');
-      } finally {
-        setLoadingDonors(false);
+        setError(err.response?.data?.message || 'Failed to load donor');
       }
     };
-    loadDonors();
-  }, []);
 
-  useEffect(() => {
-    if (preselectedDonorId) {
-      setForm((prev) => ({ ...prev, donor_id: preselectedDonorId }));
-    }
-  }, [preselectedDonorId]);
+    fetchDonor();
+  }, [donorIdFromUrl, selectedDonor]);
+
+  const handleDonorSelect = (donor) => {
+    setSelectedDonor(donor);
+    setForm((prev) => ({ ...prev, donor_id: donor.id }));
+    if (error) setError('');
+  };
+
+  const handleDonorClear = () => {
+    setSelectedDonor(null);
+    setForm((prev) => ({ ...prev, donor_id: '' }));
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -105,8 +101,7 @@ const AddDonorInteraction = () => {
 
       const response = await axiosInstance.post('/donor-relationship/interactions', payload);
       if (response.data.success) {
-        const donorId = form.donor_id;
-        navigate(`/dms/donors/view/${donorId}?tab=journey`, {
+        navigate(`/dms/donors/view/${form.donor_id}?tab=journey`, {
           state: { flashMessage: 'Interaction recorded successfully' },
         });
       } else {
@@ -135,20 +130,56 @@ const AddDonorInteraction = () => {
         <form onSubmit={handleSubmit} className="form reconciliation-upload-card">
           <div className="form-section">
             <p className="reconciliation-notes">
-              Record what you did and how the donor responded. You can only add interactions
-              for donors assigned to you.
+              Search and select a donor, then record what you did and how they responded.
             </p>
 
             <div className="form-grid-2">
-              <FormSelect
-                name="donor_id"
-                label="Donor"
-                value={form.donor_id}
-                onChange={handleChange}
-                options={donorOptions}
-                required
-                disabled={loadingDonors}
-              />
+              <div>
+                <SearchableDropdown
+                  label="Select Donor :"
+                  placeholder="Search donors by name, email, or phone..."
+                  apiEndpoint="/donors"
+                  onSelect={handleDonorSelect}
+                  onClear={handleDonorClear}
+                  value={selectedDonor}
+                  displayKey="name"
+                  debounceDelay={500}
+                  minSearchLength={2}
+                  allowResearch={true}
+                  required
+                  renderOption={(donor, index) => (
+                    <div
+                      key={donor.id}
+                      className="searchable-dropdown__option"
+                      onClick={() => handleDonorSelect(donor)}
+                      style={{
+                        padding: '12px',
+                        borderBottom: '1px solid #eee',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                        {donor.name || `${donor.first_name || ''} ${donor.last_name || ''}`.trim()}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#666' }}>
+                        {[donor.email, donor.phone].filter(Boolean).join(' • ') || `ID: ${donor.id}`}
+                      </div>
+                    </div>
+                  )}
+                />
+                {!selectedDonor && (
+                  <div
+                    style={{
+                      marginTop: '10px',
+                      fontSize: '14px',
+                      color: '#666',
+                      fontStyle: 'italic',
+                    }}
+                  >
+                    Please register the donor first if not in the system
+                  </div>
+                )}
+              </div>
 
               <FormSelect
                 name="activity_type"
