@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal, FiClipboard, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiMic, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal, FiClipboard, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw } from 'react-icons/fi';
 import { HiOutlineSwitchHorizontal } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
@@ -16,6 +16,7 @@ import { tasksBasePath } from '../../../../utils/admin';
 import '../../../../styles/components.css';
 import './index.css';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
+import VoiceTaskModal from '../shared/VoiceTaskModal';
 import TaskAssigneeFilter, { formatAssigneeLabel } from '../shared/TaskAssigneeFilter';
 import {
   TASK_DEPARTMENT_OPTIONS,
@@ -69,6 +70,8 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   const [approvalsLoaded, setApprovalsLoaded] = useState(false);
   const [hasInteractedWithApprovals, setHasInteractedWithApprovals] = useState(false);
   const [showApprovalBanner, setShowApprovalBanner] = useState(false);
+  const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const [taskRefreshNonce, setTaskRefreshNonce] = useState(0);
 
   const currentUserId = user?.id ? Number(user.id) : null;
 
@@ -473,7 +476,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
       }
     };
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id, taskPerms.reportScope, user?.department]);
+  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id, taskPerms.reportScope, user?.department, taskRefreshNonce]);
 
   // Reset approvalsLoaded when we navigate to this page to refresh data
   useEffect(() => {
@@ -1355,6 +1358,16 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
               <div className="tl-tasks-toolbar-right">
                 <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
                 <button
+                  type="button"
+                  className="tl-tasks-voice-btn"
+                  onClick={() => setVoiceModalOpen(true)}
+                  title="Create task by voice"
+                  aria-label="Create task by voice"
+                >
+                  <FiMic />
+                  <FiPlus className="tl-tasks-voice-btn__plus" />
+                </button>
+                <button
                   className="tl-tasks-add-btn"
                   onClick={taskPerms.canCreate ? () => navigate(`${tasksRouteBase}/add`, { state: { defaultDepartment: user?.department } }) : undefined}
                   disabled={!taskPerms.canCreate}
@@ -1511,6 +1524,12 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
               )}
             </div>
         </div>
+
+        <VoiceTaskModal
+          open={voiceModalOpen}
+          onClose={() => setVoiceModalOpen(false)}
+          onCreated={() => setTaskRefreshNonce((n) => n + 1)}
+        />
     </>
   );
 };
