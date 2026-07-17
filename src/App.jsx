@@ -21,6 +21,7 @@ import { OfflineProvider } from './context/OfflineContext';
 import { SummaryProvider } from './context/SummaryContext';
 import { InKindItemsProvider } from './context/InKindItemsContext';
 import { NotificationProvider } from './context/NotificationContext';
+import { VoiceTaskUsersProvider } from './context/VoiceTaskUsersContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
 import UserView from './components/admin/user/UserView';
 import ProfileRedirect from './components/profile/ProfileRedirect';
@@ -202,6 +203,7 @@ const App = () => {
               <AuthProvider>
                 <OfflineProvider>
                 <NotificationProvider>
+                <VoiceTaskUsersProvider>
                   <SummaryProvider>
                     <InKindItemsProvider>
                       <div className="app-container">
@@ -525,6 +527,7 @@ const App = () => {
                       </div>
                     </InKindItemsProvider>
                   </SummaryProvider>
+                </VoiceTaskUsersProvider>
                 </NotificationProvider>
                 </OfflineProvider>
             </AuthProvider>

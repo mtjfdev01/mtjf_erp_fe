@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FiMic, FiSquare, FiCheck, FiLoader, FiAlertCircle } from 'react-icons/fi';
+import { FiMic, FiSquare, FiCheck, FiLoader, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
+import { useVoiceTaskUsers } from '../../../../context/VoiceTaskUsersContext';
 import './VoiceTaskModal.css';
 
 const STEPS = {
@@ -24,12 +25,23 @@ const formatLabel = (value) => {
 
 const VoiceTaskModal = ({ open, onClose, onCreated }) => {
   const { user } = useAuth();
+  const {
+    users: knownUsers,
+    userCount,
+    loading: usersLoading,
+    loadedAt,
+    refreshUsers,
+  } = useVoiceTaskUsers();
   const [step, setStep] = useState(STEPS.IDLE);
   const [error, setError] = useState('');
   const [transcript, setTranscript] = useState('');
   const [draft, setDraft] = useState(null);
   const [payload, setPayload] = useState(null);
   const [warnings, setWarnings] = useState([]);
+  const [outputLanguage, setOutputLanguage] = useState('ur'); // default Urdu; English optional
+  const [refreshingUsers, setRefreshingUsers] = useState(false);
+
+  const canRecord = outputLanguage === 'ur' || outputLanguage === 'en';
 
   const mediaRecorderRef = useRef(null);
   const chunksRef = useRef([]);
@@ -43,6 +55,7 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
     setPayload(null);
     setWarnings([]);
     chunksRef.current = [];
+    // keep outputLanguage when recording again from review
   }, []);
 
   const stopStream = useCallback(() => {
@@ -57,6 +70,7 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
       mediaRecorderRef.current.stop();
     }
     stopStream();
+    setOutputLanguage('ur');
     resetState();
     onClose();
   }, [onClose, resetState, stopStream]);
@@ -66,11 +80,16 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
       stopStream();
       return undefined;
     }
+    setOutputLanguage('ur');
     resetState();
     return () => stopStream();
   }, [open, resetState, stopStream]);
 
   const startRecording = async () => {
+    if (!canRecord) {
+      setError('Pehle title aur description ki zaban select karein.');
+      return;
+    }
     setError('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -143,6 +162,7 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
       const formData = new FormData();
       const ext = blob.type.includes('mp4') ? 'm4a' : 'webm';
       formData.append('audio', blob, `voice-task.${ext}`);
+      formData.append('language', outputLanguage || 'ur');
 
       const res = await axiosInstance.post('/tasks/voice/transcribe', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -164,6 +184,19 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
     }
   };
 
+  const handleRefreshUsers = async () => {
+    try {
+      setRefreshingUsers(true);
+      setError('');
+      await refreshUsers();
+      toast.success('Team names refreshed');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to refresh users');
+    } finally {
+      setRefreshingUsers(false);
+    }
+  };
+
   const handleBuildPayload = async () => {
     const text = transcript.trim();
     if (!text) {
@@ -176,6 +209,13 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
     try {
       const res = await axiosInstance.post('/tasks/voice/build-payload', {
         transcript: text,
+        output_language: outputLanguage,
+        known_users: knownUsers.map((u) => ({
+          id: u.id,
+          first_name: u.first_name,
+          last_name: u.last_name,
+          department: u.department,
+        })),
       });
       const data = res.data?.data;
       setDraft(data?.draft || null);
@@ -240,8 +280,32 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
           Create Task by Voice
         </h2>
         <p className="voice-task-subtitle">
-          Record your task, review the transcript, then confirm to create.
+          Record in English or Urdu (Roman Urdu). Review the transcript, then confirm to create.
         </p>
+
+        <div className="voice-task-roster-bar">
+          <span>
+            {usersLoading || refreshingUsers
+              ? 'Loading team names…'
+              : `${userCount} team name${userCount === 1 ? '' : 's'} cached`}
+            {loadedAt && !usersLoading && !refreshingUsers ? (
+              <span className="voice-task-roster-bar__meta">
+                {' '}
+                · {new Date(loadedAt).toLocaleString()}
+              </span>
+            ) : null}
+          </span>
+          <button
+            type="button"
+            className="voice-task-roster-refresh"
+            onClick={handleRefreshUsers}
+            disabled={usersLoading || refreshingUsers || isBusy}
+            title="Refresh team names after adding new users"
+          >
+            <FiRefreshCw className={refreshingUsers || usersLoading ? 'voice-task-spin' : ''} />
+            Refresh names
+          </button>
+        </div>
 
         {error ? (
           <div className="voice-task-error">
@@ -252,19 +316,50 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
 
         {(step === STEPS.IDLE || step === STEPS.RECORDING) && (
           <div className="voice-task-record-panel">
+            <div className="voice-task-lang-picker">
+              <p className="voice-task-lang-picker__label">
+                Title aur description kis zaban mein chahiye?
+              </p>
+              <div className="voice-task-lang-picker__options">
+                <button
+                  type="button"
+                  className={`voice-task-lang-btn${outputLanguage === 'ur' ? ' is-active' : ''}`}
+                  onClick={() => setOutputLanguage('ur')}
+                  disabled={step === STEPS.RECORDING}
+                >
+                  Urdu (default)
+                </button>
+                <button
+                  type="button"
+                  className={`voice-task-lang-btn${outputLanguage === 'en' ? ' is-active' : ''}`}
+                  onClick={() => setOutputLanguage('en')}
+                  disabled={step === STEPS.RECORDING}
+                >
+                  English
+                </button>
+              </div>
+            </div>
+
             <button
               type="button"
               className={`voice-task-record-btn${step === STEPS.RECORDING ? ' is-recording' : ''}`}
               onClick={step === STEPS.RECORDING ? stopRecording : startRecording}
+              disabled={!canRecord && step !== STEPS.RECORDING}
             >
               {step === STEPS.RECORDING ? <FiSquare /> : <FiMic />}
               <span>{step === STEPS.RECORDING ? 'Stop recording' : 'Start recording'}</span>
             </button>
             {step === STEPS.RECORDING ? (
-              <p className="voice-task-hint voice-task-hint--pulse">Listening… speak your task clearly</p>
+              <p className="voice-task-hint voice-task-hint--pulse">
+                Listening… {outputLanguage === 'en' ? 'English' : 'Urdu'} mode
+              </p>
             ) : (
               <p className="voice-task-hint">
-                Example: “Create a high priority task for Ali to follow up donor Ahmed tomorrow.”
+                Default: Urdu. English option upar select kar sakte hain.
+                <br />
+                Example (UR): “Ali ko kal donor Ahmed ko call karne ka high priority task banao.”
+                <br />
+                Example (EN): “High priority task for Ali to follow up donor Ahmed tomorrow.”
               </p>
             )}
           </div>
@@ -314,6 +409,9 @@ const VoiceTaskModal = ({ open, onClose, onCreated }) => {
 
         {(step === STEPS.CONFIRM || step === STEPS.CREATING) && draft && (
           <div className="voice-task-confirm">
+            <p className="voice-task-lang-badge">
+              Title & description: {draft.output_language === 'ur' ? 'Urdu' : 'English'}
+            </p>
             <div className="voice-task-draft">
               <div className="voice-task-draft-row">
                 <span>Title</span>
