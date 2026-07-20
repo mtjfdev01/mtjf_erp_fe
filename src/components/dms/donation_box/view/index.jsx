@@ -137,8 +137,8 @@ const ViewDonationBox = () => {
             <h3 className="view-section-title">Box Identification</h3>
             <div className="view-grid">
               <div className="view-item">
-                <span className="view-item-label">Box ID</span>
-                <span className="view-item-value">BOX-{donationBox.box_id_no}</span>
+                <span className="view-item-label">Box No. / Box ID No.</span>
+                <span className="view-item-value">{donationBox.box_id_no || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Key Number</span>
@@ -173,6 +173,10 @@ const ViewDonationBox = () => {
               <div className="view-item">
                 <span className="view-item-label">FRD Officers</span>
                 <span className="view-item-value">{donationBox.assignedUsers?.map(user => user.first_name + ' ' + user.last_name).join(', ') || '-'}</span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Address</span>
+                <span className="view-item-value">{donationBox.address || '-'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Landmark/Marketplace</span>

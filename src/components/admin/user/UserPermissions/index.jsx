@@ -61,6 +61,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Offline Donations',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
+        recurring_donations: {
+          label: 'Recurring Donations',
+          actions: ['list_view', 'view']
+        },
+        donation_allotments: {
+          label: 'Donation Allotments',
+          actions: ['create', 'list_view', 'view', 'approve']
+        },
         donation_box: {
           label: 'Donation Box',
           actions: ['create','list_view', 'view', 'update', 'delete']
@@ -84,10 +92,6 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         appeals: {
           label: 'Urgent Appeals',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
-        },
-        recurring_donations: {
-          label: 'Recurring Donations',
-          actions: ['list_view', 'view']
         },
         social_posts: {
           label: 'Social Posts',
@@ -116,10 +120,6 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         reconciliation: {
           label: 'Bank Reconciliation',
           actions: ['create', 'list_view', 'view']
-        },
-        donation_allotments: {
-          label: 'Donation Allotments',
-          actions: ['create', 'list_view', 'view', 'approve']
         },
         donor_relationship: {
           label: 'Donor Relationship',

@@ -19,6 +19,7 @@ const AddDonationBox = () => {
   const navigate = useNavigate();
   const [form, setForm] = useState({
     // Box identification
+    box_id_no: '',
     key_no: '',
     
     // Location information
@@ -33,6 +34,7 @@ const AddDonationBox = () => {
     shop_name: '',
     shopkeeper: '',
     cell_no: '',
+    address: '',
     landmark_marketplace: '',
     route: '',
     
@@ -178,6 +180,7 @@ const AddDonationBox = () => {
 
       // Prepare donation box data
       const donationBoxData = {
+        box_id_no: form.box_id_no || null,
         key_no: form.key_no || null,
         city_id: form.city_id, // City ID for payload
         route_id: form.route_id, // Route ID for payload
@@ -185,6 +188,7 @@ const AddDonationBox = () => {
         shop_name: form.shop_name,
         shopkeeper: form.shopkeeper || null,
         cell_no: form.cell_no || null,
+        address: form.address || null,
         landmark_marketplace: form.landmark_marketplace || null,
         route: form.route || null,
         box_type: form.box_type,
@@ -241,10 +245,7 @@ const AddDonationBox = () => {
   const boxTypeOptions = [
     { value: 'small', label: 'Small' },
     { value: 'medium', label: 'Medium' },
-    { value: 'large', label: 'Large' },
-    { value: 'medium_star', label: 'Medium/Star' },
-    { value: 'premium', label: 'Premium' },
-    { value: 'standard', label: 'Standard' }
+    { value: 'large', label: 'Large' }
   ];
 
   const statusOptions = [
@@ -298,6 +299,14 @@ const AddDonationBox = () => {
           <div className="form-section">
             <h3 className="form-section-heading">Box Identification</h3>
             <div className="form-grid-2">
+              <FormInput
+                label="Box No. / Box ID No."
+                type="text"
+                name="box_id_no"
+                value={form.box_id_no}
+                onChange={handleChange}
+                placeholder="e.g., FSD-L-141"
+              />
 
               <FormInput
                 label="Key Number"
@@ -336,7 +345,7 @@ const AddDonationBox = () => {
           <div className="form-section">
             <h3 className="form-section-heading">Location Information</h3>
             <div className="form-grid-2">
-              <FormSelect
+              {/* <FormSelect
                 label="Country"
                 name="country"
                 value={form.country}
@@ -344,7 +353,7 @@ const AddDonationBox = () => {
                 options={countryOptions}
                 required
                 disabled={true} // Fixed to Pakistan
-              />
+              /> */}
 
               <FormSelect
                 label="Region"
@@ -462,6 +471,15 @@ const AddDonationBox = () => {
                 value={form.cell_no}
                 onChange={handleChange}
                 placeholder="e.g., 0317-2841827"
+              />
+
+              <FormInput
+                label="Address"
+                type="text"
+                name="address"
+                value={form.address}
+                onChange={handleChange}
+                placeholder="e.g., Green Town Millat Road FSD"
               />
 
             </div>
