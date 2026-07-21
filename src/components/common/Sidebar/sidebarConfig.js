@@ -45,6 +45,7 @@ import {
   FiRepeat,
   FiRefreshCw,
   FiMessageSquare,
+  FiSend,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -379,6 +380,8 @@ const adminDepartmentItems = () => [
     icon: FiHeart,
     subItems: [ 
       {label: "Donations", path: "/donations/online_donations/list", type: "list", icon: BiSolidDonateHeart},
+      {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
+      {label: "Recurring Campaign Donors", path: "/dms/manual-recurring/list", type: "list", icon: FiRepeat},
       {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
       {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
       {label: "Donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
@@ -707,14 +710,16 @@ const marketingDepartmentItems = () => [
 // Email Templates module items
 const emailTemplatesItems = () => [
   {
-    label: 'Email Templates',
+    label: 'Templates',
     path: '/dms/email_templates/list',
     type: 'list',
     module: 'email_templates',
     icon: FiMail,
     subItems: [
       { label: 'Templates List', path: '/dms/email_templates/list', type: 'list', icon: FiList },
-      { label: 'Add Template', path: '/dms/email_templates/add', type: 'list', icon: FiPlusCircle }
+      { label: 'Create Template', path: '/dms/email_templates/add', type: 'list', icon: FiPlusCircle },
+      { label: 'Send Communication', path: '/dms/email_templates/send', type: 'list', icon: FiSend },
+      { label: 'Send History', path: '/dms/email_templates/batches', type: 'list', icon: FiFileText },
     ]
   },
   {
@@ -919,23 +924,11 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
 
-  // Super admin: Admin Panel + Tasks + Email Checklist (no full Communication menu).
+  // Super admin: Admin Panel + Tasks + full Communication (templates + checklist).
   if (isSuperAdminRole || isSuperAdminPermission) {
     const sections = [departmentConfigs.admin(false)];
     sections.push(buildSuperAdminTaskingGroup());
-    sections.push({
-      id: 'communication_tools',
-      label: 'Communication',
-      icon: FiMail,
-      items: [
-        {
-          label: 'Email Checklist',
-          path: '/email-checklist',
-          type: 'list',
-          icon: FiCheckSquare,
-        },
-      ],
-    });
+    sections.push(departmentConfigs.email_templates());
     return sections;
   }
 

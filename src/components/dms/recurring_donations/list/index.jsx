@@ -138,12 +138,30 @@ const RecurringDonationsList = () => {
     },
   ];
 
+  if (!canList) {
+    return (
+      <>
+        <Navbar />
+        <div className="list-wrapper">
+          <PageHeader
+          onRefresh={fetchRows}
+          refreshing={loading} title="Recurring Donations" />
+          <div className="status-message status-message--error">
+            You do not have permission to view recurring donations.
+          </div>
+        </div>
+      </>
+    );
+  }
+
   if (loading && rows.length === 0) {
     return (
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader title="Recurring Donations" />
+          <PageHeader
+          onRefresh={fetchRows}
+          refreshing={loading} title="Recurring Donations" />
           <div className="loading">Loading...</div>
         </div>
       </>
@@ -155,6 +173,8 @@ const RecurringDonationsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
+          onRefresh={fetchRows}
+          refreshing={loading}
           title="Recurring Donations"
           subtitle="Stripe subscriptions and installment history"
           icon={<FiRepeat />}

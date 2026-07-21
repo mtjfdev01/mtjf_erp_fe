@@ -12,6 +12,7 @@ import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import SearchableDropdown from '../../../common/SearchableDropdown';
+import HybridDropdown from '../../../common/HybridDropdown';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { DownloadCSV } from '../../../common/download';
 import DataImport from '../../../common/DataImport';
@@ -19,6 +20,8 @@ import { FiEye, FiEdit, FiTrash2, FiUser, FiKey } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
+import useListRowSelection from '../../../../hooks/useListRowSelection';
+import { saveAudienceFilters } from '../../email_templates/communicationAudience';
 
 const DONOR_ASSIGNED_FILTER_ALL = {
   id: '__all__',
@@ -69,6 +72,8 @@ const DonorsList = () => {
     recurring: null,
     is_mature_donor: null,
     assigned_to_user_id: '',
+    donated_amount: '',
+    donated_amount_operator: '',
   });
 
   // Applied filters - Actually sent to API
@@ -84,7 +89,55 @@ const DonorsList = () => {
     recurring: null,
     is_mature_donor: null,
     assigned_to_user_id: '',
+    donated_amount: '',
+    donated_amount_operator: '',
   });
+
+  const selectionResetKey = useMemo(
+    () => JSON.stringify({ currentPage, pageSize, appliedFilters }),
+    [currentPage, pageSize, appliedFilters],
+  );
+  const {
+    selectedIds,
+    selectedCount,
+    isSelected,
+    toggleOne,
+    toggleAllOnPage,
+    clearSelection,
+    allOnPageSelected,
+    headerCheckboxRef,
+  } = useListRowSelection(donors, 'id', selectionResetKey);
+
+  const hasActiveFilters = useMemo(() => {
+    const empty = {
+      search: '',
+      donor_type: '',
+      donation_type: '',
+      city: '',
+      date: '',
+      start_date: '',
+      end_date: '',
+      source: '',
+      multi_time_donors: null,
+      recurring: null,
+      is_mature_donor: null,
+      assigned_to_user_id: '',
+      donated_amount: '',
+      donated_amount_operator: '',
+    };
+    return JSON.stringify(appliedFilters) !== JSON.stringify(empty);
+  }, [appliedFilters]);
+
+  const handleSendToSelected = () => {
+    const ids = Array.from(selectedIds);
+    if (!ids.length) return;
+    navigate(`/dms/email_templates/send?mode=manual&donor_ids=${ids.join(',')}`);
+  };
+
+  const handleSendToFiltered = () => {
+    saveAudienceFilters(appliedFilters);
+    navigate('/dms/email_templates/send?mode=filters');
+  };
 
   const canSearchAssignees = useMemo(() => {
     if (!permissions) return false;
@@ -286,6 +339,8 @@ const DonorsList = () => {
       recurring: null,
       is_mature_donor: null,
       assigned_to_user_id: '',
+      donated_amount: '',
+      donated_amount_operator: '',
     };
     
     setSelectedAssignedUser(null);
@@ -344,8 +399,12 @@ const DonorsList = () => {
       ) {
         delete params.assigned_to_user_id;
       }
+      if (!params.donated_amount || !params.donated_amount_operator) {
+        delete params.donated_amount;
+        delete params.donated_amount_operator;
+      }
       
-      const response = await axiosInstance.get('/donors', { params }); 
+      const response = await axiosInstance.get('/donors', { params });
       if (response.data.success) {
         setDonors(response.data.data || []);
         setTotalItems(response.data.pagination?.total || 0);
@@ -492,6 +551,28 @@ const DonorsList = () => {
     { value: 'false', label: 'No' },
   ];
 
+  const donatedAmountOptions = [
+    { value: '', label: 'Any Amount' },
+    { value: '1000', label: '1,000' },
+    { value: '5000', label: '5,000' },
+    { value: '10000', label: '10,000' },
+    { value: '25000', label: '25,000' },
+    { value: '50000', label: '50,000' },
+    { value: '100000', label: '100,000' },
+    { value: '250000', label: '250,000' },
+    { value: '500000', label: '500,000' },
+    { value: '1000000', label: '1,000,000' },
+  ];
+
+  const donatedAmountOperatorOptions = [
+    { value: '', label: 'Select Operator' },
+    { value: '>', label: 'Greater than' },
+    { value: '<', label: 'Less than' },
+    { value: '=', label: 'Equal to' },
+    { value: '>=', label: 'Greater than or equal' },
+    { value: '<=', label: 'Less than or equal' },
+  ];
+
   const getDonorTypeIcon = (type) => {
     return type === 'csr' ? <BsFillBuildingsFill /> : <FiUser />;
   };
@@ -504,15 +585,20 @@ const DonorsList = () => {
     return type === 'csr' ? 'donor-type--csr' : 'donor-type--individual';
   };
 
-  if (loading) {
+  if (loading && donors.length === 0) {
     return (
       <>
         <Navbar />
         <div className="list-wrapper">
-          <div className="loading-container">
-            <div className="loading-spinner"></div>
-            <p>Loading donors...</p>
-          </div>
+          <PageHeader
+          onRefresh={fetchDonors}
+          refreshing={loading} 
+            title="Registered Donors" 
+            showBackButton={false}
+            showAdd={true}
+            addPath='/dms/donors/add'
+          />
+          <div className="loading">Loading...</div>
         </div>
       </>
     );
@@ -522,7 +608,9 @@ const DonorsList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader 
+        <PageHeader
+          onRefresh={fetchDonors}
+          refreshing={loading} 
           title="Registered Donors" 
           showBackButton={false}
           showFilterToggle
@@ -534,6 +622,7 @@ const DonorsList = () => {
         
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
+          {loading && <div className="loading">Loading...</div>}
           
           {/* Filters Section */}
           <CollapsibleFilters open={filtersOpen}>
@@ -598,6 +687,24 @@ const DonorsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All"
+            />
+
+            <HybridDropdown
+              label="Total Donated Amount"
+              placeholder="Type or select amount..."
+              options={donatedAmountOptions}
+              value={tempFilters.donated_amount}
+              onChange={(value) => handleFilterChange('donated_amount', value)}
+              allowCustom={true}
+            />
+
+            <DropdownFilter
+              filterKey="donated_amount_operator"
+              label="Donated Amount Operator"
+              data={donatedAmountOperatorOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Select operator"
             />
 
             <SearchableDropdown
@@ -689,10 +796,59 @@ const DonorsList = () => {
           </div>
           </CollapsibleFilters>
           
+          {selectedCount > 0 && (
+            <div className="list-selection-bar">
+              <span className="list-selection-bar__count">
+                {selectedCount} donor{selectedCount === 1 ? '' : 's'} selected
+              </span>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={handleSendToSelected}
+                >
+                  Send communication to selected
+                </button>
+                <button
+                  type="button"
+                  className="list-selection-bar__clear"
+                  onClick={clearSelection}
+                >
+                  Clear selection
+                </button>
+              </div>
+            </div>
+          )}
+
+          {hasActiveFilters && (
+            <div className="list-selection-bar">
+              <span className="list-selection-bar__count">
+                Filters applied — send to all matching donors ({totalItems})
+              </span>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={handleSendToFiltered}
+              >
+                Send communication to filtered donors
+              </button>
+            </div>
+          )}
+
           <div className="table-container">
             <table className="data-table">
               <thead>
                 <tr>
+                  <th className="table-select-col">
+                    <input
+                      ref={headerCheckboxRef}
+                      type="checkbox"
+                      checked={allOnPageSelected}
+                      onChange={toggleAllOnPage}
+                      disabled={donors.length === 0}
+                      aria-label="Select all donors on this page"
+                    />
+                  </th>
                   <th>Type</th>
                   <th>Name</th>
                   <th>Email</th>
@@ -705,13 +861,21 @@ const DonorsList = () => {
               <tbody>
                 {donors.length === 0 ? (
                   <tr>
-                    <td colSpan="7" className="no-data">
+                    <td colSpan="8" className="no-data">
                       No donors found
                     </td>
                   </tr>
                 ) : (
                   donors.map((donor) => (
-                    <tr key={donor.id}>
+                    <tr key={donor.id} className={isSelected(donor.id) ? 'row-selected' : ''}>
+                      <td className="table-select-col">
+                        <input
+                          type="checkbox"
+                          checked={isSelected(donor.id)}
+                          onChange={() => toggleOne(donor.id)}
+                          aria-label={`Select ${donor.name || 'donor'}`}
+                        />
+                      </td>
                       <td>
                         <div className={`donor-type ${getDonorTypeClass(donor.donor_type)}`}>
                           {getDonorTypeIcon(donor.donor_type)}

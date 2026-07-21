@@ -135,7 +135,9 @@ const SurveysList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Surveys" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd addPath="/dms/surveys/add" />
+        <PageHeader
+          onRefresh={fetchSurveys}
+          refreshing={loading} title="Surveys" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd addPath="/dms/surveys/add" />
         {error && <div className="status-message status-message--error">{error}</div>}
         <div className="list-content">
           <CollapsibleFilters open={filtersOpen}>

@@ -128,7 +128,9 @@ const AppealsList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Urgent Appeals" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd addPath="/dms/appeals/add" />
+        <PageHeader
+          onRefresh={fetchAppeals}
+          refreshing={loading} title="Urgent Appeals" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd addPath="/dms/appeals/add" />
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
 

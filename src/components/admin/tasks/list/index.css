@@ -1475,6 +1475,10 @@
   overflow-x: auto;
 }
 
+.tl-tasks-filter-main .refresh-button--inline {
+  flex-shrink: 0;
+}
+
 .tl-filter-item {
   display: flex;
   align-items: center;

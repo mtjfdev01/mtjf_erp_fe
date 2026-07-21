@@ -18,14 +18,37 @@ import TimeTracker from './TimeTracker';
 import ProgressUpdate from './ProgressUpdate';
 import StatusUpdateModal from './StatusUpdateModal';
 import QuickActionModal from './QuickActionModal';
-import { STATUS_TRANSITION_MAP, QUICK_ACTION_LABEL_MAP } from './taskStatusConfig';
+import {
+  STATUS_TRANSITION_MAP,
+  QUICK_ACTION_LABEL_MAP,
+  QUICK_ACTIONS,
+  isQuickActionAvailable,
+} from './taskStatusConfig';
 import '../../../../styles/variables.css';
 import './index.css';
 import './TaskViewModal.css';
 import { FaExclamationTriangle } from 'react-icons/fa';
-import { FiCalendar, FiClock, FiUser, FiX } from 'react-icons/fi';
+import {
+  FiCalendar,
+  FiChevronRight,
+  FiClock,
+  FiFileText,
+  FiFlag,
+  FiRepeat,
+  FiUser,
+  FiUserPlus,
+  FiX,
+} from 'react-icons/fi';
 import TaskActivityTimeline from './TaskActivityTimeline';
 import './taskViewV2.css';
+
+const QUICK_ACTION_ICON_MAP = {
+  REASSIGN: FiUserPlus,
+  CHANGE_DUE_DATE: FiCalendar,
+  CHANGE_PRIORITY: FiFlag,
+  MOVE_PROJECT: FiRepeat,
+  GENERATE_REPORT: FiFileText,
+};
 
 const ViewTask = ({
   taskId: taskIdProp,
@@ -963,6 +986,40 @@ const ViewTask = ({
     ];
   }, [task?.status]);
 
+  const availableQuickActions = useMemo(() => {
+    if (!task || approvalLoading) return [];
+
+    const availabilityContext = {
+      permissions: taskPerms,
+      userDepartment: user?.department,
+      taskDepartment: task?.department,
+      userRole: user?.role,
+      isAssignee: isCurrentUserAssignee,
+      workflowType: String(task?.workflow_type || '').toUpperCase(),
+      currentStatus: String(task?.status || '').toLowerCase(),
+      currentUserId: user?.id,
+      createdByUserId: task?.created_by_id,
+      reportedById: task?.reported_by_id,
+      approvalRequiredUserIds: task?.approval_required_user_ids,
+      approvalsMeta: approvalState?.approvals_meta,
+      currentUserHasActedOnApproval,
+    };
+
+    return QUICK_ACTIONS.filter((q) =>
+      isQuickActionAvailable(q.key, availabilityContext),
+    ).map((q) => q.key);
+  }, [
+    task,
+    approvalLoading,
+    taskPerms,
+    user?.department,
+    user?.role,
+    user?.id,
+    isCurrentUserAssignee,
+    approvalState?.approvals_meta,
+    currentUserHasActedOnApproval,
+  ]);
+
   const dueInfo = getDueInfo(task?.due_date, task?.status);
 
   const reassignmentActivities = useMemo(() => {
@@ -1231,6 +1288,26 @@ const ViewTask = ({
                           {capitalize(task.priority || 'medium')}
                         </span>
                         <span className="tv-badge tv-badge--id">{formatTaskId(task)}</span>
+                        {availableQuickActions.map((key) => {
+                          const ActionIcon = QUICK_ACTION_ICON_MAP[key] || FiCalendar;
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              className={`tv-quick-action-chip tv-quick-action-chip--${key.toLowerCase()}`}
+                              onClick={() => handleQuickAction(key)}
+                              title={QUICK_ACTION_LABEL_MAP[key]}
+                            >
+                              <span className="tv-quick-action-chip__icon" aria-hidden="true">
+                                <ActionIcon />
+                              </span>
+                              <span className="tv-quick-action-chip__label">
+                                {QUICK_ACTION_LABEL_MAP[key]}
+                              </span>
+                              <FiChevronRight className="tv-quick-action-chip__chevron" aria-hidden="true" />
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                     <div className="tv-header-actions">

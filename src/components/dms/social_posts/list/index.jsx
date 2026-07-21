@@ -214,7 +214,9 @@ const SocialPostsList = () => {
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader title="Social Posts" />
+          <PageHeader
+          onRefresh={fetchSocialPosts}
+          refreshing={loading} title="Social Posts" />
           <div className="loading">Loading...</div>
         </div>
       </>
@@ -226,6 +228,8 @@ const SocialPostsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
+          onRefresh={fetchSocialPosts}
+          refreshing={loading}
           title="Social Posts"
           subtitle="Create and schedule posts through Buffer"
           showBackButton={false}

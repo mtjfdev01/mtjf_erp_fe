@@ -95,13 +95,35 @@ const DonorCommunication = ({ donorId, donor }) => {
     try {
       setLoading(true);
       setError('');
-      const res = await axiosInstance.get('/donor-relationship/interactions', {
-        params: { donor_id: donorId },
-      });
-      if (res.data.success) {
-        setInteractions(res.data.data || []);
+      const [interactionsRes, logsRes] = await Promise.all([
+        axiosInstance.get('/donor-relationship/interactions', {
+          params: { donor_id: donorId },
+        }),
+        axiosInstance.get('/email-templates/communication-logs', {
+          params: { donor_id: donorId, pageSize: 100 },
+        }),
+      ]);
+      const manual = interactionsRes.data.success
+        ? interactionsRes.data.data || []
+        : [];
+      const automated = (logsRes.data?.data || []).map((log) => ({
+        id: `comm-log-${log.id}`,
+        activity_type: log.channel,
+        activity_datetime: log.sent_at || log.scheduled_at || log.created_at,
+        user_action_text: `Template "${log.template?.name || 'Communication'}" — ${log.delivery_status}${log.error_message ? `: ${log.error_message}` : ''}`,
+        donor_response_text: log.metadata?.reply || null,
+        status: log.delivery_status,
+        custom_activity_title: 'Automated communication',
+        is_automated: true,
+      }));
+      if (interactionsRes.data.success) {
+        setInteractions([...manual, ...automated].sort((a, b) => {
+          const aTime = new Date(a.activity_datetime || a.created_at).getTime();
+          const bTime = new Date(b.activity_datetime || b.created_at).getTime();
+          return bTime - aTime;
+        }));
       } else {
-        setError(res.data.message || 'Failed to load relationship journey');
+        setError(interactionsRes.data.message || 'Failed to load relationship journey');
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load relationship journey');
@@ -157,6 +179,7 @@ const DonorCommunication = ({ donorId, donor }) => {
   }, [filteredInteractions]);
 
   const handleDelete = async (item) => {
+    if (item.is_automated) return;
     const { canDelete } = canMutateInteraction(permissions, item);
     if (!canDelete) return;
     if (!window.confirm('Delete this interaction? Linked open follow-ups will also be removed.')) {

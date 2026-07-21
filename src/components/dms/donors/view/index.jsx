@@ -11,6 +11,7 @@ import PageHeader from '../../../common/PageHeader';
 import Modal from '../../../common/Modal';
 import DonorAuditHistory from '../shared/DonorAuditHistory';
 import DonorCommunication from '../../donor_relationship/shared/DonorCommunication';
+import ManualRecurringDonorPanel from '../../manual_recurring/ManualRecurringDonorPanel';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 import {
   FiUser,
@@ -732,6 +733,8 @@ const ViewDonor = () => {
                   </div>
                 </div>
               </section>
+
+              <ManualRecurringDonorPanel donorId={id} onUpdated={fetchDonor} />
 
               {showDonorJourney ? (
                 <DonorCommunication donorId={id} donor={donor} />

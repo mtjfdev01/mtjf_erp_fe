@@ -13,6 +13,7 @@ import TaskCardMenu from './TaskCardMenu';
 import BoardColumnPicker from './BoardColumnPicker';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
 import TaskAssigneeFilter from '../shared/TaskAssigneeFilter';
+import { RefreshButton } from '../../../common/filters';
 import {
   TASK_DEPARTMENT_OPTIONS,
   TASK_PROJECT_PROGRAM_OPTIONS,
@@ -27,7 +28,7 @@ import {
 } from './taskBoardConfig';
 import './index.css';
 
-const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
+const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) => {
   const { user, permissions } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -244,7 +245,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, refreshNonce]);
 
   const canChangeStatus = useCallback(
     (task) => {
@@ -584,6 +585,8 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
                   ))}
                 </select>
               </div>
+
+              <RefreshButton onClick={fetchTasks} loading={loading} />
             </div>
           </div>
 

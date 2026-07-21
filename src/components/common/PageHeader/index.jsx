@@ -4,6 +4,7 @@ import { FiArrowLeft } from 'react-icons/fi';
 import { MdEdit, MdAdd } from 'react-icons/md';
 import { FaFilter } from 'react-icons/fa6';
 import { useNavigationHistory } from '../../../context/NavigationHistoryContext';
+import RefreshButton from '../filters/RefreshButton';
 import './PageHeader.css';
 
 const PageHeader = ({
@@ -22,6 +23,9 @@ const PageHeader = ({
   filtersOpen = false,
   onFilterToggle,
   filterTitle = 'Toggle filters',
+  onRefresh,
+  refreshing = false,
+  refreshTitle = 'Refresh',
   rightElement,
 }) => {
   const navigate = useNavigate();
@@ -85,6 +89,14 @@ const PageHeader = ({
           >
             <FaFilter />
           </button>
+        )}
+        {showFilterToggle && onRefresh && (
+          <RefreshButton
+            variant="header"
+            onClick={onRefresh}
+            loading={refreshing}
+            title={refreshTitle}
+          />
         )}
         {showAdd && addPath && (
           <button

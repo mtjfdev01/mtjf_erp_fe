@@ -9,7 +9,12 @@ import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateRangeFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
-import { FiEye, FiEdit, FiTrash2, FiDollarSign, FiStar } from 'react-icons/fi';
+import { FiEye, FiEdit, FiTrash2, FiDollarSign, FiStar, FiRepeat } from 'react-icons/fi';
+import {
+  TARGET_FREQUENCY_OPTIONS,
+  formatTargetFrequency,
+  CAMPAIGN_TYPE_OPTIONS
+} from '../campaignConstants';
 
 const CampaignsList = () => {
   const navigate = useNavigate();
@@ -29,14 +34,18 @@ const CampaignsList = () => {
     search: '',
     status: '',
     from: '',
-    to: ''
+    to: '',
+    campaign_type: '',
+    target_frequency: ''
   });
 
   const [appliedFilters, setAppliedFilters] = useState({
     search: '',
     status: '',
     from: '',
-    to: ''
+    to: '',
+    campaign_type: '',
+    target_frequency: ''
   });
 
   const handleFilterChange = (key, value) => {
@@ -54,7 +63,14 @@ const CampaignsList = () => {
   };
 
   const handleClearFilters = () => {
-    const emptyFilters = { search: '', status: '', from: '', to: '' };
+    const emptyFilters = {
+      search: '',
+      status: '',
+      from: '',
+      to: '',
+      campaign_type: '',
+      target_frequency: ''
+    };
     const filtersAreEmpty = JSON.stringify(appliedFilters) === JSON.stringify(emptyFilters);
     if (!filtersAreEmpty) {
       setTempFilters(emptyFilters);
@@ -67,11 +83,22 @@ const CampaignsList = () => {
     fetchCampaigns();
   }, [currentPage, pageSize, appliedFilters]);
 
+  const buildQueryParams = (filters) => {
+    const params = { ...filters };
+    if (params.campaign_type === 'recurring') {
+      params.is_recurring = true;
+    } else if (params.campaign_type === 'one_time') {
+      params.is_recurring = false;
+    }
+    delete params.campaign_type;
+    Object.keys(params).forEach((k) => !params[k] && params[k] !== false && delete params[k]);
+    return params;
+  };
+
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      const params = { ...appliedFilters };
-      Object.keys(params).forEach(k => !params[k] && delete params[k]);
+      const params = buildQueryParams(appliedFilters);
       const response = await axiosInstance.get('/campaigns', { params });
       if (response.data.success) {
         const data = response.data.data || [];
@@ -196,6 +223,8 @@ const CampaignsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
+          onRefresh={fetchCampaigns}
+          refreshing={loading}
           title="Campaigns"
           showBackButton={false}
           showFilterToggle
@@ -227,6 +256,24 @@ const CampaignsList = () => {
               placeholder="All Statuses"
             />
 
+            <DropdownFilter
+              filterKey="campaign_type"
+              label="Campaign type"
+              data={CAMPAIGN_TYPE_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All types"
+            />
+
+            <DropdownFilter
+              filterKey="target_frequency"
+              label="Frequency"
+              data={TARGET_FREQUENCY_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All frequencies"
+            />
+
             <DateRangeFilter
               startKey="from"
               endKey="to"
@@ -254,7 +301,9 @@ const CampaignsList = () => {
                 <tr>
                   <th>Title</th>
                   <th>Status</th>
-                  <th>Goal</th>
+                  <th>Type</th>
+                  <th>Frequency</th>
+                  <th>Goal / Target</th>
                   <th>Currency</th>
                   <th>Start Date</th>
                   <th>End Date</th>
@@ -265,7 +314,7 @@ const CampaignsList = () => {
               <tbody>
                 {campaigns.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="no-data">No campaigns found</td>
+                    <td colSpan="10" className="no-data">No campaigns found</td>
                   </tr>
                 ) : (
                   campaigns.map((campaign) => (
@@ -280,9 +329,22 @@ const CampaignsList = () => {
                       </td>
                       <td>{getStatusBadge(campaign.status)}</td>
                       <td>
+                        {campaign.is_recurring ? (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '13px' }}>
+                            <FiRepeat size={14} /> Recurring
+                          </span>
+                        ) : (
+                          'One-time'
+                        )}
+                      </td>
+                      <td>{campaign.is_recurring ? formatTargetFrequency(campaign.target_frequency) : '—'}</td>
+                      <td>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <FiDollarSign size={14} />
                           {formatAmount(campaign.goal_amount, campaign.currency)}
+                          {campaign.is_recurring && (
+                            <span style={{ fontSize: '11px', color: '#6b7280' }}>/ period</span>
+                          )}
                         </div>
                       </td>
                       <td>{campaign.currency || 'PKR'}</td>
