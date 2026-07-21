@@ -262,6 +262,10 @@
 .task-stat-icon--ended {
   background: #7f8c8d;
 }
+.task-stat-icon--completed {
+  background: #0feb42;
+  color: #ffffff;
+}
 
 .task-stat-card--ended,
 .task-stat-icon--ended {

@@ -1325,7 +1325,7 @@ const ViewTask = ({
                     )
                   ) : null}
 
-                  <div className="tv-meta-strip">
+                  {/* <div className="tv-meta-strip">
                     <div className="tv-meta-item">
                       <div className="tv-meta-label">
                         <FiUser size={12} />
@@ -1364,7 +1364,7 @@ const ViewTask = ({
                         {totalTimeSeconds == null ? '—' : formatTimeShort(totalTimeSeconds)}
                       </span>
                     </div>
-                  </div>
+                  </div> */}
                 </header>
 
                 {renderRecurrenceInfo()}
@@ -1640,10 +1640,10 @@ const ViewTask = ({
                       )}
 
                       <div className="task-view-section">
-                        <h3 className="task-task-view-section-title">Team & Assignment</h3>
+                        <h3 className="task-task-view-section-title">Assignment</h3>
                         <div className="team-assignment">
                           <div className="team-assignment-main">
-                            <span className="team-assignment-label">Assigned:</span>
+                            <span className="team-assignment-label">Assignee:</span>
                             {assignedUsers && assignedUsers.length > 0 ? (
                               <div className="team-assignment-pill-list">
                                 {assignedUsers.map((u) => {

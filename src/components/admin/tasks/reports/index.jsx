@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard, FaEllipsisH, FaChevronLeft, FaChevronRight, FaChevronUp, FaChevronDown } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard, FaEllipsisH, FaChevronLeft, FaChevronRight, FaChevronUp, FaChevronDown, FaCheck } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
@@ -210,31 +210,31 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
       meta.data.forEach((arc, index) => {
         const value = dataset.data[index];
         if (value === 0 || !arc) return;
-        
+
         const percentage = Math.round((value / total) * 100);
-        
+
         // Calculate arc length to determine if label fits
         const startAngle = arc.startAngle;
         const endAngle = arc.endAngle;
         const arcLength = endAngle - startAngle;
-        
+
         // Only draw label if arc is large enough (at least 12 degrees)
         if (arcLength < 0.21) { // ~12 degrees in radians
           return;
         }
-        
+
         ctx.save();
         const center = arc.getCenterPoint();
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ffffff';
-        
+
         // Text shadow for better readability
         ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
         ctx.shadowBlur = 2;
         ctx.shadowOffsetX = 1;
         ctx.shadowOffsetY = 1;
-        
+
         // Only draw value if percentage > 2%, otherwise skip to save space
         if (percentage >= 2) {
           ctx.font = '600 11px Inter, sans-serif';
@@ -246,7 +246,7 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
           ctx.font = '600 10px Inter, sans-serif';
           ctx.fillText(value.toString(), center.x, center.y);
         }
-        
+
         ctx.restore();
       });
     });
@@ -290,11 +290,11 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
           right: 16
         }
       },
-      plugins: { 
+      plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: function(context) {
+            label: function (context) {
               const label = context.label || '';
               const value = context.parsed || 0;
               const total = context.dataset.data.reduce((a, b) => a + b, 0);
@@ -392,7 +392,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
     if (slider) {
       slider.addEventListener('scroll', checkScrollability);
       checkScrollability();
-      
+
       return () => slider.removeEventListener('scroll', checkScrollability);
     }
   }, [filteredProjects]);
@@ -410,16 +410,16 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
   useEffect(() => {
     if (filteredProjects.length > 0 && projectBarChartRef.current) {
-        const labels = filteredProjects.map((p) => p.label);
-        const chartSizes = getResponsiveChartSizes();
+      const labels = filteredProjects.map((p) => p.label);
+      const chartSizes = getResponsiveChartSizes();
 
-        const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
-          const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
-          const total = filteredProjects.reduce((sum, project) => {
-            return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
-          }, 0);
-          return { statusLabel, statusKey, index, total };
-        });
+      const statusTotals = STATUS_LABELS.map((statusLabel, index) => {
+        const statusKey = statusLabel.toLowerCase().replace(/\s+/g, '_');
+        const total = filteredProjects.reduce((sum, project) => {
+          return sum + (project.statuses && project.statuses[statusKey] ? project.statuses[statusKey] : 0);
+        }, 0);
+        return { statusLabel, statusKey, index, total };
+      });
       const activeStatuses = statusTotals.filter(item => item.total > 0);
 
       const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
@@ -440,7 +440,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
       }));
 
       const data = { labels, datasets };
-      
+
       if (projectBarChartInstance.current) {
         projectBarChartInstance.current.data = data;
         // Update responsive sizes with guards
@@ -553,15 +553,15 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
                 }
               },
               layout: {
-              padding: {
-                ...chartSizes.chartPadding,
-                bottom: screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30,
-                top: 10,
-                left: 10,
-                right: 10
-              }
-            },
-            scales: {
+                padding: {
+                  ...chartSizes.chartPadding,
+                  bottom: screenWidth < 480 ? 40 : screenWidth < 768 ? 35 : 30,
+                  top: 10,
+                  left: 10,
+                  right: 10
+                }
+              },
+              scales: {
                 x: {
                   stacked: true,
                   beginAtZero: true,
@@ -706,7 +706,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
     <div className="task-report-card task-report-card--project-report">
       <div className="task-report-card-header task-report-card-header--with-filter" ref={headerRef}>
         <div className="task-report-header-left">
-          <FaProjectDiagram className="task-status-overview-icon"/>
+          <FaProjectDiagram className="task-status-overview-icon" />
           <h2 className="task-report-card-title">Project/Program-wise Task Report</h2>
         </div>
         <div className={`task-report-header-right ${showHeaderFilters ? 'task-report-header-right--visible' : ''}`}>
@@ -751,7 +751,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
       <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: 'auto', position: 'relative' }}>
         <div className="task-report-slider-wrapper task-report-slider-wrapper--vertical">
           {canScrollUp && (
-            <button 
+            <button
               className="task-report-slider-button task-report-slider-button--left"
               onClick={() => handleScroll(projectReportSliderRef, 'left', true)}
               type="button"
@@ -760,19 +760,19 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
             </button>
           )}
           <div className="task-report-slider-container task-report-slider-container--vertical" ref={projectReportSliderRef}>
-            <div 
-              className="task-report-chart-inner" 
-              style={{ 
+            <div
+              className="task-report-chart-inner"
+              style={{
                 width: '100%',
                 minWidth: '100%',
-                height: `${dynamicHeight}px` 
+                height: `${dynamicHeight}px`
               }}
             >
               <canvas ref={projectBarChartRef}></canvas>
             </div>
           </div>
           {canScrollDown && (
-            <button 
+            <button
               className="task-report-slider-button task-report-slider-button--right"
               onClick={() => handleScroll(projectReportSliderRef, 'right', true)}
               type="button"
@@ -790,7 +790,7 @@ const TaskReports = () => {
   const { user, permissions } = useAuth();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
-  const [viewType, setViewType] = useState('all'); // Default to 'all' for reports
+  const [viewType, setViewType] = useState("assigned"); // Default to assigned tasks for reports
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [taskStats, setTaskStats] = useState(null);
   const [taskStatsLoading, setTaskStatsLoading] = useState(false);
@@ -883,7 +883,7 @@ const TaskReports = () => {
     if (slider) {
       slider.addEventListener('scroll', checkUserScrollability);
       checkUserScrollability();
-      
+
       return () => slider.removeEventListener('scroll', checkUserScrollability);
     }
   }, [filteredUserReportUsers]);
@@ -894,7 +894,7 @@ const TaskReports = () => {
     if (slider) {
       slider.addEventListener('scroll', checkDeptScrollability);
       checkDeptScrollability();
-      
+
       return () => slider.removeEventListener('scroll', checkDeptScrollability);
     }
   }, [taskStats]);
@@ -1377,7 +1377,7 @@ const TaskReports = () => {
         statsSummary.closed || 0,
         statsSummary.cancelled || 0
       ];
-      
+
       const visibleData = STATUS_LABELS.map((label, index) => ({
         label,
         value: allStatusValues[index],
@@ -1386,11 +1386,11 @@ const TaskReports = () => {
         index,
         isHidden: hiddenDoughnutStatuses.has(label)
       })).filter(item => item.value > 0);
-      
+
       const visibleLabels = visibleData.map(item => item.label);
       const visibleValues = visibleData.map(item => item.isHidden ? 0 : item.value);
       const visibleColors = visibleData.map(item => item.color);
-      
+
       const completionData = {
         labels: visibleLabels,
         datasets: [{
@@ -1401,7 +1401,7 @@ const TaskReports = () => {
           borderWidth: 2
         }]
       };
-      
+
       const chartSizes = getResponsiveChartSizes();
       createOrUpdateDoughnutChart(
         completionRateChartRef.current.getContext('2d'),
@@ -1464,37 +1464,37 @@ const TaskReports = () => {
 
       // Create datasets only for statuses with actual data
       // Calculate responsive bar settings based on screen size - EVEN MORE SPACING!
-              const getBarSettings = () => {
-                if (screenWidth < 480) {
-                  return { barPercentage: 0.3, categoryPercentage: 0.3, maxBarThickness: 18 };
-                } else if (screenWidth < 768) {
-                  return { barPercentage: 0.35, categoryPercentage: 0.35, maxBarThickness: 22 };
-                } else if (screenWidth < 1024) {
-                  return { barPercentage: 0.4, categoryPercentage: 0.4, maxBarThickness: 28 };
-                } else {
-                  return { barPercentage: 0.5, categoryPercentage: 0.5, maxBarThickness: chartSizes.maxBarThickness };
-                }
-              };
-              const barSettings = getBarSettings();
-              
-              const datasets = activeStatuses.map(({ status, index }) => ({
-                label: STATUS_LABELS[index],
-                data: visibleDepts.map(dept => {
-                  const entry = taskStats.department_status_breakdown[dept][status];
-                  const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
-                  return count > 0 ? count : null;
-                }),
-                backgroundColor: STATUS_COLORS[index],
-                hoverBackgroundColor: STATUS_COLORS[index],
-                borderColor: '#ffffff',
-                hoverBorderColor: '#ffffff',
-                borderRadius: 4,
-                borderSkipped: false,
-                barPercentage: barSettings.barPercentage,
-                categoryPercentage: barSettings.categoryPercentage,
-                barThickness: screenWidth < 480 ? 15 : screenWidth < 768 ? 18 : screenWidth < 1024 ? 22 : chartSizes.barThickness,
-                maxBarThickness: barSettings.maxBarThickness
-              }));
+      const getBarSettings = () => {
+        if (screenWidth < 480) {
+          return { barPercentage: 0.3, categoryPercentage: 0.3, maxBarThickness: 18 };
+        } else if (screenWidth < 768) {
+          return { barPercentage: 0.35, categoryPercentage: 0.35, maxBarThickness: 22 };
+        } else if (screenWidth < 1024) {
+          return { barPercentage: 0.4, categoryPercentage: 0.4, maxBarThickness: 28 };
+        } else {
+          return { barPercentage: 0.5, categoryPercentage: 0.5, maxBarThickness: chartSizes.maxBarThickness };
+        }
+      };
+      const barSettings = getBarSettings();
+
+      const datasets = activeStatuses.map(({ status, index }) => ({
+        label: STATUS_LABELS[index],
+        data: visibleDepts.map(dept => {
+          const entry = taskStats.department_status_breakdown[dept][status];
+          const count = entry ? (typeof entry === 'object' ? entry.count : entry) : 0;
+          return count > 0 ? count : null;
+        }),
+        backgroundColor: STATUS_COLORS[index],
+        hoverBackgroundColor: STATUS_COLORS[index],
+        borderColor: '#ffffff',
+        hoverBorderColor: '#ffffff',
+        borderRadius: 4,
+        borderSkipped: false,
+        barPercentage: barSettings.barPercentage,
+        categoryPercentage: barSettings.categoryPercentage,
+        barThickness: screenWidth < 480 ? 15 : screenWidth < 768 ? 18 : screenWidth < 1024 ? 22 : chartSizes.barThickness,
+        maxBarThickness: barSettings.maxBarThickness
+      }));
 
       const data = {
         labels,
@@ -1514,7 +1514,7 @@ const TaskReports = () => {
         departmentChartRef.current.options.layout.padding.top = 10;
         departmentChartRef.current.options.layout.padding.left = 10;
         departmentChartRef.current.options.layout.padding.right = 10;
-        
+
         if (departmentChartRef.current.options.plugins) {
           if (departmentChartRef.current.options.plugins.legend) {
             departmentChartRef.current.options.plugins.legend.display = !isMobile;
@@ -1851,7 +1851,7 @@ const TaskReports = () => {
         }
       };
       const userBarSettings = getUserBarSettings();
-      
+
       // Create a dataset only for statuses with actual data
       const datasets = activeStatuses.map(({ statusLabel, statusKey, index }) => ({
         label: statusLabel,
@@ -1892,7 +1892,7 @@ const TaskReports = () => {
         userBarChartInstance.current.options.layout.padding.top = 10;
         userBarChartInstance.current.options.layout.padding.left = 10;
         userBarChartInstance.current.options.layout.padding.right = 10;
-        
+
         if (userBarChartInstance.current.options.scales) {
           if (userBarChartInstance.current.options.scales.x) {
             if (userBarChartInstance.current.options.scales.x.ticks) {
@@ -2172,7 +2172,7 @@ const TaskReports = () => {
                         // For vertical bars, topmost is smallest y
                         pos = Math.min(bar.y, bar.base);
                       }
-                      
+
                       const existing = barTopPositions.get(idx);
                       if (existing === undefined) {
                         barTopPositions.set(idx, pos);
@@ -2222,13 +2222,13 @@ const TaskReports = () => {
                     ctx.textBaseline = 'middle';
                     ctx.fillStyle = '#ffffff';
                     ctx.font = '600 10px "Inter", sans-serif';
-                    
+
                     // Text shadow for readability
                     ctx.shadowColor = 'rgba(0, 0, 0, 0.4)';
                     ctx.shadowBlur = 3;
                     ctx.shadowOffsetX = 0;
                     ctx.shadowOffsetY = 0;
-                    
+
                     ctx.fillText(value, centerX, centerY);
                   });
                 });
@@ -2382,23 +2382,23 @@ const TaskReports = () => {
 
   return (
     <>
-      <Navbar/>
+      <Navbar />
       <Loader loading={taskStatsLoading} />
       {!taskStatsLoading && (
         <div className="task-report-container">
           <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
-          <div className="task-dashboard-shell">                
-          <div className="task-dashboard-layout">
-            <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
-            </div>
-            {!showTeamPerformance ? (
-              <>
-                <div className="task-dashboard-header">
-                  {/* <div className="task-dashboard-header-bar">
+          <div className="task-dashboard-shell">
+            <div className="task-dashboard-layout">
+              <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
+              </div>
+              {!showTeamPerformance ? (
+                <>
+                  <div className="task-dashboard-header">
+                    {/* <div className="task-dashboard-header-bar">
                     <div className="task-dashboard-header-bar-time">{formattedCurrentTime}</div>
                   </div> */}
-                  <div className="task-dashboard-header-top">
-                    {/* <div className="task-dashboard-welcome task-dashboard-welcome-card">
+                    <div className="task-dashboard-header-top">
+                      {/* <div className="task-dashboard-welcome task-dashboard-welcome-card">
                       <div className="task-dashboard-title">
                         Welcome{" "}
                         {user?.first_name || user?.last_name
@@ -2411,182 +2411,318 @@ const TaskReports = () => {
                         <span className="task-badge">{`Scope: ${rolePerms.scope}`}</span>
                       </div>
                     </div> */}
-                    <div className="task-dashboard-cards">
-                      <div className="task-stat-card task-stat-card--total">
-                        <FaLayerGroup className="task-stat-icon--total task-stat-icon"/>
-                        <div className="task-stat-label">Total Tasks</div>
-                        <div className="task-stat-value">{statsSummary.total}</div>
-                      </div>
-                      <div className="task-stat-card task-stat-card--pending task-stat-card--active">
-                        <FaHourglassHalf className="task-stat-icon--pending task-stat-icon"/>
-                        <div className="task-stat-label">Pending Tasks</div>
-                        <div className="task-stat-value">
-                          {statsSummary.pending}
+                      <div className="task-dashboard-cards">
+                        <div className="task-stat-card task-stat-card--total">
+                          <FaLayerGroup className="task-stat-icon--total task-stat-icon" />
+                          <div className="task-stat-label">Total Tasks</div>
+                          <div className="task-stat-value">{statsSummary.total}</div>
                         </div>
-                      </div>
-                      <div className="task-stat-card task-stat-card--ended">
-                        <FaLock className="task-stat-icon--ended task-stat-icon"/>
-                        <div className="task-stat-label">Closed Tasks</div>
-                        <div className="task-stat-value">
-                          {statsSummary.ended}
-                        </div>
-                      </div>
-                      <div className="task-stat-card task-stat-card--overdue">
-                        <FaExclamationTriangle className="task-stat-icon--overdue task-stat-icon"/>
-                        <div className="task-stat-label">Overdue Tasks</div>
-                        <div className="task-stat-value">
-                          {statsSummary.overdue}
-                        </div>
-                      </div>
-                      <div className="task-stat-card task-stat-card--completion">
-                        <FaChartLine className="task-stat-icon--completion task-stat-icon"/>
-                        <div className="task-stat-label">Completion Rate</div>
-                        <div className="task-stat-value">
-                          {`${Number(statsSummary.completionRate || 0).toFixed(1)}%`}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="task-dashboard-main">
-                  <div className="task-dashboard-column">
-                    <div className="task-dashboard-bottom-left">
-                      <div className="task-report-card task-report-card--status-overview">
-                        <div className="task-report-card-header">
-                          <FaChartPie className="task-status-overview-icon"/>
-                          <h2 className="task-report-card-title">Status Overview</h2>
-                        </div>
-                        <div className="task-status-grid">
-                          <div className="task-status-card task-status-card--open">
-                            <FaFolderOpen className="task-status-icon"/>
-                            <div className="task-status-label">Open</div>
-                            <div className="task-status-value">
-                              {statsSummary.open}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--in-progress">
-                            <FaSpinner className="task-status-icon"/>
-                            <div className="task-status-label">In Progress</div>
-                            <div className="task-status-value">
-                              {statsSummary.inProgress}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--pending-approval">
-                            <FaUserClock className="task-status-icon"/>
-                            <div className="task-status-label">Pending Approval</div>
-                            <div className="task-status-value">
-                              {statsSummary.pendingApproval}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--approved">
-                            <FaCheckDouble className="task-status-icon"/>
-                            <div className="task-status-label">Approved</div>
-                            <div className="task-status-value">
-                              {statsSummary.approved}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--rejected">
-                            <FaTimesCircle className="task-status-icon"/>
-                            <div className="task-status-label">Rejected</div>
-                            <div className="task-status-value">
-                              {statsSummary.rejected}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--completed">
-                            <FaCheckCircle className="task-status-icon"/>
-                            <div className="task-status-label">Completed</div>
-                            <div className="task-status-value">
-                              {statsSummary.completed}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--closed">
-                            <FaLock className="task-status-icon"/>
-                            <div className="task-status-label">Closed</div>
-                            <div className="task-status-value">
-                              {statsSummary.closed}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--cancelled">
-                            <FaBan className="task-status-icon"/>
-                            <div className="task-status-label">Cancelled</div>
-                            <div className="task-status-value">
-                              {statsSummary.cancelled}
-                            </div>
+                        <div className="task-stat-card task-stat-card--pending task-stat-card--active">
+                          <FaHourglassHalf className="task-stat-icon--pending task-stat-icon" />
+                          <div className="task-stat-label">Pending Tasks</div>
+                          <div className="task-stat-value">
+                            {statsSummary.pending}
                           </div>
                         </div>
-                      </div>
-                      <div className="task-report-card task-report-card--priority-overview">
-                        <div className="task-report-card-header">
-                          <FaFlag className="task-status-overview-icon"/>
-                          <h2 className="task-report-card-title">Priority Overview</h2>
+                        <div className="task-stat-card task-stat-card--completed">
+                          <FaCheck className="task-stat-icon--completed task-stat-icon" />
+                          <div className="task-stat-label">Completed Tasks</div>
+                          <div className="task-stat-value">
+                            {statsSummary.completed}
+                          </div>
                         </div>
-                        <div className="task-priority-grid">
-                          <div className="task-status-card task-status-card--priority-low">
-                            <FaArrowDown className="task-status-icon"/>
-                            <div className="task-status-label">Low</div>
-                            <div className="task-status-value">
-                              {prioritySummary.low}
-                            </div>
+                        <div className="task-stat-card task-stat-card--overdue">
+                          <FaExclamationTriangle className="task-stat-icon--overdue task-stat-icon" />
+                          <div className="task-stat-label">Overdue Tasks</div>
+                          <div className="task-stat-value">
+                            {statsSummary.overdue}
                           </div>
-                          <div className="task-status-card task-status-card--priority-medium">
-                            <FaGripLines className="task-status-icon"/>
-                            <div className="task-status-label">Medium</div>
-                            <div className="task-status-value">
-                              {prioritySummary.medium}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--priority-high">
-                            <FaArrowUp className="task-status-icon"/>
-                            <div className="task-status-label">High</div>
-                            <div className="task-status-value">
-                              {prioritySummary.high}
-                            </div>
-                          </div>
-                          <div className="task-status-card task-status-card--priority-critical">
-                            <FaExclamationCircle className="task-status-icon"/>
-                            <div className="task-status-label">Critical</div>
-                            <div className="task-status-value">
-                              {prioritySummary.critical}
-                            </div>
+                        </div>
+                        <div className="task-stat-card task-stat-card--completion">
+                          <FaChartLine className="task-stat-icon--completion task-stat-icon" />
+                          <div className="task-stat-label">Completion Rate</div>
+                          <div className="task-stat-value">
+                            {`${Number(statsSummary.completionRate || 0).toFixed(1)}%`}
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div className="task-dashboard-column">
-                    {/* Task Progress Section */}
-                    <div className="task-report-card task-report-card--task-progress">
-                      <div className="task-report-card-header">
-                        <FaChartLine className="task-status-overview-icon"/>
-                        <h2 className="task-report-card-title">Task Progress</h2>
+                  <div className="task-dashboard-main">
+                    <div className="task-dashboard-column">
+                      <div className="task-dashboard-bottom-left">
+                        <div className="task-report-card task-report-card--status-overview">
+                          <div className="task-report-card-header">
+                            <FaChartPie className="task-status-overview-icon" />
+                            <h2 className="task-report-card-title">Status Overview</h2>
+                          </div>
+                          <div className="task-status-grid">
+                            <div className="task-status-card task-status-card--open">
+                              <FaFolderOpen className="task-status-icon" />
+                              <div className="task-status-label">Open</div>
+                              <div className="task-status-value">
+                                {statsSummary.open}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--in-progress">
+                              <FaSpinner className="task-status-icon" />
+                              <div className="task-status-label">In Progress</div>
+                              <div className="task-status-value">
+                                {statsSummary.inProgress}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--completed">
+                              <FaCheckCircle className="task-status-icon" />
+                              <div className="task-status-label">Completed</div>
+                              <div className="task-status-value">
+                                {statsSummary.completed}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--closed">
+                              <FaLock className="task-status-icon" />
+                              <div className="task-status-label">Closed</div>
+                              <div className="task-status-value">
+                                {statsSummary.closed}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--pending-approval">
+                              <FaUserClock className="task-status-icon" />
+                              <div className="task-status-label">Pending Approval</div>
+                              <div className="task-status-value">
+                                {statsSummary.pendingApproval}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--approved">
+                              <FaCheckDouble className="task-status-icon" />
+                              <div className="task-status-label">Approved</div>
+                              <div className="task-status-value">
+                                {statsSummary.approved}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--rejected">
+                              <FaTimesCircle className="task-status-icon" />
+                              <div className="task-status-label">Rejected</div>
+                              <div className="task-status-value">
+                                {statsSummary.rejected}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--cancelled">
+                              <FaBan className="task-status-icon" />
+                              <div className="task-status-label">Cancelled</div>
+                              <div className="task-status-value">
+                                {statsSummary.cancelled}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="task-report-card task-report-card--priority-overview">
+                          <div className="task-report-card-header">
+                            <FaFlag className="task-status-overview-icon" />
+                            <h2 className="task-report-card-title">Priority Overview</h2>
+                          </div>
+                          <div className="task-priority-grid">
+                            <div className="task-status-card task-status-card--priority-low">
+                              <FaArrowDown className="task-status-icon" />
+                              <div className="task-status-label">Low</div>
+                              <div className="task-status-value">
+                                {prioritySummary.low}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--priority-medium">
+                              <FaGripLines className="task-status-icon" />
+                              <div className="task-status-label">Medium</div>
+                              <div className="task-status-value">
+                                {prioritySummary.medium}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--priority-high">
+                              <FaArrowUp className="task-status-icon" />
+                              <div className="task-status-label">High</div>
+                              <div className="task-status-value">
+                                {prioritySummary.high}
+                              </div>
+                            </div>
+                            <div className="task-status-card task-status-card--priority-critical">
+                              <FaExclamationCircle className="task-status-icon" />
+                              <div className="task-status-label">Critical</div>
+                              <div className="task-status-value">
+                                {prioritySummary.critical}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="task-dashboard-column">
+                      {/* Task Progress Section */}
+                      <div className="task-report-card task-report-card--task-progress">
+                        <div className="task-report-card-header">
+                          <FaChartLine className="task-status-overview-icon" />
+                          <h2 className="task-report-card-title">Task Progress</h2>
+                        </div>
+                        <div className="task-report-card-chart task-report-card-chart--wide">
+                          <canvas ref={completionRateChartRef}></canvas>
+                          <div className="task-progress-legend--task-progress">
+                            {(() => {
+                              const allStatusValues = [
+                                statsSummary.open || 0,
+                                statsSummary.inProgress || 0,
+                                statsSummary.pendingApproval || 0,
+                                statsSummary.approved || 0,
+                                statsSummary.rejected || 0,
+                                statsSummary.completed || 0,
+                                statsSummary.closed || 0,
+                                statsSummary.cancelled || 0
+                              ];
+
+                              return STATUS_LABELS.map((label, index) => {
+                                const count = allStatusValues[index];
+                                if (count === 0) return null;
+
+                                const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
+                                const isHidden = hiddenDoughnutStatuses.has(label);
+
+                                return (
+                                  <div
+                                    key={label}
+                                    className="task-progress-legend-item--task-progress"
+                                    onClick={() => toggleDonutStatusVisibility(label)}
+                                    style={{
+                                      cursor: 'pointer',
+                                      opacity: isHidden ? 0.4 : 1,
+                                      textDecoration: isHidden ? 'line-through' : 'none'
+                                    }}
+                                  >
+                                    <span
+                                      className={`task-progress-dot ${colorClass}`}
+                                      style={{
+                                        backgroundColor: STATUS_COLORS[index] || '',
+                                        opacity: isHidden ? 0.4 : 1
+                                      }}
+                                    />
+                                    <div className="task-progress-legend-body--task-progress">
+                                      <span className="task-progress-legend-label--task-progress">
+                                        {label}
+                                      </span>
+                                      <span className="task-progress-legend-value--task-progress">
+                                        {count}
+                                      </span>
+                                    </div>
+                                  </div>
+                                );
+                              });
+                            })()}
+                          </div>
+                        </div>
+                        {taskStatsLoading && <div className="loading">Loading task progress...</div>}
+                        {taskStatsError && <div className="error">{taskStatsError}</div>}
+                      </div>
+                    </div>
+                  </div>
+                  {/* ========== Reports Grid ========== */}
+                  <div className="task-dashboard-reports-grid">
+                    {/* Project/Program-wise Task Report */}
+                    <ProjectProgramWiseReport projects={taskAggregates.projects} />
+                    {/* User-wise Task Report */}
+                    <div className="task-report-card task-report-card--user-report">
+                      <div className="task-report-card-header task-report-card-header--with-filter" ref={userReportHeaderRef}>
+                        <div className="task-report-header-left">
+                          <FaUsers className="task-status-overview-icon" />
+                          <h2 className="task-report-card-title">User-wise Task Report</h2>
+                        </div>
+                        <div className={`task-report-header-right ${showUserReportFilters ? 'task-report-header-right--visible' : ''}`}>
+                          <div className="task-report-filter-inline">
+                            <input
+                              type="text"
+                              className="task-report-category-filter"
+                              placeholder="Search users..."
+                              value={userReportSearchQuery}
+                              onChange={(e) => setUserReportSearchQuery(e.target.value)}
+                            />
+                            {userReportSearchQuery && (
+                              <button
+                                className="task-report-filter-clear-inline"
+                                onClick={() => setUserReportSearchQuery('')}
+                                title="Clear Filter"
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                          <button
+                            className="task-report-export-button"
+                            onClick={handleExportUserReport}
+                            title="Export user report"
+                            type="button"
+                          >
+                            <FaDownload /> Export
+                          </button>
+                        </div>
+                        <button
+                          className="task-report-header-menu-button"
+                          onClick={() => setShowUserReportFilters(!showUserReportFilters)}
+                          title={showUserReportFilters ? "Hide filters" : "Show filters"}
+                          type="button"
+                        >
+                          <FaEllipsisH />
+                        </button>
                       </div>
                       <div className="task-report-card-chart task-report-card-chart--wide">
-                        <canvas ref={completionRateChartRef}></canvas>
-                        <div className="task-progress-legend--task-progress">
+                        <div className="task-report-slider-wrapper">
+                          {userCanScrollLeft && (
+                            <button
+                              className="task-report-slider-button task-report-slider-button--left"
+                              onClick={() => handleScroll(userReportSliderRef, 'left', false)}
+                              type="button"
+                            >
+                              <FaChevronLeft />
+                            </button>
+                          )}
+                          <div className="task-report-slider-container" ref={userReportSliderRef}>
+                            <div
+                              className="task-report-chart-inner"
+                              style={{
+                                width: `${Math.max(100, (filteredUserReportUsers?.length || 0) * (screenWidth < 480 ? 150 : screenWidth < 768 ? 180 : screenWidth < 1024 ? 200 : 220))}px`,
+                                minWidth: '100%',
+                                height: screenWidth < 480 ? '380px' : screenWidth < 768 ? '420px' : screenWidth < 1024 ? '450px' : '480px'
+                              }}
+                            >
+                              <canvas ref={userBarChartRef}></canvas>
+                            </div>
+                          </div>
+                          {userCanScrollRight && (
+                            <button
+                              className="task-report-slider-button task-report-slider-button--right"
+                              onClick={() => handleScroll(userReportSliderRef, 'right', false)}
+                              type="button"
+                            >
+                              <FaChevronRight />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <div className="task-progress-legend--user-report" style={{ marginTop: '0.5rem' }}>
                         {(() => {
-                          const allStatusValues = [
-                            statsSummary.open || 0,
-                            statsSummary.inProgress || 0,
-                            statsSummary.pendingApproval || 0,
-                            statsSummary.approved || 0,
-                            statsSummary.rejected || 0,
-                            statsSummary.completed || 0,
-                            statsSummary.closed || 0,
-                            statsSummary.cancelled || 0
-                          ];
-                          
-                          return STATUS_LABELS.map((label, index) => {
-                            const count = allStatusValues[index];
-                            if (count === 0) return null;
-                            
+                          // Calculate total count for each status
+                          const statusTotals = STATUS_LABELS.map((label, index) => {
+                            const statusKey = label.toLowerCase().replace(/\s+/g, '_');
+                            const total = filteredUserReportUsers.reduce((sum, user) => {
+                              return sum + (user.statuses && user.statuses[statusKey] ? user.statuses[statusKey] : 0);
+                            }, 0);
+                            return { label, index, total };
+                          });
+
+                          return statusTotals.map(({ label, index, total }) => {
+                            if (total === 0) return null;
+
                             const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
-                            const isHidden = hiddenDoughnutStatuses.has(label);
-                            
+                            const isHidden = hiddenUserBarStatuses.has(label);
+
                             return (
                               <div
                                 key={label}
-                                className="task-progress-legend-item--task-progress"
-                                onClick={() => toggleDonutStatusVisibility(label)}
+                                className="task-progress-legend-item--user-report"
+                                onClick={() => toggleUserBarStatusVisibility(label)}
                                 style={{
                                   cursor: 'pointer',
                                   opacity: isHidden ? 0.4 : 1,
@@ -2595,249 +2731,13 @@ const TaskReports = () => {
                               >
                                 <span
                                   className={`task-progress-dot ${colorClass}`}
-                                  style={{ 
+                                  style={{
                                     backgroundColor: STATUS_COLORS[index] || '',
                                     opacity: isHidden ? 0.4 : 1
                                   }}
                                 />
-                                <div className="task-progress-legend-body--task-progress">
-                                  <span className="task-progress-legend-label--task-progress">
-                                    {label}
-                                  </span>
-                                  <span className="task-progress-legend-value--task-progress">
-                                    {count}
-                                  </span>
-                                </div>
-                              </div>
-                            );
-                          });
-                        })()}
-                      </div>
-                      </div>
-                      {taskStatsLoading && <div className="loading">Loading task progress...</div>}
-                      {taskStatsError && <div className="error">{taskStatsError}</div>}
-                    </div>
-                  </div>
-                </div>
-                {/* ========== Reports Grid ========== */}
-                <div className="task-dashboard-reports-grid">
-                  {/* Project/Program-wise Task Report */}
-                  <ProjectProgramWiseReport projects={taskAggregates.projects} />
-                  {/* User-wise Task Report */}
-                  <div className="task-report-card task-report-card--user-report">
-                    <div className="task-report-card-header task-report-card-header--with-filter" ref={userReportHeaderRef}>
-                      <div className="task-report-header-left">
-                        <FaUsers className="task-status-overview-icon"/>
-                        <h2 className="task-report-card-title">User-wise Task Report</h2>
-                      </div>
-                      <div className={`task-report-header-right ${showUserReportFilters ? 'task-report-header-right--visible' : ''}`}>
-                        <div className="task-report-filter-inline">
-                          <input
-                            type="text"
-                            className="task-report-category-filter"
-                            placeholder="Search users..."
-                            value={userReportSearchQuery}
-                            onChange={(e) => setUserReportSearchQuery(e.target.value)}
-                          />
-                          {userReportSearchQuery && (
-                            <button
-                              className="task-report-filter-clear-inline"
-                              onClick={() => setUserReportSearchQuery('')}
-                              title="Clear Filter"
-                            >
-                              ✕
-                            </button>
-                          )}
-                        </div>
-                        <button
-                          className="task-report-export-button"
-                          onClick={handleExportUserReport}
-                          title="Export user report"
-                          type="button"
-                        >
-                          <FaDownload /> Export
-                        </button>  
-                      </div>
-                      <button
-                        className="task-report-header-menu-button"
-                        onClick={() => setShowUserReportFilters(!showUserReportFilters)}
-                        title={showUserReportFilters ? "Hide filters" : "Show filters"}
-                        type="button"
-                      >
-                        <FaEllipsisH />
-                      </button>
-                    </div>
-                    <div className="task-report-card-chart task-report-card-chart--wide">
-                      <div className="task-report-slider-wrapper">
-                        {userCanScrollLeft && (
-                          <button 
-                            className="task-report-slider-button task-report-slider-button--left"
-                            onClick={() => handleScroll(userReportSliderRef, 'left', false)}
-                            type="button"
-                          >
-                            <FaChevronLeft />
-                          </button>
-                        )}
-                        <div className="task-report-slider-container" ref={userReportSliderRef}>
-                          <div 
-                            className="task-report-chart-inner" 
-                            style={{ 
-                              width: `${Math.max(100, (filteredUserReportUsers?.length || 0) * (screenWidth < 480 ? 150 : screenWidth < 768 ? 180 : screenWidth < 1024 ? 200 : 220))}px`,
-                              minWidth: '100%',
-                              height: screenWidth < 480 ? '380px' : screenWidth < 768 ? '420px' : screenWidth < 1024 ? '450px' : '480px' 
-                            }}
-                          >
-                            <canvas ref={userBarChartRef}></canvas>
-                          </div>
-                        </div>
-                        {userCanScrollRight && (
-                          <button 
-                            className="task-report-slider-button task-report-slider-button--right"
-                            onClick={() => handleScroll(userReportSliderRef, 'right', false)}
-                            type="button"
-                          >
-                            <FaChevronRight />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                    <div className="task-progress-legend--user-report" style={{ marginTop: '0.5rem' }}>
-                      {(() => {
-                        // Calculate total count for each status
-                        const statusTotals = STATUS_LABELS.map((label, index) => {
-                          const statusKey = label.toLowerCase().replace(/\s+/g, '_');
-                          const total = filteredUserReportUsers.reduce((sum, user) => {
-                            return sum + (user.statuses && user.statuses[statusKey] ? user.statuses[statusKey] : 0);
-                          }, 0);
-                          return { label, index, total };
-                        });
-                        
-                        return statusTotals.map(({ label, index, total }) => {
-                          if (total === 0) return null;
-                          
-                          const colorClass = STATUS_DOT_CLASSNAMES[index] || '';
-                          const isHidden = hiddenUserBarStatuses.has(label);
-                          
-                          return (
-                            <div
-                              key={label}
-                              className="task-progress-legend-item--user-report"
-                              onClick={() => toggleUserBarStatusVisibility(label)}
-                              style={{
-                                cursor: 'pointer',
-                                opacity: isHidden ? 0.4 : 1,
-                                textDecoration: isHidden ? 'line-through' : 'none'
-                              }}
-                            >
-                              <span
-                                className={`task-progress-dot ${colorClass}`}
-                                style={{ 
-                                  backgroundColor: STATUS_COLORS[index] || '',
-                                  opacity: isHidden ? 0.4 : 1
-                                }}
-                              />
-                              <span className="task-progress-legend-label--user-report">
-                                {label}: {total}
-                              </span>
-                            </div>
-                          );
-                        });
-                      })()}
-                    </div>
-                  </div>  
-                  {/* Department-wise Task Report (Only for Admin) */}
-                  {rolePerms.isAdmin && (
-                    <div className="task-report-card task-report-card--department-report">
-                      <div className="task-report-card-header task-report-card-header--with-filter" ref={deptReportHeaderRef}>
-                        <div className="task-report-header-left">
-                          <FaBuilding className="task-status-overview-icon"/>
-                          <h2 className="task-report-card-title">Department-wise Task Report</h2>
-                        </div>
-                        <div className={`task-report-header-right ${showDeptReportFilters ? 'task-report-header-right--visible' : ''}`}>
-                          <button
-                            className="task-report-export-button"
-                            onClick={handleExportDepartmentReport}
-                            title="Export department report"
-                            type="button"
-                          >
-                            <FaDownload /> Export
-                          </button>
-                        </div>
-                        <button
-                          className="task-report-header-menu-button"
-                          onClick={() => setShowDeptReportFilters(!showDeptReportFilters)}
-                          title={showDeptReportFilters ? "Hide filters" : "Show filters"}
-                          type="button"
-                        >
-                          <FaEllipsisH />
-                        </button>
-                      </div>
-                      <div className="task-report-card-chart task-report-card-chart--wide">
-                        <div className="task-report-slider-wrapper">
-                          {deptCanScrollLeft && (
-                            <button 
-                              className="task-report-slider-button task-report-slider-button--left"
-                              onClick={() => handleScroll(deptReportSliderRef, 'left', false)}
-                              type="button"
-                            >
-                              <FaChevronLeft />
-                            </button>
-                          )}
-                          <div className="task-report-slider-container" ref={deptReportSliderRef}>
-                            <div 
-                              className="task-report-chart-inner" 
-                              style={{ 
-                                width: `${Math.max(100, (Object.keys(taskStats?.department_breakdown || {}).length || 0) * (screenWidth < 480 ? 150 : screenWidth < 768 ? 180 : screenWidth < 1024 ? 200 : 220))}px`,
-                                minWidth: '100%',
-                                height: screenWidth < 480 ? '380px' : screenWidth < 768 ? '420px' : screenWidth < 1024 ? '450px' : '480px' 
-                              }}
-                            >
-                              <canvas ref={departmentCanvasRef}></canvas>
-                            </div>
-                          </div>
-                          {deptCanScrollRight && (
-                            <button 
-                              className="task-report-slider-button task-report-slider-button--right"
-                              onClick={() => handleScroll(deptReportSliderRef, 'right', false)}
-                              type="button"
-                            >
-                              <FaChevronRight />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      <div className="task-progress-legend--department-report" style={{ marginTop: '0.5rem' }}>
-                        {taskStats?.department_breakdown && (() => {
-                          // Create consistent color map for legend items
-                          const deptColorMap = {};
-                          Object.keys(taskStats.department_breakdown).forEach((dept, index) => {
-                            deptColorMap[dept] = DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
-                          });
-
-                          return Object.entries(taskStats.department_breakdown).map(([dept, count]) => {
-                            const isHidden = hiddenDepartmentBarDepartments.has(dept);
-                            const deptColor = deptColorMap[dept];
-
-                            return (
-                              <div
-                                key={dept}
-                                className="task-progress-legend-item--department-report"
-                                onClick={() => toggleBarDepartmentVisibility(dept)}
-                                style={{
-                                  cursor: 'pointer',
-                                  opacity: isHidden ? 0.4 : 1,
-                                  textDecoration: isHidden ? 'line-through' : 'none'
-                                }}
-                              >
-                                <span
-                                  className="task-progress-dot"
-                                  style={{
-                                    backgroundColor: deptColor,
-                                    opacity: isHidden ? 0.4 : 1
-                                  }}
-                                />
-                                <span className="task-progress-legend-label--department-report">
-                                  {String(dept || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}: {count}
+                                <span className="task-progress-legend-label--user-report">
+                                  {label}: {total}
                                 </span>
                               </div>
                             );
@@ -2845,21 +2745,121 @@ const TaskReports = () => {
                         })()}
                       </div>
                     </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <TeamPerformance
-                taskAggregates={taskAggregates}
-                currentUser={user}
-                duration={duration}
-                getDateRangeForDuration={getDateRangeForDuration}
-              />
-            )}
+                    {/* Department-wise Task Report (Only for Admin) */}
+                    {rolePerms.isAdmin && (
+                      <div className="task-report-card task-report-card--department-report">
+                        <div className="task-report-card-header task-report-card-header--with-filter" ref={deptReportHeaderRef}>
+                          <div className="task-report-header-left">
+                            <FaBuilding className="task-status-overview-icon" />
+                            <h2 className="task-report-card-title">Department-wise Task Report</h2>
+                          </div>
+                          <div className={`task-report-header-right ${showDeptReportFilters ? 'task-report-header-right--visible' : ''}`}>
+                            <button
+                              className="task-report-export-button"
+                              onClick={handleExportDepartmentReport}
+                              title="Export department report"
+                              type="button"
+                            >
+                              <FaDownload /> Export
+                            </button>
+                          </div>
+                          <button
+                            className="task-report-header-menu-button"
+                            onClick={() => setShowDeptReportFilters(!showDeptReportFilters)}
+                            title={showDeptReportFilters ? "Hide filters" : "Show filters"}
+                            type="button"
+                          >
+                            <FaEllipsisH />
+                          </button>
+                        </div>
+                        <div className="task-report-card-chart task-report-card-chart--wide">
+                          <div className="task-report-slider-wrapper">
+                            {deptCanScrollLeft && (
+                              <button
+                                className="task-report-slider-button task-report-slider-button--left"
+                                onClick={() => handleScroll(deptReportSliderRef, 'left', false)}
+                                type="button"
+                              >
+                                <FaChevronLeft />
+                              </button>
+                            )}
+                            <div className="task-report-slider-container" ref={deptReportSliderRef}>
+                              <div
+                                className="task-report-chart-inner"
+                                style={{
+                                  width: `${Math.max(100, (Object.keys(taskStats?.department_breakdown || {}).length || 0) * (screenWidth < 480 ? 150 : screenWidth < 768 ? 180 : screenWidth < 1024 ? 200 : 220))}px`,
+                                  minWidth: '100%',
+                                  height: screenWidth < 480 ? '380px' : screenWidth < 768 ? '420px' : screenWidth < 1024 ? '450px' : '480px'
+                                }}
+                              >
+                                <canvas ref={departmentCanvasRef}></canvas>
+                              </div>
+                            </div>
+                            {deptCanScrollRight && (
+                              <button
+                                className="task-report-slider-button task-report-slider-button--right"
+                                onClick={() => handleScroll(deptReportSliderRef, 'right', false)}
+                                type="button"
+                              >
+                                <FaChevronRight />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <div className="task-progress-legend--department-report" style={{ marginTop: '0.5rem' }}>
+                          {taskStats?.department_breakdown && (() => {
+                            // Create consistent color map for legend items
+                            const deptColorMap = {};
+                            Object.keys(taskStats.department_breakdown).forEach((dept, index) => {
+                              deptColorMap[dept] = DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length];
+                            });
+
+                            return Object.entries(taskStats.department_breakdown).map(([dept, count]) => {
+                              const isHidden = hiddenDepartmentBarDepartments.has(dept);
+                              const deptColor = deptColorMap[dept];
+
+                              return (
+                                <div
+                                  key={dept}
+                                  className="task-progress-legend-item--department-report"
+                                  onClick={() => toggleBarDepartmentVisibility(dept)}
+                                  style={{
+                                    cursor: 'pointer',
+                                    opacity: isHidden ? 0.4 : 1,
+                                    textDecoration: isHidden ? 'line-through' : 'none'
+                                  }}
+                                >
+                                  <span
+                                    className="task-progress-dot"
+                                    style={{
+                                      backgroundColor: deptColor,
+                                      opacity: isHidden ? 0.4 : 1
+                                    }}
+                                  />
+                                  <span className="task-progress-legend-label--department-report">
+                                    {String(dept || 'Unassigned').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}: {count}
+                                  </span>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <TeamPerformance
+                  taskAggregates={taskAggregates}
+                  currentUser={user}
+                  duration={duration}
+                  getDateRangeForDuration={getDateRangeForDuration}
+                />
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
     </>
   );
 };

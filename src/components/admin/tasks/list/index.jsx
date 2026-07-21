@@ -26,10 +26,10 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permissions } = useAuth();
-  
+
   // Initialize state from URL search params
   const searchParams = new URLSearchParams(location.search);
-  
+
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +46,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   });
   const [filters, setFilters] = useState({
     search: searchParams.get('search') || '',
-    department: searchParams.get('department') || '', 
+    department: searchParams.get('department') || '',
     project_name: searchParams.get('project_name') || '',
     status: searchParams.get('status') || '',
     priority: searchParams.get('priority') || '',
@@ -99,7 +99,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   // Sync state to URL search params
   useEffect(() => {
     const params = new URLSearchParams();
-    
+
     if (currentPage !== 1) params.set('page', currentPage);
     if (pageSize !== 30) params.set('pageSize', pageSize);
     if (sortField !== 'created_at') params.set('sortField', sortField);
@@ -115,7 +115,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
       if (label) params.set('user_label', label);
     }
     if (activeTab !== 'assigned_to_me') params.set('activeTab', activeTab);
-    
+
     // Navigate with updated params
     navigate({
       pathname: location.pathname,
@@ -177,7 +177,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
       placeholder: 'All Departments',
       value: filters.department,
       label: 'Department',
-      options: TASK_DEPARTMENT_OPTIONS
+      options: TASK_DEPARTMENT_OPTIONS,
     },
     {
       key: 'project_name',
@@ -654,7 +654,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
         <th className="hide-on-mobile">Assignment</th>
         <th className="tl-tasks-col-center tl-tasks-col-priority">Priority / Status</th>
         <th className="hide-on-mobile tl-tasks-col-center">Dates</th>
-        <th className="hide-until-large">Age</th>
+        {/* <th className="hide-until-large">Age</th> */}
         <th className="table-actions tl-tasks-col-center">Actions</th>
       </tr>
     </thead>
@@ -1052,9 +1052,9 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
           </div>
         </td>
 
-        <td className={`hide-until-large ${overdue ? 'tl-tasks-list-age-overdue' : ''}`}>
+        {/* <td className={`hide-until-large ${overdue ? 'tl-tasks-list-age-overdue' : ''}`}>
           {getAgeDisplay(t)}
-        </td>
+        </td> */}
 
         <td className="table-actions tl-tasks-col-center">
           <div className="tl-task-card-actions tl-tasks-list-desktop-only">
@@ -1438,79 +1438,79 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
             </div>
           </div>
 
-              {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
+          {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
 
-              <div className="tl-task-card-list">
-                <div className="tl-tab-content-wrapper">
-                  {activeTab === 'assigned_to_me' && (
-                    <div className="tl-tasks-group tl-fade-in">
-                      {myTasks.length > 0 ? (
-                        renderTasksTable(myTasks)
-                      ) : (
-                        <div className="tl-empty-tab-state">
-                          <FiUserCheck className="tl-empty-icon" />
-                          <p>No tasks assigned to you at the moment.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'assigned_to_team' && isManager && (
-                    <div className="tl-tasks-group tl-fade-in">
-                      {teamTasks.length > 0 ? (
-                        renderTasksTable(teamTasks)
-                      ) : (
-                        <div className="tl-empty-tab-state">
-                          <FiUsers className="tl-empty-icon" />
-                          <p>No tasks assigned to your team members.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'approval_tasks' && (
-                    <div className="tl-tasks-group tl-fade-in">
-                      {approvalTasks.length > 0 ? (
-                        renderTasksTable(approvalTasks)
-                      ) : (
-                        <div className="tl-empty-tab-state">
-                          <FiThumbsUp className="tl-empty-icon" />
-                          <p>No approval tasks found.</p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {activeTab === 'other_tasks' && (
-                    <div className="tl-tasks-group tl-fade-in">
-                      {otherTasks.length > 0 ? (
-                        renderTasksTable(otherTasks)
-                      ) : (
-                        <div className="tl-empty-tab-state">
-                          <FiList className="tl-empty-icon" />
-                          <p>No other tasks found.</p>
-                        </div>
-                      )}
+          <div className="tl-task-card-list">
+            <div className="tl-tab-content-wrapper">
+              {activeTab === 'assigned_to_me' && (
+                <div className="tl-tasks-group tl-fade-in">
+                  {myTasks.length > 0 ? (
+                    renderTasksTable(myTasks)
+                  ) : (
+                    <div className="tl-empty-tab-state">
+                      <FiUserCheck className="tl-empty-icon" />
+                      <p>No tasks assigned to you at the moment.</p>
                     </div>
                   )}
                 </div>
-              </div>
-              {totalItems > 0 && (
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={totalItems}
-                  pageSize={pageSize}
-                  onPageChange={setCurrentPage}
-                  onPageSizeChange={(n) => { setPageSize(n); setCurrentPage(1); }}
-                  onSortChange={(f, o) => { setSortField(f); setSortOrder(o); setCurrentPage(1); }}
-                  sortField={sortField}
-                  sortOrder={sortOrder}
-                  sortOptions={sortOptions}
-                />
+              )}
+
+              {activeTab === 'assigned_to_team' && isManager && (
+                <div className="tl-tasks-group tl-fade-in">
+                  {teamTasks.length > 0 ? (
+                    renderTasksTable(teamTasks)
+                  ) : (
+                    <div className="tl-empty-tab-state">
+                      <FiUsers className="tl-empty-icon" />
+                      <p>No tasks assigned to your team members.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'approval_tasks' && (
+                <div className="tl-tasks-group tl-fade-in">
+                  {approvalTasks.length > 0 ? (
+                    renderTasksTable(approvalTasks)
+                  ) : (
+                    <div className="tl-empty-tab-state">
+                      <FiThumbsUp className="tl-empty-icon" />
+                      <p>No approval tasks found.</p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'other_tasks' && (
+                <div className="tl-tasks-group tl-fade-in">
+                  {otherTasks.length > 0 ? (
+                    renderTasksTable(otherTasks)
+                  ) : (
+                    <div className="tl-empty-tab-state">
+                      <FiList className="tl-empty-icon" />
+                      <p>No other tasks found.</p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
+          </div>
+          {totalItems > 0 && (
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={totalItems}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={(n) => { setPageSize(n); setCurrentPage(1); }}
+              onSortChange={(f, o) => { setSortField(f); setSortOrder(o); setCurrentPage(1); }}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              sortOptions={sortOptions}
+            />
+          )}
         </div>
+      </div>
     </>
   );
 };

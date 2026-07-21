@@ -54,7 +54,7 @@ const TaskFormSelect = ({
   };
 
   const getDisplayLabel = () => {
-    const selectedOption = options.find(opt => 
+    const selectedOption = options.find(opt =>
       (typeof opt === 'string' ? opt : opt.value) === value
     );
     if (selectedOption) {
@@ -82,7 +82,7 @@ const TaskFormSelect = ({
               {getDisplayLabel()}
             </span>
           </span>
-          <span className="task-custom-select-arrow">â–¼</span>
+          <span className="task-custom-select-arrow">▼</span>
         </div>
 
         {isOpen && (
@@ -213,7 +213,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
         Project/Program <span className="required-mark">*</span>
       </label>
       <div className="task-custom-select-container">
-        <div 
+        <div
           className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''}`}
           onClick={handleToggle}
         >
@@ -222,7 +222,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
           ) : (
             <span className="task-custom-select-placeholder">Select Project or Program</span>
           )}
-          <span className="task-custom-select-arrow">â–¼</span>
+          <span className="task-custom-select-arrow">▼</span>
         </div>
 
         {value && (
@@ -256,9 +256,9 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
                 </>
               ) : (
                 (projectCategory === 'Projects' ? projects : programs).map(item => (
-                  <button 
-                    key={item} 
-                    type="button" 
+                  <button
+                    key={item}
+                    type="button"
                     className={`task-custom-select-option ${value === item ? 'is-selected' : ''}`}
                     onClick={() => handleItemSelect(item)}
                   >
@@ -344,7 +344,7 @@ const UpdateTask = ({
   );
   const multiSelectParams = useMemo(() => ({ active: true }), []);
 
-  
+
   // Custom search function for assignees - allows self-assignment
   const searchAssignees = useMemo(() => {
     return async (searchTerm) => {
@@ -361,9 +361,9 @@ const UpdateTask = ({
       }
     };
   }, []);
-  
+
   const canEditCompleted = taskPerms.canEditCompleted === true;
-  
+
   const editTitle =
     String(form.status).toLowerCase() === 'completed' && !canEditCompleted
       ? 'Your role cannot edit completed tasks'
@@ -388,12 +388,12 @@ const UpdateTask = ({
   // Auto-calculate due date based on recurrence frequency
   const calculateDueDate = (startDate, frequency) => {
     if (!startDate || !frequency) return '';
-    
+
     const start = new Date(startDate);
     if (isNaN(start.getTime())) return '';
-    
+
     const dueDate = new Date(start);
-    
+
     switch (frequency) {
       case 'daily':
         dueDate.setDate(dueDate.getDate() + 1);
@@ -418,7 +418,7 @@ const UpdateTask = ({
       default:
         return '';
     }
-    
+
     // Format as YYYY-MM-DD
     return dueDate.toISOString().split('T')[0];
   };
@@ -471,15 +471,15 @@ const UpdateTask = ({
         });
         const existingMovItems = Array.isArray(t.mov_items)
           ? t.mov_items
-              .map((text) => String(text || '').trim())
-              .filter((text) => text.length > 0)
+            .map((text) => String(text || '').trim())
+            .filter((text) => text.length > 0)
           : [];
         const combinedMovItems =
           existingMovItems.length > 0
             ? existingMovItems
             : movFromDescription && movFromDescription.length > 0
-            ? movFromDescription
-            : [];
+              ? movFromDescription
+              : [];
         setMovItems(combinedMovItems.length > 0 ? combinedMovItems : ['']);
 
         const idsFromAssigned = Array.isArray(t.assigned_user_ids)
@@ -487,13 +487,13 @@ const UpdateTask = ({
           : [];
         const idsFromMeta = Array.isArray(t.assigned_users_meta)
           ? t.assigned_users_meta
-              .map((m) => (m && m.user_id ? m.user_id : null))
-              .filter((n) => Number.isInteger(n) && n > 0)
+            .map((m) => (m && m.user_id ? m.user_id : null))
+            .filter((n) => Number.isInteger(n) && n > 0)
           : [];
         const idsFromApprovers = Array.isArray(t.approval_required_user_ids)
           ? t.approval_required_user_ids.filter(
-              (n) => Number.isInteger(Number(n)) && Number(n) > 0
-            )
+            (n) => Number.isInteger(Number(n)) && Number(n) > 0
+          )
           : [];
         const uniqueIds = Array.from(
           new Set([
@@ -607,7 +607,7 @@ const UpdateTask = ({
     const { name, value } = e.target;
     setForm((prev) => {
       const next = { ...prev, [name]: value };
-      
+
       // Auto-calculate due date when start_date or recurrence_frequency changes
       if ((name === 'start_date' || name === 'recurrence_frequency') && prev.task_type === 'recurring') {
         const startDate = name === 'start_date' ? value : prev.start_date;
@@ -617,7 +617,7 @@ const UpdateTask = ({
           next.due_date = calculatedDueDate;
         }
       }
-      
+
       if (name === 'custom_recurrence_days') {
         next.recurrence_rule = value ? `${value} days` : '';
       }
@@ -629,7 +629,7 @@ const UpdateTask = ({
     const { name, value } = e.target;
     setForm((prev) => {
       const next = { ...prev, [name]: value };
-      
+
       // Auto-calculate due date when recurrence_frequency changes
       if (name === 'recurrence_frequency' && prev.task_type === 'recurring') {
         const calculatedDueDate = calculateDueDate(prev.start_date, value);
@@ -637,7 +637,7 @@ const UpdateTask = ({
           next.due_date = calculatedDueDate;
         }
       }
-      
+
       if (name === 'recurrence_frequency') {
         if (value === 'other') {
           next.recurrence_rule = next.custom_recurrence_days ? `${next.custom_recurrence_days} days` : '';
@@ -657,8 +657,8 @@ const UpdateTask = ({
     try {
       const movItemsClean = Array.isArray(movItems)
         ? movItems
-            .map((text) => String(text || '').trim())
-            .filter((text) => text.length > 0)
+          .map((text) => String(text || '').trim())
+          .filter((text) => text.length > 0)
         : [];
       if (movItemsClean.length === 0) {
         const msg =
@@ -668,7 +668,7 @@ const UpdateTask = ({
         setSaving(false);
         return;
       }
-      
+
       // FIXED: Do NOT encode MOV into description - send it separately via mov_items field
       const payload = {
         title: form.title || undefined,
@@ -686,12 +686,12 @@ const UpdateTask = ({
         assigned_users_meta:
           assignedUsers && assignedUsers.length > 0
             ? assignedUsers.map((u) => ({
-                user_id: u.id,
-                department:
-                  assignedUserDepartments[u.id] ||
-                  form.department ||
-                  'admin'
-              }))
+              user_id: u.id,
+              department:
+                assignedUserDepartments[u.id] ||
+                form.department ||
+                'admin'
+            }))
             : undefined,
         approval_required_user_ids:
           approverUsers && approverUsers.length > 0
@@ -847,47 +847,7 @@ const UpdateTask = ({
                   iconClassName="task-custom-select-field-icon--status"
                   options={statusOptions}
                 />
-                <TaskFormSelect
-                  name="priority"
-                  label="Priority"
-                  value={form.priority}
-                  onChange={handleChange}
-                  icon={FiAlignJustify}
-                  iconClassName="task-custom-select-field-icon--priority"
-                  options={['low', 'medium', 'high', 'critical'].map((p) => ({
-                    value: p,
-                    label: p[0].toUpperCase() + p.slice(1)
-                  }))}
-                />
-                <TaskFormSelect
-                  name="workflow_type"
-                  label="Workflow Type"
-                  value={form.workflow_type}
-                  onChange={handleChange}
-                  icon={FiGitBranch}
-                  iconClassName="task-custom-select-field-icon--workflow"
-                  options={['standard', 'approval_required'].map((w) => ({
-                    value: w,
-                    label: w
-                      .split('_')
-                      .map((x) => x[0].toUpperCase() + x.slice(1))
-                      .join(' ')
-                  }))}
-                />
-                <TaskFormSelect
-                  name="task_type"
-                  label="Task Type"
-                  value={form.task_type}
-                  onChange={handleChange}
-                  icon={FiClipboard}
-                  iconClassName="task-custom-select-field-icon--task-type"
-                  options={[
-                    { value: 'one_time', label: 'One-time task' },
-                    { value: 'recurring', label: 'Recurring task' },
-                    { value: 'project_linked', label: 'Project-linked task' }
-                  ]}
-                />
-                <div className="add-task-setup-assignees" style={{ gridColumn: '1 / -1' }}>
+                <div className="add-task-setup-assignees">
                   <SearchableMultiSelect
                     label="Assigned Users"
                     onSearch={searchAssignees}
@@ -915,41 +875,79 @@ const UpdateTask = ({
                     )}
                   />
                 </div>
-              </div>
-
-              {form.workflow_type === 'approval_required' && (
-                <div className="add-task-conditional-block">
-                  <SearchableMultiSelect
-                    label="Approvers"
-                    apiEndpoint="/users/options"
-                    apiParams={multiSelectParams}
-                    onSelect={(users) => setApproverUsers(users)}
-                    onClear={() => setApproverUsers([])}
-                    value={approverUsers}
-                    displayKey="first_name"
-                    valueKey="id"
-                    allowResearch={true}
-                    debounceDelay={500}
-                    minSearchLength={2}
-                    renderOption={(user) => (
-                      <div className="assign-user-option">
-                        <div className="assign-user-name">
-                          {user.first_name} {user.last_name}
-                        </div>
-                        <div className="assign-user-email">
-                          {user.email}
-                        </div>
-                        {user.department && (
-                          <div className="assign-user-meta">
-                            {user.department} â€¢ {user.role || 'User'}
+                <TaskFormSelect
+                  name="workflow_type"
+                  label="Workflow Type"
+                  value={form.workflow_type}
+                  onChange={handleChange}
+                  icon={FiGitBranch}
+                  iconClassName="task-custom-select-field-icon--workflow"
+                  options={['standard', 'approval_required'].map((w) => ({
+                    value: w,
+                    label: w
+                      .split('_')
+                      .map((x) => x[0].toUpperCase() + x.slice(1))
+                      .join(' ')
+                  }))}
+                />
+                {form.workflow_type === 'approval_required' && (
+                  <div className="add-task-conditional-block">
+                    <SearchableMultiSelect
+                      label="Approvers"
+                      apiEndpoint="/users/options"
+                      apiParams={multiSelectParams}
+                      onSelect={(users) => setApproverUsers(users)}
+                      onClear={() => setApproverUsers([])}
+                      value={approverUsers}
+                      displayKey="first_name"
+                      valueKey="id"
+                      allowResearch={true}
+                      debounceDelay={500}
+                      minSearchLength={2}
+                      renderOption={(user) => (
+                        <div className="assign-user-option">
+                          <div className="assign-user-name">
+                            {user.first_name} {user.last_name}
                           </div>
-                        )}
-                      </div>
-                    )}
-                  />
-                </div>
-              )}
-
+                          <div className="assign-user-email">
+                            {user.email}
+                          </div>
+                          {user.department && (
+                            <div className="assign-user-meta">
+                              {user.department} â€¢ {user.role || 'User'}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    />
+                  </div>
+                )}
+                <TaskFormSelect
+                  name="priority"
+                  label="Priority"
+                  value={form.priority}
+                  onChange={handleChange}
+                  icon={FiAlignJustify}
+                  iconClassName="task-custom-select-field-icon--priority"
+                  options={['low', 'medium', 'high', 'critical'].map((p) => ({
+                    value: p,
+                    label: p[0].toUpperCase() + p.slice(1)
+                  }))}
+                />
+                <TaskFormSelect
+                  name="task_type"
+                  label="Task Type"
+                  value={form.task_type}
+                  onChange={handleChange}
+                  icon={FiClipboard}
+                  iconClassName="task-custom-select-field-icon--task-type"
+                  options={[
+                    { value: 'one_time', label: 'One-time task' },
+                    { value: 'recurring', label: 'Recurring task' },
+                    { value: 'project_linked', label: 'Project-linked task' }
+                  ]}
+                />
+              </div>
               {form.task_type === 'recurring' && (
                 <div className="add-task-conditional-block">
                   <div className="add-task-grid-2">
@@ -1043,7 +1041,7 @@ const UpdateTask = ({
                               u.email ||
                               `User #${u.id}`
                             }
-                            onChange={() => {}}
+                            onChange={() => { }}
                             disabled
                           />
                         </div>
@@ -1053,11 +1051,11 @@ const UpdateTask = ({
                             label=""
                             value={formatDepartment(
                               assignedUserDepartments[u.id] ||
-                                u.department ||
-                                form.department ||
-                                ''
+                              u.department ||
+                              form.department ||
+                              ''
                             )}
-                            onChange={() => {}}
+                            onChange={() => { }}
                             disabled
                           />
                         </div>
