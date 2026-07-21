@@ -42,8 +42,6 @@ function ImportDialogContent({
   uploading,
   result,
   failedRows,
-  importYear,
-  onImportYearChange,
   onClose,
   onDownloadTemplate,
   onFileChange,
@@ -59,22 +57,6 @@ function ImportDialogContent({
 
         <div className="data-import-panel">
           <p>{config.description}</p>
-
-          {config.requiresYear && (
-            <label className="data-import-year">
-              <span>Active since year</span>
-              <input
-                type="number"
-                min="1900"
-                max="2100"
-                value={importYear}
-                onChange={(e) => onImportYearChange(e.target.value)}
-                placeholder="e.g. 2023"
-                disabled={!!result}
-              />
-              <small>Sheet has month only — date becomes 1st of that month in this year.</small>
-            </label>
-          )}
 
           <div className="data-import-actions">
             <input
@@ -176,14 +158,12 @@ const DataImport = ({
   const fileInputRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState(null);
-  const [importYear, setImportYear] = useState(String(new Date().getFullYear()));
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
 
   const resetState = () => {
     setFile(null);
-    setImportYear(String(new Date().getFullYear()));
     setError('');
     setResult(null);
     setUploading(false);
@@ -221,19 +201,8 @@ const DataImport = ({
       return;
     }
 
-    if (config.requiresYear) {
-      const yearNum = Number(String(importYear).trim());
-      if (!Number.isInteger(yearNum) || yearNum < 1900 || yearNum > 2100) {
-        setError('Please enter a valid year (1900–2100) for Active Since.');
-        return;
-      }
-    }
-
     const formData = new FormData();
     formData.append('file', file);
-    if (config.requiresYear) {
-      formData.append('year', String(importYear).trim());
-    }
 
     try {
       setUploading(true);
@@ -286,8 +255,6 @@ const DataImport = ({
           uploading={uploading}
           result={result}
           failedRows={failedRows}
-          importYear={importYear}
-          onImportYearChange={setImportYear}
           onClose={handleClose}
           onDownloadTemplate={handleDownloadTemplate}
           onFileChange={handleFileChange}

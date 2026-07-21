@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiBarChart2, FiChevronDown, FiLogOut, FiMoon, FiSun, FiUser } from 'react-icons/fi';
-
 import { useAuth } from '../context/AuthContext';
 import { useNotifications } from '../context/NotificationContext';
 import { useTheme } from '../context/ThemeContext';
@@ -81,11 +80,7 @@ const Navbar = () => {
 
           {menuOpen && (
             <div className="navbar-user-menu">
-              <Link
-                to="/profile"
-                className="navbar-user-menu__header navbar-user-menu__header--link"
-                onClick={() => setMenuOpen(false)}
-              >
+              <div className="navbar-user-menu__header">
                 <div className="navbar-user-menu__avatar">
                   <FiUser />
                 </div>
@@ -96,7 +91,7 @@ const Navbar = () => {
                     <div className="navbar-user-menu__department">{user.department}</div>
                   ) : null}
                 </div>
-              </Link>
+              </div>
 
               <div className="navbar-user-menu__meta">
                 <span>Notifications</span>
@@ -105,15 +100,6 @@ const Navbar = () => {
 
               <Link
                 to="/profile"
-                className="navbar-user-menu__link"
-                onClick={() => setMenuOpen(false)}
-              >
-                <FiUser />
-                <span>My Profile</span>
-              </Link>
-
-              <Link
-                to="/my-performance"
                 className="navbar-user-menu__link"
                 onClick={() => setMenuOpen(false)}
               >

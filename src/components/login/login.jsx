@@ -2,31 +2,19 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import './login.css';
-import {
-  FiArrowLeft,
-  FiArrowRight,
-  FiEye,
-  FiEyeOff,
-  FiHeart,
-  FiLock,
-  FiMail,
-  FiShield,
-} from 'react-icons/fi';
+import { FiArrowRight, FiEye, FiEyeOff, FiHeart, FiLock, FiMail, FiShield } from 'react-icons/fi';
 import mtjfLogo from '../../assets/mtjf_logo.png';
 import OfflineModeControls from '../common/OfflineModeControls';
-import axiosInstance from '../../utils/axios';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [mode, setMode] = useState('login'); // 'login' | 'forgot'
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e) => {
@@ -36,14 +24,12 @@ const Login = () => {
       [name]: value,
     }));
     if (error) setError('');
-    if (success) setSuccess('');
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    setSuccess('');
 
     try {
       const trimmedFormData = {
@@ -73,53 +59,14 @@ const Login = () => {
     }
   };
 
-  const handleForgotSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
-
-    const email = formData.email.trim().toLowerCase();
-    if (!email) {
-      setError('Please enter your email address.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const res = await axiosInstance.post('/auth/forgot-password', { email });
-      setSuccess(
-        res.data?.message ||
-          'If an account exists for this email, a new password has been sent.',
-      );
-    } catch (err) {
-      if (!err.response) {
-        setError(
-          'Unable to reach the server. Check your internet connection and try again.',
-        );
-      } else {
-        setError(
-          err.response?.data?.message ||
-            'Could not reset password. Please try again later.',
-        );
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <div className="login-bg">
       <div className="login-card">
         <div className="login-logo">
           <img src={mtjfLogo} alt="MTJF Logo" />
         </div>
-        <h2 className="login-title">MTJF Solutions</h2>
-        <p className="login-subtitle">
-          {mode === 'forgot'
-            ? 'Enter your email to receive a temporary password'
-            : 'Sign in to your account'}
-        </p>
+        <h2 className="login-title">Donor Management System</h2>
+        <p className="login-subtitle">Sign in to your account</p>
 
         <div className="login-divider" aria-hidden>
           <span className="login-divider__line" />
@@ -127,112 +74,59 @@ const Login = () => {
           <span className="login-divider__line" />
         </div>
 
-        {mode === 'login' ? (
-          <form onSubmit={handleSubmit} className="login-form">
-            {error && <div className="login-error">{error}</div>}
+        <form onSubmit={handleSubmit} className="login-form">
+          {error && <div className="login-error">{error}</div>}
 
-            <label className="login-field">
-              <span className="login-field__label">Email</span>
-              <div className="login-input-wrap">
-                <FiMail className="login-input-icon" aria-hidden />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your email"
-                  autoComplete="email"
-                />
-              </div>
-            </label>
+          <label className="login-field">
+            <span className="login-field__label">Email</span>
+            <div className="login-input-wrap">
+              <FiMail className="login-input-icon" aria-hidden />
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                required
+                placeholder="Enter your email"
+                autoComplete="email"
+              />
+            </div>
+          </label>
 
-            <label className="login-field">
-              <span className="login-field__label">Password</span>
-              <div className="login-input-wrap">
-                <FiLock className="login-input-icon" aria-hidden />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your password"
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  className="password-toggle-icon"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
-                >
-                  {showPassword ? <FiEyeOff /> : <FiEye />}
-                </button>
-              </div>
-            </label>
-
-            <div className="login-forgot-row">
+          <label className="login-field">
+            <span className="login-field__label">Password</span>
+            <div className="login-input-wrap">
+              <FiLock className="login-input-icon" aria-hidden />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="Enter your password"
+                autoComplete="current-password"
+              />
               <button
                 type="button"
-                className="login-forgot-link"
-                onClick={() => {
-                  setMode('forgot');
-                  setError('');
-                  setSuccess('');
-                }}
+                className="password-toggle-icon"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
               >
-                Forgot password?
+                {showPassword ? <FiEyeOff /> : <FiEye />}
               </button>
             </div>
+          </label>
 
-            <button type="submit" className="login-submit" disabled={loading}>
-              {loading ? (
-                'Logging in...'
-              ) : (
-                <>
-                  Login <FiArrowRight aria-hidden />
-                </>
-              )}
-            </button>
-          </form>
-        ) : (
-          <form onSubmit={handleForgotSubmit} className="login-form">
-            {error && <div className="login-error">{error}</div>}
-            {success && <div className="login-success">{success}</div>}
-
-            <label className="login-field">
-              <span className="login-field__label">Email</span>
-              <div className="login-input-wrap">
-                <FiMail className="login-input-icon" aria-hidden />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  required
-                  placeholder="Enter your email"
-                  autoComplete="email"
-                />
-              </div>
-            </label>
-
-            <button type="submit" className="login-submit" disabled={loading}>
-              {loading ? 'Sending...' : 'Send new password'}
-            </button>
-
-            <button
-              type="button"
-              className="login-back-to-login"
-              onClick={() => {
-                setMode('login');
-                setError('');
-                setSuccess('');
-              }}
-            >
-              <FiArrowLeft aria-hidden /> Back to login
-            </button>
-          </form>
-        )}
+          <button type="submit" className="login-submit" disabled={loading}>
+            {loading ? (
+              'Logging in...'
+            ) : (
+              <>
+                Login <FiArrowRight aria-hidden />
+              </>
+            )}
+          </button>
+        </form>
 
         <div className="login-offline">
           <OfflineModeControls />

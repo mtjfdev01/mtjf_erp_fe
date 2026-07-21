@@ -11,6 +11,7 @@ const StatusUpdateModal = ({
   onClose,
   onUpdated,
 }) => {
+  console.log('StatusUpdateModal props:', { isOpen, taskId, action });
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 

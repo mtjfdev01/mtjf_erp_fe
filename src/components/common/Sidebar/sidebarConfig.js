@@ -379,7 +379,6 @@ const adminDepartmentItems = () => [
     icon: FiHeart,
     subItems: [ 
       {label: "Donations", path: "/donations/online_donations/list", type: "list", icon: BiSolidDonateHeart},
-      {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
       {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
       {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
       {label: "Donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
@@ -389,6 +388,7 @@ const adminDepartmentItems = () => [
       {label: "Campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
       {label: "Appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
       {label: "Social Media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
+      {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", icon: FiRepeat},
       {label: "Reconciliation", path: "/dms/reconciliation/list", type: "list", icon: FiRefreshCw},
       {label: "Donor Relationship", path: "/dms/donor-relationship/follow-ups", type: "list", icon: FiUsers}
     ]
@@ -505,13 +505,6 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'donation_allotments',
     icon: FiCheckCircle,
   },
-  {
-    label: 'Recurring Donations',
-    path: '/dms/recurring-donations/list',
-    type: 'list',
-    module: 'recurring_donations',
-    icon: FiRepeat,
-  },
   // {
   //   label: 'Offline Donations',
   //   path: '/donations/offline_donations/list',
@@ -580,6 +573,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'social_posts',
     icon: FiFileText
+  },
+  {
+    label: 'Recurring Donations',
+    path: '/dms/recurring-donations/list',
+    type: 'list',
+    module: 'recurring_donations',
+    icon: FiRepeat
   },
   {
     label: 'Reconciliation',
@@ -890,7 +890,7 @@ const departmentConfigs = {
 };
  
 // Filter items based on user permissions
-const filterItemsByPermissions = (items, permissions, department, user) => {
+const filterItemsByPermissions = (items, permissions, department) => {
   if (!permissions || !department) {
     return items; // Return all items if no permissions (fallback)
   }
@@ -903,14 +903,6 @@ const filterItemsByPermissions = (items, permissions, department, user) => {
 
     // If item has no module, show it (for backward compatibility)
     if (!item.module) {
-      return true;
-    }
-
-    // fund_raising_user role matches backend recurring-donations guard
-    if (
-      item.module === 'recurring_donations' &&
-      String(user?.role || '').toLowerCase() === 'fund_raising_user'
-    ) {
       return true;
     }
 
@@ -956,7 +948,6 @@ export const getSidebarConfig = (user, permissions = null) => {
         config.items,
         permissions,
         config.id,
-        user,
       );
 
       return {

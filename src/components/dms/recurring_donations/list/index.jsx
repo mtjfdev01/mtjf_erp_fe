@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -8,8 +8,6 @@ import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
-import { useAuth } from '../../../../context/AuthContext';
-import { fundRaisingRecurringHas } from '../../../../utils/permissions';
 import { FiEye, FiRepeat } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
@@ -28,19 +26,6 @@ const INTERVAL_OPTIONS = [
 
 const RecurringDonationsList = () => {
   const navigate = useNavigate();
-  const { permissions, user } = useAuth();
-  const canList = useMemo(
-    () =>
-      fundRaisingRecurringHas(permissions, 'list_view') ||
-      String(user?.role || '').toLowerCase() === 'fund_raising_user',
-    [permissions, user],
-  );
-  const canView = useMemo(
-    () =>
-      fundRaisingRecurringHas(permissions, 'view') ||
-      String(user?.role || '').toLowerCase() === 'fund_raising_user',
-    [permissions, user],
-  );
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -106,10 +91,8 @@ const RecurringDonationsList = () => {
   };
 
   useEffect(() => {
-    if (canList) {
-      fetchRows();
-    }
-  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters, canList]);
+    fetchRows();
+  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
   const formatAmount = (amount, currency = 'PKR') => {
     if (amount == null) return '-';
@@ -151,23 +134,9 @@ const RecurringDonationsList = () => {
       label: 'View',
       color: '#2196f3',
       onClick: () => navigate(`/dms/recurring-donations/view/${row.id}`),
-      visible: canView,
+      visible: true,
     },
   ];
-
-  if (!canList) {
-    return (
-      <>
-        <Navbar />
-        <div className="list-wrapper">
-          <PageHeader title="Recurring Donations" />
-          <div className="status-message status-message--error">
-            You do not have permission to view recurring donations.
-          </div>
-        </div>
-      </>
-    );
-  }
 
   if (loading && rows.length === 0) {
     return (
