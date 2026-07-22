@@ -380,11 +380,8 @@ const adminDepartmentItems = () => [
     icon: FiHeart,
     subItems: [ 
       {label: "Donations", path: "/donations/online_donations/list", type: "list", icon: BiSolidDonateHeart},
-<<<<<<< HEAD
       {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
       {label: "Recurring Campaign Donors", path: "/dms/manual-recurring/list", type: "list", icon: FiRepeat},
-=======
->>>>>>> 85948ebe16eb70a7358ccb7e42c1740120362c38
       {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
       {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
       {label: "Donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
