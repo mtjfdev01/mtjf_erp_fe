@@ -5,7 +5,8 @@ import { HiOutlineSwitchHorizontal } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
-import PageHeader from '../../../common/PageHeader';
+import PageHeader from '../../../common/PageHeader'
+import { RefreshButton } from '../../../common/filters';
 import Loader from '../../../common/loader/Loader';
 import Pagination from '../../../common/Pagination';
 import ActionMenu from '../../../common/ActionMenu';
@@ -1448,6 +1449,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
               <button className="tl-filter-clear-btn" onClick={clearAllFilters} disabled={loading}>
                 Clear
               </button>
+              <RefreshButton onClick={() => setTaskRefreshNonce((n) => n + 1)} loading={loading} />
             </div>
           </div>
 

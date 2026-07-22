@@ -386,7 +386,9 @@ const DonationBoxList = () => {
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader 
+          <PageHeader
+          onRefresh={fetchDonationBoxes}
+          refreshing={loading} 
             title="Donation Boxes" 
             showBackButton={false} 
             showAdd={true}
@@ -403,6 +405,8 @@ const DonationBoxList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
+          onRefresh={fetchDonationBoxes}
+          refreshing={loading}
           title="Donation Boxes"
           showBackButton={false}
           showFilterToggle

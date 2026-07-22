@@ -118,6 +118,8 @@ const ReceiptTemplateList = () => {
       <Navbar />
       <div className="list-content">
         <PageHeader
+          onRefresh={fetchTemplates}
+          refreshing={loading}
           title="Receipt Templates"
           showFilterToggle
           filtersOpen={filtersOpen}

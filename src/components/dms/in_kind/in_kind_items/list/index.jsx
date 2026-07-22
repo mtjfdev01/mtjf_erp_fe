@@ -258,7 +258,9 @@ const InKindItemsList = () => {
       <>
         <Navbar />
         <div className="form-content">
-          <PageHeader title="In-Kind Items" />
+          <PageHeader
+          onRefresh={fetchItems}
+          refreshing={loading} title="In-Kind Items" />
           <div style={{ textAlign: 'center', padding: '2rem' }}>
             <div>Loading in-kind items...</div>
           </div>
@@ -271,7 +273,9 @@ const InKindItemsList = () => {
     <>
       <Navbar />
       <div className="form-content">
-        <PageHeader 
+        <PageHeader
+          onRefresh={fetchItems}
+          refreshing={loading} 
           title="In-Kind Items" 
           onBack={() => navigate('/dms')}
           showFilterToggle

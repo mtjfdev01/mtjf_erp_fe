@@ -66,6 +66,11 @@
   overflow-x: auto;
 }
 
+.trello-board-toolbar-filters .refresh-button--inline {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 /* Compact scope switch (shared look with list view) */
 .trello-board-toolbar .tl-scope-switch {
   display: inline-flex;

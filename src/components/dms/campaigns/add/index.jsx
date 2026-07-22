@@ -6,9 +6,13 @@ import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import Navbar from '../../../Navbar';
+import { TARGET_FREQUENCY_OPTIONS, emptyCommunicationTemplates, communicationTemplatesToApi } from '../campaignConstants';
+import CampaignCommunicationSection from '../CampaignCommunicationSection';
+import CampaignDonationItemsSection from '../CampaignDonationItemsSection';
 
 const AddCampaign = () => {
   const navigate = useNavigate();
+  const [donationItems, setDonationItems] = useState([]);
   const [form, setForm] = useState({
     title: '',
     slug: '',
@@ -18,7 +22,11 @@ const AddCampaign = () => {
     currency: 'PKR',
     start_at: '',
     end_at: '',
-    is_featured: false
+    is_featured: false,
+    is_recurring: false,
+    target_frequency: 'monthly',
+    monthly_donor_automation_enabled: false,
+    communication_templates: emptyCommunicationTemplates()
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +40,26 @@ const AddCampaign = () => {
     if (error) setError('');
   };
 
+  const handleToggleAutomation = (e) => {
+    setForm((prev) => ({
+      ...prev,
+      monthly_donor_automation_enabled: e.target.checked
+    }));
+  };
+
+  const handleSlotChange = (slotKey, field, value) => {
+    setForm((prev) => ({
+      ...prev,
+      communication_templates: {
+        ...prev.communication_templates,
+        [slotKey]: {
+          ...prev.communication_templates[slotKey],
+          [field]: value
+        }
+      }
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -42,10 +70,32 @@ const AddCampaign = () => {
       return;
     }
 
+    if (form.is_recurring && !form.target_frequency) {
+      setError('Please select a target frequency for recurring campaigns');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const campaignData = {
         ...form,
-        goal_amount: form.goal_amount ? parseFloat(form.goal_amount) : undefined
+        goal_amount: form.goal_amount ? parseFloat(form.goal_amount) : undefined,
+        is_recurring: form.is_recurring,
+        target_frequency: form.is_recurring ? form.target_frequency : null,
+        monthly_donor_automation_enabled: form.is_recurring ? form.monthly_donor_automation_enabled : false,
+        communication_templates: form.is_recurring
+          ? communicationTemplatesToApi(form.communication_templates)
+          : null,
+        donation_items: donationItems.map(
+          ({ name, description, unit_price, currency, sort_order, is_active }) => ({
+            name,
+            description: description || null,
+            unit_price: Number(unit_price),
+            currency: currency || form.currency || 'PKR',
+            sort_order: sort_order ?? 0,
+            is_active: is_active !== false
+          })
+        )
       };
       if (!campaignData.slug) delete campaignData.slug;
 
@@ -132,7 +182,7 @@ const AddCampaign = () => {
               />
 
               <FormInput
-                label="Goal Amount"
+                label={form.is_recurring ? 'Target per period' : 'Goal Amount'}
                 type="number"
                 name="goal_amount"
                 value={form.goal_amount}
@@ -143,6 +193,45 @@ const AddCampaign = () => {
               />
             </div>
           </div>
+
+          <div className="form-section">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: form.is_recurring ? '16px' : 0 }}>
+              <input
+                type="checkbox"
+                id="is_recurring"
+                name="is_recurring"
+                checked={form.is_recurring}
+                onChange={handleChange}
+                style={{ width: '18px', height: '18px' }}
+              />
+              <label htmlFor="is_recurring" style={{ cursor: 'pointer' }}>
+                Recurring campaign (goal applies each period)
+              </label>
+            </div>
+            {form.is_recurring && (
+              <FormSelect
+                label="Target frequency"
+                name="target_frequency"
+                value={form.target_frequency}
+                onChange={handleChange}
+                options={TARGET_FREQUENCY_OPTIONS}
+                required
+              />
+            )}
+          </div>
+
+          <CampaignCommunicationSection
+            form={form}
+            onToggleAutomation={handleToggleAutomation}
+            onSlotChange={handleSlotChange}
+          />
+
+          <CampaignDonationItemsSection
+            draftItems={donationItems}
+            onDraftItemsChange={setDonationItems}
+            defaultCurrency={form.currency || 'PKR'}
+            isRecurring={form.is_recurring}
+          />
 
           <div className="form-section">
             <div className="form-grid-2">

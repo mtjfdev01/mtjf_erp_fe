@@ -195,6 +195,8 @@ const EventsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
+          onRefresh={fetchEvents}
+          refreshing={loading}
           title="Events"
           showBackButton={false}
           showFilterToggle

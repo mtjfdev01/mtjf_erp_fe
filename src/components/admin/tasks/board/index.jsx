@@ -13,6 +13,7 @@ import TaskCardMenu from './TaskCardMenu';
 import BoardColumnPicker from './BoardColumnPicker';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
 import TaskAssigneeFilter from '../shared/TaskAssigneeFilter';
+import { RefreshButton } from '../../../common/filters';
 import {
   TASK_DEPARTMENT_OPTIONS,
   TASK_PROJECT_PROGRAM_OPTIONS,
@@ -584,6 +585,8 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
                   ))}
                 </select>
               </div>
+
+              <RefreshButton onClick={fetchTasks} loading={loading} />
             </div>
           </div>
 

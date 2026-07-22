@@ -317,7 +317,9 @@ const DonationBoxDonationsList = () => {
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader 
+          <PageHeader
+          onRefresh={fetchDonations}
+          refreshing={loading} 
             title = 'Donation Box Collections'  
             showBackButton={!!donationBoxId} 
             backPath={getBackPath()}
@@ -335,6 +337,8 @@ const DonationBoxDonationsList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
+          onRefresh={fetchDonations}
+          refreshing={loading}
           title={
             donationBoxId && donationBoxInfo
               ? `Collections — ${donationBoxInfo.shop_name || donationBoxInfo.key_no}`

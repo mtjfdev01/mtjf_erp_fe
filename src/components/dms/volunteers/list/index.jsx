@@ -156,7 +156,9 @@ const VolunteersList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader title="Registered Volunteers" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd={true} addPath="/dms/volunteers/add" />
+        <PageHeader
+          onRefresh={fetchVolunteers}
+          refreshing={loading} title="Registered Volunteers" showBackButton={false} showFilterToggle filtersOpen={filtersOpen} onFilterToggle={toggleFilters} showAdd={true} addPath="/dms/volunteers/add" />
         <div className="list-content">
           {error && <div className="status-message status-message--error">{error}</div>}
 

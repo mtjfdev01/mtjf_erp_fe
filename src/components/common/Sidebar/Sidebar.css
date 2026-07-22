@@ -176,6 +176,23 @@
   box-shadow: var(--sidebar-item-shadow);
 }
 
+a.sidebar-item-header,
+a.sidebar-sub-item {
+  text-decoration: none;
+  color: inherit;
+}
+
+a.sidebar-item-header:visited,
+a.sidebar-sub-item:visited,
+a.sidebar-item-header:hover,
+a.sidebar-sub-item:hover,
+a.sidebar-item-header:active,
+a.sidebar-sub-item:active,
+a.sidebar-item-header:focus,
+a.sidebar-sub-item:focus {
+  color: inherit;
+}
+
 .sidebar-item-icon {
   display: inline-flex;
   align-items: center;

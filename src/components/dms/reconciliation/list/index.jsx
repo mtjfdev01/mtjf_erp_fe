@@ -126,6 +126,8 @@ const ReconciliationList = () => {
       <Navbar />
       <div className="view-wrapper">
         <PageHeader
+          onRefresh={fetchRecords}
+          refreshing={loading}
           title="Bank Reconciliation"
           showBackButton={false}
           showFilterToggle

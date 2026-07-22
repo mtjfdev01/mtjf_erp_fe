@@ -5,7 +5,7 @@ import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import ActionMenu from '../../../../common/ActionMenu';
 import Pagination from '../../../../common/Pagination';
-import { SearchFilter, DropdownFilter } from '../../../../common/filters';
+import { SearchFilter, DropdownFilter, RefreshButton } from '../../../../common/filters';
 import { SearchButton, ClearButton } from '../../../../common/filters/index';
 import { departments } from '../../../../../utils/user';
 import { FiEye, FiTrash2, FiDownload } from 'react-icons/fi';
@@ -248,6 +248,7 @@ const ResumeCollectionList = () => {
             <div className="resume-collection-filters-actions">
               <SearchButton onClick={handleApplyFilters} />
               <ClearButton onClick={handleClearFilters} />
+              <RefreshButton onClick={fetchItems} loading={loading} />
             </div>
           </div>
         </div>

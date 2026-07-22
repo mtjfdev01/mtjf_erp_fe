@@ -15,6 +15,7 @@ import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 import useOfflineDataRefresh from '../../../../../hooks/useOfflineDataRefresh';
 import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
+import useListRowSelection from '../../../../../hooks/useListRowSelection';
 import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
 
 import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
@@ -112,6 +113,20 @@ const OnlineDonationsList = () => {
   const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
     `${listStoragePrefix}:applied`, EMPTY_FILTERS
   );
+
+  const selectionResetKey = useMemo(
+    () => JSON.stringify({ currentPage, pageSize, appliedFilters }),
+    [currentPage, pageSize, appliedFilters],
+  );
+  const {
+    selectedCount,
+    isSelected,
+    toggleOne,
+    toggleAllOnPage,
+    clearSelection,
+    allOnPageSelected,
+    headerCheckboxRef,
+  } = useListRowSelection(donations, 'id', selectionResetKey);
 
   // Donor page: lock donor_id from route. General list: clear donor scope so sidebar list is full.
   useEffect(() => {
@@ -302,12 +317,21 @@ const OnlineDonationsList = () => {
             return ms;
           })(),
         relationsFilters: relationsFiltersPayload,
-        hybrid_filters:[ {
-          value: appliedFilters.amount,
-          operator: appliedFilters.price_operator,
-          column: 'amount',
-        }
-      ]
+        hybrid_filters: (() => {
+          const amount = appliedFilters.amount;
+          const operator = appliedFilters.price_operator;
+          if (
+            amount === '' ||
+            amount === null ||
+            amount === undefined ||
+            !operator
+          ) {
+            return [];
+          }
+          const num = Number(String(amount).replace(/,/g, ''));
+          if (!Number.isFinite(num)) return [];
+          return [{ value: num, operator, column: 'amount' }];
+        })(),
       };
 
 
@@ -728,7 +752,9 @@ const OnlineDonationsList = () => {
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader 
+          <PageHeader
+          onRefresh={fetchDonations}
+          refreshing={loading} 
             title="Donations Listing" 
             showBackButton={false} 
             showAdd={true}
@@ -744,7 +770,9 @@ const OnlineDonationsList = () => {
     <>
       <Navbar />
       <div className="list-wrapper">
-        <PageHeader 
+        <PageHeader
+          onRefresh={fetchDonations}
+          refreshing={loading} 
           title={
             isDonorDonationsRoute || urlDonorId
               ? 'Donor Donations'
@@ -864,24 +892,23 @@ const OnlineDonationsList = () => {
               placeholder="All Templates"
             />
             
-            {/* <HybridDropdown
+            <HybridDropdown
               label="Amount"
               placeholder="Type or select amount..."
               options={priceRangeOptions}
               value={tempFilters.amount}
               onChange={(value) => handleFilterChange('amount', value)}
               allowCustom={true}
-            /> */}
-            
-            {/* Custom plus specified options */}
-            {/* <HybridDropdown
+            />
+
+            <DropdownFilter
+              filterKey="price_operator"
               label="Amount Operator"
-              placeholder="Type or select operator..."
-              options={priceOperatorOptions}
-              value={tempFilters.price_operator}
-              onChange={(value) => handleFilterChange('price_operator', value)}
-              allowCustom={true}
-            /> */}
+              data={priceOperatorOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Select operator"
+            />
             
             <DateFilter
               filterKey="date"
@@ -971,10 +998,34 @@ const OnlineDonationsList = () => {
                   PKR {totalDonationAmount.toLocaleString()}
                 </div>
               </div>
+          {selectedCount > 0 && (
+            <div className="list-selection-bar">
+              <span className="list-selection-bar__count">
+                {selectedCount} donation{selectedCount === 1 ? '' : 's'} selected
+              </span>
+              <button
+                type="button"
+                className="list-selection-bar__clear"
+                onClick={clearSelection}
+              >
+                Clear selection
+              </button>
+            </div>
+          )}
           <div className="table-container"> 
             <table className="data-table">
               <thead>
                 <tr>
+                  <th className="table-select-col">
+                    <input
+                      ref={headerCheckboxRef}
+                      type="checkbox"
+                      checked={allOnPageSelected}
+                      onChange={toggleAllOnPage}
+                      disabled={donations.length === 0}
+                      aria-label="Select all donations on this page"
+                    />
+                  </th>
                   <th>Donor </th>
                   <th>Amount</th>
                   {/* <th>Type</th> */}
@@ -989,8 +1040,23 @@ const OnlineDonationsList = () => {
                 </tr>
               </thead>
               <tbody>
-                {donations.map(donation => (
-                  <tr key={donation.id}>
+                {donations.length === 0 ? (
+                  <tr>
+                    <td colSpan="10" className="no-data">
+                      No donations found
+                    </td>
+                  </tr>
+                ) : (
+                  donations.map(donation => (
+                  <tr key={donation.id} className={isSelected(donation.id) ? 'row-selected' : ''}>
+                    <td className="table-select-col">
+                      <input
+                        type="checkbox"
+                        checked={isSelected(donation.id)}
+                        onChange={() => toggleOne(donation.id)}
+                        aria-label={`Select donation ${donation.id}`}
+                      />
+                    </td>
                     <td>
                       <div className="donor-info">
                         <div className="donor-name">{donation?.donor?.name?.slice(0, 15) + '...' || 'Anonymous'}</div>
@@ -1038,7 +1104,8 @@ const OnlineDonationsList = () => {
                       <ActionMenu actions={getActionMenuItems(donation)} />
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>

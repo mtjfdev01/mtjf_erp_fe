@@ -135,6 +135,7 @@ import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from '.
 import PendingAllotmentsList from './components/dms/donations/allotments/pending';
 import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
+import ManualRecurringList from './components/dms/manual_recurring/list';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
@@ -155,6 +156,9 @@ import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
+import CommunicationSend from './components/dms/email_templates/send';
+import CommunicationBatchList from './components/dms/email_templates/batches/list';
+import CommunicationBatchView from './components/dms/email_templates/batches/view';
 import EmailChecklist from './components/communication/email_checklist';
 import ReceiptTemplateList from './components/dms/receipt_templates/list';
 import ReceiptTemplateForm from './components/dms/receipt_templates/form';
@@ -419,6 +423,7 @@ const App = () => {
                                 {/* Recurring Donations (Stripe subscriptions) */}
                                 <Route path="/dms/recurring-donations/list" element={<RecurringDonationsList />} />
                                 <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
+                                <Route path="/dms/manual-recurring/list" element={<ManualRecurringList />} />
 
                                 {/* Social Posts (Buffer) */}
                                 <Route path="/dms/social-posts/list" element={<SocialPostsList />} />
@@ -492,6 +497,9 @@ const App = () => {
                                 {/* Email Template Routes */}
                                 <Route path="/dms/email_templates/list" element={<EmailTemplateList />} />
                                 <Route path="/dms/email_templates/add" element={<EmailTemplateForm />} />
+                                <Route path="/dms/email_templates/send" element={<CommunicationSend />} />
+                                <Route path="/dms/email_templates/batches" element={<CommunicationBatchList />} />
+                                <Route path="/dms/email_templates/batches/:batchId" element={<CommunicationBatchView />} />
                                 <Route path="/email-checklist" element={<EmailChecklist />} />
                                 <Route path="/dms/email_templates/edit/:id" element={<EmailTemplateForm />} />
 
