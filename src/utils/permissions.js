@@ -97,14 +97,6 @@ export const canViewModule = (permissions, department, module) => {
     return modulePermissions.view === true || modulePermissions.list_view === true;
   }
 
-  // Recurring donations: module permission or fund raising manager flag
-  if (department === 'fund_raising' && module === 'recurring_donations') {
-    if (permissions.fund_raising_manager === true) return true;
-    const recurring = permissions.fund_raising?.recurring_donations;
-    if (recurring?.view === true || recurring?.list_view === true) return true;
-    return false;
-  }
-
   const modulePermissions = permissions[department]?.[module];
   if (!modulePermissions) {
     return false;
@@ -127,14 +119,6 @@ export const fundRaisingDonorsHas = (permissions, action) => {
     fr.online_donors?.[action] === true ||
     fr.offline_donors?.[action] === true
   );
-};
-
-/** Recurring donations ledger (Stripe subscriptions). */
-export const fundRaisingRecurringHas = (permissions, action) => {
-  if (!permissions || !action) return false;
-  if (permissions.super_admin === true) return true;
-  if (permissions.fund_raising_manager === true) return true;
-  return permissions.fund_raising?.recurring_donations?.[action] === true;
 };
 
 /**
@@ -297,7 +281,6 @@ export default {
   hasDepartmentAccess,
   canViewModule,
   fundRaisingDonorsHas,
-  fundRaisingRecurringHas,
   isSuperAdmin,
   getAccessibleModules,
   getModulePermissions,
@@ -380,7 +363,8 @@ export const getTaskPermissions = (permissions, department, userRole) => {
   const canApproveBase =
     actions.approve === true || isAdmin;
   const canApproveByRole = isAdmin || isDeptHeadRole || isManagerRole || isTeamLeadRole;
-  return {
+  
+  const result = {
     canView: canViewBase || canViewReports,
     canViewDetail: canViewDetail,
     canCreate: actions.create === true || isAdmin,
@@ -397,4 +381,19 @@ export const getTaskPermissions = (permissions, department, userRole) => {
     canEditCompleted,
     reportScope: scope
   };
+
+  console.log('getTaskPermissions result:', {
+    result,
+    permissions,
+    department,
+    userRole,
+    modulePermissions,
+    actions,
+    isAdmin,
+    isDeptHeadRole,
+    isManagerRole,
+    isTeamLeadRole
+  });
+  
+  return result;
 };

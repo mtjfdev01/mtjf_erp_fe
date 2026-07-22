@@ -207,57 +207,6 @@ body {
   font-size: 0.9rem;
 }
 
-.login-success {
-  color: #047857;
-  text-align: center;
-  margin-bottom: 1rem;
-  font-weight: 500;
-  font-size: 0.9rem;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 10px;
-  padding: 0.65rem 0.75rem;
-}
-
-.login-forgot-row {
-  display: flex;
-  justify-content: flex-end;
-  margin: -0.35rem 0 0.85rem;
-}
-
-.login-forgot-link {
-  border: none;
-  background: none;
-  padding: 0;
-  color: #3b82f6;
-  font-size: 0.85rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.login-forgot-link:hover {
-  text-decoration: underline;
-}
-
-.login-back-to-login {
-  margin-top: 0.85rem;
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: none;
-  background: none;
-  color: #64748b;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.login-back-to-login:hover {
-  color: #0f2744;
-}
-
 .login-offline {
   margin-top: 1rem;
   padding-top: 0.85rem;

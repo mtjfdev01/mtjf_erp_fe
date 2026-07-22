@@ -63,7 +63,6 @@ const DonorsList = () => {
   const [tempFilters, setTempFilters] = useState({
     search: '',
     donor_type: '',
-    donation_type: '',
     city: '',
     date: '',
     start_date: '',
@@ -81,7 +80,6 @@ const DonorsList = () => {
   const [appliedFilters, setAppliedFilters] = useState({
     search: '',
     donor_type: '',
-    donation_type: '',
     city: '',
     date: '',
     start_date: '',
@@ -332,7 +330,6 @@ const DonorsList = () => {
     const emptyFilters = {
       search: '',
       donor_type: '',
-      donation_type: '',
       city: '',
       date: '',
       start_date: '',
@@ -388,9 +385,6 @@ const DonorsList = () => {
       }
       if (params.recurring === null || params.recurring === undefined) {
         delete params.recurring;
-      }
-      if (!params.donation_type) {
-        delete params.donation_type;
       }
       if (params.is_mature_donor === null || params.is_mature_donor === undefined) {
         delete params.is_mature_donor;

@@ -10,7 +10,10 @@
 }
 
 .task-view-wrapper {
+  margin-top: 35px;
   --max-width: 1800px;
+
+
 }
 
 .task-receipt-page {

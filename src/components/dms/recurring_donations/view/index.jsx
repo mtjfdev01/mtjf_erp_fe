@@ -1,31 +1,18 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
-import { useAuth } from '../../../../context/AuthContext';
-import { fundRaisingRecurringHas } from '../../../../utils/permissions';
 import { FiRepeat, FiUser, FiDollarSign } from 'react-icons/fi';
 
 const RecurringDonationView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { permissions, user } = useAuth();
-  const canView = useMemo(
-    () =>
-      fundRaisingRecurringHas(permissions, 'view') ||
-      String(user?.role || '').toLowerCase() === 'fund_raising_user',
-    [permissions, user],
-  );
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!canView) {
-      setLoading(false);
-      return;
-    }
     const load = async () => {
       try {
         setLoading(true);
@@ -43,7 +30,7 @@ const RecurringDonationView = () => {
       }
     };
     load();
-  }, [id, canView]);
+  }, [id]);
 
   const formatAmount = (amount, currency) => {
     if (amount == null) return '-';
@@ -59,20 +46,6 @@ const RecurringDonationView = () => {
     if (!donor) return '-';
     return donor.name || [donor.first_name, donor.last_name].filter(Boolean).join(' ') || donor.email;
   };
-
-  if (!canView) {
-    return (
-      <>
-        <Navbar />
-        <div className="view-wrapper">
-          <PageHeader title="Recurring Donation" showBackButton backPath="/dms/recurring-donations/list" />
-          <div className="status-message status-message--error">
-            You do not have permission to view this recurring donation.
-          </div>
-        </div>
-      </>
-    );
-  }
 
   if (loading) {
     return (

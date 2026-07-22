@@ -110,12 +110,17 @@ const ViewTask = ({
         if (!cancelled) {
           setTask(t);
           setAssignedUsersMeta(Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : []);
-          // Note: approval data is now lazy-loaded only when needed
+          // If it's not an approval workflow, immediately set approval loading to false
+          const isApproval = String(t.workflow_type).toLowerCase() === 'approval_required';
+          if (!isApproval) {
+            setApprovalLoading(false);
+          }
         }
       } catch (e) {
         if (!cancelled) {
           setError(e.response?.data?.message || 'Failed to load task.');
-        }
+          setApprovalLoading(false);
+        } 
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -483,6 +488,10 @@ const ViewTask = ({
 
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [statusModalAction, setStatusModalAction] = useState(null);
+  useEffect(() => {
+    console.log('statusModalOpen changed:', statusModalOpen);
+    console.log('statusModalAction changed:', statusModalAction);
+  }, [statusModalOpen, statusModalAction]);
   const [statusActionLoading, setStatusActionLoading] = useState(false);
 
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -827,11 +836,12 @@ const ViewTask = ({
     }
   };
 
-  const handleStatusActionClick = async (action) => {
-    // Do NOT load approval data on button click
-    // Approval data will be loaded only when user submits the form with a note
+  const handleStatusActionClick = (action) => {
+    console.log('handleStatusActionClick called with action:', action);
+    console.log('Previous statusModalOpen:', statusModalOpen);
     setStatusModalAction(action);
     setStatusModalOpen(true);
+    console.log('After setStatusModalOpen:', statusModalOpen);
   };
 
   const handleStatusUpdated = async (updated) => {
@@ -877,8 +887,11 @@ const ViewTask = ({
   };
 
   const handleQuickAction = (key) => {
+    console.log('index.jsx handleQuickAction called with key:', key);
+    console.log('quickActionOpen before:', quickActionOpen);
     setQuickActionKey(key);
     setQuickActionOpen(true);
+    console.log('quickActionOpen after:', quickActionOpen);
   };
 
   const handleRemoveAttachment = async (attachmentId) => {
@@ -1298,27 +1311,48 @@ const ViewTask = ({
                       </div>
                     </div>
                     <div className="tv-header-actions">
-                      <TaskActionBar
-                        taskId={task.id}
-                        currentStatus={task.status}
-                        permissions={taskPerms}
-                        userDepartment={user?.department}
-                        taskDepartment={task.department}
-                        workflowType={task.workflow_type}
-                        userRole={user?.role}
-                        isAssignee={isCurrentUserAssignee}
-                        currentUserId={user?.id}
-                        createdByUserId={task.created_by_id}
-                        reportedById={task.reported_by_id}
-                        approvalRequiredUserIds={task.approval_required_user_ids}
-                        approvalsMeta={approvalState?.approvals_meta}
-                        currentUserHasActedOnApproval={currentUserHasActedOnApproval}
-                        approvalLoading={approvalLoading}
-                        onStatusAction={handleStatusActionClick}
-                        onQuickAction={handleQuickAction}
-                        disabled={statusActionLoading}
-                        align="top"
-                      />
+{(() => {
+                        console.log('TaskActionBar props in index.jsx:', {
+                          taskId: task.id,
+                          currentStatus: task.status,
+                          permissions: taskPerms,
+                          userDepartment: user?.department,
+                          taskDepartment: task.department,
+                          workflowType: task.workflow_type,
+                          userRole: user?.role,
+                          isAssignee: isCurrentUserAssignee,
+                          currentUserId: user?.id,
+                          createdByUserId: task.created_by_id,
+                          reportedById: task.reported_by_id,
+                          approvalRequiredUserIds: task.approval_required_user_ids,
+                          approvalsMeta: approvalState?.approvals_meta,
+                          currentUserHasActedOnApproval,
+                          approvalLoading
+                        });
+                        return (
+                          <TaskActionBar
+                            taskId={task.id}
+                            currentStatus={task.status}
+                            permissions={taskPerms}
+                            userDepartment={user?.department}
+                            taskDepartment={task.department}
+                            workflowType={task.workflow_type}
+                            userRole={user?.role}
+                            isAssignee={isCurrentUserAssignee}
+                            currentUserId={user?.id}
+                            createdByUserId={task.created_by_id}
+                            reportedById={task.reported_by_id}
+                            approvalRequiredUserIds={task.approval_required_user_ids}
+                            approvalsMeta={approvalState?.approvals_meta}
+                            currentUserHasActedOnApproval={currentUserHasActedOnApproval}
+                            approvalLoading={approvalLoading}
+                            onStatusAction={handleStatusActionClick}
+                            onQuickAction={handleQuickAction}
+                            disabled={statusActionLoading}
+                            align="top"
+                          />
+                        );
+                      })()}
                       {isModal && (
                         <button type="button" className="tv-icon-btn" onClick={handleBack} aria-label="Close">
                           <FiX />
