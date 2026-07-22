@@ -9,6 +9,7 @@ import {
   toggleNotificationSound,
   isSoundEnabled,
 } from '../utils/notifications/audio';
+import { dispatchAppNotification } from '../utils/notifications/events';
 
 const NotificationContext = createContext(null);
 
@@ -19,6 +20,7 @@ export const NotificationProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(false);
   const handlersRef = useRef({ onNew: null, onUnread: null });
+  const liveSeenIdsRef = useRef(new Set());
 
   const getToken = useCallback(() => {
     const storedToken =
@@ -35,15 +37,18 @@ export const NotificationProvider = ({ children }) => {
 
   const handleNewNotification = useCallback((notification) => {
     if (!notification?.id) return;
+    if (liveSeenIdsRef.current.has(notification.id)) return;
+    liveSeenIdsRef.current.add(notification.id);
 
     setNotifications((prev) => {
       if (prev.some((n) => n.id === notification.id)) return prev;
       return [notification, ...prev];
     });
-
-    // Prefer authoritative unread_count event; bump only as optimistic fallback
     setUnreadCount((prev) => prev + 1);
     playNotificationSound();
+
+    // Notify mounted list pages / modules (auto-refresh, etc.)
+    dispatchAppNotification(notification);
 
     if ('Notification' in window && Notification.permission === 'granted') {
       try {
@@ -78,6 +83,7 @@ export const NotificationProvider = ({ children }) => {
       notificationSocket.off('new_notification', handlersRef.current.onNew);
       notificationSocket.off('unread_count', handlersRef.current.onUnread);
       notificationSocket.disconnect();
+      liveSeenIdsRef.current.clear();
       setNotifications([]);
       setUnreadCount(0);
       return undefined;

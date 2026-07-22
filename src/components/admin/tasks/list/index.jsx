@@ -23,7 +23,7 @@ import {
   TASK_PROJECT_PROGRAM_OPTIONS,
 } from '../shared/taskFilterOptions';
 
-const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
+const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permissions } = useAuth();
@@ -70,6 +70,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   const [approvalsLoaded, setApprovalsLoaded] = useState(false);
   const [hasInteractedWithApprovals, setHasInteractedWithApprovals] = useState(false);
   const [showApprovalBanner, setShowApprovalBanner] = useState(false);
+  const [taskRefreshNonce, setTaskRefreshNonce] = useState(0);
 
   const currentUserId = user?.id ? Number(user.id) : null;
 
@@ -409,82 +410,95 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange }) => {
   }, [approvalTasks.length, activeTab, approvalsLoaded]);
 
   // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
-  useEffect(() => {
-    const fetchTasks = async () => {
-      setLoading(true);
-      setError('');
-      try {
-        const scopedFilters = {
-          ...filters,
-          department: filters.department
-        };
+  const fetchTasks = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const scopedFilters = {
+        ...filters,
+        department: filters.department
+      };
 
-        // Always use strict backend filtering if a department is selected in the dropdown.
-        // This ensures that clicking "Program Tasks" in sidebar OR selecting "Program" from dropdown
-        // shows ONLY tasks belonging to that department.
-        const isStrictFilter = !!scopedFilters.department;
+      // Always use strict backend filtering if a department is selected in the dropdown.
+      // This ensures that clicking "Program Tasks" in sidebar OR selecting "Program" from dropdown
+      // shows ONLY tasks belonging to that department.
+      const isStrictFilter = !!scopedFilters.department;
 
-        const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
+      const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
 
-        // Check if user-applied search filters are active
-        const hasUserAppliedFilters =
-          filters.search ||
-          filters.status ||
-          filters.priority ||
-          assigneeId;
+      // Check if user-applied search filters are active
+      const hasUserAppliedFilters =
+        filters.search ||
+        filters.status ||
+        filters.priority ||
+        assigneeId;
 
-        let res;
+      let res;
 
-        if (hasUserAppliedFilters) {
-          // Use POST /tasks/search when user applies search/status/priority/user filters
-          const payload = {
-            pagination: { page: currentPage, pageSize, sortField, sortOrder },
-            filters: {
-              ...scopedFilters,
-              assignee_id: assigneeId,
-            },
-            strictDepartment: isStrictFilter
-          };
-          res = await axiosInstance.post('/tasks/search', payload);
-        } else {
-          // Use GET /tasks/list for default loading
-          const params = {
-            page: currentPage,
-            pageSize,
-            sortField,
-            sortOrder,
-            department: scopedFilters.department || undefined,
+      if (hasUserAppliedFilters) {
+        // Use POST /tasks/search when user applies search/status/priority/user filters
+        const payload = {
+          pagination: { page: currentPage, pageSize, sortField, sortOrder },
+          filters: {
+            ...scopedFilters,
             assignee_id: assigneeId,
-            strictDepartment: isStrictFilter
-          };
-          res = await axiosInstance.get('/tasks/list', { params });
-        }
-
-        const list = res.data.data || [];
-        setTasks(list);
-        setTotalItems(res.data.pagination?.total || 0);
-        setTotalPages(res.data.pagination?.totalPages || Math.ceil(totalItems / pageSize));
-        if (res.data.categoryCounts) {
-          setCategoryCounts(res.data.categoryCounts);
-        }
-      } catch (e) {
-        setError(e.response?.data?.message || 'Failed to fetch tasks.');
-      } finally {
-        setLoading(false);
+          },
+          strictDepartment: isStrictFilter
+        };
+        res = await axiosInstance.post('/tasks/search', payload);
+      } else {
+        // Use GET /tasks/list for default loading
+        const params = {
+          page: currentPage,
+          pageSize,
+          sortField,
+          sortOrder,
+          department: scopedFilters.department || undefined,
+          assignee_id: assigneeId,
+          strictDepartment: isStrictFilter
+        };
+        res = await axiosInstance.get('/tasks/list', { params });
       }
-    };
+
+      const list = res.data.data || [];
+      setTasks(list);
+      setTotalItems(res.data.pagination?.total || 0);
+      setTotalPages(res.data.pagination?.totalPages || Math.ceil((res.data.pagination?.total || 0) / pageSize));
+      if (res.data.categoryCounts) {
+        setCategoryCounts(res.data.categoryCounts);
+      }
+    } catch (e) {
+      setError(e.response?.data?.message || 'Failed to fetch tasks.');
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    currentPage,
+    pageSize,
+    sortField,
+    sortOrder,
+    filters.search,
+    filters.department,
+    filters.project_name,
+    filters.status,
+    filters.priority,
+    assignedUser?.id,
+    taskPerms.reportScope,
+    user?.department,
+  ]);
+
+  useEffect(() => {
     fetchTasks();
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id, taskPerms.reportScope, user?.department]);
+  }, [fetchTasks, taskRefreshNonce, refreshNonce]);
+
+  useEffect(() => {
+    fetchApprovals();
+  }, [fetchApprovals, refreshNonce]);
 
   // Reset approvalsLoaded when we navigate to this page to refresh data
   useEffect(() => {
     setApprovalsLoaded(false);
   }, [location.pathname]);
-
-  // Load approvals immediately for all logged-in users
-  useEffect(() => {
-    fetchApprovals();
-  }, [fetchApprovals]);
 
   const handleFilterChange = (key, value) => {
     if (key === 'search') {

@@ -28,7 +28,7 @@ import {
 } from './taskBoardConfig';
 import './index.css';
 
-const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
+const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) => {
   const { user, permissions } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -245,7 +245,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange }) => {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]);
+  }, [fetchTasks, refreshNonce]);
 
   const canChangeStatus = useCallback(
     (task) => {

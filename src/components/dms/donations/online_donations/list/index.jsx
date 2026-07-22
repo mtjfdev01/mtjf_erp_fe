@@ -14,9 +14,11 @@ import SearchableDropdown from '../../../../common/SearchableDropdown';
 import { getDate, getTime } from '../../../../../utils/functions';
 import usePersistedFilters from '../../../../../hooks/usePersistedFilters';
 import useOfflineDataRefresh from '../../../../../hooks/useOfflineDataRefresh';
+import useNotificationListRefresh from '../../../../../hooks/useNotificationListRefresh';
 import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
 import useListRowSelection from '../../../../../hooks/useListRowSelection';
 import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
+import { NotificationRefreshPresets } from '../../../../../utils/notifications/events';
 
 import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
@@ -249,6 +251,12 @@ const OnlineDonationsList = () => {
     sortOrder,
     appliedFilters,
   ]);
+
+  // Live donation attempt notification → refresh list while this page is open
+  useNotificationListRefresh(() => fetchDonations(), {
+    ...NotificationRefreshPresets.donations,
+    deps: [currentPage, pageSize, sortField, sortOrder, appliedFilters],
+  });
 
   const fetchDonations = async () => {
     try {
