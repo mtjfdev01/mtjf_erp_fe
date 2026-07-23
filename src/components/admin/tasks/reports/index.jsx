@@ -2621,8 +2621,11 @@ const TaskReports = () => {
                 </div>
                 {/* ========== Reports Grid ========== */}
                 <div className="task-dashboard-reports-grid">
-                  {/* Project/Program-wise Task Report */}
-                  <ProjectProgramWiseReport projects={taskAggregates.projects} />
+                  {/* Project/Program-wise Task Report — hide for fund raising & super admin */}
+                  {String(user?.department || '').toLowerCase() !== 'fund_raising' &&
+                    String(user?.role || '').toLowerCase() !== 'super_admin' && (
+                      <ProjectProgramWiseReport projects={taskAggregates.projects} />
+                    )}
                   {/* User-wise Task Report */}
                   <div className="task-report-card task-report-card--user-report">
                     <div className="task-report-card-header task-report-card-header--with-filter" ref={userReportHeaderRef}>

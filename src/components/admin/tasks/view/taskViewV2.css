@@ -104,6 +104,65 @@
   border-color: #e2e8f0;
 }
 
+.tv-quick-actions-dropdown {
+  position: relative;
+  display: inline-flex;
+}
+
+.tv-quick-actions-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  line-height: 1.2;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.tv-quick-actions-toggle:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.tv-quick-actions-toggle__chevron {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.tv-quick-actions-toggle__chevron--open {
+  transform: rotate(180deg);
+}
+
+.tv-quick-actions-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 220px;
+  padding: 0.45rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.1);
+}
+
+.tv-quick-actions-menu .tv-quick-action-chip {
+  width: 100%;
+  justify-content: flex-start;
+}
+
 .tv-quick-action-chip {
   display: inline-flex;
   align-items: center;
@@ -236,12 +295,19 @@
 
 .tv-header-actions .task-action-bar {
   flex-wrap: nowrap;
+  gap: 0.5rem;
+  margin-bottom: 0;
 }
 
+/* Keep Approve/Reject (and other status actions) visible on desktop header */
 .tv-header-actions .task-action-bar-primary {
-  display: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
 }
 
+/* Quick actions live in the header badge dropdown — hide the duplicate toggle here */
 .tv-header-actions .task-action-bar-secondary {
   display: none;
 }

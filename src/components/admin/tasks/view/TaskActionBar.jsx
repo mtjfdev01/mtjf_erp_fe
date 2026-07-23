@@ -208,17 +208,17 @@ const TaskActionBar = ({
     setIsFabMenuOpen(false);
   };
 
-  console.log('TaskActionBar debug info:', {
-    availableButtons,
-    visibleQuickActions,
-    approvalLoading,
-    normalizedStatus,
-    normalizedWorkflow,
-    availabilityContext,
-    permissions,
-    userRole,
-    isAssignee
-  });
+  // console.log('TaskActionBar debug info:', {
+  //   availableButtons,
+  //   visibleQuickActions,
+  //   approvalLoading,
+  //   normalizedStatus,
+  //   normalizedWorkflow,
+  //   availabilityContext,
+  //   permissions,
+  //   userRole,
+  //   isAssignee
+  // });
 
   const containerClass =
     align === 'bottom'

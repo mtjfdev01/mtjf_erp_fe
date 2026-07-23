@@ -30,6 +30,7 @@ import './TaskViewModal.css';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import {
   FiCalendar,
+  FiChevronDown,
   FiChevronRight,
   FiClock,
   FiFileText,
@@ -495,6 +496,7 @@ const ViewTask = ({
   const [statusActionLoading, setStatusActionLoading] = useState(false);
 
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
+  const [quickActionsDropdownOpen, setQuickActionsDropdownOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [quickActionKey, setQuickActionKey] = useState(null);
   const [currentUserHasActedOnApproval, setCurrentUserHasActedOnApproval] =
@@ -889,6 +891,7 @@ const ViewTask = ({
   const handleQuickAction = (key) => {
     console.log('index.jsx handleQuickAction called with key:', key);
     console.log('quickActionOpen before:', quickActionOpen);
+    setQuickActionsDropdownOpen(false);
     setQuickActionKey(key);
     setQuickActionOpen(true);
     console.log('quickActionOpen after:', quickActionOpen);
@@ -1288,26 +1291,64 @@ const ViewTask = ({
                           {capitalize(task.priority || 'medium')}
                         </span>
                         <span className="tv-badge tv-badge--id">{formatTaskId(task)}</span>
-                        {availableQuickActions.map((key) => {
-                          const ActionIcon = QUICK_ACTION_ICON_MAP[key] || FiCalendar;
-                          return (
+                        {availableQuickActions.length > 0 && (
+                          <div className="tv-quick-actions-dropdown">
                             <button
-                              key={key}
                               type="button"
-                              className={`tv-quick-action-chip tv-quick-action-chip--${key.toLowerCase()}`}
-                              onClick={() => handleQuickAction(key)}
-                              title={QUICK_ACTION_LABEL_MAP[key]}
+                              className="tv-quick-actions-toggle"
+                              onClick={() =>
+                                setQuickActionsDropdownOpen((prev) => !prev)
+                              }
+                              aria-expanded={quickActionsDropdownOpen}
+                              aria-haspopup="menu"
                             >
-                              <span className="tv-quick-action-chip__icon" aria-hidden="true">
-                                <ActionIcon />
-                              </span>
-                              <span className="tv-quick-action-chip__label">
-                                {QUICK_ACTION_LABEL_MAP[key]}
-                              </span>
-                              <FiChevronRight className="tv-quick-action-chip__chevron" aria-hidden="true" />
+                              Quick Actions
+                              <FiChevronDown
+                                className={`tv-quick-actions-toggle__chevron${
+                                  quickActionsDropdownOpen
+                                    ? ' tv-quick-actions-toggle__chevron--open'
+                                    : ''
+                                }`}
+                                aria-hidden="true"
+                              />
                             </button>
-                          );
-                        })}
+                            {quickActionsDropdownOpen && (
+                              <div
+                                className="tv-quick-actions-menu"
+                                role="menu"
+                              >
+                                {availableQuickActions.map((key) => {
+                                  const ActionIcon =
+                                    QUICK_ACTION_ICON_MAP[key] || FiCalendar;
+                                  return (
+                                    <button
+                                      key={key}
+                                      type="button"
+                                      role="menuitem"
+                                      className={`tv-quick-action-chip tv-quick-action-chip--${key.toLowerCase()}`}
+                                      onClick={() => handleQuickAction(key)}
+                                      title={QUICK_ACTION_LABEL_MAP[key]}
+                                    >
+                                      <span
+                                        className="tv-quick-action-chip__icon"
+                                        aria-hidden="true"
+                                      >
+                                        <ActionIcon />
+                                      </span>
+                                      <span className="tv-quick-action-chip__label">
+                                        {QUICK_ACTION_LABEL_MAP[key]}
+                                      </span>
+                                      <FiChevronRight
+                                        className="tv-quick-action-chip__chevron"
+                                        aria-hidden="true"
+                                      />
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className="tv-header-actions">

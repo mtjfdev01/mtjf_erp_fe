@@ -90,7 +90,7 @@ const PageHeader = ({
             <FaFilter />
           </button>
         )}
-        {showFilterToggle && onRefresh && (
+        {onRefresh && (
           <RefreshButton
             variant="header"
             onClick={onRefresh}

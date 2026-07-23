@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -8,6 +8,8 @@ import Pagination from '../../../common/Pagination';
 import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
+import { useAuth } from '../../../../context/AuthContext';
+import { hasPermission } from '../../../../utils/permissions';
 import { FiEye, FiRepeat } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
@@ -26,6 +28,7 @@ const INTERVAL_OPTIONS = [
 
 const RecurringDonationsList = () => {
   const navigate = useNavigate();
+  const { permissions } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -38,6 +41,16 @@ const RecurringDonationsList = () => {
   const [sortOrder, setSortOrder] = useState('DESC');
   const [tempFilters, setTempFilters] = useState({ search: '', status: '', billing_interval: '' });
   const [appliedFilters, setAppliedFilters] = useState({ search: '', status: '', billing_interval: '' });
+
+  const canList = useMemo(() => {
+    if (!permissions) return null;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
+    );
+  }, [permissions]);
 
   const handleFilterChange = (key, value) => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
@@ -137,6 +150,22 @@ const RecurringDonationsList = () => {
       visible: true,
     },
   ];
+
+  if (canList === null) {
+    return (
+      <>
+        <Navbar />
+        <div className="list-wrapper">
+          <PageHeader
+            onRefresh={fetchRows}
+            refreshing={loading}
+            title="Recurring Donations"
+          />
+          <div className="loading">Loading...</div>
+        </div>
+      </>
+    );
+  }
 
   if (!canList) {
     return (

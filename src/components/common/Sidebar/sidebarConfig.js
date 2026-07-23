@@ -391,7 +391,6 @@ const adminDepartmentItems = () => [
       {label: "Campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
       {label: "Appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
       {label: "Social Media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
-      {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", icon: FiRepeat},
       {label: "Reconciliation", path: "/dms/reconciliation/list", type: "list", icon: FiRefreshCw},
       {label: "Donor Relationship", path: "/dms/donor-relationship/follow-ups", type: "list", icon: FiUsers}
     ]

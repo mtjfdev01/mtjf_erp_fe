@@ -426,36 +426,37 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
       const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
 
-      // Check if user-applied search filters are active
+      // Department / project are user filters too — must hit search (or list with full params)
       const hasUserAppliedFilters =
         filters.search ||
         filters.status ||
         filters.priority ||
+        filters.department ||
+        filters.project_name ||
         assigneeId;
 
       let res;
 
       if (hasUserAppliedFilters) {
-        // Use POST /tasks/search when user applies search/status/priority/user filters
         const payload = {
           pagination: { page: currentPage, pageSize, sortField, sortOrder },
           filters: {
             ...scopedFilters,
             assignee_id: assigneeId,
           },
-          strictDepartment: isStrictFilter
+          strictDepartment: isStrictFilter,
         };
         res = await axiosInstance.post('/tasks/search', payload);
       } else {
-        // Use GET /tasks/list for default loading
         const params = {
           page: currentPage,
           pageSize,
           sortField,
           sortOrder,
           department: scopedFilters.department || undefined,
+          project_name: scopedFilters.project_name || undefined,
           assignee_id: assigneeId,
-          strictDepartment: isStrictFilter
+          strictDepartment: isStrictFilter,
         };
         res = await axiosInstance.get('/tasks/list', { params });
       }

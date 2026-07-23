@@ -9,7 +9,7 @@ const ProfileRedirect = () => {
     return <Navigate to="/welcome" replace />;
   }
 
-  return <Navigate to={`/users/${user.id}`} replace />;
+  return <Navigate to={`/users/${user.id}/performance`} replace />;
 };
 
 export default ProfileRedirect;
