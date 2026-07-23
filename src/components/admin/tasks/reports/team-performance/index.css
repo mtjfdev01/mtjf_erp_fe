@@ -728,7 +728,7 @@
 /* Large desktops (≥ 1440px) – more breathing room */
 @media (min-width: 1440px) {
   .team-perf-card {
-    padding: 2rem;
+    padding: 1rem;
   }
   .team-perf-grid {
     gap: 1.5rem;

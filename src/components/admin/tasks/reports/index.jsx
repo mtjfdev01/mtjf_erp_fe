@@ -790,7 +790,7 @@ const TaskReports = () => {
   const { user, permissions } = useAuth();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
-  const [viewType, setViewType] = useState("assigned"); // Default to assigned tasks for reports
+  const [viewType, setViewType] = useState("all"); // Default to all tasks for reports
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [taskStats, setTaskStats] = useState(null);
   const [taskStatsLoading, setTaskStatsLoading] = useState(false);
@@ -1031,14 +1031,15 @@ const TaskReports = () => {
     const closed = breakdown.closed || 0;
     const rejected = breakdown.rejected || 0;
     const cancelled = breakdown.cancelled || 0;
-    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'approved', 'completed', 'rejected', 'cancelled']);
+    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'rejected', 'cancelled']);
     const ended = closed;
     const completionRate = taskStats?.completion_rate || 0;
     const overdue = taskStats?.overdue_tasks || 0;
-    const progressCompleted = closed;
-    const progressInProgress = inProgress + pendingApproval + approved + completed;
+    const progressCompleted = closed + completed;
+    const progressInProgress = inProgress + pendingApproval;
     const progressNotStarted = open + draft;
-    const active = open + inProgress + pendingApproval + approved + completed;
+    const active = open + inProgress + pendingApproval;
+    const completedTasks = completed + closed;
     const completedTotal = closed;
     return {
       total,
@@ -1059,7 +1060,8 @@ const TaskReports = () => {
       completedTotal,
       progressCompleted,
       progressInProgress,
-      progressNotStarted
+      progressNotStarted,
+      completedTasks
     };
   }, [taskStats]);
 
@@ -2280,105 +2282,87 @@ const TaskReports = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [showFilterPopover]);
-
-  const filterButtonElement = (
-    <div style={{ position: 'relative' }}>
-      <button
-        ref={filterButtonRef}
-        className="task-filter-button"
-        onClick={() => setShowFilterPopover(!showFilterPopover)}
+  const filterElement = (
+  <div className="task-dashboard-filters">
+    <div className="task-filter-group">
+      <span className="task-filter-label">Duration</span>
+      <select
+        className="task-filter-select"
+        value={duration}
+        onChange={(e) => setDuration(e.target.value)}
       >
-        <span className="task-filter-button-icon">🔍</span>
-        <span className="task-filter-button-text">Filters</span>
-      </button>
-      {showFilterPopover && (
-        <div ref={filterPopoverRef} className="task-filter-popover">
-          <div className="task-filter-popover-content">
-            <div className="task-filter-popover-header">
-              <h3 className="task-filter-popover-title">Dashboard Filters</h3>
-              <button
-                className="task-filter-popover-close"
-                onClick={() => setShowFilterPopover(false)}
-              >
-                ×
-              </button>
-            </div>
-            <div className="task-filter-popover-body">
-              <div className="task-filter-group">
-                <span className="task-filter-label">Duration</span>
-                <select
-                  className="task-filter-select"
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                >
-                  <option value="today">Today</option>
-                  <option value="yesterday">Yesterday</option>
-                  <option value="this_week">This Week</option>
-                  <option value="last_week">Last Week</option>
-                  <option value="this_month">This Month</option>
-                  <option value="last_month">Last Month</option>
-                  <option value="this_year">This Year</option>
-                  <option value="last_year">Last Year</option>
-                </select>
-              </div>
+        <option value="today">Today</option>
+        <option value="yesterday">Yesterday</option>
+        <option value="this_week">This Week</option>
+        <option value="last_week">Last Week</option>
+        <option value="this_month">This Month</option>
+        <option value="last_month">Last Month</option>
+        <option value="this_year">This Year</option>
+        <option value="last_year">Last Year</option>
+      </select>
+    </div>
 
-              {!rolePerms.isAdmin && (
-                <div className="task-filter-group">
-                  <span className="task-filter-label">Tasks</span>
-                  <select
-                    className="task-filter-select"
-                    value={viewType}
-                    onChange={(e) => setViewType(e.target.value)}
-                  >
-                    <option value="all">All Tasks</option>
-                    <option value="created">Created by You</option>
-                    <option value="assigned">Assigned to You</option>
-                    <option value="assigned_to_team">Assigned to Team</option>
-                    <option value="approval_tasks">Approval Tasks</option>
-                  </select>
-                </div>
-              )}
+    {!rolePerms.isAdmin && (
+      <div className="task-filter-group">
+        <span className="task-filter-label">Tasks</span>
+        <select
+          className="task-filter-select"
+          value={viewType}
+          onChange={(e) => setViewType(e.target.value)}
+        >
+          <option value="all">All Tasks</option>
+          <option value="created">Created by You</option>
+          <option value="assigned">Assigned to You</option>
+          <option value="assigned_to_team">Assigned to Team</option>
+          <option value="approval_tasks">Approval Tasks</option>
+        </select>
+      </div>
+    )}
 
-              {(rolePerms.isAdmin || rolePerms.scope === 'org') && isGeneralAdminDashboard && (
-                <div className="task-filter-group">
-                  <span className="task-filter-label">Department</span>
-                  <select
-                    className="task-filter-select"
-                    value={selectedDepartment}
-                    onChange={(e) => setSelectedDepartment(e.target.value)}
-                  >
-                    <option value="">All Departments</option>
-                    {Array.isArray(departments) &&
-                      departments.map((d) => (
-                        <option key={d} value={d}>
-                          {String(d || '')
-                            .split('_')
-                            .filter(Boolean)
-                            .map((w) => w[0].toUpperCase() + w.slice(1))
-                            .join(' ')}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-              )}
-
-              {(rolePerms.isAdmin || user?.role === 'manager' || user?.role === 'dept_head' || user?.role === 'team_lead') && (
-                <div className="task-filter-group">
-                  <span className="task-filter-label">View Mode</span>
-                  <button
-                    className={`task-filter-toggle-btn ${showTeamPerformance ? 'active' : ''}`}
-                    onClick={() => setShowTeamPerformance(!showTeamPerformance)}
-                  >
-                    {showTeamPerformance ? '📊 Main Dashboard' : '👥 Team Performance'}
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
+    {(rolePerms.isAdmin || rolePerms.scope === "org") &&
+      isGeneralAdminDashboard && (
+        <div className="task-filter-group">
+          <span className="task-filter-label">Department</span>
+          <select
+            className="task-filter-select"
+            value={selectedDepartment}
+            onChange={(e) => setSelectedDepartment(e.target.value)}
+          >
+            <option value="">All Departments</option>
+            {Array.isArray(departments) &&
+              departments.map((d) => (
+                <option key={d} value={d}>
+                  {String(d || "")
+                    .split("_")
+                    .filter(Boolean)
+                    .map((w) => w[0].toUpperCase() + w.slice(1))
+                    .join(" ")}
+                </option>
+              ))}
+          </select>
         </div>
       )}
-    </div>
-  );
+
+    {(rolePerms.isAdmin ||
+      user?.role === "manager" ||
+      user?.role === "dept_head" ||
+      user?.role === "team_lead") && (
+      <div className="task-filter-group">
+        <span className="task-filter-label">View Mode</span>
+        <button
+          className={`task-filter-toggle-btn ${
+            showTeamPerformance ? "active" : ""
+          }`}
+          onClick={() => setShowTeamPerformance(!showTeamPerformance)}
+        >
+          {showTeamPerformance
+            ? "Main Dashboard"
+            : "Team Performance"}
+        </button>
+      </div>
+    )}
+  </div>
+);
 
   return (
     <>
@@ -2386,7 +2370,7 @@ const TaskReports = () => {
       <Loader loading={taskStatsLoading} />
       {!taskStatsLoading && (
         <div className="task-report-container">
-          <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterButtonElement} />
+          <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterElement} />
           <div className="task-dashboard-shell">
             <div className="task-dashboard-layout">
               <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
@@ -2419,16 +2403,16 @@ const TaskReports = () => {
                         </div>
                         <div className="task-stat-card task-stat-card--pending task-stat-card--active">
                           <FaHourglassHalf className="task-stat-icon--pending task-stat-icon" />
-                          <div className="task-stat-label">Pending Tasks</div>
+                          <div className="task-stat-label">Total Pending</div>
                           <div className="task-stat-value">
                             {statsSummary.pending}
                           </div>
                         </div>
                         <div className="task-stat-card task-stat-card--completed">
                           <FaCheck className="task-stat-icon--completed task-stat-icon" />
-                          <div className="task-stat-label">Completed Tasks</div>
+                          <div className="task-stat-label">Total Completed</div>
                           <div className="task-stat-value">
-                            {statsSummary.completed}
+                          {statsSummary.completedTasks}
                           </div>
                         </div>
                         <div className="task-stat-card task-stat-card--overdue">
