@@ -173,6 +173,9 @@ const ViewCampaign = () => {
       : 'Off';
   }
 
+  campaignInfo.Program = campaign.program?.label || '—';
+  campaignInfo.Subprogram = campaign.sub_program?.label || '—';
+
   return (
     <>
       <Navbar />

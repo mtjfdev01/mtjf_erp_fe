@@ -13,7 +13,8 @@ const RefreshButton = ({
 }) => {
   const handleClick = (e) => {
     e.preventDefault();
-    if (onClick && !disabled && !loading) {
+    e.stopPropagation();
+    if (onClick && !disabled) {
       onClick();
     }
   };
@@ -25,7 +26,7 @@ const RefreshButton = ({
       type="button"
       className={`refresh-button refresh-button--${variant} ${loading ? 'refresh-button--loading' : ''} ${className}`.trim()}
       onClick={handleClick}
-      disabled={disabled || loading}
+      disabled={disabled}
       title={title}
       aria-label={title}
     >

@@ -302,6 +302,7 @@ const CampaignsList = () => {
                   <th>Title</th>
                   <th>Status</th>
                   <th>Type</th>
+                  <th>Program</th>
                   <th>Frequency</th>
                   <th>Goal / Target</th>
                   <th>Currency</th>
@@ -314,7 +315,7 @@ const CampaignsList = () => {
               <tbody>
                 {campaigns.length === 0 ? (
                   <tr>
-                    <td colSpan="10" className="no-data">No campaigns found</td>
+                    <td colSpan="11" className="no-data">No campaigns found</td>
                   </tr>
                 ) : (
                   campaigns.map((campaign) => (
@@ -336,6 +337,11 @@ const CampaignsList = () => {
                         ) : (
                           'One-time'
                         )}
+                      </td>
+                      <td>
+                        {campaign.sub_program?.label
+                          ? `${campaign.program?.label || 'Program'} / ${campaign.sub_program.label}`
+                          : campaign.program?.label || '—'}
                       </td>
                       <td>{campaign.is_recurring ? formatTargetFrequency(campaign.target_frequency) : '—'}</td>
                       <td>

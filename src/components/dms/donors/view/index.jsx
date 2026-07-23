@@ -260,7 +260,18 @@ const ViewDonor = () => {
   const isCsr = donor.donor_type === 'csr';
   const typeLabel = getDonorTypeLabel(donor.donor_type);
   const typeBadgeClass = `donor-profile-type-badge${isCsr ? ' donor-profile-type-badge--csr' : ''}`;
-  const stats = donor.donation_stats || {};
+  const stats = {
+    total_donations:
+      donor.donation_stats?.total_donations ?? donor.donation_count ?? 0,
+    total_donated:
+      donor.donation_stats?.total_donated ?? donor.total_donated ?? 0,
+    currency:
+      donor.donation_stats?.currency ||
+      donor.donation_stats?.last_donation?.currency ||
+      'PKR',
+    first_donation: donor.donation_stats?.first_donation || null,
+    last_donation: donor.donation_stats?.last_donation || null,
+  };
   const currency = stats.currency || stats.last_donation?.currency || 'PKR';
   const recurringActive = !!donor.recurring;
   const addressText = [donor.address, donor.city, donor.country, donor.postal_code]

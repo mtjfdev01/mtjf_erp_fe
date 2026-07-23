@@ -69,6 +69,7 @@ const DonationBoxList = () => {
 
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [listRefreshNonce, setListRefreshNonce] = useState(0);
 
   const [tempFilters, setTempFilters, clearTempFilters] = usePersistedFilters(
     'donation-box-list:temp',
@@ -97,8 +98,7 @@ const DonationBoxList = () => {
       setAppliedFilters(tempFilters);
       setCurrentPage(1);
     } else {
-      // If filters haven't changed, force refresh by calling fetchDonationBoxes
-      fetchDonationBoxes();
+      handleRefresh();
     }
   };
 
@@ -174,7 +174,9 @@ const DonationBoxList = () => {
 
   useEffect(() => {
     fetchDonationBoxes();
-  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
+  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters, listRefreshNonce]);
+
+  const handleRefresh = () => setListRefreshNonce((n) => n + 1);
 
   const buildListParams = () => {
     const params = {
@@ -387,7 +389,7 @@ const DonationBoxList = () => {
         <Navbar />
         <div className="list-wrapper">
           <PageHeader
-          onRefresh={fetchDonationBoxes}
+          onRefresh={handleRefresh}
           refreshing={loading} 
             title="Donation Boxes" 
             showBackButton={false} 
@@ -405,7 +407,7 @@ const DonationBoxList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
-          onRefresh={fetchDonationBoxes}
+          onRefresh={handleRefresh}
           refreshing={loading}
           title="Donation Boxes"
           showBackButton={false}

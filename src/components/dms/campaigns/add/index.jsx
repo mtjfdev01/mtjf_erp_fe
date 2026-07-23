@@ -9,6 +9,7 @@ import Navbar from '../../../Navbar';
 import { TARGET_FREQUENCY_OPTIONS, emptyCommunicationTemplates, communicationTemplatesToApi } from '../campaignConstants';
 import CampaignCommunicationSection from '../CampaignCommunicationSection';
 import CampaignDonationItemsSection from '../CampaignDonationItemsSection';
+import CampaignProgramFields, { parseOptionalCampaignId } from '../CampaignProgramFields';
 
 const AddCampaign = () => {
   const navigate = useNavigate();
@@ -26,7 +27,9 @@ const AddCampaign = () => {
     is_recurring: false,
     target_frequency: 'monthly',
     monthly_donor_automation_enabled: false,
-    communication_templates: emptyCommunicationTemplates()
+    communication_templates: emptyCommunicationTemplates(),
+    program_id: '',
+    sub_program_id: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -86,6 +89,8 @@ const AddCampaign = () => {
         communication_templates: form.is_recurring
           ? communicationTemplatesToApi(form.communication_templates)
           : null,
+        program_id: parseOptionalCampaignId(form.program_id),
+        sub_program_id: parseOptionalCampaignId(form.sub_program_id),
         donation_items: donationItems.map(
           ({ name, description, unit_price, currency, sort_order, is_active }) => ({
             name,
@@ -231,6 +236,17 @@ const AddCampaign = () => {
             onDraftItemsChange={setDonationItems}
             defaultCurrency={form.currency || 'PKR'}
             isRecurring={form.is_recurring}
+          />
+
+          <CampaignProgramFields
+            programId={form.program_id}
+            subProgramId={form.sub_program_id}
+            onProgramChange={(value) =>
+              setForm((prev) => ({ ...prev, program_id: value }))
+            }
+            onSubProgramChange={(value) =>
+              setForm((prev) => ({ ...prev, sub_program_id: value }))
+            }
           />
 
           <div className="form-section">

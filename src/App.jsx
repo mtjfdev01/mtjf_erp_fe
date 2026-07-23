@@ -23,6 +23,7 @@ import { InKindItemsProvider } from './context/InKindItemsContext';
 import { NotificationProvider } from './context/NotificationContext';
 import Sidebar from './components/common/Sidebar/Sidebar';
 import UserView from './components/admin/user/UserView';
+import UserPerformance from './components/admin/user/UserPerformance';
 import ProfileRedirect from './components/profile/ProfileRedirect';
 import ApplicationReportsList from './components/program/applications_report/application_reports_list';
 import CreateApplicationReport from './components/program/applications_report/create_application_report';
@@ -244,6 +245,7 @@ const App = () => {
                                 <Route path="/admin/users/edit/:id" element={<UpdateUser />} />
                                 <Route path="/profile" element={<ProfileRedirect />} />
                                 <Route path="/users/:id" element={<UserView />} />
+                                <Route path="/users/:id/performance" element={<UserPerformance />} />
                                 
                                 {/* Store Report Routes - Nested under /store */}
                                 <Route path="/store/reports/add" element={<AddStoreReport />} />

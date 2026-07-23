@@ -1159,14 +1159,16 @@ const ViewOnlineDonation = () => {
 
           <div className="view-section">
             <h3 className="view-section-title">Donor Information</h3>
-            <div className="view-grid">
+            <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
               <div className="view-item">
                 <span className="view-item-label">Name</span>
                 <span className="view-item-value">{donation?.donor?.name || 'Anonymous'}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Email</span>
-                <span className="view-item-value">{donation?.donor?.email || '-'}</span>
+                <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
+                  {donation?.donor?.email || '-'}
+                </span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Phone</span>

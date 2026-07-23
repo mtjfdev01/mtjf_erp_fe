@@ -205,7 +205,9 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
     try {
       const taskSearch = searchInput.trim() || undefined;
       const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
-      const hasServerFilters = taskSearch || assigneeId || departmentFilter || projectFilter;
+      const hasServerFilters =
+        taskSearch || assigneeId || departmentFilter || projectFilter;
+      const isStrictFilter = Boolean(departmentFilter);
 
       let res;
       if (hasServerFilters) {
@@ -222,6 +224,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
             department: departmentFilter || undefined,
             project_name: projectFilter || undefined,
           },
+          strictDepartment: isStrictFilter,
         });
       } else {
         res = await axiosInstance.get('/tasks/list', {
@@ -232,6 +235,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
             sortOrder: 'DESC',
             department: departmentFilter || undefined,
             project_name: projectFilter || undefined,
+            strictDepartment: isStrictFilter,
           },
         });
       }
