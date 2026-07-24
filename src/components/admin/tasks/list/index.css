@@ -1372,9 +1372,9 @@
 .tl-scope-switch {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 10px;
+  gap: 8px;
+  padding: 3px 8px;
+  border-radius: 6px;
   background: #f1f5f9;
   border: 1px solid #e2e8f0;
   min-width: 0;
@@ -1385,9 +1385,9 @@
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.75rem;
   height: 32px;
-  padding: 0 0.55rem;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 8px;
   background: transparent;
@@ -1453,8 +1453,9 @@
   color: #16a34a;
 }
 
-.tl-scope-switch__btn.is-active .tl-scope-switch__count {
-  background: currentColor;
+
+.tl-scope-switch__btn.approval .tl-scope-switch__count {
+  /* background:#2563EB; */
   color: #fff;
 }
 
@@ -1477,6 +1478,7 @@
 
 .tl-tasks-filter-main .refresh-button--inline {
   flex-shrink: 0;
+  height: 35px;
 }
 
 .tl-filter-item {
@@ -1487,7 +1489,7 @@
   border: 1px solid #e0e4e9;
   border-radius: 8px;
   padding: 0 6px;
-  height: 40px;
+  height: 35px;
   gap: 6px;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
@@ -1542,7 +1544,7 @@
   background: #ffffff;
   border: 1px solid #e0e4e9;
   padding: 0 20px;
-  height: 40px;
+  height: 35px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
@@ -1646,7 +1648,7 @@
 
   .tl-filter-clear-btn {
     flex: 1 1 100%;
-    height: 38px;
+    height: 35px;
     margin-top: 0;
   }
 
