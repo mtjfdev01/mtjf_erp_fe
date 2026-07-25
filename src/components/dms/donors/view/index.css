@@ -556,7 +556,7 @@
   gap: 0.85rem;
   position: sticky;
   top: 5rem;
-  max-height: calc(100vh - 5.5rem);
+  /* max-height: calc(100vh - 5.5rem); */
   overflow-y: auto;
   padding-right: 2px;
   min-width: 0;

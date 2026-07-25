@@ -18,8 +18,8 @@ const ManualRecurringList = () => {
   const [jobResult, setJobResult] = useState(null);
   const { filtersOpen, toggleFilters } = useFiltersPanel();
 
-  const [tempFilters, setTempFilters] = useState({ search: '', status: '' });
-  const [appliedFilters, setAppliedFilters] = useState({ search: '', status: '' });
+  const [tempFilters, setTempFilters] = useState({ search: '', status: '', installment_status: '' });
+  const [appliedFilters, setAppliedFilters] = useState({ search: '', status: '', installment_status: '' });
 
   useEffect(() => {
     fetchPledges();
@@ -42,17 +42,17 @@ const ManualRecurringList = () => {
   };
 
   const handleApplyFilters = () => {
-    setAppliedFilters(tempFilters);
+    setAppliedFilters({ ...tempFilters });
   };
 
   const handleClearFilters = () => {
-    const empty = { search: '', status: '' };
+    const empty = { search: '', status: '', installment_status: '' };
     setTempFilters(empty);
     setAppliedFilters(empty);
   };
 
   const handleRunReminders = async (dryRun = true) => {
-    if (!dryRun && !window.confirm('Send monthly reminders now to all eligible donors?')) {
+    if (!dryRun && !window.confirm('Send due recurring-campaign reminders/thanks now (daily / weekly weekend / monthly as applicable)?')) {
       return;
     }
     setRunningJob(true);
@@ -61,6 +61,7 @@ const ManualRecurringList = () => {
     try {
       const response = await axiosInstance.post('/dms-crons/manual-recurring-reminders', null, {
         params: {
+          run_due: 'true',
           dry_run: dryRun ? 'true' : 'false',
           include_details: dryRun ? 'true' : 'false'
         }
@@ -83,7 +84,7 @@ const ManualRecurringList = () => {
         <div className="list-wrapper">
           <div className="loading-container">
             <div className="loading-spinner" />
-            <p>Loading manual recurring pledges...</p>
+            <p>Loading campaign pledges...</p>
           </div>
         </div>
       </>
@@ -97,7 +98,8 @@ const ManualRecurringList = () => {
         <PageHeader
           onRefresh={fetchPledges}
           refreshing={loading}
-          title="Recurring Campaign Donors"
+          title="Campaign Pledges"
+          subtitle="Recurring campaign enrollments (manual pledges)"
           showBackButton={false}
           showFilterToggle
           filtersOpen={filtersOpen}
@@ -114,6 +116,14 @@ const ManualRecurringList = () => {
             marginBottom: '16px',
             alignItems: 'center'
           }}>
+            <button
+              type="button"
+              className="secondary_btn"
+              onClick={() => navigate('/dms/recurring-donors/list')}
+            >
+              <FiRepeat style={{ marginRight: '6px' }} />
+              Recurring Donors
+            </button>
             <button
               type="button"
               className="secondary_btn"
@@ -184,6 +194,17 @@ const ManualRecurringList = () => {
                 filters={tempFilters}
                 onFilterChange={(key, value) => setTempFilters((p) => ({ ...p, [key]: value }))}
                 placeholder="All statuses"
+              />
+              <DropdownFilter
+                filterKey="installment_status"
+                label="Installments"
+                data={[
+                  { value: 'pending', label: 'Pending installments' },
+                  { value: 'completed', label: 'Completed installments' },
+                ]}
+                filters={tempFilters}
+                onFilterChange={(key, value) => setTempFilters((p) => ({ ...p, [key]: value }))}
+                placeholder="All installments"
               />
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                 <SearchButton onClick={handleApplyFilters} text="Search" loading={loading} />

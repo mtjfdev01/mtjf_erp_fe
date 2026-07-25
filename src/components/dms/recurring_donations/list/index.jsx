@@ -10,7 +10,7 @@ import { SearchButton, ClearButton } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
-import { FiEye, FiRepeat } from 'react-icons/fi';
+import { FiEye, FiRepeat, FiSend } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -26,6 +26,18 @@ const INTERVAL_OPTIONS = [
   { value: 'year', label: 'Yearly' },
 ];
 
+const INSTALLMENT_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending installments' },
+  { value: 'completed', label: 'Completed installments' },
+];
+
+const EMPTY_FILTERS = {
+  search: '',
+  status: '',
+  billing_interval: '',
+  installment_status: '',
+};
+
 const RecurringDonationsList = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
@@ -39,8 +51,9 @@ const RecurringDonationsList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('DESC');
-  const [tempFilters, setTempFilters] = useState({ search: '', status: '', billing_interval: '' });
-  const [appliedFilters, setAppliedFilters] = useState({ search: '', status: '', billing_interval: '' });
+  const [tempFilters, setTempFilters] = useState({ ...EMPTY_FILTERS });
+  const [appliedFilters, setAppliedFilters] = useState({ ...EMPTY_FILTERS });
+  const [sendingLinkId, setSendingLinkId] = useState(null);
 
   const canList = useMemo(() => {
     if (!permissions) return null;
@@ -58,7 +71,7 @@ const RecurringDonationsList = () => {
 
   const handleApplyFilters = () => {
     if (JSON.stringify(appliedFilters) !== JSON.stringify(tempFilters)) {
-      setAppliedFilters(tempFilters);
+      setAppliedFilters({ ...tempFilters });
       setCurrentPage(1);
     } else {
       fetchRows();
@@ -66,9 +79,8 @@ const RecurringDonationsList = () => {
   };
 
   const handleClearFilters = () => {
-    const empty = { search: '', status: '', billing_interval: '' };
-    setTempFilters(empty);
-    setAppliedFilters(empty);
+    setTempFilters({ ...EMPTY_FILTERS });
+    setAppliedFilters({ ...EMPTY_FILTERS });
     setCurrentPage(1);
   };
 
@@ -149,6 +161,33 @@ const RecurringDonationsList = () => {
       onClick: () => navigate(`/dms/recurring-donations/view/${row.id}`),
       visible: true,
     },
+    ...(!row.stripe_subscription_id
+      ? [
+          {
+            icon: <FiSend />,
+            label: sendingLinkId === row.id ? 'Sending...' : 'Send installment link',
+            color: '#059669',
+            onClick: async () => {
+              setSendingLinkId(row.id);
+              setError('');
+              try {
+                const response = await axiosInstance.post(
+                  `/recurring-donations/${row.id}/send-installment-link`,
+                );
+                if (!response.data.success) {
+                  setError(response.data.message || 'Failed to send installment link');
+                }
+              } catch (err) {
+                setError(err.response?.data?.message || 'Failed to send installment link');
+              } finally {
+                setSendingLinkId(null);
+              }
+            },
+            disabled: sendingLinkId === row.id,
+            visible: true,
+          },
+        ]
+      : []),
   ];
 
   if (canList === null) {
@@ -217,21 +256,35 @@ const RecurringDonationsList = () => {
         <CollapsibleFilters open={filtersOpen}>
         <div className="filters-section">
           <SearchFilter
-            value={tempFilters.search}
-            onChange={(v) => handleFilterChange('search', v)}
+            filterKey="search"
+            label="Search"
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
             placeholder="Search subscription, order, donor..."
           />
           <DropdownFilter
+            filterKey="status"
             label="Status"
-            value={tempFilters.status}
-            onChange={(v) => handleFilterChange('status', v)}
-            options={STATUS_OPTIONS}
+            data={STATUS_OPTIONS}
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
+            placeholder="All statuses"
           />
           <DropdownFilter
+            filterKey="billing_interval"
             label="Billing"
-            value={tempFilters.billing_interval}
-            onChange={(v) => handleFilterChange('billing_interval', v)}
-            options={INTERVAL_OPTIONS}
+            data={INTERVAL_OPTIONS}
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
+            placeholder="All billing"
+          />
+          <DropdownFilter
+            filterKey="installment_status"
+            label="Installments"
+            data={INSTALLMENT_STATUS_OPTIONS}
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
+            placeholder="All installments"
           />
           <SearchButton onClick={handleApplyFilters} />
           <ClearButton onClick={handleClearFilters} />

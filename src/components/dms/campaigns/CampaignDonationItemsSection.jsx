@@ -245,7 +245,6 @@ const CampaignDonationItemsSection = ({
                 name="name"
                 value={form.name}
                 onChange={handleChange}
-                required
                 maxLength={200}
               />
               <FormInput
@@ -256,7 +255,6 @@ const CampaignDonationItemsSection = ({
                 onChange={handleChange}
                 min={0}
                 step="0.01"
-                required
               />
             </div>
             <div className="form-grid-2" style={{ marginBottom: '12px' }}>

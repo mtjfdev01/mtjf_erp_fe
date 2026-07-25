@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useLocation } from 'react-router-dom';
+import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -15,6 +15,7 @@ const formatDate = (value) => {
 const ReconciliationView = () => {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const flashMessage = location.state?.flashMessage || '';
   const [record, setRecord] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -155,8 +156,38 @@ const ReconciliationView = () => {
                           </span>
                         </td>
                         <td>{row.reason || '—'}</td>
-                        <td>{row.donationId || '—'}</td>
-                        <td>{row.donorId || '—'}</td>
+                        <td>
+                          {row.donationId ? (
+                            <a
+                              href={`/donations/online_donations/view/${row.donationId}`}
+                              className="reconciliation-file-link"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                navigate(`/donations/online_donations/view/${row.donationId}`);
+                              }}
+                            >
+                              {row.donationId}
+                            </a>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                        <td>
+                          {row.donorId ? (
+                            <a
+                              href={`/dms/donors/view/${row.donorId}`}
+                              className="reconciliation-file-link"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                navigate(`/dms/donors/view/${row.donorId}`);
+                              }}
+                            >
+                              {row.donorId}
+                            </a>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
                       </tr>
                     ))
                   )}

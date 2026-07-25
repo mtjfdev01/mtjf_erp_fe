@@ -2622,7 +2622,7 @@ const TaskReports = () => {
                   {/* ========== Reports Grid ========== */}
                   <div className="task-dashboard-reports-grid">
                     {/* Project/Program-wise Task Report */}
-                    <ProjectProgramWiseReport projects={taskAggregates.projects} />
+                    {/* <ProjectProgramWiseReport projects={taskAggregates.projects} /> */}
                     {/* User-wise Task Report */}
                     <div className="task-report-card task-report-card--user-report">
                       <div className="task-report-card-header task-report-card-header--with-filter" ref={userReportHeaderRef}>

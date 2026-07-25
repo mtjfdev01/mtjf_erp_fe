@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { useNavigate, useSearchParams, useLocation, useParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation, useParams, Link } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
@@ -565,19 +565,19 @@ const OnlineDonationsList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#4CAF50',
-      onClick: () => navigate(`/donations/online_donations/view/${donation.id}`),
+      to: `/donations/online_donations/view/${donation.id}`,
       visible: true
     },
     {
       icon: <FiTrendingUp />,
       label: 'Tracking',
       color: '#7c3aed',
-      onClick: () => {
+      to: (() => {
         const t =
           (Array.isArray(donation?.progress_trackers) && donation.progress_trackers[0]) ||
           donation?.progress_tracker;
-        if (t?.id) navigate(`/progress/trackers/${t.id}/steps`);
-      },
+        return t?.id ? `/progress/trackers/${t.id}/steps` : undefined;
+      })(),
       visible: Boolean(
         (Array.isArray(donation?.progress_trackers) && donation.progress_trackers[0]?.id) ||
           donation?.progress_tracker?.id,
@@ -587,19 +587,10 @@ const OnlineDonationsList = () => {
       icon: <FiEdit2 />,
       label: 'Edit',
       color: '#2196F3',
-      onClick: () =>
-        navigate(`/donations/online_donations/update/${donation.id}`, {
-          state: { fromList: location.pathname },
-        }),
+      to: `/donations/online_donations/update/${donation.id}`,
+      state: { fromList: location.pathname },
       visible: true
     },
-    // {
-    //   icon: <FiTrash2 />,
-    //   label: 'Delete',
-    //   color: '#f44336',
-    //   onClick: () => handleDeleteClick(donation),
-    //   visible: true
-    // }
   ];
 
   const sortOptions = [
@@ -1067,7 +1058,13 @@ const OnlineDonationsList = () => {
                     </td>
                     <td>
                       <div className="donor-info">
-                        <div className="donor-name">{donation?.donor?.name?.slice(0, 15) + '...' || 'Anonymous'}</div>
+                        <Link
+                          to={`/donations/online_donations/view/${donation.id}`}
+                          className="donor-name"
+                          style={{ color: 'inherit', textDecoration: 'inherit' }}
+                        >
+                          {donation?.donor?.name?.slice(0, 15) + '...' || 'Anonymous'}
+                        </Link>
                         {donation.item_name && (
                           <div className="donor-item hide-on-mobile">{donation.item_name?.slice(0, 15) + '...'}</div>
                         )}

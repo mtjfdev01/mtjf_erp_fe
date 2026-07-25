@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { fundRaisingDonorsHas } from '../../../../utils/permissions';
@@ -490,14 +490,14 @@ const DonorsList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#2196f3',
-      onClick: () => navigate(`/dms/donors/view/${donor.id}`),  
+      to: `/dms/donors/view/${donor.id}`,
       visible: true
     },
     {
       icon: <FiEdit />,
       label: 'Edit',
       color: '#ff9800',
-      onClick: () => navigate(`/dms/donors/edit/${donor.id}`),
+      to: `/dms/donors/edit/${donor.id}`,
       visible: true
     },
     {
@@ -884,7 +884,11 @@ const DonorsList = () => {
                       </td>
                       <td>
                         <div className="donor-info">
-                          <div className="donor-name">
+                          <Link
+                            to={`/dms/donors/view/${donor.id}`}
+                            className="donor-name"
+                            style={{ color: 'inherit', textDecoration: 'inherit' }}
+                          >
                             {donor.name}
                             {donor._pending_sync && (
                               <span
@@ -901,7 +905,7 @@ const DonorsList = () => {
                                 Pending sync
                               </span>
                             )}
-                          </div>
+                          </Link>
                           {donor.donor_type === 'csr' && donor.company_name && (
                             <div className="company-name">{donor.company_name}</div>
                           )}

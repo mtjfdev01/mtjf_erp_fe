@@ -69,6 +69,14 @@
   text-decoration: underline;
 }
 
+.reconciliation-table-container {
+  overflow-x: auto;
+}
+
+.reconciliation-table-container .data-table {
+  min-width: 1100px;
+}
+
 .reconciliation-notes {
   margin-top: 12px;
   margin-bottom: 0;
