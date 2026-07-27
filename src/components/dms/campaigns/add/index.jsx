@@ -27,6 +27,7 @@ const AddCampaign = () => {
     is_recurring: false,
     target_frequency: 'monthly',
     monthly_donor_automation_enabled: false,
+    use_default_thanks_and_reminders: false,
     communication_templates: emptyCommunicationTemplates(),
     program_id: '',
     sub_program_id: '',
@@ -46,7 +47,17 @@ const AddCampaign = () => {
   const handleToggleAutomation = (e) => {
     setForm((prev) => ({
       ...prev,
-      monthly_donor_automation_enabled: e.target.checked
+      monthly_donor_automation_enabled: e.target.checked,
+      ...(e.target.checked
+        ? {}
+        : { use_default_thanks_and_reminders: false }),
+    }));
+  };
+
+  const handleToggleDefaultComm = (e) => {
+    setForm((prev) => ({
+      ...prev,
+      use_default_thanks_and_reminders: e.target.checked,
     }));
   };
 
@@ -86,6 +97,10 @@ const AddCampaign = () => {
         is_recurring: form.is_recurring,
         target_frequency: form.is_recurring ? form.target_frequency : null,
         monthly_donor_automation_enabled: form.is_recurring ? form.monthly_donor_automation_enabled : false,
+        use_default_thanks_and_reminders:
+          form.is_recurring && form.monthly_donor_automation_enabled
+            ? form.use_default_thanks_and_reminders
+            : false,
         communication_templates: form.is_recurring
           ? communicationTemplatesToApi(form.communication_templates)
           : null,
@@ -228,6 +243,7 @@ const AddCampaign = () => {
           <CampaignCommunicationSection
             form={form}
             onToggleAutomation={handleToggleAutomation}
+            onToggleDefaultComm={handleToggleDefaultComm}
             onSlotChange={handleSlotChange}
           />
 

@@ -134,6 +134,7 @@ import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from '.
 import PendingAllotmentsList from './components/dms/donations/allotments/pending';
 import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
+import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
 import AddDonation from './components/donations/online_donations/add';
@@ -418,9 +419,10 @@ const App = () => {
                                 <Route path="/donations/online_donations/update/:id" element={<UpdateOnlineDonation />} />
                                 <Route path="/donations/online_donations/add" element={<AddDonation />} /> 
 
-                                {/* Recurring Donations (Stripe subscriptions) */}
+                                {/* Recurring Donations (Stripe / ledger subscriptions) */}
                                 <Route path="/dms/recurring-donations/list" element={<RecurringDonationsList />} />
                                 <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
+                                <Route path="/dms/recurring-donors/list" element={<RecurringDonorsList />} />
                                 <Route path="/dms/manual-recurring/list" element={<ManualRecurringList />} />
 
                                 {/* Social Posts (Buffer) */}

@@ -19,10 +19,10 @@ export const formatTargetFrequency = (value) => {
 };
 
 export const CAMPAIGN_TEMPLATE_SLOTS = [
-  { key: 'marketing', label: 'Marketing' },
-  { key: 'thanks', label: 'Thank you' },
-  { key: 'reminder', label: 'Reminder' },
-  { key: 'payment_link', label: 'Payment link' },
+  { key: 'marketing', label: 'Marketing', purpose: 'marketing' },
+  { key: 'thanks', label: 'Thank you', purpose: 'thanks' },
+  { key: 'reminder', label: 'Reminder', purpose: 'recurring_reminder' },
+  { key: 'payment_link', label: 'Payment link', purpose: 'payment_link' },
 ];
 
 export const emptyCommunicationTemplates = () => ({

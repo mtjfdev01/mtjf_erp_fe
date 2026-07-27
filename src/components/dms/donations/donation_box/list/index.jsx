@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -267,7 +267,8 @@ const DonationBoxDonationsList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#4CAF50',
-      onClick: () => navigate(`/dms/donation-box-donations/view/${donation.id}`, { state: { donation } }),
+      to: `/dms/donation-box-donations/view/${donation.id}`,
+      state: { donation },
       visible: true
     },
     {
@@ -468,17 +469,36 @@ const DonationBoxDonationsList = () => {
                 {donations.map(donation => (
                   <tr key={donation.id}>
                     <td>
-                      <div style={{ fontWeight: '600', color: '#0369a1' }}>
+                      <Link
+                        to={`/dms/donation-box-donations/view/${donation.id}`}
+                        state={{ donation }}
+                        style={{ fontWeight: '600', color: '#0369a1', textDecoration: 'inherit' }}
+                      >
                         COL-{donation.id}
-                      </div>
+                      </Link>
                     </td>
                     {!donationBoxId && (
                       <td>
                         <div className="box-info">
-                          <div style={{ fontWeight: '600', color: '#333' }}>
-                            <FiBox style={{ display: 'inline', marginRight: '5px' }} />
-                            Key: {donation.donation_box?.key_no || 'N/A'}
-                          </div>
+                          {donation.donation_box?.id ? (
+                            <Link
+                              to={`/dms/donation_box/view/${donation.donation_box.id}`}
+                              style={{
+                                fontWeight: '600',
+                                color: '#333',
+                                textDecoration: 'inherit',
+                                display: 'inline-block',
+                              }}
+                            >
+                              <FiBox style={{ display: 'inline', marginRight: '5px' }} />
+                              Key: {donation.donation_box?.key_no || 'N/A'}
+                            </Link>
+                          ) : (
+                            <div style={{ fontWeight: '600', color: '#333' }}>
+                              <FiBox style={{ display: 'inline', marginRight: '5px' }} />
+                              Key: {donation.donation_box?.key_no || 'N/A'}
+                            </div>
+                          )}
                           {donation.donation_box?.box_type && (
                             <div style={{ fontSize: '0.85em', color: '#666', marginTop: '3px' }}>
                               Type: {donation.donation_box.box_type}

@@ -1162,7 +1162,22 @@ const ViewOnlineDonation = () => {
             <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
               <div className="view-item">
                 <span className="view-item-label">Name</span>
-                <span className="view-item-value">{donation?.donor?.name || 'Anonymous'}</span>
+                <span className="view-item-value">
+                  {donation?.donor?.id ? (
+                    <a
+                      href={`/dms/donors/view/${donation.donor.id}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(`/dms/donors/view/${donation.donor.id}`);
+                      }}
+                      style={{ color: '#2563eb', textDecoration: 'underline' }}
+                    >
+                      {donation.donor.name || 'Anonymous'}
+                    </a>
+                  ) : (
+                    donation?.donor?.name || 'Anonymous'
+                  )}
+                </span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Email</span>

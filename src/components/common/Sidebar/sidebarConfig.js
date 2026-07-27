@@ -381,7 +381,7 @@ const adminDepartmentItems = () => [
     subItems: [ 
       {label: "Donations", path: "/donations/online_donations/list", type: "list", icon: BiSolidDonateHeart},
       {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
-      {label: "Recurring Campaign Donors", path: "/dms/manual-recurring/list", type: "list", icon: FiRepeat},
+      {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", icon: FiRepeat},
       {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
       {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
       {label: "Donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
@@ -484,12 +484,12 @@ const hrDepartmentItems = (isUser = false) => [
 ];
 
 const geographicItems = (isUser = false) => [
-  { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list', module: 'geographic_countries', icon: FiGlobe },
-  { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list', module: 'geographic_regions', icon: FiMap },
-  { label: 'Districts', path: '/dms/geographic/districts/list', type: 'list', module: 'geographic_districts', icon: FiMap },
-  { label: 'Tehsils', path: '/dms/geographic/tehsils/list', type: 'list', module: 'geographic_tehsils', icon: FiMap },
-  { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list', module: 'geographic_cities', icon: FiMapPin },
-  { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list', module: 'geographic_routes', icon: FiNavigation }
+  { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list', module: 'countries', icon: FiGlobe },
+  { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list', module: 'regions', icon: FiMap },
+  { label: 'Districts', path: '/dms/geographic/districts/list', type: 'list', module: 'districts', icon: FiMap },
+  { label: 'Tehsils', path: '/dms/geographic/tehsils/list', type: 'list', module: 'tehsils', icon: FiMap },
+  { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list', module: 'cities', icon: FiMapPin },
+  { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list', module: 'routes', icon: FiNavigation }
 ];
 
 const fundRaisingDepartmentItems = (isUser = false) => [

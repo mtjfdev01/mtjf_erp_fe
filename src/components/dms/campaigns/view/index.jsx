@@ -168,8 +168,17 @@ const ViewCampaign = () => {
 
   if (campaign.is_recurring) {
     campaignInfo.Frequency = formatTargetFrequency(campaign.target_frequency);
-    campaignInfo['Monthly automation'] = campaign.monthly_donor_automation_enabled
-      ? 'Enabled (2nd of month)'
+    const freq = campaign.target_frequency;
+    const automationLabel =
+      freq === 'daily'
+        ? 'Enabled (daily)'
+        : freq === 'weekly'
+          ? 'Enabled (Sat & Sun)'
+          : 'Enabled (2nd of month)';
+    campaignInfo['Donor automation'] = campaign.monthly_donor_automation_enabled
+      ? campaign.use_default_thanks_and_reminders
+        ? `${automationLabel} · default thanks & payment links`
+        : automationLabel
       : 'Off';
   }
 
@@ -226,7 +235,10 @@ const ViewCampaign = () => {
             )}
           </div>
 
-          {campaign.is_recurring && campaign.communication_templates && (
+          {campaign.is_recurring && (
+            campaign.communication_templates ||
+            campaign.use_default_thanks_and_reminders
+          ) && (
             <div style={{
               padding: '20px',
               backgroundColor: '#fff',
@@ -234,23 +246,41 @@ const ViewCampaign = () => {
               borderRadius: '8px',
               marginBottom: '20px'
             }}>
-              <h3 style={{ marginBottom: '12px' }}>Communication templates</h3>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Type</th>
-                    <th>Configuration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {CAMPAIGN_TEMPLATE_SLOTS.map((slot) => (
-                    <tr key={slot.key}>
-                      <td>{slot.label}</td>
-                      <td>{formatCommunicationSlot(campaign.communication_templates, slot.key)}</td>
+              <h3 style={{ marginBottom: '12px' }}>Communication</h3>
+              {campaign.use_default_thanks_and_reminders && (
+                <p style={{ fontSize: '13px', color: '#0369a1', marginBottom: '12px', lineHeight: 1.5 }}>
+                  Using system defaults: thank-you email/WhatsApp when donated; payment-link email/WhatsApp as reminder when not.
+                </p>
+              )}
+              {campaign.communication_templates && (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Type</th>
+                      <th>Configuration</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {CAMPAIGN_TEMPLATE_SLOTS.map((slot) => {
+                      const defaultsCover =
+                        campaign.use_default_thanks_and_reminders &&
+                        (slot.key === 'thanks' || slot.key === 'reminder');
+                      return (
+                        <tr key={slot.key}>
+                          <td>{slot.label}</td>
+                          <td>
+                            {defaultsCover
+                              ? slot.key === 'thanks'
+                                ? 'System default (thanks email + WhatsApp)'
+                                : 'System default (payment-link email + WhatsApp)'
+                              : formatCommunicationSlot(campaign.communication_templates, slot.key)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           )}
 

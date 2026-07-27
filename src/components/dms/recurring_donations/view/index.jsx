@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
-import { FiRepeat, FiUser, FiDollarSign } from 'react-icons/fi';
+import { FiRepeat, FiUser, FiDollarSign, FiSend } from 'react-icons/fi';
 
 const RecurringDonationView = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [sendingLink, setSendingLink] = useState(false);
+  const [linkMessage, setLinkMessage] = useState('');
 
   useEffect(() => {
     const load = async () => {
@@ -47,6 +48,27 @@ const RecurringDonationView = () => {
     return donor.name || [donor.first_name, donor.last_name].filter(Boolean).join(' ') || donor.email;
   };
 
+  const sendInstallmentLink = async () => {
+    setSendingLink(true);
+    setLinkMessage('');
+    try {
+      const response = await axiosInstance.post(`/recurring-donations/${id}/send-installment-link`);
+      if (response.data.success) {
+        const d = response.data.data || {};
+        const parts = [];
+        if (d.email_sent) parts.push('email');
+        if (d.whatsapp_sent) parts.push('WhatsApp');
+        setLinkMessage(`Installment link sent via ${parts.join(' + ') || 'channel'}.`);
+      } else {
+        setLinkMessage(response.data.message || 'Failed to send installment link');
+      }
+    } catch (err) {
+      setLinkMessage(err.response?.data?.message || 'Failed to send installment link');
+    } finally {
+      setSendingLink(false);
+    }
+  };
+
   if (loading) {
     return (
       <>
@@ -72,6 +94,7 @@ const RecurringDonationView = () => {
   }
 
   const { subscription, installments, initial_donation, donor, summary } = data;
+  const canSendInstallmentLink = !subscription.stripe_subscription_id;
 
   return (
     <>
@@ -85,6 +108,25 @@ const RecurringDonationView = () => {
         />
 
         <div className="view-content">
+          {canSendInstallmentLink && (
+            <section className="view-section">
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="primary_btn"
+                  disabled={sendingLink}
+                  onClick={sendInstallmentLink}
+                >
+                  <FiSend style={{ marginRight: 6 }} />
+                  {sendingLink ? 'Sending...' : 'Send installment link'}
+                </button>
+                {linkMessage && (
+                  <span style={{ fontSize: 13, color: '#4b5563' }}>{linkMessage}</span>
+                )}
+              </div>
+            </section>
+          )}
+
           <section className="view-section">
             <h3><FiRepeat style={{ marginRight: 8 }} />Subscription</h3>
             <div className="view-grid">
@@ -105,14 +147,23 @@ const RecurringDonationView = () => {
           <section className="view-section">
             <h3><FiUser style={{ marginRight: 8 }} />Donor</h3>
             <div className="view-grid">
-              <div><strong>Name</strong><p>{donorLabel(donor)}</p></div>
+              <div>
+                <strong>Name</strong>
+                <p>
+                  {donor?.id ? (
+                    <Link to={`/dms/donors/view/${donor.id}`}>{donorLabel(donor)}</Link>
+                  ) : (
+                    donorLabel(donor)
+                  )}
+                </p>
+              </div>
               <div><strong>Email</strong><p>{donor?.email || '-'}</p></div>
               <div><strong>Phone</strong><p>{donor?.phone || '-'}</p></div>
               {donor?.id && (
                 <div>
-                  <button type="button" className="btn-secondary" onClick={() => navigate(`/dms/donors/view/${donor.id}`)}>
+                  <Link to={`/dms/donors/view/${donor.id}`} className="btn-secondary" style={{ display: 'inline-block', textDecoration: 'none' }}>
                     Open donor profile
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>
@@ -121,18 +172,29 @@ const RecurringDonationView = () => {
           <section className="view-section">
             <h3><FiDollarSign style={{ marginRight: 8 }} />Initial donation</h3>
             <div className="view-grid">
-              <div><strong>Donation ID</strong><p>{initial_donation?.id || subscription.initial_donation_id || '-'}</p></div>
+              <div>
+                <strong>Donation ID</strong>
+                <p>
+                  {(initial_donation?.id || subscription.initial_donation_id) ? (
+                    <Link to={`/donations/online_donations/view/${initial_donation?.id || subscription.initial_donation_id}`}>
+                      {initial_donation?.id || subscription.initial_donation_id}
+                    </Link>
+                  ) : (
+                    '-'
+                  )}
+                </p>
+              </div>
               <div><strong>Order</strong><p>{initial_donation?.orderId || '-'}</p></div>
               <div><strong>Status</strong><p>{initial_donation?.status || '-'}</p></div>
               {initial_donation?.id && (
                 <div>
-                  <button
-                    type="button"
+                  <Link
+                    to={`/donations/online_donations/view/${initial_donation.id}`}
                     className="btn-secondary"
-                    onClick={() => navigate(`/donations/online_donations/view/${initial_donation.id}`)}
+                    style={{ display: 'inline-block', textDecoration: 'none' }}
                   >
                     View initial donation
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

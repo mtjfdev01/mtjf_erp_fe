@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -309,14 +309,14 @@ const DonationBoxList = () => {
       icon: <FiEye />,
       label: 'View',
       color: '#4CAF50',
-      onClick: () => navigate(`/dms/donation_box/view/${donationBox.id}`),
+      to: `/dms/donation_box/view/${donationBox.id}`,
       visible: true
     },
     {
       icon: <FiEdit2 />,
       label: 'Update / Relocate',
       color: '#2196F3',
-      onClick: () => navigate(`/dms/donation_box/edit/${donationBox.id}`),
+      to: `/dms/donation_box/edit/${donationBox.id}`,
       visible: canUpdateBox
     },
     {
@@ -549,7 +549,13 @@ const DonationBoxList = () => {
                   <tr key={box.id}>
                     <td>
                       <div className="box-info">
-                        <div className="box-id">{box.key_no || `BOX-${box.id}`}</div>
+                        <Link
+                          to={`/dms/donation_box/view/${box.id}`}
+                          className="box-id"
+                          style={{ color: 'inherit', textDecoration: 'inherit' }}
+                        >
+                          {box.key_no || `BOX-${box.id}`}
+                        </Link>
                         {box.route?.name && (
                           <div className="box-key hide-on-mobile">Route: {box.route.name}</div>
                         )}

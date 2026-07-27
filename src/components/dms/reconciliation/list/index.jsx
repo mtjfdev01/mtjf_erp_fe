@@ -32,11 +32,8 @@ const ReconciliationList = () => {
   const canUpload = useMemo(
     () =>
       permissions?.super_admin === true ||
+      permissions?.fund_raising_manager === true ||
       hasPermission(permissions, 'fund_raising', 'reconciliation', 'create'),
-    [permissions],
-  );
-  const canView = useMemo(
-    () => hasPermission(permissions, 'fund_raising', 'reconciliation', 'view'),
     [permissions],
   );
 
@@ -117,14 +114,14 @@ const ReconciliationList = () => {
       label: 'View',
       color: '#4CAF50',
       onClick: () => navigate(`/dms/reconciliation/view/${record.id}`),
-      visible: canView,
+      visible: true,
     },
   ];
 
   return (
     <>
       <Navbar />
-      <div className="view-wrapper">
+      <div className="list-wrapper">
         <PageHeader
           onRefresh={fetchRecords}
           refreshing={loading}
@@ -142,10 +139,12 @@ const ReconciliationList = () => {
         <div className="filters-section reconciliation-filters">
           <div className="filters-row">
             <DropdownFilter
+              filterKey="bank"
               label="Bank"
-              value={tempFilters.bank}
-              onChange={(v) => handleFilterChange('bank', v)}
-              options={BANK_OPTIONS}
+              data={BANK_OPTIONS.filter((o) => o.value !== '')}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All banks"
             />
             <DateRangeFilter
               label="Run date"
@@ -162,7 +161,7 @@ const ReconciliationList = () => {
 
         {error && <div className="error-message">{error}</div>}
 
-        <div className="table-container">
+        <div className="table-container reconciliation-table-container">
           <table className="data-table">
             <thead>
               <tr>
@@ -175,7 +174,7 @@ const ReconciliationList = () => {
                 <th>Donations created</th>
                 <th>Skipped</th>
                 <th>Failed</th>
-                <th>Actions</th>
+                <th className="table-actions">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -223,8 +222,8 @@ const ReconciliationList = () => {
                     <td>{row.created_count ?? 0}</td>
                     <td>{row.skipped_count ?? 0}</td>
                     <td>{row.failed_count ?? 0}</td>
-                    <td>
-                      <ActionMenu items={getActionMenuItems(row)} />
+                    <td className="table-actions">
+                      <ActionMenu actions={getActionMenuItems(row)} />
                     </td>
                   </tr>
                 ))

@@ -262,13 +262,20 @@ a.sidebar-sub-item:focus {
 }
 
 .sidebar-sub-item:hover {
-  background: var(--color-bg-secondary);
+  background: var(--sidebar-item-hover-bg);
+  color: var(--sidebar-item-hover-text);
 }
 
 .sidebar-sub-item--active {
-  background: var(--sidebar-group-header-bg);
-  color: var(--sidebar-group-header-text);
-  font-weight: var(--font-weight-medium);
+  background: var(--sidebar-sub-item-active-bg);
+  color: var(--sidebar-sub-item-active-text);
+  font-weight: var(--font-weight-semibold);
+  box-shadow: none;
+}
+
+.sidebar-sub-item--active:hover {
+  background: var(--sidebar-sub-item-active-bg);
+  color: var(--sidebar-sub-item-active-text);
 }
 
 .sidebar-sub-item-label {

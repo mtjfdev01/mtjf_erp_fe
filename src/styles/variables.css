@@ -101,6 +101,8 @@
   --sidebar-item-active-bg: #3b82f6;
   --sidebar-item-active-text: #ffffff;
   --sidebar-item-active-border: #1d4ed8;
+  --sidebar-sub-item-active-bg: #bfdbfe;
+  --sidebar-sub-item-active-text: #1e40af;
   --sidebar-group-header-bg: #f0f6ff;
   --sidebar-group-header-text: #2563eb;
   --sidebar-group-header-accent: #3b82f6;
@@ -174,6 +176,8 @@
   --sidebar-item-active-bg: #2563eb;
   --sidebar-item-active-text: #ffffff;
   --sidebar-item-active-border: #3b82f6;
+  --sidebar-sub-item-active-bg: rgba(59, 130, 246, 0.28);
+  --sidebar-sub-item-active-text: #bfdbfe;
   --sidebar-group-header-bg: rgba(37, 99, 235, 0.18);
   --sidebar-group-header-text: #93c5fd;
   --sidebar-group-header-accent: #3b82f6;
