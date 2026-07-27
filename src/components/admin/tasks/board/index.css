@@ -135,27 +135,11 @@
 }
 
 .trello-board-toolbar .tl-scope-switch__btn.is-active {
-  background: #ffffff;
-  color: #0f172a;
+  background: #000;
+  color: #fff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
-.trello-board-toolbar .tl-scope-switch__btn.is-active.is-mine {
-  color: #2563eb;
-}
-
-.trello-board-toolbar .tl-scope-switch__btn.is-active.is-other {
-  color: #0284c7;
-}
-
-.trello-board-toolbar .tl-scope-switch__btn.is-active.is-team {
-  color: #059669;
-}
-
-.trello-board-toolbar .tl-scope-switch__btn.is-active.is-approval .tl-scope-switch__count {
-  background:#2563EB;
-  color: #fff;
-}
 
 .trello-board-column-picker {
   position: relative;
@@ -164,11 +148,10 @@
 .trello-board-column-picker-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.75rem;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
   border: 1px solid #bfdbfe;
-  border-radius: 999px;
-  background: #fff;
+  border-radius: 8px;
   color: #2563eb;
   font-size: 0.82rem;
   font-weight: 500;

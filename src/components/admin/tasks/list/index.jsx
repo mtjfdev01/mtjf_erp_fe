@@ -609,6 +609,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     return 'User';
   };
 
+
   const getAgeDisplay = (task) => {
     const dueInfo = getDueInfo(task.due_date, task.status);
     if (!dueInfo) return '—';
@@ -772,9 +773,9 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                         <ul className="tl-tasks-assignee-list">
                           <li className="tl-tasks-assignee-list-item">
                             <div className="tl-tasks-assignee-name">{info.name}</div>
-                            {info.department && (
+                           {info.department && (
                               <div className="tl-tasks-assignee-department">
-                                {capitalize(info.department)}
+                                department: {capitalize(info.department)}
                               </div>
                             )}
                           </li>
@@ -798,7 +799,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
           <span className="tl-assignee-text-label">
             {meta.length === 1 ? 'Single User' : 'Multiple Users'}
           </span>
-          <span className="tl-tasks-list-assignment-name">{getPrimaryAssigneeName(t)}</span>
+          {/* <span className="tl-tasks-list-assignment-name">{getPrimaryAssigneeName(t)}</span> */}
         </div>
       </div>
     );

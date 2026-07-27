@@ -269,6 +269,22 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
 
   // If chart already exists, update it
   if (chartInstanceRef.current) {
+    // Defensive check: if the instance was bound to a different canvas (e.g.
+    // canvas was unmounted & remounted by a loading flag or parent conditional),
+    // destroy the orphaned instance and fall through to re-create it.
+    const currentCanvas = ctx && ctx.canvas;
+    if (currentCanvas && chartInstanceRef.current.canvas &&
+        chartInstanceRef.current.canvas !== currentCanvas) {
+      try { chartInstanceRef.current.destroy(); } catch (_) { /* no-op */ }
+      chartInstanceRef.current = null;
+    } else if (document && currentCanvas && !document.body.contains(currentCanvas)) {
+      // The canvas being passed is already detached - destroy and bail.
+      try { chartInstanceRef.current.destroy(); } catch (_) { /* no-op */ }
+      chartInstanceRef.current = null;
+      return;
+    }
+  }
+  if (chartInstanceRef.current) {
     chartInstanceRef.current.data = data;
     chartInstanceRef.current.update('none'); // Use 'none' to prevent animation issues
     return;
@@ -354,6 +370,24 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
   };
 
   useClickOutside(headerRef, () => setShowHeaderFilters(false));
+
+  /** Sync helper for ProjectProgramWiseReport chart instances (same logic as outer dashboard). */
+  const syncProjectChartCanvas = (instanceRef, canvasRef) => {
+    const instance = instanceRef.current;
+    const canvas = canvasRef.current;
+    if (!instance) return false;
+    if (!canvas) {
+      try { instance.destroy(); } catch (_) { /* no-op */ }
+      instanceRef.current = null;
+      return false;
+    }
+    if (instance.canvas !== canvas) {
+      try { instance.destroy(); } catch (_) { /* no-op */ }
+      instanceRef.current = null;
+      return false;
+    }
+    return true;
+  };
 
   useEffect(() => {
     const handleResize = () => {
@@ -441,7 +475,10 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
       const data = { labels, datasets };
 
-      if (projectBarChartInstance.current) {
+      // Validate instance is still bound to a canvas currently in the DOM
+      const projectInstanceAlive = syncProjectChartCanvas(projectBarChartInstance, projectBarChartRef);
+
+      if (projectInstanceAlive && projectBarChartInstance.current) {
         projectBarChartInstance.current.data = data;
         // Update responsive sizes with guards
         if (projectBarChartInstance.current.options.plugins) {
@@ -1006,6 +1043,49 @@ const TaskReports = () => {
     };
   }, [taskPerms, user?.role]);
 
+  /** Task-visibility capabilities derived from role scope and permission flags. */
+  const taskScopeCaps = useMemo(() => {
+    const scope = rolePerms.scope;
+    const hasTeamScope = scope === 'team' || scope === 'department' || scope === 'org';
+    const hasDeptScope = scope === 'department' || scope === 'org';
+    const hasOrgScope = scope === 'org';
+    const isSelfOnly = scope === 'self';
+    const canViewTeam = hasTeamScope || rolePerms.canAssign || rolePerms.isAdmin;
+    const canViewTeamToggle = canViewTeam ||
+      user?.role === 'manager' ||
+      user?.role === 'dept_head' ||
+      user?.role === 'team_lead' ||
+      user?.role === 'assistant_manager' ||
+      user?.role === 'coordinator';
+    const availableViewTypes = ['all', 'created', 'assigned', 'approval_tasks'];
+    if (canViewTeam) availableViewTypes.push('assigned_to_team');
+    return {
+      scope,
+      hasTeamScope,
+      hasDeptScope,
+      hasOrgScope,
+      isSelfOnly,
+      canViewTeam,
+      canViewTeamToggle,
+      availableViewTypes,
+      // For a pure "User" / self-scope role, default "All Tasks" must mean "All of YOUR tasks"
+      // The backend applyRoleFiltersWithoutBrackets already enforces this for self roles,
+      // but we still make the intent explicit on the frontend.
+      showTasksDropdown: !rolePerms.isAdmin
+    };
+  }, [rolePerms, user?.role]);
+
+  /** Guard: if current viewType is not authorized for this user, reset to "all". */
+  useEffect(() => {
+    if (!taskScopeCaps.availableViewTypes.includes(viewType)) {
+      setViewType('all');
+    }
+    // If user does not have team scope, also force exit from Team Performance page.
+    if (showTeamPerformance && !taskScopeCaps.canViewTeamToggle) {
+      setShowTeamPerformance(false);
+    }
+  }, [viewType, showTeamPerformance, taskScopeCaps.availableViewTypes, taskScopeCaps.canViewTeamToggle]);
+
   /** Org-wide task reports (all departments filter): super admins, or admin-role users in admin department. */
   const isGeneralAdminDashboard = useMemo(() => {
     const r = String(user?.role || '').toLowerCase();
@@ -1031,7 +1111,7 @@ const TaskReports = () => {
     const closed = breakdown.closed || 0;
     const rejected = breakdown.rejected || 0;
     const cancelled = breakdown.cancelled || 0;
-    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'rejected', 'cancelled']);
+    const pending = sumBy(['draft', 'open', 'in_progress', 'rejected', 'cancelled']);
     const ended = closed;
     const completionRate = taskStats?.completion_rate || 0;
     const overdue = taskStats?.overdue_tasks || 0;
@@ -1039,7 +1119,7 @@ const TaskReports = () => {
     const progressInProgress = inProgress + pendingApproval;
     const progressNotStarted = open + draft;
     const active = open + inProgress + pendingApproval;
-    const completedTasks = completed + closed;
+    const completedTasks = completed + closed + approved;
     const completedTotal = closed;
     return {
       total,
@@ -1154,6 +1234,56 @@ const TaskReports = () => {
     setHiddenDepartmentBarDepartments(newHidden);
   };
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const completionRateChartRef = useRef(null);
+  const completionRateChartInstance = useRef(null);
+  const userBarChartRef = useRef(null);
+  const userBarChartInstance = useRef(null);
+  const departmentChartRef = useRef(null);
+  const departmentCanvasRef = useRef(null);
+
+  /**
+   * Ensure a chart instance is bound to the canvas element currently held by the
+   * canvasRef. If the instance was built on top of a detached canvas (e.g. the
+   * DOM was temporarily unmounted by a loading flag, or a parent conditional
+   * toggled away), destroy the stale instance so the caller re-creates it on
+   * the fresh canvas. Returns true when the caller can safely call .update()
+   * on the instance, false when the caller should branch into the "new Chart()"
+   * creation path.
+   *
+   * This is the root-cause fix for "charts disappear on filter change but
+   * reappear on page refresh".
+   */
+  function syncChartCanvas(instanceRef, canvasRef) {
+    const instance = instanceRef.current;
+    const canvas = canvasRef.current;
+    if (!instance) {
+      // Nothing to sync - caller will create new chart
+      return false;
+    }
+    if (!canvas) {
+      // Canvas element is not in the DOM right now - destroy orphaned instance
+      try { instance.destroy(); } catch (_) { /* no-op */ }
+      instanceRef.current = null;
+      return false;
+    }
+    if (instance.canvas !== canvas) {
+      // Instance is bound to a DIFFERENT canvas element than the ref currently
+      // holds - the previous canvas was unmounted, and a new one was mounted.
+      // Destroy the stale instance so we build a fresh one on the new canvas.
+      try { instance.destroy(); } catch (_) { /* no-op */ }
+      instanceRef.current = null;
+      return false;
+    }
+    return true;
+  }
+
   const toggleUserBarStatusVisibility = (statusLabel) => {
     const newHidden = new Set(hiddenUserBarStatuses);
     if (newHidden.has(statusLabel)) {
@@ -1164,6 +1294,7 @@ const TaskReports = () => {
     setHiddenUserBarStatuses(newHidden);
 
     // Also toggle the dataset visibility in the Chart.js instance
+    syncChartCanvas(userBarChartInstance, userBarChartRef);
     if (userBarChartInstance.current) {
       const datasets = userBarChartInstance.current.data.datasets;
       datasets.forEach((dataset, index) => {
@@ -1175,24 +1306,15 @@ const TaskReports = () => {
     }
   };
 
-  const completionRateChartRef = useRef(null);
-  const completionRateChartInstance = useRef(null);
-  const userBarChartRef = useRef(null);
-  const userBarChartInstance = useRef(null);
-  const departmentChartRef = useRef(null);
-  const departmentCanvasRef = useRef(null);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
   useEffect(() => {
     const handleResize = () => {
       setScreenWidth(window.innerWidth);
       setIsMobile(window.innerWidth <= 768);
+      // First, sync each chart with its current canvas ref so we don't call
+      // .update() on an orphaned instance (would silently fail / blank canvas).
+      syncChartCanvas(completionRateChartInstance, completionRateChartRef);
+      syncChartCanvas(userBarChartInstance, userBarChartRef);
+      syncChartCanvas(departmentChartRef, departmentCanvasRef);
       if (completionRateChartInstance.current) completionRateChartInstance.current.update();
       if (userBarChartInstance.current) userBarChartInstance.current.update();
       if (departmentChartRef.current) departmentChartRef.current.update();
@@ -1304,14 +1426,38 @@ const TaskReports = () => {
         statsDepartment = user?.department;
       }
 
-      const apiViewType = (!rolePerms.isAdmin && viewType !== 'all' && !showTeamPerformance) ? viewType : undefined;
+      // Determine the effective view_type for the API:
+      //  * Admins + team mode: undefined (let department/role filters apply naturally)
+      //  * Non-admin with specific viewType: pass it through (created/assigned/assigned_to_team/approval_tasks)
+      //  * Non-admin on "all" with scope === "self": explicitly narrow to a PERSONAL view (assigned)
+      //      so the backend CANNOT accidentally return department-wide data. We still rely on the
+      //      backend's applyRoleFiltersWithoutBrackets as the enforcement layer, but on the
+      //      frontend we make the intent explicit to avoid any widening bugs.
+      //  * Non-admin on "all" with broader scope: leave undefined, role filters on backend handle it.
+      let effectiveViewType;
+      const wantsSpecificView = !rolePerms.isAdmin && viewType !== 'all' && !showTeamPerformance;
+      if (wantsSpecificView) {
+        effectiveViewType = viewType;
+      } else if (!rolePerms.isAdmin && !showTeamPerformance && taskScopeCaps.isSelfOnly && viewType === 'all') {
+        // For self-only users "All Tasks" = tasks the user is involved with.
+        // We do NOT pass a specific view_type so that the backend applyRoleFiltersWithoutBrackets
+        // still includes approval-tasks, created-by, reported-by, AND assigned-to tasks.
+        // Leaving view_type empty here is correct; backend role-scoping handles it.
+        // We explicitly just keep effectiveViewType = undefined but add user_id below to help the backend.
+        effectiveViewType = undefined;
+      } else if (!rolePerms.isAdmin && showTeamPerformance && taskScopeCaps.isSelfOnly) {
+        // Self-only user somehow got into team mode; treat as their own tasks
+        effectiveViewType = undefined;
+      } else {
+        effectiveViewType = undefined;
+      }
 
       const statsParams = {
         start_date: range.from,
         end_date: range.to,
         department: statsDepartment,
-        view_type: apiViewType,
-        user_id: user?.id // Ensure the current user context is passed
+        view_type: effectiveViewType,
+        user_id: user?.id // Always pass user_id for consistent role resolution on the backend
       };
       const statsRes = await axiosInstance.get('/tasks/dashboard/stats', { params: statsParams });
       const statsData = statsRes.data?.data || statsRes.data;
@@ -1323,17 +1469,20 @@ const TaskReports = () => {
         start_date: range.from,
         end_date: range.to,
         department: statsDepartment,
-        view_type: apiViewType
+        view_type: effectiveViewType,
+        user_id: user?.id // Always pass user_id for consistent role resolution
       };
-
-      // Ensure user_id is passed when explicitly filtering by any view type
-      if (apiViewType) {
-        reportsParams.user_id = user?.id;
-      }
 
       // When showTeamPerformance is active, we specifically want to view the team, NOT just the user's assigned tasks
       // So we do NOT send user_id for team performance mode unless we are trying to restrict the view.
       // But the backend relies on the Bearer token for currentUser anyway.
+      if (showTeamPerformance && taskScopeCaps.isSelfOnly) {
+        // Self-only users shouldn't see team; keep personal-only user_id filter
+        reportsParams.user_id = user?.id;
+      } else if (showTeamPerformance) {
+        // Team roles in team mode: drop user_id so we see the full team via the Bearer-token role filters
+        delete reportsParams.user_id;
+      }
 
       const reportsRes = await axiosInstance.get('/tasks/reports', { params: reportsParams });
       const reportsData = reportsRes.data?.data || reportsRes.data;
@@ -1349,7 +1498,7 @@ const TaskReports = () => {
     } finally {
       setTaskStatsLoading(false);
     }
-  }, [duration, selectedDepartment, rolePerms.scope, rolePerms.isAdmin, user?.department, user?.id, tasksDepartmentFromUser, isGeneralAdminDashboard, permissions, viewType, showTeamPerformance, getDateRangeForDuration]);
+  }, [duration, selectedDepartment, rolePerms.scope, rolePerms.isAdmin, user, user?.department, user?.id, tasksDepartmentFromUser, isGeneralAdminDashboard, permissions, viewType, showTeamPerformance, taskScopeCaps.isSelfOnly, getDateRangeForDuration]);
 
   useEffect(() => {
     fetchTaskReports();
@@ -1367,6 +1516,13 @@ const TaskReports = () => {
       }
       return colors;
     };
+
+    // Sync all chart instances BEFORE rendering - this destroys and nulls any
+    // instance that is bound to an orphaned canvas (the root cause of blank
+    // charts on filter change - only recreated on refresh before this fix).
+    syncChartCanvas(completionRateChartInstance, completionRateChartRef);
+    syncChartCanvas(userBarChartInstance, userBarChartRef);
+    syncChartCanvas(departmentChartRef, departmentCanvasRef);
 
     if (taskStats && completionRateChartRef.current) {
       const allStatusValues = [
@@ -1503,7 +1659,10 @@ const TaskReports = () => {
         datasets
       };
 
-      if (departmentChartRef.current) {
+      // Validate instance is still attached to the canvas we now have in the DOM
+      const deptInstanceAlive = syncChartCanvas(departmentChartRef, departmentCanvasRef);
+
+      if (deptInstanceAlive && departmentChartRef.current) {
         departmentChartRef.current.data = data;
         // Update responsive sizes with guards
         if (!departmentChartRef.current.options.layout) {
@@ -1881,7 +2040,10 @@ const TaskReports = () => {
         datasets
       };
 
-      if (userBarChartInstance.current) {
+      // Validate instance is still attached to the canvas we now have in the DOM
+      const userBarInstanceAlive = syncChartCanvas(userBarChartInstance, userBarChartRef);
+
+      if (userBarInstanceAlive && userBarChartInstance.current) {
         userBarChartInstance.current.data = data;
         // Update responsive sizes with guards
         if (!userBarChartInstance.current.options.layout) {
@@ -2283,106 +2445,103 @@ const TaskReports = () => {
     };
   }, [showFilterPopover]);
   const filterElement = (
-  <div className="task-dashboard-filters">
-    <div className="task-filter-group">
-      <span className="task-filter-label">Duration</span>
-      <select
-        className="task-filter-select"
-        value={duration}
-        onChange={(e) => setDuration(e.target.value)}
-      >
-        <option value="today">Today</option>
-        <option value="yesterday">Yesterday</option>
-        <option value="this_week">This Week</option>
-        <option value="last_week">Last Week</option>
-        <option value="this_month">This Month</option>
-        <option value="last_month">Last Month</option>
-        <option value="this_year">This Year</option>
-        <option value="last_year">Last Year</option>
-      </select>
-    </div>
-
-    {!rolePerms.isAdmin && (
+    <div className="task-dashboard-filters">
       <div className="task-filter-group">
-        <span className="task-filter-label">Tasks</span>
+        <span className="task-filter-label">Duration</span>
         <select
           className="task-filter-select"
-          value={viewType}
-          onChange={(e) => setViewType(e.target.value)}
+          value={duration}
+          onChange={(e) => setDuration(e.target.value)}
         >
-          <option value="all">All Tasks</option>
-          <option value="created">Created by You</option>
-          <option value="assigned">Assigned to You</option>
-          <option value="assigned_to_team">Assigned to Team</option>
-          <option value="approval_tasks">Approval Tasks</option>
+          <option value="today">Today</option>
+          <option value="yesterday">Yesterday</option>
+          <option value="this_week">This Week</option>
+          <option value="last_week">Last Week</option>
+          <option value="this_month">This Month</option>
+          <option value="last_month">Last Month</option>
+          <option value="this_year">This Year</option>
+          <option value="last_year">Last Year</option>
         </select>
       </div>
-    )}
 
-    {(rolePerms.isAdmin || rolePerms.scope === "org") &&
-      isGeneralAdminDashboard && (
+      {taskScopeCaps.showTasksDropdown && (
         <div className="task-filter-group">
-          <span className="task-filter-label">Department</span>
+          <span className="task-filter-label">Tasks</span>
           <select
             className="task-filter-select"
-            value={selectedDepartment}
-            onChange={(e) => setSelectedDepartment(e.target.value)}
+            value={viewType}
+            onChange={(e) => setViewType(e.target.value)}
           >
-            <option value="">All Departments</option>
-            {Array.isArray(departments) &&
-              departments.map((d) => (
-                <option key={d} value={d}>
-                  {String(d || "")
-                    .split("_")
-                    .filter(Boolean)
-                    .map((w) => w[0].toUpperCase() + w.slice(1))
-                    .join(" ")}
-                </option>
-              ))}
+            <option value="all">All Tasks</option>
+            <option value="created">Created by You</option>
+            <option value="assigned">Assigned to You</option>
+            {taskScopeCaps.canViewTeam && (
+              <option value="assigned_to_team">Assigned to Team</option>
+            )}
+            <option value="approval_tasks">Approval Tasks</option>
           </select>
         </div>
       )}
 
-    {(rolePerms.isAdmin ||
-      user?.role === "manager" ||
-      user?.role === "dept_head" ||
-      user?.role === "team_lead") && (
-      <div className="task-filter-group">
-        <span className="task-filter-label">View Mode</span>
-        <button
-          className={`task-filter-toggle-btn ${
-            showTeamPerformance ? "active" : ""
-          }`}
-          onClick={() => setShowTeamPerformance(!showTeamPerformance)}
-        >
-          {showTeamPerformance
-            ? "Main Dashboard"
-            : "Team Performance"}
-        </button>
-      </div>
-    )}
-  </div>
-);
+      {(rolePerms.isAdmin || rolePerms.scope === "org") &&
+        isGeneralAdminDashboard && (
+          <div className="task-filter-group">
+            <span className="task-filter-label">Department</span>
+            <select
+              className="task-filter-select"
+              value={selectedDepartment}
+              onChange={(e) => setSelectedDepartment(e.target.value)}
+            >
+              <option value="">All Departments</option>
+              {Array.isArray(departments) &&
+                departments.map((d) => (
+                  <option key={d} value={d}>
+                    {String(d || "")
+                      .split("_")
+                      .filter(Boolean)
+                      .map((w) => w[0].toUpperCase() + w.slice(1))
+                      .join(" ")}
+                  </option>
+                ))}
+            </select>
+          </div>
+        )}
+
+      {taskScopeCaps.canViewTeamToggle && (
+          <div className="task-filter-group">
+            <span className="task-filter-label">View Mode</span>
+            <button
+              className={`task-filter-toggle-btn ${showTeamPerformance ? "active" : ""
+                }`}
+              onClick={() => setShowTeamPerformance(!showTeamPerformance)}
+            >
+              {showTeamPerformance
+                ? "Main Dashboard"
+                : "Team Performance"}
+            </button>
+          </div>
+        )}
+    </div>
+  );
 
   return (
     <>
       <Navbar />
       <Loader loading={taskStatsLoading} />
-      {!taskStatsLoading && (
-        <div className="task-report-container">
-          <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterElement} />
-          <div className="task-dashboard-shell">
-            <div className="task-dashboard-layout">
-              <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
-              </div>
-              {!showTeamPerformance ? (
-                <>
-                  <div className="task-dashboard-header">
-                    {/* <div className="task-dashboard-header-bar">
+      <div className="task-report-container">
+        <PageHeader title="Tasks Dashboard" showBackButton={true} rightElement={filterElement} />
+        <div className="task-dashboard-shell">
+          <div className="task-dashboard-layout">
+            <div className="task-dashboard-header-bottom" style={{ marginBottom: '1rem' }}>
+            </div>
+            {taskStats && taskAggregates && (!showTeamPerformance ? (
+              <>
+                <div className="task-dashboard-header">
+                  {/* <div className="task-dashboard-header-bar">
                     <div className="task-dashboard-header-bar-time">{formattedCurrentTime}</div>
                   </div> */}
-                    <div className="task-dashboard-header-top">
-                      {/* <div className="task-dashboard-welcome task-dashboard-welcome-card">
+                  <div className="task-dashboard-header-top">
+                    {/* <div className="task-dashboard-welcome task-dashboard-welcome-card">
                       <div className="task-dashboard-title">
                         Welcome{" "}
                         {user?.first_name || user?.last_name
@@ -2395,7 +2554,7 @@ const TaskReports = () => {
                         <span className="task-badge">{`Scope: ${rolePerms.scope}`}</span>
                       </div>
                     </div> */}
-                      <div className="task-dashboard-cards">
+                    <div className="task-dashboard-cards">
                         <div className="task-stat-card task-stat-card--total">
                           <FaLayerGroup className="task-stat-icon--total task-stat-icon" />
                           <div className="task-stat-label">Total Tasks</div>
@@ -2412,7 +2571,7 @@ const TaskReports = () => {
                           <FaCheck className="task-stat-icon--completed task-stat-icon" />
                           <div className="task-stat-label">Total Completed</div>
                           <div className="task-stat-value">
-                          {statsSummary.completedTasks}
+                            {statsSummary.completedTasks}
                           </div>
                         </div>
                         <div className="task-stat-card task-stat-card--overdue">
@@ -2839,11 +2998,10 @@ const TaskReports = () => {
                   duration={duration}
                   getDateRangeForDuration={getDateRangeForDuration}
                 />
-              )}
+              ))}
             </div>
           </div>
         </div>
-      )}
     </>
   );
 };
