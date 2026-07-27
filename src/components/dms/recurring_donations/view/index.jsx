@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -7,7 +7,6 @@ import { FiRepeat, FiUser, FiDollarSign, FiSend } from 'react-icons/fi';
 
 const RecurringDonationView = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -148,14 +147,23 @@ const RecurringDonationView = () => {
           <section className="view-section">
             <h3><FiUser style={{ marginRight: 8 }} />Donor</h3>
             <div className="view-grid">
-              <div><strong>Name</strong><p>{donorLabel(donor)}</p></div>
+              <div>
+                <strong>Name</strong>
+                <p>
+                  {donor?.id ? (
+                    <Link to={`/dms/donors/view/${donor.id}`}>{donorLabel(donor)}</Link>
+                  ) : (
+                    donorLabel(donor)
+                  )}
+                </p>
+              </div>
               <div><strong>Email</strong><p>{donor?.email || '-'}</p></div>
               <div><strong>Phone</strong><p>{donor?.phone || '-'}</p></div>
               {donor?.id && (
                 <div>
-                  <button type="button" className="btn-secondary" onClick={() => navigate(`/dms/donors/view/${donor.id}`)}>
+                  <Link to={`/dms/donors/view/${donor.id}`} className="btn-secondary" style={{ display: 'inline-block', textDecoration: 'none' }}>
                     Open donor profile
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>
@@ -164,18 +172,29 @@ const RecurringDonationView = () => {
           <section className="view-section">
             <h3><FiDollarSign style={{ marginRight: 8 }} />Initial donation</h3>
             <div className="view-grid">
-              <div><strong>Donation ID</strong><p>{initial_donation?.id || subscription.initial_donation_id || '-'}</p></div>
+              <div>
+                <strong>Donation ID</strong>
+                <p>
+                  {(initial_donation?.id || subscription.initial_donation_id) ? (
+                    <Link to={`/donations/online_donations/view/${initial_donation?.id || subscription.initial_donation_id}`}>
+                      {initial_donation?.id || subscription.initial_donation_id}
+                    </Link>
+                  ) : (
+                    '-'
+                  )}
+                </p>
+              </div>
               <div><strong>Order</strong><p>{initial_donation?.orderId || '-'}</p></div>
               <div><strong>Status</strong><p>{initial_donation?.status || '-'}</p></div>
               {initial_donation?.id && (
                 <div>
-                  <button
-                    type="button"
+                  <Link
+                    to={`/donations/online_donations/view/${initial_donation.id}`}
                     className="btn-secondary"
-                    onClick={() => navigate(`/donations/online_donations/view/${initial_donation.id}`)}
+                    style={{ display: 'inline-block', textDecoration: 'none' }}
                   >
                     View initial donation
-                  </button>
+                  </Link>
                 </div>
               )}
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -10,7 +10,7 @@ import { SearchButton, ClearButton } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
-import { FiEye, FiRepeat, FiSend } from 'react-icons/fi';
+import { FiEye, FiFlag, FiRepeat, FiSend } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -46,8 +46,11 @@ const EMPTY_FILTERS = {
   installment_status: '',
 };
 
-const RecurringDonationsList = () => {
-  const navigate = useNavigate();
+/**
+ * Recurring Donors = people with a recurring_donations subscription (ledger).
+ * Campaign pledges stay on a separate page, linked via the Pledges button.
+ */
+const RecurringDonorsList = () => {
   const { permissions } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +72,9 @@ const RecurringDonationsList = () => {
       permissions.super_admin === true ||
       permissions.fund_raising_manager === true ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
-      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view') ||
+      hasPermission(permissions, 'fund_raising', 'donors', 'list_view') ||
+      hasPermission(permissions, 'fund_raising', 'donors', 'view')
     );
   }, [permissions]);
 
@@ -114,10 +119,10 @@ const RecurringDonationsList = () => {
         setTotalItems(response.data.pagination?.total || 0);
         setTotalPages(response.data.pagination?.totalPages || 1);
       } else {
-        setError(response.data.message || 'Failed to fetch recurring donations');
+        setError(response.data.message || 'Failed to fetch recurring donors');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch recurring donations');
+      setError(err.response?.data?.message || 'Failed to fetch recurring donors');
     } finally {
       setLoading(false);
     }
@@ -180,36 +185,47 @@ const RecurringDonationsList = () => {
     setCurrentPage(1);
   };
 
+  const sendInstallmentLink = async (rowId) => {
+    setSendingLinkId(rowId);
+    setError('');
+    try {
+      const response = await axiosInstance.post(`/recurring-donations/${rowId}/send-installment-link`);
+      if (!response.data.success) {
+        setError(response.data.message || 'Failed to send installment link');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to send installment link');
+    } finally {
+      setSendingLinkId(null);
+    }
+  };
+
   const getActions = (row) => [
     {
       icon: <FiEye />,
-      label: 'View',
+      label: 'View subscription',
       color: '#2196f3',
-      onClick: () => navigate(`/dms/recurring-donations/view/${row.id}`),
+      to: `/dms/recurring-donations/view/${row.id}`,
       visible: true,
     },
+    ...(row.donor_id
+      ? [
+          {
+            icon: <FiEye />,
+            label: 'View donor',
+            color: '#0ea5e9',
+            to: `/dms/donors/view/${row.donor_id}`,
+            visible: true,
+          },
+        ]
+      : []),
     ...(!row.stripe_subscription_id
       ? [
           {
             icon: <FiSend />,
             label: sendingLinkId === row.id ? 'Sending...' : 'Send installment link',
             color: '#059669',
-            onClick: async () => {
-              setSendingLinkId(row.id);
-              setError('');
-              try {
-                const response = await axiosInstance.post(
-                  `/recurring-donations/${row.id}/send-installment-link`,
-                );
-                if (!response.data.success) {
-                  setError(response.data.message || 'Failed to send installment link');
-                }
-              } catch (err) {
-                setError(err.response?.data?.message || 'Failed to send installment link');
-              } finally {
-                setSendingLinkId(null);
-              }
-            },
+            onClick: () => sendInstallmentLink(row.id),
             disabled: sendingLinkId === row.id,
             visible: true,
           },
@@ -217,16 +233,12 @@ const RecurringDonationsList = () => {
       : []),
   ];
 
-  if (canList === null) {
+  if (canList === null || (loading && rows.length === 0)) {
     return (
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader
-            onRefresh={fetchRows}
-            refreshing={loading}
-            title="Recurring Donations"
-          />
+          <PageHeader title="Recurring Donors" onRefresh={fetchRows} refreshing={loading} />
           <div className="loading">Loading...</div>
         </div>
       </>
@@ -238,26 +250,10 @@ const RecurringDonationsList = () => {
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader
-          onRefresh={fetchRows}
-          refreshing={loading} title="Recurring Donations" />
+          <PageHeader title="Recurring Donors" />
           <div className="status-message status-message--error">
-            You do not have permission to view recurring donations.
+            You do not have permission to view recurring donors.
           </div>
-        </div>
-      </>
-    );
-  }
-
-  if (loading && rows.length === 0) {
-    return (
-      <>
-        <Navbar />
-        <div className="list-wrapper">
-          <PageHeader
-          onRefresh={fetchRows}
-          refreshing={loading} title="Recurring Donations" />
-          <div className="loading">Loading...</div>
         </div>
       </>
     );
@@ -270,13 +266,31 @@ const RecurringDonationsList = () => {
         <PageHeader
           onRefresh={fetchRows}
           refreshing={loading}
-          title="Recurring Donations"
-          subtitle="Stripe subscriptions and installment history"
+          title="Recurring Donors"
+          subtitle="Donors with active or past recurring donation subscriptions"
           icon={<FiRepeat />}
           showFilterToggle
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
         />
+
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            flexWrap: 'wrap',
+            marginBottom: '16px',
+            alignItems: 'center',
+          }}
+        >
+          <Link to="/dms/manual-recurring/list" className="secondary_btn" style={{ textDecoration: 'none' }}>
+            <FiFlag style={{ marginRight: '6px' }} />
+            Campaign Pledges
+          </Link>
+          <span style={{ fontSize: '13px', color: '#6b7280' }}>
+            Campaign pledge enrollments and reminder jobs
+          </span>
+        </div>
 
         {error && <div className="error-message">{error}</div>}
 
@@ -314,56 +328,54 @@ const RecurringDonationsList = () => {
         </div>
 
         <CollapsibleFilters open={filtersOpen}>
-        <div className="filters-section">
-          <SearchFilter
-            filterKey="search"
-            label="Search"
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="Search subscription, order, donor..."
-          />
-          <DropdownFilter
-            filterKey="status"
-            label="Status"
-            data={STATUS_OPTIONS}
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="All statuses"
-          />
-          <DropdownFilter
-            filterKey="billing_interval"
-            label="Billing"
-            data={INTERVAL_OPTIONS}
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="All billing"
-          />
-          <DropdownFilter
-            filterKey="installment_status"
-            label="Payment / installments"
-            data={INSTALLMENT_STATUS_OPTIONS}
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="All payments"
-          />
-          <SearchButton onClick={handleApplyFilters} />
-          <ClearButton onClick={handleClearFilters} />
-        </div>
+          <div className="filters-section">
+            <SearchFilter
+              filterKey="search"
+              label="Search"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Search donor, order, subscription..."
+            />
+            <DropdownFilter
+              filterKey="status"
+              label="Status"
+              data={STATUS_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All statuses"
+            />
+            <DropdownFilter
+              filterKey="billing_interval"
+              label="Billing"
+              data={INTERVAL_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All billing"
+            />
+            <DropdownFilter
+              filterKey="installment_status"
+              label="Payment / installments"
+              data={INSTALLMENT_STATUS_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All payments"
+            />
+            <SearchButton onClick={handleApplyFilters} />
+            <ClearButton onClick={handleClearFilters} />
+          </div>
         </CollapsibleFilters>
 
         <div className="table-container">
           <table className="data-table">
             <thead>
               <tr>
-                <th>ID</th>
                 <th>Donor</th>
                 <th>Amount</th>
                 <th>Billing</th>
                 <th>Status</th>
                 <th>Payment</th>
                 <th>Installments</th>
-                <th>Subscription</th>
-                <th>Initial order</th>
+                <th>Method</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -371,8 +383,8 @@ const RecurringDonationsList = () => {
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan="11" style={{ textAlign: 'center' }}>
-                    No recurring donations found
+                  <td colSpan="9" style={{ textAlign: 'center' }}>
+                    No recurring donors found
                   </td>
                 </tr>
               ) : (
@@ -380,7 +392,6 @@ const RecurringDonationsList = () => {
                   const collection = getCollectionBadge(row);
                   return (
                   <tr key={row.id}>
-                    <td>{row.id}</td>
                     <td>
                       <div>{row.donor_name || '-'}</div>
                       <small style={{ color: '#6b7280' }}>{row.donor_email || ''}</small>
@@ -402,10 +413,11 @@ const RecurringDonationsList = () => {
                       </span>
                     </td>
                     <td>{row.completed_installment_count ?? row.installment_count ?? 0}</td>
-                    <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {row.stripe_subscription_id || '-'}
+                    <td>
+                      {row.stripe_subscription_id
+                        ? 'Stripe'
+                        : row.donation_method || 'Manual'}
                     </td>
-                    <td>{row.initial_order_id || row.initial_donation_id || '-'}</td>
                     <td>
                       {row.created_at
                         ? new Date(row.created_at).toLocaleDateString()
@@ -438,4 +450,4 @@ const RecurringDonationsList = () => {
   );
 };
 
-export default RecurringDonationsList;
+export default RecurringDonorsList;
