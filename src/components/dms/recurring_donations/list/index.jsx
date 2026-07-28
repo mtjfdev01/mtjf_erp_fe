@@ -5,8 +5,15 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter, DropdownFilter, CollapsibleFilters } from '../../../common/filters';
-import { SearchButton, ClearButton } from '../../../common/filters';
+import {
+  SearchFilter,
+  DropdownFilter,
+  DateFilter,
+  DateRangeFilter,
+  CollapsibleFilters,
+  SearchButton,
+  ClearButton,
+} from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
@@ -44,6 +51,9 @@ const EMPTY_FILTERS = {
   status: '',
   billing_interval: '',
   installment_status: '',
+  date: '',
+  start_date: '',
+  end_date: '',
 };
 
 const RecurringDonationsList = () => {
@@ -280,7 +290,7 @@ const RecurringDonationsList = () => {
 
         {error && <div className="error-message">{error}</div>}
 
-        <div
+        {/* <div
           style={{
             display: 'flex',
             gap: 8,
@@ -311,7 +321,7 @@ const RecurringDonationsList = () => {
               </button>
             );
           })}
-        </div>
+        </div> */}
 
         <CollapsibleFilters open={filtersOpen}>
         <div className="filters-section">
@@ -346,6 +356,19 @@ const RecurringDonationsList = () => {
             onFilterChange={handleFilterChange}
             placeholder="All payments"
           />
+          <DateFilter
+            filterKey="date"
+            label="Specific Date"
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
+          />
+          <DateRangeFilter
+            startKey="start_date"
+            endKey="end_date"
+            label="Date Range"
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
+          />
           <SearchButton onClick={handleApplyFilters} />
           <ClearButton onClick={handleClearFilters} />
         </div>
@@ -369,7 +392,13 @@ const RecurringDonationsList = () => {
               </tr>
             </thead>
             <tbody>
-              {rows.length === 0 ? (
+              {loading ? (
+                <tr>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: 24 }}>
+                    Loading...
+                  </td>
+                </tr>
+              ) : rows.length === 0 ? (
                 <tr>
                   <td colSpan="11" style={{ textAlign: 'center' }}>
                     No recurring donations found

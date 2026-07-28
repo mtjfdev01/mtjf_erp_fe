@@ -3,9 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
-import SearchableDropdown from '../../../common/SearchableDropdown';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
-import HybridDropdown from '../../../common/HybridDropdown';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import LocationMapPicker from '../../../common/LocationMapPicker';
@@ -264,20 +262,6 @@ const AddDonationBox = () => {
   ];
 
 
-  // Common landmarks/marketplaces based on the data
-  const landmarkOptions = [
-    { value: 'johar', label: 'Johar' },
-    { value: 'dha', label: 'DHA' },
-    { value: 'gulshan', label: 'Gulshan' },
-    { value: 'clifton', label: 'Clifton' },
-    { value: 'defence', label: 'Defence' },
-    { value: 'malir', label: 'Malir' },
-    { value: 'north_nazimabad', label: 'North Nazimabad' },
-    { value: 'saddar', label: 'Saddar' },
-    { value: 'korangi', label: 'Korangi' },
-    { value: 'landhi', label: 'Landhi' }
-  ];
-
   return (
     <>
       <Navbar />
@@ -380,14 +364,14 @@ const AddDonationBox = () => {
                 defaultOptionText={loadingRoutes ? "Loading routes..." : !form.city ? "Select city first" : "Select route"}
               />
 
-              {/* <HybridDropdown
+              <FormInput
                 label="Landmark / Marketplace"
-                placeholder="Type or select landmark..."
-                options={landmarkOptions}
+                type="text"
+                name="landmark_marketplace"
                 value={form.landmark_marketplace}
-                onChange={(value) => setForm({ ...form, landmark_marketplace: value })}
-                allowCustom={true}
-              /> */}
+                onChange={handleChange}
+                placeholder="e.g., Millat Road, Green Town, Satyana Road"
+              />
 
               <SearchableMultiSelect
                 label="Assign Collectors"

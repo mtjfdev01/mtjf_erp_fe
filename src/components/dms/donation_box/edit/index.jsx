@@ -31,6 +31,7 @@ const EditDonationBox = () => {
     box_type: 'medium',
     status: 'active',
     collection_frequency: 'weekly',
+    landmark_marketplace: '',
     require_collection_location: true,
     location_radius_value: String(DEFAULT_COLLECTION_RADIUS_METERS),
     location_radius_unit: 'm',
@@ -124,7 +125,8 @@ const EditDonationBox = () => {
         key_no: box.key_no || '',
         box_type: box.box_type || 'medium',
         status: box.status || 'active',
-        collection_frequency: box.collection_frequency || 'weekly',
+        collection_frequency: box.collection_frequency || box.frequency || 'weekly',
+        landmark_marketplace: box.landmark_marketplace || '',
         require_collection_location: box.require_collection_location !== false,
         location_radius_value: String(radiusForm.value),
         location_radius_unit: radiusForm.unit,
@@ -217,7 +219,8 @@ const EditDonationBox = () => {
         key_no: settingsForm.key_no || null,
         box_type: settingsForm.box_type,
         status: settingsForm.status,
-        collection_frequency: settingsForm.collection_frequency,
+        frequency: settingsForm.collection_frequency,
+        landmark_marketplace: settingsForm.landmark_marketplace?.trim() || null,
         require_collection_location: settingsForm.require_collection_location,
         location_radius_meters: locationRadiusMeters,
       };
@@ -606,6 +609,15 @@ const EditDonationBox = () => {
                 onChange={handleSettingsChange}
                 options={collectionFrequencyOptions}
                 required
+              />
+
+              <FormInput
+                label="Landmark / Marketplace"
+                type="text"
+                name="landmark_marketplace"
+                value={settingsForm.landmark_marketplace}
+                onChange={handleSettingsChange}
+                placeholder="e.g., Millat Road, Green Town, Satyana Road"
               />
 
               <div style={{ gridColumn: '1 / -1' }}>
