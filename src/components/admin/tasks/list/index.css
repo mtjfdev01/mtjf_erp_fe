@@ -1432,25 +1432,9 @@
 }
 
 .tl-scope-switch__btn.is-active {
-  background: #ffffff;
-  color: #0f172a;
+  background: #000;
+  color: #fff;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-}
-
-.tl-scope-switch__btn.is-active.is-mine {
-  color: #2563eb;
-}
-
-.tl-scope-switch__btn.is-active.is-other {
-  color: #0284c7;
-}
-
-.tl-scope-switch__btn.is-active.is-team {
-  color: #059669;
-}
-
-.tl-scope-switch__btn.is-active.is-approval {
-  color: #16a34a;
 }
 
 
@@ -1996,7 +1980,7 @@
 
 .tl-tasks-assignee-department {
   color: #666666;
-  text-transform: uppercase;
+  text-transform: capitalize;
   font-size: 0.65rem;
   font-weight: 600;
   margin-top: 4px;
@@ -2119,7 +2103,7 @@
 
 .tl-tasks-assignee-department {
   color: #666666;
-  text-transform: uppercase;
+  text-transform: capitalize;
 }
 
 .tl-custom-modal-overlay {
@@ -2235,11 +2219,11 @@
 
 .tl-approval-pending-badge {
   position: absolute;
-  top: -4px;
+  top: -1px;
   right: -4px;
   background: #ef4444;
   color: #ffffff;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
   min-width: 16px;
   height: 16px;
@@ -2251,6 +2235,8 @@
   border: 1px solid #ffffff;
   box-shadow: 0 2px 6px rgba(239, 68, 68, 0.45);
   z-index: 10;
+      animation: tl-approval-badge-pulse 1.5s infinite;
+
 }
 
 @keyframes tl-approval-badge-pulse {
