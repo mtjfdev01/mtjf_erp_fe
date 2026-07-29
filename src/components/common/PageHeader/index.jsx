@@ -17,6 +17,7 @@ const PageHeader = ({
   editPath = '',
   showAdd = false,
   addPath = '',
+  onAddClick,
   addDisabled = false,
   addTitle = 'Add new',
   showFilterToggle = false,
@@ -59,6 +60,10 @@ const PageHeader = ({
   };
 
   const handleAddClick = () => {
+    if (onAddClick) {
+      onAddClick();
+      return;
+    }
     if (addPath) {
       navigate(addPath);
     }
@@ -98,7 +103,7 @@ const PageHeader = ({
             title={refreshTitle}
           />
         )}
-        {showAdd && addPath && (
+        {showAdd && (addPath || onAddClick) && (
           <button
             type="button"
             className={`back-button ${addDisabled ? 'disabled' : ''}`}

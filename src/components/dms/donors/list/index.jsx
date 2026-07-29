@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
-import { fundRaisingDonorsHas } from '../../../../utils/permissions';
+import { fundRaisingDonorsHas, hasPermission } from '../../../../utils/permissions';
 import Navbar from '../../../Navbar'; 
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
@@ -16,7 +16,7 @@ import HybridDropdown from '../../../common/HybridDropdown';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { DownloadCSV } from '../../../common/download';
 import DataImport from '../../../common/DataImport';
-import { FiEye, FiEdit, FiTrash2, FiUser, FiKey } from 'react-icons/fi';
+import { FiEye, FiEdit, FiTrash2, FiUser, FiKey, FiPlusCircle } from 'react-icons/fi';
 import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
@@ -270,6 +270,14 @@ const DonorsList = () => {
     return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'update');
   }, [permissions]);
 
+  const canAddDonation = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'online_donations', 'create')
+    );
+  }, [permissions]);
+
   /** Align with server: online = source website; offline = all other sources. Empty value = all (select placeholder). */
   const donorSourceFilterOptions = useMemo(() => {
     if (!permissions) {
@@ -506,6 +514,13 @@ const DonorsList = () => {
       color: '#111827',
       onClick: () => handleRevealPassword(donor),
       visible: canRevealPassword === true
+    },
+    {
+      icon: <FiPlusCircle />,
+      label: 'Add Donation',
+      color: '#16a34a',
+      to: `/donations/online_donations/add?donor_id=${donor.id}`,
+      visible: canAddDonation
     },
     {
       icon: <FiTrash2 />,

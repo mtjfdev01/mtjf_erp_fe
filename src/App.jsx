@@ -145,6 +145,7 @@ import EditDonationBox from './components/dms/donation_box/edit';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
+import DmsTodosPage from './components/dms/todos/list';
 import FundRaising from './components/dms/fund_raising';
 import ReconciliationList from './components/dms/reconciliation/list';
 import ReconciliationAdd from './components/dms/reconciliation/add';
@@ -410,6 +411,7 @@ const App = () => {
                                 <Route path="/dms/donation-box-donations/list/:id" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/view/:id" element={<ViewDonationBoxDonation />} />
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
+                                <Route path="/dms/todos" element={<DmsTodosPage />} />
                                 
                                 {/* Donations Routes */}
                                 <Route path="/donations/online_donations/list" element={<OnlineDonationsList key="online-donations-list" />} />

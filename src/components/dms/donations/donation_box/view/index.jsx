@@ -186,6 +186,12 @@ const ViewDonationBoxDonation = () => {
                   {donation.collected_by?.first_name} {donation.collected_by?.last_name || 'N/A'}
                 </span>
               </div>
+              {donation.notes && (
+                <div className="view-item view-item--full">
+                  <span className="view-item-label">Notes</span>
+                  <span className="view-item-value">{donation.notes}</span>
+                </div>
+              )}
             </div>
           </div>
 

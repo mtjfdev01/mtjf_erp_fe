@@ -384,6 +384,7 @@ const adminDepartmentItems = () => [
       {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", icon: FiRepeat},
       {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
       {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
+      {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
       {label: "Donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
       {label: "Volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
       {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
@@ -533,6 +534,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'donation_box_donations',
     icon: FiPackage
+  },
+  {
+    label: 'My To-Dos',
+    path: '/dms/todos',
+    type: 'list',
+    module: 'dms_todos',
+    icon: FiCheckSquare
   },
   {
     label: 'Volunteers',

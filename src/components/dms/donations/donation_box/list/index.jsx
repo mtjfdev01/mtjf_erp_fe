@@ -462,6 +462,7 @@ const DonationBoxDonationsList = () => {
                   <th>Collection Amount</th>
                   <th>Collection Date</th>
                   <th>Collected By</th>
+                  <th>Notes</th>
                   <th className="table-actions">Actions</th>
                 </tr>
               </thead>
@@ -557,6 +558,11 @@ const DonationBoxDonationsList = () => {
                     <td>
                       <div style={{ fontWeight: '600', color: '#333' }}>
                         {donation.collected_by?.first_name + ' ' + donation.collected_by?.last_name || 'N/A'}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontSize: '0.85em', color: '#6b7280', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={donation.notes || ''}>
+                        {donation.notes || '—'}
                       </div>
                     </td>
                     <td className="table-actions">

@@ -21,7 +21,7 @@ import SearchableDropdown from '../../../common/SearchableDropdown';
 import usePersistedFilters from '../../../../hooks/usePersistedFilters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 
-import { FiEye, FiEdit2, FiTrash2 } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiPlusCircle } from 'react-icons/fi';
 
 const EMPTY_FILTERS = {
   search: '',
@@ -304,6 +304,14 @@ const DonationBoxList = () => {
     );
   }, [permissions]);
 
+  const canAddDonation = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      hasPermission(permissions, 'fund_raising', 'donation_box_donations', 'create')
+    );
+  }, [permissions]);
+
   const getActionMenuItems = (donationBox) => [
     {
       icon: <FiEye />,
@@ -318,6 +326,13 @@ const DonationBoxList = () => {
       color: '#2196F3',
       to: `/dms/donation_box/edit/${donationBox.id}`,
       visible: canUpdateBox
+    },
+    {
+      icon: <FiPlusCircle />,
+      label: 'Add Donation',
+      color: '#16a34a',
+      to: `/dms/donation-box-donations/add/${donationBox.id}`,
+      visible: canAddDonation
     },
     {
       icon: <FiTrash2 />,
@@ -537,8 +552,7 @@ const DonationBoxList = () => {
                   <th>Shop Name</th>
                   <th>Location</th>
                   <th>Box Type</th>
-                  <th className="hide-on-mobile">Shopkeeper</th>
-                  <th className="hide-on-mobile">Cell No</th>
+                  <th className="hide-on-mobile">Last Collection</th>
                   <th>Status</th>
                   <th>Active Since</th>
                   <th className="table-actions">Actions</th>
@@ -578,8 +592,7 @@ const DonationBoxList = () => {
                       </div>
                     </td>
                     <td>{getBoxTypeBadge(box.box_type)}</td>
-                    <td className="hide-on-mobile">{box.shopkeeper || '-'}</td>
-                    <td className="hide-on-mobile">{box.cell_no || '-'}</td>
+                    <td className="hide-on-mobile">{box.last_collection_date ? formatDate(box.last_collection_date) : '-'}</td>
                     <td>{getStatusBadge(box.status)}</td>
                     <td>{formatDate(box.active_since || box.created_at)}</td>
                     <td className="table-actions">

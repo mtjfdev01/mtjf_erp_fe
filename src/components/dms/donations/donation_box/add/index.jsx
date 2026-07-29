@@ -18,7 +18,8 @@ const AddDonationBoxDonation = () => {
     donation_box_id: '',
     donation_box: id ?? null, // Will store the selected donation box object
     collection_amount: '',
-    collection_date: new Date().toISOString().split('T')[0]
+    collection_date: new Date().toISOString().split('T')[0],
+    notes: ''
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -120,6 +121,7 @@ const AddDonationBoxDonation = () => {
         donation_box_id: form.donation_box_id,
         collection_amount: amount,
         collection_date: form.collection_date,
+        notes: form.notes || undefined,
       };
 
       if (needsDeviceGps) {
@@ -253,6 +255,17 @@ const AddDonationBoxDonation = () => {
                 onChange={handleChange}
                 required
                 max={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+            <div style={{ marginTop: '8px' }}>
+              <label style={{ display: 'block', marginBottom: '4px', fontWeight: 500, fontSize: '0.9em' }}>Notes</label>
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                placeholder="Optional notes about this collection"
+                rows={3}
+                style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1px solid #d1d5db', fontSize: '0.9em', resize: 'vertical' }}
               />
             </div>
             {needsDeviceGps && (
