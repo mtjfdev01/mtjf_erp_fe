@@ -13,7 +13,7 @@ export default defineConfig({
         name: "MTJ Foundation DMS",
         short_name: "MTJ DMS",
         description:
-          "A secure donor management system for managing donors, donations, appeals, campaigns, events, donation boxes, reports, and communication workflows.",
+          "A secure MTJF Solutions for managing donors, donations, appeals, campaigns, events, donation boxes, reports, and communication workflows.",
         theme_color: "#0f172a",
         background_color: "#ffffff",
         display: "standalone",

@@ -14,7 +14,7 @@ const PrivacyPolicy = () => {
         <div>
           <h1>Privacy Policy</h1>
           <p className="privacy-policy-meta">
-            MTJ Foundation Donor Management System (DMS)
+            MTJ Foundation MTJF Solutions (DMS)
             <br />
             Effective date: {EFFECTIVE_DATE}
           </p>
@@ -30,7 +30,7 @@ const PrivacyPolicy = () => {
           <p>
             This Privacy Policy describes how Muhammad Tayyab Jawaid (MTJ) Foundation
             (&quot;MTJ Foundation&quot;, &quot;we&quot;, &quot;us&quot;) collects, uses, stores, and protects
-            information when you use the MTJ Foundation Donor Management System (DMS)
+            information when you use the MTJ Foundation MTJF Solutions (DMS)
             mobile and web application (the &quot;App&quot;).
           </p>
           <p>

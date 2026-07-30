@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Chart, registerables } from 'chart.js';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
 import Modal from '../../../common/Modal';
-import { FiKey, FiExternalLink } from 'react-icons/fi';
+import { FiKey } from 'react-icons/fi';
 import '../../../../styles/variables.css';
 import '../../../../styles/components.css';
 import Navbar from '../../../Navbar';
@@ -131,7 +131,6 @@ const TaskTrendChart = ({ monthlyTrend }) => {
 
 const UserPerformance = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user: authUser, permissions } = useAuth();
   const [dashboard, setDashboard] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -310,78 +309,6 @@ const UserPerformance = () => {
                 </div>
               </div>
             </div>
-
-            <h4 className="perf-subtitle">Recent assigned tasks</h4>
-            <div className="perf-table-wrap">
-              <table className="perf-table">
-                <thead>
-                  <tr>
-                    <th>Task</th>
-                    <th>Priority</th>
-                    <th>Assigned</th>
-                    <th>Due</th>
-                    <th>Status</th>
-                    <th>Remarks</th>
-                    <th />
-                  </tr>
-                </thead>
-                <tbody>
-                  {(tasks.recent_tasks || []).length === 0 ? (
-                    <tr><td colSpan={7} className="perf-table-empty">No tasks assigned yet</td></tr>
-                  ) : (
-                    tasks.recent_tasks.map((task) => (
-                      <tr key={task.id}>
-                        <td>{task.title}</td>
-                        <td>{formatLabel(task.priority)}</td>
-                        <td>{formatDate(task.assigned_date)}</td>
-                        <td>{formatDate(task.due_date)}</td>
-                        <td><StatusBadge status={task.status} /></td>
-                        <td className="perf-remarks">{task.remarks || '—'}</td>
-                        <td>
-                          <button type="button" className="secondary_btn perf-table-btn" onClick={() => navigate(`/tasks/view/${task.id}`)}>
-                            <FiExternalLink />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {(tasks.overdue_task_list || []).length > 0 && (
-              <>
-                <h4 className="perf-subtitle perf-subtitle--danger">Overdue tasks</h4>
-                <div className="perf-table-wrap">
-                  <table className="perf-table">
-                    <thead>
-                      <tr>
-                        <th>Task</th>
-                        <th>Priority</th>
-                        <th>Due</th>
-                        <th>Remarks</th>
-                        <th />
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tasks.overdue_task_list.map((task) => (
-                        <tr key={task.id} className="perf-row-overdue">
-                          <td>{task.title}</td>
-                          <td>{formatLabel(task.priority)}</td>
-                          <td>{formatDate(task.due_date)}</td>
-                          <td className="perf-remarks">{task.remarks || '—'}</td>
-                          <td>
-                            <button type="button" className="secondary_btn perf-table-btn" onClick={() => navigate(`/tasks/view/${task.id}`)}>
-                              Open
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            )}
           </section>
 
           {/* 4. DMS Performance */}

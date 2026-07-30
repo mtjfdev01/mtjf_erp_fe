@@ -44,7 +44,7 @@ const Navbar = () => {
         <div className="navbar-brand">
           <img src={mtjfLogo} alt="MTJF Logo" className="navbar-logo" />
           <h2 className="navbar-title">
-            <span className="navbar-title-full">Donor Management System</span>
+            <span className="navbar-title-full">MTJF Solutions</span>
             <span className="navbar-title-short">DMS</span>
           </h2>
         </div>
