@@ -827,7 +827,7 @@ const TaskReports = () => {
   const { user, permissions } = useAuth();
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
-  const [viewType, setViewType] = useState("all"); // Default to all tasks for reports
+  const [viewType, setViewType] = useState("assigned"); // Initial view: current user's assigned tasks
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [taskStats, setTaskStats] = useState(null);
   const [taskStatsLoading, setTaskStatsLoading] = useState(false);
@@ -1426,28 +1426,19 @@ const TaskReports = () => {
         statsDepartment = user?.department;
       }
 
-      // Determine the effective view_type for the API:
-      //  * Admins + team mode: undefined (let department/role filters apply naturally)
-      //  * Non-admin with specific viewType: pass it through (created/assigned/assigned_to_team/approval_tasks)
-      //  * Non-admin on "all" with scope === "self": explicitly narrow to a PERSONAL view (assigned)
-      //      so the backend CANNOT accidentally return department-wide data. We still rely on the
-      //      backend's applyRoleFiltersWithoutBrackets as the enforcement layer, but on the
-      //      frontend we make the intent explicit to avoid any widening bugs.
-      //  * Non-admin on "all" with broader scope: leave undefined, role filters on backend handle it.
+      // view_type scopes the dashboard to the logged-in user (from JWT via @CurrentUser).
+      // Do NOT send user_id — backend ignores query user_id and uses req.user from JwtGuard.
       let effectiveViewType;
-      const wantsSpecificView = !rolePerms.isAdmin && viewType !== 'all' && !showTeamPerformance;
-      if (wantsSpecificView) {
+      if (showTeamPerformance && !taskScopeCaps.isSelfOnly) {
+        // Team performance mode: leave view_type empty so role filters show the team
+        effectiveViewType = undefined;
+      } else if (!rolePerms.isAdmin && viewType !== 'all') {
         effectiveViewType = viewType;
-      } else if (!rolePerms.isAdmin && !showTeamPerformance && taskScopeCaps.isSelfOnly && viewType === 'all') {
-        // For self-only users "All Tasks" = tasks the user is involved with.
-        // We do NOT pass a specific view_type so that the backend applyRoleFiltersWithoutBrackets
-        // still includes approval-tasks, created-by, reported-by, AND assigned-to tasks.
-        // Leaving view_type empty here is correct; backend role-scoping handles it.
-        // We explicitly just keep effectiveViewType = undefined but add user_id below to help the backend.
+      } else if (!rolePerms.isAdmin && viewType === 'all') {
+        // "All" still means personal involvement; leave undefined so role filters apply
         effectiveViewType = undefined;
-      } else if (!rolePerms.isAdmin && showTeamPerformance && taskScopeCaps.isSelfOnly) {
-        // Self-only user somehow got into team mode; treat as their own tasks
-        effectiveViewType = undefined;
+      } else if (rolePerms.isAdmin && viewType !== 'all') {
+        effectiveViewType = viewType;
       } else {
         effectiveViewType = undefined;
       }
@@ -1457,32 +1448,17 @@ const TaskReports = () => {
         end_date: range.to,
         department: statsDepartment,
         view_type: effectiveViewType,
-        user_id: user?.id // Always pass user_id for consistent role resolution on the backend
       };
       const statsRes = await axiosInstance.get('/tasks/dashboard/stats', { params: statsParams });
       const statsData = statsRes.data?.data || statsRes.data;
       setTaskStats(statsData || null);
 
-      // Fetch user-wise and project-wise aggregates from the reports endpoint
-      // Build reports params
       const reportsParams = {
         start_date: range.from,
         end_date: range.to,
         department: statsDepartment,
         view_type: effectiveViewType,
-        user_id: user?.id // Always pass user_id for consistent role resolution
       };
-
-      // When showTeamPerformance is active, we specifically want to view the team, NOT just the user's assigned tasks
-      // So we do NOT send user_id for team performance mode unless we are trying to restrict the view.
-      // But the backend relies on the Bearer token for currentUser anyway.
-      if (showTeamPerformance && taskScopeCaps.isSelfOnly) {
-        // Self-only users shouldn't see team; keep personal-only user_id filter
-        reportsParams.user_id = user?.id;
-      } else if (showTeamPerformance) {
-        // Team roles in team mode: drop user_id so we see the full team via the Bearer-token role filters
-        delete reportsParams.user_id;
-      }
 
       const reportsRes = await axiosInstance.get('/tasks/reports', { params: reportsParams });
       const reportsData = reportsRes.data?.data || reportsRes.data;
@@ -2767,7 +2743,7 @@ const TaskReports = () => {
                     {/* Project/Program-wise Task Report */}
                     {/* <ProjectProgramWiseReport projects={taskAggregates.projects} /> */}
                     {/* User-wise Task Report */}
-                    <div className="task-report-card task-report-card--user-report">
+                    {/* <div className="task-report-card task-report-card--user-report">
                       <div className="task-report-card-header task-report-card-header--with-filter" ref={userReportHeaderRef}>
                         <div className="task-report-header-left">
                           <FaUsers className="task-status-overview-icon" />
@@ -2887,9 +2863,9 @@ const TaskReports = () => {
                           });
                         })()}
                       </div>
-                    </div>
+                    </div> */}
                     {/* Department-wise Task Report (Only for Admin) */}
-                    {rolePerms.isAdmin && (
+                    {/* {rolePerms.isAdmin && (
                       <div className="task-report-card task-report-card--department-report">
                         <div className="task-report-card-header task-report-card-header--with-filter" ref={deptReportHeaderRef}>
                           <div className="task-report-header-left">
@@ -2988,7 +2964,7 @@ const TaskReports = () => {
                           })()}
                         </div>
                       </div>
-                    )}
+                    )} */}
                   </div>
                 </>
               ) : (
