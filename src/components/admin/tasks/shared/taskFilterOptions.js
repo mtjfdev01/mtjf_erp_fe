@@ -1,14 +1,22 @@
+// Keep in sync with ddr_server/src/users/user.entity.ts → Department enum
 export const TASK_DEPARTMENT_OPTIONS = [
   'store',
   'procurements',
-  'accounts_and_finance',
   'program',
+  'accounts_and_finance',
+  'admin',
+  'fund_raising',
   'it',
   'hr',
   'marketing',
   'audio_video',
-  'fund_raising',
-  'admin',
+  'meal',
+  'health',
+  'executive_office',
+  'ceo',
+  'internal_audit',
+  'crd',
+  'aas_lab',
 ].map((dept) => ({
   value: dept,
   label: dept

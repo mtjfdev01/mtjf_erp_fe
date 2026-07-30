@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiSearch, FiPlus, FiChevronDown, FiClock, FiList, FiUsers, FiMoreHorizontal, FiClipboard, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiPlus, FiClock, FiList, FiUsers, FiMoreHorizontal, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw } from 'react-icons/fi';
 import { HiOutlineSwitchHorizontal } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
-import PageHeader from '../../../common/PageHeader'
-import { RefreshButton } from '../../../common/filters';
+import { RefreshButton, SearchFilter, DropdownFilter, CollapsibleFilters, SearchButton, ClearButton } from '../../../common/filters';
 import Loader from '../../../common/loader/Loader';
 import Pagination from '../../../common/Pagination';
 import ActionMenu from '../../../common/ActionMenu';
@@ -14,10 +13,12 @@ import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
 import { tasksBasePath } from '../../../../utils/admin';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import '../../../../styles/components.css';
 import './index.css';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
-import TaskAssigneeFilter, { formatAssigneeLabel } from '../shared/TaskAssigneeFilter';
+import TaskAssigneeFilter from '../shared/TaskAssigneeFilter';
+import useTasksServerQuery from '../shared/useTasksServerQuery';
 import {
   TASK_DEPARTMENT_OPTIONS,
   TASK_PROJECT_PROGRAM_OPTIONS,
@@ -27,103 +28,43 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   const navigate = useNavigate();
   const location = useLocation();
   const { user, permissions } = useAuth();
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
 
-  // Initialize state from URL search params
-  const searchParams = new URLSearchParams(location.search);
-
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [currentPage, setCurrentPage] = useState(() => Number(searchParams.get('page')) || 1);
-  const [pageSize, setPageSize] = useState(() => Number(searchParams.get('pageSize')) || 30);
-  const [sortField, setSortField] = useState(() => searchParams.get('sortField') || 'created_at');
-  const [sortOrder, setSortOrder] = useState(() => searchParams.get('sortOrder') || 'DESC');
-  const [totalItems, setTotalItems] = useState(0);
-  const [totalPages, setTotalPages] = useState(1);
-  const [categoryCounts, setCategoryCounts] = useState({
-    assigned_to_me: 0,
-    assigned_to_team: 0,
-    other_tasks: 0
-  });
-  const [filters, setFilters] = useState({
-    search: searchParams.get('search') || '',
-    department: searchParams.get('department') || '',
-    project_name: searchParams.get('project_name') || '',
-    status: searchParams.get('status') || '',
-    priority: searchParams.get('priority') || '',
-  });
-  const [assignedUser, setAssignedUser] = useState(() => {
-    const assigneeId = searchParams.get('assignee_id');
-    if (!assigneeId || !Number.isFinite(Number(assigneeId))) return null;
-    const label = (searchParams.get('user_label') || '').trim();
-    const parts = label.split(' ').filter(Boolean);
-    return {
-      id: Number(assigneeId),
-      first_name: parts[0] || '',
-      last_name: parts.slice(1).join(' ') || '',
-    };
-  });
-  const [searchInput, setSearchInput] = useState(() => searchParams.get('search') || '');
-  const [isSearchPending, setIsSearchPending] = useState(false);
+  const [assignedUser, setAssignedUser] = useState(null);
   const [myApprovals, setMyApprovals] = useState([]);
-  const [activeTab, setActiveTab] = useState(() => searchParams.get('activeTab') || 'assigned_to_me');
+  const [activeTab, setActiveTab] = useState('assigned_to_me');
   const [approvalsLoaded, setApprovalsLoaded] = useState(false);
-  const [hasInteractedWithApprovals, setHasInteractedWithApprovals] = useState(false);
-  const [showApprovalBanner, setShowApprovalBanner] = useState(false);
-  const [taskRefreshNonce, setTaskRefreshNonce] = useState(0);
+
+  const {
+    tasks,
+    setTasks,
+    loading,
+    error,
+    totalItems,
+    totalPages,
+    categoryCounts,
+    currentPage,
+    pageSize,
+    sortField,
+    sortOrder,
+    tempFilters,
+    handleFilterChange,
+    handleApplyFilters,
+    handleClearFilters,
+    setCurrentPage,
+    setPageSize,
+    handleSortChange,
+    refresh,
+  } = useTasksServerQuery({
+    storagePrefix: 'tasks-list',
+    defaultPageSize: 30,
+    defaultSortField: 'created_at',
+    activeTab,
+    assignedUser,
+    refreshNonce,
+  });
 
   const currentUserId = user?.id ? Number(user.id) : null;
-
-  useEffect(() => {
-    const assigneeId = searchParams.get('assignee_id');
-    if (!assigneeId || !Number.isFinite(Number(assigneeId))) return;
-
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await axiosInstance.get(
-          `/users/by-ids?ids=${encodeURIComponent(assigneeId)}`,
-        );
-        const users = Array.isArray(res.data) ? res.data : [];
-        if (!cancelled && users[0]) {
-          setAssignedUser(users[0]);
-        }
-      } catch {
-        // URL assignee could not be loaded; filter stays empty
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Sync state to URL search params
-  useEffect(() => {
-    const params = new URLSearchParams();
-
-    if (currentPage !== 1) params.set('page', currentPage);
-    if (pageSize !== 30) params.set('pageSize', pageSize);
-    if (sortField !== 'created_at') params.set('sortField', sortField);
-    if (sortOrder !== 'DESC') params.set('sortOrder', sortOrder);
-    if (filters.search) params.set('search', filters.search);
-    if (filters.department) params.set('department', filters.department);
-    if (filters.project_name) params.set('project_name', filters.project_name);
-    if (filters.status) params.set('status', filters.status);
-    if (filters.priority) params.set('priority', filters.priority);
-    if (assignedUser?.id) {
-      params.set('assignee_id', String(assignedUser.id));
-      const label = formatAssigneeLabel(assignedUser);
-      if (label) params.set('user_label', label);
-    }
-    if (activeTab !== 'assigned_to_me') params.set('activeTab', activeTab);
-
-    // Navigate with updated params
-    navigate({
-      pathname: location.pathname,
-      search: params.toString()
-    }, { replace: true });
-  }, [currentPage, pageSize, sortField, sortOrder, filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id, activeTab, navigate, location.pathname]);
 
   const isManager = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
@@ -142,79 +83,30 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     return ['dept_head', 'manager'].includes(role);
   }, [user?.role]);
 
-  const debouncedSearch = useMemo(() => {
-    let timeout;
-    const fn = (value) => {
-      if (timeout) clearTimeout(timeout);
-      setIsSearchPending(true);
-      timeout = setTimeout(() => {
-        setFilters((prev) => ({ ...prev, search: value }));
-        setIsSearchPending(false);
-      }, 600);
-    };
-    fn.cancel = () => timeout && clearTimeout(timeout);
-    return fn;
-  }, []);
+  const statusFilterOptions = useMemo(
+    () => [
+      'open',
+      'in_progress',
+      'pending_approval',
+      'approved',
+      'rejected',
+      'completed',
+      'closed',
+      'cancelled',
+    ].map((s) => ({
+      value: s,
+      label: s.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' '),
+    })),
+    [],
+  );
 
-  const handleSearchInputChange = useCallback((value) => {
-    setSearchInput(value);
-    debouncedSearch(value);
-  }, [debouncedSearch]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filters.search, filters.department, filters.project_name, filters.status, filters.priority, assignedUser?.id]);
-
-  useEffect(() => {
-    return () => {
-      if (debouncedSearch.cancel) debouncedSearch.cancel();
-    };
-  }, [debouncedSearch]);
-
-  const filterConfig = [
-    { key: 'search', type: 'text', placeholder: isSearchPending ? 'Searching...' : 'Search tasks...', value: searchInput, width: '250px' },
-    {
-      key: 'department',
-      type: 'select',
-      placeholder: 'All Departments',
-      value: filters.department,
-      label: 'Department',
-      options: TASK_DEPARTMENT_OPTIONS,
-    },
-    {
-      key: 'project_name',
-      type: 'select',
-      placeholder: 'All Projects/Programs',
-      value: filters.project_name,
-      label: 'Project / Program',
-      options: TASK_PROJECT_PROGRAM_OPTIONS,
-    },
-    {
-      key: 'status',
-      type: 'select',
-      placeholder: 'All Statuses',
-      value: filters.status,
-      label: 'Status',
-      options: [
-        'open',
-        'in_progress',
-        'pending_approval',
-        'approved',
-        'rejected',
-        'completed',
-        'closed',
-        'cancelled'
-      ].map((s) => ({ value: s, label: s.split('_').map(w => w[0].toUpperCase() + w.slice(1)).join(' ') }))
-    },
-    {
-      key: 'priority',
-      type: 'select',
-      placeholder: 'All Priorities',
-      value: filters.priority,
-      label: 'Priority',
-      options: ['low', 'medium', 'high', 'critical'].map((p) => ({ value: p, label: p[0].toUpperCase() + p.slice(1) }))
-    }
-  ];
+  const priorityFilterOptions = useMemo(
+    () => ['low', 'medium', 'high', 'critical'].map((p) => ({
+      value: p,
+      label: p[0].toUpperCase() + p.slice(1),
+    })),
+    [],
+  );
 
   const tasksRouteBase = useMemo(() => tasksBasePath(), []);
 
@@ -254,31 +146,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     [currentUserId]
   );
 
-  const isTaskAssignedToTeam = useCallback(
-    (task) => {
-      if (!user?.department || !task) return false;
-
-      // Check if any assignee is from current user's department
-      const meta = Array.isArray(task.assigned_users_meta) ? task.assigned_users_meta : [];
-      return meta.some((m) => m?.department === user.department && Number(m?.user_id) !== currentUserId);
-    },
-    [user?.department, currentUserId]
-  );
-
-  const myTasks = useMemo(
-    () => Array.isArray(tasks) ? tasks.filter((t) => isTaskAssignedToCurrentUser(t)) : [],
-    [tasks, isTaskAssignedToCurrentUser]
-  );
-
-  const teamTasks = useMemo(() => {
-    if (!isManager || !user?.department) return [];
-    // Tasks assigned to team members (and NOT assigned to current user)
-    return Array.isArray(tasks) ? tasks.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t)) : [];
-  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, user?.department, isManager]);
-
-  // Load approvals immediately for all logged-in users
   const fetchApprovals = useCallback(async () => {
-    // Only fetch approvals if we have a current user
     if (!currentUserId) {
       return;
     }
@@ -294,7 +162,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     } catch {
       if (!cancelled) {
         setMyApprovals([]);
-        setApprovalsLoaded(true); // Mark as loaded even on error to prevent retries
+        setApprovalsLoaded(true);
       }
     }
     return () => {
@@ -381,141 +249,28 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     return Array.isArray(approvalRequestsForUser) ? approvalRequestsForUser : [];
   }, [approvalRequestsForUser]);
 
-  const otherTasks = useMemo(() => {
-    if (!currentUserId) return Array.isArray(tasks) ? tasks : [];
-
-    // Get regular other tasks (not assigned to current user or team AND not an approval task for this user)
-    const regularOtherTasks = Array.isArray(tasks) ? tasks.filter((t) => {
-      const assignedToMe = isTaskAssignedToCurrentUser(t);
-      if (assignedToMe) return false;
-
-      const assignedToTeam = isManager && isTaskAssignedToTeam(t);
-      if (assignedToTeam) return false;
-
-      // Also exclude tasks that are in approvalTasks
-      const isApprovalTask = approvalTasks.some(at => Number(at.id) === Number(t.id));
-      if (isApprovalTask) return false;
-
-      return true;
-    }) : [];
-
-    return regularOtherTasks;
-  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, currentUserId, isManager, approvalTasks]);
-
   useEffect(() => {
-    // Only reset activeTab if approvals are fully loaded and approvalTasks is actually empty
     if (approvalsLoaded && activeTab === 'approval_tasks' && approvalTasks.length === 0) {
       setActiveTab('assigned_to_me');
     }
   }, [approvalTasks.length, activeTab, approvalsLoaded]);
 
-  // Optimized: Use /tasks/list for initial load, /tasks/search only when search filters are applied
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const scopedFilters = {
-        ...filters,
-        department: filters.department
-      };
-
-      // Always use strict backend filtering if a department is selected in the dropdown.
-      // This ensures that clicking "Program Tasks" in sidebar OR selecting "Program" from dropdown
-      // shows ONLY tasks belonging to that department.
-      const isStrictFilter = !!scopedFilters.department;
-
-      const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
-
-      // Department / project are user filters too — must hit search (or list with full params)
-      const hasUserAppliedFilters =
-        filters.search ||
-        filters.status ||
-        filters.priority ||
-        filters.department ||
-        filters.project_name ||
-        assigneeId;
-
-      let res;
-
-      if (hasUserAppliedFilters) {
-        const payload = {
-          pagination: { page: currentPage, pageSize, sortField, sortOrder },
-          filters: {
-            ...scopedFilters,
-            assignee_id: assigneeId,
-          },
-          strictDepartment: isStrictFilter,
-        };
-        res = await axiosInstance.post('/tasks/search', payload);
-      } else {
-        const params = {
-          page: currentPage,
-          pageSize,
-          sortField,
-          sortOrder,
-          department: scopedFilters.department || undefined,
-          project_name: scopedFilters.project_name || undefined,
-          assignee_id: assigneeId,
-          strictDepartment: isStrictFilter,
-        };
-        res = await axiosInstance.get('/tasks/list', { params });
-      }
-
-      const list = res.data.data || [];
-      setTasks(list);
-      setTotalItems(res.data.pagination?.total || 0);
-      setTotalPages(res.data.pagination?.totalPages || Math.ceil((res.data.pagination?.total || 0) / pageSize));
-      if (res.data.categoryCounts) {
-        setCategoryCounts(res.data.categoryCounts);
-      }
-    } catch (e) {
-      setError(e.response?.data?.message || 'Failed to fetch tasks.');
-    } finally {
-      setLoading(false);
-    }
-  }, [
-    currentPage,
-    pageSize,
-    sortField,
-    sortOrder,
-    filters.search,
-    filters.department,
-    filters.project_name,
-    filters.status,
-    filters.priority,
-    assignedUser?.id,
-    taskPerms.reportScope,
-    user?.department,
-  ]);
-
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks, taskRefreshNonce, refreshNonce]);
-
   useEffect(() => {
     fetchApprovals();
   }, [fetchApprovals, refreshNonce]);
 
-  // Reset approvalsLoaded when we navigate to this page to refresh data
   useEffect(() => {
     setApprovalsLoaded(false);
   }, [location.pathname]);
 
-  const handleFilterChange = (key, value) => {
-    if (key === 'search') {
-      handleSearchInputChange(value);
-    } else {
-      setFilters((prev) => ({ ...prev, [key]: value }));
-    }
-  };
-  const clearAllFilters = () => {
-    setSearchInput('');
-    setAssignedUser(null);
-    setFilters({ search: '', department: '', project_name: '', status: '', priority: '' });
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
     setCurrentPage(1);
-    setPageSize(30);
-    setSortField('created_at');
-    setSortOrder('DESC');
+  };
+
+  const handleClearAll = () => {
+    setAssignedUser(null);
+    handleClearFilters();
     setActiveTab('assigned_to_me');
   };
 
@@ -926,7 +681,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     try {
       await axiosInstance.delete(`/tasks/${task.id}`);
       setTasks((prev) => prev.filter((t) => t.id !== task.id));
-      setTotalItems((prev) => Math.max(prev - 1, 0));
+      refresh();
       toast.success('Task deleted.');
     } catch (e) {
       toast.error(e.response?.data?.message || 'Failed to delete task.');
@@ -1297,24 +1052,24 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                   role="tab"
                   aria-selected={activeTab === 'assigned_to_me'}
                   className={`tl-scope-switch__btn ${activeTab === 'assigned_to_me' ? 'is-active is-mine' : ''}`}
-                  onClick={() => setActiveTab('assigned_to_me')}
+                  onClick={() => handleTabChange('assigned_to_me')}
                   title="Assigned to me"
                 >
                   <FiUserCheck />
                   <span className="tl-scope-switch__label">Me</span>
-                  <span className="tl-scope-switch__count">{myTasks.length}</span>
+                  <span className="tl-scope-switch__count">{categoryCounts.assigned_to_me}</span>
                 </button>
                 <button
                   type="button"
                   role="tab"
                   aria-selected={activeTab === 'other_tasks'}
                   className={`tl-scope-switch__btn ${activeTab === 'other_tasks' ? 'is-active is-other' : ''}`}
-                  onClick={() => setActiveTab('other_tasks')}
-                  title="Assigned to others"
+                  onClick={() => handleTabChange('other_tasks')}
+                  title="Assigned by me"
                 >
                   <FiList />
                   <span className="tl-scope-switch__label">Others</span>
-                  <span className="tl-scope-switch__count">{otherTasks.length}</span>
+                  <span className="tl-scope-switch__count">{categoryCounts.other_tasks}</span>
                 </button>
                 {isManager && (
                   <button
@@ -1322,12 +1077,12 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                     role="tab"
                     aria-selected={activeTab === 'assigned_to_team'}
                     className={`tl-scope-switch__btn ${activeTab === 'assigned_to_team' ? 'is-active is-team' : ''}`}
-                    onClick={() => setActiveTab('assigned_to_team')}
+                    onClick={() => handleTabChange('assigned_to_team')}
                     title="Assigned to team"
                   >
                     <FiUsers />
                     <span className="tl-scope-switch__label">Team</span>
-                    <span className="tl-scope-switch__count">{teamTasks.length}</span>
+                    <span className="tl-scope-switch__count">{categoryCounts.assigned_to_team}</span>
                   </button>
                 )}
                 {approvalTasks.length > 0 && (
@@ -1336,7 +1091,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                     role="tab"
                     aria-selected={activeTab === 'approval_tasks'}
                     className={`tl-scope-switch__btn ${activeTab === 'approval_tasks' ? 'is-active is-approval' : ''}`}
-                    onClick={() => setActiveTab('approval_tasks')}
+                    onClick={() => handleTabChange('approval_tasks')}
                     title="Approval tasks"
                   >
                     <FiThumbsUp />
@@ -1370,6 +1125,13 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               </div>
 
               <div className="tl-tasks-toolbar-right">
+                <button
+                  type="button"
+                  className="tl-filter-clear-btn"
+                  onClick={toggleFilters}
+                >
+                  {filtersOpen ? 'Hide filters' : 'Show filters'}
+                </button>
                 <TaskViewModeSwitch value={viewMode} onChange={onViewModeChange} />
                 <button
                   className="tl-tasks-add-btn"
@@ -1382,132 +1144,92 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               </div>
             </div>
 
-            <div className="tl-tasks-filter-main">
-              <div className="tl-filter-item tl-search-item">
-                <FiSearch className="tl-filter-icon" />
-                <input
-                  type="text"
-                  placeholder={isSearchPending ? 'Searching...' : 'Search tasks...'}
-                  value={searchInput}
-                  onChange={(e) => handleSearchInputChange(e.target.value)}
-                />
-              </div>
+            <CollapsibleFilters open={filtersOpen}>
+            <div className="filters-section tl-tasks-filter-main">
+              <SearchFilter
+                filterKey="search"
+                label="Search"
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="Search tasks..."
+              />
 
-              <div className="tl-filter-item tl-select-item">
-                <FiUsers className="tl-filter-icon" />
-                <select
-                  value={filters.department === null ? '' : filters.department}
-                  onChange={(e) => setFilters(prev => ({ ...prev, department: e.target.value }))}
-                >
-                  <option value="">Department</option>
-                  {filterConfig[1].options.map(opt => (
-                    <option key={opt.value} value={opt.value} style={{ textTransform: 'uppercase' }}>{opt.label}</option>
-                  ))}
-                </select>
-                <FiChevronDown className="tl-chevron-icon" />
-              </div>
+              <DropdownFilter
+                filterKey="department"
+                label="Department"
+                data={TASK_DEPARTMENT_OPTIONS}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Departments"
+              />
 
-              <div className="tl-filter-item tl-select-item">
-                <FiClipboard className="tl-filter-icon" />
-                <select
-                  value={filters.project_name}
-                  onChange={(e) => setFilters(prev => ({ ...prev, project_name: e.target.value }))}
-                >
-                  <option value="">Project / Program</option>
-                  {filterConfig[2].options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                <FiChevronDown className="tl-chevron-icon" />
-              </div>
+              <DropdownFilter
+                filterKey="project_name"
+                label="Project / Program"
+                data={TASK_PROJECT_PROGRAM_OPTIONS}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Projects/Programs"
+              />
 
-              <div className="tl-filter-item tl-select-item">
-                <FiClock className="tl-filter-icon" />
-                <select
-                  value={filters.status}
-                  onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-                >
-                  <option value="">Status</option>
-                  {filterConfig[3].options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                <FiChevronDown className="tl-chevron-icon" />
-              </div>
+              <DropdownFilter
+                filterKey="status"
+                label="Status"
+                data={statusFilterOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Statuses"
+              />
 
-              <div className="tl-filter-item tl-select-item">
-                <FiList className="tl-filter-icon" />
-                <select
-                  value={filters.priority}
-                  onChange={(e) => setFilters(prev => ({ ...prev, priority: e.target.value }))}
-                >
-                  <option value="">Priority</option>
-                  {filterConfig[4].options.map(opt => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-                <FiChevronDown className="tl-chevron-icon" />
-              </div>
+              <DropdownFilter
+                filterKey="priority"
+                label="Priority"
+                data={priorityFilterOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Priorities"
+              />
 
-              <button className="tl-filter-clear-btn" onClick={clearAllFilters} disabled={loading}>
-                Clear
-              </button>
-              <RefreshButton onClick={() => setTaskRefreshNonce((n) => n + 1)} loading={loading} />
+              <div className="filters-actions">
+                <SearchButton onClick={handleApplyFilters} loading={loading} />
+                <ClearButton onClick={handleClearAll} disabled={loading} />
+                <RefreshButton onClick={refresh} loading={loading} />
+              </div>
             </div>
+            </CollapsibleFilters>
           </div>
 
           {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
 
           <div className="tl-task-card-list">
             <div className="tl-tab-content-wrapper">
-              {activeTab === 'assigned_to_me' && (
-                <div className="tl-tasks-group tl-fade-in">
-                  {myTasks.length > 0 ? (
-                    renderTasksTable(myTasks)
-                  ) : (
-                    <div className="tl-empty-tab-state">
+              {tasks.length > 0 ? (
+                renderTasksTable(tasks)
+              ) : (
+                <div className="tl-empty-tab-state">
+                  {activeTab === 'assigned_to_me' && (
+                    <>
                       <FiUserCheck className="tl-empty-icon" />
                       <p>No tasks assigned to you at the moment.</p>
-                    </div>
+                    </>
                   )}
-                </div>
-              )}
-
-              {activeTab === 'assigned_to_team' && isManager && (
-                <div className="tl-tasks-group tl-fade-in">
-                  {teamTasks.length > 0 ? (
-                    renderTasksTable(teamTasks)
-                  ) : (
-                    <div className="tl-empty-tab-state">
+                  {activeTab === 'assigned_to_team' && (
+                    <>
                       <FiUsers className="tl-empty-icon" />
                       <p>No tasks assigned to your team members.</p>
-                    </div>
+                    </>
                   )}
-                </div>
-              )}
-
-              {activeTab === 'approval_tasks' && (
-                <div className="tl-tasks-group tl-fade-in">
-                  {approvalTasks.length > 0 ? (
-                    renderTasksTable(approvalTasks)
-                  ) : (
-                    <div className="tl-empty-tab-state">
+                  {activeTab === 'approval_tasks' && (
+                    <>
                       <FiThumbsUp className="tl-empty-icon" />
                       <p>No approval tasks found.</p>
-                    </div>
+                    </>
                   )}
-                </div>
-              )}
-
-              {activeTab === 'other_tasks' && (
-                <div className="tl-tasks-group tl-fade-in">
-                  {otherTasks.length > 0 ? (
-                    renderTasksTable(otherTasks)
-                  ) : (
-                    <div className="tl-empty-tab-state">
+                  {activeTab === 'other_tasks' && (
+                    <>
                       <FiList className="tl-empty-icon" />
-                      <p>No other tasks found.</p>
-                    </div>
+                      <p>No tasks assigned by you found.</p>
+                    </>
                   )}
                 </div>
               )}
@@ -1520,8 +1242,8 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               totalItems={totalItems}
               pageSize={pageSize}
               onPageChange={setCurrentPage}
-              onPageSizeChange={(n) => { setPageSize(n); setCurrentPage(1); }}
-              onSortChange={(f, o) => { setSortField(f); setSortOrder(o); setCurrentPage(1); }}
+              onPageSizeChange={setPageSize}
+              onSortChange={handleSortChange}
               sortField={sortField}
               sortOrder={sortOrder}
               sortOptions={sortOptions}

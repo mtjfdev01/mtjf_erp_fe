@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FiPlus, FiSearch, FiUserCheck, FiUsers, FiList } from 'react-icons/fi';
+import { FiPlus, FiUserCheck, FiUsers, FiList } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
-import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
@@ -13,7 +12,16 @@ import TaskCardMenu from './TaskCardMenu';
 import BoardColumnPicker from './BoardColumnPicker';
 import TaskViewModeSwitch from '../shared/TaskViewModeSwitch';
 import TaskAssigneeFilter from '../shared/TaskAssigneeFilter';
-import { RefreshButton } from '../../../common/filters';
+import {
+  RefreshButton,
+  SearchFilter,
+  DropdownFilter,
+  CollapsibleFilters,
+  SearchButton,
+  ClearButton,
+} from '../../../common/filters';
+import useFiltersPanel from '../../../../hooks/useFiltersPanel';
+import useTasksServerQuery from '../shared/useTasksServerQuery';
 import {
   TASK_DEPARTMENT_OPTIONS,
   TASK_PROJECT_PROGRAM_OPTIONS,
@@ -30,12 +38,7 @@ import './index.css';
 
 const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) => {
   const { user, permissions } = useAuth();
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [departmentFilter, setDepartmentFilter] = useState('');
-  const [projectFilter, setProjectFilter] = useState('');
+  const { filtersOpen, toggleFilters } = useFiltersPanel();
   const [assignedUser, setAssignedUser] = useState(null);
   const [activeTab, setActiveTab] = useState('assigned_to_me');
   const [draggingTaskId, setDraggingTaskId] = useState(null);
@@ -58,7 +61,28 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
   const [visibleColumnIds, setVisibleColumnIds] = useState(() => loadVisibleColumnIds(null));
   const pendingRollbackRef = useRef(new Map());
   const statusRequestRef = useRef(0);
-  const tasksRef = useRef(tasks);
+  const tasksRef = useRef([]);
+
+  const {
+    tasks,
+    setTasks,
+    loading,
+    error,
+    categoryCounts,
+    tempFilters,
+    handleFilterChange,
+    handleApplyFilters,
+    handleClearFilters,
+    setCurrentPage,
+    refresh,
+  } = useTasksServerQuery({
+    storagePrefix: 'tasks-board',
+    defaultPageSize: -1,
+    defaultSortField: 'updated_at',
+    activeTab,
+    assignedUser,
+    refreshNonce,
+  });
 
   useEffect(() => {
     tasksRef.current = tasks;
@@ -95,35 +119,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
     [currentUserId],
   );
 
-  const isTaskAssignedToTeam = useCallback(
-    (task) => {
-      if (!user?.department || !task) return false;
-      const meta = Array.isArray(task.assigned_users_meta) ? task.assigned_users_meta : [];
-      return meta.some((m) => m?.department === user.department && Number(m?.user_id) !== currentUserId);
-    },
-    [user?.department, currentUserId],
-  );
-
-  const filteredByTab = useMemo(() => {
-    const list = Array.isArray(tasks) ? tasks : [];
-    if (activeTab === 'assigned_to_me') {
-      return list.filter((t) => isTaskAssignedToCurrentUser(t));
-    }
-    if (activeTab === 'assigned_to_team' && isManager) {
-      return list.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t));
-    }
-    return list.filter((t) => !isTaskAssignedToCurrentUser(t) && !(isManager && isTaskAssignedToTeam(t)));
-  }, [tasks, activeTab, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, isManager]);
-
-  const visibleTasks = useMemo(() => {
-    const q = searchInput.trim().toLowerCase();
-    if (!q) return filteredByTab;
-    return filteredByTab.filter((t) => {
-      const title = String(t.title || '').toLowerCase();
-      const dept = String(t.department || '').toLowerCase();
-      return title.includes(q) || dept.includes(q);
-    });
-  }, [filteredByTab, searchInput]);
+  const visibleTasks = useMemo(() => (Array.isArray(tasks) ? tasks : []), [tasks]);
 
   const tasksByColumn = useMemo(() => {
     const map = Object.fromEntries(BOARD_COLUMNS.map((c) => [c.id, []]));
@@ -186,70 +182,50 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
     toast.info('Only Open column is shown. Use Show all to restore every column.');
   };
 
-  const tabCounts = useMemo(() => {
-    const list = Array.isArray(tasks) ? tasks : [];
-    return {
-      assigned_to_me: list.filter((t) => isTaskAssignedToCurrentUser(t)).length,
-      assigned_to_team: isManager
-        ? list.filter((t) => !isTaskAssignedToCurrentUser(t) && isTaskAssignedToTeam(t)).length
-        : 0,
-      other_tasks: list.filter(
-        (t) => !isTaskAssignedToCurrentUser(t) && !(isManager && isTaskAssignedToTeam(t)),
-      ).length,
-    };
-  }, [tasks, isTaskAssignedToCurrentUser, isTaskAssignedToTeam, isManager]);
+  const tabCounts = useMemo(
+    () => ({
+      assigned_to_me: categoryCounts.assigned_to_me || 0,
+      assigned_to_team: categoryCounts.assigned_to_team || 0,
+      other_tasks: categoryCounts.other_tasks || 0,
+    }),
+    [categoryCounts],
+  );
 
-  const fetchTasks = useCallback(async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const taskSearch = searchInput.trim() || undefined;
-      const assigneeId = assignedUser?.id ? Number(assignedUser.id) : undefined;
-      const hasServerFilters =
-        taskSearch || assigneeId || departmentFilter || projectFilter;
-      const isStrictFilter = Boolean(departmentFilter);
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+  };
 
-      let res;
-      if (hasServerFilters) {
-        res = await axiosInstance.post('/tasks/search', {
-          pagination: {
-            page: 1,
-            pageSize: 200,
-            sortField: 'updated_at',
-            sortOrder: 'DESC',
-          },
-          filters: {
-            search: taskSearch,
-            assignee_id: assigneeId,
-            department: departmentFilter || undefined,
-            project_name: projectFilter || undefined,
-          },
-          strictDepartment: isStrictFilter,
-        });
-      } else {
-        res = await axiosInstance.get('/tasks/list', {
-          params: {
-            page: 1,
-            pageSize: 200,
-            sortField: 'updated_at',
-            sortOrder: 'DESC',
-            department: departmentFilter || undefined,
-            project_name: projectFilter || undefined,
-            strictDepartment: isStrictFilter,
-          },
-        });
-      }
-      setTasks(res.data?.data || []);
-    } catch (e) {
-      setError(e.response?.data?.message || 'Failed to fetch tasks.');
-    } finally {
-      setLoading(false);
-    }
-  }, [searchInput, assignedUser?.id, departmentFilter, projectFilter]);
+  const handleClearAll = () => {
+    setAssignedUser(null);
+    handleClearFilters();
+    setActiveTab('assigned_to_me');
+  };
 
-  useEffect(() => {
-    fetchTasks();
-  }, [fetchTasks, refreshNonce]);
+  const statusFilterOptions = useMemo(
+    () => [
+      'open',
+      'in_progress',
+      'pending_approval',
+      'approved',
+      'rejected',
+      'completed',
+      'closed',
+      'cancelled',
+    ].map((s) => ({
+      value: s,
+      label: s.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' '),
+    })),
+    [],
+  );
+
+  const priorityFilterOptions = useMemo(
+    () => ['low', 'medium', 'high', 'critical'].map((p) => ({
+      value: p,
+      label: p[0].toUpperCase() + p.slice(1),
+    })),
+    [],
+  );
 
   const canChangeStatus = useCallback(
     (task) => {
@@ -372,10 +348,10 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
   const handleTaskFormSaved = async (savedTask) => {
     closeTaskFormModal();
     if (!savedTask?.id) {
-      await fetchTasks();
+      refresh();
       return;
     }
-    await fetchTasks();
+    refresh();
   };
 
   const handleTaskUpdatedFromModal = (updated) => {
@@ -475,7 +451,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                   role="tab"
                   aria-selected={activeTab === 'assigned_to_me'}
                   className={`tl-scope-switch__btn ${activeTab === 'assigned_to_me' ? 'is-active is-mine' : ''}`}
-                  onClick={() => setActiveTab('assigned_to_me')}
+                  onClick={() => handleTabChange('assigned_to_me')}
                   title="Assigned to me"
                 >
                   <FiUserCheck />
@@ -487,8 +463,8 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                   role="tab"
                   aria-selected={activeTab === 'other_tasks'}
                   className={`tl-scope-switch__btn ${activeTab === 'other_tasks' ? 'is-active is-other' : ''}`}
-                  onClick={() => setActiveTab('other_tasks')}
-                  title="Assigned to others"
+                  onClick={() => handleTabChange('other_tasks')}
+                  title="Assigned by me"
                 >
                   <FiList />
                   <span className="tl-scope-switch__label">Others</span>
@@ -500,7 +476,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                     role="tab"
                     aria-selected={activeTab === 'assigned_to_team'}
                     className={`tl-scope-switch__btn ${activeTab === 'assigned_to_team' ? 'is-active is-team' : ''}`}
-                    onClick={() => setActiveTab('assigned_to_team')}
+                    onClick={() => handleTabChange('assigned_to_team')}
                     title="Assigned to team"
                   >
                     <FiUsers />
@@ -520,6 +496,13 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
               </div>
 
               <div className="trello-board-toolbar-right">
+                <button
+                  type="button"
+                  className="tl-filter-clear-btn"
+                  onClick={toggleFilters}
+                >
+                  {filtersOpen ? 'Hide filters' : 'Show filters'}
+                </button>
                 <BoardColumnPicker
                   open={columnPickerOpen}
                   onToggle={() => setColumnPickerOpen((prev) => !prev)}
@@ -549,49 +532,59 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
               </div>
             </div>
 
-            <div className="trello-board-toolbar-filters">
-              <div className="trello-board-search">
-                <FiSearch />
-                <input
-                  type="text"
-                  placeholder="Search tasks..."
-                  value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
-                />
-              </div>
+            <CollapsibleFilters open={filtersOpen}>
+            <div className="trello-board-toolbar-filters filters-section">
+              <SearchFilter
+                filterKey="search"
+                label="Search"
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="Search tasks..."
+              />
 
-              <div className="trello-board-select-filter">
-                <select
-                  value={departmentFilter}
-                  onChange={(e) => setDepartmentFilter(e.target.value)}
-                  aria-label="Filter by department"
-                >
-                  <option value="">Department</option>
-                  {TASK_DEPARTMENT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <DropdownFilter
+                filterKey="department"
+                label="Department"
+                data={TASK_DEPARTMENT_OPTIONS}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Departments"
+              />
 
-              <div className="trello-board-select-filter trello-board-select-filter--project">
-                <select
-                  value={projectFilter}
-                  onChange={(e) => setProjectFilter(e.target.value)}
-                  aria-label="Filter by project or program"
-                >
-                  <option value="">Project / Program</option>
-                  {TASK_PROJECT_PROGRAM_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <DropdownFilter
+                filterKey="project_name"
+                label="Project / Program"
+                data={TASK_PROJECT_PROGRAM_OPTIONS}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Projects/Programs"
+              />
 
-              <RefreshButton onClick={fetchTasks} loading={loading} />
+              <DropdownFilter
+                filterKey="status"
+                label="Status"
+                data={statusFilterOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Statuses"
+              />
+
+              <DropdownFilter
+                filterKey="priority"
+                label="Priority"
+                data={priorityFilterOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Priorities"
+              />
+
+              <div className="filters-actions">
+                <SearchButton onClick={handleApplyFilters} loading={loading} />
+                <ClearButton onClick={handleClearAll} disabled={loading} />
+                <RefreshButton onClick={refresh} loading={loading} />
+              </div>
             </div>
+            </CollapsibleFilters>
           </div>
 
           {/* <p className="trello-board-hint">

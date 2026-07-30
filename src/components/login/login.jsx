@@ -65,7 +65,7 @@ const Login = () => {
         <div className="login-logo">
           <img src={mtjfLogo} alt="MTJF Logo" />
         </div>
-        <h2 className="login-title">Donor Management System</h2>
+        <h2 className="login-title">MTJF Solutions</h2>
         <p className="login-subtitle">Sign in to your account</p>
 
         <div className="login-divider" aria-hidden>
