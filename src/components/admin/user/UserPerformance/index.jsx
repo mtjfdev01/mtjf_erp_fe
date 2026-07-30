@@ -40,6 +40,28 @@ const formatAmount = (amount) => {
   return `Rs. ${Number(amount).toLocaleString()}`;
 };
 
+const DmsPeriodMetrics = ({ title, stats }) => {
+  if (!stats) return null;
+
+  return (
+    <div style={{ marginTop: '1rem' }}>
+      <h4 className="perf-subtitle">{title}</h4>
+      <div className="perf-metrics-grid perf-metrics-grid--dms">
+        <MetricCard label="Donation Boxes Assigned" value={stats.donation_boxes_assigned ?? 0} accent="blue" />
+        <MetricCard label="Donation Box Collection" value={formatAmount(stats.donations_box_collection)} accent="indigo" />
+        <MetricCard label="Donations Added" value={stats.donations_added ?? 0} accent="violet" />
+        <MetricCard label="Donor Registered" value={stats.donor_registered ?? 0} accent="green" />
+        <MetricCard label="Donation Boxes Registered" value={stats.donation_boxes_registered ?? 0} accent="amber" />
+        <MetricCard label="Follow-ups" value={stats.followups ?? 0} accent="blue" />
+        <MetricCard label="Follow-ups Completed" value={stats.followups_completed ?? 0} accent="green" />
+        <MetricCard label="Overdue Follow-ups" value={stats.followups_overdue ?? 0} accent="red" />
+        <MetricCard label="Interactions" value={stats.interactions ?? 0} accent="violet" />
+        <MetricCard label="Interaction Donors" value={stats.interaction_donors ?? 0} accent="indigo" />
+      </div>
+    </div>
+  );
+};
+
 const MetricCard = ({ label, value, accent = 'blue' }) => (
   <div className={`perf-metric-card perf-metric-card--${accent}`}>
     <span className="perf-metric-card__label">{label}</span>
@@ -381,6 +403,9 @@ const UserPerformance = () => {
                 <MetricCard label="Pending Allotment Approvals" value={dms.pending_allotment_approvals} accent="red" />
                 <MetricCard label="Pending Donation Recovery" value={dms.donations_pending_recovery} accent="red" />
               </div>
+
+              <DmsPeriodMetrics title="Total View" stats={dms.period_summary?.total} />
+              <DmsPeriodMetrics title="Last Month View" stats={dms.period_summary?.last_month} />
             </section>
           ) : (
             <section className="perf-section view-section">
