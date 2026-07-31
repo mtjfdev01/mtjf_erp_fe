@@ -4,6 +4,11 @@ import { FiSearch } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
+import {
+  DONOR_PIPELINE_STAGES,
+  DONOR_PIPELINE_STAGE_LABELS,
+  DONOR_PIPELINE_STAGE_HINTS,
+} from '../shared/donorPipelineConstants';
 import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import Navbar from '../../../Navbar';
@@ -33,6 +38,7 @@ const RegisterDonor = () => {
     postal_code: '',
     cnic: '',
     notes: '',
+    pipeline_stage: 'lead',
   });
   const [assignedUser, setAssignedUser] = useState(null);
   const [referrerUser, setReferrerUser] = useState(null);
@@ -73,6 +79,7 @@ const RegisterDonor = () => {
         assigned_to_user_id: assignedUser?.id || null,
         referrer_user_id: referrerUser?.id || null,
         source: form.source,
+        pipeline_stage: form.pipeline_stage || 'lead',
       };
 
       if (form.donor_type === 'individual') {
@@ -372,6 +379,23 @@ const RegisterDonor = () => {
                   value={form.source}
                   onChange={handleChange}
                 />
+                <div className="form-group">
+                  <label htmlFor="pipeline_stage">Pipeline Stage</label>
+                  <select
+                    id="pipeline_stage"
+                    name="pipeline_stage"
+                    value={form.pipeline_stage}
+                    onChange={handleChange}
+                    className="form-control"
+                  >
+                    {DONOR_PIPELINE_STAGES.map((value) => (
+                      <option key={value} value={value}>
+                        {DONOR_PIPELINE_STAGE_LABELS[value]} —{' '}
+                        {DONOR_PIPELINE_STAGE_HINTS[value]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <SearchableDropdown
                   label="Assign to User (Optional)"
                   placeholder="Search users by name or email..."

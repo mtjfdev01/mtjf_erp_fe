@@ -19,7 +19,8 @@ export default function TaskAssigneeFilter({
       <SearchableDropdown
         label=""
         placeholder={placeholder}
-        apiEndpoint="/users"
+        apiEndpoint="/users/options"
+        apiParams={{ active: true }}
         onSelect={onSelect}
         onClear={onClear}
         value={value}
@@ -30,7 +31,7 @@ export default function TaskAssigneeFilter({
         renderOption={(user) => (
           <div>
             <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-              {user.first_name} {user.last_name}
+              {formatAssigneeLabel(user)}
             </div>
             <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
             {user.department && (

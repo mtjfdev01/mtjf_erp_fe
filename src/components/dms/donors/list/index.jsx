@@ -22,6 +22,10 @@ import FormInput from '../../../common/FormInput';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
 import useListRowSelection from '../../../../hooks/useListRowSelection';
 import { saveAudienceFilters } from '../../email_templates/communicationAudience';
+import {
+  DONOR_PIPELINE_FILTER_OPTIONS,
+  formatPipelineStage,
+} from '../shared/donorPipelineConstants';
 
 const DONOR_ASSIGNED_FILTER_ALL = {
   id: '__all__',
@@ -74,6 +78,7 @@ const DonorsList = () => {
     assigned_to_user_id: '',
     donated_amount: '',
     donated_amount_operator: '',
+    pipeline_stage: '',
   });
 
   // Applied filters - Actually sent to API
@@ -91,6 +96,7 @@ const DonorsList = () => {
     assigned_to_user_id: '',
     donated_amount: '',
     donated_amount_operator: '',
+    pipeline_stage: '',
   });
 
   const selectionResetKey = useMemo(
@@ -124,6 +130,7 @@ const DonorsList = () => {
       assigned_to_user_id: '',
       donated_amount: '',
       donated_amount_operator: '',
+      pipeline_stage: '',
     };
     return JSON.stringify(appliedFilters) !== JSON.stringify(empty);
   }, [appliedFilters]);
@@ -349,6 +356,7 @@ const DonorsList = () => {
       assigned_to_user_id: '',
       donated_amount: '',
       donated_amount_operator: '',
+      pipeline_stage: '',
     };
     
     setSelectedAssignedUser(null);
@@ -399,6 +407,9 @@ const DonorsList = () => {
       }
       if (!params.source) {
         delete params.source;
+      }
+      if (!params.pipeline_stage) {
+        delete params.pipeline_stage;
       }
       if (
         params.assigned_to_user_id === null ||
@@ -667,6 +678,15 @@ const DonorsList = () => {
               onFilterChange={handleFilterChange}
               placeholder="All sources"
             />
+
+            <DropdownFilter
+              filterKey="pipeline_stage"
+              label="Pipeline Stage"
+              data={DONOR_PIPELINE_FILTER_OPTIONS.filter((o) => o.value !== '')}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All Stages"
+            />
             
             <DropdownFilter
               filterKey="donation_type"
@@ -866,6 +886,7 @@ const DonorsList = () => {
                   </th>
                   <th>Type</th>
                   <th>Name</th>
+                  <th>Pipeline</th>
                   <th>Email</th>
                   <th>Phone</th>
                   <th>City</th>
@@ -876,7 +897,7 @@ const DonorsList = () => {
               <tbody>
                 {donors.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="no-data">
+                    <td colSpan="9" className="no-data">
                       No donors found
                     </td>
                   </tr>
@@ -925,6 +946,11 @@ const DonorsList = () => {
                             <div className="company-name">{donor.company_name}</div>
                           )}
                         </div>
+                      </td>
+                      <td>
+                        {formatPipelineStage(
+                          donor.effective_pipeline_stage || donor.pipeline_stage,
+                        )}
                       </td>
                       <td>{donor.email}</td>
                       <td>{donor.phone}</td>

@@ -10,9 +10,11 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Modal from '../../../common/Modal';
 import DonorAuditHistory from '../shared/DonorAuditHistory';
+import DonorPipelinePanel from '../shared/DonorPipelinePanel';
 import DonorCommunication from '../../donor_relationship/shared/DonorCommunication';
 import ManualRecurringDonorPanel from '../../manual_recurring/ManualRecurringDonorPanel';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
+import { formatPipelineStage, resolveDonorPipelineStage } from '../shared/donorPipelineConstants';
 import {
   FiUser,
   FiMail,
@@ -34,6 +36,7 @@ import {
   FiCheck,
   FiMaximize2,
   FiMinimize2,
+  FiGitBranch,
 } from 'react-icons/fi';
 import { GiPayMoney } from 'react-icons/gi';
 import { BsFillBuildingsFill } from 'react-icons/bs';
@@ -159,6 +162,15 @@ const ViewDonor = () => {
   const canRevealPassword = (() => {
     if (!permissions) return false;
     return permissions.super_admin === true || fundRaisingDonorsHas(permissions, 'update');
+  })();
+
+  const canUpdatePipeline = (() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising_manager === true ||
+      fundRaisingDonorsHas(permissions, 'update')
+    );
   })();
 
   const closeRevealModal = () => {
@@ -509,6 +521,44 @@ const ViewDonor = () => {
                     </strong>
                   </div>
                   <div className="donor-crm-summary-row">
+                    <span>Pipeline Stage</span>
+                    <strong>
+                      <span className="donor-crm-pill donor-crm-pill--info">
+                        <FiGitBranch style={{ marginRight: 4 }} />
+                        {formatPipelineStage(
+                          donor.effective_pipeline_stage || donor.pipeline_stage,
+                        )}
+                      </span>
+                    </strong>
+                  </div>
+                  {(donor.pipeline_ask_amount != null ||
+                    donor.pipeline_pledge_amount != null) && (
+                    <>
+                      {donor.pipeline_ask_amount != null && (
+                        <div className="donor-crm-summary-row">
+                          <span>Ask Amount</span>
+                          <strong>
+                            {formatMoney(
+                              donor.pipeline_ask_amount,
+                              donor.pipeline_amount_currency || 'PKR',
+                            )}
+                          </strong>
+                        </div>
+                      )}
+                      {donor.pipeline_pledge_amount != null && (
+                        <div className="donor-crm-summary-row">
+                          <span>Pledge Amount</span>
+                          <strong>
+                            {formatMoney(
+                              donor.pipeline_pledge_amount,
+                              donor.pipeline_amount_currency || 'PKR',
+                            )}
+                          </strong>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  <div className="donor-crm-summary-row">
                     <span>Registered On</span>
                     <strong>{formatShortDate(donor.created_at)}</strong>
                   </div>
@@ -746,6 +796,22 @@ const ViewDonor = () => {
               </section>
 
               <ManualRecurringDonorPanel donorId={id} onUpdated={fetchDonor} />
+
+              <DonorPipelinePanel
+                donorId={id}
+                currentStage={
+                  donor.effective_pipeline_stage ||
+                  resolveDonorPipelineStage(donor.pipeline_stage)
+                }
+                askAmount={donor.pipeline_ask_amount}
+                pledgeAmount={donor.pipeline_pledge_amount}
+                amountCurrency={donor.pipeline_amount_currency || 'PKR'}
+                canUpdate={canUpdatePipeline}
+                onStageChanged={(updated) => {
+                  if (updated) setDonor(updated);
+                  else fetchDonor();
+                }}
+              />
 
               {showDonorJourney ? (
                 <DonorCommunication donorId={id} donor={donor} />
