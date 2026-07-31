@@ -12,6 +12,9 @@ import { getTaskPermissions } from '../../../../utils/permissions';
 import { tasksBasePath } from '../../../../utils/admin';
 import { splitDescriptionAndMov } from '../../../../utils/movEncoding';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
+import TaskPendingAttachments, {
+  uploadPendingTaskAttachments,
+} from '../shared/TaskPendingAttachments';
 import '../../../../styles/variables.css';
 import './index.css';
 
@@ -202,7 +205,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
   const getDisplayValue = () => {
     if (value) {
       const isProject = projects.includes(value);
-      return `${isProject ? 'ðŸ“' : 'ðŸ“‹'} ${value}`;
+      return `${isProject ? '📁' : '📋'} ${value}`;
     }
     return '';
   };
@@ -226,7 +229,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
         </div>
 
         {value && (
-          <button type="button" className="task-custom-select-clear-btn" onClick={handleClear}>âœ•</button>
+          <button type="button" className="task-custom-select-clear-btn" onClick={handleClear}>❌</button>
         )}
 
         {isOpen && (
@@ -237,7 +240,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
               </span>
               {selectionStep === 'item' && (
                 <button type="button" className="task-custom-select-back-link" onClick={handleBack}>
-                  â† Back
+                  ◀ Back
                 </button>
               )}
             </div>
@@ -246,12 +249,12 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
               {selectionStep === 'category' ? (
                 <>
                   <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Projects')}>
-                    <span><span className="task-custom-select-option-icon">ðŸ“</span> Projects</span>
-                    <span className="task-custom-select-option-arrow">â€º</span>
+                    <span><span className="task-custom-select-option-icon">📁</span> Projects</span>
+                    <span className="task-custom-select-option-arrow">›</span>
                   </button>
                   <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Programs')}>
-                    <span><span className="task-custom-select-option-icon">ðŸ“‹</span> Programs</span>
-                    <span className="task-custom-select-option-arrow">â€º</span>
+                    <span><span className="task-custom-select-option-icon">📋</span> Programs</span>
+                    <span className="task-custom-select-option-arrow">›</span>
                   </button>
                 </>
               ) : (
@@ -315,10 +318,7 @@ const UpdateTask = ({
   const [reportedByUsers, setReportedByUsers] = useState([]);
   const [approverUsers, setApproverUsers] = useState([]);
   const [movItems, setMovItems] = useState(['']);
-  const [attachmentFile, setAttachmentFile] = useState(null);
-  const [attachmentDescription, setAttachmentDescription] = useState('');
-  const [showAttachment, setShowAttachment] = useState(false);
-  const [showAttachmentTrigger, setShowAttachmentTrigger] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
 
   const formatDepartment = (dept) => {
     if (!dept) return '';
@@ -714,27 +714,26 @@ const UpdateTask = ({
       const updatedTask = res?.data?.data || null;
       toast.success('Task updated. Email notification will be sent if configured.');
 
-      if (showAttachment && attachmentFile) {
-        try {
-          const formData = new FormData();
-          formData.append('file', attachmentFile);
-          formData.append('is_initial', 'true');
-          if (attachmentDescription) {
-            formData.append('description', attachmentDescription);
-          }
-          await axiosInstance.post(
-            `/tasks/${id}/attachments/upload`,
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            }
+      if (pendingAttachments.length > 0) {
+        const { uploaded, failed } = await uploadPendingTaskAttachments({
+          axiosInstance,
+          taskId: id,
+          items: pendingAttachments,
+          isInitial: true,
+        });
+        if (uploaded > 0) {
+          toast.success(
+            uploaded === 1
+              ? 'Attachment uploaded successfully.'
+              : `${uploaded} attachments uploaded successfully.`,
           );
-          toast.success('Attachment uploaded successfully.');
-        } catch (attErr) {
-          console.error('Attachment upload error:', attErr);
-          toast.error('Task updated, but failed to upload attachment.');
+        }
+        if (failed > 0) {
+          toast.error(
+            failed === 1
+              ? 'Task updated, but failed to upload 1 attachment.'
+              : `Task updated, but failed to upload ${failed} attachments.`,
+          );
         }
       }
 
@@ -1124,6 +1123,14 @@ const UpdateTask = ({
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="add-task-section add-task-section--compact" style={{ marginBottom: '0.85rem' }}>
+              <TaskPendingAttachments
+                items={pendingAttachments}
+                onChange={setPendingAttachments}
+                disabled={saving || (String(form.status).toLowerCase() === 'completed' && !canEditCompleted)}
+              />
             </div>
 
             <div className="add-task-footer add-task-footer--actions">

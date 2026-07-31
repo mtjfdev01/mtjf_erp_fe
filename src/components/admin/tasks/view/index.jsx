@@ -69,8 +69,7 @@ const ViewTask = ({
   const [usersFetchInProgress, setUsersFetchInProgress] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [attachment, setAttachment] = useState({ file: null });
-  const [attachmentDescription, setAttachmentDescription] = useState('');
+  const [attachment, setAttachment] = useState({ file: null, name: '' });
   const [comment, setComment] = useState({ content: '', mentioned_user_ids: [] });
   const [commentFormKey, setCommentFormKey] = useState(0);
   const [savingAttachment, setSavingAttachment] = useState(false);
@@ -772,7 +771,11 @@ const ViewTask = ({
 
   const handleAttachmentChange = (e) => {
     const file = e.target.files && e.target.files[0];
-    setAttachment({ file: file || null });
+    setAttachment((prev) => ({ ...prev, file: file || null }));
+  };
+
+  const handleAttachmentNameChange = (e) => {
+    setAttachment((prev) => ({ ...prev, name: e.target.value }));
   };
 
   const handleCommentChange = (e) => {
@@ -789,6 +792,13 @@ const ViewTask = ({
     setSavingAttachment(true);
     setError('');
     try {
+      const trimmedName = String(attachment.name || '').trim();
+      if (!trimmedName) {
+        setSavingAttachment(false);
+        setError('Attachment name is required.');
+        toast.error('Attachment name is required.');
+        return;
+      }
       if (!attachment.file) {
         setSavingAttachment(false);
         setError('Please select a file to upload.');
@@ -797,6 +807,8 @@ const ViewTask = ({
       }
       const formData = new FormData();
       formData.append('file', attachment.file);
+      formData.append('description', trimmedName);
+      formData.append('name', trimmedName);
       const res = await axiosInstance.post(
         `/tasks/${id}/attachments/upload`,
         formData,
@@ -807,7 +819,7 @@ const ViewTask = ({
         }
       );
       setTask((prev) => ({ ...prev, attachments: [...(prev.attachments || []), res.data.data] }));
-      setAttachment({ file: null });
+      setAttachment({ file: null, name: '' });
       toast.success('Attachment added.');
     } catch (e2) {
       setError(e2.response?.data?.message || 'Failed to add attachment.');
@@ -1575,67 +1587,68 @@ const ViewTask = ({
 
                   {initialAttachments.length > 0 && (
                     <div className="task-view-section">
-                      {/* <h3 className="task-task-view-section-title">
-                      <span>📎</span> Task Attachments (Initial)
-                    </h3> */}
-                      {/* <div className="task-view-grid">
-                      <div className="task-view-item task-attachments-item">
-                        <ul className="attachments-list">
-                          {initialAttachments.map((a) => {
-                            const rawType = a.file_type || '';
-                            const shortType = rawType.includes('/')
-                              ? rawType.split('/')[1]
-                              : rawType;
-                            const shortUpper = shortType
-                              ? shortType.toUpperCase()
-                              : 'FILE';
-                            return (
-                              <li key={a.id} className="attachments-item">
-                                <div className="attachment-main">
-                                  <div className="attachment-header">
-                                    <div className="attachment-icon">
-                                      {shortUpper}
-                                    </div>
-                                    <div className="attachment-text">
-                                      <div className="attachment-name">
-                                        {a.file_name}
+                      <h3 className="task-task-view-section-title">
+                        <span>📎</span> Task Attachments (Initial)
+                      </h3>
+                      <div className="task-view-grid">
+                        <div className="task-view-item task-attachments-item">
+                          <ul className="attachments-list">
+                            {initialAttachments.map((a) => {
+                              const rawType = a.file_type || '';
+                              const shortType = rawType.includes('/')
+                                ? rawType.split('/')[1]
+                                : rawType;
+                              const shortUpper = shortType
+                                ? shortType.toUpperCase()
+                                : 'FILE';
+                              const displayName = a.description || a.file_name;
+                              return (
+                                <li key={a.id} className="attachments-item">
+                                  <div className="attachment-main">
+                                    <div className="attachment-header">
+                                      <div className="attachment-icon">
+                                        {shortUpper}
                                       </div>
-                                      {a.description && (
-                                        <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                                          {a.description}
+                                      <div className="attachment-text">
+                                        <div className="attachment-name">
+                                          {displayName}
                                         </div>
-                                      )}
-                                      <div className="attachment-type">
-                                        {rawType}
+                                        {a.description && a.file_name && a.description !== a.file_name && (
+                                          <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
+                                            {a.file_name}
+                                          </div>
+                                        )}
+                                        <div className="attachment-type">
+                                          {rawType}
+                                        </div>
                                       </div>
                                     </div>
-                                  </div>
-                                  <div className="attachment-actions">
-                                    <a
-                                      href={getAttachmentHref(a.file_url)}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="attachment-open-button"
-                                    >
-                                      View
-                                    </a>
-                                    {canDeleteAttachment && (
-                                      <button
-                                        type="button"
-                                        className="attachment-remove-button"
-                                        onClick={() => handleRemoveAttachment(a.id)}
+                                    <div className="attachment-actions">
+                                      <a
+                                        href={getAttachmentHref(a.file_url)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="attachment-open-button"
                                       >
-                                        ×
-                                      </button>
-                                    )}
+                                        View
+                                      </a>
+                                      {canDeleteAttachment && (
+                                        <button
+                                          type="button"
+                                          className="attachment-remove-button"
+                                          onClick={() => handleRemoveAttachment(a.id)}
+                                        >
+                                          ×
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
+                                </li>
+                              );
+                            })}
+                          </ul>
+                        </div>
                       </div>
-                    </div> */}
                     </div>
                   )}
 
@@ -1982,7 +1995,7 @@ const ViewTask = ({
                       )}
 
                       <div className="task-notes-panel">
-                        {/* <div
+                        <div
                         className={`task-view-section${
                           isApproverView ? ' task-view-section--approver-primary' : ''
                         }`}
@@ -2002,6 +2015,7 @@ const ViewTask = ({
                                   const shortUpper = shortType
                                     ? shortType.toUpperCase()
                                     : 'FILE';
+                                  const displayName = a.description || a.file_name;
                                   return (
                                     <li key={a.id} className="attachments-item">
                                       <div className="attachment-main">
@@ -2011,11 +2025,11 @@ const ViewTask = ({
                                           </div>
                                           <div className="attachment-text">
                                             <div className="attachment-name">
-                                              {a.file_name}
+                                              {displayName}
                                             </div>
-                                            {a.description && (
+                                            {a.description && a.file_name && a.description !== a.file_name && (
                                               <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                                                {a.description}
+                                                {a.file_name}
                                               </div>
                                             )}
                                             <div className="attachment-type">
@@ -2050,10 +2064,19 @@ const ViewTask = ({
                               </ul>
                             </div>
                           </div>
-                        </div> 
+                        </div>
                         {!isApproverView && (
                           <form onSubmit={addAttachment} className="task-attachments-form">
                             <div className="task-attachments-input-container">
+                              <FormInput
+                                name="attachment_name"
+                                label="Attachment name"
+                                value={attachment.name}
+                                onChange={handleAttachmentNameChange}
+                                placeholder="e.g. Progress photo, Signed form"
+                                disabled={!canInteractWithNotes || savingAttachment}
+                                required
+                              />
                               <div className="form-group">
                                  <label className="form-label">File</label>
                                 <input
@@ -2076,8 +2099,8 @@ const ViewTask = ({
                               </PrimaryButton>
                             </div>
                           </form>
-                        )} 
-                      </div> */}
+                        )}
+                      </div>
 
                         <TaskDueRemindersPanel
                           taskId={task.id}

@@ -11,6 +11,9 @@ import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import { useAuth } from '../../../../context/AuthContext';
 import { getTaskPermissions } from '../../../../utils/permissions';
 import { tasksBasePath } from '../../../../utils/admin';
+import TaskPendingAttachments, {
+  uploadPendingTaskAttachments,
+} from '../shared/TaskPendingAttachments';
 import '../../../../styles/variables.css';
 import './index.css';
 
@@ -334,10 +337,7 @@ const AddTask = ({
   const [reportedByUsers, setReportedByUsers] = useState([]);
   const [approverUsers, setApproverUsers] = useState([]);
   const [movItems, setMovItems] = useState(['']);
-  const [attachmentFile, setAttachmentFile] = useState(null);
-  const [attachmentDescription, setAttachmentDescription] = useState('');
-  const [showAttachment, setShowAttachment] = useState(false);
-  const [showAttachmentTrigger, setShowAttachmentTrigger] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
 
   const taskPerms = useMemo(
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
@@ -620,27 +620,26 @@ const AddTask = ({
       createdTaskId = createdTaskData?.id;
       toast.success('Task created. Assignment emails will send if configured.');
 
-      if (createdTaskId && showAttachment && attachmentFile) {
-        try {
-          const formData = new FormData();
-          formData.append('file', attachmentFile);
-          formData.append('is_initial', 'true');
-          if (attachmentDescription) {
-            formData.append('description', attachmentDescription);
-          }
-          await axiosInstance.post(
-            `/tasks/${createdTaskId}/attachments/upload`,
-            formData,
-            {
-              headers: {
-                'Content-Type': 'multipart/form-data'
-              }
-            }
+      if (createdTaskId && pendingAttachments.length > 0) {
+        const { uploaded, failed } = await uploadPendingTaskAttachments({
+          axiosInstance,
+          taskId: createdTaskId,
+          items: pendingAttachments,
+          isInitial: true,
+        });
+        if (uploaded > 0) {
+          toast.success(
+            uploaded === 1
+              ? 'Attachment uploaded successfully.'
+              : `${uploaded} attachments uploaded successfully.`,
           );
-          toast.success('Attachment uploaded successfully.');
-        } catch (attErr) {
-          console.error('Attachment upload error:', attErr);
-          toast.error('Task created, but failed to upload attachment.');
+        }
+        if (failed > 0) {
+          toast.error(
+            failed === 1
+              ? 'Task created, but failed to upload 1 attachment.'
+              : `Task created, but failed to upload ${failed} attachments.`,
+          );
         }
       }
     } catch (e2) {
@@ -1006,6 +1005,14 @@ const AddTask = ({
                   </button>
                 </div>
               </div>
+            </div>
+
+            <div className="add-task-section add-task-section--compact" style={{ marginBottom: '0.85rem' }}>
+              <TaskPendingAttachments
+                items={pendingAttachments}
+                onChange={setPendingAttachments}
+                disabled={submitting || !taskPerms.canCreate}
+              />
             </div>
 
             <div className="add-task-footer add-task-footer--actions">
