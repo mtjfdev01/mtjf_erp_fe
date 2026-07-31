@@ -33,6 +33,10 @@ export default defineConfig({
           },
         ],
       },
+      workbox: {
+        // Main bundle can exceed Workbox default 2 MiB precache limit
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      },
     }),
   ],  
   resolve: {
