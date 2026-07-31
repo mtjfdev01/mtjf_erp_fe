@@ -1,6 +1,6 @@
 ﻿import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { FiAlignJustify, FiClipboard, FiFlag, FiGitBranch, FiPlus } from 'react-icons/fi';
+import { FiAlignJustify, FiClipboard, FiFlag, FiGitBranch, FiPlus, FiTrash2 } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import { toast } from 'react-toastify';
 import Navbar from '../../../Navbar';
@@ -319,6 +319,9 @@ const UpdateTask = ({
   const [approverUsers, setApproverUsers] = useState([]);
   const [movItems, setMovItems] = useState(['']);
   const [pendingAttachments, setPendingAttachments] = useState([]);
+  const [existingAttachments, setExistingAttachments] = useState([]);
+  const [removingAttachmentId, setRemovingAttachmentId] = useState(null);
+  const attachmentsRef = useRef(null);
 
   const formatDepartment = (dept) => {
     if (!dept) return '';
@@ -481,6 +484,7 @@ const UpdateTask = ({
               ? movFromDescription
               : [];
         setMovItems(combinedMovItems.length > 0 ? combinedMovItems : ['']);
+        setExistingAttachments(Array.isArray(t.attachments) ? t.attachments : []);
 
         const idsFromAssigned = Array.isArray(t.assigned_user_ids)
           ? t.assigned_user_ids.filter((n) => Number.isInteger(n) && n > 0)
@@ -603,6 +607,33 @@ const UpdateTask = ({
     }));
   }, [originalStatus, originalWorkflowType]);
 
+  const getAttachmentHref = (urlStr) => {
+    if (!urlStr) return '#';
+    if (urlStr.startsWith('http://') || urlStr.startsWith('https://')) {
+      return urlStr;
+    }
+    const base = axiosInstance.defaults.baseURL || '';
+    return `${base.replace(/\/$/, '')}${urlStr}`;
+  };
+
+  const handleRemoveExistingAttachment = async (attachmentId) => {
+    if (!window.confirm('Remove this attachment?')) return;
+    setRemovingAttachmentId(attachmentId);
+    try {
+      await axiosInstance.delete(`/tasks/${id}/attachments/${attachmentId}`);
+      setExistingAttachments((prev) =>
+        prev.filter((a) => a.id !== attachmentId),
+      );
+      toast.success('Attachment removed.');
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || 'Failed to remove attachment.',
+      );
+    } finally {
+      setRemovingAttachmentId(null);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
@@ -714,11 +745,13 @@ const UpdateTask = ({
       const updatedTask = res?.data?.data || null;
       toast.success('Task updated. Email notification will be sent if configured.');
 
-      if (pendingAttachments.length > 0) {
+      const toUpload =
+        attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;
+      if (toUpload.length > 0) {
         const { uploaded, failed } = await uploadPendingTaskAttachments({
           axiosInstance,
           taskId: id,
-          items: pendingAttachments,
+          items: toUpload,
           isInitial: true,
         });
         if (uploaded > 0) {
@@ -1126,9 +1159,62 @@ const UpdateTask = ({
             </div>
 
             <div className="add-task-section add-task-section--compact" style={{ marginBottom: '0.85rem' }}>
+              {existingAttachments.length > 0 && (
+                <div className="task-existing-attachments" style={{ marginBottom: '1rem' }}>
+                  <div className="add-task-section-title">Current attachments</div>
+                  <ul className="task-pending-attachments__list">
+                    {existingAttachments.map((a) => {
+                      const displayName = a.description || a.file_name;
+                      return (
+                        <li key={a.id} className="task-pending-attachments__item">
+                          <div className="task-pending-attachments__item-main">
+                            <strong>{displayName}</strong>
+                            {a.description &&
+                              a.file_name &&
+                              a.description !== a.file_name && (
+                                <span>{a.file_name}</span>
+                              )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <a
+                              href={getAttachmentHref(a.file_url)}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ fontSize: '0.85rem', color: '#2563eb' }}
+                            >
+                              View
+                            </a>
+                            <button
+                              type="button"
+                              className="task-pending-attachments__remove"
+                              onClick={() => handleRemoveExistingAttachment(a.id)}
+                              disabled={
+                                removingAttachmentId === a.id ||
+                                saving ||
+                                (String(form.status).toLowerCase() === 'completed' &&
+                                  !canEditCompleted)
+                              }
+                              title="Remove"
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
               <TaskPendingAttachments
+                ref={attachmentsRef}
                 items={pendingAttachments}
                 onChange={setPendingAttachments}
+                title={
+                  existingAttachments.length > 0
+                    ? 'Add more attachments'
+                    : 'Attachments'
+                }
                 disabled={saving || (String(form.status).toLowerCase() === 'completed' && !canEditCompleted)}
               />
             </div>

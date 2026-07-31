@@ -2,7 +2,7 @@ import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react'
 import { FiPaperclip, FiPlus, FiTrash2 } from 'react-icons/fi';
 import FormInput from '../../../common/FormInput';
 import { SecondaryButton } from '../../../common/buttons';
-import './TaskPendingAttachments.css';
+import './DonationPendingAttachments.css';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
 
@@ -15,12 +15,18 @@ function makeItem(name, file) {
 }
 
 /**
- * Pending named attachments for task create/update.
+ * Pending named attachments for donation create/update.
  * On form submit, call ref.current.collectForSubmit() so a filled name+file
  * is included even if "Add attachment" was not clicked.
  */
-const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
-  { items = [], onChange, disabled = false, title = 'Attachments', fileInputId = 'task-pending-attachment-file' },
+const DonationPendingAttachments = forwardRef(function DonationPendingAttachments(
+  {
+    items = [],
+    onChange,
+    disabled = false,
+    title = 'Attachments',
+    fileInputId = 'donation-pending-attachment-file',
+  },
   ref,
 ) {
   const [name, setName] = useState('');
@@ -38,7 +44,6 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
   };
 
   useImperativeHandle(ref, () => ({
-    /** Returns queued items + current draft (if name+file filled). */
     collectForSubmit() {
       const trimmed = String(draftRef.current.name || '').trim();
       const draftFile = draftRef.current.file;
@@ -88,13 +93,13 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
   };
 
   return (
-    <div className="task-pending-attachments">
-      <div className="add-task-section-title">{title}</div>
-      <p className="task-pending-attachments__hint">
-        Enter a name and choose a file, then create the task (or click Add attachment to queue several files). Max 10MB each.
+    <div className="donation-pending-attachments">
+      <h3 className="form-section-heading">{title}</h3>
+      <p className="donation-pending-attachments__hint">
+        Enter a name and choose a file, then save the donation (or click Add attachment to queue several files). Max 10MB each.
       </p>
 
-      <div className="task-pending-attachments__form">
+      <div className="donation-pending-attachments__form">
         <FormInput
           name="attachment_name"
           label="Attachment name"
@@ -103,7 +108,7 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
             setName(e.target.value);
             if (error) setError('');
           }}
-          placeholder="e.g. Proposal draft, Site photo, Checklist"
+          placeholder="e.g. Cheque scan, Bank receipt, Proof of payment"
           disabled={disabled}
         />
 
@@ -120,7 +125,7 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
             accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.txt,application/pdf,image/*"
           />
           {file && (
-            <div className="task-pending-attachments__selected">
+            <div className="donation-pending-attachments__selected">
               <FiPaperclip /> Selected: {file.name}
             </div>
           )}
@@ -139,16 +144,16 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
       </div>
 
       {items.length > 0 && (
-        <ul className="task-pending-attachments__list">
+        <ul className="donation-pending-attachments__list">
           {items.map((item) => (
-            <li key={item.id} className="task-pending-attachments__item">
-              <div className="task-pending-attachments__item-main">
+            <li key={item.id} className="donation-pending-attachments__item">
+              <div className="donation-pending-attachments__item-main">
                 <strong>{item.name}</strong>
                 <span>{item.file?.name}</span>
               </div>
               <button
                 type="button"
-                className="task-pending-attachments__remove"
+                className="donation-pending-attachments__remove"
                 onClick={() => handleRemove(item.id)}
                 disabled={disabled}
                 title="Remove"
@@ -163,16 +168,15 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
   );
 });
 
-export default TaskPendingAttachments;
+export default DonationPendingAttachments;
 
-/** Upload pending named attachments after task create/update. */
-export async function uploadPendingTaskAttachments({
+/** Upload pending named attachments after donation create/update. */
+export async function uploadPendingDonationAttachments({
   axiosInstance,
-  taskId,
+  donationId,
   items,
-  isInitial = true,
 }) {
-  if (!taskId || !items?.length) return { uploaded: 0, failed: 0 };
+  if (!donationId || !items?.length) return { uploaded: 0, failed: 0 };
 
   let uploaded = 0;
   let failed = 0;
@@ -181,17 +185,18 @@ export async function uploadPendingTaskAttachments({
     try {
       const formData = new FormData();
       formData.append('file', item.file);
-      formData.append('is_initial', isInitial ? 'true' : 'false');
       if (item.name) {
         formData.append('description', item.name);
         formData.append('name', item.name);
       }
-      await axiosInstance.post(`/tasks/${taskId}/attachments/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
+      await axiosInstance.post(
+        `/donations/${donationId}/attachments/upload`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
       uploaded += 1;
     } catch (err) {
-      console.error('Attachment upload error:', err);
+      console.error('Donation attachment upload error:', err);
       failed += 1;
     }
   }

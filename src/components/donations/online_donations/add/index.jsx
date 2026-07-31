@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
@@ -12,6 +12,10 @@ import { FiPlus, FiTrash2 } from 'react-icons/fi';
 import { useInKindItems } from '../../../../context/InKindItemsContext';
 import ReloadButton from '../../../common/buttons/reload';
 import { projectCards } from '../../../../utils/program';
+import DonationPendingAttachments, {
+  uploadPendingDonationAttachments,
+} from '../../../dms/donations/shared/DonationPendingAttachments';
+import { toast } from 'react-toastify';
 
 const AddDonation = () => {
   const navigate = useNavigate();
@@ -137,6 +141,8 @@ const AddDonation = () => {
   
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const attachmentsRef = useRef(null);
   const [error, setError] = useState('');
 
   const handleChange = (e) => {
@@ -324,6 +330,35 @@ const AddDonation = () => {
               ? Number(payload.id)
               : null
           : null;
+
+      if (
+        newDonationId &&
+        !String(newDonationId).startsWith('local_')
+      ) {
+        const toUpload =
+          attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;
+        if (toUpload.length > 0) {
+          const { uploaded, failed } = await uploadPendingDonationAttachments({
+            axiosInstance,
+            donationId: newDonationId,
+            items: toUpload,
+          });
+          if (uploaded > 0) {
+            toast.success(
+              uploaded === 1
+                ? 'Attachment uploaded successfully.'
+                : `${uploaded} attachments uploaded successfully.`,
+            );
+          }
+          if (failed > 0) {
+            toast.error(
+              failed === 1
+                ? 'Donation saved, but failed to upload 1 attachment.'
+                : `Donation saved, but failed to upload ${failed} attachments.`,
+            );
+          }
+        }
+      }
 
       if (newDonationId) {
         navigate(`/donations/online_donations/view/${newDonationId}`);
@@ -1126,6 +1161,15 @@ const AddDonation = () => {
               />
             </div>
           </div> */}
+
+          <div className="form-section">
+            <DonationPendingAttachments
+              ref={attachmentsRef}
+              items={pendingAttachments}
+              onChange={setPendingAttachments}
+              disabled={isSubmitting}
+            />
+          </div>
 
           <div className="form-actions">
             <button 

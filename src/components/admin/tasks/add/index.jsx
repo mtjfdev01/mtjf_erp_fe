@@ -338,6 +338,7 @@ const AddTask = ({
   const [approverUsers, setApproverUsers] = useState([]);
   const [movItems, setMovItems] = useState(['']);
   const [pendingAttachments, setPendingAttachments] = useState([]);
+  const attachmentsRef = useRef(null);
 
   const taskPerms = useMemo(
     () => getTaskPermissions(permissions || {}, user?.department, user?.role),
@@ -620,26 +621,30 @@ const AddTask = ({
       createdTaskId = createdTaskData?.id;
       toast.success('Task created. Assignment emails will send if configured.');
 
-      if (createdTaskId && pendingAttachments.length > 0) {
-        const { uploaded, failed } = await uploadPendingTaskAttachments({
-          axiosInstance,
-          taskId: createdTaskId,
-          items: pendingAttachments,
-          isInitial: true,
-        });
-        if (uploaded > 0) {
-          toast.success(
-            uploaded === 1
-              ? 'Attachment uploaded successfully.'
-              : `${uploaded} attachments uploaded successfully.`,
-          );
-        }
-        if (failed > 0) {
-          toast.error(
-            failed === 1
-              ? 'Task created, but failed to upload 1 attachment.'
-              : `Task created, but failed to upload ${failed} attachments.`,
-          );
+      if (createdTaskId) {
+        const toUpload =
+          attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;
+        if (toUpload.length > 0) {
+          const { uploaded, failed } = await uploadPendingTaskAttachments({
+            axiosInstance,
+            taskId: createdTaskId,
+            items: toUpload,
+            isInitial: true,
+          });
+          if (uploaded > 0) {
+            toast.success(
+              uploaded === 1
+                ? 'Attachment uploaded successfully.'
+                : `${uploaded} attachments uploaded successfully.`,
+            );
+          }
+          if (failed > 0) {
+            toast.error(
+              failed === 1
+                ? 'Task created, but failed to upload 1 attachment.'
+                : `Task created, but failed to upload ${failed} attachments.`,
+            );
+          }
         }
       }
     } catch (e2) {
@@ -1009,6 +1014,7 @@ const AddTask = ({
 
             <div className="add-task-section add-task-section--compact" style={{ marginBottom: '0.85rem' }}>
               <TaskPendingAttachments
+                ref={attachmentsRef}
                 items={pendingAttachments}
                 onChange={setPendingAttachments}
                 disabled={submitting || !taskPerms.canCreate}

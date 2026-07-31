@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   FiMail,
@@ -19,8 +19,13 @@ import FormSelect from '../../../../common/FormSelect';
 import DonationAuditHistory from '../../shared/DonationAuditHistory';
 import DonationAllotmentPanel from '../../shared/DonationAllotmentPanel';
 import DonationReceiptModal from '../../shared/DonationReceiptModal';
+import DonationPendingAttachments, {
+  uploadPendingDonationAttachments,
+} from '../../shared/DonationPendingAttachments';
+import '../../shared/DonationPendingAttachments.css';
 import { useAuth } from '../../../../../context/AuthContext';
 import { isLocalId } from '../../../../../offline/handlers';
+import { toast } from 'react-toastify';
 import './index.css';
 
 /** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
@@ -77,6 +82,9 @@ const ViewOnlineDonation = () => {
   const [progressEvidenceTitle, setProgressEvidenceTitle] = useState('');
   const [progressEvidenceType, setProgressEvidenceType] = useState('link');
   const [activeProgressStepId, setActiveProgressStepId] = useState(null);
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const attachmentsRef = useRef(null);
+  const [savingAttachments, setSavingAttachments] = useState(false);
   const [batchTagDraft, setBatchTagDraft] = useState('');
   const [batchTagNameDraft, setBatchTagNameDraft] = useState('');
   const [savingBatchTag, setSavingBatchTag] = useState(false);
@@ -344,6 +352,58 @@ const ViewOnlineDonation = () => {
       console.error('Error fetching donation:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const uploadViewAttachments = async () => {
+    if (isLocalId(id)) return;
+    const toUpload =
+      attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;
+    if (!toUpload.length) {
+      toast.error('Add an attachment name and file first.');
+      return;
+    }
+    setSavingAttachments(true);
+    try {
+      const { uploaded, failed } = await uploadPendingDonationAttachments({
+        axiosInstance,
+        donationId: id,
+        items: toUpload,
+      });
+      if (uploaded > 0) {
+        toast.success(
+          uploaded === 1
+            ? 'Attachment uploaded successfully.'
+            : `${uploaded} attachments uploaded successfully.`,
+        );
+        setPendingAttachments([]);
+        await fetchDonation();
+      }
+      if (failed > 0) {
+        toast.error(
+          failed === 1
+            ? 'Failed to upload 1 attachment.'
+            : `Failed to upload ${failed} attachments.`,
+        );
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to upload attachments.');
+    } finally {
+      setSavingAttachments(false);
+    }
+  };
+
+  const removeDonationAttachment = async (attachmentId) => {
+    if (!window.confirm('Remove this attachment?')) return;
+    try {
+      await axiosInstance.delete(`/donations/${id}/attachments/${attachmentId}`);
+      setDonation((prev) => ({
+        ...prev,
+        attachments: (prev.attachments || []).filter((a) => a.id !== attachmentId),
+      }));
+      toast.success('Attachment removed.');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to remove attachment.');
     }
   };
   
@@ -1112,6 +1172,67 @@ const ViewOnlineDonation = () => {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="view-section">
+            <h3 className="view-section-title">Attachments</h3>
+            {(donation.attachments || []).length > 0 ? (
+              <ul className="donation-attachments-list">
+                {(donation.attachments || []).map((a) => {
+                  const displayName = a.description || a.file_name;
+                  return (
+                    <li key={a.id} className="donation-attachments-list__item">
+                      <div className="donation-attachments-list__main">
+                        <strong>{displayName}</strong>
+                        {a.description && a.file_name && a.description !== a.file_name && (
+                          <span>{a.file_name}</span>
+                        )}
+                      </div>
+                      <div className="donation-attachments-list__actions">
+                        <a href={a.file_url} target="_blank" rel="noreferrer">
+                          View
+                        </a>
+                        {!isLocalId(id) && (
+                          <button
+                            type="button"
+                            onClick={() => removeDonationAttachment(a.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p style={{ margin: '0.5rem 0', color: '#64748b', fontSize: '0.9rem' }}>
+                No attachments yet.
+              </p>
+            )}
+
+            {!isLocalId(id) && (
+              <div style={{ marginTop: '1rem' }}>
+                <DonationPendingAttachments
+                  ref={attachmentsRef}
+                  items={pendingAttachments}
+                  onChange={setPendingAttachments}
+                  disabled={savingAttachments}
+                  title="Add attachment"
+                  fileInputId="donation-view-pending-attachment-file"
+                />
+                <div style={{ marginTop: '0.75rem' }}>
+                  <button
+                    type="button"
+                    className="primary_btn"
+                    onClick={uploadViewAttachments}
+                    disabled={savingAttachments}
+                  >
+                    {savingAttachments ? 'Uploading...' : 'Upload attachments'}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="view-section">
