@@ -1,0 +1,170 @@
+.org-crm-page .org-people-search {
+  margin-bottom: 12px;
+}
+
+.org-people-empty {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #777;
+}
+
+.org-people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.org-people-item {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  text-align: left;
+  border: 1px solid transparent;
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.org-people-item:hover {
+  border-color: #ddd;
+  background: #f3f6fb;
+}
+
+.org-people-item--active {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.org-people-item__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #1f2937;
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.org-people-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.org-people-item__body strong {
+  font-size: 13px;
+}
+
+.org-people-item__body span {
+  font-size: 12px;
+  color: #666;
+  text-transform: capitalize;
+}
+
+.org-people-item__stage {
+  color: #2563eb !important;
+}
+
+.org-branch-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.org-view-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  color: #777;
+}
+
+.org-branch-tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.org-branch-tree__branch {
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+
+.org-branch-tree__row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.org-branch-tree__meta {
+  display: block;
+  font-size: 12px;
+  color: #777;
+  margin-top: 2px;
+}
+
+.org-branch-tree__subs {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0 0 0 12px;
+  border-left: 2px solid #ddd;
+}
+
+.org-branch-form {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #eee;
+}
+
+.org-selected-person-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.org-selected-person-banner__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.org-selected-person-banner__left h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.org-selected-person-banner__left p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #666;
+  text-transform: capitalize;
+}
+
+.org-selected-person-banner__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .org-selected-person-banner {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}

@@ -33,14 +33,9 @@ const EditDonor = () => {
     notes: '',
     first_name: '',
     last_name: '',
-    company_name: '',
-    company_registration: '',
-    contact_person: '',
-    designation: '',
-    company_address: '',
-    company_phone: '',
-    company_email: '',
+    date_of_birth: '',
     is_active: true,
+    affiliation_role: 'contact',
   });
 
   const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -50,6 +45,7 @@ const EditDonor = () => {
   const [pwError, setPwError] = useState('');
   const [assignedUser, setAssignedUser] = useState(null);
   const [referrerUser, setReferrerUser] = useState(null);
+  const [selectedOrganization, setSelectedOrganization] = useState(null);
 
   useEffect(() => {
     fetchDonor();
@@ -64,6 +60,10 @@ const EditDonor = () => {
       if (!res.data?.success) throw new Error(res.data?.message || 'Failed to load donor');
       const d = res.data.data;
       setDonor(d);
+      const primaryAff =
+        (d.organization_affiliations || []).find((a) => a.is_primary) ||
+        (d.organization_affiliations || [])[0] ||
+        null;
       setForm({
         donor_type: d.donor_type || 'individual',
         name: d.name || '',
@@ -78,17 +78,15 @@ const EditDonor = () => {
         notes: d.notes || '',
         first_name: d.first_name || '',
         last_name: d.last_name || '',
-        company_name: d.company_name || '',
-        company_registration: d.company_registration || '',
-        contact_person: d.contact_person || '',
-        designation: d.designation || '',
-        company_address: d.company_address || '',
-        company_phone: d.company_phone || '',
-        company_email: d.company_email || '',
+        date_of_birth: d.date_of_birth
+          ? String(d.date_of_birth).slice(0, 10)
+          : '',
         is_active: d.is_active !== false,
+        affiliation_role: primaryAff?.role || 'contact',
       });
       setAssignedUser(d.assigned_to || null);
       setReferrerUser(d.referred_by || null);
+      setSelectedOrganization(primaryAff?.organization || null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load donor');
     } finally {
@@ -111,6 +109,8 @@ const EditDonor = () => {
   const handleUserClear = () => setAssignedUser(null);
   const handleReferrerSelect = (user) => setReferrerUser(user);
   const handleReferrerClear = () => setReferrerUser(null);
+  const handleOrganizationSelect = (org) => setSelectedOrganization(org);
+  const handleOrganizationClear = () => setSelectedOrganization(null);
 
   const renderUserOption = (user, onSelect) => (
     <div
@@ -159,28 +159,22 @@ const EditDonor = () => {
         payload.first_name = form.first_name;
         payload.last_name = form.last_name;
         payload.name = `${form.first_name || ''} ${form.last_name || ''}`.trim() || payload.name;
-        payload.company_name = null;
-        payload.company_registration = null;
-        payload.contact_person = null;
-        payload.designation = null;
-        payload.company_address = null;
-        payload.company_phone = null;
-        payload.company_email = null;
       } else {
-        payload.company_name = form.company_name;
-        payload.company_registration = form.company_registration;
-        payload.contact_person = form.contact_person;
-        payload.designation = form.designation;
-        payload.company_address = form.company_address;
-        payload.company_phone = form.company_phone;
-        payload.company_email = form.company_email;
-        payload.name = form.company_name || payload.name;
-        payload.first_name = null;
-        payload.last_name = null;
+        payload.name = form.name?.trim() || payload.name;
+        if (form.donor_type === 'csr' && !selectedOrganization?.id) {
+          throw new Error('Please select an organization for CSR donors.');
+        }
       }
 
       payload.assigned_to_user_id = assignedUser?.id ?? null;
       payload.referrer_user_id = referrerUser?.id ?? null;
+      payload.date_of_birth = form.date_of_birth || null;
+
+      if (selectedOrganization?.id) {
+        payload.organization_id = selectedOrganization.id;
+        payload.affiliation_role = form.affiliation_role || 'contact';
+        payload.affiliation_is_primary = true;
+      }
 
       const res = await axiosInstance.patch(`/donors/${id}`, payload);
       if (!res.data?.success) throw new Error(res.data?.message || 'Failed to update donor');
@@ -221,6 +215,33 @@ const EditDonor = () => {
     { value: 'individual', label: 'Individual Donor' },
     { value: 'csr', label: 'CSR Donor (Corporate)' },
   ];
+
+  const affiliationRoleOptions = [
+    { value: 'contact', label: 'Contact' },
+    { value: 'ceo', label: 'CEO' },
+    { value: 'cfo', label: 'CFO' },
+    { value: 'csr_head', label: 'CSR Head' },
+    { value: 'branch_manager', label: 'Branch Manager' },
+    { value: 'other', label: 'Other' },
+  ];
+
+  const renderOrgOption = (org, onSelect) => (
+    <div
+      key={org.id}
+      className="searchable-dropdown__option"
+      onClick={() => onSelect(org)}
+      style={{
+        padding: '12px',
+        borderBottom: '1px solid #eee',
+        cursor: 'pointer',
+      }}
+    >
+      <div style={{ fontWeight: '500', marginBottom: '4px' }}>{org.name}</div>
+      <div style={{ fontSize: '12px', color: '#666' }}>
+        {[org.city, org.registration_number].filter(Boolean).join(' · ') || 'Organization'}
+      </div>
+    </div>
+  );
 
   if (loading) {
     return (
@@ -301,64 +322,26 @@ const EditDonor = () => {
                     value={form.cnic}
                     onChange={handleChange}
                   />
+                  <FormInput
+                    label="Date of Birth (optional)"
+                    type="date"
+                    name="date_of_birth"
+                    value={form.date_of_birth}
+                    onChange={handleChange}
+                  />
                 </div>
               </section>
             ) : (
               <section className="donor-register-card">
-                <h3 className="donor-register-card__title">2. Company Details</h3>
+                <h3 className="donor-register-card__title">2. Contact Person</h3>
                 <div className="form-grid-3">
                   <FormInput
-                    label="Company Name"
+                    label="Contact Person Name"
                     type="text"
-                    name="company_name"
-                    value={form.company_name}
+                    name="name"
+                    value={form.name}
                     onChange={handleChange}
                     required
-                  />
-                  <FormInput
-                    label="Registration Number"
-                    type="text"
-                    name="company_registration"
-                    value={form.company_registration}
-                    onChange={handleChange}
-                  />
-                  <FormInput
-                    label="Contact Person"
-                    type="text"
-                    name="contact_person"
-                    value={form.contact_person}
-                    onChange={handleChange}
-                    required
-                  />
-                  <FormInput
-                    label="Designation"
-                    type="text"
-                    name="designation"
-                    value={form.designation}
-                    onChange={handleChange}
-                  />
-                  <FormInput
-                    label="Company Phone"
-                    type="tel"
-                    name="company_phone"
-                    value={form.company_phone}
-                    onChange={handleChange}
-                  />
-                  <FormInput
-                    label="Company Email"
-                    type="email"
-                    name="company_email"
-                    value={form.company_email}
-                    onChange={handleChange}
-                  />
-                </div>
-                <div className="form-grid-2 donor-register-card__row">
-                  <FormInput
-                    label="Company Address"
-                    type="text"
-                    name="company_address"
-                    value={form.company_address}
-                    onChange={handleChange}
                   />
                   <FormInput
                     label="CNIC (optional)"
@@ -367,9 +350,45 @@ const EditDonor = () => {
                     value={form.cnic}
                     onChange={handleChange}
                   />
+                  <FormInput
+                    label="Date of Birth (optional)"
+                    type="date"
+                    name="date_of_birth"
+                    value={form.date_of_birth}
+                    onChange={handleChange}
+                  />
                 </div>
               </section>
             )}
+
+            <section className="donor-register-card">
+              <h3 className="donor-register-card__title">
+                2b. Organization Link {form.donor_type === 'csr' ? '(required)' : '(optional)'}
+              </h3>
+              <div className="form-grid-2">
+                <SearchableDropdown
+                  label="Search organization"
+                  placeholder="Search by company name..."
+                  apiEndpoint="/organizations"
+                  apiParams={{ pageSize: 20 }}
+                  onSelect={handleOrganizationSelect}
+                  onClear={handleOrganizationClear}
+                  value={selectedOrganization}
+                  displayKey="name"
+                  debounceDelay={400}
+                  minSearchLength={2}
+                  allowResearch={true}
+                  renderOption={(org) => renderOrgOption(org, handleOrganizationSelect)}
+                />
+                <FormSelect
+                  label="Role at organization"
+                  name="affiliation_role"
+                  value={form.affiliation_role}
+                  onChange={handleChange}
+                  options={affiliationRoleOptions}
+                />
+              </div>
+            </section>
 
             <section className="donor-register-card">
               <h3 className="donor-register-card__title">3. Address</h3>

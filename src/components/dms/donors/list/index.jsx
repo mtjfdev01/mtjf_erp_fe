@@ -320,7 +320,6 @@ const DonorsList = () => {
   const csvColumns = [
     { key: 'donor_type', label: 'Type' },
     { key: 'name', label: 'Name' },
-    { key: 'company_name', label: 'Company' },
     { key: 'email', label: 'Email' },
     { key: 'phone', label: 'Phone' },
     { key: 'city', label: 'City' },
@@ -942,8 +941,8 @@ const DonorsList = () => {
                               </span>
                             )}
                           </Link>
-                          {donor.donor_type === 'csr' && donor.company_name && (
-                            <div className="company-name">{donor.company_name}</div>
+                          {donor.donor_type === 'csr' && (
+                            <div className="company-name">CSR contact</div>
                           )}
                         </div>
                       </td>

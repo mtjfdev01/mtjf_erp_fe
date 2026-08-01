@@ -171,7 +171,7 @@ export async function handleOfflineRequest(config) {
     const search = (params.search || '').trim().toLowerCase();
     if (search) {
       rows = rows.filter((d) =>
-        [d.name, d.email, d.phone, d.company_name, d.city]
+        [d.name, d.email, d.phone, d.city]
           .filter(Boolean)
           .some((v) => String(v).toLowerCase().includes(search)),
       );

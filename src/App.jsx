@@ -132,7 +132,7 @@ import ResumeCollectionAdd from './components/admin/hr/resume_collection/add';
 import ResumeCollectionView from './components/admin/hr/resume_collection/view';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
 import PendingAllotmentsList from './components/dms/donations/allotments/pending';
-import { DonorsList, RegisterDonor, ViewDonor, EditDonor, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, EditDonor, OrganizationsList, AddOrganization, ViewOrganization, EditOrganization, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
 import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
@@ -439,6 +439,12 @@ const App = () => {
                                 <Route path="/dms/donors/:donorId/donations" element={<OnlineDonationsList key="donor-donations-list" />} />
                                 <Route path="/dms/donors/add" element={<RegisterDonor />} />
                                 <Route path="/dms/donors/edit/:id" element={<EditDonor />} />
+
+                                {/* Organizations (Organization → Branch → Sub-branch) */}
+                                <Route path="/dms/organizations/list" element={<OrganizationsList />} />
+                                <Route path="/dms/organizations/add" element={<AddOrganization />} />
+                                <Route path="/dms/organizations/view/:id" element={<ViewOrganization />} />
+                                <Route path="/dms/organizations/edit/:id" element={<EditOrganization />} />
 
                                 
                                 {/* Volunteers Routes */}

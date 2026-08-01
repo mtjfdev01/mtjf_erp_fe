@@ -452,46 +452,25 @@ const ViewDonor = () => {
                       <strong>{donor.last_name}</strong>
                     </div>
                   )}
-                  {isCsr && donor.company_name && (
+                  {donor.date_of_birth && (
                     <div className="donor-crm-summary-row">
-                      <span>Company Name</span>
-                      <strong>{donor.company_name}</strong>
+                      <span>Date of Birth</span>
+                      <strong>{formatShortDate(donor.date_of_birth)}</strong>
                     </div>
                   )}
-                  {isCsr && donor.company_registration && (
-                    <div className="donor-crm-summary-row">
-                      <span>Registration Number</span>
-                      <strong>{donor.company_registration}</strong>
-                    </div>
-                  )}
-                  {isCsr && donor.contact_person && (
-                    <div className="donor-crm-summary-row">
-                      <span>Contact Person</span>
-                      <strong>{donor.contact_person}</strong>
-                    </div>
-                  )}
-                  {isCsr && donor.designation && (
-                    <div className="donor-crm-summary-row">
-                      <span>Designation</span>
-                      <strong>{donor.designation}</strong>
-                    </div>
-                  )}
-                  {isCsr && donor.company_email && (
-                    <div className="donor-crm-summary-row">
-                      <span>Company Email</span>
-                      <strong>{donor.company_email}</strong>
-                    </div>
-                  )}
-                  {isCsr && donor.company_phone && (
-                    <div className="donor-crm-summary-row">
-                      <span>Company Phone</span>
-                      <strong>{donor.company_phone}</strong>
-                    </div>
-                  )}
-                  {isCsr && donor.company_address && (
+                  {(donor.organization_affiliations || []).length > 0 && (
                     <div className="donor-crm-summary-row donor-crm-summary-row--block">
-                      <span>Company Address</span>
-                      <strong>{donor.company_address}</strong>
+                      <span>Organizations</span>
+                      <strong>
+                        {(donor.organization_affiliations || []).map((aff) => (
+                          <div key={aff.id} style={{ marginBottom: 6 }}>
+                            {aff.organization?.name || `Org #${aff.organization_id}`}
+                            {aff.role ? ` · ${String(aff.role).replace(/_/g, ' ')}` : ''}
+                            {aff.is_primary ? ' · primary' : ''}
+                            {aff.branch?.name ? ` · ${aff.branch.name}` : ''}
+                          </div>
+                        ))}
+                      </strong>
                     </div>
                   )}
                   <div className="donor-crm-summary-row">
