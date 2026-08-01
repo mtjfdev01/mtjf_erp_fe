@@ -10,15 +10,17 @@ import {
   FiUser,
   FiMaximize2,
   FiMinimize2,
+  FiMinus,
+  FiSidebar,
   FiList,
   FiLayers,
   FiCalendar,
   FiRefreshCw,
   FiClock,
   FiFileText,
-  FiMessageSquare,
   FiGitBranch,
 } from 'react-icons/fi';
+import { FaWhatsapp } from 'react-icons/fa';
 import { BsFillBuildingsFill } from 'react-icons/bs';
 import { GiPayMoney } from 'react-icons/gi';
 import axiosInstance from '../../../../utils/axios';
@@ -107,6 +109,7 @@ const ViewOrganization = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [infoExpanded, setInfoExpanded] = useState(false);
+  const [asideHidden, setAsideHidden] = useState(false);
   const [showBranchForm, setShowBranchForm] = useState(false);
   const [branchForm, setBranchForm] = useState(emptyBranchForm);
   const [savingBranch, setSavingBranch] = useState(false);
@@ -334,20 +337,55 @@ const ViewOrganization = () => {
             </div>
           )}
 
-          <div className={`donor-crm-layout${infoExpanded ? ' donor-crm-layout--info-expanded' : ''}`}>
+          <div
+            className={`donor-crm-layout${infoExpanded ? ' donor-crm-layout--info-expanded' : ''}${
+              asideHidden ? ' donor-crm-layout--aside-hidden' : ''
+            }`}
+          >
+            {asideHidden ? (
+              <button
+                type="button"
+                className="donor-crm-aside-show-btn"
+                onClick={() => setAsideHidden(false)}
+                title="Show organization profile"
+                aria-label="Show organization profile"
+              >
+                <FiSidebar />
+                {/* <span>Show profile</span> */}
+              </button>
+            ) : null}
+
+            {!asideHidden ? (
             <aside className="donor-crm-aside">
               <section className="donor-crm-card donor-crm-identity">
                 <div className="donor-crm-identity__top">
                   <span className="donor-crm-identity__eyebrow">Organization Profile</span>
-                  <button
-                    type="button"
-                    className="donor-crm-expand-btn"
-                    onClick={() => setInfoExpanded((v) => !v)}
-                    title={infoExpanded ? 'Collapse' : 'Expand'}
-                  >
-                    {infoExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
-                    <span>{infoExpanded ? 'Collapse' : 'Expand'}</span>
-                  </button>
+                  <div className="donor-crm-identity__top-actions">
+                    <button
+                      type="button"
+                      className="donor-crm-expand-btn"
+                      onClick={() => setInfoExpanded((v) => !v)}
+                      title={infoExpanded ? 'Collapse' : 'Expand'}
+                      aria-label={infoExpanded ? 'Collapse organization info' : 'Expand organization info'}
+                      aria-pressed={infoExpanded}
+                    >
+                      {infoExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
+                      <span>{infoExpanded ? 'Collapse' : 'Expand'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="donor-crm-expand-btn donor-crm-expand-btn--hide"
+                      onClick={() => {
+                        setInfoExpanded(false);
+                        setAsideHidden(true);
+                      }}
+                      title="Hide organization profile"
+                      aria-label="Hide organization profile"
+                    >
+                      <FiMinus />
+                      <span>Hide</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="donor-crm-identity__hero">
@@ -618,6 +656,7 @@ const ViewOrganization = () => {
                 )}
               </section>
             </aside>
+            ) : null}
 
             <div className="donor-crm-main" aria-hidden={infoExpanded}>
               {!selectedDonorId ? (
@@ -789,77 +828,107 @@ const ViewOrganization = () => {
                     </div>
                   </section>
 
-                  <section className="donor-crm-card">
-                    <h3 className="donor-crm-card__title">Person Summary</h3>
-                    <div className="donor-crm-summary-list">
-                      <div className="donor-crm-summary-row">
-                        <span>Email</span>
-                        <strong>{donor.email || '—'}</strong>
+                  <section className="donor-crm-card org-person-summary">
+                    <div className="org-person-summary__header">
+                      <span className="org-person-summary__header-icon" aria-hidden="true">
+                        <FiUser />
+                      </span>
+                      <h3 className="org-person-summary__title">Person Summary</h3>
+                      <div className="org-person-summary__header-actions">
+                        <button
+                          type="button"
+                          className="org-person-summary__icon-btn"
+                          title="Call"
+                          aria-label="Call"
+                          onClick={() => {
+                            if (donor.phone) {
+                              window.location.href = `tel:${String(donor.phone).replace(/\s+/g, '')}`;
+                            }
+                          }}
+                          disabled={!donor.phone}
+                        >
+                          <FiPhone />
+                        </button>
+                        <button
+                          type="button"
+                          className="org-person-summary__icon-btn"
+                          title="Email"
+                          aria-label="Email"
+                          onClick={() => {
+                            if (donor.email) window.location.href = `mailto:${donor.email}`;
+                          }}
+                          disabled={!donor.email}
+                        >
+                          <FiMail />
+                        </button>
+                        <button
+                          type="button"
+                          className="org-person-summary__icon-btn org-person-summary__icon-btn--whatsapp"
+                          title="WhatsApp"
+                          aria-label="WhatsApp"
+                          onClick={() => {
+                            const digits = String(donor.phone || '').replace(/\D/g, '');
+                            if (digits) {
+                              window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer');
+                            }
+                          }}
+                          disabled={!donor.phone}
+                        >
+                          <FaWhatsapp />
+                        </button>
                       </div>
-                      <div className="donor-crm-summary-row">
-                        <span>Phone</span>
-                        <strong>{donor.phone || '—'}</strong>
+                    </div>
+
+                    <div className="org-person-summary__grid">
+                      <div className="org-person-summary__tile">
+                        <span className="org-person-summary__tile-label">Email</span>
+                        <strong className="org-person-summary__tile-value" title={donor.email || ''}>
+                          {donor.email || '—'}
+                        </strong>
                       </div>
-                      <div className="donor-crm-summary-row">
-                        <span>Assigned To</span>
-                        <strong>
+                      <div className="org-person-summary__tile">
+                        <span className="org-person-summary__tile-label">Phone</span>
+                        <strong className="org-person-summary__tile-value">
+                          {donor.phone || '—'}
+                        </strong>
+                      </div>
+                      <div className="org-person-summary__tile">
+                        <span className="org-person-summary__tile-label">Assigned To</span>
+                        <strong className="org-person-summary__tile-value">
                           {donor.assigned_to ? formatAuditActor(donor.assigned_to) : 'Unassigned'}
                         </strong>
                       </div>
-                      <div className="donor-crm-summary-row">
-                        <span>Status</span>
-                        <strong>{donor.is_active === false ? 'Inactive' : 'Active'}</strong>
+                      <div className="org-person-summary__tile">
+                        <span className="org-person-summary__tile-label">Status</span>
+                        <strong className="org-person-summary__tile-value">
+                          <span
+                            className={`org-person-summary__status-pill ${
+                              donor.is_active === false
+                                ? 'org-person-summary__status-pill--inactive'
+                                : 'org-person-summary__status-pill--active'
+                            }`}
+                          >
+                            <span className="org-person-summary__status-pill-dot" />
+                            {donor.is_active === false ? 'Inactive' : 'Active'}
+                          </span>
+                        </strong>
                       </div>
-                      <div className="donor-crm-summary-row donor-crm-summary-row--block">
-                        <span>Notes</span>
-                        <strong>{donor.notes || '—'}</strong>
+                      <div className="org-person-summary__tile org-person-summary__tile--notes">
+                        <span className="org-person-summary__tile-label">Notes</span>
+                        <strong
+                          className="org-person-summary__tile-value"
+                          title={donor.notes || ''}
+                        >
+                          {donor.notes || '—'}
+                        </strong>
                       </div>
-                    </div>
-                    <div className="donor-crm-quick-actions" style={{ marginTop: 12 }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (donor.phone) window.location.href = `tel:${String(donor.phone).replace(/\s+/g, '')}`;
-                        }}
-                        disabled={!donor.phone}
-                      >
-                        <span className="donor-crm-quick-actions__icon donor-crm-quick-actions__icon--call">
-                          <FiPhone />
-                        </span>
-                        Call
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (donor.email) window.location.href = `mailto:${donor.email}`;
-                        }}
-                        disabled={!donor.email}
-                      >
-                        <span className="donor-crm-quick-actions__icon donor-crm-quick-actions__icon--email">
-                          <FiMail />
-                        </span>
-                        Email
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const digits = String(donor.phone || '').replace(/\D/g, '');
-                          if (digits) window.open(`https://wa.me/${digits}`, '_blank', 'noopener,noreferrer');
-                        }}
-                        disabled={!donor.phone}
-                      >
-                        <span className="donor-crm-quick-actions__icon donor-crm-quick-actions__icon--wa">
-                          <FiMessageSquare />
-                        </span>
-                        WhatsApp
-                      </button>
                     </div>
                   </section>
 
-                  <ManualRecurringDonorPanel
+                  {/* <ManualRecurringDonorPanel
                     donorId={donor.id}
                     onUpdated={() => loadSelectedDonor(donor.id)}
-                  />
+                  /> */}
 
                   <DonorPipelinePanel
                     donorId={donor.id}

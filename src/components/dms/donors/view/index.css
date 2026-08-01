@@ -605,6 +605,13 @@
   margin-bottom: 0.85rem;
 }
 
+.donor-crm-identity__top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+}
+
 .donor-crm-identity__eyebrow {
   font-size: 0.7rem;
   font-weight: 700;
@@ -630,6 +637,58 @@
   box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
   transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease,
     box-shadow 0.2s ease;
+}
+
+.donor-crm-expand-btn--hide {
+  border-color: #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #64748b;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.donor-crm-expand-btn--hide:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #475569;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
+}
+
+.donor-crm-aside-show-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  align-self: start;
+  position: sticky;
+  top: 5rem;
+  height: 36px;
+  padding: 0 0.85rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ffffff 0%, #eff6ff 100%);
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.08);
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.donor-crm-aside-show-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.donor-crm-aside-show-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.donor-crm-layout--aside-hidden {
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
 }
 
 .donor-crm-expand-btn:hover {
@@ -1017,6 +1076,15 @@
     grid-template-columns: 1fr;
   }
 
+  .donor-crm-layout--aside-hidden {
+    grid-template-columns: 1fr;
+  }
+
+  .donor-crm-aside-show-btn {
+    position: static;
+    justify-self: start;
+  }
+
   .donor-crm-layout--info-expanded {
     grid-template-columns: minmax(0, 1fr) 0fr;
   }
@@ -1047,7 +1115,8 @@
     grid-template-columns: 1fr;
   }
 
-  .donor-crm-expand-btn span {
+  .donor-crm-expand-btn span,
+  .donor-crm-aside-show-btn span {
     display: none;
   }
 }

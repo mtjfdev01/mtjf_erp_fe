@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
-import { FiGitBranch, FiRefreshCw } from 'react-icons/fi';
+import { FiGitBranch, FiMinus, FiRefreshCw, FiSidebar } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
@@ -58,6 +58,7 @@ const DonorPipelinePanel = ({
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [panelHidden, setPanelHidden] = useState(false);
 
   const showAmountField = stage === 'ask' || stage === 'pledge';
 
@@ -224,18 +225,31 @@ const DonorPipelinePanel = ({
             )}
           </div>
         </div>
-        <SecondaryButton
-          type="button"
-          onClick={fetchHistory}
-          disabled={loadingHistory}
-          loading={loadingHistory}
-          loadingText="Refreshing…"
-          icon={<FiRefreshCw />}
-        >
-          Refresh
-        </SecondaryButton>
+        <div className="donor-pipeline-panel__header-actions">
+          <SecondaryButton
+            type="button"
+            onClick={fetchHistory}
+            disabled={loadingHistory || panelHidden}
+            loading={loadingHistory}
+            loadingText="Refreshing…"
+            icon={<FiRefreshCw />}
+          >
+            {/* Refresh */}
+          </SecondaryButton>
+          <SecondaryButton
+            type="button"
+            onClick={() => setPanelHidden((v) => !v)}
+            icon={panelHidden ? <FiSidebar /> : <FiMinus />}
+            title={panelHidden ? 'Show pipeline' : 'Hide pipeline'}
+            aria-label={panelHidden ? 'Show pipeline' : 'Hide pipeline'}
+          >
+            {/* Hide / Show */}
+          </SecondaryButton>
+        </div>
       </div>
 
+      {!panelHidden ? (
+        <>
       <div className="donor-pipeline-steps" aria-label="Pipeline stages">
         {stepOptions.map((opt) => {
           const active = opt.value === effectiveStage;
@@ -253,23 +267,25 @@ const DonorPipelinePanel = ({
 
       {canUpdate && (
         <form className="donor-pipeline-form" onSubmit={handleSubmit}>
-          <FormSelect
-            label="Move / note stage"
-            name="pipeline_stage"
-            value={stage}
-            onChange={(e) => setStage(e.target.value)}
-            options={stageOptions}
-            required
-          />
+          <div className="donor-pipeline-form__row">
+            <FormSelect
+              label="Move / note stage"
+              name="pipeline_stage"
+              value={stage}
+              onChange={(e) => setStage(e.target.value)}
+              options={stageOptions}
+              required
+            />
 
-          <FormSelect
-            label="Transition type"
-            name="pipeline_mode"
-            value={mode}
-            onChange={(e) => setMode(e.target.value)}
-            options={modeOptions}
-            required
-          />
+            <FormSelect
+              label="Transition type"
+              name="pipeline_mode"
+              value={mode}
+              onChange={(e) => setMode(e.target.value)}
+              options={modeOptions}
+              required
+            />
+          </div>
 
           {showAmountField && (
             <div className="donor-pipeline-form__amount-row">
@@ -350,6 +366,8 @@ const DonorPipelinePanel = ({
           </ul>
         )}
       </div>
+        </>
+      ) : null}
     </section>
   );
 };

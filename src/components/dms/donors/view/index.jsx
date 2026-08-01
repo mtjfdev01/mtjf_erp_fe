@@ -36,6 +36,8 @@ import {
   FiCheck,
   FiMaximize2,
   FiMinimize2,
+  FiMinus,
+  FiSidebar,
   FiGitBranch,
 } from 'react-icons/fi';
 import { GiPayMoney } from 'react-icons/gi';
@@ -56,6 +58,7 @@ const ViewDonor = () => {
   const [revealLoading, setRevealLoading] = useState(false);
   const [copiedField, setCopiedField] = useState('');
   const [infoExpanded, setInfoExpanded] = useState(false);
+  const [asideHidden, setAsideHidden] = useState(false);
 
   const showDonorJourney = useMemo(() => {
     if (!donor || !permissions) return false;
@@ -303,22 +306,54 @@ const ViewDonor = () => {
             </div>
           )}
 
-          <div className={`donor-crm-layout${infoExpanded ? ' donor-crm-layout--info-expanded' : ''}`}>
+          <div
+            className={`donor-crm-layout${infoExpanded ? ' donor-crm-layout--info-expanded' : ''}${
+              asideHidden ? ' donor-crm-layout--aside-hidden' : ''
+            }`}
+          >
+            {asideHidden ? (
+              <button
+                type="button"
+                className="donor-crm-aside-show-btn"
+                onClick={() => setAsideHidden(false)}
+                title="Show donor profile"
+                aria-label="Show donor profile"
+              >
+                <FiSidebar />
+              </button>
+            ) : null}
+
+            {!asideHidden ? (
             <aside className="donor-crm-aside">
               <section className="donor-crm-card donor-crm-identity">
                 <div className="donor-crm-identity__top">
                   <span className="donor-crm-identity__eyebrow">Donor Profile</span>
-                  <button
-                    type="button"
-                    className="donor-crm-expand-btn"
-                    onClick={() => setInfoExpanded((v) => !v)}
-                    title={infoExpanded ? 'Collapse donor info' : 'Expand donor info'}
-                    aria-label={infoExpanded ? 'Collapse donor info' : 'Expand donor info'}
-                    aria-pressed={infoExpanded}
-                  >
-                    {infoExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
-                    <span>{infoExpanded ? 'Collapse' : 'Expand'}</span>
-                  </button>
+                  <div className="donor-crm-identity__top-actions">
+                    <button
+                      type="button"
+                      className="donor-crm-expand-btn"
+                      onClick={() => setInfoExpanded((v) => !v)}
+                      title={infoExpanded ? 'Collapse donor info' : 'Expand donor info'}
+                      aria-label={infoExpanded ? 'Collapse donor info' : 'Expand donor info'}
+                      aria-pressed={infoExpanded}
+                    >
+                      {infoExpanded ? <FiMinimize2 /> : <FiMaximize2 />}
+                      <span>{infoExpanded ? 'Collapse' : 'Expand'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="donor-crm-expand-btn donor-crm-expand-btn--hide"
+                      onClick={() => {
+                        setInfoExpanded(false);
+                        setAsideHidden(true);
+                      }}
+                      title="Hide donor profile"
+                      aria-label="Hide donor profile"
+                    >
+                      <FiMinus />
+                      <span>Hide</span>
+                    </button>
+                  </div>
                 </div>
 
                 <div className="donor-crm-identity__hero">
@@ -695,6 +730,7 @@ const ViewDonor = () => {
                 </div>
               </section>
             </aside>
+            ) : null}
 
             <div className="donor-crm-main" aria-hidden={infoExpanded}>
               <section className="donor-crm-stats-bar" aria-label="Donation summary">
@@ -774,7 +810,7 @@ const ViewDonor = () => {
                 </div>
               </section>
 
-              <ManualRecurringDonorPanel donorId={id} onUpdated={fetchDonor} />
+              {/* <ManualRecurringDonorPanel donorId={id} onUpdated={fetchDonor} /> */}
 
               <DonorPipelinePanel
                 donorId={id}
