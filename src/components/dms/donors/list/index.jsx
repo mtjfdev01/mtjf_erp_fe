@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { fundRaisingDonorsHas, hasPermission } from '../../../../utils/permissions';
@@ -21,7 +21,7 @@ import { BsFillBuildingsFill } from "react-icons/bs";
 import FormInput from '../../../common/FormInput';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
 import useListRowSelection from '../../../../hooks/useListRowSelection';
-import { saveAudienceFilters } from '../../email_templates/communicationAudience';
+import DonorBulkActionsModal from './DonorBulkActionsModal';
 import {
   DONOR_PIPELINE_FILTER_OPTIONS,
   formatPipelineStage,
@@ -40,7 +40,6 @@ const DONOR_ASSIGNED_FILTER_ME = {
 };
 
 const DonorsList = () => {
-  const navigate = useNavigate();
   const { permissions, user } = useAuth();
   const [donors, setDonors] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +53,10 @@ const DonorsList = () => {
   const [revealError, setRevealError] = useState('');
   const [revealLoading, setRevealLoading] = useState(false);
   const [selectedAssignedUser, setSelectedAssignedUser] = useState(null);
+  const [bulkActionsOpen, setBulkActionsOpen] = useState(false);
+  const [bulkAudienceMode, setBulkAudienceMode] = useState('manual'); // manual | filters
+  const [bulkDonorIds, setBulkDonorIds] = useState([]);
+  const [bulkDonorFilters, setBulkDonorFilters] = useState(null);
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -135,15 +138,30 @@ const DonorsList = () => {
     return JSON.stringify(appliedFilters) !== JSON.stringify(empty);
   }, [appliedFilters]);
 
-  const handleSendToSelected = () => {
+  const handleActionsForSelected = () => {
     const ids = Array.from(selectedIds);
     if (!ids.length) return;
-    navigate(`/dms/email_templates/send?mode=manual&donor_ids=${ids.join(',')}`);
+    setBulkAudienceMode('manual');
+    setBulkDonorIds(ids);
+    setBulkDonorFilters(null);
+    setBulkActionsOpen(true);
   };
 
-  const handleSendToFiltered = () => {
-    saveAudienceFilters(appliedFilters);
-    navigate('/dms/email_templates/send?mode=filters');
+  const handleActionsForFiltered = () => {
+    setBulkAudienceMode('filters');
+    setBulkDonorIds([]);
+    setBulkDonorFilters({ ...appliedFilters });
+    setBulkActionsOpen(true);
+  };
+
+  const handleBulkActionsClose = () => {
+    setBulkActionsOpen(false);
+  };
+
+  const handleBulkSendSuccess = () => {
+    if (bulkAudienceMode === 'manual') {
+      clearSelection();
+    }
   };
 
   const canSearchAssignees = useMemo(() => {
@@ -839,9 +857,9 @@ const DonorsList = () => {
                 <button
                   type="button"
                   className="primary-btn"
-                  onClick={handleSendToSelected}
+                  onClick={handleActionsForSelected}
                 >
-                  Send communication to selected
+                  Actions
                 </button>
                 <button
                   type="button"
@@ -857,14 +875,14 @@ const DonorsList = () => {
           {hasActiveFilters && (
             <div className="list-selection-bar">
               <span className="list-selection-bar__count">
-                Filters applied — send to all matching donors ({totalItems})
+                Filters applied — actions for all matching donors ({totalItems})
               </span>
               <button
                 type="button"
                 className="primary-btn"
-                onClick={handleSendToFiltered}
+                onClick={handleActionsForFiltered}
               >
-                Send communication to filtered donors
+                Actions for filtered donors
               </button>
             </div>
           )}
@@ -999,6 +1017,17 @@ const DonorsList = () => {
           ...(revealedPassword ? { Password: revealedPassword } : {}),
           Note: 'Password is shown for operational use only. Close this dialog when done.',
         }}
+      />
+
+      <DonorBulkActionsModal
+        isOpen={bulkActionsOpen}
+        onClose={handleBulkActionsClose}
+        audienceMode={bulkAudienceMode}
+        donorIds={bulkDonorIds}
+        donorFilters={bulkDonorFilters}
+        selectedCount={bulkAudienceMode === 'manual' ? bulkDonorIds.length : 0}
+        matchedHint={bulkAudienceMode === 'filters' ? totalItems : null}
+        onSendSuccess={handleBulkSendSuccess}
       />
     </>
   );

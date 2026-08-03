@@ -133,6 +133,11 @@ import ResumeCollectionView from './components/admin/hr/resume_collection/view';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
 import PendingAllotmentsList from './components/dms/donations/allotments/pending';
 import { DonorsList, RegisterDonor, ViewDonor, EditDonor, OrganizationsList, AddOrganization, ViewOrganization, EditOrganization, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
+import AidApplicationsList from './components/dms/aid/applications/list';
+import AidApplicationAdd from './components/dms/aid/applications/add';
+import AidApplicationView from './components/dms/aid/applications/view';
+import AidPeopleList from './components/dms/aid/people/list';
+import AidPersonView from './components/dms/aid/people/view';
 import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
 import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
@@ -445,6 +450,12 @@ const App = () => {
                                 <Route path="/dms/organizations/add" element={<AddOrganization />} />
                                 <Route path="/dms/organizations/view/:id" element={<ViewOrganization />} />
                                 <Route path="/dms/organizations/edit/:id" element={<EditOrganization />} />
+
+                                <Route path="/dms/aid/applications/list" element={<AidApplicationsList />} />
+                                <Route path="/dms/aid/applications/add" element={<AidApplicationAdd />} />
+                                <Route path="/dms/aid/applications/view/:id" element={<AidApplicationView />} />
+                                <Route path="/dms/aid/people/list" element={<AidPeopleList />} />
+                                <Route path="/dms/aid/people/view/:id" element={<AidPersonView />} />
 
                                 
                                 {/* Volunteers Routes */}

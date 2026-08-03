@@ -81,6 +81,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Organizations',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
+        aid_people: {
+          label: 'Aid People',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        aid_applications: {
+          label: 'Aid Applications',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'ceo_approve', 'deliver']
+        },
         // donations_report: {
         //   label: 'Donations Report',
         //   actions: ['send', 'receive']
