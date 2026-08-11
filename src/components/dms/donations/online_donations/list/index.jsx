@@ -274,8 +274,8 @@ const OnlineDonationsList = () => {
         ? {}
         : isOfflineRoute
           ? { _donation_source_not: 'website' }
-          : isOnlineRoute
-            ? { donation_source: appliedFilters.donation_source || 'website' }
+          : isOnlineRoute && appliedFilters.donation_source
+            ? { donation_source: appliedFilters.donation_source }
             : {};
 
       const filterPayload = {
@@ -291,9 +291,6 @@ const OnlineDonationsList = () => {
           status: appliedFilters.status,
           donation_type: appliedFilters.donation_type,
           donation_method: appliedFilters.donation_method,
-          donation_source: isDonorScopedList || isOfflineRoute
-            ? undefined
-            : appliedFilters.donation_source,
           ...routeSourceFilter,
           progress_workflow_template_id: appliedFilters.progress_workflow_template_id || undefined,
           orderId: appliedFilters.orderId,

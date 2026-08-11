@@ -34,7 +34,8 @@ const INTERVAL_OPTIONS = [
 ];
 
 const INSTALLMENT_STATUS_OPTIONS = [
-  { value: 'pending', label: 'Pending installments (none paid)' },
+  { value: 'pending', label: 'Pending / arrears' },
+  { value: 'pending_dues', label: 'Has missing installments' },
   { value: 'pending_initial', label: 'Pending initial donation' },
   { value: 'completed', label: 'Has paid installments' },
 ];
@@ -172,15 +173,22 @@ const RecurringDonationsList = () => {
   };
 
   const getCollectionBadge = (row) => {
+    const pending = Number(row.pending_installment_count ?? 0);
     const completed = Number(row.completed_installment_count ?? 0);
     const initialStatus = String(row.initial_donation_status || '').toLowerCase();
+    if (pending > 0) {
+      return {
+        label: pending === 1 ? '1 missing' : `${pending} missing`,
+        color: '#ef4444',
+      };
+    }
     if (completed > 0) {
-      return { label: 'Paid', color: '#10b981' };
+      return { label: 'Paid up', color: '#10b981' };
     }
     if (initialStatus === 'pending' || initialStatus === 'failed') {
       return { label: 'Pending initial', color: '#f59e0b' };
     }
-    return { label: 'Pending installment', color: '#ef4444' };
+    return { label: 'Pending installment', color: '#f59e0b' };
   };
 
   const applyPaymentQuickFilter = (value) => {
@@ -384,7 +392,8 @@ const RecurringDonationsList = () => {
                 <th>Billing</th>
                 <th>Status</th>
                 <th>Payment</th>
-                <th>Installments</th>
+                <th>Paid</th>
+                <th>Missing</th>
                 <th>Subscription</th>
                 <th>Initial order</th>
                 <th>Created</th>
@@ -394,13 +403,13 @@ const RecurringDonationsList = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="11" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan="12" style={{ textAlign: 'center', padding: 24 }}>
                     Loading...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan="11" style={{ textAlign: 'center' }}>
+                  <td colSpan="12" style={{ textAlign: 'center' }}>
                     No recurring donations found
                   </td>
                 </tr>
@@ -430,7 +439,8 @@ const RecurringDonationsList = () => {
                         {collection.label}
                       </span>
                     </td>
-                    <td>{row.completed_installment_count ?? row.installment_count ?? 0}</td>
+                    <td>{row.completed_installment_count ?? 0}</td>
+                    <td>{row.pending_installment_count ?? 0}</td>
                     <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {row.stripe_subscription_id || '-'}
                     </td>

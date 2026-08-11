@@ -57,13 +57,14 @@ export const ENTITY_IMPORT_CONFIG = {
     label: 'Donation Boxes',
     templateFilename: 'donation-box-import-template',
     description:
-      'Import physical donation boxes. Required: shop_name. Also provide route_id, or route_name with city_id/city_name.',
+      'Import physical donation boxes. Required: shop_name and city (city_id or city_name). Route, key_no, and box_id_no are optional. Duplicates = same shop_name + shopkeeper + phone (same shop name alone is allowed).',
     headers: [
       'shop_name',
       'route_id',
       'route_name',
       'city_id',
       'city_name',
+      'box_id_no',
       'key_no',
       'shopkeeper',
       'cell_no',
@@ -77,9 +78,10 @@ export const ENTITY_IMPORT_CONFIG = {
     ],
     sampleRow: {
       shop_name: 'Sample General Store',
-      route_id: '1',
+      route_id: '',
       city_id: '1',
-      key_no: 'KEY-001',
+      box_id_no: '',
+      key_no: '',
       shopkeeper: 'Ahmed Khan',
       cell_no: '03001234567',
       landmark_marketplace: 'Main Bazaar',

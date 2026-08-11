@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
-import { FiRepeat, FiUser, FiDollarSign, FiSend } from 'react-icons/fi';
+import { FiRepeat, FiUser, FiDollarSign, FiSend, FiCheck } from 'react-icons/fi';
 
 const RecurringDonationView = () => {
   const { id } = useParams();
@@ -12,26 +12,31 @@ const RecurringDonationView = () => {
   const [error, setError] = useState('');
   const [sendingLink, setSendingLink] = useState(false);
   const [linkMessage, setLinkMessage] = useState('');
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const [markingPaid, setMarkingPaid] = useState(false);
+  const [markMessage, setMarkMessage] = useState('');
+
+  const load = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await axiosInstance.get(`/recurring-donations/${id}`);
+      if (response.data.success) {
+        setData(response.data.data);
+        setError('');
+        setSelectedIds(new Set());
+      } else {
+        setError(response.data.message || 'Failed to load recurring donation');
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load recurring donation');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        setLoading(true);
-        const response = await axiosInstance.get(`/recurring-donations/${id}`);
-        if (response.data.success) {
-          setData(response.data.data);
-          setError('');
-        } else {
-          setError(response.data.message || 'Failed to load recurring donation');
-        }
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to load recurring donation');
-      } finally {
-        setLoading(false);
-      }
-    };
     load();
-  }, [id]);
+  }, [load]);
 
   const formatAmount = (amount, currency) => {
     if (amount == null) return '-';
@@ -46,6 +51,39 @@ const RecurringDonationView = () => {
   const donorLabel = (donor) => {
     if (!donor) return '-';
     return donor.name || [donor.first_name, donor.last_name].filter(Boolean).join(' ') || donor.email;
+  };
+
+  const pendingInstallments = useMemo(() => {
+    const list = data?.installments || [];
+    return list.filter((inst) => String(inst.status || '').toLowerCase() === 'pending');
+  }, [data]);
+
+  const allPendingSelected =
+    pendingInstallments.length > 0 &&
+    pendingInstallments.every((inst) => selectedIds.has(inst.id));
+
+  const selectedPendingAmount = useMemo(() => {
+    return pendingInstallments
+      .filter((inst) => selectedIds.has(inst.id))
+      .reduce((sum, inst) => sum + (Number(inst.amount) || 0), 0);
+  }, [pendingInstallments, selectedIds]);
+
+  const toggleOne = (installmentId, isPending) => {
+    if (!isPending) return;
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(installmentId)) next.delete(installmentId);
+      else next.add(installmentId);
+      return next;
+    });
+  };
+
+  const toggleAllPending = () => {
+    if (allPendingSelected) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(pendingInstallments.map((inst) => inst.id)));
   };
 
   const sendInstallmentLink = async () => {
@@ -69,7 +107,44 @@ const RecurringDonationView = () => {
     }
   };
 
-  if (loading) {
+  const markSelectedPaid = async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) {
+      setMarkMessage('Select at least one pending installment');
+      return;
+    }
+    if (
+      !window.confirm(
+        `Mark ${ids.length} installment(s) as paid (${formatAmount(
+          selectedPendingAmount,
+          data?.subscription?.currency,
+        )})?`,
+      )
+    ) {
+      return;
+    }
+
+    setMarkingPaid(true);
+    setMarkMessage('');
+    try {
+      const response = await axiosInstance.post(
+        `/recurring-donations/${id}/mark-installments-paid`,
+        { installment_ids: ids },
+      );
+      if (response.data.success) {
+        setMarkMessage(response.data.message || 'Marked as paid');
+        await load();
+      } else {
+        setMarkMessage(response.data.message || 'Failed to mark as paid');
+      }
+    } catch (err) {
+      setMarkMessage(err.response?.data?.message || 'Failed to mark as paid');
+    } finally {
+      setMarkingPaid(false);
+    }
+  };
+
+  if (loading && !data) {
     return (
       <>
         <Navbar />
@@ -95,6 +170,7 @@ const RecurringDonationView = () => {
 
   const { subscription, installments, initial_donation, donor, summary } = data;
   const canSendInstallmentLink = !subscription.stripe_subscription_id;
+  const canMarkPaid = !subscription.stripe_subscription_id && pendingInstallments.length > 0;
 
   return (
     <>
@@ -139,8 +215,10 @@ const RecurringDonationView = () => {
               <div><strong>Project</strong><p>{subscription.project_id || '-'}</p></div>
               <div><strong>Campaign</strong><p>{subscription.campaign_id || '-'}</p></div>
               <div><strong>Started</strong><p>{formatDate(subscription.created_at)}</p></div>
-              <div><strong>Installments paid</strong><p>{summary?.installment_count ?? 0}</p></div>
-              <div><strong>Total installment amount</strong><p>{formatAmount(summary?.total_paid_amount, subscription.currency)}</p></div>
+              <div><strong>Installments paid</strong><p>{summary?.completed_installment_count ?? 0}</p></div>
+              <div><strong>Missing installments</strong><p>{summary?.pending_installment_count ?? 0}</p></div>
+              <div><strong>Arrears amount</strong><p>{formatAmount(summary?.arrears_amount, subscription.currency)}</p></div>
+              <div><strong>Total paid amount</strong><p>{formatAmount(summary?.total_paid_amount, subscription.currency)}</p></div>
             </div>
           </section>
 
@@ -201,36 +279,103 @@ const RecurringDonationView = () => {
           </section>
 
           <section className="view-section">
-            <h3>Installments</h3>
+            <div
+              style={{
+                display: 'flex',
+                gap: 12,
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                marginBottom: 12,
+              }}
+            >
+              <h3 style={{ margin: 0 }}>Installments</h3>
+              {canMarkPaid && (
+                <>
+                  <button
+                    type="button"
+                    className="primary_btn"
+                    disabled={markingPaid || selectedIds.size === 0}
+                    onClick={markSelectedPaid}
+                  >
+                    <FiCheck style={{ marginRight: 6 }} />
+                    {markingPaid
+                      ? 'Saving...'
+                      : `Mark selected paid (${selectedIds.size})`}
+                  </button>
+                  {selectedIds.size > 0 && (
+                    <span style={{ fontSize: 13, color: '#4b5563' }}>
+                      Total: {formatAmount(selectedPendingAmount, subscription.currency)}
+                    </span>
+                  )}
+                </>
+              )}
+              {markMessage && (
+                <span style={{ fontSize: 13, color: '#4b5563' }}>{markMessage}</span>
+              )}
+            </div>
             <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
+                    {canMarkPaid && (
+                      <th style={{ width: 40 }}>
+                        <input
+                          type="checkbox"
+                          checked={allPendingSelected}
+                          onChange={toggleAllPending}
+                          title="Select all pending"
+                          aria-label="Select all pending installments"
+                        />
+                      </th>
+                    )}
                     <th>ID</th>
+                    <th>Period</th>
                     <th>Amount</th>
                     <th>Status</th>
-                    <th>Invoice</th>
+                    <th>Donation / invoice</th>
                     <th>Paid at</th>
-                    <th>Billing reason</th>
+                    <th>Reason</th>
                   </tr>
                 </thead>
                 <tbody>
                   {installments?.length ? (
-                    installments.map((inst) => (
-                      <tr key={inst.id}>
-                        <td>{inst.id}</td>
-                        <td>{formatAmount(inst.amount, inst.currency || subscription.currency)}</td>
-                        <td>{inst.status}</td>
-                        <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {inst.stripe_invoice_id || '-'}
-                        </td>
-                        <td>{formatDate(inst.paid_at)}</td>
-                        <td>{inst.stripe_billing_reason || '-'}</td>
-                      </tr>
-                    ))
+                    installments.map((inst) => {
+                      const isPending =
+                        String(inst.status || '').toLowerCase() === 'pending';
+                      return (
+                        <tr key={inst.id}>
+                          {canMarkPaid && (
+                            <td>
+                              <input
+                                type="checkbox"
+                                disabled={!isPending}
+                                checked={selectedIds.has(inst.id)}
+                                onChange={() => toggleOne(inst.id, isPending)}
+                                aria-label={`Select installment ${inst.id}`}
+                              />
+                            </td>
+                          )}
+                          <td>{inst.id}</td>
+                          <td>{inst.period_key || '-'}</td>
+                          <td>{formatAmount(inst.amount, inst.currency || subscription.currency)}</td>
+                          <td>{inst.status}</td>
+                          <td style={{ maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {inst.stripe_payment_intent_id ? (
+                              <Link to={`/donations/online_donations/view/${inst.stripe_payment_intent_id}`}>
+                                {inst.stripe_invoice_id || inst.stripe_payment_intent_id}
+                              </Link>
+                            ) : (
+                              inst.stripe_invoice_id || '-'
+                            )}
+                          </td>
+                          <td>{formatDate(inst.paid_at)}</td>
+                          <td>{inst.stripe_billing_reason || '-'}</td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="6" style={{ textAlign: 'center' }}>
+                      <td colSpan={canMarkPaid ? 8 : 7} style={{ textAlign: 'center' }}>
                         No installments recorded yet
                       </td>
                     </tr>

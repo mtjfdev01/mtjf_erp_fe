@@ -72,6 +72,18 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
+  // Super admin / FR manager: all fund_raising modules visible in sidebar
+  if (permissions.super_admin === true) {
+    return true;
+  }
+  if (
+    department === 'fund_raising' &&
+    (permissions.fund_raising_manager === true ||
+      permissions.fund_raising?.manager === true)
+  ) {
+    return true;
+  }
+
   // Unified donors (fund_raising): allow sidebar if new `donors` or legacy online/offline donor flags exist
   if (department === 'fund_raising' && module === 'donors') {
     const fr = permissions[department];

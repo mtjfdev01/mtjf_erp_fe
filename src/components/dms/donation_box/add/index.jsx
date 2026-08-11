@@ -106,11 +106,7 @@ const AddDonationBox = () => {
         console.log('Routes data:', routesData);
         setRoutes(routesData);
         
-        // If there's only one route, auto-select it
-        if (routesData.length === 1) {
-          console.log('Auto-selecting single route:', routesData[0]);
-          setForm(prev => ({ ...prev, route_id: routesData[0].id }));
-        }
+        // Optional route — do not auto-select when only one exists
       }
     } catch (err) {
       console.error('Error fetching routes:', err);
@@ -177,9 +173,9 @@ const AddDonationBox = () => {
       // Prepare donation box data
       const donationBoxData = {
         key_no: form.key_no || null,
-        city_id: form.city_id, // City ID for payload
-        route_id: form.route_id, // Route ID for payload
-        assigned_user_ids: form.assigned_user_ids || [], // Array of user IDs for multiple assignments
+        city_id: form.city_id || null,
+        route_id: form.route_id ? Number(form.route_id) : null,
+        assigned_user_ids: form.assigned_user_ids || [],
         shop_name: form.shop_name,
         shopkeeper: form.shopkeeper || null,
         cell_no: form.cell_no || null,
@@ -353,15 +349,14 @@ const AddDonationBox = () => {
               />
 
               <FormSelect
-                label="Route"
+                label="Route (optional)"
                 name="route_id"
                 value={form.route_id}
                 onChange={handleChange}
                 options={routes.map(route => ({ value: route.id, label: route.name }))}
-                required
                 disabled={loadingRoutes || !form.city}
                 showDefaultOption={true}
-                defaultOptionText={loadingRoutes ? "Loading routes..." : !form.city ? "Select city first" : "Select route"}
+                defaultOptionText={loadingRoutes ? "Loading routes..." : !form.city ? "Select city first" : "No route"}
               />
 
               <FormInput

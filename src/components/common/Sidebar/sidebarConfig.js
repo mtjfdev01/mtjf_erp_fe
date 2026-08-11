@@ -386,9 +386,10 @@ const adminDepartmentItems = () => [
       {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
       {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
       {label: "Donors", path: "/dms/donors/list", type: "list", icon: FiUsers},
+      // Enable later — Beneficiary Aid Applications (Phase 1)
+      // {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
+      // {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
       {label: "Organizations", path: "/dms/organizations/list", type: "list", module: "organizations", icon: FiBriefcase},
-      {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
-      {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
       {label: "Volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
       {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
       {label: "Events", path: "/dms/events/list", type: "list", icon: FiCalendar},
@@ -497,19 +498,27 @@ const geographicItems = (isUser = false) => [
 ];
 
 const fundRaisingDepartmentItems = (isUser = false) => [
+  // Enable later — Beneficiary Aid Applications (Phase 1)
+  // {
+  //   label: 'Aid Applications',
+  //   path: '/dms/aid/applications/list',
+  //   type: 'list',
+  //   module: 'aid_applications',
+  //   icon: FiLifeBuoy
+  // },
+  // {
+  //   label: 'Aid People',
+  //   path: '/dms/aid/people/list',
+  //   type: 'list',
+  //   module: 'aid_people',
+  //   icon: FiUsers
+  // },
   {
     label: 'Donations',
     path: '/donations/online_donations/list',
     type: 'list',
     module: 'online_donations',
     icon: BiSolidDonateHeart
-  },
-  {
-    label: 'Allotment Approvals',
-    path: '/donations/allotments/pending',
-    type: 'list',
-    module: 'donation_allotments',
-    icon: FiCheckCircle,
   },
   // {
   //   label: 'Offline Donations',
@@ -525,27 +534,6 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiUsers
   },
   {
-    label: 'Organizations',
-    path: '/dms/organizations/list',
-    type: 'list',
-    module: 'organizations',
-    icon: FiBriefcase
-  },
-  {
-    label: 'Aid Applications',
-    path: '/dms/aid/applications/list',
-    type: 'list',
-    module: 'aid_applications',
-    icon: FiLifeBuoy
-  },
-  {
-    label: 'Aid People',
-    path: '/dms/aid/people/list',
-    type: 'list',
-    module: 'aid_people',
-    icon: FiUsers
-  },
-  {
     label: 'Donation Box',
     path: '/dms/donation_box/list',
     type: 'list',
@@ -558,6 +546,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'donation_box_donations',
     icon: FiPackage
+  },
+  {
+    label: 'Organizations',
+    path: '/dms/organizations/list',
+    type: 'list',
+    module: 'organizations',
+    icon: FiBriefcase
   },
   {
     label: 'My To-Dos',
@@ -633,6 +628,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
       { label: 'Add Interaction', path: '/dms/donor-relationship/add', type: 'list', icon: FiPlusCircle },
       { label: 'Management Overview', path: '/dms/donor-relationship/overview', type: 'list', icon: FiBarChart2 },
     ],
+  },
+  {
+    label: 'Allotment Approvals',
+    path: '/donations/allotments/pending',
+    type: 'list',
+    module: 'donation_allotments',
+    icon: FiCheckCircle,
   },
   {
     label: 'Receipt Templates',
@@ -955,9 +957,14 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
 
-  // Super admin: Admin Panel + Tasks + full Communication (templates + checklist).
+  // Super admin: DMS Menu (admin) + dedicated Fund Raising list + Tasks + Communication.
+  // Fund Raising is included explicitly so Aid Applications / Aid People are easy to find
+  // (not only nested under DMS Menu → Fund Raising).
   if (isSuperAdminRole || isSuperAdminPermission) {
-    const sections = [departmentConfigs.admin(false)];
+    const sections = [
+      departmentConfigs.admin(false),
+      departmentConfigs.fund_raising(false),
+    ];
     sections.push(buildSuperAdminTaskingGroup());
     sections.push(departmentConfigs.email_templates());
     return sections;

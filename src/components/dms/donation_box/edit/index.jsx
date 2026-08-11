@@ -240,8 +240,8 @@ const EditDonationBox = () => {
 
   const handleRelocate = async (e) => {
     e.preventDefault();
-    if (!relocateForm.route_id || !relocateForm.shop_name?.trim()) {
-      setError('New route and shop name are required to relocate the box.');
+    if (!relocateForm.shop_name?.trim()) {
+      setError('Shop name is required to relocate the box.');
       return;
     }
 
@@ -257,7 +257,7 @@ const EditDonationBox = () => {
       const location = relocateLocation;
 
       const payload = {
-        route_id: Number(relocateForm.route_id),
+        route_id: relocateForm.route_id ? Number(relocateForm.route_id) : null,
         city_id: relocateForm.city_id ? Number(relocateForm.city_id) : undefined,
         shop_name: relocateForm.shop_name.trim(),
         shopkeeper: relocateForm.shopkeeper?.trim() || undefined,
@@ -455,12 +455,11 @@ const EditDonationBox = () => {
               />
 
               <FormSelect
-                label="Route"
+                label="Route (optional)"
                 name="route_id"
                 value={relocateForm.route_id}
                 onChange={handleRelocateChange}
                 options={routes.map((route) => ({ value: route.id, label: route.name }))}
-                required
                 disabled={loadingRoutes || !relocateForm.city}
                 showDefaultOption
                 defaultOptionText={
@@ -468,7 +467,7 @@ const EditDonationBox = () => {
                     ? 'Loading routes...'
                     : !relocateForm.city
                       ? 'Select city first'
-                      : 'Select route'
+                      : 'No route'
                 }
               />
 

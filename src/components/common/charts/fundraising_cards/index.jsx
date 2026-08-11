@@ -115,15 +115,15 @@ const FundraisingCards = ({ cards, title = 'Fundraising overview', className = '
 
   const cardItems = [
     { key: 'total_donations_amount', label: 'Completed Donations', isCurrency: true, subtitle: 'Total amount collected' },
+    { key: 'donation_box_donations_amount', label: 'Donation Box Collection', isCurrency: true, subtitle: 'Total amount collected' },
+    { key: 'total_recurring_collection', label: 'Total Recurring Collection', isCurrency: true, subtitle: 'Completed installments in period' },
     { key: 'individual_donors_count', label: 'Individual Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'corporate_donors_count', label: 'Corporate Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'recurring_donors_count', label: 'Recurring Donors', isCurrency: false, subtitle: 'Active in selected period' },
-    { key: 'total_recurring_collection', label: 'Total Recurring Collection', isCurrency: true, subtitle: 'Completed installments in period' },
     { key: 'total_pending_installments_amount', label: 'Total Pending Installments Amount', isCurrency: true, subtitle: 'Subscriptions awaiting first installment' },
     { key: 'recurring_donations_count', label: 'Recurring Donations (count)', isCurrency: false, subtitle: 'Installments in selected period' },
     { key: 'multi_time_donors_count', label: 'Multi-time Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'active_donation_boxes_count', label: 'Active Donation Boxes', isCurrency: false, subtitle: 'Active boxes' },
-    { key: 'donation_box_donations_amount', label: 'Donation Box Collection', isCurrency: true, subtitle: 'Total amount collected' },
     { key: 'events_count', label: 'Events', isCurrency: false, subtitle: 'Total events' },
     { key: 'campaigns_count', label: 'Campaigns', isCurrency: false, subtitle: 'Total campaigns' },
     { key: 'total_donations_count', label: 'Donations (count)', isCurrency: false, subtitle: 'Completed donations' },

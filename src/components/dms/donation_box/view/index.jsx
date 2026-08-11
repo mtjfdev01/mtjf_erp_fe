@@ -164,11 +164,19 @@ const ViewDonationBox = () => {
             <div className="view-grid">
               <div className="view-item">
                 <span className="view-item-label">Region</span>
-                <span className="view-item-value">{donationBox?.route?.region?.name || '-'}</span>
+                <span className="view-item-value">
+                  {donationBox?.route?.region?.name
+                    || donationBox?.city?.region?.name
+                    || '-'}
+                </span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">City</span>
-                <span className="view-item-value">{donationBox?.route?.cities?.find(city => city.id === donationBox.city_id)?.name || '-'}</span>
+                <span className="view-item-value">
+                  {donationBox?.city?.name
+                    || donationBox?.route?.cities?.find((city) => city.id === donationBox.city_id)?.name
+                    || '-'}
+                </span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">FRD Officers</span>
