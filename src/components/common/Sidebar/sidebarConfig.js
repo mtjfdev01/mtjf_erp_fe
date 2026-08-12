@@ -391,11 +391,11 @@ const adminDepartmentItems = () => [
       // {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
       {label: "Organizations", path: "/dms/organizations/list", type: "list", module: "organizations", icon: FiBriefcase},
       {label: "Volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
-      {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
-      {label: "Events", path: "/dms/events/list", type: "list", icon: FiCalendar},
-      {label: "Campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
-      {label: "Appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
-      {label: "Social Media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
+      // {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
+      // {label: "Events", path: "/dms/events/list", type: "list", icon: FiCalendar},
+      // {label: "Campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
+      // {label: "Appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
+      // {label: "Social Media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
       {label: "Reconciliation", path: "/dms/reconciliation/list", type: "list", icon: FiRefreshCw},
       {label: "Donor Relationship", path: "/dms/donor-relationship/follow-ups", type: "list", icon: FiUsers}
     ]
@@ -568,41 +568,41 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'volunteers',
     icon: FiUserPlus
   },
-  {
-    label: 'Surveys',
-    path: '/dms/surveys/list',
-    type: 'list',
-    module: 'surveys',
-    icon: FiClipboard
-  },
-  {
-    label: 'Events',
-    path: '/dms/events/list',
-    type: 'list',
-    module: 'events',
-    icon: FiCalendar
-  },
-  {
-    label: 'Campaigns',
-    path: '/dms/campaigns/list',
-    type: 'list',
-    module: 'campaigns',
-    icon: FiFlag
-  },
-  {
-    label: 'Appeals',
-    path: '/dms/appeals/list',
-    type: 'list',
-    module: 'appeals',
-    icon: FiAlertCircle
-  },
-  {
-    label: 'Social Media',
-    path: '/dms/social-posts/list',
-    type: 'list',
-    module: 'social_posts',
-    icon: FiFileText
-  },
+  // {
+  //   label: 'Surveys',
+  //   path: '/dms/surveys/list',
+  //   type: 'list',
+  //   module: 'surveys',
+  //   icon: FiClipboard
+  // },
+  // {
+  //   label: 'Events',
+  //   path: '/dms/events/list',
+  //   type: 'list',
+  //   module: 'events',
+  //   icon: FiCalendar
+  // },
+  // {
+  //   label: 'Campaigns',
+  //   path: '/dms/campaigns/list',
+  //   type: 'list',
+  //   module: 'campaigns',
+  //   icon: FiFlag
+  // },
+  // {
+  //   label: 'Appeals',
+  //   path: '/dms/appeals/list',
+  //   type: 'list',
+  //   module: 'appeals',
+  //   icon: FiAlertCircle
+  // },
+  // {
+  //   label: 'Social Media',
+  //   path: '/dms/social-posts/list',
+  //   type: 'list',
+  //   module: 'social_posts',
+  //   icon: FiFileText
+  // },
   {
     label: 'Recurring Donations',
     path: '/dms/recurring-donations/list',
@@ -629,24 +629,24 @@ const fundRaisingDepartmentItems = (isUser = false) => [
       { label: 'Management Overview', path: '/dms/donor-relationship/overview', type: 'list', icon: FiBarChart2 },
     ],
   },
-  {
-    label: 'Allotment Approvals',
-    path: '/donations/allotments/pending',
-    type: 'list',
-    module: 'donation_allotments',
-    icon: FiCheckCircle,
-  },
-  {
-    label: 'Receipt Templates',
-    path: '/dms/receipt_templates/list',
-    type: 'list',
-    module: 'receipt_templates',
-    icon: FiFileText,
-    subItems: [
-      { label: 'Templates List', path: '/dms/receipt_templates/list', type: 'list', icon: FiList },
-      { label: 'Add Template', path: '/dms/receipt_templates/add', type: 'list', icon: FiPlusCircle }
-    ]
-  },
+  // {
+  //   label: 'Allotment Approvals',
+  //   path: '/donations/allotments/pending',
+  //   type: 'list',
+  //   module: 'donation_allotments',
+  //   icon: FiCheckCircle,
+  // },
+  // {
+  //   label: 'Receipt Templates',
+  //   path: '/dms/receipt_templates/list',
+  //   type: 'list',
+  //   module: 'receipt_templates',
+  //   icon: FiFileText,
+  //   subItems: [
+  //     { label: 'Templates List', path: '/dms/receipt_templates/list', type: 'list', icon: FiList },
+  //     { label: 'Add Template', path: '/dms/receipt_templates/add', type: 'list', icon: FiPlusCircle }
+  //   ]
+  // },
   // {
   //   label: 'Reports',
   //   path: '/dms/reports/create',

@@ -209,6 +209,33 @@ const RecurringDonationView = () => {
               <div><strong>Status</strong><p>{subscription.status}</p></div>
               <div><strong>Amount</strong><p>{formatAmount(subscription.amount, subscription.currency)}</p></div>
               <div><strong>Billing</strong><p>{subscription.billing_interval} (every {subscription.billing_interval_count || 1})</p></div>
+              {(subscription.prepaid_periods > 0 || subscription.prepaid_months > 0) && (
+                <>
+                  <div>
+                    <strong>Prepaid periods</strong>
+                    <p>
+                      {subscription.prepaid_periods || subscription.prepaid_months}{' '}
+                      {subscription.billing_interval === 'day'
+                        ? 'day(s)'
+                        : subscription.billing_interval === 'week'
+                          ? 'week(s)'
+                          : 'month(s)'}
+                    </p>
+                  </div>
+                  <div>
+                    <strong>Prepaid coverage</strong>
+                    <p>
+                      {subscription.prepaid_start_period_key && subscription.prepaid_end_period_key
+                        ? `${subscription.prepaid_start_period_key} → ${subscription.prepaid_end_period_key}`
+                        : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <strong>Next recurring after prepaid</strong>
+                    <p>{subscription.start_date || '-'}</p>
+                  </div>
+                </>
+              )}
               <div><strong>Stripe subscription</strong><p>{subscription.stripe_subscription_id || '-'}</p></div>
               <div><strong>Stripe customer</strong><p>{subscription.stripe_customer_id || '-'}</p></div>
               <div><strong>Method</strong><p>{subscription.donation_method || '-'}</p></div>
