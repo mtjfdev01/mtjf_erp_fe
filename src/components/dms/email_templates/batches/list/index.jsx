@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -25,6 +25,11 @@ const formatDateTime = (value) => {
 
 const CommunicationBatchList = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sendSource =
+    searchParams.get('source') === 'communication'
+      ? 'communication'
+      : 'donor_bulk';
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -43,7 +48,7 @@ const CommunicationBatchList = () => {
 
   useEffect(() => {
     fetchBatches();
-  }, [currentPage, pageSize, appliedFilters]);
+  }, [currentPage, pageSize, appliedFilters, sendSource]);
 
   const fetchBatches = async () => {
     try {
@@ -55,6 +60,7 @@ const CommunicationBatchList = () => {
           pageSize,
           channel: appliedFilters.channels[0] || undefined,
           batch_status: appliedFilters.batch_statuses[0] || undefined,
+          send_source: sendSource,
         },
       });
       if (res.data.success) {
@@ -74,9 +80,26 @@ const CommunicationBatchList = () => {
       <Navbar />
       <div className="list-wrapper">
         <PageHeader
-          title="Communication Send History"
-          onBackClick={() => navigate('/dms/email_templates/list')}
+          title={
+            sendSource === 'donor_bulk'
+              ? 'Donor Bulk Send History'
+              : 'Communication Send History'
+          }
+          onBackClick={() =>
+            navigate(
+              sendSource === 'donor_bulk'
+                ? '/dms/donors/list'
+                : '/dms/email_templates/list',
+            )
+          }
         />
+
+        {sendSource === 'donor_bulk' && (
+          <p style={{ margin: '0 0 12px', color: '#6b7280', fontSize: 13 }}>
+            Opens, clicks, and spam stats apply only to emails sent from the donors
+            list bulk action — not other system emails.
+          </p>
+        )}
 
         <div className="list-content">
         <div className="filters-container card" style={{ marginBottom: 16 }}>
@@ -137,6 +160,14 @@ const CommunicationBatchList = () => {
                     <th>Criteria</th>
                     <th>Matched</th>
                     <th>Sent</th>
+                    {sendSource === 'donor_bulk' && (
+                      <>
+                        <th>Opened</th>
+                        <th>Not opened</th>
+                        <th>Clicked</th>
+                        <th>Spam</th>
+                      </>
+                    )}
                     <th>Failed</th>
                     <th>Status</th>
                     <th>Action</th>
@@ -144,7 +175,9 @@ const CommunicationBatchList = () => {
                 </thead>
                 <tbody>
                   {batches.length ? (
-                    batches.map((batch) => (
+                    batches.map((batch) => {
+                      const a = batch.analytics || {};
+                      return (
                       <tr key={batch.id}>
                         <td>{formatDateTime(batch.sent_at || batch.created_at)}</td>
                         <td>{batch.template_name || batch.template?.name || '—'}</td>
@@ -155,8 +188,16 @@ const CommunicationBatchList = () => {
                             : `Manual (${batch.donor_ids?.length || batch.matched_count || 0} donors)`}
                         </td>
                         <td>{batch.matched_count ?? 0}</td>
-                        <td>{batch.sent_count ?? 0}</td>
-                        <td>{batch.failed_count ?? 0}</td>
+                        <td>{a.sent ?? batch.sent_count ?? 0}</td>
+                        {sendSource === 'donor_bulk' && (
+                          <>
+                            <td>{a.opened ?? 0}</td>
+                            <td>{a.not_opened ?? 0}</td>
+                            <td>{a.clicked ?? 0}</td>
+                            <td>{a.spam ?? 0}</td>
+                          </>
+                        )}
+                        <td>{a.failed ?? batch.failed_count ?? 0}</td>
                         <td>
                           <span className={`status-badge status-${batch.batch_status}`}>
                             {batch.batch_status}
@@ -167,17 +208,20 @@ const CommunicationBatchList = () => {
                             type="button"
                             className="secondary-btn"
                             onClick={() =>
-                              navigate(`/dms/email_templates/batches/${batch.id}`)
+                              navigate(
+                                `/dms/email_templates/batches/${batch.id}?source=${sendSource}`,
+                              )
                             }
                           >
                             View
                           </button>
                         </td>
                       </tr>
-                    ))
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="9" className="text-center">
+                      <td colSpan={sendSource === 'donor_bulk' ? 13 : 9} className="text-center">
                         No send history found
                       </td>
                     </tr>

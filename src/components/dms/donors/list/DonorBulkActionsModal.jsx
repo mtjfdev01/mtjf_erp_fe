@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { FiMail, FiHeart, FiArrowLeft } from 'react-icons/fi';
 import CommunicationSendForm from '../../email_templates/send/CommunicationSendForm';
 import './DonorBulkActionsModal.css';
@@ -17,6 +18,7 @@ const DonorBulkActionsModal = ({
   matchedHint = null,
   onSendSuccess,
 }) => {
+  const navigate = useNavigate();
   const [step, setStep] = useState('picker');
 
   useEffect(() => {
@@ -133,8 +135,13 @@ const DonorBulkActionsModal = ({
               initialDonorIds={audienceMode === 'manual' ? donorIds : []}
               initialDonorFilters={audienceMode === 'filters' ? donorFilters : null}
               lockAudience
+              sendSource="donor_bulk"
               compact
-              showHistoryLink={false}
+              showHistoryLink
+              onNavigateHistory={() => {
+                onClose();
+                navigate('/dms/email_templates/batches?source=donor_bulk');
+              }}
               onSuccess={(data) => {
                 if (typeof onSendSuccess === 'function') onSendSuccess(data);
               }}

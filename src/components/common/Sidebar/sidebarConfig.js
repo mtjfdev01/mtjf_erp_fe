@@ -752,7 +752,7 @@ const emailTemplatesItems = () => [
       { label: 'Templates List', path: '/dms/email_templates/list', type: 'list', icon: FiList },
       { label: 'Create Template', path: '/dms/email_templates/add', type: 'list', icon: FiPlusCircle },
       { label: 'Send Communication', path: '/dms/email_templates/send', type: 'list', icon: FiSend },
-      { label: 'Send History', path: '/dms/email_templates/batches', type: 'list', icon: FiFileText },
+      { label: 'Send History', path: '/dms/email_templates/batches?source=communication', type: 'list', icon: FiFileText },
     ]
   },
   {

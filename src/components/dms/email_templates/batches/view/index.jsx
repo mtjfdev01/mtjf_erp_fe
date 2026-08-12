@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -21,6 +21,12 @@ const statusLabel = (status) => {
 const CommunicationBatchView = () => {
   const { batchId } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const sendSource =
+    searchParams.get('source') === 'communication'
+      ? 'communication'
+      : 'donor_bulk';
+  const listPath = `/dms/email_templates/batches?source=${sendSource}`;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [batch, setBatch] = useState(null);
@@ -63,8 +69,12 @@ const CommunicationBatchView = () => {
       <Navbar />
       <div className="form-content">
         <PageHeader
-          title="Send Batch Details"
-          onBack={() => navigate('/dms/email_templates/batches')}
+          title={
+            sendSource === 'donor_bulk'
+              ? 'Donor Bulk Send Details'
+              : 'Send Batch Details'
+          }
+          onBack={() => navigate(listPath)}
         />
 
         {error && <div className="error-message">{error}</div>}
@@ -103,7 +113,7 @@ const CommunicationBatchView = () => {
           </div>
         )}
 
-        {analytics && batch?.channel === 'email' && (
+        {analytics && batch?.channel === 'email' && sendSource === 'donor_bulk' && (
           <div className="form-card card" style={{ marginBottom: 16 }}>
             <h3 style={{ marginTop: 0 }}>Email analytics</h3>
             <p style={{ color: '#6b7280', fontSize: 13, marginTop: 0 }}>
@@ -123,6 +133,7 @@ const CommunicationBatchView = () => {
                 { label: 'Opened', value: analytics.opened },
                 { label: 'Not opened', value: analytics.not_opened },
                 { label: 'Clicked', value: analytics.clicked },
+                { label: 'Spam', value: analytics.spam },
                 { label: 'Failed', value: analytics.failed },
               ].map((item) => (
                 <div
@@ -151,8 +162,12 @@ const CommunicationBatchView = () => {
                 <th>Recipient</th>
                 <th>Status</th>
                 <th>Sent at</th>
-                <th>Opened at</th>
-                <th>Clicked at</th>
+                {sendSource === 'donor_bulk' && (
+                  <>
+                    <th>Opened at</th>
+                    <th>Clicked at</th>
+                  </>
+                )}
                 <th>Error</th>
               </tr>
             </thead>
@@ -164,14 +179,18 @@ const CommunicationBatchView = () => {
                     <td>{log.recipient || '—'}</td>
                     <td>{statusLabel(log.delivery_status)}</td>
                     <td>{formatDateTime(log.sent_at || log.scheduled_at)}</td>
-                    <td>{formatDateTime(log.opened_at)}</td>
-                    <td>{formatDateTime(log.clicked_at)}</td>
+                    {sendSource === 'donor_bulk' && (
+                      <>
+                        <td>{formatDateTime(log.opened_at)}</td>
+                        <td>{formatDateTime(log.clicked_at)}</td>
+                      </>
+                    )}
                     <td>{log.error_message || '—'}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan="7" className="text-center">No delivery logs</td>
+                  <td colSpan={sendSource === 'donor_bulk' ? 7 : 5} className="text-center">No delivery logs</td>
                 </tr>
               )}
             </tbody>

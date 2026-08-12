@@ -193,7 +193,9 @@ const EmailTemplateList = () => {
               <button
                 type="button"
                 className="secondary-btn"
-                onClick={() => navigate('/dms/email_templates/batches')}
+                onClick={() =>
+                  navigate('/dms/email_templates/batches?source=communication')
+                }
               >
                 Send History
               </button>
