@@ -35,7 +35,9 @@ const CommunicationSend = () => {
             initialTemplateId={initialTemplateId}
             lockAudience={false}
             showHistoryLink
-            onNavigateHistory={() => navigate('/dms/email_templates/batches')}
+            onNavigateHistory={() =>
+              navigate('/dms/email_templates/batches?source=communication')
+            }
           />
         </div>
       </div>

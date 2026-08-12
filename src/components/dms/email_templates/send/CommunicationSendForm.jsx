@@ -53,6 +53,7 @@ const YES_NO_OPTIONS = [
  * @param {object|null} [props.initialDonorFilters]
  * @param {string} [props.initialTemplateId]
  * @param {boolean} [props.lockAudience] — when true, audience is fixed (list modal)
+ * @param {'donor_bulk'|'communication'} [props.sendSource] — tags batch for analytics scoping
  * @param {boolean} [props.showHistoryLink]
  * @param {() => void} [props.onNavigateHistory]
  * @param {(data: object) => void} [props.onSuccess]
@@ -64,6 +65,7 @@ const CommunicationSendForm = ({
   initialDonorFilters = null,
   initialTemplateId = '',
   lockAudience = false,
+  sendSource = 'communication',
   showHistoryLink = true,
   onNavigateHistory,
   onSuccess,
@@ -263,6 +265,7 @@ const CommunicationSendForm = ({
           ...buildAudiencePayload(),
           channel,
           scheduled_at: schedule ? scheduledAt : null,
+          send_source: sendSource,
         },
       );
       const data = res.data?.data;
