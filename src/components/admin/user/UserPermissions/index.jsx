@@ -410,6 +410,19 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    ceo_office: {
+      label: 'CEO Office',
+      submodules: {
+        dashboard: {
+          label: 'CEO Dashboard',
+          actions: ['view']
+        },
+        instruction_register: {
+          label: 'Instruction Register',
+          actions: ['list_view', 'view', 'create', 'update', 'delete']
+        }
+      }
+    },
   };
 
   const SCOPE_OPTIONS = [

@@ -169,7 +169,6 @@ export const getAccessibleModules = (permissions, department) => {
  * @param {Object} permissions - User permissions object
  * @param {string} department - Department name
  * @param {string} module - Module name
- * @returns {Object} - Object with permission flags
  */
 export const getModulePermissions = (permissions, department, module) => {
   if (!permissions || !department || !module) {
@@ -181,8 +180,8 @@ export const getModulePermissions = (permissions, department, module) => {
       list_view: false
     };
   }
-  
-  const modulePermissions = permissions[department]?.[module] || {};
+
+ const modulePermissions = permissions[department]?.[module] || {};
   
   return {
     view: modulePermissions.view === true,

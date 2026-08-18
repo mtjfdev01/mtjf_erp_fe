@@ -46,6 +46,7 @@ import {
   FiRefreshCw,
   FiMessageSquare,
   FiSend,
+  FiCoffee,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -763,6 +764,22 @@ const emailTemplatesItems = () => [
     icon: FiCheckSquare,
   }
 ];
+const ceoOfficeItems = () => [
+  {
+    label: 'CEO Dashboard',
+    path: '/ceo-office/dashboard',
+    type: 'list',
+    module: 'dashboard',
+    icon: FiCoffee
+  },
+  {
+    label: 'Instruction Register',
+    path: '/ceo-office/instruction-register',
+    type: 'list',
+    module: 'instruction_register',
+    icon: FiList
+  },
+];
 
 // All department items for permission-based access
 const allDepartmentItems = (isUser = false) => [
@@ -771,6 +788,12 @@ const allDepartmentItems = (isUser = false) => [
     label: 'Program Department',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
+  },
+  {
+    id: 'ceo_office',
+    label: 'CEO Office',
+    icon: FiCoffee,
+    items: ceoOfficeItems()
   },
   // {
   //   id: 'store',
@@ -847,8 +870,15 @@ const allDepartmentItems = (isUser = false) => [
 ];
 
 
+
 // Department configurations
 const departmentConfigs = {
+ceo_office: (isUser = false) => ({
+    id: 'ceo_office',
+    label: 'CEO Office',
+    icon: FiCoffee,
+    items: ceoOfficeItems()
+  }),
   program: (isUser = false) => ({
     id: 'program',
     label: 'Program Department',
@@ -956,17 +986,50 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isSuperAdminRole = user.role === 'super_admin';
   const isSuperAdminPermission = isSuperAdmin(permissions);
   const isUser = user.role === 'user';
+  const isCeoRole = user.role === 'ceo' || user.role === 'pa';
+  const isCeoDepartment = user.department === 'ceo';
 
-  // Super admin: DMS Menu (admin) + dedicated Fund Raising list + Tasks + Communication.
+  // Super admin: DMS Menu (admin) + dedicated Fund Raising list + Tasks + Communication + CEO Office.
   // Fund Raising is included explicitly so Aid Applications / Aid People are easy to find
   // (not only nested under DMS Menu → Fund Raising).
   if (isSuperAdminRole || isSuperAdminPermission) {
     const sections = [
       departmentConfigs.admin(false),
       departmentConfigs.fund_raising(false),
+      departmentConfigs.ceo_office(false),
     ];
     sections.push(buildSuperAdminTaskingGroup());
     sections.push(departmentConfigs.email_templates());
+    return sections;
+  }
+
+  // CEO / PA role or CEO department: include CEO Office section but with items filtered by actual permissions
+  if (isCeoRole || isCeoDepartment) {
+    const sections = [];
+
+    if (permissions) {
+      const permissionSections = allDepartmentItems(isUser)
+        .map((config) => {
+          const filteredItems = filterItemsByPermissions(
+            config.items,
+            permissions,
+            config.id,
+          );
+
+          return {
+            ...config,
+            items: filteredItems,
+          };
+        })
+        .filter((section) => section.items.length > 0);
+      sections.push(...permissionSections);
+    }
+
+    const unifiedTaskingGroup = buildUnifiedTaskingGroup(user, permissions);
+    if (unifiedTaskingGroup) {
+      sections.push(unifiedTaskingGroup);
+    }
+
     return sections;
   }
 

@@ -203,6 +203,11 @@ import StepsList from './components/progress_tracking/admin/steps/list';
 import StepView from './components/progress_tracking/admin/steps/view';
 import EvidenceView from './components/progress_tracking/admin/evidence/view';
 import ProgressTemplateDashboard from './components/admin/dashboard/progress_template_dashboard';
+import CeoDashboard from './components/ceo-office/dashboard';
+import QuickNote from './components/ceo-office/note/quick-note';
+import InstructionRegister from './components/ceo-office/instruction-register';
+import CeoNoteView from './components/ceo-office/note/note-view';
+// import Reports from './components/ceo-office/reports';
 import './styles/screen-theme.css';
 
 const App = () => {
@@ -521,6 +526,15 @@ const App = () => {
                                 <Route path="/dms/email_templates/batches/:batchId" element={<CommunicationBatchView />} />
                                 <Route path="/email-checklist" element={<EmailChecklist />} />
                                 <Route path="/dms/email_templates/edit/:id" element={<EmailTemplateForm />} />
+
+                                {/* CEO Office Routes */}
+                                <Route path="/ceo-office/dashboard" element={<CeoDashboard />} />
+                                <Route path="/ceo-office/quick-note" element={<QuickNote />} />
+                                <Route path="/ceo-notes" element={<QuickNote />} />
+                                <Route path="/ceo-office/instruction-register" element={<InstructionRegister />} />
+                                <Route path="/ceo-office/notes/:id" element={<CeoNoteView />} />
+                                {/* <Route path="/ceo-office/reports" element={<Reports />} /> */}
+                                <Route path="/ceo-office" element={<Navigate to="/ceo-office/dashboard" replace />} />
 
                                 {/* Receipt Template Routes */}
                                 <Route path="/dms/receipt_templates/list" element={<ReceiptTemplateList />} />
