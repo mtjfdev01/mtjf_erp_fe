@@ -4,7 +4,7 @@ import DropdownFilter from '../DropdownFilter';
 import SearchableDropdown from '../../SearchableDropdown';
 import './styles.css';
 
-export const TEAM_FILTER_DEFAULT = 'direct';
+export const TEAM_FILTER_DEFAULT = 'all';
 
 export const TEAM_FILTER_PRESETS = [
   { value: 'all', label: 'All (per access scope)' },
