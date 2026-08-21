@@ -264,36 +264,28 @@ const UpdateUser = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = [
-      'first_name',
-      'last_name',
-      'phone',
-      'dob',
-      'address',
-      'cnic',
-      'role',
-      'department',
-      'gender',
-      'joining_date',
-      'emergency_contact',
-      'blood_group'
-    ];
-
-    for (const field of requiredFields) {
-      if (!form[field]) {
-        setError(`Please fill in all required fields`);
-        return false;
-      }
+    if (!form.first_name?.trim()) {
+      setError('First name is required');
+      return false;
     }
-
-    // Validate CNIC format (13 digits)
-    if (!/^\d{13}$/.test(form.cnic)) {
-      setError('CNIC must be 13 digits');
+    if (!form.department) {
+      setError('Department is required');
       return false;
     }
 
-    // Validate phone number format
-    if (!/^\d{11}$/.test(form.phone)) {
+    // Optional fields — validate format only when filled
+    if (form.email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(form.email.trim())) {
+        setError('Please enter a valid email address');
+        return false;
+      }
+    }
+    if (form.cnic && !/^\d{13}$/.test(form.cnic)) {
+      setError('CNIC must be 13 digits');
+      return false;
+    }
+    if (form.phone && !/^\d{11}$/.test(form.phone)) {
       setError('Phone number must be 11 digits');
       return false;
     }
@@ -309,7 +301,17 @@ const UpdateUser = () => {
     try {
       const payload = {
         ...form,
-        email: form.email.trim().toLowerCase(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name?.trim() || null,
+        email: form.email?.trim() ? form.email.trim().toLowerCase() : null,
+        phone: form.phone?.trim() || null,
+        dob: form.dob || null,
+        address: form.address?.trim() || null,
+        cnic: form.cnic?.trim() || null,
+        gender: form.gender || null,
+        joining_date: form.joining_date || null,
+        emergency_contact: form.emergency_contact?.trim() || null,
+        blood_group: form.blood_group || null,
         user_code: form.user_code?.trim() || null,
         manager_id: form.manager_id ? Number(form.manager_id) : null,
       };
@@ -403,7 +405,6 @@ const UpdateUser = () => {
                 label="Last Name"
                 value={form.last_name}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -429,7 +430,6 @@ const UpdateUser = () => {
                 type="tel"
                 value={form.phone}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -438,7 +438,6 @@ const UpdateUser = () => {
                 type="date"
                 value={form.dob}
                 onChange={handleChange}
-                required
               />
 
               <FormSelect
@@ -447,7 +446,6 @@ const UpdateUser = () => {
                 value={form.gender}
                 options={genders}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -456,7 +454,6 @@ const UpdateUser = () => {
                 value={form.cnic}
                 onChange={handleChange}
                 placeholder="13 digits"
-                required
               />
 
               <FormSelect
@@ -465,7 +462,6 @@ const UpdateUser = () => {
                 value={form.blood_group}
                 options={bloodGroups}
                 onChange={handleChange}
-                required
               />
 
               <FormSelect
@@ -483,7 +479,6 @@ const UpdateUser = () => {
                 value={form.role}
                 options={availableRoles}
                 onChange={handleChange}
-                required
               />
 
               <FormSelect
@@ -500,7 +495,6 @@ const UpdateUser = () => {
                 type="date"
                 value={form.joining_date}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -509,7 +503,6 @@ const UpdateUser = () => {
                 type="tel"
                 value={form.emergency_contact}
                 onChange={handleChange}
-                required
               />
             </div>
 
@@ -518,7 +511,6 @@ const UpdateUser = () => {
               label="Address"
               value={form.address}
               onChange={handleChange}
-              required
             />
 
             {/* Geographic Assignment Section - Only for Fund Raising */}

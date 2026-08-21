@@ -1,14 +1,14 @@
 import React, { Suspense, lazy } from 'react';
-import PageHeader from '../../../pageHeader/PageHeader';
+import PageHeader from '@/components/pageHeader/PageHeader';
 import { pageContentToPreview } from './pageContentUtils';
-import '../../../pageHeader/PageHeader.css';
-import '../../../mediaContentSection/MediaContentSection.css';
-import '../../../faqs/FAQs.css';
+import '@/components/pageHeader/PageHeader.css';
+import '@/components/mediaContentSection/MediaContentSection.css';
+import '@/components/faqs/FAQs.css';
 
 const MediaContentSection = lazy(() =>
-  import('../../../mediaContentSection/MediaContentSection'),
+  import('@/components/mediaContentSection/MediaContentSection'),
 );
-const FAQs = lazy(() => import('../../../faqs/FAQs'));
+const FAQs = lazy(() => import('@/components/faqs/FAQs'));
 
 const PageContentPreview = ({ pageContent, catalog }) => {
   const project = pageContentToPreview(pageContent, catalog);

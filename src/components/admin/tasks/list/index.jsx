@@ -5,7 +5,7 @@ import { HiOutlineSwitchHorizontal } from 'react-icons/hi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
-import { RefreshButton, SearchFilter, DropdownFilter, CollapsibleFilters, SearchButton, ClearButton } from '../../../common/filters';
+import { RefreshButton, SearchFilter, DropdownFilter, CollapsibleFilters, SearchButton, ClearButton, TeamFilter } from '../../../common/filters';
 import Loader from '../../../common/loader/Loader';
 import Pagination from '../../../common/Pagination';
 import ActionMenu from '../../../common/ActionMenu';
@@ -1196,6 +1196,12 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                 filters={tempFilters}
                 onFilterChange={handleFilterChange}
                 placeholder="All Priorities"
+              />
+
+              <TeamFilter
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                label="Team / Report (assignee)"
               />
 
               <div className="filters-actions">
