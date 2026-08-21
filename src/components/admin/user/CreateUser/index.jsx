@@ -129,52 +129,38 @@ const CreateUser = () => {
   };
 
   const validateForm = () => {
-    const requiredFields = [
-      'first_name',
-      'last_name',
-      'email', // Make email required
-      'phone',
-      'dob',
-      'address',
-      'cnic',
-      'role',
-      'department',
-      'gender',
-      'joining_date',
-      'emergency_contact',
-      'blood_group',
-      'password' // Make password required
-    ];
-
-    for (const field of requiredFields) {
-      if (!form[field]) {
-        setError(`Please fill in all required fields`);
-        return false;
-      }
+    if (!form.first_name?.trim()) {
+      setError('First name is required');
+      return false;
     }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) {
-      setError('Please enter a valid email address');
+    if (!form.department) {
+      setError('Department is required');
+      return false;
+    }
+    if (!form.password) {
+      setError('Password is required');
       return false;
     }
 
-    // Validate password strength
     const passwordErrors = validatePassword(form.password);
     if (passwordErrors.length > 0) {
       setError(`Password requirements: ${passwordErrors.join(', ')}`);
       return false;
     }
 
-    // Validate CNIC format (13 digits)
-    if (!/^\d{13}$/.test(form.cnic)) {
+    // Optional fields — validate format only when filled
+    if (form.email?.trim()) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(form.email.trim())) {
+        setError('Please enter a valid email address');
+        return false;
+      }
+    }
+    if (form.cnic && !/^\d{13}$/.test(form.cnic)) {
       setError('CNIC must be 13 digits');
       return false;
     }
-
-    // Validate phone number format
-    if (!/^\d{11}$/.test(form.phone)) {
+    if (form.phone && !/^\d{11}$/.test(form.phone)) {
       setError('Phone number must be 11 digits');
       return false;
     }
@@ -190,8 +176,19 @@ const CreateUser = () => {
     try {
       const sanitizedForm = {
         ...form,
-        email: form.email.trim().toLowerCase(),
+        first_name: form.first_name.trim(),
+        last_name: form.last_name?.trim() || null,
+        email: form.email?.trim() ? form.email.trim().toLowerCase() : null,
         password: form.password.trim(),
+        phone: form.phone?.trim() || null,
+        dob: form.dob || null,
+        address: form.address?.trim() || null,
+        cnic: form.cnic?.trim() || null,
+        gender: form.gender || null,
+        joining_date: form.joining_date || null,
+        emergency_contact: form.emergency_contact?.trim() || null,
+        blood_group: form.blood_group || null,
+        role: form.role || undefined,
       };
 
       // Create payload with user data and permissions
@@ -282,7 +279,6 @@ const CreateUser = () => {
                 label="Last Name"
                 value={form.last_name}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -299,7 +295,6 @@ const CreateUser = () => {
                 type="email"
                 value={form.email}
                 onChange={handleChange}
-                required
               />
 
               <div className="form-group">
@@ -338,7 +333,6 @@ const CreateUser = () => {
                 type="tel"
                 value={form.phone}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -347,7 +341,6 @@ const CreateUser = () => {
                 type="date"
                 value={form.dob}
                 onChange={handleChange}
-                required
               />
 
               <FormSelect
@@ -356,7 +349,6 @@ const CreateUser = () => {
                 value={form.gender}
                 options={genders}
                 onChange={handleChange}
-                required
               />
 
               <FormInput
@@ -365,7 +357,6 @@ const CreateUser = () => {
                 value={form.cnic}
                 onChange={handleChange}
                 placeholder="13 digits"
-                required
               />
 
               <FormSelect
@@ -374,7 +365,6 @@ const CreateUser = () => {
                 value={form.blood_group}
                 options={bloodGroups}
                 onChange={handleChange}
-                required
               />
 
               <FormSelect
@@ -392,7 +382,6 @@ const CreateUser = () => {
                 value={form.role}
                 options={availableRoles}
                 onChange={handleChange}
-                required
               />
 
               <FormSelect
@@ -409,7 +398,6 @@ const CreateUser = () => {
                 type="date"
                 value={form.joining_date}
                 onChange={handleChange}
-                // required
               />
 
               <FormInput
@@ -418,7 +406,6 @@ const CreateUser = () => {
                 type="tel"
                 value={form.emergency_contact}
                 onChange={handleChange}
-                // required
               />
             </div>
 
@@ -427,7 +414,6 @@ const CreateUser = () => {
               label="Address"
               value={form.address}
               onChange={handleChange}
-              // required
             />
 
             {/* Geographic Assignment Section - Only for Fund Raising */}
