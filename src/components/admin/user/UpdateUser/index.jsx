@@ -9,6 +9,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import MultiSelect from '../../../common/MultiSelect';
 import UserPermissions from '../UserPermissions';
 import GeographicAssignmentPicker from '../GeographicAssignmentPicker';
 import {
@@ -39,7 +40,7 @@ const UpdateUser = () => {
     joining_date: '',
     emergency_contact: '',
     blood_group: '',
-    manager_id: '',
+    manager_ids: [],
   });
 
   const [managerOptions, setManagerOptions] = useState([]);
@@ -109,19 +110,20 @@ const UpdateUser = () => {
       try {
         const res = await axiosInstance.get('/users/options');
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setManagerOptions([
-          { value: '', label: 'No manager' },
-          ...list.map((u) => ({
-            value: String(u.id),
-            label: u.full_name || u.email,
-          })),
-        ]);
+        setManagerOptions(
+          list
+            .filter((u) => Number(u.id) !== Number(id))
+            .map((u) => ({
+              value: String(u.id),
+              label: u.full_name || u.email,
+            })),
+        );
       } catch (err) {
         console.error('Error fetching manager options:', err);
       }
     };
     fetchManagers();
-  }, []);
+  }, [id]);
 
   useEffect(() => {
     fetchUser();
@@ -150,7 +152,11 @@ const UpdateUser = () => {
         joining_date: userData.joining_date || '',
         emergency_contact: userData.emergency_contact || '',
         blood_group: userData.blood_group || '',
-        manager_id: userData.manager_id ? String(userData.manager_id) : '',
+        manager_ids: Array.isArray(userData.manager_ids) && userData.manager_ids.length
+          ? userData.manager_ids.map(String)
+          : userData.manager_id
+            ? [String(userData.manager_id)]
+            : [],
       });
 
       setGeographicAssignments(normalizeGeographicAssignments(userData));
@@ -313,7 +319,9 @@ const UpdateUser = () => {
         emergency_contact: form.emergency_contact?.trim() || null,
         blood_group: form.blood_group || null,
         user_code: form.user_code?.trim() || null,
-        manager_id: form.manager_id ? Number(form.manager_id) : null,
+        manager_ids: Array.isArray(form.manager_ids)
+          ? form.manager_ids.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+          : [],
       };
 
       // Include geographic assignments for fund_raising department
@@ -481,12 +489,13 @@ const UpdateUser = () => {
                 onChange={handleChange}
               />
 
-              <FormSelect
-                name="manager_id"
-                label="Reports to (Manager)"
-                value={form.manager_id}
+              <MultiSelect
+                name="manager_ids"
+                label="Reports to (Managers)"
                 options={managerOptions}
-                onChange={handleChange}
+                value={form.manager_ids || []}
+                onChange={(next) => setForm((prev) => ({ ...prev, manager_ids: next }))}
+                placeholder="Select one or more managers..."
               />
 
               <FormInput

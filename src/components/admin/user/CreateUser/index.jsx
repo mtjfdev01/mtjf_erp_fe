@@ -9,6 +9,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import MultiSelect from '../../../common/MultiSelect';
 import UserPermissions from '../UserPermissions';
 import GeographicAssignmentPicker from '../GeographicAssignmentPicker';
 import {
@@ -42,10 +43,10 @@ const CreateUser = () => {
     emergency_contact: '',
     blood_group: bloodGroups[2].value,
     password: '',
-    manager_id: '',
+    manager_ids: [],
   });
 
-  const [managerOptions, setManagerOptions] = useState([{ value: '', label: 'No manager' }]);
+  const [managerOptions, setManagerOptions] = useState([]);
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -66,13 +67,12 @@ const CreateUser = () => {
       try {
         const res = await axiosInstance.get('/users/options');
         const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setManagerOptions([
-          { value: '', label: 'No manager' },
-          ...list.map((u) => ({
+        setManagerOptions(
+          list.map((u) => ({
             value: String(u.id),
             label: u.full_name || u.email,
           })),
-        ]);
+        );
       } catch (err) {
         console.error('Error fetching manager options:', err);
       }
@@ -196,7 +196,9 @@ const CreateUser = () => {
         ...sanitizedForm,
         user_code: sanitizedForm.user_code?.trim() || null,
         permissions: userPermissions,
-        manager_id: form.manager_id ? Number(form.manager_id) : null,
+        manager_ids: Array.isArray(form.manager_ids)
+          ? form.manager_ids.map(Number).filter((n) => Number.isFinite(n) && n > 0)
+          : [],
       };
 
       // Include geographic assignments for fund_raising department
@@ -231,6 +233,7 @@ const CreateUser = () => {
         emergency_contact: '',
         blood_group: bloodGroups[2].value,
         password: '',
+        manager_ids: [],
       });
       
       // Reset permissions and geographic assignments
@@ -384,12 +387,13 @@ const CreateUser = () => {
                 onChange={handleChange}
               />
 
-              <FormSelect
-                name="manager_id"
-                label="Reports to (Manager)"
-                value={form.manager_id}
+              <MultiSelect
+                name="manager_ids"
+                label="Reports to (Managers)"
                 options={managerOptions}
-                onChange={handleChange}
+                value={form.manager_ids || []}
+                onChange={(next) => setForm((prev) => ({ ...prev, manager_ids: next }))}
+                placeholder="Select one or more managers..."
               />
 
               <FormInput
