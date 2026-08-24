@@ -504,6 +504,47 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       return 'User';
     };
 
+    // Single assignee: show name. Multiple: avatar stack.
+    if (meta.length === 1) {
+      const user = meta[0];
+      const info =
+        Array.isArray(details) && details.length > 0
+          ? details.find((d) => d.id === user.user_id)
+          : null;
+      const displayName = getDisplayName(user, info);
+      const isOpen = openAssigneeTaskId === t.id && openAssigneeUserId === user.user_id;
+      return (
+        <div className="tl-tasks-list-assignment-cell">
+          <div
+            className="tl-tasks-assignee-trigger"
+            onClick={(e) => handleAssigneeClick(e, t, user.user_id)}
+          >
+            <span className="tl-tasks-list-assignment-name" title={displayName}>
+              {displayName}
+            </span>
+            {isOpen && (
+              <div className="tl-tasks-assignee-popover">
+                {info ? (
+                  <ul className="tl-tasks-assignee-list">
+                    <li className="tl-tasks-assignee-list-item">
+                      <div className="tl-tasks-assignee-name">{info.name}</div>
+                      {info.department && (
+                        <div className="tl-tasks-assignee-department">
+                          department: {capitalize(info.department)}
+                        </div>
+                      )}
+                    </li>
+                  </ul>
+                ) : (
+                  <div className="tl-tasks-assignee-empty">No assignee details</div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="tl-tasks-list-assignment-cell">
         <div className="tl-task-card-assignees-group">
@@ -536,7 +577,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                         <ul className="tl-tasks-assignee-list">
                           <li className="tl-tasks-assignee-list-item">
                             <div className="tl-tasks-assignee-name">{info.name}</div>
-                           {info.department && (
+                            {info.department && (
                               <div className="tl-tasks-assignee-department">
                                 department: {capitalize(info.department)}
                               </div>
@@ -557,12 +598,6 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               </div>
             )}
           </div>
-        </div>
-        <div className="tl-tasks-list-assignment-info">
-          <span className="tl-assignee-text-label">
-            {meta.length === 1 ? 'Single User' : 'Multiple Users'}
-          </span>
-          {/* <span className="tl-tasks-list-assignment-name">{getPrimaryAssigneeName(t)}</span> */}
         </div>
       </div>
     );

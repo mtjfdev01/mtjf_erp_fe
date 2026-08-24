@@ -710,12 +710,7 @@ const ViewTask = ({
     return Number(task.created_by_id) === Number(user.id);
   }, [user, task]);
 
-  const assignmentUsersForDisplay = useMemo(() => {
-    if (isCurrentUserCreator) return assignedUsers;
-    return assignedUsers.filter(
-      (assignedUser) => Number(assignedUser?.id) === Number(user?.id),
-    );
-  }, [assignedUsers, isCurrentUserCreator, user?.id]);
+  const assignmentUsersForDisplay = assignedUsers || [];
 
   const canEditMovChecklist = useMemo(() => {
     if (!task || !user) return false;
