@@ -23,6 +23,49 @@ const AFFILIATION_ROLE_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
+const BUSINESS_TYPE_OPTIONS = [
+  { value: "Banking & Financial Services", label: "Banking & Financial Services" },
+  { value: "Islamic Banking", label: "Islamic Banking" },
+  { value: "Insurance & Takaful", label: "Insurance & Takaful" },
+  { value: "Investment & Asset Management", label: "Investment & Asset Management" },
+  { value: "Oil & Gas", label: "Oil & Gas" },
+  { value: "Energy & Power", label: "Energy & Power" },
+  { value: "Petroleum & Fuel", label: "Petroleum & Fuel" },
+  { value: "FMCG", label: "FMCG" },
+  { value: "Food & Beverage", label: "Food & Beverage" },
+  { value: "Pharmaceuticals", label: "Pharmaceuticals" },
+  { value: "Healthcare & Medical", label: "Healthcare & Medical" },
+  { value: "Telecommunications", label: "Telecommunications" },
+  { value: "Technology & IT", label: "Technology & IT" },
+  { value: "E-Commerce & Digital Services", label: "E-Commerce & Digital Services" },
+  { value: "Manufacturing", label: "Manufacturing" },
+  { value: "Automotive", label: "Automotive" },
+  { value: "Cement & Construction Materials", label: "Cement & Construction Materials" },
+  { value: "Construction & Real Estate", label: "Construction & Real Estate" },
+  { value: "Engineering", label: "Engineering" },
+  { value: "Chemicals & Petrochemicals", label: "Chemicals & Petrochemicals" },
+  { value: "Textile & Apparel", label: "Textile & Apparel" },
+  { value: "Retail & Wholesale", label: "Retail & Wholesale" },
+  { value: "Logistics & Transportation", label: "Logistics & Transportation" },
+  { value: "Aviation", label: "Aviation" },
+  { value: "Shipping & Ports", label: "Shipping & Ports" },
+  { value: "Agriculture & Agribusiness", label: "Agriculture & Agribusiness" },
+  { value: "Education", label: "Education" },
+  { value: "Media & Entertainment", label: "Media & Entertainment" },
+  { value: "Advertising & Marketing", label: "Advertising & Marketing" },
+  { value: "Hospitality & Tourism", label: "Hospitality & Tourism" },
+  { value: "Philanthropy / Foundations", label: "Philanthropy / Foundations" },
+  { value: "NGOs / Non-Profit Organizations", label: "NGOs / Non-Profit Organizations" },
+  { value: "Government / Public Sector", label: "Government / Public Sector" },
+  { value: "Development Sector", label: "Development Sector" },
+  { value: "Professional Services", label: "Professional Services" },
+  { value: "Legal Services", label: "Legal Services" },
+  { value: "Consulting", label: "Consulting" },
+  { value: "Security Services", label: "Security Services" },
+  { value: "Conglomerates / Business Groups", label: "Conglomerates / Business Groups" },
+  { value: "Other", label: "Other" },
+];
+
 const RegisterDonor = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -51,6 +94,9 @@ const RegisterDonor = () => {
     org_email: '',
     org_phone: '',
     org_address: '',
+    business_type: '',
+    business_type_other: '',
+    area_of_interest: '',
   });
   const [assignedUser, setAssignedUser] = useState(null);
   const [referrerUser, setReferrerUser] = useState(null);
@@ -153,6 +199,14 @@ const RegisterDonor = () => {
         source: form.source,
         pipeline_stage: form.pipeline_stage || 'lead',
       };
+
+      if (form.donor_type === 'csr') {
+        donorData.business_type = form.business_type || null;
+        donorData.business_type_other =
+          form.business_type === 'Other' ? form.business_type_other || null : null;
+      }
+
+      donorData.area_of_interest = form.area_of_interest || null;
 
       if (form.date_of_birth) {
         donorData.date_of_birth = form.date_of_birth;
@@ -360,8 +414,43 @@ const RegisterDonor = () => {
                   value={form.date_of_birth}
                   onChange={handleChange}
                 />
+                <FormInput
+                  label="Area of Interest (optional)"
+                  type="text"
+                  name="area_of_interest"
+                  value={form.area_of_interest}
+                  onChange={handleChange}
+                  placeholder="e.g. Education, Healthcare, Environment..."
+                />
               </div>
             </section>
+
+            {form.donor_type === 'csr' && (
+              <section className="donor-register-card">
+                <h3 className="donor-register-card__title">2c. Business Type (CSR)</h3>
+                <div className="form-grid-2">
+                  <FormSelect
+                    label="Business Type"
+                    name="business_type"
+                    value={form.business_type}
+                    onChange={handleChange}
+                    options={BUSINESS_TYPE_OPTIONS}
+                    showDefaultOption
+                    defaultOptionText="Select Business Type (optional)"
+                  />
+                  {form.business_type === 'Other' && (
+                    <FormInput
+                      label="Other business type (optional)"
+                      type="text"
+                      name="business_type_other"
+                      value={form.business_type_other}
+                      onChange={handleChange}
+                      placeholder="Type business type..."
+                    />
+                  )}
+                </div>
+              </section>
+            )}
 
             <section className="donor-register-card">
               <h3 className="donor-register-card__title">

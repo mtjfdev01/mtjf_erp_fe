@@ -381,6 +381,8 @@ const adminDepartmentItems = () => [
     icon: FiHeart,
     subItems: [ 
       {label: "Donations", path: "/donations/online_donations/list", type: "list", icon: BiSolidDonateHeart},
+      {label: "Website Donation Projects", path: "/dms/website_donation_projects/list", type: "list", icon: FiGrid},
+      {label: "Home Hero Slides", path: "/dms/website_home_hero/list", type: "list", icon: FiLayers},
       {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
       {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", icon: FiRepeat},
       {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
@@ -520,6 +522,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'online_donations',
     icon: BiSolidDonateHeart
+  },
+  {
+    label: 'Website Donation Projects',
+    path: '/dms/website_donation_projects/list',
+    type: 'list',
+    module: 'website_donation_projects',
+    icon: FiGrid
+  },
+  {
+    label: 'Home Hero Slides',
+    path: '/dms/website_home_hero/list',
+    type: 'list',
+    module: 'website_home_hero',
+    icon: FiLayers
   },
   // {
   //   label: 'Offline Donations',
