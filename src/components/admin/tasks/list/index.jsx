@@ -351,12 +351,22 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     const assignedMeta = Array.isArray(t.assigned_users_meta)
       ? t.assigned_users_meta
       : [];
+    const currentUserDetails = assigneeDetailsCache[t.id];
+    const currentUsersById = new Map(
+      Array.isArray(currentUserDetails)
+        ? currentUserDetails.map((details) => [Number(details.id), details])
+        : [],
+    );
     const isTaskCreator =
       currentUserId != null && Number(t.created_by_id) === currentUserId;
     const visibleMeta = isTaskCreator
       ? assignedMeta
       : assignedMeta.filter((m) => Number(m?.user_id) === currentUserId);
-    const depts = [...new Set(visibleMeta.map((m) => m?.department).filter(Boolean))];
+    const depts = [...new Set(
+      visibleMeta
+        .map((meta) => currentUsersById.get(Number(meta?.user_id))?.department || meta?.department)
+        .filter(Boolean),
+    )];
     if (depts.length > 0) {
       return depts.map((d) => capitalize(d)).join(', ');
     }
@@ -575,6 +585,65 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   const [reassignUsers, setReassignUsers] = useState([]);
   const [reassignSaving, setReassignSaving] = useState(false);
   const [reassignError, setReassignError] = useState('');
+
+  useEffect(() => {
+    const taskRows = Array.isArray(tasks) ? tasks : [];
+    const userIds = Array.from(new Set(
+      taskRows.flatMap((task) => [
+        ...(Array.isArray(task.assigned_user_ids) ? task.assigned_user_ids : []),
+        ...(Array.isArray(task.assigned_users_meta)
+          ? task.assigned_users_meta.map((meta) => meta?.user_id)
+          : []),
+      ])
+        .map((value) => Number(value))
+        .filter((value) => Number.isInteger(value) && value > 0),
+    ));
+
+    if (userIds.length === 0) return undefined;
+
+    let cancelled = false;
+    const refreshAssigneeDetails = async () => {
+      try {
+        const query = userIds.map((userId) => `ids=${encodeURIComponent(userId)}`).join('&');
+        const response = await axiosInstance.get(`/users/by-ids?${query}`);
+        const users = Array.isArray(response.data) ? response.data : [];
+        if (cancelled) return;
+
+        const usersById = new Map(users.map((resolvedUser) => [Number(resolvedUser.id), resolvedUser]));
+        setAssigneeDetailsCache((previous) => {
+          const next = { ...previous };
+          taskRows.forEach((task) => {
+            const taskUserIds = Array.from(new Set([
+              ...(Array.isArray(task.assigned_user_ids) ? task.assigned_user_ids : []),
+              ...(Array.isArray(task.assigned_users_meta)
+                ? task.assigned_users_meta.map((meta) => meta?.user_id)
+                : []),
+            ]))
+              .map((value) => Number(value))
+              .filter((value) => Number.isInteger(value) && value > 0);
+            next[task.id] = taskUserIds
+              .map((userId) => usersById.get(userId))
+              .filter(Boolean)
+              .map((resolvedUser) => ({
+                id: resolvedUser.id,
+                name: (`${resolvedUser.first_name || ''} ${resolvedUser.last_name || ''}`).trim()
+                  || resolvedUser.email
+                  || `User #${resolvedUser.id}`,
+                department: resolvedUser.department || '',
+              }));
+          });
+          return next;
+        });
+      } catch {
+        // Keep task metadata as a fallback when the refresh fails.
+      }
+    };
+
+    refreshAssigneeDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [tasks]);
 
   useEffect(() => {
     const close = () => {

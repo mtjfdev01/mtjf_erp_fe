@@ -232,13 +232,11 @@ const ViewTask = ({
         ]),
       ).filter((n) => n != null && Number.isInteger(n) && n > 0);
 
-      // Only fetch if there are missing IDs that we don't already have cached
-      const missingIds = allNeededIds.filter(id => !usersById[id]);
-
-      if (missingIds.length > 0 && !usersFetchInProgress) {
+      // Always refresh user records so department changes are reflected immediately.
+      if (allNeededIds.length > 0 && !usersFetchInProgress) {
         setUsersFetchInProgress(true);
         try {
-          const query = missingIds.map((idVal) => `ids=${encodeURIComponent(idVal)}`).join('&');
+          const query = allNeededIds.map((idVal) => `ids=${encodeURIComponent(idVal)}`).join('&');
           const res = await axiosInstance.get(`/users/by-ids?${query}`);
           const usersArray = Array.isArray(res.data) ? res.data : [];
           setUsersById(prev => {
@@ -1805,11 +1803,8 @@ const ViewTask = ({
                             {assignmentUsersForDisplay.length > 0 ? (
                               <div className="team-assignment-pill-list">
                                 {assignmentUsersForDisplay.map((u) => {
-                                  const meta = assignedUsersMeta.find(
-                                    (m) => m?.user_id === u.id,
-                                  );
-                                  const deptLabel = meta?.department
-                                    ? meta.department
+                                  const deptLabel = u.department
+                                    ? u.department
                                       .split('_')
                                       .map((w) =>
                                         w ? w[0].toUpperCase() + w.slice(1) : '',
@@ -2280,11 +2275,7 @@ const ViewTask = ({
                     <div className="metadata">
                       <span>Task ID: {formatTaskId(task)}</span>
                       <span>
-                        Department: {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0
-                          ? [...new Set(task.assigned_users_meta.map(m => m ? m.department : null).filter(Boolean))]
-                            .map(d => capitalize(d))
-                            .join(', ')
-                          : capitalize(task.department)}
+                        Department: {capitalize(task.department)}
                       </span>
                       <span>
                         Last updated:{' '}

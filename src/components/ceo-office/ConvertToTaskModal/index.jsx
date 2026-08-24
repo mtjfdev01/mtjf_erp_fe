@@ -2,6 +2,7 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import axios from '../../../utils/axios';
 import SearchableMultiSelect from '../../common/SearchableMultiSelect';
 import FormInput from '../../common/FormInput';
+import MovAssignmentPicker from '../../admin/tasks/shared/MovAssignmentPicker';
 import './index.css';
 
 const ConvertToTaskModal = ({ 
@@ -14,7 +15,7 @@ const ConvertToTaskModal = ({
   // Local state for user objects and MOV items
   const [assignedUsers, setAssignedUsers] = useState([]);
   const [assignedUserDepartments, setAssignedUserDepartments] = useState({});
-  const [movItems, setMovItems] = useState(['']); // Start with one empty MOV item
+  const [movItems, setMovItems] = useState([{ text: '', user_id: null }]);
   const hasInitialized = useRef(false); // To track if we've already initialized assignedUsers
 
   // Sync local state with convertData when modal first opens
@@ -43,6 +44,15 @@ const ConvertToTaskModal = ({
     
     if (isOpen && !hasInitialized.current) {
       hasInitialized.current = true;
+      const initialMovItems = Array.isArray(convertData.mov_items)
+        ? convertData.mov_items.map((item, index) => ({
+          text: typeof item === 'string' ? item : item?.text || '',
+          user_id: convertData.mov_assignments?.find(
+            (assignment) => Number(assignment.mov_index) === index,
+          )?.user_id ?? (typeof item === 'object' ? item?.user_id : null),
+        }))
+        : [];
+      setMovItems(initialMovItems.length > 0 ? initialMovItems : [{ text: '', user_id: null }]);
       fetchInitialUsers();
     }
   }, [isOpen]); // Only depend on isOpen, not convertData.assigned_users!
@@ -59,7 +69,7 @@ const ConvertToTaskModal = ({
     if (!isOpen) {
       setAssignedUsers([]);
       setAssignedUserDepartments({});
-      setMovItems(['']);
+      setMovItems([{ text: '', user_id: null }]);
     }
   }, [isOpen]);
 
@@ -97,35 +107,62 @@ const ConvertToTaskModal = ({
   // Update convertData when users are selected
   const handleSelectUsers = (users) => {
     setAssignedUsers(users);
-    setConvertData({ 
-      ...convertData, 
-      assigned_users: users.map(u => u.id) 
-    });
+    setConvertData((previous) => ({
+      ...previous,
+      assigned_users: users.map((user) => user.id),
+      mov_assignments: movItems
+        .filter((item) => item.text.trim())
+        .map((item, mov_index) => ({
+          mov_index,
+          user_id: users.length === 1 ? users[0].id : item.user_id,
+        })),
+    }));
   };
 
   // MOV handlers
   const handleMovAdd = () => {
-    setMovItems([...movItems, '']);
+    setMovItems((prev) => [...prev, { text: '', user_id: null }]);
   };
 
   const handleMovRemove = (index) => {
     const newMovItems = movItems.filter((_, i) => i !== index);
     setMovItems(newMovItems);
+    updateMovData(newMovItems);
   };
 
   const handleMovChange = (index, value) => {
-    const newMovItems = [...movItems];
-    newMovItems[index] = value;
+    const newMovItems = movItems.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, text: value } : item
+    ));
     setMovItems(newMovItems);
-    setConvertData({
-      ...convertData,
-      mov_items: newMovItems.filter(item => item.trim() !== '')
-    });
+    updateMovData(newMovItems);
+  };
+
+  const handleMovUserChange = (index, userId) => {
+    const newMovItems = movItems.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, user_id: userId } : item
+    ));
+    setMovItems(newMovItems);
+    updateMovData(newMovItems);
+  };
+
+  const updateMovData = (items) => {
+    const cleanItems = items
+      .map((item) => ({ ...item, text: String(item.text || '').trim() }))
+      .filter((item) => item.text.length > 0);
+    setConvertData((previous) => ({
+      ...previous,
+      mov_items: cleanItems.map((item) => item.text),
+      mov_assignments: cleanItems.map((item, mov_index) => ({
+        mov_index,
+        user_id: assignedUsers.length === 1 ? assignedUsers[0].id : item.user_id,
+      })),
+    }));
   };
 
   // Validation checks
   const hasAssignees = assignedUsers.length > 0;
-  const hasMovItems = movItems.some(item => item.trim() !== '');
+  const hasMovItems = movItems.some(item => item.text.trim() !== '');
   const isFormValid = hasAssignees && hasMovItems;
 
   // Wrapper for onConvert to validate first
@@ -225,14 +262,20 @@ const ConvertToTaskModal = ({
               Means of Verification (MOV) <span style={{ color: 'red' }}>*</span>
             </label>
             <div className="convert-mov-container">
-              {movItems.map((value, index) => (
+              {movItems.map((item, index) => (
                 <div key={index} className="convert-mov-item-row">
                   <FormInput
                     name={`mov_item_${index}`}
-                    // label={index === 0 ? 'MOV item' : ''}
-                    value={value}
+                    label={index === 0 ? 'MOV Item' : ''}
+                    value={item.text}
                     onChange={(e) => handleMovChange(index, e.target.value)}
                     placeholder="Define a clear, specific, and measurable verification point"
+                  />
+                  <MovAssignmentPicker
+                    assignedUsers={assignedUsers}
+                    userId={assignedUsers.length === 1 ? assignedUsers[0].id : item.user_id}
+                    onChange={(userId) => handleMovUserChange(index, userId)}
+                    disabled={assignedUsers.length === 0}
                   />
                   {movItems.length > 1 && (
                     <button
