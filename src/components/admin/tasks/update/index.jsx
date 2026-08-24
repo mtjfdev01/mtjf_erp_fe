@@ -388,6 +388,11 @@ const UpdateTask = ({
   const handleMovRemove = (index) => {
     setMovItems((prev) => prev.filter((_, i) => i !== index));
   };
+  const handleMovUserChange = (index, userId) => {
+    setMovItems((prev) => prev.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, user_id: userId } : item
+    )));
+  };
 
   const handleMovUserChange = (index, userId) => {
     setMovItems((prev) => prev.map((item, itemIndex) => (

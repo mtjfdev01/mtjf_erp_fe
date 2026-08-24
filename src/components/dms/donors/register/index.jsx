@@ -12,6 +12,7 @@ import {
 import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import Navbar from '../../../Navbar';
+import { useAuth } from '../../../../context/AuthContext';
 import './index.css';
 
 const AFFILIATION_ROLE_OPTIONS = [
@@ -67,6 +68,7 @@ const BUSINESS_TYPE_OPTIONS = [
 ];
 
 const RegisterDonor = () => {
+  const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const presetOrgId = searchParams.get('organization_id');
@@ -194,7 +196,7 @@ const RegisterDonor = () => {
         postal_code: form.postal_code,
         cnic: form.cnic,
         notes: form.notes,
-        assigned_to_user_id: assignedUser?.id || null,
+        assigned_to_user_id: assignedUser?.id || currentUser?.id || null,
         referrer_user_id: referrerUser?.id || null,
         source: form.source,
         pipeline_stage: form.pipeline_stage || 'lead',
