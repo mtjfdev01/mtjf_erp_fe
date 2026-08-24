@@ -394,12 +394,6 @@ const UpdateTask = ({
     )));
   };
 
-  const handleMovUserChange = (index, userId) => {
-    setMovItems((prev) => prev.map((item, itemIndex) => (
-      itemIndex === index ? { ...item, user_id: userId } : item
-    )));
-  };
-
   // Auto-calculate due date based on recurrence frequency
   const calculateDueDate = (startDate, frequency) => {
     if (!startDate || !frequency) return '';

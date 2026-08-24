@@ -208,33 +208,6 @@ const ConvertToTaskModal = ({
             />
           </div>
           <div className="convert-form-group">
-            <label className="convert-form-label">Department</label>
-            <select
-              value={convertData.task_department}
-              onChange={(e) => setConvertData({ ...convertData, task_department: e.target.value })}
-              className="convert-form-control"
-            >
-              <option value="">Select Department</option>
-              <option value="admin">Admin</option>
-              <option value="program">Program</option>
-              <option value="store">Store</option>
-              <option value="procurements">Procurements</option>
-              <option value="accounts_and_finance">Accounts & Finance</option>
-              <option value="fund_raising">Fund Raising</option>
-              <option value="hr">HR</option>
-              <option value="it">IT</option>
-              <option value="marketing">Marketing</option>
-              <option value="audio_video">Audio Video</option>
-              <option value="meal">Meal</option>
-              <option value="health">Health</option>
-              <option value="executive_office">Executive Office</option>
-              <option value="ceo">CEO</option>
-              <option value="internal_audit">Internal Audit</option>
-              <option value="crd">CRD</option>
-              <option value="aas_lab">Aas Lab</option>
-            </select>
-          </div>
-          <div className="convert-form-group">
             <label className="convert-form-label">Priority</label>
             <select
               value={convertData.task_priority}
