@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -13,6 +13,12 @@ import '../register/index.css';
 const EditDonor = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
+  const donorsBasePath = location.pathname.includes('/dms/offline_donors')
+    ? '/dms/offline_donors'
+    : location.pathname.includes('/dms/online_donors')
+      ? '/dms/online_donors'
+      : '/dms/donors';
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -100,7 +106,7 @@ const EditDonor = () => {
     }
   };
 
-  const handleBack = () => navigate(`/dms/donors/view/${id}`);
+  const handleBack = () => navigate(`${donorsBasePath}/view/${id}`);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -192,7 +198,7 @@ const EditDonor = () => {
 
       const res = await axiosInstance.patch(`/donors/${id}`, payload);
       if (!res.data?.success) throw new Error(res.data?.message || 'Failed to update donor');
-      navigate(`/dms/donors/view/${id}`);
+      navigate(`${donorsBasePath}/view/${id}`);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to update donor');
     } finally {
