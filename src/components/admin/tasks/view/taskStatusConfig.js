@@ -150,21 +150,14 @@ export const isStatusActionAvailable = (action, context) => {
     });
   switch (action) {
     case 'START':
+      return isAssignee && sameDeptOrOrg;
     case 'PAUSE':
     case 'BLOCK':
     case 'REOPEN':
     case 'REOPEN_IN_PROGRESS':
       return perms.canUpdate && sameDeptOrOrg;
     case 'COMPLETE':
-      const isTaskCreatorForComplete =
-        context.currentUserId != null &&
-        context.createdByUserId != null &&
-        Number(context.currentUserId) === Number(context.createdByUserId);
-      return (
-        (isAssignee || isTaskCreatorForComplete || isAdminRole) &&
-        (perms.canUpdate || perms.canView) &&
-        sameDeptOrOrg
-      );
+      return isAssignee && sameDeptOrOrg;
     case 'CLOSE':
       const isCreator = context.currentUserId != null && context.createdByUserId != null && Number(context.currentUserId) === Number(context.createdByUserId);
       const isReporter = context.currentUserId != null && context.reportedById != null && Number(context.currentUserId) === Number(context.reportedById);

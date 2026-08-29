@@ -239,7 +239,6 @@ const ConvertToTaskModal = ({
                 <div key={index} className="convert-mov-item-row">
                   <FormInput
                     name={`mov_item_${index}`}
-                    label={index === 0 ? 'MOV Item' : ''}
                     value={item.text}
                     onChange={(e) => handleMovChange(index, e.target.value)}
                     placeholder="Define a clear, specific, and measurable verification point"
@@ -275,7 +274,6 @@ const ConvertToTaskModal = ({
           <div className="convert-form-group">
             <label className="convert-form-label">Assigned Users</label>
             <SearchableMultiSelect
-              // label="Assign Users"
               onSearch={searchAssignees}
               onSelect={handleSelectUsers}
               onClear={() => {

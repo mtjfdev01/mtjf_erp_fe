@@ -57,7 +57,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     refresh,
   } = useTasksServerQuery({
     storagePrefix: 'tasks-list',
-    defaultPageSize: 30,
+    defaultPageSize: 10,
     defaultSortField: 'created_at',
     activeTab,
     assignedUser,
