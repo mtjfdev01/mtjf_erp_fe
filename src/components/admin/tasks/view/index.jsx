@@ -689,6 +689,21 @@ const ViewTask = ({
   };
   const canCreate = taskPerms.canCreate === true;
   const canUpdate = taskPerms.canUpdate === true;
+
+  const isCurrentUserAssignee = useMemo(() => {
+    if (!user || !task) return false;
+    const assignedIds = Array.isArray(task.assigned_user_ids)
+      ? task.assigned_user_ids
+      : [];
+    const metaIds = Array.isArray(task.assigned_users_meta)
+      ? task.assigned_users_meta.map((m) => Number(m?.user_id)).filter((n) => Number.isInteger(n) && n > 0)
+      : [];
+    const allIds = [...assignedIds, ...metaIds].map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
+    return allIds.includes(Number(user.id));
+  }, [user, task]);
+
+  const canEditTaskByCurrentUser =
+    canUpdate && !(isCurrentUserAssignee && Number(task?.created_by_id) !== Number(user?.id));
   const canView = taskPerms.canView === true;
   const canInteractWithNotes = canUpdate || canCreate || canView;
   const canDeleteAttachment = canUpdate || canCreate;
@@ -697,11 +712,6 @@ const ViewTask = ({
     assignedUsers && assignedUsers.length > 0
       ? getUserDisplayName(assignedUsers[0])
       : '';
-
-  const isCurrentUserAssignee = useMemo(() => {
-    if (!user || !Array.isArray(assignedUsers)) return false;
-    return assignedUsers.some((u) => u && Number(u.id) === Number(user.id));
-  }, [user, assignedUsers]);
 
   const reminderAssigneeName = useMemo(() => {
     if (!assignedUsers || assignedUsers.length === 0) return '';
@@ -1276,7 +1286,7 @@ const ViewTask = ({
             title="Task Details"
             showBackButton={true}
             onBackClick={handleBack}
-            showEdit={!loading && task && taskPerms.canUpdate === true}
+            showEdit={!loading && task && canEditTaskByCurrentUser}
             editPath={!loading && task ? `${taskRouteBase}/update/${task.id}` : ''}
           />
         )}
