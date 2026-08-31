@@ -1,22 +1,14 @@
 export const STATUS_BUTTON_CONFIG = {
   DRAFT: [],
-  OPEN: [
-    { label: 'Start Working', action: 'START', color: 'primary' },
-  ],
-  ASSIGNED: [
-    { label: 'Start Working', action: 'START', color: 'primary' },
-  ],
-  IN_PROGRESS: [
-    { label: 'Complete Task', action: 'COMPLETE', color: 'success' },
-  ],
+  OPEN: [],
+  ASSIGNED: [],
+  IN_PROGRESS: [],
   PENDING: [],
   PENDING_APPROVAL: [
     { label: 'Approve', action: 'APPROVE', color: 'success' },
     { label: 'Reject', action: 'REJECT', color: 'danger' },
   ],
-  REJECTED: [
-    { label: 'Start Working', action: 'START', color: 'primary' },
-  ],
+  REJECTED: [],
   APPROVED: [
     { label: 'Close Task', action: 'CLOSE', color: 'danger' },
   ],
