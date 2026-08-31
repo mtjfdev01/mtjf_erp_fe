@@ -179,6 +179,14 @@ const RegisterDonor = () => {
     setIsSubmitting(true);
 
     try {
+      const email = form.email?.trim() || '';
+      const phone = form.phone?.trim() || '';
+      if (!email && !phone) {
+        setError('Please provide either an email or a phone number.');
+        setIsSubmitting(false);
+        return;
+      }
+
       if (form.donor_type === 'csr' && !selectedOrganization?.id) {
         setError('Please select or create an organization for CSR donors.');
         setIsSubmitting(false);
@@ -192,9 +200,9 @@ const RegisterDonor = () => {
 
       const donorData = {
         donor_type: form.donor_type,
-        email: form.email,
+        email: email || undefined,
         password: form.password,
-        phone: form.phone,
+        phone: phone || undefined,
         name: fullName,
         first_name: form.first_name || undefined,
         last_name: form.last_name || undefined,
@@ -348,7 +356,6 @@ const RegisterDonor = () => {
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  required
                 />
                 <FormInput
                   label="Phone"
@@ -356,9 +363,11 @@ const RegisterDonor = () => {
                   name="phone"
                   value={form.phone}
                   onChange={handleChange}
-                  required
                 />
               </div>
+              <p className="donor-register-contact-hint">
+                At least one of email or phone is required.
+              </p>
               <div className="donor-register-lookup">
                 <button
                   type="button"

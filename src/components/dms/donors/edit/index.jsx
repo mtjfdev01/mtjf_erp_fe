@@ -152,11 +152,17 @@ const EditDonor = () => {
     setSaving(true);
     setError('');
     try {
+      const email = form.email?.trim() || '';
+      const phone = form.phone?.trim() || '';
+      if (!email && !phone) {
+        throw new Error('Please provide either an email or a phone number.');
+      }
+
       const payload = {
         donor_type: form.donor_type,
         name: form.name,
-        email: form.email,
-        phone: form.phone,
+        email: email || null,
+        phone: phone || null,
         cnic: form.cnic,
         source: form.source,
         address: form.address,
@@ -347,7 +353,6 @@ const EditDonor = () => {
                   name="email"
                   value={form.email}
                   onChange={handleChange}
-                  required
                 />
                 <FormInput
                   label="Phone"
@@ -355,9 +360,11 @@ const EditDonor = () => {
                   name="phone"
                   value={form.phone}
                   onChange={handleChange}
-                  required
                 />
               </div>
+              <p className="donor-register-contact-hint">
+                At least one of email or phone is required.
+              </p>
             </section>
 
             {form.donor_type === 'individual' ? (
