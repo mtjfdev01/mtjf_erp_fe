@@ -57,7 +57,7 @@ export const ENTITY_IMPORT_CONFIG = {
     label: 'Donation Boxes',
     templateFilename: 'donation-box-import-template',
     description:
-      'Import physical donation boxes. Required: shop_name and city (city_id or city_name). Route, key_no, and box_id_no are optional. Duplicates = same shop_name + shopkeeper + phone (same shop name alone is allowed).',
+      'Import physical donation boxes. Required: shop_name and city (city_id or city_name). Route, key_no, and box_id_no are optional. status: active, inactive (or "in active"), removed, broken, snr. Duplicates = same shop_name + shopkeeper + phone (same shop name alone is allowed).',
     headers: [
       'shop_name',
       'route_id',

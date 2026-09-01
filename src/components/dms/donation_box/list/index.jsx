@@ -267,11 +267,10 @@ const DonationBoxList = () => {
   const getStatusBadge = (status) => {
     const statusMap = {
       'active': { class: 'status-completed', text: 'Active' },
-      'inactive': { class: 'status-cancelled', text: 'Inactive' },
-      'maintenance': { class: 'status-pending', text: 'Maintenance' },
-      'damaged': { class: 'status-failed', text: 'Damaged' },
-      'retired': { class: 'status-cancelled', text: 'Retired' },
-      'pending': { class: 'status-pending', text: 'Pending' }
+      'inactive': { class: 'status-cancelled', text: 'In Active' },
+      'removed': { class: 'status-cancelled', text: 'Removed' },
+      'broken': { class: 'status-failed', text: 'Broken' },
+      'snr': { class: 'status-pending', text: 'SNR' },
     };
     
     const statusInfo = statusMap[status] || { class: 'status-pending', text: status };
@@ -359,11 +358,10 @@ const DonationBoxList = () => {
 
   const statusOptions = [
     { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'damaged', label: 'Damaged' },
-    { value: 'retired', label: 'Retired' },
-    { value: 'pending', label: 'Pending' }
+    { value: 'inactive', label: 'In Active' },
+    { value: 'removed', label: 'Removed' },
+    { value: 'broken', label: 'Broken' },
+    { value: 'snr', label: 'SNR' },
   ];
 
   const boxTypeOptions = [

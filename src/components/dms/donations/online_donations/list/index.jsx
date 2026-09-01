@@ -278,8 +278,8 @@ const OnlineDonationsList = () => {
         ? {}
         : isOfflineRoute
           ? { _donation_source_not: 'website' }
-          : isOnlineRoute && appliedFilters.donation_source
-            ? { donation_source: appliedFilters.donation_source }
+          : isOnlineRoute
+            ? { donation_source: appliedFilters.donation_source || 'website' }
             : {};
 
       const filterPayload = {
