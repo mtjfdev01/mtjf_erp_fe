@@ -414,6 +414,7 @@ const adminDepartmentItems = () => [
     subItems: [
       { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list', icon: FiGlobe },
       { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list', icon: FiMap },
+      { label: 'Sub Regions', path: '/dms/geographic/sub-regions/list', type: 'list', icon: FiMap },
       { label: 'Districts', path: '/dms/geographic/districts/list', type: 'list', icon: FiMap },
       { label: 'Tehsils', path: '/dms/geographic/tehsils/list', type: 'list', icon: FiMap },
       { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list', icon: FiMapPin },
@@ -496,6 +497,7 @@ const hrDepartmentItems = (isUser = false) => [
 const geographicItems = (isUser = false) => [
   { label: 'Countries', path: '/dms/geographic/countries/list', type: 'list', module: 'countries', icon: FiGlobe },
   { label: 'Regions', path: '/dms/geographic/regions/list', type: 'list', module: 'regions', icon: FiMap },
+  { label: 'Sub Regions', path: '/dms/geographic/sub-regions/list', type: 'list', module: 'sub_regions', icon: FiMap },
   { label: 'Districts', path: '/dms/geographic/districts/list', type: 'list', module: 'districts', icon: FiMap },
   { label: 'Tehsils', path: '/dms/geographic/tehsils/list', type: 'list', module: 'tehsils', icon: FiMap },
   { label: 'Cities', path: '/dms/geographic/cities/list', type: 'list', module: 'cities', icon: FiMapPin },

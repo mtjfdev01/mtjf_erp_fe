@@ -182,6 +182,8 @@ import CountriesList from './components/dms/geographic/countries/list';
 import AddCountry from './components/dms/geographic/countries/add';
 import RegionsList from './components/dms/geographic/regions/list';
 import AddRegion from './components/dms/geographic/regions/add';
+import SubRegionsList from './components/dms/geographic/sub_regions/list';
+import AddSubRegion from './components/dms/geographic/sub_regions/add';
 import DistrictsList from './components/dms/geographic/districts/list';
 import AddDistrict from './components/dms/geographic/districts/add';
 import TehsilsList from './components/dms/geographic/tehsils/list';
@@ -500,6 +502,8 @@ const App = () => {
                                 <Route path="/dms/geographic/countries/add" element={<AddCountry />} />
                                 <Route path="/dms/geographic/regions/list" element={<RegionsList />} />
                                 <Route path="/dms/geographic/regions/add" element={<AddRegion />} />
+                                <Route path="/dms/geographic/sub-regions/list" element={<SubRegionsList />} />
+                                <Route path="/dms/geographic/sub-regions/add" element={<AddSubRegion />} />
                                 <Route path="/dms/geographic/districts/list" element={<DistrictsList />} />
                                 <Route path="/dms/geographic/districts/add" element={<AddDistrict />} />
                                 <Route path="/dms/geographic/tehsils/list" element={<TehsilsList />} />

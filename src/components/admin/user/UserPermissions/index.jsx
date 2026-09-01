@@ -388,6 +388,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Regions',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
+        sub_regions: {
+          label: 'Sub Regions',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         districts: {
           label: 'Districts',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
