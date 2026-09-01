@@ -576,7 +576,7 @@ const DonationBoxList = () => {
                           className="box-id"
                           style={{ color: 'inherit', textDecoration: 'inherit' }}
                         >
-                          {box.key_no || `BOX-${box.id}`}
+                          {box.box_id_no || 'N/A'}
                         </Link>
                         {box.route?.name && (
                           <div className="box-key hide-on-mobile">Route: {box.route.name}</div>
