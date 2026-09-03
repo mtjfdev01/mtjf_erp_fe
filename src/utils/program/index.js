@@ -308,4 +308,8 @@ export const projectCards = [
       },
     ]
   },
+  { 
+    id: 'seasonal-support-initiative', 
+    title: "Seasonal Support Initiative"
+  },
 ]
