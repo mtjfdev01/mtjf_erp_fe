@@ -12,6 +12,11 @@ import DonationPendingAttachments, {
 } from '../../shared/DonationPendingAttachments';
 import '../../shared/DonationPendingAttachments.css';
 import { toast } from 'react-toastify';
+import {
+  getDonationListRoutes,
+  donationViewPath,
+  resolveDonationListBackPath,
+} from '../../shared/donationListRoutes';
 import './index.css';
 
 const donationTypeOptions = [
@@ -92,14 +97,15 @@ function formatDateYmd(value) {
 }
 
 const UpdateOnlineDonation = () => {
-  const { id } = useParams();
+  const { id, csrDonorId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isOfflineRoute = location.pathname.includes('/donations/offline_donations');
-  const donationsBasePath = isOfflineRoute
-    ? '/donations/offline_donations'
-    : '/donations/online_donations';
-  const listBackPath = location.state?.fromList || `${donationsBasePath}/list`;
+  const donationRoutes = useMemo(
+    () => getDonationListRoutes(location, { csrDonorId }),
+    [location.pathname, csrDonorId],
+  );
+  const listBackPath = resolveDonationListBackPath(location, donationRoutes);
+  const pageTitle = `Update ${donationRoutes.pageLabel}`;
 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -276,7 +282,9 @@ const UpdateOnlineDonation = () => {
         }
       }
 
-      navigate(`${donationsBasePath}/view/${id}`);
+      navigate(donationViewPath(donationRoutes, id), {
+        state: location.state?.fromList ? { fromList: location.state.fromList } : undefined,
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update donation');
     } finally {
@@ -299,7 +307,7 @@ const UpdateOnlineDonation = () => {
     <>
       <Navbar />
       <div className="form-content update-donation-wrapper">
-        <PageHeader title="Update Donation" showBackButton={true} backPath={listBackPath} />
+        <PageHeader title={pageTitle} showBackButton={true} backPath={listBackPath} />
         {isInKind && (
           <div className="status-message" style={{ marginBottom: '1rem' }}>
             In-kind line items are not editable here; you can still update amounts, status, and other core fields.

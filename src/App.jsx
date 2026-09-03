@@ -132,7 +132,7 @@ import ResumeCollectionAdd from './components/admin/hr/resume_collection/add';
 import ResumeCollectionView from './components/admin/hr/resume_collection/view';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
 import PendingAllotmentsList from './components/dms/donations/allotments/pending';
-import { DonorsList, RegisterDonor, ViewDonor, EditDonor, OrganizationsList, AddOrganization, ViewOrganization, EditOrganization, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, EditDonor, OrganizationsList, AddOrganization, ViewOrganization, EditOrganization, CsrPocsList, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import AidApplicationsList from './components/dms/aid/applications/list';
 import AidApplicationAdd from './components/dms/aid/applications/add';
 import AidApplicationView from './components/dms/aid/applications/view';
@@ -469,7 +469,19 @@ const App = () => {
                                 <Route path="/dms/online_donors/edit/:id" element={<EditDonor />} />
                                 <Route path="/dms/offline_donors/edit/:id" element={<EditDonor />} />
 
-                                {/* Organizations (Organization → Branch → Sub-branch) */}
+                                {/* CSR Donors (Organization → Branch → Sub-branch) */}
+                                <Route path="/dms/csr-donations/list" element={<OnlineDonationsList key="csr-donations-hub-list" />} />
+                                <Route path="/dms/csr-donations/add" element={<AddDonation />} />
+                                <Route path="/dms/csr-donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/dms/csr-donations/update/:id" element={<UpdateOnlineDonation />} />
+                                <Route path="/dms/csr-donors/:csrDonorId/donations" element={<OnlineDonationsList key="csr-donor-donations-list" />} />
+                                <Route path="/dms/csr-donors/:csrDonorId/donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/dms/csr-donors/:csrDonorId/donations/update/:id" element={<UpdateOnlineDonation />} />
+                                <Route path="/dms/csr-donors/list" element={<OrganizationsList />} />
+                                <Route path="/dms/csr-donors/add" element={<AddOrganization />} />
+                                <Route path="/dms/csr-donors/view/:id" element={<ViewOrganization />} />
+                                <Route path="/dms/csr-donors/edit/:id" element={<EditOrganization />} />
+                                <Route path="/dms/csr-pocs/list" element={<CsrPocsList />} />
                                 <Route path="/dms/organizations/list" element={<OrganizationsList />} />
                                 <Route path="/dms/organizations/add" element={<AddOrganization />} />
                                 <Route path="/dms/organizations/view/:id" element={<ViewOrganization />} />

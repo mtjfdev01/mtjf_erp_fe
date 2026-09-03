@@ -90,7 +90,6 @@ const DonorsList = () => {
   // Filter state - Temporary filters (not applied until search button is clicked)
   const [tempFilters, setTempFilters] = useState({
     search: '',
-    donor_type: '',
     city: '',
     date: '',
     start_date: '',
@@ -109,7 +108,6 @@ const DonorsList = () => {
   // Applied filters - Actually sent to API
   const [appliedFilters, setAppliedFilters] = useState({
     search: '',
-    donor_type: '',
     city: '',
     date: '',
     start_date: '',
@@ -143,7 +141,6 @@ const DonorsList = () => {
   const hasActiveFilters = useMemo(() => {
     const empty = {
       search: '',
-      donor_type: '',
       donation_type: '',
       city: '',
       date: '',
@@ -416,7 +413,6 @@ const DonorsList = () => {
   const handleClearFilters = () => {
     const emptyFilters = {
       search: '',
-      donor_type: '',
       city: '',
       date: '',
       start_date: '',
@@ -499,6 +495,9 @@ const DonorsList = () => {
         delete params.donated_amount;
         delete params.donated_amount_operator;
       }
+
+      // Donors module is individuals only; legacy POC rows live under CSR Donors.
+      params.donor_type = 'individual';
       
       const response = await axiosInstance.get('/donors', { params });
       if (response.data.success) {
@@ -630,12 +629,6 @@ const DonorsList = () => {
   ];
 
   // Filter options
-  const donorTypeOptions = [
-    { value: 'individual', label: 'Individual' },
-    { value: 'csr', label: 'CSR (Corporate)' },
-  ];
-
-  // 
   const donationTypeOptions = [
     { value: 'one_time_donor', label: 'One Time Donor' },
     { value: 'recurring_donor', label: 'Recurring Donor' }
@@ -683,7 +676,7 @@ const DonorsList = () => {
   };
 
   const getDonorTypeLabel = (type) => {
-    return type === 'csr' ? 'CSR' : 'Individual';
+    return type === 'csr' ? 'Legacy POC' : 'Individual';
   };
 
   const getDonorTypeClass = (type) => {
@@ -738,15 +731,6 @@ const DonorsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="Search by name, email, phone..."
-            />
-            
-            <DropdownFilter
-              filterKey="donor_type"
-              label="Donor Type"
-              data={donorTypeOptions}
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="All Types"
             />
 
             {!lockedSource && donorSourceFilterOptions.length > 0 && (
@@ -1029,7 +1013,7 @@ const DonorsList = () => {
                             )}
                           </Link>
                           {donor.donor_type === 'csr' && (
-                            <div className="company-name">CSR contact</div>
+                            <div className="company-name">Legacy POC — use CSR Donors</div>
                           )}
                         </div>
                       </td>

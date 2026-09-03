@@ -7,7 +7,7 @@ export const ENTITY_IMPORT_CONFIG = {
     label: 'Donors',
     templateFilename: 'donors-import-template',
     description:
-      'Import individual or CSR donors. Required: donor_type, email, phone, name. For csr also include organization_name (or organization_id).',
+      'Import individual donors only. Required: donor_type (individual), email, phone, name.',
     headers: [
       'donor_type',
       'email',
@@ -51,6 +51,37 @@ export const ENTITY_IMPORT_CONFIG = {
       notification_subscription: 'true',
       recurring: 'false',
       multi_time_donor: 'false',
+    },
+  },
+  csr_pocs: {
+    label: 'CSR POCs',
+    templateFilename: 'csr-pocs-import-template',
+    description:
+      'Import point-of-contact people for CSR donors. Required: name and either email or phone. Use csr_donor_id or csr_donor_name to link the company.',
+    headers: [
+      'csr_donor_id',
+      'csr_donor_name',
+      'name',
+      'email',
+      'phone',
+      'cnic',
+      'role',
+      'branch_id',
+      'is_primary',
+      'business_type',
+      'business_type_other',
+      'area_of_interest',
+      'notes',
+      'is_active',
+    ],
+    sampleRow: {
+      csr_donor_name: 'Sample Corp Ltd',
+      name: 'Jane POC',
+      email: 'jane.poc@samplecorp.com',
+      phone: '03001234567',
+      role: 'contact',
+      is_primary: 'true',
+      is_active: 'true',
     },
   },
   donation_box: {

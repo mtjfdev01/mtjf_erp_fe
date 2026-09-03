@@ -394,7 +394,9 @@ const adminDepartmentItems = () => [
       // {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
       // {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
       {label: "Offline Donors", path: "/dms/offline_donors/list", type: "list", module: "offline_donors", icon: FiUsers},
-      {label: "Organizations", path: "/dms/organizations/list", type: "list", module: "organizations", icon: FiBriefcase},
+      {label: "CSR Donors", path: "/dms/csr-donors/list", type: "list", module: "organizations", icon: FiBriefcase},
+      {label: "CSR Donations", path: "/dms/csr-donations/list", type: "list", module: "organizations", icon: BiSolidDonateHeart},
+      {label: "CSR POCs", path: "/dms/csr-pocs/list", type: "list", module: "csr_pocs", icon: FiUsers},
       {label: "Volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
       // {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
       // {label: "Events", path: "/dms/events/list", type: "list", icon: FiCalendar},
@@ -577,11 +579,25 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiPackage
   },
   {
-    label: 'Organizations',
-    path: '/dms/organizations/list',
+    label: 'CSR Donors',
+    path: '/dms/csr-donors/list',
     type: 'list',
     module: 'organizations',
     icon: FiBriefcase
+  },
+  {
+    label: 'CSR Donations',
+    path: '/dms/csr-donations/list',
+    type: 'list',
+    module: 'organizations',
+    icon: BiSolidDonateHeart
+  },
+  {
+    label: 'CSR POCs',
+    path: '/dms/csr-pocs/list',
+    type: 'list',
+    module: 'csr_pocs',
+    icon: FiUsers
   },
   {
     label: 'My To-Dos',

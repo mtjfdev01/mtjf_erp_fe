@@ -26,6 +26,10 @@ import '../../shared/DonationPendingAttachments.css';
 import { useAuth } from '../../../../../context/AuthContext';
 import { isLocalId } from '../../../../../offline/handlers';
 import { toast } from 'react-toastify';
+import {
+  getDonationListRoutes,
+  resolveDonationListBackPath,
+} from '../../shared/donationListRoutes';
 import './index.css';
 
 /** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
@@ -49,14 +53,15 @@ const PROGRESS_STEP_STATUS_OPTIONS = [
 ];
 
 const ViewOnlineDonation = () => {
-  const { id } = useParams();
+  const { id, csrDonorId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isOfflineRoute = location.pathname.includes('/donations/offline_donations');
-  const donationsBasePath = isOfflineRoute
-    ? '/donations/offline_donations'
-    : '/donations/online_donations';
-  const pageTitle = isOfflineRoute ? 'View Offline Donation' : 'View Online Donation';
+  const donationRoutes = useMemo(
+    () => getDonationListRoutes(location, { csrDonorId }),
+    [location.pathname, csrDonorId],
+  );
+  const listBackPath = resolveDonationListBackPath(location, donationRoutes);
+  const pageTitle = `View ${donationRoutes.pageLabel}`;
   const { hasAnyPermission } = useAuth();
   const [donation, setDonation] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -718,7 +723,7 @@ const ViewOnlineDonation = () => {
           <PageHeader
             title={pageTitle}
             showBackButton={true}
-            backPath={`${donationsBasePath}/list`}
+            backPath={listBackPath}
           />
           <div className="loading">Loading...</div>
         </div>
@@ -734,7 +739,7 @@ const ViewOnlineDonation = () => {
           <PageHeader 
             title={pageTitle}
             showBackButton={true}
-            backPath={`${donationsBasePath}/list`}
+            backPath={listBackPath}
           />
           <div className="view-content">
             <div className="status-message status-message--error">{error}</div>
@@ -752,7 +757,7 @@ const ViewOnlineDonation = () => {
           <PageHeader 
             title={pageTitle}
             showBackButton={true}
-            backPath={`${donationsBasePath}/list`}
+            backPath={listBackPath}
           />
           <div className="view-content">
             <div className="status-message status-message--error">Donation not found</div>
@@ -769,7 +774,7 @@ const ViewOnlineDonation = () => {
         <PageHeader 
           title={pageTitle}
           showBackButton={true}
-          backPath={`${donationsBasePath}/list`}
+          backPath={listBackPath}
         />
         <div className="view-content">
           {isPendingOffline && (
@@ -1284,54 +1289,158 @@ const ViewOnlineDonation = () => {
             </div>
           )}
 
-          <div className="view-section">
-            <h3 className="view-section-title">Donor Information</h3>
-            <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
-              <div className="view-item">
-                <span className="view-item-label">Name</span>
-                <span className="view-item-value">
-                  {donation?.donor?.id ? (
-                    <a
-                      href={`/dms/donors/view/${donation.donor.id}`}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(`/dms/donors/view/${donation.donor.id}`);
-                      }}
-                      style={{ color: '#2563eb', textDecoration: 'underline' }}
-                    >
-                      {donation.donor.name || 'Anonymous'}
-                    </a>
-                  ) : (
-                    donation?.donor?.name || 'Anonymous'
+          {(donation?.organization_id || donation?.organization) ? (
+            <>
+              <div className="view-section">
+                <h3 className="view-section-title">CSR Donor</h3>
+                <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                  <div className="view-item">
+                    <span className="view-item-label">Company</span>
+                    <span className="view-item-value">
+                      {donation.organization?.id ? (
+                        <a
+                          href={`/dms/csr-donors/view/${donation.organization.id}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            navigate(`/dms/csr-donors/view/${donation.organization.id}`);
+                          }}
+                          style={{ color: '#2563eb', textDecoration: 'underline' }}
+                        >
+                          {donation.organization.name || 'CSR Donor'}
+                        </a>
+                      ) : (
+                        donation.organization?.name || 'CSR Donor'
+                      )}
+                    </span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">Email</span>
+                    <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
+                      {donation.organization?.email || '-'}
+                    </span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">Phone</span>
+                    <span className="view-item-value">{donation.organization?.phone || '-'}</span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">Registration #</span>
+                    <span className="view-item-value">
+                      {donation.organization?.registration_number || '-'}
+                    </span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">Country</span>
+                    <span className="view-item-value">
+                      {donation.organization?.country || donation?.country || '-'}
+                    </span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">City</span>
+                    <span className="view-item-value">
+                      {donation.organization?.city || donation?.city || '-'}
+                    </span>
+                  </div>
+                  {(donation.organization?.address || donation?.address) && (
+                    <div className="view-item view-item--full">
+                      <span className="view-item-label">Address</span>
+                      <span className="view-item-value">
+                        {donation.organization?.address || donation?.address}
+                      </span>
+                    </div>
                   )}
-                </span>
-              </div>
-              <div className="view-item">
-                <span className="view-item-label">Email</span>
-                <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
-                  {donation?.donor?.email || '-'}
-                </span>
-              </div>
-              <div className="view-item">
-                <span className="view-item-label">Phone</span>
-                <span className="view-item-value">{donation?.donor?.phone || '-'}</span>
-              </div>
-              <div className="view-item">
-                <span className="view-item-label">Country</span>
-                <span className="view-item-value">{donation?.donor?.country || '-'}</span>
-              </div>
-              <div className="view-item">
-                <span className="view-item-label">City</span>
-                <span className="view-item-value">{donation?.donor?.city || '-'}</span>
-              </div>
-              {donation.address && (
-                <div className="view-item view-item--full">
-                  <span className="view-item-label">Address</span>
-                  <span className="view-item-value">{donation?.donor?.address}</span>
                 </div>
-              )}
+              </div>
+
+              {donation?.csr_poc_id && donation?.csr_poc ? (
+                <div className="view-section">
+                  <h3 className="view-section-title">POC Information</h3>
+                  <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                    <div className="view-item">
+                      <span className="view-item-label">Name</span>
+                      <span className="view-item-value">
+                        {donation.organization?.id ? (
+                          <a
+                            href={`/dms/csr-donors/view/${donation.organization.id}?person=${donation.csr_poc.id}`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate(
+                                `/dms/csr-donors/view/${donation.organization.id}?person=${donation.csr_poc.id}`,
+                              );
+                            }}
+                            style={{ color: '#2563eb', textDecoration: 'underline' }}
+                          >
+                            {donation.csr_poc.name || 'POC'}
+                          </a>
+                        ) : (
+                          donation.csr_poc.name || 'POC'
+                        )}
+                      </span>
+                    </div>
+                    <div className="view-item">
+                      <span className="view-item-label">Email</span>
+                      <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
+                        {donation.csr_poc.email || '-'}
+                      </span>
+                    </div>
+                    <div className="view-item">
+                      <span className="view-item-label">Phone</span>
+                      <span className="view-item-value">{donation.csr_poc.phone || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <div className="view-section">
+              <h3 className="view-section-title">Donor Information</h3>
+              <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                <div className="view-item">
+                  <span className="view-item-label">Name</span>
+                  <span className="view-item-value">
+                    {donation?.donor?.id ? (
+                      <a
+                        href={`/dms/donors/view/${donation.donor.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/dms/donors/view/${donation.donor.id}`);
+                        }}
+                        style={{ color: '#2563eb', textDecoration: 'underline' }}
+                      >
+                        {donation.donor.name || 'Anonymous'}
+                      </a>
+                    ) : (
+                      donation?.donor?.name || 'Anonymous'
+                    )}
+                  </span>
+                </div>
+                <div className="view-item">
+                  <span className="view-item-label">Email</span>
+                  <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
+                    {donation?.donor?.email || '-'}
+                  </span>
+                </div>
+                <div className="view-item">
+                  <span className="view-item-label">Phone</span>
+                  <span className="view-item-value">{donation?.donor?.phone || '-'}</span>
+                </div>
+                <div className="view-item">
+                  <span className="view-item-label">Country</span>
+                  <span className="view-item-value">{donation?.donor?.country || '-'}</span>
+                </div>
+                <div className="view-item">
+                  <span className="view-item-label">City</span>
+                  <span className="view-item-value">{donation?.donor?.city || '-'}</span>
+                </div>
+                {donation.address && (
+                  <div className="view-item view-item--full">
+                    <span className="view-item-label">Address</span>
+                    <span className="view-item-value">{donation?.donor?.address}</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {donation.in_kind_items && donation.in_kind_items.length > 0 && (
             <div className="view-section">
