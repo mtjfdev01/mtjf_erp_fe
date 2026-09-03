@@ -373,40 +373,40 @@ const adminDepartmentItems = () => [
       {label: "Subprograms", path: "/program/subprograms", type: "list", icon: FiList}
     ]
   },
-  {
-    label: 'Fund Raising',
-    path: '/fund_raising',
-    type: 'list',
-    module: 'fund_raising_admin',
-    icon: FiHeart,
-    subItems: [ 
-      {label: "Online Donations", path: "/donations/online_donations/list", type: "list", module: "online_donations", icon: BiSolidDonateHeart},
-      {label: "Offline Donations", path: "/donations/offline_donations/list", type: "list", module: "offline_donations", icon: BiSolidDonateHeart},
-      {label: "Website Donation Projects", path: "/dms/website_donation_projects/list", type: "list", icon: FiGrid},
-      {label: "Home Hero Slides", path: "/dms/website_home_hero/list", type: "list", icon: FiLayers},
-      {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
-      {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", icon: FiRepeat},
-      {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
-      {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
-      {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
-      {label: "Online Donors", path: "/dms/online_donors/list", type: "list", module: "online_donors", icon: FiUsers},
-      // Enable later — Beneficiary Aid Applications (Phase 1)
-      // {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
-      // {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
-      {label: "Offline Donors", path: "/dms/offline_donors/list", type: "list", module: "offline_donors", icon: FiUsers},
-      {label: "CSR Donors", path: "/dms/csr-donors/list", type: "list", module: "organizations", icon: FiBriefcase},
-      {label: "CSR Donations", path: "/dms/csr-donations/list", type: "list", module: "organizations", icon: BiSolidDonateHeart},
-      {label: "CSR POCs", path: "/dms/csr-pocs/list", type: "list", module: "csr_pocs", icon: FiUsers},
-      {label: "Volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
-      // {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
-      // {label: "Events", path: "/dms/events/list", type: "list", icon: FiCalendar},
-      // {label: "Campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
-      // {label: "Appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
-      // {label: "Social Media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
-      {label: "Reconciliation", path: "/dms/reconciliation/list", type: "list", icon: FiRefreshCw},
-      {label: "Donor Relationship", path: "/dms/donor-relationship/follow-ups", type: "list", icon: FiUsers}
-    ]
-  },
+  // {
+  //   label: 'Fund Raising',
+  //   path: '/fund_raising',
+  //   type: 'list',
+  //   module: 'fund_raising_admin',
+  //   icon: FiHeart,
+  //   subItems: [ 
+  //     {label: "Online Donations", path: "/donations/online_donations/list", type: "list", module: "online_donations", icon: BiSolidDonateHeart},
+  //     {label: "Offline Donations", path: "/donations/offline_donations/list", type: "list", module: "offline_donations", icon: BiSolidDonateHeart},
+  //     {label: "Website Donation Projects", path: "/dms/website_donation_projects/list", type: "list", icon: FiGrid},
+  //     {label: "Home Hero Slides", path: "/dms/website_home_hero/list", type: "list", icon: FiLayers},
+  //     {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
+  //     {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", icon: FiRepeat},
+  //     {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
+  //     {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
+  //     {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
+  //     {label: "Online Donors", path: "/dms/online_donors/list", type: "list", module: "online_donors", icon: FiUsers},
+  //     // Enable later — Beneficiary Aid Applications (Phase 1)
+  //     // {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
+  //     // {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
+  //     {label: "Offline Donors", path: "/dms/offline_donors/list", type: "list", module: "offline_donors", icon: FiUsers},
+  //     {label: "CSR Donors", path: "/dms/csr-donors/list", type: "list", module: "organizations", icon: FiBriefcase},
+  //     {label: "CSR Donations", path: "/dms/csr-donations/list", type: "list", module: "organizations", icon: BiSolidDonateHeart},
+  //     {label: "CSR POCs", path: "/dms/csr-pocs/list", type: "list", module: "csr_pocs", icon: FiUsers},
+  //     {label: "Volunteers", path: "/dms/volunteers/list", type: "list", icon: FiUserPlus},
+  //     // {label: "Surveys", path: "/dms/surveys/list", type: "list", icon: FiClipboard},
+  //     // {label: "Events", path: "/dms/events/list", type: "list", icon: FiCalendar},
+  //     // {label: "Campaigns", path: "/dms/campaigns/list", type: "list", icon: FiFlag},
+  //     // {label: "Appeals", path: "/dms/appeals/list", type: "list", icon: FiAlertCircle},
+  //     // {label: "Social Media", path: "/dms/social-posts/list", type: "list", icon: FiFileText},
+  //     {label: "Reconciliation", path: "/dms/reconciliation/list", type: "list", icon: FiRefreshCw},
+  //     {label: "Donor Relationship", path: "/dms/donor-relationship/follow-ups", type: "list", icon: FiUsers}
+  //   ]
+  // },
   {
     label: 'Geographic',
     path: '/dms/geographic/countries/list',
@@ -577,6 +577,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'donation_box_donations',
     icon: FiPackage
+  },
+  {
+    label: 'In Kind Items',
+    path: '/dms/in-kind-items/list',
+    type: 'list',
+    module: 'donation_in_kind_items',
+    icon: FiGift
+  },
+  {
+    label: 'In Kind Donations',
+    path: '/dms/in-kind-donations/list',
+    type: 'list',
+    module: 'in_kind_donations',
+    icon: FiGift
   },
   {
     label: 'CSR Donors',

@@ -474,6 +474,10 @@ const App = () => {
                                 <Route path="/dms/csr-donations/add" element={<AddDonation />} />
                                 <Route path="/dms/csr-donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/dms/csr-donations/update/:id" element={<UpdateOnlineDonation />} />
+                                <Route path="/dms/in-kind-donations/list" element={<OnlineDonationsList key="in-kind-donations-hub-list" />} />
+                                <Route path="/dms/in-kind-donations/add" element={<AddDonation />} />
+                                <Route path="/dms/in-kind-donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/dms/in-kind-donations/update/:id" element={<UpdateOnlineDonation />} />
                                 <Route path="/dms/csr-donors/:csrDonorId/donations" element={<OnlineDonationsList key="csr-donor-donations-list" />} />
                                 <Route path="/dms/csr-donors/:csrDonorId/donations/view/:id" element={<ViewOnlineDonation />} />
                                 <Route path="/dms/csr-donors/:csrDonorId/donations/update/:id" element={<UpdateOnlineDonation />} />

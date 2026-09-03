@@ -1,6 +1,6 @@
 /**
  * Resolve list/view/update/add base paths from the current donations route.
- * Optional `params.channel`: 'online' | 'offline' | 'csr' forces a channel
+ * Optional `params.channel`: 'online' | 'offline' | 'csr' | 'in_kind' forces a channel
  * (used when embedding the list outside a donations URL).
  */
 export function getDonationListRoutes(location, params = {}) {
@@ -28,6 +28,16 @@ export function getDonationListRoutes(location, params = {}) {
     };
   }
 
+  if (forcedChannel === 'in_kind') {
+    return {
+      basePath: '/dms/in-kind-donations',
+      listPath: '/dms/in-kind-donations/list',
+      channel: 'in_kind',
+      pageLabel: 'In Kind Donation',
+      listTitle: 'In Kind Donations',
+    };
+  }
+
   if (forcedChannel === 'csr') {
     if (csrDonorId) {
       const basePath = `/dms/csr-donors/${csrDonorId}/donations`;
@@ -46,6 +56,16 @@ export function getDonationListRoutes(location, params = {}) {
       channel: 'csr',
       pageLabel: 'CSR Donation',
       listTitle: 'CSR Donations',
+    };
+  }
+
+  if (pathname.startsWith('/dms/in-kind-donations')) {
+    return {
+      basePath: '/dms/in-kind-donations',
+      listPath: '/dms/in-kind-donations/list',
+      channel: 'in_kind',
+      pageLabel: 'In Kind Donation',
+      listTitle: 'In Kind Donations',
     };
   }
 
@@ -102,6 +122,9 @@ export function donationAddPath(routes, query = '') {
   const q = query ? (query.startsWith('?') ? query : `?${query}`) : '';
   if (routes.channel === 'csr') {
     return `/dms/csr-donations/add${q}`;
+  }
+  if (routes.channel === 'in_kind') {
+    return `/dms/in-kind-donations/add${q}`;
   }
   return `${routes.basePath}/add${q}`;
 }

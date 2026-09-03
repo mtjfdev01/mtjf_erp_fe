@@ -109,6 +109,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Donation Box Donations',
           actions: ['create','list_view', 'view', 'update', 'delete', 'bypass_location']
         },
+        donation_in_kind_items: {
+          label: 'In Kind Items',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        in_kind_donations: {
+          label: 'In Kind Donations',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'completing']
+        },
         dms_todos: {
           label: 'My To-Dos',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
@@ -517,6 +525,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     approve: 'Approve / Reject',
     manage_overview: 'Manage Overview',
     bypass_location: 'Bypass location (GPS + territory filter)',
+    completing: 'Completing',
   };
 
   const initializePermissions = () => {

@@ -20,13 +20,15 @@ import useListRowSelection from '../../../../../hooks/useListRowSelection';
 import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
 import { NotificationRefreshPresets } from '../../../../../utils/notifications/events';
 
-import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
 import MultiSelect from '../../../../common/MultiSelect';
 import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
+import { useAuth } from '../../../../../context/AuthContext';
+import { toast } from 'react-toastify';
 import {
   getDonationListRoutes,
   donationViewPath,
@@ -43,6 +45,7 @@ const OnlineDonationsList = ({
 } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasAnyPermission } = useAuth();
   const [searchParams] = useSearchParams();
   const { donorId: routeDonorId, csrDonorId: routeCsrDonorId } = useParams();
   // Dedicated donor/CSR donations page, or legacy query params, or profile embed
@@ -70,6 +73,18 @@ const OnlineDonationsList = ({
   const isCsrDonorScopedRoute =
     Boolean(routeCsrDonorId) || Boolean(embedded && urlCsrDonorId);
   const isCsrDonationsRoute = isCsrDonationsHubRoute || isCsrDonorScopedRoute;
+  const isInKindDonationsRoute =
+    !embedded && location.pathname.startsWith('/dms/in-kind-donations');
+  const canApproveInKind = useMemo(
+    () =>
+      hasAnyPermission([
+        'super_admin',
+        'fund_raising_manager',
+        'fund_raising.in_kind_donations.completing',
+      ]),
+    [hasAnyPermission],
+  );
+  const showInKindApproveCol = isInKindDonationsRoute && canApproveInKind;
   const isOfflineRoute =
     embeddedChannel === 'offline' ||
     (!embeddedChannel && location.pathname.includes('/donations/offline_donations'));
@@ -86,9 +101,18 @@ const OnlineDonationsList = ({
             : embeddedChannel === 'offline'
               ? 'offline'
               : 'online'
-          : undefined,
+          : isInKindDonationsRoute
+            ? 'in_kind'
+            : undefined,
       }),
-    [location.pathname, routeCsrDonorId, urlCsrDonorId, embedded, embeddedChannel],
+    [
+      location.pathname,
+      routeCsrDonorId,
+      urlCsrDonorId,
+      embedded,
+      embeddedChannel,
+      isInKindDonationsRoute,
+    ],
   );
   const donationsBasePath = donationRoutes.basePath;
   const listReturnPath = `${location.pathname}${location.search}`;
@@ -98,6 +122,7 @@ const OnlineDonationsList = ({
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
+  const [approvingDonationId, setApprovingDonationId] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [selectedCsrDonorFilter, setSelectedCsrDonorFilter] = useState(null);
   const [csrDonorLabel, setCsrDonorLabel] = useState('');
@@ -131,9 +156,11 @@ const OnlineDonationsList = ({
       ? `donations-csr-${routeCsrDonorId || urlCsrDonorId}-list`
       : isDonorDonationsRoute
         ? `donations-donor-${routeDonorId || urlDonorId}-list`
-        : isOfflineRoute
-          ? 'donations-offline-list'
-          : 'donations-online-list';
+        : isInKindDonationsRoute
+          ? 'donations-in-kind-list'
+          : isOfflineRoute
+            ? 'donations-offline-list'
+            : 'donations-online-list';
 
   // Pagination state — persisted so it survives navigation
   const [paginationState, setPaginationState] = usePersistedFilters(
@@ -220,6 +247,18 @@ const OnlineDonationsList = ({
     );
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlDonorId]);
+
+  // In Kind Donations hub: always lock payment method to in_kind.
+  useEffect(() => {
+    if (!isInKindDonationsRoute) return;
+    setTempFilters((prev) =>
+      prev.donation_method === 'in_kind' ? prev : { ...prev, donation_method: 'in_kind' },
+    );
+    setAppliedFilters((prev) =>
+      prev.donation_method === 'in_kind' ? prev : { ...prev, donation_method: 'in_kind' },
+    );
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInKindDonationsRoute]);
 
   useEffect(() => {
     if (!urlCsrDonorId) {
@@ -344,6 +383,10 @@ const OnlineDonationsList = ({
     setSelectedCsrDonorFilter(null);
     clearTempFilters();
     clearAppliedFilters();
+    if (isInKindDonationsRoute) {
+      setTempFilters((prev) => ({ ...prev, donation_method: 'in_kind' }));
+      setAppliedFilters((prev) => ({ ...prev, donation_method: 'in_kind' }));
+    }
     setCurrentPage(1);
   };
 
@@ -380,7 +423,7 @@ const OnlineDonationsList = ({
       const relationsFiltersPayload = appliedFilters.relationsFilters || {};
       
       // Prepare filter payload
-      const routeSourceFilter = isEntityScopedList
+      const routeSourceFilter = isEntityScopedList || isInKindDonationsRoute
         ? {}
         : isOfflineRoute
           ? { _donation_source_not: 'website' }
@@ -400,7 +443,9 @@ const OnlineDonationsList = ({
           search: appliedFilters.search,
           status: appliedFilters.status,
           donation_type: appliedFilters.donation_type,
-          donation_method: appliedFilters.donation_method,
+          donation_method: isInKindDonationsRoute
+            ? 'in_kind'
+            : appliedFilters.donation_method,
           ...routeSourceFilter,
           progress_workflow_template_id: appliedFilters.progress_workflow_template_id || undefined,
           orderId: appliedFilters.orderId,
@@ -675,6 +720,33 @@ const OnlineDonationsList = ({
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
   };
 
+  const handleApproveInKind = async (donation) => {
+    if (!donation?.id || !canApproveInKind) return;
+    const status = String(donation.status || '').toLowerCase();
+    if (status === 'completed' || status === 'paid' || status === 'success') return;
+
+    setApprovingDonationId(donation.id);
+    try {
+      const response = await axiosInstance.patch(`/donations/${donation.id}`, {
+        status: 'completed',
+      });
+      if (response.data?.success) {
+        toast.success('In-kind donation approved successfully');
+        setDonations((prev) =>
+          prev.map((row) =>
+            row.id === donation.id ? { ...row, status: 'completed' } : row,
+          ),
+        );
+      } else {
+        toast.error(response.data?.message || 'Failed to approve donation');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to approve donation');
+    } finally {
+      setApprovingDonationId(null);
+    }
+  };
+
   const getActionMenuItems = (donation) => [
     {
       icon: <FiEye />,
@@ -859,6 +931,9 @@ const OnlineDonationsList = ({
   // Generate filename with current date
   const getCSVFilename = () => {
     const today = new Date().toISOString().split('T')[0];
+    if (isInKindDonationsRoute) return `in-kind-donations-${today}`;
+    if (isCsrDonationsRoute) return `csr-donations-${today}`;
+    if (isOfflineRoute) return `offline-donations-${today}`;
     return `online-donations-${today}`;
   };
 
@@ -899,6 +974,8 @@ const OnlineDonationsList = ({
                   ? `${csrDonorLabel} — Donations`
                   : 'CSR Donor Donations'
                 : 'Donor Donations'
+              : isInKindDonationsRoute
+              ? 'In Kind Donations'
               : isCsrDonationsHubRoute
               ? 'CSR Donations'
               : isCsrDonorScopedRoute || urlCsrDonorId
@@ -913,12 +990,17 @@ const OnlineDonationsList = ({
           }
           showBackButton={
             !embedded &&
-            Boolean(urlDonorId || urlCsrDonorId || isCsrDonationsHubRoute)
+            Boolean(
+              urlDonorId ||
+                urlCsrDonorId ||
+                isCsrDonationsHubRoute ||
+                isInKindDonationsRoute,
+            )
           }
           backPath={
             embedded
               ? null
-              : isCsrDonationsHubRoute
+              : isInKindDonationsRoute || isCsrDonationsHubRoute
               ? '/dms'
               : urlCsrDonorId
                 ? `/dms/csr-donors/view/${urlCsrDonorId}${urlCsrPocId ? `?person=${urlCsrPocId}` : ''}`
@@ -1048,14 +1130,16 @@ const OnlineDonationsList = ({
               placeholder="All Types"
             />
             
-            <DropdownFilter
-              filterKey="donation_method"
-              label="Payment Method"
-              data={donationMethodOptions}
-              filters={tempFilters}
-              onFilterChange={handleFilterChange}
-              placeholder="All Methods"
-            />
+            {!isInKindDonationsRoute && (
+              <DropdownFilter
+                filterKey="donation_method"
+                label="Payment Method"
+                data={donationMethodOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="All Methods"
+              />
+            )}
 
             <DropdownFilter
               filterKey="donation_source"
@@ -1218,6 +1302,7 @@ const OnlineDonationsList = ({
                   <th className="hide-on-mobile">Email</th>
                   {/* <th className="hide-on-mobile">Phone</th> */}
                   <th>Status</th>
+                  {showInKindApproveCol ? <th>Approve</th> : null}
                   <th>Date</th>
                   <th>Time</th>
                   <th className="table-actions">Actions</th>
@@ -1226,7 +1311,9 @@ const OnlineDonationsList = ({
               <tbody>
                 {donations.length === 0 ? (
                   <tr>
-                    <td colSpan={isCsrDonationsRoute ? 11 : 10} className="no-data">
+                    <td colSpan={
+                      (isCsrDonationsRoute ? 11 : 10) + (showInKindApproveCol ? 1 : 0)
+                    } className="no-data">
                       No donations found
                     </td>
                   </tr>
@@ -1305,6 +1392,37 @@ const OnlineDonationsList = ({
                     <td className="hide-on-mobile">{donation?.donor?.email?.slice(0, 15) + '...' || '-'}</td>
                     {/* <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td> */}
                     <td>{getStatusBadge(donation.status)}</td>
+                    {showInKindApproveCol ? (
+                      <td>
+                        {['completed', 'paid', 'success'].includes(
+                          String(donation.status || '').toLowerCase(),
+                        ) ? (
+                          <span className="status-badge status-completed">Approved</span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="primary_btn"
+                            style={{
+                              padding: '6px 12px',
+                              fontSize: '12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                            }}
+                            disabled={approvingDonationId === donation.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApproveInKind(donation);
+                            }}
+                          >
+                            <FiCheckCircle />
+                            {approvingDonationId === donation.id
+                              ? 'Approving…'
+                              : 'Approve'}
+                          </button>
+                        )}
+                      </td>
+                    ) : null}
                     <td>{formatDate(donation.date || donation.created_at)}</td>
                     <td>{getTime(donation.created_at)}</td>
                     <td className="table-actions">

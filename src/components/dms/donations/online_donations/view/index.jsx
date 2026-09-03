@@ -158,6 +158,13 @@ const ViewOnlineDonation = () => {
   const donationStatus = String(donation?.status || '').toLowerCase();
   const isDonationCompleted = donationStatus === 'completed';
   const isDonationFailed = donationStatus === 'failed';
+  const isInKindDonation =
+    String(donation?.donation_method || '').toLowerCase() === 'in_kind';
+  const canApproveInKind = hasAnyPermission([
+    'super_admin',
+    'fund_raising_manager',
+    'fund_raising.in_kind_donations.completing',
+  ]);
 
   // Links for unpaid / non-completed; thanks + receipt only after completion
   const showPaymentLinkActions = !isDonationCompleted;
@@ -177,8 +184,10 @@ const ViewOnlineDonation = () => {
   const canSendReceiptEmail = canSendComm(COMM_PERMS.donationReceiptsSend);
   const showReceiptSection =
     isDonationCompleted && (canViewReceipt || canSendReceiptEmail);
-  const showMarkCompleted = !isDonationCompleted;
-  const showMarkFailed = !isDonationFailed;
+  const showMarkCompleted = isInKindDonation
+    ? !isDonationCompleted && canApproveInKind
+    : !isDonationCompleted;
+  const showMarkFailed = isInKindDonation ? false : !isDonationFailed;
   const showStatusActions = showMarkCompleted || showMarkFailed;
   const isPendingOffline = isLocalId(id);
 
@@ -1142,6 +1151,34 @@ const ViewOnlineDonation = () => {
                 <span className="view-item-label">Status</span>
                 <span className="view-item-value">{getStatusBadge(donation.status)}</span>
               </div>
+              {isInKindDonation && canApproveInKind && !isDonationCompleted && (
+                <div className="view-item">
+                  <span className="view-item-label">Approve</span>
+                  <span className="view-item-value">
+                    <button
+                      type="button"
+                      className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
+                      onClick={markAsCompleted}
+                      disabled={markingCompleted}
+                    >
+                      <span className="donation-comm-btn__icon">
+                        <FiCheckCircle />
+                      </span>
+                      <span className="donation-comm-btn__label">
+                        {markingCompleted ? 'Approving…' : 'Approve'}
+                      </span>
+                    </button>
+                  </span>
+                </div>
+              )}
+              {isInKindDonation && isDonationCompleted && (
+                <div className="view-item">
+                  <span className="view-item-label">Approve</span>
+                  <span className="view-item-value">
+                    <span className="status-badge status-completed">Approved</span>
+                  </span>
+                </div>
+              )}
               <div className="view-item">
                 <span className="view-item-label">Amount</span>
                 <span className="view-item-value">{formatAmount(donation.amount, donation.currency)}</span>
@@ -1685,9 +1722,15 @@ const ViewOnlineDonation = () => {
                       <span className="donation-comm-btn__icon">
                         <FiCheckCircle />
                       </span>
-                      <span className="donation-comm-btn__label">
-                        {markingCompleted ? 'Updating…' : 'Completed'}
-                      </span>
+                        <span className="donation-comm-btn__label">
+                          {markingCompleted
+                            ? isInKindDonation
+                              ? 'Approving…'
+                              : 'Updating…'
+                            : isInKindDonation
+                              ? 'Approve'
+                              : 'Completed'}
+                        </span>
                     </button>
                   )}
                   {showMarkFailed && (
@@ -1821,7 +1864,13 @@ const ViewOnlineDonation = () => {
                           <FiCheckCircle />
                         </span>
                         <span className="donation-comm-btn__label">
-                          {markingCompleted ? 'Updating…' : 'Completed'}
+                          {markingCompleted
+                            ? isInKindDonation
+                              ? 'Approving…'
+                              : 'Updating…'
+                            : isInKindDonation
+                              ? 'Approve'
+                              : 'Completed'}
                         </span>
                       </button>
                     )}

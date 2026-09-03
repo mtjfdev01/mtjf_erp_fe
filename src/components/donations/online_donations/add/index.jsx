@@ -33,6 +33,8 @@ const AddDonation = ({
   const navigate = useNavigate();
   const location = useLocation();
   const isCsrHubAddRoute = !embedded && location.pathname.includes('/dms/csr-donations/add');
+  const isInKindHubAddRoute =
+    !embedded && location.pathname.includes('/dms/in-kind-donations/add');
   const { inKindItems, refetchInKindItems } = useInKindItems();
   const [searchParams] = useSearchParams();
   const donorIdFromUrl =
@@ -57,13 +59,24 @@ const AddDonation = ({
         { csrDonorId: csrDonorIdFromUrl || '', channel: 'csr' },
       );
     }
+    if (isInKindHubAddRoute) {
+      return getDonationListRoutes(location, { channel: 'in_kind' });
+    }
     if (embedded && donorIdFromUrl) {
       return getDonationListRoutes(location, {
         channel: embeddedChannel === 'offline' ? 'offline' : 'online',
       });
     }
     return getDonationListRoutes(location);
-  }, [location.pathname, isCsrHubAddRoute, csrDonorIdFromUrl, embedded, donorIdFromUrl, embeddedChannel]);
+  }, [
+    location.pathname,
+    isCsrHubAddRoute,
+    isInKindHubAddRoute,
+    csrDonorIdFromUrl,
+    embedded,
+    donorIdFromUrl,
+    embeddedChannel,
+  ]);
   // console.log("inKindItems", inKindItems);
   const [form, setForm] = useState({
     // Donor information (will come from selected donor)
@@ -74,7 +87,7 @@ const AddDonation = ({
     currency: 'PKR',
     date: new Date().toISOString().split('T')[0], // Current date
     donation_type: 'general',
-    donation_method: 'cash',
+    donation_method: isInKindHubAddRoute ? 'in_kind' : 'cash',
     source: '',
     collection_center: '',
     status: 'pending',
@@ -280,6 +293,29 @@ const AddDonation = ({
     });
   };
 
+  const sumInKindEstimatedValue = (items = []) =>
+    items.reduce((sum, item) => {
+      const value = parseFloat(item?.estimated_value);
+      return sum + (Number.isFinite(value) ? value : 0);
+    }, 0);
+
+  // Check if cheque is selected as payment method — declared early for amount sync
+  const isChequeSelected = form.donation_method === 'cheque';
+  const isInKindSelected = form.donation_method === 'in_kind';
+
+  // In-kind: amount is always the sum of estimated values (read-only for user).
+  useEffect(() => {
+    if (!isInKindSelected) return;
+    const total = sumInKindEstimatedValue(form.in_kind_items);
+    const nextAmount = Number.isFinite(total) ? String(total) : '0';
+    setForm((prev) => {
+      if (prev.donation_method !== 'in_kind') return prev;
+      if (String(prev.amount) === nextAmount && prev.status === 'pending') return prev;
+      return { ...prev, amount: nextAmount, status: 'pending' };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInKindSelected, form.in_kind_items]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -384,15 +420,25 @@ const AddDonation = ({
               address: selectedCsrDonor?.address || null,
             }
           : {}),
-        amount: qurbaniTotal != null ? Number(qurbaniTotal) : parseFloat(form.amount),
+        amount:
+          form.donation_method === 'in_kind' || isInKindHubAddRoute
+            ? sumInKindEstimatedValue(form.in_kind_items)
+            : qurbaniTotal != null
+              ? Number(qurbaniTotal)
+              : parseFloat(form.amount),
         currency: form.currency,
         date: form.date,
         donation_type: form.donation_type,
-        donation_method: form.donation_method,
+        donation_method: isInKindHubAddRoute ? 'in_kind' : form.donation_method,
         donation_source: isCsrMode
           ? 'fund_raising'
-          : String(form.source || '').trim() || 'website',
-        status: form.status,
+          : isInKindHubAddRoute || form.donation_method === 'in_kind'
+            ? String(form.source || '').trim() || 'fund_raising'
+            : String(form.source || '').trim() || 'website',
+        status:
+          form.donation_method === 'in_kind' || isInKindHubAddRoute
+            ? 'pending'
+            : form.status,
         project_id: form.project_id || null,
         project_name: form.project_name,
         ...(isQurbaniProject
@@ -526,12 +572,14 @@ const AddDonation = ({
     { value: 'qurbani-barai-mustehqeen', label: 'Qurbani Barai Mustehqeen' },
   ];
 
-  const donationMethodOptions = [
-    { value: 'cash', label: 'Cash' },
-    { value: 'cheque', label: 'Cheque' },
-    { value: 'in_kind', label: 'In Kind' },
-    { value: 'bank_transfer', label: 'Bank Transfer' },
-  ];
+  const donationMethodOptions = isInKindHubAddRoute
+    ? [{ value: 'in_kind', label: 'In Kind' }]
+    : [
+        { value: 'cash', label: 'Cash' },
+        { value: 'cheque', label: 'Cheque' },
+        { value: 'in_kind', label: 'In Kind' },
+        { value: 'bank_transfer', label: 'Bank Transfer' },
+      ];
 
   const statusOptions = [
     { value: 'pending', label: 'Pending' },
@@ -608,12 +656,6 @@ const AddDonation = ({
     { value: 'poor', label: 'Poor' }
   ];
 
-  // Check if cheque is selected as payment method
-  const isChequeSelected = form.donation_method === 'cheque';
-  
-  // Check if in kind is selected as payment method
-  const isInKindSelected = form.donation_method === 'in_kind';
-  
   // Check if collection center is selected as donation source
   const isCollectionCenter = form.source === 'collection_center';
 
@@ -746,7 +788,13 @@ const AddDonation = ({
       {!embedded && <Navbar />}
       <div className={embedded ? 'donor-profile-donations-embed' : 'form-content'}>
         <PageHeader
-          title={isCsrMode ? 'Add CSR Donation' : 'Add Donation'}
+          title={
+            isInKindHubAddRoute
+              ? 'Add In Kind Donation'
+              : isCsrMode
+                ? 'Add CSR Donation'
+                : 'Add Donation'
+          }
           backPath={
             embedded
               ? undefined
@@ -898,15 +946,21 @@ const AddDonation = ({
             <h3 className="form-section-heading">Donation Details</h3>
             <div className="form-grid-2">
               <FormInput
-                label="Amount"
+                label={isInKindSelected ? 'Amount (from estimated values)' : 'Amount'}
                 type="number"
                 name="amount"
                 value={form.amount}
                 onChange={handleChange}
-                required
+                required={!isInKindSelected}
                 placeholder="0.00"
                 step="0.01"
                 min="0"
+                disabled={isInKindSelected}
+                title={
+                  isInKindSelected
+                    ? 'Amount is the sum of Estimated Value on in-kind items'
+                    : undefined
+                }
               />
 
               <FormSelect
@@ -940,13 +994,21 @@ const AddDonation = ({
                 label="Payment Method"
                 name="donation_method"
                 value={form.donation_method}
+                disabled={isInKindHubAddRoute}
                 onChange={(e) => {
                   const method = e.target.value;
                   setForm({ 
                     ...form, 
                     donation_method: method,
-                    // Set status to pending if cheque is selected
-                    status: method === 'cheque' ? 'pending' : form.status,
+                    // In-kind / cheque start as pending
+                    status:
+                      method === 'cheque' || method === 'in_kind'
+                        ? 'pending'
+                        : form.status,
+                    amount:
+                      method === 'in_kind'
+                        ? String(sumInKindEstimatedValue(form.in_kind_items))
+                        : form.amount,
                     // Reset cheque fields if not cheque
                     cheque_number: method === 'cheque' ? form.cheque_number : '',
                     bank_name: method === 'cheque' ? form.bank_name : '',
@@ -1004,8 +1066,13 @@ const AddDonation = ({
                 name="status"
                 value={form.status}
                 onChange={handleChange}
-                options={statusOptions}
+                options={
+                  isInKindSelected
+                    ? [{ value: 'pending', label: 'Pending' }]
+                    : statusOptions
+                }
                 required
+                disabled={isInKindSelected}
               />
 
               <HybridDropdown
