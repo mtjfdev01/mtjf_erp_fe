@@ -5,6 +5,7 @@ import axiosInstance from '../../../../../utils/axios';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import Navbar from '../../../../Navbar';
+import { IN_KIND_CATEGORY_OPTIONS } from '../../../../../utils/inKindCategories';
 
 const EditInKindItem = () => {
   const { id } = useParams();
@@ -19,18 +20,7 @@ const EditInKindItem = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const categoryOptions = [
-    { value: 'clothing', label: 'Clothing' },
-    { value: 'food', label: 'Food' },
-    { value: 'medical', label: 'Medical' },
-    { value: 'educational', label: 'Educational' },
-    { value: 'electronics', label: 'Electronics' },
-    { value: 'furniture', label: 'Furniture' },
-    { value: 'books', label: 'Books' },
-    { value: 'toys', label: 'Toys' },
-    { value: 'household', label: 'Household' },
-    { value: 'other', label: 'Other' },
-  ];
+  const categoryOptions = IN_KIND_CATEGORY_OPTIONS;
 
   useEffect(() => {
     const fetchItem = async () => {

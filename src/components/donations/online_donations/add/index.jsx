@@ -20,6 +20,7 @@ import {
   donationViewPath,
 } from '../../../dms/donations/shared/donationListRoutes';
 import { toast } from 'react-toastify';
+import { getInKindCategoryLabel } from '../../../../utils/inKindCategories';
 
 const AddDonation = ({
   embedded = false,
@@ -276,12 +277,17 @@ const AddDonation = ({
               ...item,
               id: selectedItem.id,
               name: selectedItem.name,
-              description: selectedItem.description || item.description,
-              category: selectedItem.category || item.category,
-              // Don't override estimated_value, let user keep their input
+              description: selectedItem.description || '',
+              category: selectedItem.category || '',
               estimated_value: item.estimated_value
             };
           }
+          return {
+            ...item,
+            id: null,
+            name: value,
+            category: '',
+          };
         }
         return { ...item, [field]: value };
       }
@@ -631,32 +637,6 @@ const AddDonation = ({
     { value: 'soneri_bank', label: 'Soneri Bank' },
     { value: 'silk_bank', label: 'Silk Bank' },
     { value: 'other', label: 'Other Bank' }
-  ];
-
-  // In-kind donation category options
-  const inKindCategoryOptions = [
-    { value: 'clothing', label: 'Clothing' },
-    { value: 'food', label: 'Food' },
-    { value: 'medical', label: 'Medical' },
-    { value: 'educational', label: 'Educational' },
-    { value: 'electronics', label: 'Electronics' },
-    { value: 'furniture', label: 'Furniture' },
-    { value: 'books', label: 'Books' },
-    { value: 'toys', label: 'Toys' },
-    { value: 'household', label: 'Household' },
-    { value: 'food_items', label: 'Food Items' },
-    { value: 'beverages_refreshments', label: 'Beverages & Refreshments' },
-    { value: 'clothing_apparel', label: 'Clothing & Apparel' },
-    { value: 'hygiene_personal_care', label: 'Hygiene & Personal Care' },
-    { value: 'medical_supplies', label: 'Medical Supplies' },
-    { value: 'education_stationery', label: 'Education & Stationery' },
-    { value: 'household_items', label: 'Household Items' },
-    { value: 'relief_emergency', label: 'Relief & Emergency Items' },
-    { value: 'it_electronics', label: 'IT & Electronics' },
-    { value: 'construction_materials', label: 'Construction Materials' },
-    { value: 'agriculture_plantation', label: 'Agriculture & Plantation' },
-    { value: 'office_supplies', label: 'Office Supplies' },
-    { value: 'other', label: 'Other / Miscellaneous' },
   ];
 
   // In-kind donation condition options
@@ -1217,10 +1197,12 @@ const AddDonation = ({
                            onChange={(e) => handleInKindItemChange(index, 'name', e.target.value)}
                            options={[
                              { value: '', label: 'Select item name...' },
-                             ...inKindItems.map(item => ({
-                               value: item.name,
-                               label: item.name
-                             }))
+                             ...inKindItems.map((catalogItem) => ({
+                               value: catalogItem.name,
+                               label: catalogItem.category
+                                 ? `${catalogItem.name} (${getInKindCategoryLabel(catalogItem.category)})`
+                                 : catalogItem.name,
+                             })),
                            ]}
                            required
                          />
@@ -1244,15 +1226,23 @@ const AddDonation = ({
                    />
 
                    <div className="form-grid-2" style={{ marginBottom: '1rem' }}>
-                     <FormSelect
-                       label="Category"
-                       name={`category_${index}`}
-                       value={item.category}
-                       onChange={(e) => handleInKindItemChange(index, 'category', e.target.value)}
-                       options={inKindCategoryOptions}
-                       required
-                       placeholder="Select category"
-                     />
+                     <div className="form-group">
+                       <label>Category</label>
+                       <div
+                         className="form-control"
+                         style={{
+                           background: '#f3f4f6',
+                           color: item.category ? '#111827' : '#9ca3af',
+                           minHeight: '38px',
+                           display: 'flex',
+                           alignItems: 'center',
+                         }}
+                       >
+                         {item.name
+                           ? getInKindCategoryLabel(item.category)
+                           : 'Select an item to see category'}
+                       </div>
+                     </div>
 
                      <FormSelect
                        label="Condition"

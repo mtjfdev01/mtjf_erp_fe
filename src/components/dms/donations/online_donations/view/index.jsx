@@ -10,6 +10,7 @@ import {
 import { FaWhatsapp } from 'react-icons/fa';
 import { HiOutlineDocumentText } from 'react-icons/hi';
 import axiosInstance from '../../../../../utils/axios';
+import { getInKindCategoryLabel } from '../../../../../utils/inKindCategories';
 import '../../../../../styles/variables.css';
 import '../../../../../styles/components.css';
 import PageHeader from '../../../../common/PageHeader';
@@ -1500,7 +1501,9 @@ const ViewOnlineDonation = () => {
                     </div>
                     <div className="view-item">
                       <span className="view-item-label">Category</span>
-                      <span className="view-item-value">{item.category || '-'}</span>
+                      <span className="view-item-value">
+                        {getInKindCategoryLabel(item.category)}
+                      </span>
                     </div>
                     <div className="view-item">
                       <span className="view-item-label">Condition</span>
