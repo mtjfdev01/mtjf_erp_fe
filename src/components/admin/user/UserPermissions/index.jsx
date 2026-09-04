@@ -7,14 +7,14 @@ import { toast } from 'react-toastify';
 import { FiChevronRight } from 'react-icons/fi';
 import { useAuth } from '../../../../context/AuthContext';
 
-/** Normalize fund_raising donor keys: keep online_donors + offline_donors (like donations).
- * Migrates legacy unified `donors` into both modules when specific keys are missing. */
+/** Normalize fund_raising donor keys and CSR POC keys for the permissions UI. */
 const mergeFundRaisingDonorPermissions = (rawPermissions) => {
   if (!rawPermissions || typeof rawPermissions !== 'object') return rawPermissions;
   const next = JSON.parse(JSON.stringify(rawPermissions));
   if (!next.fund_raising) return next;
   const fr = next.fund_raising;
   const actions = ['create', 'list_view', 'view', 'update', 'delete', 'csv_xport'];
+  const pocActions = ['create', 'list_view', 'view', 'update', 'delete'];
   const blank = () => {
     const o = { scope: 'self', view_all: false };
     actions.forEach((a) => {
@@ -22,8 +22,17 @@ const mergeFundRaisingDonorPermissions = (rawPermissions) => {
     });
     return o;
   };
+  const blankPoc = () => {
+    const o = { scope: 'self', view_all: false };
+    pocActions.forEach((a) => {
+      o[a] = false;
+    });
+    return o;
+  };
 
   const fromUnified = fr.donors && typeof fr.donors === 'object' ? fr.donors : null;
+  const fromOrganizations =
+    fr.organizations && typeof fr.organizations === 'object' ? fr.organizations : null;
   const ensure = (key) => {
     if (fr[key] && typeof fr[key] === 'object') return { ...blank(), ...fr[key] };
     if (fromUnified) {
@@ -38,10 +47,27 @@ const mergeFundRaisingDonorPermissions = (rawPermissions) => {
     return fr[key] && typeof fr[key] === 'object' ? fr[key] : blank();
   };
 
+  const ensureCsrPocs = () => {
+    if (fr.csr_pocs && typeof fr.csr_pocs === 'object') {
+      return { ...blankPoc(), ...fr.csr_pocs };
+    }
+    if (fromOrganizations) {
+      const o = blankPoc();
+      o.scope = fromOrganizations.scope || 'self';
+      o.view_all = fromOrganizations.view_all === true;
+      pocActions.forEach((a) => {
+        o[a] = fromOrganizations[a] === true;
+      });
+      return o;
+    }
+    return blankPoc();
+  };
+
   next.fund_raising = {
     ...fr,
     online_donors: ensure('online_donors'),
     offline_donors: ensure('offline_donors'),
+    csr_pocs: ensureCsrPocs(),
   };
   delete next.fund_raising.donors;
   return next;
@@ -83,6 +109,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Donation Box Donations',
           actions: ['create','list_view', 'view', 'update', 'delete', 'bypass_location']
         },
+        donation_in_kind_items: {
+          label: 'In Kind Items',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        in_kind_donations: {
+          label: 'In Kind Donations',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'completing']
+        },
         dms_todos: {
           label: 'My To-Dos',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
@@ -96,7 +130,11 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           actions: ['create', 'list_view', 'view', 'update', 'delete', 'csv_xport']
         },
         organizations: {
-          label: 'Organizations',
+          label: 'CSR Donors',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        csr_pocs: {
+          label: 'CSR POCs',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
         // Enable later — Beneficiary Aid Applications (Phase 1)
@@ -388,6 +426,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Regions',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
+        sub_regions: {
+          label: 'Sub Regions',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         districts: {
           label: 'Districts',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
@@ -483,6 +525,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     approve: 'Approve / Reject',
     manage_overview: 'Manage Overview',
     bypass_location: 'Bypass location (GPS + territory filter)',
+    completing: 'Completing',
   };
 
   const initializePermissions = () => {

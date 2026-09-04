@@ -84,6 +84,20 @@ export const canViewModule = (permissions, department, module) => {
     return true;
   }
 
+  // CSR donors / CSR POCs share access in sidebar when either submodule is granted
+  if (
+    department === 'fund_raising' &&
+    (module === 'organizations' || module === 'csr_pocs')
+  ) {
+    const fr = permissions[department];
+    if (!fr) return false;
+    const specific = fr[module];
+    if (specific?.view === true || specific?.list_view === true) return true;
+    const siblingKey = module === 'organizations' ? 'csr_pocs' : 'organizations';
+    const sibling = fr[siblingKey];
+    return sibling?.view === true || sibling?.list_view === true;
+  }
+
   // Unified donors (fund_raising): allow sidebar if new or legacy donor module flags exist
   if (department === 'fund_raising' && (module === 'donors' || module === 'online_donors' || module === 'offline_donors')) {
     const fr = permissions[department];
@@ -138,6 +152,19 @@ export const fundRaisingDonorsHas = (permissions, action) => {
     fr.donors?.[action] === true ||
     fr.online_donors?.[action] === true ||
     fr.offline_donors?.[action] === true
+  );
+};
+
+/**
+ * True if CSR Donor (organizations) or CSR POC permissions grant `action`.
+ */
+export const fundRaisingOrganizationsOrPocsHas = (permissions, action) => {
+  if (!permissions?.fund_raising || !action) {
+    return false;
+  }
+  const fr = permissions.fund_raising;
+  return (
+    fr.organizations?.[action] === true || fr.csr_pocs?.[action] === true
   );
 };
 
@@ -300,6 +327,7 @@ export default {
   hasDepartmentAccess,
   canViewModule,
   fundRaisingDonorsHas,
+  fundRaisingOrganizationsOrPocsHas,
   isSuperAdmin,
   getAccessibleModules,
   getModulePermissions,

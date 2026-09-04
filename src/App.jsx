@@ -132,7 +132,7 @@ import ResumeCollectionAdd from './components/admin/hr/resume_collection/add';
 import ResumeCollectionView from './components/admin/hr/resume_collection/view';
 import { OnlineDonationsList, ViewOnlineDonation, UpdateOnlineDonation } from './components/dms/donations/online_donations/index';
 import PendingAllotmentsList from './components/dms/donations/allotments/pending';
-import { DonorsList, RegisterDonor, ViewDonor, EditDonor, OrganizationsList, AddOrganization, ViewOrganization, EditOrganization, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
+import { DonorsList, RegisterDonor, ViewDonor, EditDonor, OrganizationsList, AddOrganization, ViewOrganization, EditOrganization, CsrPocsList, VolunteersList, RegisterVolunteer, ViewVolunteer, EditVolunteer, SurveysList, AddSurvey, ViewSurvey, EditSurvey, SurveyReport, FillSurvey, EventsList, AddEvent, EditEvent, ViewEvent, CampaignsList, AddCampaign, EditCampaign, ViewCampaign, AppealsList, AddAppeal, EditAppeal, ViewAppeal } from './components/dms';
 import AidApplicationsList from './components/dms/aid/applications/list';
 import AidApplicationAdd from './components/dms/aid/applications/add';
 import AidApplicationView from './components/dms/aid/applications/view';
@@ -182,6 +182,8 @@ import CountriesList from './components/dms/geographic/countries/list';
 import AddCountry from './components/dms/geographic/countries/add';
 import RegionsList from './components/dms/geographic/regions/list';
 import AddRegion from './components/dms/geographic/regions/add';
+import SubRegionsList from './components/dms/geographic/sub_regions/list';
+import AddSubRegion from './components/dms/geographic/sub_regions/add';
 import DistrictsList from './components/dms/geographic/districts/list';
 import AddDistrict from './components/dms/geographic/districts/add';
 import TehsilsList from './components/dms/geographic/tehsils/list';
@@ -467,7 +469,23 @@ const App = () => {
                                 <Route path="/dms/online_donors/edit/:id" element={<EditDonor />} />
                                 <Route path="/dms/offline_donors/edit/:id" element={<EditDonor />} />
 
-                                {/* Organizations (Organization → Branch → Sub-branch) */}
+                                {/* CSR Donors (Organization → Branch → Sub-branch) */}
+                                <Route path="/dms/csr-donations/list" element={<OnlineDonationsList key="csr-donations-hub-list" />} />
+                                <Route path="/dms/csr-donations/add" element={<AddDonation />} />
+                                <Route path="/dms/csr-donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/dms/csr-donations/update/:id" element={<UpdateOnlineDonation />} />
+                                <Route path="/dms/in-kind-donations/list" element={<OnlineDonationsList key="in-kind-donations-hub-list" />} />
+                                <Route path="/dms/in-kind-donations/add" element={<AddDonation />} />
+                                <Route path="/dms/in-kind-donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/dms/in-kind-donations/update/:id" element={<UpdateOnlineDonation />} />
+                                <Route path="/dms/csr-donors/:csrDonorId/donations" element={<OnlineDonationsList key="csr-donor-donations-list" />} />
+                                <Route path="/dms/csr-donors/:csrDonorId/donations/view/:id" element={<ViewOnlineDonation />} />
+                                <Route path="/dms/csr-donors/:csrDonorId/donations/update/:id" element={<UpdateOnlineDonation />} />
+                                <Route path="/dms/csr-donors/list" element={<OrganizationsList />} />
+                                <Route path="/dms/csr-donors/add" element={<AddOrganization />} />
+                                <Route path="/dms/csr-donors/view/:id" element={<ViewOrganization />} />
+                                <Route path="/dms/csr-donors/edit/:id" element={<EditOrganization />} />
+                                <Route path="/dms/csr-pocs/list" element={<CsrPocsList />} />
                                 <Route path="/dms/organizations/list" element={<OrganizationsList />} />
                                 <Route path="/dms/organizations/add" element={<AddOrganization />} />
                                 <Route path="/dms/organizations/view/:id" element={<ViewOrganization />} />
@@ -500,6 +518,8 @@ const App = () => {
                                 <Route path="/dms/geographic/countries/add" element={<AddCountry />} />
                                 <Route path="/dms/geographic/regions/list" element={<RegionsList />} />
                                 <Route path="/dms/geographic/regions/add" element={<AddRegion />} />
+                                <Route path="/dms/geographic/sub-regions/list" element={<SubRegionsList />} />
+                                <Route path="/dms/geographic/sub-regions/add" element={<AddSubRegion />} />
                                 <Route path="/dms/geographic/districts/list" element={<DistrictsList />} />
                                 <Route path="/dms/geographic/districts/add" element={<AddDistrict />} />
                                 <Route path="/dms/geographic/tehsils/list" element={<TehsilsList />} />

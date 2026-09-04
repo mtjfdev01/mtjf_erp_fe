@@ -12,6 +12,13 @@ import DonationPendingAttachments, {
 } from '../../shared/DonationPendingAttachments';
 import '../../shared/DonationPendingAttachments.css';
 import { toast } from 'react-toastify';
+import {
+  getDonationListRoutes,
+  donationViewPath,
+  resolveDonationListBackPath,
+} from '../../shared/donationListRoutes';
+import { useAuth } from '../../../../../context/AuthContext';
+import { hasPermission } from '../../../../../utils/permissions';
 import './index.css';
 
 const donationTypeOptions = [
@@ -92,14 +99,24 @@ function formatDateYmd(value) {
 }
 
 const UpdateOnlineDonation = () => {
-  const { id } = useParams();
+  const { id, csrDonorId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isOfflineRoute = location.pathname.includes('/donations/offline_donations');
-  const donationsBasePath = isOfflineRoute
-    ? '/donations/offline_donations'
-    : '/donations/online_donations';
-  const listBackPath = location.state?.fromList || `${donationsBasePath}/list`;
+  const { permissions } = useAuth();
+  const donationRoutes = useMemo(
+    () => getDonationListRoutes(location, { csrDonorId }),
+    [location.pathname, csrDonorId],
+  );
+  const listBackPath = resolveDonationListBackPath(location, donationRoutes);
+  const pageTitle = `Update ${donationRoutes.pageLabel}`;
+
+  const canCompleteInKind = useMemo(
+    () =>
+      permissions?.super_admin === true ||
+      permissions?.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'in_kind_donations', 'completing'),
+    [permissions],
+  );
 
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -107,6 +124,7 @@ const UpdateOnlineDonation = () => {
   const [pendingAttachments, setPendingAttachments] = useState([]);
   const [existingAttachments, setExistingAttachments] = useState([]);
   const [removingAttachmentId, setRemovingAttachmentId] = useState(null);
+  const [initialStatus, setInitialStatus] = useState('pending');
   const attachmentsRef = useRef(null);
   const [form, setForm] = useState({
     amount: '',
@@ -141,6 +159,7 @@ const UpdateOnlineDonation = () => {
           return;
         }
         const d = res.data.data;
+        setInitialStatus(d.status || 'pending');
         setForm({
           amount: d.amount != null ? String(d.amount) : '',
           paid_amount: d.paid_amount != null ? String(d.paid_amount) : '',
@@ -190,6 +209,20 @@ const UpdateOnlineDonation = () => {
   const isInKind = form.donation_method === 'in_kind';
   const isCheque = form.donation_method === 'cheque';
 
+  const inKindStatusOptions = useMemo(() => {
+    if (!isInKind) return statusOptions;
+    const current = String(form.status || 'pending').toLowerCase();
+    const base = [{ value: 'pending', label: 'Pending' }];
+    if (canCompleteInKind || current === 'completed') {
+      base.push({ value: 'completed', label: 'Completed' });
+    }
+    // Keep current non-standard status visible so the select stays controlled
+    if (current && !base.some((o) => o.value === current)) {
+      base.push({ value: current, label: current });
+    }
+    return base;
+  }, [isInKind, canCompleteInKind, form.status]);
+
   const methodOptions = useMemo(() => {
     const current = form.donation_method;
     if (!current) return donationMethodOptions;
@@ -217,8 +250,26 @@ const UpdateOnlineDonation = () => {
     setIsSubmitting(true);
     setError('');
     try {
+      const nextStatus = String(form.status || '').toLowerCase();
+      const completingInKind =
+        isInKind &&
+        ['completed', 'paid', 'success'].includes(nextStatus) &&
+        !['completed', 'paid', 'success'].includes(
+          String(initialStatus || '').toLowerCase(),
+        );
+
+      if (completingInKind && !canCompleteInKind) {
+        setError('You do not have permission to mark in-kind donations as completed.');
+        setIsSubmitting(false);
+        return;
+      }
+
       const payload = {
-        amount: form.amount !== '' ? parseFloat(form.amount) : undefined,
+        amount: isInKind
+          ? undefined
+          : form.amount !== ''
+            ? parseFloat(form.amount)
+            : undefined,
         paid_amount: form.paid_amount !== '' ? parseFloat(form.paid_amount) : undefined,
         currency: form.currency || undefined,
         date: form.date || undefined,
@@ -276,7 +327,9 @@ const UpdateOnlineDonation = () => {
         }
       }
 
-      navigate(`${donationsBasePath}/view/${id}`);
+      navigate(donationViewPath(donationRoutes, id), {
+        state: location.state?.fromList ? { fromList: location.state.fromList } : undefined,
+      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update donation');
     } finally {
@@ -299,10 +352,12 @@ const UpdateOnlineDonation = () => {
     <>
       <Navbar />
       <div className="form-content update-donation-wrapper">
-        <PageHeader title="Update Donation" showBackButton={true} backPath={listBackPath} />
+        <PageHeader title={pageTitle} showBackButton={true} backPath={listBackPath} />
         {isInKind && (
           <div className="status-message" style={{ marginBottom: '1rem' }}>
-            In-kind line items are not editable here; you can still update amounts, status, and other core fields.
+            In-kind line items are not editable here. Amount is calculated from estimated
+            values and cannot be changed. Only users with Completing permission can mark
+            the donation as completed.
           </div>
         )}
         <form onSubmit={handleSubmit} className="form">
@@ -312,13 +367,14 @@ const UpdateOnlineDonation = () => {
             <h3 className="form-section-heading">Donation details</h3>
             <div className="form-grid-2">
               <FormInput
-                label="Amount"
+                label={isInKind ? 'Amount (from estimated values)' : 'Amount'}
                 type="number"
                 name="amount"
                 value={form.amount}
                 onChange={handleChange}
                 step="0.01"
                 min="0"
+                disabled={isInKind}
               />
               <FormInput
                 label="Paid amount"
@@ -372,7 +428,12 @@ const UpdateOnlineDonation = () => {
                 name="status"
                 value={form.status}
                 onChange={handleChange}
-                options={statusOptions}
+                options={inKindStatusOptions}
+                disabled={
+                  isInKind &&
+                  !canCompleteInKind &&
+                  String(form.status || '').toLowerCase() === 'pending'
+                }
               />
             </div>
           </div>

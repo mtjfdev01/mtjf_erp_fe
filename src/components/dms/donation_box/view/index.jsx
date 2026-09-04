@@ -46,11 +46,10 @@ const ViewDonationBox = () => {
   const getStatusBadge = (status) => {
     const statusMap = {
       'active': { class: 'status-completed', text: 'Active' },
-      'inactive': { class: 'status-cancelled', text: 'Inactive' },
-      'maintenance': { class: 'status-pending', text: 'Maintenance' },
-      'damaged': { class: 'status-failed', text: 'Damaged' },
-      'retired': { class: 'status-cancelled', text: 'Retired' },
-      'pending': { class: 'status-pending', text: 'Pending' }
+      'inactive': { class: 'status-cancelled', text: 'In Active' },
+      'removed': { class: 'status-cancelled', text: 'Removed' },
+      'broken': { class: 'status-failed', text: 'Broken' },
+      'snr': { class: 'status-pending', text: 'SNR' },
     };
     
     const statusInfo = statusMap[status] || { class: 'status-pending', text: status };
@@ -138,7 +137,7 @@ const ViewDonationBox = () => {
             <div className="view-grid">
               <div className="view-item">
                 <span className="view-item-label">Box ID</span>
-                <span className="view-item-value">BOX-{donationBox.box_id_no}</span>
+                <span className="view-item-value">{donationBox.box_id_no}</span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Key Number</span>

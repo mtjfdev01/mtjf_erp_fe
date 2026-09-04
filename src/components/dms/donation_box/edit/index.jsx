@@ -318,11 +318,10 @@ const EditDonationBox = () => {
 
   const statusOptions = [
     { value: 'active', label: 'Active' },
-    { value: 'inactive', label: 'Inactive' },
-    { value: 'maintenance', label: 'Maintenance' },
-    { value: 'damaged', label: 'Damaged' },
-    { value: 'retired', label: 'Retired' },
-    { value: 'pending', label: 'Pending' },
+    { value: 'inactive', label: 'In Active' },
+    { value: 'removed', label: 'Removed' },
+    { value: 'broken', label: 'Broken' },
+    { value: 'snr', label: 'SNR' },
   ];
 
   const collectionFrequencyOptions = [

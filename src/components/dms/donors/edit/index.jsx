@@ -10,15 +10,24 @@ import Modal from '../../../common/Modal';
 import { FiKey } from 'react-icons/fi';
 import '../register/index.css';
 
-const EditDonor = () => {
+const EditDonor = ({
+  embedded = false,
+  embeddedDonorId = null,
+  embeddedBasePath = null,
+  onSaved = null,
+  onCancel = null,
+} = {}) => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const { id: routeId } = useParams();
+  const id = embeddedDonorId != null && embeddedDonorId !== '' ? String(embeddedDonorId) : routeId;
   const location = useLocation();
-  const donorsBasePath = location.pathname.includes('/dms/offline_donors')
-    ? '/dms/offline_donors'
-    : location.pathname.includes('/dms/online_donors')
-      ? '/dms/online_donors'
-      : '/dms/donors';
+  const donorsBasePath =
+    embeddedBasePath ||
+    (location.pathname.includes('/dms/offline_donors')
+      ? '/dms/offline_donors'
+      : location.pathname.includes('/dms/online_donors')
+        ? '/dms/online_donors'
+        : '/dms/donors');
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -106,7 +115,13 @@ const EditDonor = () => {
     }
   };
 
-  const handleBack = () => navigate(`${donorsBasePath}/view/${id}`);
+  const handleBack = () => {
+    if (embedded && typeof onCancel === 'function') {
+      onCancel();
+      return;
+    }
+    navigate(`${donorsBasePath}/view/${id}`);
+  };
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -180,7 +195,7 @@ const EditDonor = () => {
       } else {
         payload.name = form.name?.trim() || payload.name;
         if (form.donor_type === 'csr' && !selectedOrganization?.id) {
-          throw new Error('Please select an organization for CSR donors.');
+          throw new Error('Please select a CSR donor for this POC.');
         }
       }
 
@@ -204,6 +219,10 @@ const EditDonor = () => {
 
       const res = await axiosInstance.patch(`/donors/${id}`, payload);
       if (!res.data?.success) throw new Error(res.data?.message || 'Failed to update donor');
+      if (embedded && typeof onSaved === 'function') {
+        onSaved(res.data?.data || null);
+        return;
+      }
       navigate(`${donorsBasePath}/view/${id}`);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to update donor');
@@ -239,7 +258,9 @@ const EditDonor = () => {
 
   const donorTypeOptions = [
     { value: 'individual', label: 'Individual Donor' },
-    { value: 'csr', label: 'CSR Donor (Corporate)' },
+    ...(form.donor_type === 'csr'
+      ? [{ value: 'csr', label: 'POC (legacy — use CSR Donor view)' }]
+      : []),
   ];
 
   const affiliationRoleOptions = [
@@ -307,7 +328,7 @@ const EditDonor = () => {
     >
       <div style={{ fontWeight: '500', marginBottom: '4px' }}>{org.name}</div>
       <div style={{ fontSize: '12px', color: '#666' }}>
-        {[org.city, org.registration_number].filter(Boolean).join(' · ') || 'Organization'}
+        {[org.city, org.registration_number].filter(Boolean).join(' · ') || 'CSR Donor'}
       </div>
     </div>
   );
@@ -315,8 +336,8 @@ const EditDonor = () => {
   if (loading) {
     return (
       <>
-        <Navbar />
-        <div className="list-wrapper">
+        {!embedded && <Navbar />}
+        <div className={embedded ? 'donor-profile-donations-embed' : 'list-wrapper'}>
           <div className="loading-container">
             <div className="loading-spinner"></div>
             <p>Loading donor...</p>
@@ -328,10 +349,10 @@ const EditDonor = () => {
 
   return (
     <>
-      <Navbar />
-      <div className="list-wrapper">
-        <div className="list-content donor-register-page">
-          <PageHeader title="Edit Donor" onBack={handleBack} />
+      {!embedded && <Navbar />}
+      <div className={embedded ? 'donor-profile-donations-embed' : 'list-wrapper'}>
+        <div className={embedded ? 'list-content donor-register-page' : 'list-content donor-register-page'}>
+          <PageHeader title="Edit Donor" onBackClick={handleBack} />
 
           {error && <div className="status-message status-message--error">{error}</div>}
 
@@ -476,13 +497,13 @@ const EditDonor = () => {
 
             <section className="donor-register-card">
               <h3 className="donor-register-card__title">
-                2b. Organization Link {form.donor_type === 'csr' ? '(required)' : '(optional)'}
+                2b. CSR Donor Link {form.donor_type === 'csr' ? '(required)' : '(optional)'}
               </h3>
               <div className="form-grid-2">
                 <SearchableDropdown
                   label="Search organization"
                   placeholder="Search by company name..."
-                  apiEndpoint="/organizations"
+                  apiEndpoint="/csr-donors"
                   apiParams={{ pageSize: 20 }}
                   onSelect={handleOrganizationSelect}
                   onClear={handleOrganizationClear}

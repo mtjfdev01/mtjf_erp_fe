@@ -3,6 +3,20 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
+import '../inKindItems.css';
+
+const CATEGORY_LABELS = {
+  clothing: 'Clothing',
+  food: 'Food',
+  medical: 'Medical',
+  educational: 'Educational',
+  electronics: 'Electronics',
+  furniture: 'Furniture',
+  books: 'Books',
+  toys: 'Toys',
+  household: 'Household',
+  other: 'Other',
+};
 
 const ViewInKindItem = () => {
   const { id } = useParams();
@@ -44,22 +58,19 @@ const ViewInKindItem = () => {
   };
 
   const getCategoryBadge = (category) => {
-    const categoryLabels = {
-      clothing: 'Clothing',
-      food: 'Food',
-      medical: 'Medical',
-      educational: 'Educational',
-      electronics: 'Electronics',
-      furniture: 'Furniture',
-      books: 'Books',
-      toys: 'Toys',
-      household: 'Household',
-      other: 'Other'
-    };
-
+    const key = String(category || 'other').toLowerCase();
     return (
-      <span className="status-badge status-badge--info">
-        {categoryLabels[category] || category}
+      <span className={`inkind-category-badge inkind-category-badge--${key}`}>
+        {CATEGORY_LABELS[key] || category || 'Other'}
+      </span>
+    );
+  };
+
+  const getStatusBadge = (row) => {
+    const archived = row?.is_archived === true;
+    return (
+      <span className={`status-badge ${archived ? 'status-cancelled' : 'status-completed'}`}>
+        {archived ? 'Archived' : 'Active'}
       </span>
     );
   };
@@ -169,9 +180,7 @@ const ViewInKindItem = () => {
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">Status</span>
-                  <span className="view-item-value">
-                    <span className="status-badge status-badge--success">Active</span>
-                  </span>
+                  <span className="view-item-value">{getStatusBadge(item)}</span>
                 </div>
               </div>
             </div>
