@@ -88,7 +88,7 @@ export const ENTITY_IMPORT_CONFIG = {
     label: 'Donation Boxes',
     templateFilename: 'donation-box-import-template',
     description:
-      'Import physical donation boxes. Required: shop_name and city (city_id or city_name). Route, key_no, and box_id_no are optional. status: active, inactive (or "in active"), removed, broken, snr. Duplicates = same shop_name + shopkeeper + phone (same shop name alone is allowed).',
+      'Import physical donation boxes. Required: shop_name and city (city_id or city_name). Route, key_no, and box_id_no are optional. status: active, inactive (or "in active"), removed, broken, snr. Multiple boxes may share the same shop_name. Duplicates are skipped only when the same box_id_no already exists.',
     headers: [
       'shop_name',
       'route_id',
@@ -128,7 +128,7 @@ export const ENTITY_IMPORT_CONFIG = {
     label: 'Donation Box Collections',
     templateFilename: 'donation-box-collections-import-template',
     description:
-      'Import collection records. Required: collection_amount, collection_date. Identify the box with donation_box_id, key_no, or shop_name.',
+      'Import collection records. Required: collection_amount, collection_date. Identify the box with donation_box_id or key_no (preferred). shop_name works only when it matches a single box — multiple boxes can share the same shop name.',
     headers: [
       'donation_box_id',
       'key_no',

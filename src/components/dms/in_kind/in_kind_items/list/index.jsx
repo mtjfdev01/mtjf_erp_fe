@@ -17,6 +17,10 @@ import {
 import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../../context/AuthContext';
 import { hasPermission } from '../../../../../utils/permissions';
+import {
+  IN_KIND_CATEGORY_OPTIONS,
+  getInKindCategoryLabel,
+} from '../../../../../utils/inKindCategories';
 import '../inKindItems.css';
 
 const EMPTY_FILTERS = {
@@ -24,31 +28,7 @@ const EMPTY_FILTERS = {
   category: '',
 };
 
-const CATEGORY_LABELS = {
-  clothing: 'Clothing',
-  food: 'Food',
-  medical: 'Medical',
-  educational: 'Educational',
-  electronics: 'Electronics',
-  furniture: 'Furniture',
-  books: 'Books',
-  toys: 'Toys',
-  household: 'Household',
-  other: 'Other',
-};
-
-const categoryOptions = [
-  { value: 'clothing', label: 'Clothing' },
-  { value: 'food', label: 'Food' },
-  { value: 'medical', label: 'Medical' },
-  { value: 'educational', label: 'Educational' },
-  { value: 'electronics', label: 'Electronics' },
-  { value: 'furniture', label: 'Furniture' },
-  { value: 'books', label: 'Books' },
-  { value: 'toys', label: 'Toys' },
-  { value: 'household', label: 'Household' },
-  { value: 'other', label: 'Other' },
-];
+const categoryOptions = IN_KIND_CATEGORY_OPTIONS;
 
 const formatDate = (dateString) => {
   if (!dateString) return '—';
@@ -63,7 +43,7 @@ const getCategoryBadge = (category) => {
   const key = String(category || 'other').toLowerCase();
   return (
     <span className={`inkind-category-badge inkind-category-badge--${key}`}>
-      {CATEGORY_LABELS[key] || category || 'Other'}
+      {getInKindCategoryLabel(category)}
     </span>
   );
 };

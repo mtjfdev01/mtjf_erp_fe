@@ -3,20 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
+import { getInKindCategoryLabel } from '../../../../../utils/inKindCategories';
 import '../inKindItems.css';
-
-const CATEGORY_LABELS = {
-  clothing: 'Clothing',
-  food: 'Food',
-  medical: 'Medical',
-  educational: 'Educational',
-  electronics: 'Electronics',
-  furniture: 'Furniture',
-  books: 'Books',
-  toys: 'Toys',
-  household: 'Household',
-  other: 'Other',
-};
 
 const ViewInKindItem = () => {
   const { id } = useParams();
@@ -61,7 +49,7 @@ const ViewInKindItem = () => {
     const key = String(category || 'other').toLowerCase();
     return (
       <span className={`inkind-category-badge inkind-category-badge--${key}`}>
-        {CATEGORY_LABELS[key] || category || 'Other'}
+        {getInKindCategoryLabel(category)}
       </span>
     );
   };
