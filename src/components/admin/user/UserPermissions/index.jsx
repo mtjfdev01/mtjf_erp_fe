@@ -154,6 +154,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Dashboard',
           actions: ['view']
         },
+        recurring_performance: {
+          label: 'Recurring Performance',
+          actions: ['view']
+        },
         appeals: {
           label: 'Urgent Appeals',
           actions: ['create', 'list_view', 'view', 'update', 'delete']

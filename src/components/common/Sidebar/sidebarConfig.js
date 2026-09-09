@@ -813,6 +813,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'dashboard',
     icon: FiHome
+  },
+  {
+    label: 'Recurring Performance',
+    path: '/fund_raising/recurring-performance',
+    type: 'list',
+    module: 'recurring_performance',
+    icon: FiRepeat
   }
 ];
 

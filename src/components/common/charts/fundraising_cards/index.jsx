@@ -109,8 +109,14 @@ const FundraisingCard = ({
 /**
  * Props.cards: shape from API data.cards
  * { total_donations_amount, total_donations_count, total_donors_count, ... }
+ * Optional cardKeys: when provided, only those KPI keys are rendered (order preserved).
  */
-const FundraisingCards = ({ cards, title = 'Fundraising overview', className = '' }) => {
+const FundraisingCards = ({
+  cards,
+  title = 'Fundraising overview',
+  className = '',
+  cardKeys = null,
+}) => {
   if (!cards) return null;
 
   const cardItems = [
@@ -129,11 +135,18 @@ const FundraisingCards = ({ cards, title = 'Fundraising overview', className = '
     { key: 'total_donations_count', label: 'Donations (count)', isCurrency: false, subtitle: 'Completed donations' },
   ];
 
+  const visibleItems =
+    Array.isArray(cardKeys) && cardKeys.length > 0
+      ? cardKeys
+          .map((key) => cardItems.find((item) => item.key === key))
+          .filter(Boolean)
+      : cardItems;
+
   return (
     <div className={`fundraising-cards ${className}`.trim()}>
       {title && <h2 className="fundraising-cards__title">{title}</h2>}
       <div className="fundraising-cards__list">
-        {cardItems.map(({ key, label, isCurrency, subtitle }) => (
+        {visibleItems.map(({ key, label, isCurrency, subtitle }) => (
           <FundraisingCard
             key={key}
             title={label}

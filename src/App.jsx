@@ -160,6 +160,7 @@ import InteractionsList from './components/dms/donor_relationship/interactions';
 import AddDonorInteraction from './components/dms/donor_relationship/add';
 import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
+import RecurringPerformanceDashboardPage from './components/dms/recurring_performance_dashboard';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
 import CommunicationSend from './components/dms/email_templates/send';
@@ -422,6 +423,7 @@ const App = () => {
                                 {/* Fund Raising Welcome */}
                                 <Route path="/fund_raising" element={<FundRaising />} />
                                 <Route path="/fund_raising/dashboard" element={<FundRaisingDashboardPage />} />
+                                <Route path="/fund_raising/recurring-performance" element={<RecurringPerformanceDashboardPage />} />
                                 {/* DMS Section Routes */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
