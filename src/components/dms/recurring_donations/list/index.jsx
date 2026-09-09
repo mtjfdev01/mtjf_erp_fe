@@ -17,7 +17,7 @@ import {
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
-import { FiEye, FiRepeat, FiSend } from 'react-icons/fi';
+import { FiEye, FiRepeat, FiSend, FiEdit2 } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -81,6 +81,24 @@ const RecurringDonationsList = () => {
       permissions.fund_raising_manager === true ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
+    );
+  }, [permissions]);
+
+  const canCreate = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'create')
+    );
+  }, [permissions]);
+
+  const canUpdate = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'update')
     );
   }, [permissions]);
 
@@ -206,6 +224,17 @@ const RecurringDonationsList = () => {
       onClick: () => navigate(`/dms/recurring-donations/view/${row.id}`),
       visible: true,
     },
+    ...(canUpdate
+      ? [
+          {
+            icon: <FiEdit2 />,
+            label: 'Edit',
+            color: '#f59e0b',
+            onClick: () => navigate(`/dms/recurring-donations/update/${row.id}`),
+            visible: true,
+          },
+        ]
+      : []),
     ...(!row.stripe_subscription_id
       ? [
           {
@@ -294,6 +323,9 @@ const RecurringDonationsList = () => {
           showFilterToggle
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
+          showAdd={canCreate}
+          addPath="/dms/recurring-donations/add"
+          addTitle="Add Recurring Donation"
         />
 
         {error && <div className="error-message">{error}</div>}

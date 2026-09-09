@@ -138,7 +138,7 @@ import AidApplicationAdd from './components/dms/aid/applications/add';
 import AidApplicationView from './components/dms/aid/applications/view';
 import AidPeopleList from './components/dms/aid/people/list';
 import AidPersonView from './components/dms/aid/people/view';
-import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
+import { RecurringDonationsList, RecurringDonationView, AddRecurringDonation, UpdateRecurringDonation } from './components/dms/recurring_donations';
 import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
@@ -448,6 +448,8 @@ const App = () => {
 
                                 {/* Recurring Donations (Stripe / ledger subscriptions) */}
                                 <Route path="/dms/recurring-donations/list" element={<RecurringDonationsList />} />
+                                <Route path="/dms/recurring-donations/add" element={<AddRecurringDonation />} />
+                                <Route path="/dms/recurring-donations/update/:id" element={<UpdateRecurringDonation />} />
                                 <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
                                 <Route path="/dms/recurring-donors/list" element={<RecurringDonorsList />} />
                                 <Route path="/dms/manual-recurring/list" element={<ManualRecurringList />} />

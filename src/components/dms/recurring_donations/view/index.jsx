@@ -4,9 +4,12 @@ import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { FiRepeat, FiUser, FiDollarSign, FiSend, FiCheck } from 'react-icons/fi';
+import { useAuth } from '../../../../context/AuthContext';
+import { hasPermission } from '../../../../utils/permissions';
 
 const RecurringDonationView = () => {
   const { id } = useParams();
+  const { permissions } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -15,6 +18,15 @@ const RecurringDonationView = () => {
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [markingPaid, setMarkingPaid] = useState(false);
   const [markMessage, setMarkMessage] = useState('');
+
+  const canUpdate = useMemo(() => {
+    if (!permissions) return false;
+    return (
+      permissions.super_admin === true ||
+      permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'update')
+    );
+  }, [permissions]);
 
   const load = useCallback(async () => {
     try {
@@ -181,6 +193,8 @@ const RecurringDonationView = () => {
           showBackButton
           backPath="/dms/recurring-donations/list"
           icon={<FiRepeat />}
+          showEdit={canUpdate}
+          editPath={`/dms/recurring-donations/update/${id}`}
         />
 
         <div className="view-content">
