@@ -444,3 +444,95 @@ export const getTaskPermissions = (permissions, department, userRole) => {
   
   return result;
 };
+
+export const getComplaintPermissions = (permissions, department, userRole) => {
+  const role = String(userRole || '').toLowerCase();
+  const isAdmin = isSuperAdmin(permissions) || role === 'super_admin' || role === 'admin';
+  const isDeptHeadRole = role === 'dept_head';
+  const isManagerRole = role === 'manager' || role === 'assistant_manager';
+  const isTeamLeadRole = role === 'team_lead' || role === 'coordinator';
+  const isStaffRole = role === 'staff' || role === 'officer' || role === 'support' || role === 'analyst' || role === 'developer' || role === 'it_support' || role === 'user';
+  const isFieldOfficerRole = role === 'field_officer';
+  const isVolunteerRole = role === 'volunteer';
+
+  const deptKey =
+    department &&
+    (permissions?.[department]?.tickets || permissions?.[department]?.complaints)
+      ? department
+      : null;
+  const modulePermissions =
+    (deptKey
+      ? permissions?.[deptKey]?.tickets || permissions?.[deptKey]?.complaints
+      : null) ||
+    permissions?.tickets?.tickets ||
+    permissions?.complaints?.complaints ||
+    permissions?.admin?.tickets ||
+    permissions?.admin?.complaints ||
+    permissions?.tickets ||
+    permissions?.complaints ||
+    {};
+  const reports = modulePermissions?.reports || {};
+  const actions = {
+    ...modulePermissions,
+    ...reports,
+  };
+
+  let scope = 'self';
+  if (reports.view_all === true) {
+    scope = 'org';
+  } else if (reports.view_dept === true) {
+    scope = 'department';
+  } else if (reports.view_team === true) {
+    scope = 'team';
+  } else if (reports.view_own === true) {
+    scope = 'self';
+  } else if (modulePermissions.view_all === true || modulePermissions.scope === 'org') {
+    scope = 'org';
+  } else if (modulePermissions.scope === 'department') {
+    scope = 'department';
+  } else if (modulePermissions.scope === 'team') {
+    scope = 'team';
+  } else if (isAdmin) {
+    scope = 'org';
+  } else if (isDeptHeadRole) {
+    scope = 'department';
+  } else if (isManagerRole || isTeamLeadRole) {
+    scope = 'team';
+  } else if (isStaffRole || isFieldOfficerRole || isVolunteerRole) {
+    scope = 'self';
+  }
+
+  const canViewDetail = actions.view === true || isAdmin;
+  const canViewBase = canViewDetail || actions.list_view === true;
+  const canViewReports =
+    reports.view_all === true ||
+    reports.view_dept === true ||
+    reports.view_team === true ||
+    reports.view_own === true;
+  const canUpdate = actions.update === true || isAdmin;
+  const canEditCompleted =
+    actions.edit_completed === true || actions.update === true || isAdmin;
+  const canApproveBase = actions.approve === true || isAdmin;
+  const canApproveByRole =
+    isAdmin || isDeptHeadRole || isManagerRole || isTeamLeadRole;
+
+  return {
+    canView: canViewBase || canViewReports,
+    canViewDetail,
+    canCreate: actions.create === true || isAdmin,
+    canUpdate,
+    canDelete: actions.delete === true || isAdmin,
+    canAssign:
+      actions.assign === true ||
+      isAdmin ||
+      isManagerRole ||
+      isDeptHeadRole ||
+      isTeamLeadRole,
+    canApprove: canApproveBase || canApproveByRole,
+    canComplete: actions.complete === true || isAdmin,
+    canEditCompleted,
+    reportScope: scope,
+  };
+};
+
+export const getTicketPermissions = getComplaintPermissions;

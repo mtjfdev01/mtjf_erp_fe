@@ -470,6 +470,19 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    tickets: {
+      label: 'Tickets',
+      submodules: {
+        tickets: {
+          label: 'Tickets',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'assign', 'approve', 'complete']
+        },
+        dashboard: {
+          label: 'Dashboard',
+          actions: ['view']
+        }
+      }
+    },
     ceo_office: {
       label: 'CEO Office',
       submodules: {
@@ -523,6 +536,8 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     receive:'Receive',
     csv_xport:'CSV Export',
     approve: 'Approve / Reject',
+    assign: 'Assign',
+    complete: 'Complete',
     manage_overview: 'Manage Overview',
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',

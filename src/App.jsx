@@ -198,6 +198,12 @@ import UpdateTask from './components/admin/tasks/update';
 import ViewTask from './components/admin/tasks/view';
 import TaskReports from './components/admin/tasks/reports';
 import TaskReceipt from './components/admin/tasks/taskrecipt';
+import ComplaintsPage from './components/admin/complaints';
+import AddComplaint from './components/admin/complaints/add';
+import UpdateComplaint from './components/admin/complaints/update';
+import ViewComplaint from './components/admin/complaints/view';
+import ComplaintReports from './components/admin/complaints/reports';
+import ComplaintReceipt from './components/admin/complaints/taskrecipt';
 import PublicTrackingPage from './components/progress_tracking/public';
 import TemplatesList from './components/progress_tracking/admin/templates/list';
 import TemplateAdd from './components/progress_tracking/admin/templates/add';
@@ -604,6 +610,15 @@ const App = () => {
                                 <Route path="/tasks/dashboard" element={<TaskReports />} />
                                 <Route path="/tasks/reports" element={<Navigate to="/tasks/dashboard" replace />} />
                                 <Route path="/tasks/receipt/:id" element={<TaskReceipt />} />
+
+                                {/* Complaints — flat routes for all users */}
+                                <Route path="/tickets/list" element={<ComplaintsPage />} />
+                                <Route path="/tickets/add" element={<AddComplaint />} />
+                                <Route path="/tickets/update/:id" element={<UpdateComplaint />} />
+                                <Route path="/tickets/view/:id" element={<ViewComplaint />} />
+                                <Route path="/tickets/dashboard" element={<ComplaintReports />} />
+                                <Route path="/tickets/reports" element={<Navigate to="/tickets/dashboard" replace />} />
+                                <Route path="/tickets/receipt/:id" element={<ComplaintReceipt />} />
                               </Routes>
                             </main>
                           </div>
