@@ -81,10 +81,10 @@ const RecurringDonorsList = () => {
     return (
       permissions.super_admin === true ||
       permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donors', 'list_view') ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donors', 'view') ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
-      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view') ||
-      hasPermission(permissions, 'fund_raising', 'donors', 'list_view') ||
-      hasPermission(permissions, 'fund_raising', 'donors', 'view')
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
     );
   }, [permissions]);
 
@@ -284,7 +284,7 @@ const RecurringDonorsList = () => {
           onFilterToggle={toggleFilters}
         />
 
-        <div
+        {/* <div
           style={{
             display: 'flex',
             gap: '10px',
@@ -300,7 +300,7 @@ const RecurringDonorsList = () => {
           <span style={{ fontSize: '13px', color: '#6b7280' }}>
             Campaign pledge enrollments and reminder jobs
           </span>
-        </div>
+        </div> */}
 
         {error && <div className="error-message">{error}</div>}
 

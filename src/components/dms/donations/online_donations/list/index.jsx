@@ -35,6 +35,7 @@ import {
   donationUpdatePath,
   donationAddPath,
 } from '../../shared/donationListRoutes';
+import { projectCards } from '../../../../../utils/program';
 
 const OnlineDonationsList = ({
   embedded = false,
@@ -189,6 +190,7 @@ const OnlineDonationsList = ({
     amount: '',
     ref: [],
     appeal_id: [],
+    project_id: [],
     price_operator: '',
     donor_id: '',
     donor_search: '',
@@ -481,6 +483,9 @@ const OnlineDonationsList = ({
             }
             if (appliedFilters.appeal_id?.length > 0) {
               ms.appeal_id = appliedFilters.appeal_id;
+            }
+            if (appliedFilters.project_id?.length > 0) {
+              ms.project_id = appliedFilters.project_id;
             }
             return ms;
           })(),
@@ -810,6 +815,17 @@ const OnlineDonationsList = ({
     const fromApi = filterLookupData.appeals || [];
     return [{ value: '__none__', label: 'No appeal linked' }, ...fromApi];
   }, [filterLookupData.appeals]);
+
+  const projectFilterOptions = useMemo(
+    () => [
+      { value: '__none__', label: 'No project linked' },
+      ...(projectCards || []).map((p) => ({
+        value: p.id,
+        label: p.title || p.id,
+      })),
+    ],
+    [],
+  );
   const donationTypeOptions = [
     { value: 'zakat', label: 'Zakat' },
     { value: 'sadqa', label: 'Sadqa' },
@@ -1119,6 +1135,15 @@ const OnlineDonationsList = ({
               value={tempFilters.appeal_id}
               onChange={(value) => handleFilterChange('appeal_id', value)}
               placeholder="Select appeals"
+            />
+
+            <MultiSelect
+              name="project_id"
+              label="Project"
+              options={projectFilterOptions}
+              value={tempFilters.project_id}
+              onChange={(value) => handleFilterChange('project_id', value)}
+              placeholder="Select projects"
             />
             
             <DropdownFilter

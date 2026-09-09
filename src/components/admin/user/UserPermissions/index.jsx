@@ -154,13 +154,25 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Dashboard',
           actions: ['view']
         },
+        recurring_performance: {
+          label: 'Recurring Performance',
+          actions: ['view']
+        },
         appeals: {
           label: 'Urgent Appeals',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
         recurring_donations: {
           label: 'Recurring Donations',
+          actions: ['create', 'list_view', 'view', 'update']
+        },
+        recurring_donors: {
+          label: 'Recurring Donors',
           actions: ['list_view', 'view']
+        },
+        event_pledges: {
+          label: 'Event Pledges',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
         social_posts: {
           label: 'Social Posts',
@@ -470,6 +482,19 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    tickets: {
+      label: 'Tickets',
+      submodules: {
+        tickets: {
+          label: 'Tickets',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'assign', 'approve', 'complete']
+        },
+        dashboard: {
+          label: 'Dashboard',
+          actions: ['view']
+        }
+      }
+    },
     ceo_office: {
       label: 'CEO Office',
       submodules: {
@@ -523,6 +548,8 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     receive:'Receive',
     csv_xport:'CSV Export',
     approve: 'Approve / Reject',
+    assign: 'Assign',
+    complete: 'Complete',
     manage_overview: 'Manage Overview',
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',

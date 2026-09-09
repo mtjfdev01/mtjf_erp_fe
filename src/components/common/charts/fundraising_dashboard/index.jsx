@@ -42,7 +42,23 @@ function mapApiToCharts(apiData) {
   return { cumulative, recurringDonations, recurringDonors };
 }
 
-const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
+/**
+ * Shared fundraising charts dashboard.
+ * Optional props keep the existing Fund Raising Dashboard behavior unchanged.
+ */
+const FundraisingDashboard = ({
+  months = DEFAULT_MONTHS,
+  apiEndpoint = '/dashboard/fundraising-overview',
+  storageKeyPrefix = 'fundraising-dashboard',
+  cardsTitle = 'Fundraising overview',
+  cardKeys = null,
+  forbiddenMessage = 'You do not have permission to view fundraising dashboard.',
+  cumulativeTitle = 'Cumulative Donations',
+  cumulativeSubtitle = 'Cumulative total of completed donations over time',
+  showCumulative = true,
+  showOverviewComparison = true,
+  cardLinks = null,
+}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isForbidden, setIsForbidden] = useState(false);
@@ -58,8 +74,14 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
     values: [],
     monthly: [],
   });
-  const [tempFilters, setTempFilters] = usePersistedFilters('fundraising-dashboard:temp', EMPTY_FILTERS);
-  const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters('fundraising-dashboard:applied', EMPTY_FILTERS);
+  const [tempFilters, setTempFilters] = usePersistedFilters(
+    `${storageKeyPrefix}:temp`,
+    EMPTY_FILTERS,
+  );
+  const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
+    `${storageKeyPrefix}:applied`,
+    EMPTY_FILTERS,
+  );
 
   const handleFilterChange = (key, value) => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
@@ -143,7 +165,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
     setError(null);
     setIsForbidden(false);
     axiosInstance
-      .get('/dashboard/fundraising-overview', { params: apiParams })
+      .get(apiEndpoint, { params: apiParams })
       .then((res) => {
         if (cancelled) return;
         const raw = res?.data?.data;
@@ -172,7 +194,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, [apiParams]);
+  }, [apiParams, apiEndpoint]);
 
   return (
     <div className="fundraising-charts-demo">
@@ -206,30 +228,39 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
         ) : !error ? (
         <>
           <div className="fundraising-charts-demo__cards">
-            <FundraisingCards cards={cards} title="Fundraising overview" />
+            <FundraisingCards
+              cards={cards}
+              title={cardsTitle}
+              cardKeys={cardKeys}
+              cardLinks={cardLinks}
+            />
           </div>
 
-          <div className="fundraising-charts-demo__charts-row fundraising-charts-demo__charts-row--single">
-            <div className="fundraising-charts-demo__chart">
-              <CumulativeChart
-                title="Cumulative Donations"
-                subtitle="Cumulative total of completed donations over time"
-                data={cumulativeData}
-                height={280}
-              />
+          {showCumulative && (
+            <div className="fundraising-charts-demo__charts-row fundraising-charts-demo__charts-row--single">
+              <div className="fundraising-charts-demo__chart">
+                <CumulativeChart
+                  title={cumulativeTitle}
+                  subtitle={cumulativeSubtitle}
+                  data={cumulativeData}
+                  height={280}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          <div className="fundraising-charts-demo__charts-row fundraising-charts-demo__charts-row--single">
-            <div className="fundraising-charts-demo__chart">
-              <OverviewComparisonChart
-                title="Overview Comparison"
-                subtitle="Comparison of key counts"
-                data={overviewComparisonData}
-                height={280}
-              />
+          {showOverviewComparison && (
+            <div className="fundraising-charts-demo__charts-row fundraising-charts-demo__charts-row--single">
+              <div className="fundraising-charts-demo__chart">
+                <OverviewComparisonChart
+                  title="Overview Comparison"
+                  subtitle="Comparison of key counts"
+                  data={overviewComparisonData}
+                  height={280}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="fundraising-charts-demo__charts-row fundraising-charts-demo__charts-row--recurring">
             <div className="fundraising-charts-demo__chart">
@@ -267,7 +298,7 @@ const FundraisingDashboard = ({ months = DEFAULT_MONTHS }) => {
         ) : (
         <div className="fundraising-charts-demo__error">
           {isForbidden
-            ? 'You do not have permission to view fundraising dashboard.'
+            ? forbiddenMessage
             : (error || 'Failed to load fundraising data.')}
         </div>
         )}

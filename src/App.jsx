@@ -138,7 +138,7 @@ import AidApplicationAdd from './components/dms/aid/applications/add';
 import AidApplicationView from './components/dms/aid/applications/view';
 import AidPeopleList from './components/dms/aid/people/list';
 import AidPersonView from './components/dms/aid/people/view';
-import { RecurringDonationsList, RecurringDonationView } from './components/dms/recurring_donations';
+import { RecurringDonationsList, RecurringDonationView, AddRecurringDonation, UpdateRecurringDonation } from './components/dms/recurring_donations';
 import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
@@ -160,6 +160,8 @@ import InteractionsList from './components/dms/donor_relationship/interactions';
 import AddDonorInteraction from './components/dms/donor_relationship/add';
 import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
+import RecurringPerformanceDashboardPage from './components/dms/recurring_performance_dashboard';
+import { EventPledgesList, AddEventPledge, EditEventPledge, ViewEventPledge } from './components/dms/event_pledges';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
 import CommunicationSend from './components/dms/email_templates/send';
@@ -198,6 +200,12 @@ import UpdateTask from './components/admin/tasks/update';
 import ViewTask from './components/admin/tasks/view';
 import TaskReports from './components/admin/tasks/reports';
 import TaskReceipt from './components/admin/tasks/taskrecipt';
+import ComplaintsPage from './components/admin/complaints';
+import AddComplaint from './components/admin/complaints/add';
+import UpdateComplaint from './components/admin/complaints/update';
+import ViewComplaint from './components/admin/complaints/view';
+import ComplaintReports from './components/admin/complaints/reports';
+import ComplaintReceipt from './components/admin/complaints/taskrecipt';
 import PublicTrackingPage from './components/progress_tracking/public';
 import TemplatesList from './components/progress_tracking/admin/templates/list';
 import TemplateAdd from './components/progress_tracking/admin/templates/add';
@@ -416,6 +424,7 @@ const App = () => {
                                 {/* Fund Raising Welcome */}
                                 <Route path="/fund_raising" element={<FundRaising />} />
                                 <Route path="/fund_raising/dashboard" element={<FundRaisingDashboardPage />} />
+                                <Route path="/fund_raising/recurring-performance" element={<RecurringPerformanceDashboardPage />} />
                                 {/* DMS Section Routes */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
@@ -442,8 +451,14 @@ const App = () => {
 
                                 {/* Recurring Donations (Stripe / ledger subscriptions) */}
                                 <Route path="/dms/recurring-donations/list" element={<RecurringDonationsList />} />
+                                <Route path="/dms/recurring-donations/add" element={<AddRecurringDonation />} />
+                                <Route path="/dms/recurring-donations/update/:id" element={<UpdateRecurringDonation />} />
                                 <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
                                 <Route path="/dms/recurring-donors/list" element={<RecurringDonorsList />} />
+                                <Route path="/dms/event-pledges/list" element={<EventPledgesList />} />
+                                <Route path="/dms/event-pledges/add" element={<AddEventPledge />} />
+                                <Route path="/dms/event-pledges/edit/:id" element={<EditEventPledge />} />
+                                <Route path="/dms/event-pledges/view/:id" element={<ViewEventPledge />} />
                                 <Route path="/dms/manual-recurring/list" element={<ManualRecurringList />} />
 
                                 {/* Social Posts (Buffer) */}
@@ -604,6 +619,15 @@ const App = () => {
                                 <Route path="/tasks/dashboard" element={<TaskReports />} />
                                 <Route path="/tasks/reports" element={<Navigate to="/tasks/dashboard" replace />} />
                                 <Route path="/tasks/receipt/:id" element={<TaskReceipt />} />
+
+                                {/* Complaints — flat routes for all users */}
+                                <Route path="/tickets/list" element={<ComplaintsPage />} />
+                                <Route path="/tickets/add" element={<AddComplaint />} />
+                                <Route path="/tickets/update/:id" element={<UpdateComplaint />} />
+                                <Route path="/tickets/view/:id" element={<ViewComplaint />} />
+                                <Route path="/tickets/dashboard" element={<ComplaintReports />} />
+                                <Route path="/tickets/reports" element={<Navigate to="/tickets/dashboard" replace />} />
+                                <Route path="/tickets/receipt/:id" element={<ComplaintReceipt />} />
                               </Routes>
                             </main>
                           </div>
