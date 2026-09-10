@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   FiActivity,
   FiAlertCircle,
@@ -74,7 +75,7 @@ const TONE_BY_KEY = {
 
 /**
  * KPI card (icon + title + big value + subtitle).
- * Layout is tuned to match the reference screenshot.
+ * Optional `to` wraps the card in a Link.
  */
 const FundraisingCard = ({
   title,
@@ -84,14 +85,15 @@ const FundraisingCard = ({
   className = '',
   icon: Icon,
   tone = 'slate',
+  to = null,
 }) => {
   const compact = formatValue(value, isCurrency);
   const full = fullValue(value, isCurrency);
   const aria = `${title} ${full}`;
   const sub = subtitle || (isCurrency ? 'Total amount collected' : 'Total count');
 
-  return (
-    <div className={`fundraising-card fundraising-card--tone-${tone} ${className}`.trim()}>
+  const body = (
+    <>
       <div className="fundraising-card__icon" aria-hidden>
         {Icon ? <Icon size={18} /> : null}
       </div>
@@ -102,20 +104,33 @@ const FundraisingCard = ({
         </div>
         <div className="fundraising-card__subtitle">{sub}</div>
       </div>
-    </div>
+    </>
   );
+
+  const classes = `fundraising-card fundraising-card--tone-${tone}${to ? ' fundraising-card--link' : ''} ${className}`.trim();
+
+  if (to) {
+    return (
+      <Link to={to} className={classes} title={`Open ${title}`}>
+        {body}
+      </Link>
+    );
+  }
+
+  return <div className={classes}>{body}</div>;
 };
 
 /**
  * Props.cards: shape from API data.cards
- * { total_donations_amount, total_donations_count, total_donors_count, ... }
  * Optional cardKeys: when provided, only those KPI keys are rendered (order preserved).
+ * Optional cardLinks: map of card key → route path.
  */
 const FundraisingCards = ({
   cards,
   title = 'Fundraising overview',
   className = '',
   cardKeys = null,
+  cardLinks = null,
 }) => {
   if (!cards) return null;
 
@@ -125,9 +140,9 @@ const FundraisingCards = ({
     { key: 'total_recurring_collection', label: 'Total Recurring Collection', isCurrency: true, subtitle: 'Completed installments in period' },
     { key: 'individual_donors_count', label: 'Individual Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'corporate_donors_count', label: 'Corporate Donors', isCurrency: false, subtitle: 'Total donors' },
-    { key: 'recurring_donors_count', label: 'Recurring Donors', isCurrency: false, subtitle: 'Active in selected period' },
+    { key: 'recurring_donors_count', label: 'Recurring Donors', isCurrency: false, subtitle: 'With paid installments (same as list)' },
     { key: 'total_pending_installments_amount', label: 'Total Pending Installments Amount', isCurrency: true, subtitle: 'Subscriptions awaiting first installment' },
-    { key: 'recurring_donations_count', label: 'Recurring Donations (count)', isCurrency: false, subtitle: 'Installments in selected period' },
+    { key: 'recurring_donations_count', label: 'Recurring Donations (count)', isCurrency: false, subtitle: 'With paid installments (same as list)' },
     { key: 'multi_time_donors_count', label: 'Multi-time Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'active_donation_boxes_count', label: 'Active Donation Boxes', isCurrency: false, subtitle: 'Active boxes' },
     { key: 'events_count', label: 'Events', isCurrency: false, subtitle: 'Total events' },
@@ -155,6 +170,7 @@ const FundraisingCards = ({
             subtitle={subtitle}
             icon={ICON_BY_KEY[key]}
             tone={TONE_BY_KEY[key]}
+            to={cardLinks?.[key] || null}
           />
         ))}
       </div>

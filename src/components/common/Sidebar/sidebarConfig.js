@@ -748,6 +748,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiRepeat
   },
   {
+    label: 'Recurring Donors',
+    path: '/dms/recurring-donors/list',
+    type: 'list',
+    module: 'recurring_donations',
+    icon: FiUsers
+  },
+  {
+    label: 'Event Pledges',
+    path: '/dms/event-pledges/list',
+    type: 'list',
+    module: 'event_pledges',
+    icon: FiClipboard
+  },
+  {
     label: 'Reconciliation',
     path: '/dms/reconciliation/list',
     type: 'list',

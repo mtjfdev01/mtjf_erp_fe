@@ -161,6 +161,7 @@ import AddDonorInteraction from './components/dms/donor_relationship/add';
 import ManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import RecurringPerformanceDashboardPage from './components/dms/recurring_performance_dashboard';
+import { EventPledgesList, AddEventPledge, EditEventPledge, ViewEventPledge } from './components/dms/event_pledges';
 import EmailTemplateList from './components/dms/email_templates/list';
 import EmailTemplateForm from './components/dms/email_templates/form';
 import CommunicationSend from './components/dms/email_templates/send';
@@ -454,6 +455,10 @@ const App = () => {
                                 <Route path="/dms/recurring-donations/update/:id" element={<UpdateRecurringDonation />} />
                                 <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
                                 <Route path="/dms/recurring-donors/list" element={<RecurringDonorsList />} />
+                                <Route path="/dms/event-pledges/list" element={<EventPledgesList />} />
+                                <Route path="/dms/event-pledges/add" element={<AddEventPledge />} />
+                                <Route path="/dms/event-pledges/edit/:id" element={<EditEventPledge />} />
+                                <Route path="/dms/event-pledges/view/:id" element={<ViewEventPledge />} />
                                 <Route path="/dms/manual-recurring/list" element={<ManualRecurringList />} />
 
                                 {/* Social Posts (Buffer) */}

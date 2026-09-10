@@ -8,12 +8,20 @@ const RECURRING_CARD_KEYS = [
   'total_pending_installments_amount',
   'recurring_donors_count',
   'recurring_donations_count',
-  'total_donations_amount',
-  'total_donations_count',
-  'individual_donors_count',
-  'corporate_donors_count',
-  'multi_time_donors_count',
+  // 'individual_donors_count',
+  // 'corporate_donors_count',
+  // 'multi_time_donors_count',
 ];
+
+const RECURRING_CARD_LINKS = {
+  total_recurring_collection: '/dms/recurring-donations/list',
+  total_pending_installments_amount: '/dms/recurring-donations/list',
+  recurring_donors_count: '/dms/recurring-donors/list',
+  recurring_donations_count: '/dms/recurring-donations/list',
+  individual_donors_count: '/dms/online_donors/list',
+  corporate_donors_count: '/dms/csr-donors/list',
+  multi_time_donors_count: '/dms/online_donors/list',
+};
 
 const RecurringPerformanceDashboardPage = () => {
   return (
@@ -32,6 +40,7 @@ const RecurringPerformanceDashboardPage = () => {
             storageKeyPrefix="recurring-performance-dashboard"
             cardsTitle="Recurring performance"
             cardKeys={RECURRING_CARD_KEYS}
+            cardLinks={RECURRING_CARD_LINKS}
             forbiddenMessage="You do not have permission to view recurring performance dashboard."
             showCumulative={false}
             showOverviewComparison={false}

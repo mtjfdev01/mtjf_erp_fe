@@ -57,6 +57,7 @@ const FundraisingDashboard = ({
   cumulativeSubtitle = 'Cumulative total of completed donations over time',
   showCumulative = true,
   showOverviewComparison = true,
+  cardLinks = null,
 }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -227,7 +228,12 @@ const FundraisingDashboard = ({
         ) : !error ? (
         <>
           <div className="fundraising-charts-demo__cards">
-            <FundraisingCards cards={cards} title={cardsTitle} cardKeys={cardKeys} />
+            <FundraisingCards
+              cards={cards}
+              title={cardsTitle}
+              cardKeys={cardKeys}
+              cardLinks={cardLinks}
+            />
           </div>
 
           {showCumulative && (
