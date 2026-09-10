@@ -284,7 +284,7 @@ const RecurringDonorsList = () => {
           onFilterToggle={toggleFilters}
         />
 
-        <div
+        {/* <div
           style={{
             display: 'flex',
             gap: '10px',
@@ -300,7 +300,7 @@ const RecurringDonorsList = () => {
           <span style={{ fontSize: '13px', color: '#6b7280' }}>
             Campaign pledge enrollments and reminder jobs
           </span>
-        </div>
+        </div> */}
 
         {error && <div className="error-message">{error}</div>}
 
