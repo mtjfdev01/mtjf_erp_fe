@@ -751,7 +751,7 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     label: 'Recurring Donors',
     path: '/dms/recurring-donors/list',
     type: 'list',
-    module: 'recurring_donations',
+    module: 'recurring_donors',
     icon: FiUsers
   },
   {

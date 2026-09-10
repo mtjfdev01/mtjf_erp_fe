@@ -166,6 +166,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Recurring Donations',
           actions: ['create', 'list_view', 'view', 'update']
         },
+        recurring_donors: {
+          label: 'Recurring Donors',
+          actions: ['list_view', 'view']
+        },
         event_pledges: {
           label: 'Event Pledges',
           actions: ['create', 'list_view', 'view', 'update', 'delete']

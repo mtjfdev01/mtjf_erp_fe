@@ -81,10 +81,10 @@ const RecurringDonorsList = () => {
     return (
       permissions.super_admin === true ||
       permissions.fund_raising_manager === true ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donors', 'list_view') ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donors', 'view') ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
-      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view') ||
-      hasPermission(permissions, 'fund_raising', 'donors', 'list_view') ||
-      hasPermission(permissions, 'fund_raising', 'donors', 'view')
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
     );
   }, [permissions]);
 
