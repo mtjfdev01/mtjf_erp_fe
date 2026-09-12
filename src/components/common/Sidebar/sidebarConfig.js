@@ -733,13 +733,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   //   module: 'appeals',
   //   icon: FiAlertCircle
   // },
-  // {
-  //   label: 'Social Media',
-  //   path: '/dms/social-posts/list',
-  //   type: 'list',
-  //   module: 'social_posts',
-  //   icon: FiFileText
-  // },
+  {
+    label: 'Social Posts',
+    path: '/dms/social-posts/list',
+    type: 'list',
+    module: 'social_posts',
+    icon: FiFileText
+  },
   {
     label: 'Recurring Donations',
     path: '/dms/recurring-donations/list',

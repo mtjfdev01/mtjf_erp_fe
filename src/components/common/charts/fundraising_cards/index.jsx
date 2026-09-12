@@ -55,6 +55,11 @@ const ICON_BY_KEY = {
   donation_box_donations_amount: FiCreditCard,
   events_count: FiCalendar,
   campaigns_count: FiActivity,
+  registered_recurring_donors_count: FiUsers,
+  outstanding_donors_count: FiAlertCircle,
+  committed_amount: FiCreditCard,
+  committed_monthly_amount: FiRepeat,
+  this_month_recurring_collection: FiHeart,
 };
 
 const TONE_BY_KEY = {
@@ -71,6 +76,11 @@ const TONE_BY_KEY = {
   donation_box_donations_amount: 'emerald',
   events_count: 'violet',
   campaigns_count: 'cyan',
+  registered_recurring_donors_count: 'violet',
+  outstanding_donors_count: 'amber',
+  committed_amount: 'indigo',
+  committed_monthly_amount: 'blue',
+  this_month_recurring_collection: 'emerald',
 };
 
 /**
@@ -135,27 +145,50 @@ const FundraisingCards = ({
   if (!cards) return null;
 
   const cardItems = [
+    { key: 'committed_amount', label: 'Committed Amount', isCurrency: true, subtitle: 'Active subscription pledges' },
     { key: 'total_donations_amount', label: 'Completed Donations', isCurrency: true, subtitle: 'Total amount collected' },
     { key: 'donation_box_donations_amount', label: 'Donation Box Collection', isCurrency: true, subtitle: 'Total amount collected' },
     { key: 'total_recurring_collection', label: 'Total Recurring Collection', isCurrency: true, subtitle: 'Completed installments in period' },
     { key: 'individual_donors_count', label: 'Individual Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'corporate_donors_count', label: 'Corporate Donors', isCurrency: false, subtitle: 'Total donors' },
-    { key: 'recurring_donors_count', label: 'Recurring Donors', isCurrency: false, subtitle: 'With paid installments (same as list)' },
-    { key: 'total_pending_installments_amount', label: 'Total Pending Installments Amount', isCurrency: true, subtitle: 'Subscriptions awaiting first installment' },
-    { key: 'recurring_donations_count', label: 'Recurring Donations (count)', isCurrency: false, subtitle: 'With paid installments (same as list)' },
+    { key: 'recurring_donors_count', label: 'Active Recurring Donors', isCurrency: false, subtitle: 'With paid installments (same as list)' },
+    { key: 'total_pending_installments_amount', label: 'Due Installments', isCurrency: true, subtitle: 'Subscriptions awaiting first installment' },
+    { key: 'recurring_donations_count', label: 'Active Recurring Donations', isCurrency: false, subtitle: 'With paid installments (same as list)' },
     { key: 'multi_time_donors_count', label: 'Multi-time Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'active_donation_boxes_count', label: 'Active Donation Boxes', isCurrency: false, subtitle: 'Active boxes' },
     { key: 'events_count', label: 'Events', isCurrency: false, subtitle: 'Total events' },
     { key: 'campaigns_count', label: 'Campaigns', isCurrency: false, subtitle: 'Total campaigns' },
     { key: 'total_donations_count', label: 'Donations (count)', isCurrency: false, subtitle: 'Completed donations' },
+    { key: 'registered_recurring_donors_count', label: 'Total Registered Recurring Donors', isCurrency: false, subtitle: 'All ledger subscriptions (same as list)' },
+    { key: 'outstanding_donors_count', label: 'Due Donors', isCurrency: false, subtitle: 'Not completed installment yet (same as list pending)' },
+    // { key: 'committed_monthly_amount', label: 'Committed Monthly', isCurrency: true, subtitle: 'Monthly run-rate of active recurring' },
+    { key: 'committed_monthly_amount', label: 'Committed Monthly', isCurrency: true, subtitle: 'Monthly run-rate of active recurring' },
+    { key: 'this_month_recurring_collection', label: 'This Month Collection', isCurrency: true, subtitle: 'Completed recurring this calendar month' },
   ];
 
-  const visibleItems =
-    Array.isArray(cardKeys) && cardKeys.length > 0
-      ? cardKeys
-          .map((key) => cardItems.find((item) => item.key === key))
-          .filter(Boolean)
-      : cardItems;
+  // Default Fund Raising dashboard: original cards only (new KPIs are opt-in via cardKeys)
+  const DEFAULT_CARD_KEYS = [
+    'total_donations_amount',
+    'donation_box_donations_amount',
+    'total_recurring_collection',
+    'individual_donors_count',
+    'corporate_donors_count',
+    'recurring_donors_count',
+    'total_pending_installments_amount',
+    'recurring_donations_count',
+    'multi_time_donors_count',
+    'active_donation_boxes_count',
+    'events_count',
+    'campaigns_count',
+    'total_donations_count',
+  ];
+
+  const keysToShow =
+    Array.isArray(cardKeys) && cardKeys.length > 0 ? cardKeys : DEFAULT_CARD_KEYS;
+
+  const visibleItems = keysToShow
+    .map((key) => cardItems.find((item) => item.key === key))
+    .filter(Boolean);
 
   return (
     <div className={`fundraising-cards ${className}`.trim()}>
