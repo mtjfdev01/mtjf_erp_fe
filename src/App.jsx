@@ -206,6 +206,10 @@ import UpdateComplaint from './components/admin/complaints/update';
 import ViewComplaint from './components/admin/complaints/view';
 import ComplaintReports from './components/admin/complaints/reports';
 import ComplaintReceipt from './components/admin/complaints/taskrecipt';
+import ComplaintsCasePage from './components/admin/complaints-case';
+import AddComplaintCase from './components/admin/complaints-case/add';
+import ViewComplaintCase from './components/admin/complaints-case/view';
+import TrackComplaintCase from './components/admin/complaints-case/track';
 import PublicTrackingPage from './components/progress_tracking/public';
 import TemplatesList from './components/progress_tracking/admin/templates/list';
 import TemplateAdd from './components/progress_tracking/admin/templates/add';
@@ -628,6 +632,12 @@ const App = () => {
                                 <Route path="/tickets/dashboard" element={<ComplaintReports />} />
                                 <Route path="/tickets/reports" element={<Navigate to="/tickets/dashboard" replace />} />
                                 <Route path="/tickets/receipt/:id" element={<ComplaintReceipt />} />
+
+                                {/* Grievance complaints — separate from issues/tickets flow */}
+                                <Route path="/complaints/list" element={<ComplaintsCasePage />} />
+                                <Route path="/complaints/add" element={<AddComplaintCase />} />
+                                <Route path="/complaints/view/:id" element={<ViewComplaintCase />} />
+                                <Route path="/complaints/track" element={<TrackComplaintCase />} />
                               </Routes>
                             </main>
                           </div>

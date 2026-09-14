@@ -536,3 +536,37 @@ export const getComplaintPermissions = (permissions, department, userRole) => {
 };
 
 export const getTicketPermissions = getComplaintPermissions;
+
+export const getComplaintCasePermissions = (permissions, department, userRole) => {
+  const role = String(userRole || '').toLowerCase();
+  const isAdmin = isSuperAdmin(permissions) || role === 'super_admin' || role === 'admin';
+
+  const deptKey =
+    department &&
+    (permissions?.[department]?.tickets || permissions?.[department]?.complaints)
+      ? department
+      : null;
+  const ticketsRoot =
+    (deptKey ? permissions?.[deptKey]?.tickets : null) ||
+    permissions?.tickets ||
+    {};
+  const casePerms =
+    ticketsRoot?.complaints_case ||
+    permissions?.tickets?.complaints_case ||
+    permissions?.complaints_case ||
+    {};
+
+  const has = (key) => casePerms[key] === true || isAdmin;
+
+  return {
+    canView: has('view') || has('list_view'),
+    canList: has('list_view') || has('view'),
+    canCreate: has('create'),
+    canInvestigate: has('investigate'),
+    canUpdateStatus: has('update_status') || has('investigate'),
+    canManageNominees: has('manage_nominees') || has('investigate'),
+    canViewNominees: has('view_nominees') || has('view') || has('list_view'),
+    canScheduleMeetings: has('schedule_meetings') || has('investigate'),
+    canAddNarrative: has('add_narrative') || has('investigate'),
+  };
+};

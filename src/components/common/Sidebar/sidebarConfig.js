@@ -47,6 +47,7 @@ import {
   FiMessageSquare,
   FiSend,
   FiCoffee,
+  FiSearch,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -58,6 +59,9 @@ const TASKS_LIST_PATH = '/tasks/list';
 const TASKS_DASHBOARD_PATH = '/tasks/dashboard';
 const COMPLAINTS_LIST_PATH = '/tickets/list';
 const COMPLAINTS_DASHBOARD_PATH = '/tickets/dashboard';
+const GRIEVANCE_LIST_PATH = '/complaints/list';
+const GRIEVANCE_ADD_PATH = '/complaints/add';
+const GRIEVANCE_TRACK_PATH = '/complaints/track';
 
 const hasGlobalTaskingAccess = (permissions) => (
   permissions?.tasks?.view === true ||
@@ -105,6 +109,61 @@ const shouldShowUnifiedTasking = (permissions) =>
 const shouldShowUnifiedComplaints = (permissions) =>
   hasGlobalComplaintsAccess(permissions) || hasAnyDepartmentComplaintAccess(permissions);
 
+const hasGlobalComplaintCaseAccess = (permissions) => (
+  permissions?.tickets?.complaints_case?.view === true ||
+  permissions?.tickets?.complaints_case?.list_view === true ||
+  permissions?.tickets?.complaints_case?.create === true ||
+  permissions?.complaints_case?.view === true ||
+  permissions?.complaints_case?.list_view === true ||
+  permissions?.complaints_case?.create === true
+);
+
+const hasAnyDepartmentComplaintCaseAccess = (permissions) => {
+  if (!permissions) return false;
+  return departments.some((dept) => {
+    const mod = permissions?.[dept]?.tickets?.complaints_case;
+    return mod?.view === true || mod?.list_view === true || mod?.create === true;
+  });
+};
+
+const shouldShowComplaintCase = (permissions) =>
+  hasGlobalComplaintCaseAccess(permissions) || hasAnyDepartmentComplaintCaseAccess(permissions);
+
+const buildComplaintCaseGroup = (user, permissions) => {
+  if (!user || !permissions) return null;
+  if (!shouldShowComplaintCase(permissions) && !isSuperAdmin(permissions) && user.role !== 'super_admin') {
+    return null;
+  }
+  return {
+    id: 'complaints_case_global',
+    label: 'Complaints',
+    icon: FiAlertCircle,
+    items: [
+      {
+        label: 'Complaints List',
+        path: GRIEVANCE_LIST_PATH,
+        type: 'list',
+        module: 'tickets',
+        icon: FiList,
+      },
+      {
+        label: 'Submit Complaint',
+        path: GRIEVANCE_ADD_PATH,
+        type: 'list',
+        module: 'tickets',
+        icon: FiAlertCircle,
+      },
+      {
+        label: 'Track by Code',
+        path: GRIEVANCE_TRACK_PATH,
+        type: 'list',
+        module: 'tickets',
+        icon: FiSearch,
+      },
+    ],
+  };
+};
+
 const buildUnifiedTaskingGroup = (user, permissions) => {
   if (!user || !permissions || !shouldShowUnifiedTasking(permissions)) {
     return null;
@@ -138,18 +197,18 @@ const buildUnifiedComplaintsGroup = (user, permissions) => {
   }
   return {
     id: 'tickets_global',
-    label: 'Tickets',
+    label: 'Issues',
     icon: FiAlertCircle,
     items: [
       {
-        label: 'Tickets List',
+        label: 'Issues List',
         path: COMPLAINTS_LIST_PATH,
         type: 'list',
         module: 'tickets',
         icon: FiList,
       },
       {
-        label: 'Tickets Dashboard',
+        label: 'Issues Dashboard',
         path: COMPLAINTS_DASHBOARD_PATH,
         type: 'list',
         module: 'tickets',
@@ -185,18 +244,18 @@ const buildSuperAdminTaskingGroup = () => ({
 /** Super admin: single Tickets section (flat `/complaints/...` routes). */
 const buildSuperAdminComplaintsGroup = () => ({
   id: 'tickets_global',
-  label: 'Tickets',
+  label: 'Issues',
   icon: FiAlertCircle,
   items: [
     {
-      label: 'Tickets List',
+      label: 'Issues List',
       path: COMPLAINTS_LIST_PATH,
       type: 'list',
       module: 'tickets',
       icon: FiList,
     },
     {
-      label: 'Tickets Dashboard',
+      label: 'Issues Dashboard',
       path: COMPLAINTS_DASHBOARD_PATH,
       type: 'list',
       module: 'tickets',
@@ -1249,6 +1308,8 @@ export const getSidebarConfig = (user, permissions = null) => {
     ];
     sections.push(buildSuperAdminTaskingGroup());
     sections.push(buildSuperAdminComplaintsGroup());
+    const superAdminComplaintCaseGroup = buildComplaintCaseGroup(user, permissions);
+    if (superAdminComplaintCaseGroup) sections.push(superAdminComplaintCaseGroup);
     sections.push(departmentConfigs.email_templates());
     return sections;
   }
@@ -1285,6 +1346,11 @@ export const getSidebarConfig = (user, permissions = null) => {
       sections.push(unifiedComplaintsGroup);
     }
 
+    const complaintCaseGroup = buildComplaintCaseGroup(user, permissions);
+    if (complaintCaseGroup) {
+      sections.push(complaintCaseGroup);
+    }
+
     return sections;
   }
 
@@ -1314,6 +1380,11 @@ export const getSidebarConfig = (user, permissions = null) => {
   const unifiedComplaintsGroup = buildUnifiedComplaintsGroup(user, permissions);
   if (unifiedComplaintsGroup) {
     sections.push(unifiedComplaintsGroup);
+  }
+
+  const complaintCaseGroup = buildComplaintCaseGroup(user, permissions);
+  if (complaintCaseGroup) {
+    sections.push(complaintCaseGroup);
   }
 
   return sections;

@@ -486,8 +486,22 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       label: 'Tickets',
       submodules: {
         tickets: {
-          label: 'Tickets',
+          label: 'Issues (Tickets)',
           actions: ['create', 'list_view', 'view', 'update', 'delete', 'assign', 'approve', 'complete']
+        },
+        complaints_case: {
+          label: 'Complaints (Grievance)',
+          actions: [
+            'create',
+            'list_view',
+            'view',
+            'investigate',
+            'update_status',
+            'manage_nominees',
+            'view_nominees',
+            'schedule_meetings',
+            'add_narrative',
+          ]
         },
         dashboard: {
           label: 'Dashboard',
@@ -550,6 +564,12 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     approve: 'Approve / Reject',
     assign: 'Assign',
     complete: 'Complete',
+    investigate: 'Investigate',
+    update_status: 'Update Status',
+    manage_nominees: 'Manage Nominees',
+    view_nominees: 'View Nominees',
+    schedule_meetings: 'Schedule Meetings',
+    add_narrative: 'Add Narrative',
     manage_overview: 'Manage Overview',
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',
