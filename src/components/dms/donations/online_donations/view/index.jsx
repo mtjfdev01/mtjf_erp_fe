@@ -33,6 +33,16 @@ import {
 } from '../../shared/donationListRoutes';
 import './index.css';
 
+const formatReferrerUser = (user) => {
+  if (!user) return null;
+  const name = [user.first_name, user.last_name].filter(Boolean).join(' ').trim();
+  return name || user.email || (user.id != null ? `User #${user.id}` : null);
+};
+
+/** Donation-level referrer, else donor.referred_by (older / partial rows). */
+const resolveDonationReferrer = (donation) =>
+  donation?.referred_by || donation?.donor?.referred_by || null;
+
 /** Matches UserPermissions `communication.*` send flags; `super_admin` is handled in checks. */
 const COMM_PERMS = {
   emailPaymentLinks: 'communication.email_payment_links.send',
@@ -1200,6 +1210,12 @@ const ViewOnlineDonation = () => {
                 <span className="view-item-label">Payment Method</span>
                 <span className="view-item-value">{donation.donation_method?.toUpperCase() || 'N/A'}</span>
               </div>
+              <div className="view-item">
+                <span className="view-item-label">Referred By</span>
+                <span className="view-item-value">
+                  {formatReferrerUser(resolveDonationReferrer(donation)) || '-'}
+                </span>
+              </div>
               { donation?.donation_method && donation.donation_method == "cheque" &&( 
               <div className="view-item">
                 <span className="view-item-label">Cheque Number</span>
@@ -1222,6 +1238,28 @@ const ViewOnlineDonation = () => {
               )}
             </div>
           </div>
+
+          {resolveDonationReferrer(donation) && (
+            <div className="view-section">
+              <h3 className="view-section-title">Referral</h3>
+              <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                <div className="view-item">
+                  <span className="view-item-label">Referred By</span>
+                  <span className="view-item-value">
+                    {formatReferrerUser(resolveDonationReferrer(donation))}
+                  </span>
+                </div>
+                {resolveDonationReferrer(donation)?.email && (
+                  <div className="view-item">
+                    <span className="view-item-label">Referrer Email</span>
+                    <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
+                      {resolveDonationReferrer(donation).email}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="view-section">
             <h3 className="view-section-title">Attachments</h3>
@@ -1469,6 +1507,12 @@ const ViewOnlineDonation = () => {
                 <div className="view-item">
                   <span className="view-item-label">City</span>
                   <span className="view-item-value">{donation?.donor?.city || '-'}</span>
+                </div>
+                <div className="view-item">
+                  <span className="view-item-label">Referred By</span>
+                  <span className="view-item-value">
+                    {formatReferrerUser(resolveDonationReferrer(donation)) || '-'}
+                  </span>
                 </div>
                 {donation.address && (
                   <div className="view-item view-item--full">

@@ -24,10 +24,16 @@ const STATUS_OPTIONS = [
   { value: 'failed', label: 'Failed' },
 ];
 
+const INSTALLMENT_STATUS_OPTIONS = [
+  { value: 'pending', label: 'Pending' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'failed', label: 'Failed' },
+];
+
 const START_MODE_OPTIONS = [
-  { value: 'same_date', label: 'Same date each period' },
+  { value: 'same_date', label: 'Recurring Billing date' },
   { value: 'first_of_month', label: 'First of month' },
-  { value: 'custom', label: 'Custom start date' },
+  { value: 'custom', label: 'First billing date' },
 ];
 
 const METHOD_OPTIONS = [
@@ -61,6 +67,7 @@ const emptyForm = {
   prepaid_periods: '',
   initial_donation_id: '',
   status: 'active',
+  installment_status: 'pending',
 };
 
 const RecurringDonationForm = ({ mode = 'add' }) => {
@@ -208,6 +215,11 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
               ? Number(form.initial_donation_id)
               : undefined,
             status: form.status || 'active',
+            ...(isEdit
+              ? {}
+              : {
+                  installment_status: form.installment_status || 'pending',
+                }),
           };
 
       const res = isEdit
@@ -360,20 +372,20 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
                 onChange={handleChange}
                 disabled={fieldsDisabled}
               />
-              <FormSelect
-                label="Start date mode"
-                name="start_date_mode"
-                value={form.start_date_mode}
-                onChange={handleChange}
-                options={START_MODE_OPTIONS}
-                disabled={fieldsDisabled}
-              />
               <FormInput
-                label="Start date"
+                label="First billing date"
                 name="start_date"
                 type="date"
                 value={form.start_date}
                 onChange={handleChange}
+                disabled={fieldsDisabled}
+              />
+              <FormSelect
+                label="Recurring Billing date"
+                name="start_date_mode"
+                value={form.start_date_mode}
+                onChange={handleChange}
+                options={START_MODE_OPTIONS}
                 disabled={fieldsDisabled}
               />
               <FormSelect
@@ -432,6 +444,15 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
                 onChange={handleChange}
                 options={STATUS_OPTIONS}
               />
+              {!isEdit && (
+                <FormSelect
+                  label="Installment status"
+                  name="installment_status"
+                  value={form.installment_status}
+                  onChange={handleChange}
+                  options={INSTALLMENT_STATUS_OPTIONS}
+                />
+              )}
             </div>
           </div>
 
