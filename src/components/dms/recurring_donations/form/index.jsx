@@ -8,7 +8,7 @@ import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import { projectCards } from '../../../../utils/program';
 import { useAuth } from '../../../../context/AuthContext';
-import { hasPermission } from '../../../../utils/permissions';
+import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
 
 const INTERVAL_OPTIONS = [
   { value: 'day', label: 'Daily' },
@@ -74,7 +74,7 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
   const isEdit = mode === 'edit';
   const navigate = useNavigate();
   const { id } = useParams();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const [form, setForm] = useState({ ...emptyForm });
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [loading, setLoading] = useState(isEdit);
@@ -83,13 +83,19 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
   const [isStripe, setIsStripe] = useState(false);
 
   const canAccess = useMemo(() => {
-    if (!permissions) return null;
-    if (permissions.super_admin === true || permissions.fund_raising_manager === true) {
+    if (!permissions && !user) return null;
+    const role = String(user?.role || '').toLowerCase();
+    if (
+      isSuperAdmin(permissions) ||
+      role === 'super_admin' ||
+      permissions?.fund_raising_manager === true ||
+      role === 'fund_raising_manager'
+    ) {
       return true;
     }
     const action = isEdit ? 'update' : 'create';
     return hasPermission(permissions, 'fund_raising', 'recurring_donations', action);
-  }, [permissions, isEdit]);
+  }, [permissions, user, isEdit]);
 
   const projectOptions = useMemo(
     () => [

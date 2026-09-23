@@ -143,6 +143,22 @@ const EventPledgesList = () => {
     setCurrentPage(1);
   };
 
+  const handleSortChange = (field, order) => {
+    setSortBy(field);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
+
+  const sortOptions = [
+    { value: 'created_at', label: 'Created Date' },
+    { value: 'updated_at', label: 'Updated Date' },
+    { value: 'donor_name', label: 'Donor Name' },
+    { value: 'donation_amount', label: 'Amount' },
+    { value: 'donation_type', label: 'Donation Type' },
+    { value: 'contact_number', label: 'Contact Number' },
+    { value: 'id', label: 'ID' },
+  ];
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -303,6 +319,10 @@ const EventPledgesList = () => {
                 setPageSize(size);
                 setCurrentPage(1);
               }}
+              onSortChange={handleSortChange}
+              sortField={sortBy}
+              sortOrder={sortOrder}
+              sortOptions={sortOptions}
             />
           </>
         )}

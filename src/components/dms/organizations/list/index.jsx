@@ -48,6 +48,8 @@ const OrganizationsList = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('DESC');
   const [tempFilters, setTempFilters] = useState(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState(emptyFilters);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -55,6 +57,21 @@ const OrganizationsList = () => {
   const handleFilterChange = (key, value) => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
   };
+
+  const handleSortChange = (field, order) => {
+    setSortField(field);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
+
+  const sortOptions = [
+    { value: 'created_at', label: 'Created Date' },
+    { value: 'updated_at', label: 'Updated Date' },
+    { value: 'name', label: 'Name' },
+    { value: 'city', label: 'City' },
+    { value: 'is_active', label: 'Active' },
+    { value: 'id', label: 'ID' },
+  ];
 
   const fetchRows = async () => {
     if (!canList) {
@@ -72,6 +89,8 @@ const OrganizationsList = () => {
           is_active: appliedFilters.is_active !== '' ? appliedFilters.is_active : undefined,
           page: currentPage,
           pageSize,
+          sortField,
+          sortOrder,
         },
       });
       setRows(res.data?.data || []);
@@ -90,7 +109,7 @@ const OrganizationsList = () => {
   useEffect(() => {
     fetchRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, appliedFilters]);
+  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
   const handleApplyFilters = () => {
     setAppliedFilters(tempFilters);
@@ -278,6 +297,10 @@ const OrganizationsList = () => {
                 setPageSize(size);
                 setCurrentPage(1);
               }}
+              onSortChange={handleSortChange}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              sortOptions={sortOptions}
             />
           )}
 

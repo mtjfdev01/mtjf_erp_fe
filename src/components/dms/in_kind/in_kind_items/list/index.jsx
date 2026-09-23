@@ -154,6 +154,19 @@ const InKindItemsList = () => {
     setCurrentPage(1);
   };
 
+  const handleSortChange = (field, order) => {
+    setSortBy(field);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
+
+  const sortOptions = [
+    { value: 'created_at', label: 'Created Date' },
+    { value: 'updated_at', label: 'Updated Date' },
+    { value: 'name', label: 'Name' },
+    { value: 'category', label: 'Category' },
+  ];
+
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     try {
@@ -243,39 +256,6 @@ const InKindItemsList = () => {
             </div>
           </CollapsibleFilters>
 
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'flex-end',
-              gap: '10px',
-              alignItems: 'center',
-              marginBottom: '0.75rem',
-            }}
-          >
-            <label style={{ fontSize: '14px', color: '#374151' }}>Sort by:</label>
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{ padding: '6px 12px', border: '1px solid #d1d5db', borderRadius: '4px' }}
-            >
-              <option value="name">Item Name</option>
-              <option value="category">Category</option>
-              <option value="created_at">Created Date</option>
-              <option value="updated_at">Updated Date</option>
-            </select>
-            <button
-              type="button"
-              onClick={() => setSortOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'))}
-              className="secondary_btn"
-              style={{ padding: '6px 12px' }}
-            >
-              {sortOrder === 'ASC' ? '↑' : '↓'}
-            </button>
-          </div>
-
           <div className="table-container">
             <table className="data-table">
               <thead>
@@ -336,6 +316,10 @@ const InKindItemsList = () => {
                 setPageSize(size);
                 setCurrentPage(1);
               }}
+              onSortChange={handleSortChange}
+              sortField={sortBy}
+              sortOrder={sortOrder}
+              sortOptions={sortOptions}
             />
           )}
         </div>

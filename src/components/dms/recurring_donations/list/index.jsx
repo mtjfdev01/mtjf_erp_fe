@@ -4,6 +4,7 @@ import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ActionMenu from '../../../common/ActionMenu';
+import ConfirmationModal from '../../../common/ConfirmationModal';
 import Pagination from '../../../common/Pagination';
 import {
   SearchFilter,
@@ -16,8 +17,8 @@ import {
 } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
-import { hasPermission } from '../../../../utils/permissions';
-import { FiEye, FiRepeat, FiSend, FiEdit2 } from 'react-icons/fi';
+import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
+import { FiEye, FiRepeat, FiSend, FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -40,13 +41,6 @@ const INSTALLMENT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Has paid installments' },
 ];
 
-const PAYMENT_QUICK_FILTERS = [
-  { value: '', label: 'All' },
-  { value: 'pending', label: 'Pending installments' },
-  { value: 'pending_initial', label: 'Pending initial' },
-  { value: 'completed', label: 'Paid' },
-];
-
 const EMPTY_FILTERS = {
   search: '',
   status: '',
@@ -59,7 +53,7 @@ const EMPTY_FILTERS = {
 
 const RecurringDonationsList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -73,34 +67,48 @@ const RecurringDonationsList = () => {
   const [tempFilters, setTempFilters] = useState({ ...EMPTY_FILTERS });
   const [appliedFilters, setAppliedFilters] = useState({ ...EMPTY_FILTERS });
   const [sendingLinkId, setSendingLinkId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const isFrAdmin = useMemo(() => {
+    const role = String(user?.role || '').toLowerCase();
+    return (
+      isSuperAdmin(permissions) ||
+      role === 'super_admin' ||
+      permissions?.fund_raising_manager === true ||
+      role === 'fund_raising_manager'
+    );
+  }, [permissions, user]);
 
   const canList = useMemo(() => {
-    if (!permissions) return null;
+    if (!permissions && !user) return null;
     return (
-      permissions.super_admin === true ||
-      permissions.fund_raising_manager === true ||
+      isFrAdmin ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
     );
-  }, [permissions]);
+  }, [permissions, user, isFrAdmin]);
 
-  const canCreate = useMemo(() => {
-    if (!permissions) return false;
-    return (
-      permissions.super_admin === true ||
-      permissions.fund_raising_manager === true ||
-      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'create')
-    );
-  }, [permissions]);
+  const canCreate = useMemo(
+    () =>
+      isFrAdmin ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'create'),
+    [permissions, isFrAdmin],
+  );
 
-  const canUpdate = useMemo(() => {
-    if (!permissions) return false;
-    return (
-      permissions.super_admin === true ||
-      permissions.fund_raising_manager === true ||
-      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'update')
-    );
-  }, [permissions]);
+  const canUpdate = useMemo(
+    () =>
+      isFrAdmin ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'update'),
+    [permissions, isFrAdmin],
+  );
+
+  const canDelete = useMemo(
+    () =>
+      isFrAdmin ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'delete'),
+    [permissions, isFrAdmin],
+  );
 
   const handleFilterChange = (key, value) => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
@@ -156,6 +164,22 @@ const RecurringDonationsList = () => {
     fetchRows();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
+  const handleSortChange = (field, order) => {
+    setSortField(field);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
+
+  const sortOptions = [
+    { value: 'created_at', label: 'Created Date' },
+    { value: 'updated_at', label: 'Updated Date' },
+    { value: 'id', label: 'ID' },
+    { value: 'status', label: 'Status' },
+    { value: 'amount', label: 'Amount' },
+    { value: 'paid_at', label: 'Paid At' },
+    { value: 'billing_interval', label: 'Billing Interval' },
+  ];
+
   const formatAmount = (amount, currency = 'PKR') => {
     if (amount == null) return '-';
     return `${currency || 'PKR'} ${Number(amount).toLocaleString('en-PK', { minimumFractionDigits: 0 })}`;
@@ -209,11 +233,27 @@ const RecurringDonationsList = () => {
     return { label: 'Pending installment', color: '#f59e0b' };
   };
 
-  const applyPaymentQuickFilter = (value) => {
-    const next = { ...appliedFilters, installment_status: value };
-    setTempFilters(next);
-    setAppliedFilters(next);
-    setCurrentPage(1);
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setError('');
+    try {
+      const response = await axiosInstance.delete(
+        `/recurring-donations/${deleteTarget.id}`,
+      );
+      if (response.data.success) {
+        setDeleteTarget(null);
+        await fetchRows();
+      } else {
+        setError(response.data.message || 'Failed to delete recurring donation');
+      }
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 'Failed to delete recurring donation',
+      );
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const getActions = (row) => [
@@ -224,17 +264,20 @@ const RecurringDonationsList = () => {
       onClick: () => navigate(`/dms/recurring-donations/view/${row.id}`),
       visible: true,
     },
-    ...(canUpdate
-      ? [
-          {
-            icon: <FiEdit2 />,
-            label: 'Edit',
-            color: '#f59e0b',
-            onClick: () => navigate(`/dms/recurring-donations/update/${row.id}`),
-            visible: true,
-          },
-        ]
-      : []),
+    {
+      icon: <FiEdit2 />,
+      label: 'Edit',
+      color: '#f59e0b',
+      onClick: () => navigate(`/dms/recurring-donations/update/${row.id}`),
+      visible: canUpdate,
+    },
+    {
+      icon: <FiTrash2 />,
+      label: 'Delete',
+      color: '#ef4444',
+      onClick: () => setDeleteTarget(row),
+      visible: canDelete,
+    },
     ...(!row.stripe_subscription_id
       ? [
           {
@@ -286,8 +329,10 @@ const RecurringDonationsList = () => {
         <Navbar />
         <div className="list-wrapper">
           <PageHeader
-          onRefresh={fetchRows}
-          refreshing={loading} title="Recurring Donations" />
+            onRefresh={fetchRows}
+            refreshing={loading}
+            title="Recurring Donations"
+          />
           <div className="status-message status-message--error">
             You do not have permission to view recurring donations.
           </div>
@@ -302,8 +347,10 @@ const RecurringDonationsList = () => {
         <Navbar />
         <div className="list-wrapper">
           <PageHeader
-          onRefresh={fetchRows}
-          refreshing={loading} title="Recurring Donations" />
+            onRefresh={fetchRows}
+            refreshing={loading}
+            title="Recurring Donations"
+          />
           <div className="loading">Loading...</div>
         </div>
       </>
@@ -330,88 +377,55 @@ const RecurringDonationsList = () => {
 
         {error && <div className="error-message">{error}</div>}
 
-        {/* <div
-          style={{
-            display: 'flex',
-            gap: 8,
-            flexWrap: 'wrap',
-            marginBottom: 12,
-            alignItems: 'center',
-          }}
-        >
-          <span style={{ fontSize: 13, color: '#6b7280', marginRight: 4 }}>Payment:</span>
-          {PAYMENT_QUICK_FILTERS.map((opt) => {
-            const active = (appliedFilters.installment_status || '') === opt.value;
-            return (
-              <button
-                key={opt.value || 'all'}
-                type="button"
-                onClick={() => applyPaymentQuickFilter(opt.value)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: 6,
-                  border: active ? '1px solid #2563eb' : '1px solid #d1d5db',
-                  background: active ? '#eff6ff' : '#fff',
-                  color: active ? '#1d4ed8' : '#374151',
-                  fontSize: 13,
-                  cursor: 'pointer',
-                }}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
-        </div> */}
-
         <CollapsibleFilters open={filtersOpen}>
-        <div className="filters-section">
-          <SearchFilter
-            filterKey="search"
-            label="Search"
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="Search subscription, order, donor..."
-          />
-          <DropdownFilter
-            filterKey="status"
-            label="Status"
-            data={STATUS_OPTIONS}
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="All statuses"
-          />
-          <DropdownFilter
-            filterKey="billing_interval"
-            label="Billing"
-            data={INTERVAL_OPTIONS}
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="All billing"
-          />
-          <DropdownFilter
-            filterKey="installment_status"
-            label="Payment / installments"
-            data={INSTALLMENT_STATUS_OPTIONS}
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-            placeholder="All payments"
-          />
-          <DateFilter
-            filterKey="date"
-            label="Specific Date"
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-          />
-          <DateRangeFilter
-            startKey="start_date"
-            endKey="end_date"
-            label="Date Range"
-            filters={tempFilters}
-            onFilterChange={handleFilterChange}
-          />
-          <SearchButton onClick={handleApplyFilters} />
-          <ClearButton onClick={handleClearFilters} />
-        </div>
+          <div className="filters-section">
+            <SearchFilter
+              filterKey="search"
+              label="Search"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Search subscription, order, donor..."
+            />
+            <DropdownFilter
+              filterKey="status"
+              label="Status"
+              data={STATUS_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All statuses"
+            />
+            <DropdownFilter
+              filterKey="billing_interval"
+              label="Billing"
+              data={INTERVAL_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All billing"
+            />
+            <DropdownFilter
+              filterKey="installment_status"
+              label="Payment / installments"
+              data={INSTALLMENT_STATUS_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All payments"
+            />
+            <DateFilter
+              filterKey="date"
+              label="Specific Date"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
+            <DateRangeFilter
+              startKey="start_date"
+              endKey="end_date"
+              label="Date Range"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
+            <SearchButton onClick={handleApplyFilters} />
+            <ClearButton onClick={handleClearFilters} />
+          </div>
         </CollapsibleFilters>
 
         <div className="table-container">
@@ -426,8 +440,6 @@ const RecurringDonationsList = () => {
                 <th>Payment</th>
                 <th>Paid</th>
                 <th>Missing</th>
-                {/* <th>Subscription</th> */}
-                {/* <th>Initial order</th> */}
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -435,13 +447,13 @@ const RecurringDonationsList = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="12" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan="10" style={{ textAlign: 'center', padding: 24 }}>
                     Loading...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan="12" style={{ textAlign: 'center' }}>
+                  <td colSpan="10" style={{ textAlign: 'center' }}>
                     No recurring donations found
                   </td>
                 </tr>
@@ -449,43 +461,41 @@ const RecurringDonationsList = () => {
                 rows.map((row) => {
                   const collection = getCollectionBadge(row);
                   return (
-                  <tr key={row.id}>
-                    <td>{row.id}</td>
-                    <td>
-                      <div>{row.donor_name || '-'}</div>
-                      <small style={{ color: '#6b7280' }}>{row.donor_email || ''}</small>
-                    </td>
-                    <td>{formatAmount(row.amount, row.currency)}</td>
-                    <td>{formatBilling(row.billing_interval, row.billing_interval_count)}</td>
-                    <td>{getStatusBadge(row.status)}</td>
-                    <td>
-                      <span
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          backgroundColor: collection.color,
-                          color: 'white',
-                          fontSize: '12px',
-                        }}
-                      >
-                        {collection.label}
-                      </span>
-                    </td>
-                    <td>{row.completed_installment_count ?? 0}</td>
-                    <td>{row.pending_installment_count ?? 0}</td>
-                    {/* <td style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {row.stripe_subscription_id || '-'}
-                    </td> */}
-                    {/* <td>{row.initial_order_id || row.initial_donation_id || '-'}</td> */}
-                    <td>
-                      {row.created_at
-                        ? new Date(row.created_at).toLocaleDateString()
-                        : '-'}
-                    </td>
-                    <td>
-                      <ActionMenu actions={getActions(row)} />
-                    </td>
-                  </tr>
+                    <tr key={row.id}>
+                      <td>{row.id}</td>
+                      <td>
+                        <div>{row.donor_name || '-'}</div>
+                        <small style={{ color: '#6b7280' }}>{row.donor_email || ''}</small>
+                      </td>
+                      <td>{formatAmount(row.amount, row.currency)}</td>
+                      <td>
+                        {formatBilling(row.billing_interval, row.billing_interval_count)}
+                      </td>
+                      <td>{getStatusBadge(row.status)}</td>
+                      <td>
+                        <span
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: collection.color,
+                            color: 'white',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {collection.label}
+                        </span>
+                      </td>
+                      <td>{row.completed_installment_count ?? 0}</td>
+                      <td>{row.pending_installment_count ?? 0}</td>
+                      <td>
+                        {row.created_at
+                          ? new Date(row.created_at).toLocaleDateString()
+                          : '-'}
+                      </td>
+                      <td>
+                        <ActionMenu actions={getActions(row)} />
+                      </td>
+                    </tr>
                   );
                 })
               )}
@@ -503,8 +513,26 @@ const RecurringDonationsList = () => {
             setPageSize(size);
             setCurrentPage(1);
           }}
+          onSortChange={handleSortChange}
+          sortField={sortField}
+          sortOrder={sortOrder}
+          sortOptions={sortOptions}
         />
       </div>
+
+      <ConfirmationModal
+        isOpen={!!deleteTarget}
+        text={
+          deleteTarget
+            ? `Delete subscription #${deleteTarget.id}${
+                deleteTarget.donor_name ? ` (${deleteTarget.donor_name})` : ''
+              }? Installments will be archived. Donors and donations are not deleted.`
+            : ''
+        }
+        delete
+        onConfirm={confirmDelete}
+        onCancel={() => !deleting && setDeleteTarget(null)}
+      />
     </>
   );
 };

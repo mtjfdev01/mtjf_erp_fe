@@ -39,6 +39,7 @@ import AddDonorInteraction from '../../donor_relationship/add';
 import {
   resolveDonorPipelineStage,
 } from '../../donors/shared/donorPipelineConstants';
+import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 import '../../donor_relationship/donor-relationship.css';
 import '../../donors/view/index.css';
 import './index.css';
@@ -574,6 +575,12 @@ const ViewOrganization = () => {
                   <div className="donor-crm-summary-row">
                     <span>Branches</span>
                     <strong>{tree.length}</strong>
+                  </div>
+                  <div className="donor-crm-summary-row">
+                    <span>Created by</span>
+                    <strong>
+                      {org.created_by ? formatAuditActor(org.created_by) : '—'}
+                    </strong>
                   </div>
                   {org.notes && (
                     <div className="donor-crm-summary-row donor-crm-summary-row--block">

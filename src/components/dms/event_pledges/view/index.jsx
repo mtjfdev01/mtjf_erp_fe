@@ -5,6 +5,7 @@ import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
+import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 
 const formatAmount = (value) => {
   const num = Number(value);
@@ -146,6 +147,10 @@ const ViewEventPledge = () => {
               <div>
                 <strong>Created</strong>
                 <p>{formatDate(row.created_at)}</p>
+              </div>
+              <div>
+                <strong>Created by</strong>
+                <p>{row.created_by ? formatAuditActor(row.created_by) : '—'}</p>
               </div>
               <div>
                 <strong>Updated</strong>

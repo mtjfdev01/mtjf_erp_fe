@@ -1028,6 +1028,8 @@
   color: #0f172a;
   font-weight: 600;
   text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
   word-break: break-word;
 }
 

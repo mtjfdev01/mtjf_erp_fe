@@ -192,12 +192,14 @@ const ViewDonationBox = () => {
               <div className="view-item">
                 <span className="view-item-label">On-site collection (GPS)</span>
                 <span className="view-item-value">
-                  {donationBox.require_collection_location === false
-                    ? 'No — collect from anywhere'
-                    : 'Yes — device GPS required'}
+                  {donationBox.registration_latitude != null &&
+                  donationBox.registration_longitude != null
+                    ? 'Yes — coordinates saved'
+                    : 'No — no coordinates saved'}
                 </span>
               </div>
-              {donationBox.require_collection_location !== false && (
+              {donationBox.registration_latitude != null &&
+                donationBox.registration_longitude != null && (
                 <>
               <div className="view-item view-item--full">
                 <span className="view-item-label">GPS location details</span>
@@ -216,7 +218,6 @@ const ViewDonationBox = () => {
                   {formatRadiusDisplay(donationBox.location_radius_meters || 100)}
                 </span>
               </div>
-              {donationBox.registration_latitude != null && donationBox.registration_longitude != null && (
               <div className="view-item">
                 <span className="view-item-label">Map</span>
                 <span className="view-item-value">
@@ -232,7 +233,6 @@ const ViewDonationBox = () => {
                   </a>
                 </span>
               </div>
-              )}
                 </>
               )}
             </div>

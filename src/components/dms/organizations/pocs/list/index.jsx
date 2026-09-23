@@ -56,6 +56,8 @@ const CsrPocsList = () => {
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
+  const [sortField, setSortField] = useState('created_at');
+  const [sortOrder, setSortOrder] = useState('DESC');
   const [tempFilters, setTempFilters] = useState(emptyFilters);
   const [appliedFilters, setAppliedFilters] = useState(emptyFilters);
   const [selectedCsrDonor, setSelectedCsrDonor] = useState(null);
@@ -64,10 +66,28 @@ const CsrPocsList = () => {
     setTempFilters((prev) => ({ ...prev, [key]: value }));
   };
 
+  const handleSortChange = (field, order) => {
+    setSortField(field);
+    setSortOrder(order);
+    setCurrentPage(1);
+  };
+
+  const sortOptions = [
+    { value: 'created_at', label: 'Created Date' },
+    { value: 'updated_at', label: 'Updated Date' },
+    { value: 'name', label: 'Name' },
+    { value: 'role', label: 'Role' },
+    { value: 'is_primary', label: 'Primary' },
+    { value: 'is_active', label: 'Active' },
+    { value: 'id', label: 'ID' },
+  ];
+
   const queryParams = useMemo(() => {
     const params = {
       page: currentPage,
       pageSize,
+      sortField,
+      sortOrder,
     };
     if (appliedFilters.search?.trim()) params.search = appliedFilters.search.trim();
     if (appliedFilters.csr_donor_id) params.csr_donor_id = appliedFilters.csr_donor_id;
@@ -75,7 +95,7 @@ const CsrPocsList = () => {
     if (appliedFilters.is_primary !== '') params.is_primary = appliedFilters.is_primary;
     if (appliedFilters.is_active !== '') params.is_active = appliedFilters.is_active;
     return params;
-  }, [appliedFilters, currentPage, pageSize]);
+  }, [appliedFilters, currentPage, pageSize, sortField, sortOrder]);
 
   const fetchRows = async () => {
     if (!canList) {
@@ -342,6 +362,10 @@ const CsrPocsList = () => {
                 setPageSize(size);
                 setCurrentPage(1);
               }}
+              onSortChange={handleSortChange}
+              sortField={sortField}
+              sortOrder={sortOrder}
+              sortOptions={sortOptions}
             />
           )}
 

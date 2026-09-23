@@ -4,6 +4,7 @@ import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import { getInKindCategoryLabel } from '../../../../../utils/inKindCategories';
+import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../inKindItems.css';
 
 const ViewInKindItem = () => {
@@ -161,6 +162,12 @@ const ViewInKindItem = () => {
                 <div className="view-item">
                   <span className="view-item-label">Created Date</span>
                   <span className="view-item-value">{formatDate(item.created_at)}</span>
+                </div>
+                <div className="view-item">
+                  <span className="view-item-label">Created by</span>
+                  <span className="view-item-value">
+                    {item.created_by ? formatAuditActor(item.created_by) : '—'}
+                  </span>
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">Last Updated</span>

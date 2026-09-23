@@ -24,6 +24,7 @@ import DonationPendingAttachments, {
   uploadPendingDonationAttachments,
 } from '../../shared/DonationPendingAttachments';
 import '../../shared/DonationPendingAttachments.css';
+import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import { useAuth } from '../../../../../context/AuthContext';
 import { isLocalId } from '../../../../../offline/handlers';
 import { toast } from 'react-toastify';
@@ -1214,6 +1215,12 @@ const ViewOnlineDonation = () => {
                 <span className="view-item-label">Referred By</span>
                 <span className="view-item-value">
                   {formatReferrerUser(resolveDonationReferrer(donation)) || '-'}
+                </span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">Created by</span>
+                <span className="view-item-value">
+                  {donation.created_by ? formatAuditActor(donation.created_by) : '—'}
                 </span>
               </div>
               { donation?.donation_method && donation.donation_method == "cheque" &&( 

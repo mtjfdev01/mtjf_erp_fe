@@ -44,8 +44,10 @@ const AddDonationBoxDonation = () => {
   }, [permissions]);
 
   const activeBox = form.donation_box || donationBox;
-  const boxRequiresGps = activeBox?.require_collection_location !== false;
-  const needsDeviceGps = boxRequiresGps && !canBypassLocation;
+  const boxHasCoords =
+    activeBox?.registration_latitude != null &&
+    activeBox?.registration_longitude != null;
+  const needsDeviceGps = boxHasCoords && !canBypassLocation;
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -284,12 +286,12 @@ const AddDonationBoxDonation = () => {
                 Your device GPS (Google Maps) will be checked against this box&apos;s registered shop location when you submit.
               </p>
             )}
-            {!boxRequiresGps && (
+            {!boxHasCoords && (
               <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#0369a1' }}>
-                This box allows collection from anywhere — no device GPS check.
+                This box has no saved GPS coordinates — no device GPS check.
               </p>
             )}
-            {boxRequiresGps && canBypassLocation && (
+            {boxHasCoords && canBypassLocation && (
               <p style={{ margin: '12px 0 0', fontSize: '13px', color: '#0369a1' }}>
                 GPS check bypass is enabled for your account.
               </p>
