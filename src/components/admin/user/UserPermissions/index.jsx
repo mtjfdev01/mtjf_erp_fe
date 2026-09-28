@@ -95,11 +95,11 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       submodules: {
         online_donations: {
           label: 'Online Donations',
-          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport', 'reconciler']
         },
         offline_donations: {
           label: 'Offline Donations',
-          actions: ['create','list_view', 'view', 'update', 'delete']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'reconciler']
         },
         donation_box: {
           label: 'Donation Box',
@@ -107,7 +107,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         donation_box_donations: {
           label: 'Donation Box Donations',
-          actions: ['create','list_view', 'view', 'update', 'delete', 'bypass_location']
+          actions: ['create','list_view', 'view', 'update', 'delete', 'bypass_location', 'reconciler']
         },
         donation_in_kind_items: {
           label: 'In Kind Items',
@@ -115,7 +115,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         in_kind_donations: {
           label: 'In Kind Donations',
-          actions: ['create', 'list_view', 'view', 'update', 'delete', 'completing']
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'completing', 'reconciler']
         },
         dms_todos: {
           label: 'My To-Dos',
@@ -164,7 +164,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         recurring_donations: {
           label: 'Recurring Donations',
-          actions: ['create', 'list_view', 'view', 'update', 'delete']
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'reconciler']
         },
         recurring_donors: {
           label: 'Recurring Donors',
@@ -573,6 +573,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     manage_overview: 'Manage Overview',
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',
+    reconciler: 'Reconciler (verify / change status)',
   };
 
   const initializePermissions = () => {

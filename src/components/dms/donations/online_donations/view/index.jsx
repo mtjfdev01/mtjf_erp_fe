@@ -26,6 +26,7 @@ import DonationPendingAttachments, {
 import '../../shared/DonationPendingAttachments.css';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import { useAuth } from '../../../../../context/AuthContext';
+import { canReconcileDonations } from '../../../../../utils/permissions';
 import { isLocalId } from '../../../../../offline/handlers';
 import { toast } from 'react-toastify';
 import {
@@ -74,8 +75,22 @@ const ViewOnlineDonation = () => {
   );
   const listBackPath = resolveDonationListBackPath(location, donationRoutes);
   const pageTitle = `View ${donationRoutes.pageLabel}`;
-  const { hasAnyPermission } = useAuth();
+  const { hasAnyPermission, permissions } = useAuth();
   const [donation, setDonation] = useState(null);
+  const canReconcile = useMemo(
+    () =>
+      canReconcileDonations(permissions, {
+        channel: donationRoutes.channel,
+        donation_method: donation?.donation_method,
+        donation_source: donation?.donation_source,
+      }),
+    [
+      permissions,
+      donationRoutes.channel,
+      donation?.donation_method,
+      donation?.donation_source,
+    ],
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
@@ -176,6 +191,7 @@ const ViewOnlineDonation = () => {
     'super_admin',
     'fund_raising_manager',
     'fund_raising.in_kind_donations.completing',
+    'fund_raising.in_kind_donations.reconciler',
   ]);
 
   // Links for unpaid / non-completed; thanks + receipt only after completion
@@ -197,10 +213,13 @@ const ViewOnlineDonation = () => {
   const showReceiptSection =
     isDonationCompleted && (canViewReceipt || canSendReceiptEmail);
   const showMarkCompleted = isInKindDonation
-    ? !isDonationCompleted && canApproveInKind
-    : !isDonationCompleted;
-  const showMarkFailed = isInKindDonation ? false : !isDonationFailed;
+    ? !isDonationCompleted && (canApproveInKind || canReconcile)
+    : !isDonationCompleted && canReconcile;
+  const showMarkFailed =
+    !isDonationFailed && !isDonationCompleted && canReconcile;
   const showStatusActions = showMarkCompleted || showMarkFailed;
+  const showApproveRejectInDetails =
+    (isInKindDonation && canApproveInKind) || canReconcile;
   const isPendingOffline = isLocalId(id);
 
   useEffect(() => {
@@ -627,7 +646,7 @@ const ViewOnlineDonation = () => {
       if (response.data.success) {
         setMessageStatus({
           type: 'success',
-          message: response.data.message || 'Donation marked as completed successfully!',
+          message: response.data.message || 'Donation approved and marked completed.',
         });
         await fetchDonation();
         setAuditRefreshKey((k) => k + 1);
@@ -635,13 +654,13 @@ const ViewOnlineDonation = () => {
       } else {
         setMessageStatus({
           type: 'error',
-          message: response.data.message || 'Failed to mark donation as completed',
+          message: response.data.message || 'Failed to approve donation',
         });
       }
     } catch (err) {
       setMessageStatus({
         type: 'error',
-        message: err.response?.data?.message || 'Failed to mark donation as completed. Please try again.',
+        message: err.response?.data?.message || 'Failed to approve donation. Please try again.',
       });
       console.error('Error marking donation as completed:', err);
     } finally {
@@ -666,7 +685,7 @@ const ViewOnlineDonation = () => {
       if (response.data.success) {
         setMessageStatus({
           type: 'success',
-          message: response.data.message || 'Donation marked as failed successfully!',
+          message: response.data.message || 'Donation rejected.',
         });
         await fetchDonation();
         setAuditRefreshKey((k) => k + 1);
@@ -674,13 +693,13 @@ const ViewOnlineDonation = () => {
       } else {
         setMessageStatus({
           type: 'error',
-          message: response.data.message || 'Failed to mark donation as failed',
+          message: response.data.message || 'Failed to reject donation',
         });
       }
     } catch (err) {
       setMessageStatus({
         type: 'error',
-        message: err.response?.data?.message || 'Failed to mark donation as failed. Please try again.',
+        message: err.response?.data?.message || 'Failed to reject donation. Please try again.',
       });
       console.error('Error marking donation as failed:', err);
     } finally {
@@ -1163,31 +1182,56 @@ const ViewOnlineDonation = () => {
                 <span className="view-item-label">Status</span>
                 <span className="view-item-value">{getStatusBadge(donation.status)}</span>
               </div>
-              {isInKindDonation && canApproveInKind && !isDonationCompleted && (
+              {showApproveRejectInDetails && !isDonationCompleted && !isDonationFailed && (
                 <div className="view-item">
-                  <span className="view-item-label">Approve</span>
-                  <span className="view-item-value">
-                    <button
-                      type="button"
-                      className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
-                      onClick={markAsCompleted}
-                      disabled={markingCompleted}
-                    >
-                      <span className="donation-comm-btn__icon">
-                        <FiCheckCircle />
-                      </span>
-                      <span className="donation-comm-btn__label">
-                        {markingCompleted ? 'Approving…' : 'Approve'}
-                      </span>
-                    </button>
+                  <span className="view-item-label">Review</span>
+                  <span className="view-item-value" style={{ display: 'inline-flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {showMarkCompleted && (
+                      <button
+                        type="button"
+                        className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
+                        onClick={markAsCompleted}
+                        disabled={markingCompleted || markingFailed}
+                      >
+                        <span className="donation-comm-btn__icon">
+                          <FiCheckCircle />
+                        </span>
+                        <span className="donation-comm-btn__label">
+                          {markingCompleted ? 'Approving…' : 'Approve'}
+                        </span>
+                      </button>
+                    )}
+                    {showMarkFailed && (
+                      <button
+                        type="button"
+                        className="donation-comm-btn donation-comm-btn--failed donation-comm-btn--inline"
+                        onClick={markAsFailed}
+                        disabled={markingCompleted || markingFailed}
+                      >
+                        <span className="donation-comm-btn__icon">
+                          <FiXCircle />
+                        </span>
+                        <span className="donation-comm-btn__label">
+                          {markingFailed ? 'Rejecting…' : 'Reject'}
+                        </span>
+                      </button>
+                    )}
                   </span>
                 </div>
               )}
-              {isInKindDonation && isDonationCompleted && (
+              {showApproveRejectInDetails && isDonationCompleted && (
                 <div className="view-item">
-                  <span className="view-item-label">Approve</span>
+                  <span className="view-item-label">Review</span>
                   <span className="view-item-value">
                     <span className="status-badge status-completed">Approved</span>
+                  </span>
+                </div>
+              )}
+              {showApproveRejectInDetails && isDonationFailed && (
+                <div className="view-item">
+                  <span className="view-item-label">Review</span>
+                  <span className="view-item-value">
+                    <span className="status-badge status-failed">Rejected</span>
                   </span>
                 </div>
               )}
@@ -1778,12 +1822,8 @@ const ViewOnlineDonation = () => {
                       </span>
                         <span className="donation-comm-btn__label">
                           {markingCompleted
-                            ? isInKindDonation
-                              ? 'Approving…'
-                              : 'Updating…'
-                            : isInKindDonation
-                              ? 'Approve'
-                              : 'Completed'}
+                            ? 'Approving…'
+                            : 'Approve'}
                         </span>
                     </button>
                   )}
@@ -1792,13 +1832,13 @@ const ViewOnlineDonation = () => {
                       type="button"
                       className="donation-comm-btn donation-comm-btn--failed donation-comm-btn--inline"
                       onClick={markAsFailed}
-                      disabled={markingFailed}
+                      disabled={markingFailed || markingCompleted}
                     >
                       <span className="donation-comm-btn__icon">
                         <FiXCircle />
                       </span>
                       <span className="donation-comm-btn__label">
-                        {markingFailed ? 'Updating…' : 'Failed'}
+                        {markingFailed ? 'Rejecting…' : 'Reject'}
                       </span>
                     </button>
                   )}
@@ -1912,19 +1952,13 @@ const ViewOnlineDonation = () => {
                         type="button"
                         className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
                         onClick={markAsCompleted}
-                        disabled={markingCompleted}
+                        disabled={markingCompleted || markingFailed}
                       >
                         <span className="donation-comm-btn__icon">
                           <FiCheckCircle />
                         </span>
                         <span className="donation-comm-btn__label">
-                          {markingCompleted
-                            ? isInKindDonation
-                              ? 'Approving…'
-                              : 'Updating…'
-                            : isInKindDonation
-                              ? 'Approve'
-                              : 'Completed'}
+                          {markingCompleted ? 'Approving…' : 'Approve'}
                         </span>
                       </button>
                     )}
@@ -1933,13 +1967,13 @@ const ViewOnlineDonation = () => {
                         type="button"
                         className="donation-comm-btn donation-comm-btn--failed donation-comm-btn--inline"
                         onClick={markAsFailed}
-                        disabled={markingFailed}
+                        disabled={markingFailed || markingCompleted}
                       >
                         <span className="donation-comm-btn__icon">
                           <FiXCircle />
                         </span>
                         <span className="donation-comm-btn__label">
-                          {markingFailed ? 'Updating…' : 'Failed'}
+                          {markingFailed ? 'Rejecting…' : 'Reject'}
                         </span>
                       </button>
                     )}

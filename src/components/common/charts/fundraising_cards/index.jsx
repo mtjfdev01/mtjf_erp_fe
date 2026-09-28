@@ -145,25 +145,25 @@ const FundraisingCards = ({
   if (!cards) return null;
 
   const cardItems = [
-    { key: 'committed_amount', label: 'Committed Amount', isCurrency: true, subtitle: 'Active subscription pledges' },
+    { key: 'committed_amount', label: 'Committed Amount', isCurrency: true, subtitle: 'Active subscription pledges in period' },
     { key: 'total_donations_amount', label: 'Completed Donations', isCurrency: true, subtitle: 'Total amount collected' },
     { key: 'donation_box_donations_amount', label: 'Donation Box Collection', isCurrency: true, subtitle: 'Total amount collected' },
     { key: 'total_recurring_collection', label: 'Total Recurring Collection', isCurrency: true, subtitle: 'Completed installments in period' },
     { key: 'individual_donors_count', label: 'Individual Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'corporate_donors_count', label: 'Corporate Donors', isCurrency: false, subtitle: 'Total donors' },
-    { key: 'recurring_donors_count', label: 'Active Recurring Donors', isCurrency: false, subtitle: 'With paid installments (same as list)' },
+    { key: 'recurring_donors_count', label: 'Active Recurring Donors', isCurrency: false, subtitle: 'With paid installments in period' },
     { key: 'total_pending_installments_amount', label: 'Due Installments', isCurrency: true, subtitle: 'Subscriptions awaiting first installment' },
-    { key: 'recurring_donations_count', label: 'Active Recurring Donations', isCurrency: false, subtitle: 'With paid installments (same as list)' },
+    { key: 'recurring_donations_count', label: 'Active Recurring Donations', isCurrency: false, subtitle: 'With paid installments in period' },
     { key: 'multi_time_donors_count', label: 'Multi-time Donors', isCurrency: false, subtitle: 'Total donors' },
     { key: 'active_donation_boxes_count', label: 'Active Donation Boxes', isCurrency: false, subtitle: 'Active boxes' },
     { key: 'events_count', label: 'Events', isCurrency: false, subtitle: 'Total events' },
     { key: 'campaigns_count', label: 'Campaigns', isCurrency: false, subtitle: 'Total campaigns' },
     { key: 'total_donations_count', label: 'Donations (count)', isCurrency: false, subtitle: 'Completed donations' },
-    { key: 'registered_recurring_donors_count', label: 'Total Registered Recurring Donors', isCurrency: false, subtitle: 'All ledger subscriptions (same as list)' },
-    { key: 'outstanding_donors_count', label: 'Due Donors', isCurrency: false, subtitle: 'Not completed installment yet (same as list pending)' },
+    { key: 'registered_recurring_donors_count', label: 'Total Registered Recurring Donors', isCurrency: false, subtitle: 'Subscriptions registered in period' },
+    { key: 'outstanding_donors_count', label: 'Due Donors', isCurrency: false, subtitle: 'Registered in period, no paid installment yet' },
     // { key: 'committed_monthly_amount', label: 'Committed Monthly', isCurrency: true, subtitle: 'Monthly run-rate of active recurring' },
-    { key: 'committed_monthly_amount', label: 'Committed Monthly', isCurrency: true, subtitle: 'Monthly run-rate of active recurring' },
-    { key: 'this_month_recurring_collection', label: 'This Month Collection', isCurrency: true, subtitle: 'Completed recurring this calendar month' },
+    { key: 'committed_monthly_amount', label: 'Committed Monthly', isCurrency: true, subtitle: 'Monthly run-rate of active recurring in period' },
+    { key: 'this_month_recurring_collection', label: 'This Month Collection', isCurrency: true, subtitle: 'This calendar month within selected period' },
   ];
 
   // Default Fund Raising dashboard: original cards only (new KPIs are opt-in via cardKeys)

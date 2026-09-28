@@ -15,7 +15,7 @@ import {
   FiTrash2,
 } from 'react-icons/fi';
 import { useAuth } from '../../../../context/AuthContext';
-import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
+import { hasPermission, isSuperAdmin, canReconcileRecurring } from '../../../../utils/permissions';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 
 const INSTALLMENT_STATUS_OPTIONS = [
@@ -72,6 +72,16 @@ const RecurringDonationView = () => {
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'delete'),
     [permissions, isFrAdmin],
   );
+
+  const canReconcile = useMemo(
+    () => canReconcileRecurring(permissions),
+    [permissions],
+  );
+
+  const installmentStatusOptions = useMemo(() => {
+    if (canReconcile) return INSTALLMENT_STATUS_OPTIONS;
+    return [{ value: 'pending', label: 'Pending' }];
+  }, [canReconcile]);
 
   const load = useCallback(async () => {
     try {
@@ -348,7 +358,9 @@ const RecurringDonationView = () => {
     data;
   const canSendInstallmentLink = !subscription.stripe_subscription_id;
   const canMarkPaid =
-    !subscription.stripe_subscription_id && pendingInstallments.length > 0;
+    canReconcile &&
+    !subscription.stripe_subscription_id &&
+    pendingInstallments.length > 0;
   // Edit installments for non-Stripe; delete allowed for all when permitted
   const canEditInstallments =
     canUpdate && !subscription.stripe_subscription_id;
@@ -755,6 +767,7 @@ const RecurringDonationView = () => {
                             {isEditing ? (
                               <select
                                 value={editForm.status}
+                                disabled={!canReconcile}
                                 onChange={(e) =>
                                   setEditForm((prev) => ({
                                     ...prev,
@@ -762,7 +775,7 @@ const RecurringDonationView = () => {
                                   }))
                                 }
                               >
-                                {INSTALLMENT_STATUS_OPTIONS.map((opt) => (
+                                {installmentStatusOptions.map((opt) => (
                                   <option key={opt.value} value={opt.value}>
                                     {opt.label}
                                   </option>

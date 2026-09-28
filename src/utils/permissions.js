@@ -570,3 +570,107 @@ export const getComplaintCasePermissions = (permissions, department, userRole) =
     canAddNarrative: has('add_narrative') || has('investigate'),
   };
 };
+
+/**
+ * Map UI channel / donation fields → reconciler module.
+ * online ← website source; in_kind ← method; else offline (incl. CSR / fund_raising).
+ */
+export const resolveDonationReconcileChannel = ({
+  channel,
+  donation_method,
+  donation_source,
+} = {}) => {
+  const method = String(donation_method || '').toLowerCase();
+  if (method === 'in_kind' || channel === 'in_kind') return 'in_kind';
+  if (channel === 'online') return 'online';
+  if (channel === 'offline' || channel === 'csr') return 'offline';
+  const source = String(donation_source || '').toLowerCase();
+  if (source === 'website') return 'online';
+  return 'offline';
+};
+
+const DONATION_RECONCILE_MODULE = {
+  online: 'online_donations',
+  offline: 'offline_donations',
+  in_kind: 'in_kind_donations',
+};
+
+/**
+ * Reconciler: may set donation status beyond pending for a specific channel.
+ * Pass channel ('online'|'offline'|'in_kind'|csr) or method/source via options.
+ * Super admin and fund_raising_manager always pass.
+ */
+export const canReconcileDonations = (permissions, channelOrOptions) => {
+  if (!permissions) return false;
+  if (permissions.super_admin === true) return true;
+  if (permissions.fund_raising_manager === true) return true;
+
+  let channel = null;
+  if (typeof channelOrOptions === 'string') {
+    channel = resolveDonationReconcileChannel({ channel: channelOrOptions });
+  } else if (channelOrOptions && typeof channelOrOptions === 'object') {
+    channel = resolveDonationReconcileChannel(channelOrOptions);
+  }
+
+  if (channel && DONATION_RECONCILE_MODULE[channel]) {
+    return hasPermission(
+      permissions,
+      'fund_raising',
+      DONATION_RECONCILE_MODULE[channel],
+      'reconciler',
+    );
+  }
+
+  // No channel: any donation reconciler (legacy / generic gates)
+  return (
+    hasPermission(permissions, 'fund_raising', 'online_donations', 'reconciler') ||
+    hasPermission(permissions, 'fund_raising', 'offline_donations', 'reconciler') ||
+    hasPermission(permissions, 'fund_raising', 'in_kind_donations', 'reconciler')
+  );
+};
+
+export const canReconcileBoxCollections = (permissions) => {
+  if (!permissions) return false;
+  if (permissions.super_admin === true) return true;
+  if (permissions.fund_raising_manager === true) return true;
+  return hasPermission(
+    permissions,
+    'fund_raising',
+    'donation_box_donations',
+    'reconciler',
+  );
+};
+
+export const canReconcileRecurring = (permissions) => {
+  if (!permissions) return false;
+  if (permissions.super_admin === true) return true;
+  if (permissions.fund_raising_manager === true) return true;
+  return hasPermission(
+    permissions,
+    'fund_raising',
+    'recurring_donations',
+    'reconciler',
+  );
+};
+
+/** Status options: pending-only unless reconciler for that channel. */
+export const donationStatusOptionsForUser = (
+  permissions,
+  allOptions,
+  currentStatus = 'pending',
+  channelOrOptions = null,
+) => {
+  const pendingOnly = [{ value: 'pending', label: 'Pending' }];
+  if (canReconcileDonations(permissions, channelOrOptions)) {
+    return allOptions;
+  }
+  const current = String(currentStatus || 'pending').toLowerCase();
+  if (current && current !== 'pending') {
+    return [
+      ...pendingOnly,
+      { value: current, label: current },
+    ];
+  }
+  return pendingOnly;
+};
+

@@ -8,7 +8,7 @@ import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import { projectCards } from '../../../../utils/program';
 import { useAuth } from '../../../../context/AuthContext';
-import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
+import { hasPermission, isSuperAdmin, canReconcileRecurring } from '../../../../utils/permissions';
 
 const INTERVAL_OPTIONS = [
   { value: 'day', label: 'Daily' },
@@ -75,6 +75,14 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { permissions, user } = useAuth();
+  const canReconcile = useMemo(
+    () => canReconcileRecurring(permissions),
+    [permissions],
+  );
+  const installmentStatusOptions = useMemo(() => {
+    if (canReconcile) return INSTALLMENT_STATUS_OPTIONS;
+    return [{ value: 'pending', label: 'Pending' }];
+  }, [canReconcile]);
   const [form, setForm] = useState({ ...emptyForm });
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [loading, setLoading] = useState(isEdit);
@@ -224,7 +232,9 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
             ...(isEdit
               ? {}
               : {
-                  installment_status: form.installment_status || 'pending',
+                  installment_status: canReconcile
+                    ? form.installment_status || 'pending'
+                    : 'pending',
                 }),
           };
 
@@ -456,7 +466,8 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
                   name="installment_status"
                   value={form.installment_status}
                   onChange={handleChange}
-                  options={INSTALLMENT_STATUS_OPTIONS}
+                  options={installmentStatusOptions}
+                  disabled={!canReconcile}
                 />
               )}
             </div>

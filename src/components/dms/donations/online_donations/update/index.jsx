@@ -18,7 +18,11 @@ import {
   resolveDonationListBackPath,
 } from '../../shared/donationListRoutes';
 import { useAuth } from '../../../../../context/AuthContext';
-import { hasPermission } from '../../../../../utils/permissions';
+import {
+  hasPermission,
+  canReconcileDonations,
+  donationStatusOptionsForUser,
+} from '../../../../../utils/permissions';
 import './index.css';
 
 const donationTypeOptions = [
@@ -110,14 +114,6 @@ const UpdateOnlineDonation = () => {
   const listBackPath = resolveDonationListBackPath(location, donationRoutes);
   const pageTitle = `Update ${donationRoutes.pageLabel}`;
 
-  const canCompleteInKind = useMemo(
-    () =>
-      permissions?.super_admin === true ||
-      permissions?.fund_raising_manager === true ||
-      hasPermission(permissions, 'fund_raising', 'in_kind_donations', 'completing'),
-    [permissions],
-  );
-
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -148,6 +144,29 @@ const UpdateOnlineDonation = () => {
     bank: '',
     transaction_id: '',
   });
+
+  const canReconcile = useMemo(
+    () =>
+      canReconcileDonations(permissions, {
+        channel: donationRoutes.channel,
+        donation_method: form.donation_method,
+        donation_source: form.donation_source,
+      }),
+    [
+      permissions,
+      donationRoutes.channel,
+      form.donation_method,
+      form.donation_source,
+    ],
+  );
+
+  const canCompleteInKind = useMemo(
+    () =>
+      canReconcile ||
+      hasPermission(permissions, 'fund_raising', 'in_kind_donations', 'completing') ||
+      hasPermission(permissions, 'fund_raising', 'in_kind_donations', 'reconciler'),
+    [permissions, canReconcile],
+  );
 
   useEffect(() => {
     const fetchDonation = async () => {
@@ -210,18 +229,46 @@ const UpdateOnlineDonation = () => {
   const isCheque = form.donation_method === 'cheque';
 
   const inKindStatusOptions = useMemo(() => {
-    if (!isInKind) return statusOptions;
+    const channelOpts = {
+      channel: donationRoutes.channel,
+      donation_method: form.donation_method,
+      donation_source: form.donation_source,
+    };
+    if (!isInKind) {
+      return donationStatusOptionsForUser(
+        permissions,
+        statusOptions,
+        form.status,
+        channelOpts,
+      );
+    }
     const current = String(form.status || 'pending').toLowerCase();
     const base = [{ value: 'pending', label: 'Pending' }];
     if (canCompleteInKind || current === 'completed') {
       base.push({ value: 'completed', label: 'Completed' });
     }
-    // Keep current non-standard status visible so the select stays controlled
+    if (canReconcile) {
+      ['failed', 'cancelled', 'registered'].forEach((v) => {
+        if (!base.some((o) => o.value === v)) {
+          const fromAll = statusOptions.find((o) => o.value === v);
+          if (fromAll) base.push(fromAll);
+        }
+      });
+    }
     if (current && !base.some((o) => o.value === current)) {
       base.push({ value: current, label: current });
     }
     return base;
-  }, [isInKind, canCompleteInKind, form.status]);
+  }, [
+    isInKind,
+    canCompleteInKind,
+    canReconcile,
+    permissions,
+    form.status,
+    form.donation_method,
+    form.donation_source,
+    donationRoutes.channel,
+  ]);
 
   const methodOptions = useMemo(() => {
     const current = form.donation_method;
@@ -260,6 +307,22 @@ const UpdateOnlineDonation = () => {
 
       if (completingInKind && !canCompleteInKind) {
         setError('You do not have permission to mark in-kind donations as completed.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      const statusChanging =
+        String(form.status || '').toLowerCase() !==
+        String(initialStatus || '').toLowerCase();
+      const nextIsNonPending = !['pending', ''].includes(nextStatus);
+      if (
+        statusChanging &&
+        (nextIsNonPending ||
+          !['pending', ''].includes(String(initialStatus || '').toLowerCase())) &&
+        !canReconcile &&
+        !(completingInKind && canCompleteInKind)
+      ) {
+        setError('Only a reconciler can change donation status away from pending.');
         setIsSubmitting(false);
         return;
       }
@@ -429,11 +492,7 @@ const UpdateOnlineDonation = () => {
                 value={form.status}
                 onChange={handleChange}
                 options={inKindStatusOptions}
-                disabled={
-                  isInKind &&
-                  !canCompleteInKind &&
-                  String(form.status || '').toLowerCase() === 'pending'
-                }
+                disabled={!canReconcile && !(isInKind && canCompleteInKind)}
               />
             </div>
           </div>

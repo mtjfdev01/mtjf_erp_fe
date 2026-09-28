@@ -21,6 +21,11 @@ import {
 } from '../../../dms/donations/shared/donationListRoutes';
 import { toast } from 'react-toastify';
 import { getInKindCategoryLabel } from '../../../../utils/inKindCategories';
+import { useAuth } from '../../../../context/AuthContext';
+import {
+  canReconcileDonations,
+  donationStatusOptionsForUser,
+} from '../../../../utils/permissions';
 
 const AddDonation = ({
   embedded = false,
@@ -33,6 +38,7 @@ const AddDonation = ({
 } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { permissions } = useAuth();
   const isCsrHubAddRoute = !embedded && location.pathname.includes('/dms/csr-donations/add');
   const isInKindHubAddRoute =
     !embedded && location.pathname.includes('/dms/in-kind-donations/add');
@@ -308,19 +314,35 @@ const AddDonation = ({
   // Check if cheque is selected as payment method — declared early for amount sync
   const isChequeSelected = form.donation_method === 'cheque';
   const isInKindSelected = form.donation_method === 'in_kind';
+  const canReconcile = useMemo(
+    () =>
+      canReconcileDonations(permissions, {
+        channel: donationRoutes.channel,
+        donation_method:
+          isInKindSelected || isInKindHubAddRoute ? 'in_kind' : undefined,
+      }),
+    [
+      permissions,
+      donationRoutes.channel,
+      isInKindSelected,
+      isInKindHubAddRoute,
+    ],
+  );
 
   // In-kind: amount is always the sum of estimated values (read-only for user).
+  // Non-reconciler: keep status forced to pending.
   useEffect(() => {
     if (!isInKindSelected) return;
     const total = sumInKindEstimatedValue(form.in_kind_items);
     const nextAmount = Number.isFinite(total) ? String(total) : '0';
     setForm((prev) => {
       if (prev.donation_method !== 'in_kind') return prev;
-      if (String(prev.amount) === nextAmount && prev.status === 'pending') return prev;
-      return { ...prev, amount: nextAmount, status: 'pending' };
+      const nextStatus = canReconcile ? prev.status : 'pending';
+      if (String(prev.amount) === nextAmount && prev.status === nextStatus) return prev;
+      return { ...prev, amount: nextAmount, status: nextStatus };
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isInKindSelected, form.in_kind_items]);
+  }, [isInKindSelected, form.in_kind_items, canReconcile]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -440,11 +462,19 @@ const AddDonation = ({
           ? 'fund_raising'
           : isInKindHubAddRoute || form.donation_method === 'in_kind'
             ? String(form.source || '').trim() || 'fund_raising'
-            : String(form.source || '').trim() || 'website',
+            : String(form.source || '').trim() ||
+              (donationRoutes.channel === 'offline' ||
+              donationRoutes.channel === 'csr'
+                ? 'fund_raising'
+                : 'website'),
         status:
           form.donation_method === 'in_kind' || isInKindHubAddRoute
-            ? 'pending'
-            : form.status,
+            ? canReconcile
+              ? form.status || 'pending'
+              : 'pending'
+            : canReconcile
+              ? form.status
+              : 'pending',
         project_id: form.project_id || null,
         project_name: form.project_name,
         ...(isQurbaniProject
@@ -594,6 +624,35 @@ const AddDonation = ({
     { value: 'cancelled', label: 'Cancelled' },
     { value: 'registered', label: 'Registered' }
   ];
+
+  const visibleStatusOptions = useMemo(() => {
+    const channelOpts = {
+      channel: donationRoutes.channel,
+      donation_method: isInKindSelected ? 'in_kind' : undefined,
+    };
+    if (isInKindSelected) {
+      if (!canReconcileDonations(permissions, channelOpts)) {
+        return [{ value: 'pending', label: 'Pending' }];
+      }
+      return [
+        { value: 'pending', label: 'Pending' },
+        { value: 'completed', label: 'Completed' },
+        { value: 'failed', label: 'Failed' },
+        { value: 'cancelled', label: 'Cancelled' },
+      ];
+    }
+    return donationStatusOptionsForUser(
+      permissions,
+      statusOptions,
+      form.status,
+      channelOpts,
+    );
+  }, [
+    permissions,
+    isInKindSelected,
+    form.status,
+    donationRoutes.channel,
+  ]);
 
   const currencyOptions = [
     { value: 'PKR', label: 'PKR - Pakistani Rupee' },
@@ -1058,13 +1117,9 @@ const AddDonation = ({
                 name="status"
                 value={form.status}
                 onChange={handleChange}
-                options={
-                  isInKindSelected
-                    ? [{ value: 'pending', label: 'Pending' }]
-                    : statusOptions
-                }
+                options={visibleStatusOptions}
                 required
-                disabled={isInKindSelected}
+                disabled={!canReconcile}
               />
 
               <HybridDropdown

@@ -20,7 +20,7 @@ import useListRowSelection from '../../../../../hooks/useListRowSelection';
 import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
 import { NotificationRefreshPresets } from '../../../../../utils/notifications/events';
 
-import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp, FiCheckCircle } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
@@ -29,6 +29,7 @@ import MultiSelect from '../../../../common/MultiSelect';
 import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
 import { useAuth } from '../../../../../context/AuthContext';
 import { toast } from 'react-toastify';
+import { canReconcileDonations } from '../../../../../utils/permissions';
 import {
   getDonationListRoutes,
   donationViewPath,
@@ -46,7 +47,7 @@ const OnlineDonationsList = ({
 } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasAnyPermission } = useAuth();
+  const { hasAnyPermission, permissions } = useAuth();
   const [searchParams] = useSearchParams();
   const { donorId: routeDonorId, csrDonorId: routeCsrDonorId } = useParams();
   // Dedicated donor/CSR donations page, or legacy query params, or profile embed
@@ -82,10 +83,10 @@ const OnlineDonationsList = ({
         'super_admin',
         'fund_raising_manager',
         'fund_raising.in_kind_donations.completing',
+        'fund_raising.in_kind_donations.reconciler',
       ]),
     [hasAnyPermission],
   );
-  const showInKindApproveCol = isInKindDonationsRoute && canApproveInKind;
   const isOfflineRoute =
     embeddedChannel === 'offline' ||
     (!embeddedChannel && location.pathname.includes('/donations/offline_donations'));
@@ -115,6 +116,15 @@ const OnlineDonationsList = ({
       isInKindDonationsRoute,
     ],
   );
+  const canReconcile = useMemo(
+    () =>
+      canReconcileDonations(permissions, { channel: donationRoutes.channel }),
+    [permissions, donationRoutes.channel],
+  );
+  /** Reconciler (any channel) or in-kind Completing: show review actions column */
+  const showReconcileActionsCol =
+    canReconcile || (isInKindDonationsRoute && canApproveInKind);
+  const canRejectOnList = canReconcile;
   const donationsBasePath = donationRoutes.basePath;
   const listReturnPath = `${location.pathname}${location.search}`;
   
@@ -124,6 +134,7 @@ const OnlineDonationsList = ({
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
   const [approvingDonationId, setApprovingDonationId] = useState(null);
+  const [rejectingDonationId, setRejectingDonationId] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [selectedCsrDonorFilter, setSelectedCsrDonorFilter] = useState(null);
   const [csrDonorLabel, setCsrDonorLabel] = useState('');
@@ -725,30 +736,64 @@ const OnlineDonationsList = ({
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
   };
 
-  const handleApproveInKind = async (donation) => {
-    if (!donation?.id || !canApproveInKind) return;
-    const status = String(donation.status || '').toLowerCase();
-    if (status === 'completed' || status === 'paid' || status === 'success') return;
+  const isTerminalSuccessStatus = (status) =>
+    ['completed', 'paid', 'success'].includes(String(status || '').toLowerCase());
+
+  const isTerminalFailedStatus = (status) =>
+    ['failed', 'cancelled'].includes(String(status || '').toLowerCase());
+
+  const applyDonationStatus = async (donation, nextStatus) => {
+    if (!donation?.id) return false;
+    const response = await axiosInstance.post(`/donations/status-action`, {
+      donation_id: Number(donation.id),
+      status: nextStatus,
+    });
+    if (!response.data?.success) {
+      throw new Error(response.data?.message || 'Failed to update status');
+    }
+    setDonations((prev) =>
+      prev.map((row) =>
+        row.id === donation.id ? { ...row, status: nextStatus } : row,
+      ),
+    );
+    return true;
+  };
+
+  const handleApproveDonation = async (donation) => {
+    if (!donation?.id) return;
+    if (!canReconcile && !(isInKindDonationsRoute && canApproveInKind)) return;
+    if (isTerminalSuccessStatus(donation.status)) return;
 
     setApprovingDonationId(donation.id);
     try {
-      const response = await axiosInstance.patch(`/donations/${donation.id}`, {
-        status: 'completed',
-      });
-      if (response.data?.success) {
-        toast.success('In-kind donation approved successfully');
-        setDonations((prev) =>
-          prev.map((row) =>
-            row.id === donation.id ? { ...row, status: 'completed' } : row,
-          ),
-        );
-      } else {
-        toast.error(response.data?.message || 'Failed to approve donation');
-      }
+      await applyDonationStatus(donation, 'completed');
+      toast.success('Donation approved and marked completed');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to approve donation');
+      toast.error(
+        err.response?.data?.message || err.message || 'Failed to approve donation',
+      );
     } finally {
       setApprovingDonationId(null);
+    }
+  };
+
+  const handleRejectDonation = async (donation) => {
+    if (!donation?.id || !canRejectOnList) return;
+    if (isTerminalFailedStatus(donation.status)) return;
+    if (!window.confirm('Reject this donation? Status will be set to Failed.')) {
+      return;
+    }
+
+    setRejectingDonationId(donation.id);
+    try {
+      await applyDonationStatus(donation, 'failed');
+      toast.success('Donation rejected');
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || err.message || 'Failed to reject donation',
+      );
+    } finally {
+      setRejectingDonationId(null);
     }
   };
 
@@ -1327,7 +1372,6 @@ const OnlineDonationsList = ({
                   <th className="hide-on-mobile">Email</th>
                   {/* <th className="hide-on-mobile">Phone</th> */}
                   <th>Status</th>
-                  {showInKindApproveCol ? <th>Approve</th> : null}
                   <th>Date</th>
                   <th>Time</th>
                   <th className="table-actions">Actions</th>
@@ -1337,7 +1381,7 @@ const OnlineDonationsList = ({
                 {donations.length === 0 ? (
                   <tr>
                     <td colSpan={
-                      (isCsrDonationsRoute ? 11 : 10) + (showInKindApproveCol ? 1 : 0)
+                      isCsrDonationsRoute ? 11 : 10
                     } className="no-data">
                       No donations found
                     </td>
@@ -1416,38 +1460,79 @@ const OnlineDonationsList = ({
                     </td>
                     <td className="hide-on-mobile">{donation?.donor?.email?.slice(0, 15) + '...' || '-'}</td>
                     {/* <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td> */}
-                    <td>{getStatusBadge(donation.status)}</td>
-                    {showInKindApproveCol ? (
-                      <td>
-                        {['completed', 'paid', 'success'].includes(
-                          String(donation.status || '').toLowerCase(),
-                        ) ? (
-                          <span className="status-badge status-completed">Approved</span>
-                        ) : (
-                          <button
-                            type="button"
-                            className="primary_btn"
-                            style={{
-                              padding: '6px 12px',
-                              fontSize: '12px',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '6px',
-                            }}
-                            disabled={approvingDonationId === donation.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApproveInKind(donation);
-                            }}
-                          >
-                            <FiCheckCircle />
-                            {approvingDonationId === donation.id
-                              ? 'Approving…'
-                              : 'Approve'}
-                          </button>
-                        )}
-                      </td>
-                    ) : null}
+                    <td>
+                      <div
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {getStatusBadge(donation.status)}
+                        {showReconcileActionsCol &&
+                        !isTerminalFailedStatus(donation.status) ? (
+                          <>
+                            <button
+                              type="button"
+                              className="primary_btn"
+                              title="Approve"
+                              aria-label="Approve"
+                              style={{
+                                padding: '4px 6px',
+                                fontSize: '15px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                lineHeight: 1,
+                                opacity: isTerminalSuccessStatus(donation.status)
+                                  ? 0.55
+                                  : 1,
+                              }}
+                              disabled={
+                                approvingDonationId === donation.id ||
+                                rejectingDonationId === donation.id ||
+                                isTerminalSuccessStatus(donation.status)
+                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleApproveDonation(donation);
+                              }}
+                            >
+                              <FiCheckCircle />
+                            </button>
+                            {canRejectOnList ? (
+                              <button
+                                type="button"
+                                className="secondary_btn"
+                                title="Reject"
+                                aria-label="Reject"
+                                style={{
+                                  padding: '4px 6px',
+                                  fontSize: '15px',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  lineHeight: 1,
+                                  color: '#b91c1c',
+                                  borderColor: '#fecaca',
+                                }}
+                                disabled={
+                                  approvingDonationId === donation.id ||
+                                  rejectingDonationId === donation.id
+                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRejectDonation(donation);
+                                }}
+                              >
+                                <FiXCircle />
+                              </button>
+                            ) : null}
+                          </>
+                        ) : null}
+                      </div>
+                    </td>
                     <td>{formatDate(donation.date || donation.created_at)}</td>
                     <td>{getTime(donation.created_at)}</td>
                     <td className="table-actions">
