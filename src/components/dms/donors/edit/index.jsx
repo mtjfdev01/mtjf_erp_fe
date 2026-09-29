@@ -54,6 +54,8 @@ const EditDonor = ({
     business_type: '',
     business_type_other: '',
     area_of_interest: '',
+    recurring: false,
+    recurring_consent: false,
   });
 
   const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -104,6 +106,8 @@ const EditDonor = ({
         business_type: d.business_type || '',
         business_type_other: d.business_type_other || '',
         area_of_interest: d.area_of_interest || '',
+        recurring: d.recurring === true,
+        recurring_consent: d.recurring_consent === true,
       });
       setAssignedUser(d.assigned_to || null);
       setReferrerUser(d.referred_by || null);
@@ -124,7 +128,11 @@ const EditDonor = ({
   };
 
   const handleChange = (e) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, type, checked, value } = e.target;
+    setForm((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
     if (error) setError('');
   };
 
@@ -186,6 +194,8 @@ const EditDonor = ({
         postal_code: form.postal_code,
         notes: form.notes,
         is_active: form.is_active,
+        recurring: !!form.recurring,
+        recurring_consent: !!form.recurring_consent,
       };
 
       if (form.donor_type === 'individual') {
@@ -606,6 +616,29 @@ const EditDonor = ({
                   allowResearch={true}
                   renderOption={(user) => renderUserOption(user, handleReferrerSelect)}
                 />
+              </div>
+              <div
+                className="form-grid-2"
+                style={{ marginTop: 12, alignItems: 'center' }}
+              >
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    name="recurring"
+                    checked={!!form.recurring}
+                    onChange={handleChange}
+                  />
+                  Recurring donor
+                </label>
+                <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="checkbox"
+                    name="recurring_consent"
+                    checked={!!form.recurring_consent}
+                    onChange={handleChange}
+                  />
+                  Recurring consent
+                </label>
               </div>
               <div className="donor-register-lookup">
                 <button

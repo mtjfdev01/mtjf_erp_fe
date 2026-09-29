@@ -328,7 +328,7 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
               label="Donor"
               required
               apiEndpoint="/donors"
-              apiParams={{ recurring: true, donor_type: 'individual' }}
+              apiParams={{ donor_type: 'individual' }}
               value={selectedDonor}
               displayKey="name"
               valueKey="id"
@@ -337,14 +337,15 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
                 setSelectedDonor(null);
                 setForm((prev) => ({ ...prev, donor_id: '' }));
               }}
-              placeholder="Search recurring donor by name, email, phone..."
-              noResultsText="No recurring donors found — register one from Recurring Donors (+)"
+              placeholder="Search donor by name, email, phone..."
+              noResultsText="No donors found"
               disabled={fieldsDisabled}
               renderOption={(donor) => (
                 <div>
                   <div>
                     {donor.name ||
                       [donor.first_name, donor.last_name].filter(Boolean).join(' ')}
+                    {donor.recurring ? ' (recurring)' : ''}
                   </div>
                   <div style={{ fontSize: 12, color: '#666' }}>
                     {donor.email || donor.phone || `ID ${donor.id}`}
