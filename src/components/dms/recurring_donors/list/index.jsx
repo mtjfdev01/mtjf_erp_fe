@@ -40,11 +40,17 @@ const INSTALLMENT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Has paid installments' },
 ];
 
+const SOURCE_OPTIONS = [
+  { value: 'online', label: 'Online' },
+  { value: 'offline', label: 'Offline' },
+];
+
 const EMPTY_FILTERS = {
   search: '',
   status: '',
   billing_interval: '',
   installment_status: '',
+  source: '',
   date: '',
   start_date: '',
   end_date: '',
@@ -92,6 +98,15 @@ const RecurringDonorsList = () => {
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
     );
   }, [permissions, user, isFrAdmin]);
+
+  const canCreate = useMemo(
+    () =>
+      isFrAdmin ||
+      hasPermission(permissions, 'fund_raising', 'recurring_donors', 'create') ||
+      hasPermission(permissions, 'fund_raising', 'donors', 'create') ||
+      hasPermission(permissions, 'fund_raising', 'offline_donors', 'create'),
+    [permissions, isFrAdmin],
+  );
 
   const canUpdate = useMemo(
     () =>
@@ -317,7 +332,14 @@ const RecurringDonorsList = () => {
       <>
         <Navbar />
         <div className="list-wrapper">
-          <PageHeader title="Recurring Donors" onRefresh={fetchRows} refreshing={loading} />
+          <PageHeader
+            title="Recurring Donors"
+            onRefresh={fetchRows}
+            refreshing={loading}
+            showAdd={canCreate}
+            addPath="/dms/recurring-donors/add"
+            addTitle="Add Recurring Donor"
+          />
           <div className="loading">Loading...</div>
         </div>
       </>
@@ -351,6 +373,9 @@ const RecurringDonorsList = () => {
           showFilterToggle
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
+          showAdd={canCreate}
+          addPath="/dms/recurring-donors/add"
+          addTitle="Add Recurring Donor"
         />
 
         {error && <div className="error-message">{error}</div>}
@@ -387,6 +412,14 @@ const RecurringDonorsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All payments"
+            />
+            <DropdownFilter
+              filterKey="source"
+              label="Source"
+              data={SOURCE_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Online / Offline"
             />
             <DateFilter
               filterKey="date"

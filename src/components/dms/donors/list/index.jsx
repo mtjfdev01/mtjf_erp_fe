@@ -9,7 +9,7 @@ import ActionMenu from '../../../common/ActionMenu';
 import ConfirmationModal from '../../../common/ConfirmationModal';
 import Modal from '../../../common/Modal';
 import Pagination from '../../../common/Pagination';
-import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters, TeamFilter, defaultTeamFilterState, appendTeamFilterParams } from '../../../common/filters';
+import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters, TeamFilter, defaultTeamFilterState, appendTeamFilterParams, ReferredByFilter } from '../../../common/filters';
 import { SearchButton, ClearButton } from '../../../common/filters';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import HybridDropdown from '../../../common/HybridDropdown';
@@ -99,6 +99,8 @@ const DonorsList = () => {
     recurring: null,
     is_mature_donor: null,
     assigned_to_user_id: '',
+    referrer_user_ids: [],
+    referrer_any: '',
     donated_amount: '',
     donated_amount_operator: '',
     pipeline_stage: '',
@@ -117,6 +119,8 @@ const DonorsList = () => {
     recurring: null,
     is_mature_donor: null,
     assigned_to_user_id: '',
+    referrer_user_ids: [],
+    referrer_any: '',
     donated_amount: '',
     donated_amount_operator: '',
     pipeline_stage: '',
@@ -154,6 +158,8 @@ const DonorsList = () => {
       donated_amount: '',
       donated_amount_operator: '',
       pipeline_stage: '',
+      referrer_user_ids: [],
+      referrer_any: '',
       ...defaultTeamFilterState(),
     };
     return JSON.stringify(appliedFilters) !== JSON.stringify(empty);
@@ -425,6 +431,8 @@ const DonorsList = () => {
       donated_amount: '',
       donated_amount_operator: '',
       pipeline_stage: '',
+      referrer_user_ids: [],
+      referrer_any: '',
       ...defaultTeamFilterState(),
     };
     
@@ -491,6 +499,21 @@ const DonorsList = () => {
       ) {
         delete params.assigned_to_user_id;
       }
+      if (
+        !params.referrer_any ||
+        String(params.referrer_any).toLowerCase() !== 'true'
+      ) {
+        delete params.referrer_any;
+      }
+      if (
+        Array.isArray(params.referrer_user_ids) &&
+        params.referrer_user_ids.length > 0
+      ) {
+        params.referrer_user_ids = params.referrer_user_ids.join(',');
+      } else {
+        delete params.referrer_user_ids;
+      }
+      delete params.referrer_user_id;
       if (!params.donated_amount || !params.donated_amount_operator) {
         delete params.donated_amount;
         delete params.donated_amount_operator;
@@ -844,6 +867,11 @@ const DonorsList = () => {
             />
 
             <TeamFilter
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
+
+            <ReferredByFilter
               filters={tempFilters}
               onFilterChange={handleFilterChange}
             />

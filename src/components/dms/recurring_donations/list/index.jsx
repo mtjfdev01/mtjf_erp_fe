@@ -41,11 +41,17 @@ const INSTALLMENT_STATUS_OPTIONS = [
   { value: 'completed', label: 'Has paid installments' },
 ];
 
+const SOURCE_OPTIONS = [
+  { value: 'online', label: 'Online' },
+  { value: 'offline', label: 'Offline' },
+];
+
 const EMPTY_FILTERS = {
   search: '',
   status: '',
   billing_interval: '',
   installment_status: '',
+  source: '',
   date: '',
   start_date: '',
   end_date: '',
@@ -409,6 +415,14 @@ const RecurringDonationsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All payments"
+            />
+            <DropdownFilter
+              filterKey="source"
+              label="Source"
+              data={SOURCE_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="Online / Offline"
             />
             <DateFilter
               filterKey="date"

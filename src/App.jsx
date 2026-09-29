@@ -459,6 +459,7 @@ const App = () => {
                                 <Route path="/dms/recurring-donations/update/:id" element={<UpdateRecurringDonation />} />
                                 <Route path="/dms/recurring-donations/view/:id" element={<RecurringDonationView />} />
                                 <Route path="/dms/recurring-donors/list" element={<RecurringDonorsList />} />
+                                <Route path="/dms/recurring-donors/add" element={<RegisterDonor />} />
                                 <Route path="/dms/event-pledges/list" element={<EventPledgesList />} />
                                 <Route path="/dms/event-pledges/add" element={<AddEventPledge />} />
                                 <Route path="/dms/event-pledges/edit/:id" element={<EditEventPledge />} />

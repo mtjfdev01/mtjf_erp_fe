@@ -6,7 +6,7 @@ import '../../../../../styles/components.css';
 // import { truncate } from '../../../../../utils/functions/column_function';
 import Pagination from '../../../../common/Pagination';
 import { DownloadCSV } from '../../../../common/download';
-import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters, TeamFilter, defaultTeamFilterState, appendTeamFilterParams } from '../../../../common/filters';
+import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, CollapsibleFilters, TeamFilter, defaultTeamFilterState, appendTeamFilterParams, ReferredByFilter } from '../../../../common/filters';
 import { ClearButton } from '../../../../common/filters/index';
 import { SearchButton } from '../../../../common/filters/index';
 import HybridDropdown from '../../../../common/HybridDropdown';
@@ -207,6 +207,8 @@ const OnlineDonationsList = ({
     donor_search: '',
     csr_donor_id: '',
     orderId: '',
+    referrer_user_ids: [],
+    referrer_any: '',
     ...defaultTeamFilterState(),
     relationsFilters: {
       donor: {
@@ -478,6 +480,12 @@ const OnlineDonationsList = ({
             : {}),
 
           ...appendTeamFilterParams({}, appliedFilters),
+          ...(String(appliedFilters.referrer_any || '').toLowerCase() === 'true'
+            ? { referrer_any: 'true' }
+            : Array.isArray(appliedFilters.referrer_user_ids) &&
+                appliedFilters.referrer_user_ids.length > 0
+              ? { referrer_user_ids: appliedFilters.referrer_user_ids }
+              : {}),
           
           // Future filters can be easily added here
           // amount_range: { min: 1000, max: 50000 },
@@ -1150,6 +1158,11 @@ const OnlineDonationsList = ({
             />
 
             <TeamFilter
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
+
+            <ReferredByFilter
               filters={tempFilters}
               onFilterChange={handleFilterChange}
             />

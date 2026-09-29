@@ -71,14 +71,20 @@ const RegisterDonor = () => {
   const { user: currentUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isOfflineRoute = location.pathname.includes('/dms/offline_donors');
   const isOnlineRoute = location.pathname.includes('/dms/online_donors');
-  const donorsBasePath = isOfflineRoute
-    ? '/dms/offline_donors'
-    : isOnlineRoute
-      ? '/dms/online_donors'
-      : '/dms/donors';
-  const [searchParams] = useSearchParams();
+  const isRecurringRoute =
+    location.pathname.includes('/dms/recurring-donors') ||
+    searchParams.get('recurring') === '1' ||
+    searchParams.get('recurring') === 'true';
+  const donorsBasePath = isRecurringRoute
+    ? '/dms/recurring-donors'
+    : isOfflineRoute
+      ? '/dms/offline_donors'
+      : isOnlineRoute
+        ? '/dms/online_donors'
+        : '/dms/donors';
   const presetOrgId = searchParams.get('organization_id');
   const presetDonorType = searchParams.get('donor_type');
   const [form, setForm] = useState({
@@ -213,6 +219,7 @@ const RegisterDonor = () => {
         referrer_user_id: referrerUser?.id || null,
         source: form.source,
         pipeline_stage: form.pipeline_stage || 'lead',
+        ...(isRecurringRoute ? { recurring: true } : {}),
       };
 
       donorData.area_of_interest = form.area_of_interest || null;
@@ -227,8 +234,13 @@ const RegisterDonor = () => {
         donorData.affiliation_is_primary = true;
       }
 
-      const res = await axiosInstance.post('/donors/register', donorData);
-      navigate(`${donorsBasePath}/list`);
+      await axiosInstance.post('/donors/register', donorData);
+      // After registering a recurring donor, go add their subscription
+      navigate(
+        isRecurringRoute
+          ? '/dms/recurring-donations/add'
+          : `${donorsBasePath}/list`,
+      );
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to register donor. Please try again.');
       console.error('Error registering donor:', err);
@@ -238,7 +250,7 @@ const RegisterDonor = () => {
   };
 
   const handleBack = () => {
-    navigate('/dms');
+    navigate(isRecurringRoute ? '/dms/recurring-donors/list' : '/dms');
   };
 
   const handleCheckDonorExists = async () => {
@@ -256,7 +268,9 @@ const RegisterDonor = () => {
       if (phone) params.phone = phone;
       const res = await axiosInstance.get('/donors/lookup', { params });
       if (res.data.success && res.data.data) {
-        navigate(`${donorsBasePath}/view/${res.data.data.id}`);
+        // Recurring donors reuse the normal donor view (no /recurring-donors/view route)
+        const viewBase = isRecurringRoute ? '/dms/donors' : donorsBasePath;
+        navigate(`${viewBase}/view/${res.data.data.id}`);
       } else {
         setDonorSearchMessage('No existing donor found for this email/phone.');
       }
@@ -315,7 +329,10 @@ const RegisterDonor = () => {
       <Navbar />
       <div className="list-wrapper">
         <div className="list-content donor-register-page">
-          <PageHeader title="Register Donor" onBack={handleBack} />
+          <PageHeader
+            title={isRecurringRoute ? 'Register Recurring Donor' : 'Register Donor'}
+            onBack={handleBack}
+          />
 
           {error && (
             <div className="status-message status-message--error">{error}</div>
