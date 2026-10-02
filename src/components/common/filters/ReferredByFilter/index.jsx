@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import axiosInstance from '../../../../utils/axios';
 import SearchableMultiSelect from '../../SearchableMultiSelect';
+import './styles.css';
 
 function formatUserLabel(user) {
   if (!user) return '';
@@ -144,30 +145,23 @@ export default function ReferredByFilter({
 
   return (
     <div className={`referred-by-filter ${className}`.trim()}>
-      <label
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          marginBottom: 8,
-          fontSize: 13,
-          cursor: 'pointer',
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={referrerAny}
-          onChange={handleAnyToggle}
-        />
-        Any referral (all referred records)
-      </label>
+      <div className="referred-by-filter__header">
+        <span className="referred-by-filter__label">{label}</span>
+        <label className="referred-by-filter__any">
+          <input
+            type="checkbox"
+            checked={referrerAny}
+            onChange={handleAnyToggle}
+          />
+          Any referral
+        </label>
+      </div>
 
       <SearchableMultiSelect
-        label={label}
         placeholder={
           referrerAny
-            ? 'Clear “Any referral” to pick specific staff...'
-            : 'Search & select one or more staff...'
+            ? 'Clear “Any referral” to pick staff...'
+            : 'Search & select staff...'
         }
         value={selectedUsers}
         onSelect={handleSelect}
