@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiEye, FiAlertCircle } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -52,6 +53,7 @@ const CeoComplaintsList = () => {
   const [sortOrder, setSortOrder] = useState('DESC');
   const [tempFilters, setTempFilters] = useState({ ...EMPTY_FILTERS });
   const [appliedFilters, setAppliedFilters] = useState({ ...EMPTY_FILTERS });
+  const [updatingStatusId, setUpdatingStatusId] = useState(null);
 
   const canList = useMemo(() => {
     if (!permissions && !user) return null;
@@ -66,6 +68,13 @@ const CeoComplaintsList = () => {
     () =>
       isSuperAdmin(permissions) ||
       hasPermission(permissions, 'ceo_office', 'ceo_complaints', 'create'),
+    [permissions],
+  );
+
+  const canUpdate = useMemo(
+    () =>
+      isSuperAdmin(permissions) ||
+      hasPermission(permissions, 'ceo_office', 'ceo_complaints', 'update'),
     [permissions],
   );
 
@@ -112,6 +121,34 @@ const CeoComplaintsList = () => {
     setTempFilters({ ...EMPTY_FILTERS });
     setAppliedFilters({ ...EMPTY_FILTERS });
     setCurrentPage(1);
+  };
+
+  const handleStatusChange = async (row, nextStatus) => {
+    if (!canUpdate || !nextStatus || nextStatus === row.status) return;
+    const previous = row.status;
+    setRows((prev) =>
+      prev.map((r) => (r.id === row.id ? { ...r, status: nextStatus } : r)),
+    );
+    setUpdatingStatusId(row.id);
+    try {
+      const res = await axiosInstance.patch(
+        `/ceo-complaints/${row.id}/status`,
+        { status: nextStatus },
+      );
+      if (!res.data?.success) {
+        throw new Error(res.data?.message || 'Failed to update status');
+      }
+      toast.success('Status updated');
+    } catch (err) {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? { ...r, status: previous } : r)),
+      );
+      toast.error(
+        err.response?.data?.message || err.message || 'Failed to update status',
+      );
+    } finally {
+      setUpdatingStatusId(null);
+    }
   };
 
   if (canList === null) {
@@ -259,13 +296,36 @@ const CeoComplaintsList = () => {
                         </div>
                       ) : null}
                     </td>
-                    <td>{labelFor(COMPLAINANT_TYPE_OPTIONS, row.complainant_type)}</td>
+                    <td>
+                      {labelFor(COMPLAINANT_TYPE_OPTIONS, row.complainant_type)}
+                    </td>
                     <td>
                       {row.category === 'other' && row.category_other
                         ? row.category_other
                         : labelFor(CATEGORY_OPTIONS, row.category)}
                     </td>
-                    <td>{labelFor(STATUS_OPTIONS, row.status)}</td>
+                    <td>
+                      {canUpdate ? (
+                        <select
+                          className="form-select"
+                          value={row.status || 'submitted'}
+                          disabled={updatingStatusId === row.id}
+                          onChange={(e) =>
+                            handleStatusChange(row, e.target.value)
+                          }
+                          style={{ minWidth: 140 }}
+                          aria-label={`Status for ${row.complaint_number}`}
+                        >
+                          {STATUS_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        labelFor(STATUS_OPTIONS, row.status)
+                      )}
+                    </td>
                     <td>
                       {row.created_at
                         ? new Date(row.created_at).toLocaleDateString()
@@ -279,7 +339,9 @@ const CeoComplaintsList = () => {
                             label: 'View',
                             color: '#2196f3',
                             onClick: () =>
-                              navigate(`/ceo-office/ceo-complaints/view/${row.id}`),
+                              navigate(
+                                `/ceo-office/ceo-complaints/view/${row.id}`,
+                              ),
                             visible: true,
                           },
                         ]}

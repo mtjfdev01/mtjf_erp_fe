@@ -522,7 +522,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         },
         ceo_complaints: {
           label: 'CEO Complaints',
-          actions: ['create', 'list_view', 'view']
+          actions: ['create', 'list_view', 'view', 'update']
         }
       }
     },
