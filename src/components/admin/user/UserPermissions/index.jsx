@@ -519,6 +519,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         instruction_register: {
           label: 'Instruction Register',
           actions: ['list_view', 'view', 'create', 'update', 'delete']
+        },
+        ceo_complaints: {
+          label: 'CEO Complaints',
+          actions: ['create', 'list_view', 'view']
         }
       }
     },

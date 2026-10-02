@@ -1018,6 +1018,13 @@ const ceoOfficeItems = () => [
     module: 'instruction_register',
     icon: FiList
   },
+  {
+    label: 'CEO Complaints',
+    path: '/ceo-office/ceo-complaints/list',
+    type: 'list',
+    module: 'ceo_complaints',
+    icon: FiAlertCircle
+  },
 ];
 
 // All department items for permission-based access

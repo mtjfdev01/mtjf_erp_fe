@@ -225,6 +225,9 @@ import CeoDashboard from './components/ceo-office/dashboard';
 import QuickNote from './components/ceo-office/note/quick-note';
 import InstructionRegister from './components/ceo-office/instruction-register';
 import CeoNoteView from './components/ceo-office/note/note-view';
+import CeoComplaintsList from './components/admin/ceo_complaints/list';
+import CeoComplaintAdd from './components/admin/ceo_complaints/add';
+import CeoComplaintView from './components/admin/ceo_complaints/view';
 // import Reports from './components/ceo-office/reports';
 import './styles/screen-theme.css';
 
@@ -590,6 +593,9 @@ const App = () => {
                                 <Route path="/ceo-notes" element={<QuickNote />} />
                                 <Route path="/ceo-office/instruction-register" element={<InstructionRegister />} />
                                 <Route path="/ceo-office/notes/:id" element={<CeoNoteView />} />
+                                <Route path="/ceo-office/ceo-complaints/list" element={<CeoComplaintsList />} />
+                                <Route path="/ceo-office/ceo-complaints/add" element={<CeoComplaintAdd />} />
+                                <Route path="/ceo-office/ceo-complaints/view/:id" element={<CeoComplaintView />} />
                                 {/* <Route path="/ceo-office/reports" element={<Reports />} /> */}
                                 <Route path="/ceo-office" element={<Navigate to="/ceo-office/dashboard" replace />} />
 
