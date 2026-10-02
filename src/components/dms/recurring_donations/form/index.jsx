@@ -64,6 +64,7 @@ const emptyForm = {
   project_id: '',
   campaign_id: '',
   donation_type: 'general',
+  on_behalf_names: '',
   prepaid_periods: '',
   initial_donation_id: '',
   status: 'active',
@@ -143,6 +144,7 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
           project_id: sub.project_id || '',
           campaign_id: sub.campaign_id != null ? String(sub.campaign_id) : '',
           donation_type: sub.donation_type || '',
+          on_behalf_names: sub.on_behalf_names || '',
           prepaid_periods:
             sub.prepaid_periods != null ? String(sub.prepaid_periods) : '',
           initial_donation_id:
@@ -222,6 +224,7 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
               ? Number(form.campaign_id)
               : undefined,
             donation_type: form.donation_type || undefined,
+            on_behalf_names: String(form.on_behalf_names || '').trim() || null,
             prepaid_periods: form.prepaid_periods
               ? Number(form.prepaid_periods)
               : undefined,
@@ -327,8 +330,8 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
             <SearchableDropdown
               label="Donor"
               required
-              apiEndpoint="/donors"
-              apiParams={{ donor_type: 'individual' }}
+              apiEndpoint="/donors/lookup"
+              apiParams={{ donor_type: 'individual', pageSize: 20 }}
               value={selectedDonor}
               displayKey="name"
               valueKey="id"
@@ -456,6 +459,19 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
                 onChange={handleChange}
                 disabled={fieldsDisabled}
               />
+            </div>
+            <div style={{ marginTop: 16 }}>
+              <FormInput
+                label="On behalf name(s) (optional)"
+                type="text"
+                name="on_behalf_names"
+                value={form.on_behalf_names}
+                onChange={handleChange}
+                placeholder="Enter name(s) this donation is on behalf of"
+                disabled={fieldsDisabled}
+              />
+            </div>
+            <div className="form-grid-2" style={{ marginTop: 16 }}>
               <FormSelect
                 label="Status"
                 name="status"

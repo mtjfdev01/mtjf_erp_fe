@@ -1251,6 +1251,12 @@ const ViewOnlineDonation = () => {
                    donation.donation_type || 'General'}
                 </span>
               </div>
+              {donation.on_behalf_names ? (
+                <div className="view-item">
+                  <span className="view-item-label">On behalf name(s)</span>
+                  <span className="view-item-value">{donation.on_behalf_names}</span>
+                </div>
+              ) : null}
               <div className="view-item">
                 <span className="view-item-label">Payment Method</span>
                 <span className="view-item-value">{donation.donation_method?.toUpperCase() || 'N/A'}</span>

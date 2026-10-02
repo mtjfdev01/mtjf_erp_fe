@@ -477,11 +477,7 @@ const AddDonation = ({
               : 'pending',
         project_id: form.project_id || null,
         project_name: form.project_name,
-        ...(isQurbaniProject
-          ? {
-              on_behalf_names: String(form.on_behalf_names || '').trim() || null,
-            }
-          : {}),
+        on_behalf_names: String(form.on_behalf_names || '').trim() || null,
         ...(qurbaniPayloadItems.length > 0 ? { donation_items: qurbaniPayloadItems } : {}),
         // Payment method specific fields
         cheque_number: form.cheque_number || null,
@@ -950,7 +946,8 @@ const AddDonation = ({
             <SearchableDropdown
               label="Select Donor :"
               placeholder="Search donors by name, email, or phone..."
-              apiEndpoint="/donors"
+              apiEndpoint="/donors/lookup"
+              apiParams={{ pageSize: 20 }}
               onSelect={handleDonorSelect}
               onClear={handleDonorClear}
               value={selectedDonor}
@@ -1437,8 +1434,6 @@ const AddDonation = ({
                       project_id: id,
                       project_name: proj?.title || prev.project_name,
                       donation_items: id === QURBANI_PROJECT_ID ? prev.donation_items : [],
-                      on_behalf_names:
-                        id === QURBANI_PROJECT_ID ? prev.on_behalf_names : '',
                     }));
                   }}
                   showDefaultOption={true}
@@ -1570,18 +1565,20 @@ const AddDonation = ({
                     </div>
                   </div>
                 )}
-
-                <FormInput
-                  label="On behalf name(s) (optional)"
-                  type="textarea"
-                  name="on_behalf_names"
-                  value={form.on_behalf_names}
-                  onChange={handleChange}
-                  placeholder="Enter name(s) this Qurbani is performed on behalf of"
-                  rows="3"
-                />
               </>
             )}
+          </div>
+
+          <div className="form-section">
+            <h3 className="form-section-heading">On behalf (optional)</h3>
+            <FormInput
+              label="On behalf name(s)"
+              type="text"
+              name="on_behalf_names"
+              value={form.on_behalf_names}
+              onChange={handleChange}
+              placeholder="Enter name(s) this donation is on behalf of"
+            />
           </div>
 
           {/* Payment Details */}

@@ -488,6 +488,10 @@ const RecurringDonationView = () => {
                 <p>{subscription.donation_method || '-'}</p>
               </div>
               <div>
+                <strong>On behalf name(s)</strong>
+                <p>{subscription.on_behalf_names || '-'}</p>
+              </div>
+              <div>
                 <strong>Project</strong>
                 <p>{subscription.project_id || '-'}</p>
               </div>

@@ -268,9 +268,8 @@ const RegisterDonor = () => {
       if (phone) params.phone = phone;
       const res = await axiosInstance.get('/donors/lookup', { params });
       if (res.data.success && res.data.data) {
-        // Recurring donors reuse the normal donor view (no /recurring-donors/view route)
-        const viewBase = isRecurringRoute ? '/dms/donors' : donorsBasePath;
-        navigate(`${viewBase}/view/${res.data.data.id}`);
+        // Always open main donor profile — not scoped to online/offline/recurring add route
+        navigate(`/dms/donors/view/${res.data.data.id}`);
       } else {
         setDonorSearchMessage('No existing donor found for this email/phone.');
       }

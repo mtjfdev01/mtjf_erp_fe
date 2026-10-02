@@ -7,6 +7,7 @@ import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
+import SearchableDropdown from '../../../../common/SearchableDropdown';
 import DonationPendingAttachments, {
   uploadPendingDonationAttachments,
 } from '../../shared/DonationPendingAttachments';
@@ -143,7 +144,10 @@ const UpdateOnlineDonation = () => {
     bank_name: '',
     bank: '',
     transaction_id: '',
+    donor_id: '',
+    on_behalf_names: '',
   });
+  const [selectedDonor, setSelectedDonor] = useState(null);
 
   const canReconcile = useMemo(
     () =>
@@ -200,7 +204,26 @@ const UpdateOnlineDonation = () => {
           bank_name: d.bank_name ?? '',
           bank: d.bank ?? '',
           transaction_id: d.transaction_id ?? '',
+          donor_id: d.donor_id != null ? String(d.donor_id) : d.donor?.id != null ? String(d.donor.id) : '',
+          on_behalf_names: d.on_behalf_names ?? '',
         });
+        if (d.donor) {
+          setSelectedDonor({
+            id: d.donor.id,
+            name:
+              d.donor.name ||
+              [d.donor.first_name, d.donor.last_name].filter(Boolean).join(' ') ||
+              d.donor.email ||
+              `Donor #${d.donor.id}`,
+            email: d.donor.email,
+            phone: d.donor.phone,
+            first_name: d.donor.first_name,
+            last_name: d.donor.last_name,
+            donor_type: d.donor.donor_type,
+          });
+        } else {
+          setSelectedDonor(null);
+        }
         setExistingAttachments(Array.isArray(d.attachments) ? d.attachments : []);
       } catch (e) {
         setError(e.response?.data?.message || 'Failed to load donation');
@@ -292,6 +315,20 @@ const UpdateOnlineDonation = () => {
     if (error) setError('');
   };
 
+  const handleDonorSelect = (donor) => {
+    setSelectedDonor(donor);
+    setForm((prev) => ({
+      ...prev,
+      donor_id: donor?.id != null ? String(donor.id) : '',
+    }));
+    if (error) setError('');
+  };
+
+  const handleDonorClear = () => {
+    setSelectedDonor(null);
+    setForm((prev) => ({ ...prev, donor_id: '' }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -307,6 +344,12 @@ const UpdateOnlineDonation = () => {
 
       if (completingInKind && !canCompleteInKind) {
         setError('You do not have permission to mark in-kind donations as completed.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!form.donor_id) {
+        setError('Please select a donor.');
         setIsSubmitting(false);
         return;
       }
@@ -349,6 +392,8 @@ const UpdateOnlineDonation = () => {
         bank_name: form.bank_name || undefined,
         bank: form.bank || undefined,
         transaction_id: form.transaction_id || undefined,
+        donor_id: form.donor_id ? Number(form.donor_id) : undefined,
+        on_behalf_names: String(form.on_behalf_names || '').trim() || null,
       };
 
       if (form.campaign_id.trim() === '') payload.campaign_id = null;
@@ -425,6 +470,48 @@ const UpdateOnlineDonation = () => {
         )}
         <form onSubmit={handleSubmit} className="form">
           {error && <div className="status-message status-message--error">{error}</div>}
+
+          <div className="form-section">
+            <h3 className="form-section-heading">Donor</h3>
+            <SearchableDropdown
+              label="Select Donor"
+              placeholder="Search donors by name, email, or phone..."
+              apiEndpoint="/donors/lookup"
+              apiParams={{ pageSize: 20 }}
+              onSelect={handleDonorSelect}
+              onClear={handleDonorClear}
+              value={selectedDonor}
+              displayKey="name"
+              debounceDelay={500}
+              minSearchLength={2}
+              allowResearch={true}
+              required
+              renderOption={(donor) => (
+                <div>
+                  <div style={{ fontWeight: 500, marginBottom: 4 }}>
+                    {donor.name ||
+                      [donor.first_name, donor.last_name].filter(Boolean).join(' ') ||
+                      `Donor #${donor.id}`}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#666' }}>
+                    {[donor.email, donor.phone].filter(Boolean).join(' • ') || `ID ${donor.id}`}
+                  </div>
+                </div>
+              )}
+            />
+          </div>
+
+          <div className="form-section">
+            <h3 className="form-section-heading">On behalf (optional)</h3>
+            <FormInput
+              label="On behalf name(s)"
+              type="text"
+              name="on_behalf_names"
+              value={form.on_behalf_names}
+              onChange={handleChange}
+              placeholder="Enter name(s) this donation is on behalf of"
+            />
+          </div>
 
           <div className="form-section">
             <h3 className="form-section-heading">Donation details</h3>

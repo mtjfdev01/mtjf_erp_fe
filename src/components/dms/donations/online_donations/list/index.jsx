@@ -1289,7 +1289,8 @@ const OnlineDonationsList = ({
               <SearchableDropdown
                 label="Filter by Donor"
                 placeholder="Search donors..."
-                apiEndpoint="/donors"
+                apiEndpoint="/donors/lookup"
+                apiParams={{ pageSize: 20 }}
                 onSelect={handleDonorSelect}
                 onClear={handleDonorClear}
                 value={selectedDonor}
