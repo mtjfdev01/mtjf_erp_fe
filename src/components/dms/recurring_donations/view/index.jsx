@@ -354,8 +354,19 @@ const RecurringDonationView = () => {
     );
   }
 
-  const { subscription, installments, initial_donation, donor, summary } =
-    data;
+  const {
+    subscription,
+    installments,
+    initial_donation,
+    donor,
+    summary,
+    referred_by: referrer,
+  } = data;
+  const referrerName = referrer
+    ? [referrer.first_name, referrer.last_name].filter(Boolean).join(' ').trim() ||
+      referrer.email ||
+      `User #${referrer.id}`
+    : null;
   const canSendInstallmentLink = !subscription.stripe_subscription_id;
   const canMarkPaid =
     canReconcile &&
@@ -565,6 +576,17 @@ const RecurringDonationView = () => {
               <div>
                 <strong>Phone</strong>
                 <p>{donor?.phone || '-'}</p>
+              </div>
+              <div>
+                <strong>Referred By</strong>
+                <p>
+                  {referrerName || '-'}
+                  {referrer?.referral_code && (
+                    <small style={{ color: '#6b7280', marginLeft: 6 }}>
+                      ({referrer.referral_code})
+                    </small>
+                  )}
+                </p>
               </div>
               {donor?.id && (
                 <div>

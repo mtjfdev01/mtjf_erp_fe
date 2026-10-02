@@ -14,6 +14,7 @@ import {
   CollapsibleFilters,
   SearchButton,
   ClearButton,
+  ReferredByFilter,
 } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
@@ -55,6 +56,16 @@ const EMPTY_FILTERS = {
   date: '',
   start_date: '',
   end_date: '',
+  referrer_user_ids: [],
+  referrer_any: '',
+};
+
+const formatReferrer = (row) => {
+  const name = [row.referrer_first_name, row.referrer_last_name]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+  return name || row.referrer_email || null;
 };
 
 const RecurringDonationsList = () => {
@@ -140,7 +151,13 @@ const RecurringDonationsList = () => {
       setLoading(true);
       setError('');
       const filters = { ...appliedFilters };
-      Object.keys(filters).forEach((k) => !filters[k] && delete filters[k]);
+      Object.keys(filters).forEach((k) => {
+        const v = filters[k];
+        if (!v || (Array.isArray(v) && v.length === 0)) delete filters[k];
+      });
+      if (String(filters.referrer_any || '').toLowerCase() === 'true') {
+        delete filters.referrer_user_ids;
+      }
 
       const response = await axiosInstance.post('/recurring-donations/search', {
         pagination: {
@@ -437,6 +454,10 @@ const RecurringDonationsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
             />
+            <ReferredByFilter
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
             <SearchButton onClick={handleApplyFilters} />
             <ClearButton onClick={handleClearFilters} />
           </div>
@@ -454,6 +475,7 @@ const RecurringDonationsList = () => {
                 <th>Payment</th>
                 <th>Paid</th>
                 <th>Missing</th>
+                <th>Referred By</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -461,13 +483,13 @@ const RecurringDonationsList = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan="11" style={{ textAlign: 'center', padding: 24 }}>
                     Loading...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan="10" style={{ textAlign: 'center' }}>
+                  <td colSpan="11" style={{ textAlign: 'center' }}>
                     No recurring donations found
                   </td>
                 </tr>
@@ -501,6 +523,9 @@ const RecurringDonationsList = () => {
                       </td>
                       <td>{row.completed_installment_count ?? 0}</td>
                       <td>{row.pending_installment_count ?? 0}</td>
+                      <td title={row.referrer_code ? `Code: ${row.referrer_code}` : ''}>
+                        {formatReferrer(row) || '-'}
+                      </td>
                       <td>
                         {row.created_at
                           ? new Date(row.created_at).toLocaleDateString()
