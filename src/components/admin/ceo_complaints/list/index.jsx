@@ -21,7 +21,9 @@ import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
 import {
   ORGANIZATION_OPTIONS,
   COMPLAINANT_TYPE_OPTIONS,
+  DEPARTMENT_OPTIONS,
   CATEGORY_OPTIONS,
+  PRIORITY_OPTIONS,
   STATUS_OPTIONS,
   ASLAB_BRANCH_OPTIONS,
   labelFor,
@@ -32,7 +34,9 @@ const EMPTY_FILTERS = {
   organization: '',
   branch: '',
   complainant_type: '',
+  department: '',
   category: '',
+  priority: '',
   status: '',
   start_date: '',
   end_date: '',
@@ -231,12 +235,28 @@ const CeoComplaintsList = () => {
               placeholder="All types"
             />
             <DropdownFilter
+              filterKey="department"
+              label="Department"
+              data={DEPARTMENT_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All departments"
+            />
+            <DropdownFilter
               filterKey="category"
-              label="Category"
+              label="Complaint type"
               data={CATEGORY_OPTIONS}
               filters={tempFilters}
               onFilterChange={handleFilterChange}
-              placeholder="All categories"
+              placeholder="All types"
+            />
+            <DropdownFilter
+              filterKey="priority"
+              label="Priority / ترجیح"
+              data={PRIORITY_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All priorities"
             />
             <DropdownFilter
               filterKey="status"
@@ -264,8 +284,9 @@ const CeoComplaintsList = () => {
               <tr>
                 <th>Number</th>
                 <th>Organization</th>
-                <th>Type</th>
-                <th>Category</th>
+                <th>Department</th>
+                <th>Complaint type</th>
+                <th>Priority</th>
                 <th>Status</th>
                 <th>Created</th>
                 <th>Actions</th>
@@ -274,13 +295,13 @@ const CeoComplaintsList = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: 24 }}>
                     Loading...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan="7" style={{ textAlign: 'center' }}>
+                  <td colSpan="8" style={{ textAlign: 'center' }}>
                     No complaints found
                   </td>
                 </tr>
@@ -296,14 +317,9 @@ const CeoComplaintsList = () => {
                         </div>
                       ) : null}
                     </td>
-                    <td>
-                      {labelFor(COMPLAINANT_TYPE_OPTIONS, row.complainant_type)}
-                    </td>
-                    <td>
-                      {row.category === 'other' && row.category_other
-                        ? row.category_other
-                        : labelFor(CATEGORY_OPTIONS, row.category)}
-                    </td>
+                    <td>{labelFor(DEPARTMENT_OPTIONS, row.department)}</td>
+                    <td>{labelFor(CATEGORY_OPTIONS, row.category)}</td>
+                    <td>{labelFor(PRIORITY_OPTIONS, row.priority)}</td>
                     <td>
                       {canUpdate ? (
                         <select

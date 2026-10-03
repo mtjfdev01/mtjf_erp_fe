@@ -12,8 +12,12 @@ import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
 import {
   ORGANIZATION_OPTIONS,
   COMPLAINANT_TYPE_OPTIONS,
+  DEPARTMENT_OPTIONS,
   CATEGORY_OPTIONS,
+  PRIORITY_OPTIONS,
   ASLAB_BRANCH_OPTIONS,
+  labelFor,
+  priorityForCategory,
 } from '../shared/ceoComplaintConfig';
 
 const CeoComplaintAdd = () => {
@@ -32,8 +36,8 @@ const CeoComplaintAdd = () => {
     complainant_type: '',
     complainant_name: '',
     contact_number: '',
+    department: '',
     category: '',
-    category_other: '',
     details: '',
   });
   const [submitting, setSubmitting] = useState(false);
@@ -43,7 +47,6 @@ const CeoComplaintAdd = () => {
     setForm((prev) => {
       const next = { ...prev, [name]: value };
       if (name === 'organization' && value !== 'aslab') next.branch = '';
-      if (name === 'category' && value !== 'other') next.category_other = '';
       return next;
     });
   };
@@ -66,12 +69,20 @@ const CeoComplaintAdd = () => {
       toast.error('Complainant type is required');
       return;
     }
-    if (!form.category) {
-      toast.error('Category is required');
+    if (!form.complainant_name.trim()) {
+      toast.error('Name is required');
       return;
     }
-    if (form.category === 'other' && !form.category_other.trim()) {
-      toast.error('Please describe the other category');
+    if (!form.contact_number.trim()) {
+      toast.error('Contact number is required');
+      return;
+    }
+    if (!form.department) {
+      toast.error('Department is required');
+      return;
+    }
+    if (!form.category) {
+      toast.error('Complaint type is required');
       return;
     }
     if (!form.details.trim() || form.details.trim().length < 5) {
@@ -85,12 +96,10 @@ const CeoComplaintAdd = () => {
         organization: form.organization,
         ...(form.organization === 'aslab' ? { branch: form.branch } : {}),
         complainant_type: form.complainant_type,
-        complainant_name: form.complainant_name.trim() || undefined,
-        contact_number: form.contact_number.trim() || undefined,
+        complainant_name: form.complainant_name.trim(),
+        contact_number: form.contact_number.trim(),
+        department: form.department,
         category: form.category,
-        ...(form.category === 'other'
-          ? { category_other: form.category_other.trim() }
-          : {}),
         details: form.details.trim(),
       };
       const res = await axiosInstance.post('/ceo-complaints', payload);
@@ -199,22 +208,42 @@ const CeoComplaintAdd = () => {
           </div>
 
           <FormInput
-            label="Name (optional)"
+            label="Name"
             name="complainant_name"
             value={form.complainant_name}
             onChange={handleChange}
             placeholder="Complainant name"
+            required
           />
           <FormInput
-            label="Contact number (optional)"
+            label="Contact number"
             name="contact_number"
             value={form.contact_number}
             onChange={handleChange}
             placeholder="Phone number"
+            required
           />
 
           <div className="form-group">
-            <label>Category *</label>
+            <label>Department *</label>
+            <select
+              name="department"
+              value={form.department}
+              onChange={handleChange}
+              className="form-select"
+              required
+            >
+              <option value="">Select department</option>
+              {DEPARTMENT_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label>Complaint type (کمپلینٹ ٹائپ) *</label>
             <select
               name="category"
               value={form.category}
@@ -222,7 +251,7 @@ const CeoComplaintAdd = () => {
               className="form-select"
               required
             >
-              <option value="">Select category</option>
+              <option value="">Select complaint type</option>
               {CATEGORY_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
@@ -231,16 +260,14 @@ const CeoComplaintAdd = () => {
             </select>
           </div>
 
-          {form.category === 'other' && (
-            <FormInput
-              label="Other category *"
-              name="category_other"
-              value={form.category_other}
-              onChange={handleChange}
-              placeholder="Describe category"
-              required
-            />
-          )}
+          {form.category ? (
+            <div className="form-group">
+              <label>Priority / ترجیح (Tarjih)</label>
+              <div className="form-input" style={{ background: '#f8fafc' }}>
+                {labelFor(PRIORITY_OPTIONS, priorityForCategory(form.category))}
+              </div>
+            </div>
+          ) : null}
 
           <FormTextarea
             label="Complaint details *"

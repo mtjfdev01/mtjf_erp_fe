@@ -8,7 +8,9 @@ import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
 import {
   ORGANIZATION_OPTIONS,
   COMPLAINANT_TYPE_OPTIONS,
+  DEPARTMENT_OPTIONS,
   CATEGORY_OPTIONS,
+  PRIORITY_OPTIONS,
   STATUS_OPTIONS,
   ASLAB_BRANCH_OPTIONS,
   labelFor,
@@ -115,10 +117,14 @@ const CeoComplaintView = () => {
                 </Detail>
                 <Detail label="Name">{row.complainant_name || '-'}</Detail>
                 <Detail label="Contact">{row.contact_number || '-'}</Detail>
-                <Detail label="Category">
-                  {row.category === 'other' && row.category_other
-                    ? row.category_other
-                    : labelFor(CATEGORY_OPTIONS, row.category)}
+                <Detail label="Department">
+                  {labelFor(DEPARTMENT_OPTIONS, row.department)}
+                </Detail>
+                <Detail label="Complaint type">
+                  {labelFor(CATEGORY_OPTIONS, row.category)}
+                </Detail>
+                <Detail label="Priority / ترجیح">
+                  {labelFor(PRIORITY_OPTIONS, row.priority)}
                 </Detail>
                 <Detail label="Channel">{row.submission_channel || '-'}</Detail>
                 <Detail label="Created">
