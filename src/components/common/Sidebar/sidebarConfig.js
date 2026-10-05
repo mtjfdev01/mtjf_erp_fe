@@ -807,6 +807,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiRepeat
   },
   {
+    label: 'Reminder Logs',
+    path: '/dms/recurring-reminder-logs/list',
+    type: 'list',
+    module: 'recurring_reminder_logs',
+    icon: FiMail
+  },
+  {
     label: 'Recurring Donors',
     path: '/dms/recurring-donors/list',
     type: 'list',

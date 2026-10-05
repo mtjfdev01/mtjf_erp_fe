@@ -141,6 +141,8 @@ import AidPersonView from './components/dms/aid/people/view';
 import { RecurringDonationsList, RecurringDonationView, AddRecurringDonation, UpdateRecurringDonation } from './components/dms/recurring_donations';
 import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
+import RecurringReminderLogsList from './components/dms/recurring_reminder_logs/list';
+import RecurringReminderLogView from './components/dms/recurring_reminder_logs/view';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
@@ -468,6 +470,8 @@ const App = () => {
                                 <Route path="/dms/event-pledges/edit/:id" element={<EditEventPledge />} />
                                 <Route path="/dms/event-pledges/view/:id" element={<ViewEventPledge />} />
                                 <Route path="/dms/manual-recurring/list" element={<ManualRecurringList />} />
+                                <Route path="/dms/recurring-reminder-logs/list" element={<RecurringReminderLogsList />} />
+                                <Route path="/dms/recurring-reminder-logs/view/:id" element={<RecurringReminderLogView />} />
 
                                 {/* Social Posts (Buffer) */}
                                 <Route path="/dms/social-posts/list" element={<SocialPostsList />} />
