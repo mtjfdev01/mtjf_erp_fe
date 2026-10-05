@@ -1,8 +1,10 @@
 .complaint-case-board {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(7, minmax(220px, 1fr));
+  gap: 12px;
   align-items: start;
+  overflow-x: auto;
+  padding-bottom: 4px;
 }
 
 .complaint-case-board__column {
@@ -11,18 +13,35 @@
   border-radius: 14px;
   min-height: 460px;
   overflow: hidden;
+  min-width: 220px;
 }
 
-.complaint-case-board__column--submitted {
-  border-top: 3px solid #64748b;
+.complaint-case-board__column--acknowledged {
+  border-top: 3px solid #0284c7;
 }
 
-.complaint-case-board__column--under_investigation {
+.complaint-case-board__column--under_review {
+  border-top: 3px solid #7c3aed;
+}
+
+.complaint-case-board__column--investigating {
   border-top: 3px solid #d97706;
+}
+
+.complaint-case-board__column--pending_information {
+  border-top: 3px solid #ea580c;
+}
+
+.complaint-case-board__column--escalated {
+  border-top: 3px solid #dc2626;
 }
 
 .complaint-case-board__column--resolved {
   border-top: 3px solid #16a34a;
+}
+
+.complaint-case-board__column--closed_rejected {
+  border-top: 3px solid #64748b;
 }
 
 .complaint-case-board__header {
@@ -36,9 +55,10 @@
 
 .complaint-case-board__header h3 {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--cc-text, #1f2937);
+  line-height: 1.3;
 }
 
 .complaint-case-board__count {
@@ -114,12 +134,18 @@
   gap: 2px;
 }
 
+@media (max-width: 1400px) {
+  .complaint-case-board {
+    grid-template-columns: repeat(7, minmax(200px, 240px));
+  }
+}
+
 @media (max-width: 1024px) {
   .complaint-case-board {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(7, minmax(180px, 220px));
   }
 
   .complaint-case-board__column {
-    min-height: auto;
+    min-height: 360px;
   }
 }

@@ -30,15 +30,24 @@ export default function ComplaintsCaseBoard({ viewMode, onViewModeChange }) {
     defaultPageSize: 200,
   });
 
+  const resolveBoardStatus = (status) => {
+    const legacyMap = {
+      submitted: 'acknowledged',
+      under_investigation: 'investigating',
+      dismissed: 'closed_rejected',
+      closed: 'closed_rejected',
+    };
+    return legacyMap[status] || status;
+  };
+
   const grouped = useMemo(() => {
     const map = {};
     BOARD_COLUMNS.forEach((col) => {
       map[col.key] = [];
     });
     data.forEach((item) => {
-      const col = BOARD_COLUMNS.find((c) =>
-        c.includes ? c.includes.includes(item.complaint_workflow_status) : c.status === item.complaint_workflow_status,
-      );
+      const normalizedStatus = resolveBoardStatus(item.complaint_workflow_status);
+      const col = BOARD_COLUMNS.find((c) => c.status === normalizedStatus);
       if (col) map[col.key].push(item);
     });
     return map;

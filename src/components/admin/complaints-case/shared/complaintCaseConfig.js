@@ -1,15 +1,33 @@
 export const COMPLAINT_WORKFLOW_STATUSES = [
-  { value: 'submitted', label: 'Generated', column: 'generated' },
-  { value: 'under_investigation', label: 'Under Investigation', column: 'investigation' },
-  { value: 'resolved', label: 'Resolved', column: 'resolved' },
-  { value: 'dismissed', label: 'Dismissed', column: 'resolved' },
-  { value: 'closed', label: 'Closed', column: 'resolved' },
+  { value: 'acknowledged', label: 'Acknowledged' },
+  { value: 'under_review', label: 'Under Review' },
+  { value: 'investigating', label: 'Investigating' },
+  { value: 'pending_information', label: 'Pending Information' },
+  { value: 'escalated', label: 'Escalated' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'closed_rejected', label: 'Closed / Rejected' },
 ];
 
-export const BOARD_COLUMNS = [
-  { key: 'submitted', label: 'Generated', status: 'submitted' },
-  { key: 'under_investigation', label: 'Under Investigation', status: 'under_investigation' },
-  { key: 'resolved', label: 'Resolved', status: 'resolved', includes: ['resolved', 'dismissed', 'closed'] },
+/** Legacy values stored before workflow upgrade (display-only fallback). */
+const LEGACY_STATUS_LABELS = {
+  submitted: 'Acknowledged',
+  under_investigation: 'Investigating',
+  dismissed: 'Closed / Rejected',
+  closed: 'Closed / Rejected',
+};
+
+export const BOARD_COLUMNS = COMPLAINT_WORKFLOW_STATUSES.map((status) => ({
+  key: status.value,
+  label: status.label,
+  status: status.value,
+}));
+
+export const ACTIVE_WORKFLOW_STATUSES = [
+  'acknowledged',
+  'under_review',
+  'investigating',
+  'pending_information',
+  'escalated',
 ];
 
 export const COMPLAINT_CATEGORIES = [
@@ -48,7 +66,11 @@ export function getCategoryLabel(value, custom) {
 }
 
 export function getStatusLabel(value) {
-  return COMPLAINT_WORKFLOW_STATUSES.find((s) => s.value === value)?.label || value;
+  return (
+    COMPLAINT_WORKFLOW_STATUSES.find((s) => s.value === value)?.label ||
+    LEGACY_STATUS_LABELS[value] ||
+    value
+  );
 }
 
 export function getDepartmentLabel(value) {

@@ -17,6 +17,7 @@ import {
   COMPLAINT_CATEGORIES,
   DEPARTMENT_OPTIONS,
   COMPLAINT_WORKFLOW_STATUSES,
+  ACTIVE_WORKFLOW_STATUSES,
   getCategoryLabel,
   getStatusLabel,
   getDepartmentLabel,
@@ -46,17 +47,23 @@ export default function ComplaintsCaseList({ viewMode, onViewModeChange }) {
   } = useComplaintCaseQuery();
 
   const totals = useMemo(() => {
-    const submitted = statusCounts.submitted || 0;
-    const investigation = statusCounts.under_investigation || 0;
-    const resolved =
-      (statusCounts.resolved || 0) +
+    const active = ACTIVE_WORKFLOW_STATUSES.reduce(
+      (sum, status) => sum + (statusCounts[status] || 0),
+      0,
+    );
+    const legacyActive =
+      (statusCounts.submitted || 0) + (statusCounts.under_investigation || 0);
+    const resolved = statusCounts.resolved || 0;
+    const closedRejected =
+      (statusCounts.closed_rejected || 0) +
       (statusCounts.dismissed || 0) +
       (statusCounts.closed || 0);
+    const total = active + legacyActive + resolved + closedRejected;
     return {
-      submitted,
-      investigation,
+      active: active + legacyActive,
       resolved,
-      total: submitted + investigation + resolved,
+      closedRejected,
+      total,
     };
   }, [statusCounts]);
 
@@ -110,17 +117,17 @@ export default function ComplaintsCaseList({ viewMode, onViewModeChange }) {
               <div className="cc-stat__label">Total</div>
               <div className="cc-stat__value">{totals.total}</div>
             </div>
-            <div className="cc-stat cc-stat--generated">
-              <div className="cc-stat__label">Generated</div>
-              <div className="cc-stat__value">{totals.submitted}</div>
-            </div>
-            <div className="cc-stat cc-stat--investigation">
-              <div className="cc-stat__label">Under Investigation</div>
-              <div className="cc-stat__value">{totals.investigation}</div>
+            <div className="cc-stat cc-stat--active">
+              <div className="cc-stat__label">Active</div>
+              <div className="cc-stat__value">{totals.active}</div>
             </div>
             <div className="cc-stat cc-stat--resolved">
               <div className="cc-stat__label">Resolved</div>
               <div className="cc-stat__value">{totals.resolved}</div>
+            </div>
+            <div className="cc-stat cc-stat--closed">
+              <div className="cc-stat__label">Closed / Rejected</div>
+              <div className="cc-stat__value">{totals.closedRejected}</div>
             </div>
           </div>
 

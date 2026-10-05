@@ -534,9 +534,6 @@ const AddTask = ({
     if (!form.title || !form.title.trim()) {
       validationErrors.push('Task title is required.');
     }
-    if (!form.description || !form.description.trim()) {
-      validationErrors.push('Description is required.');
-    }
     if (!department) {
       validationErrors.push('Department is required.');
     }
@@ -563,11 +560,6 @@ const AddTask = ({
         .map((item) => ({ ...item, text: String(item.text || '').trim() }))
         .filter((item) => item.text.length > 0)
       : [];
-    if (movItemsCleanForValidation.length === 0) {
-      validationErrors.push(
-        'At least one Means of Verification (MOV) item is required for every task.'
-      );
-    }
     if (form.workflow_type === 'approval_required') {
       if (!approverUsers || approverUsers.length === 0) {
         validationErrors.push('At least one approver is required for approval-required tasks.');
@@ -592,9 +584,11 @@ const AddTask = ({
       const movItemsClean = movItemsCleanForValidation;
 
       // FIXED: Do NOT encode MOV into description - send it separately via mov_checklist field
+      const titleTrimmed = String(form.title || '').trim();
+      const descriptionTrimmed = String(form.description || '').trim();
       const payload = {
-        title: form.title,
-        description: form.description || undefined,
+        title: titleTrimmed,
+        description: descriptionTrimmed || titleTrimmed,
         department,
         priority: form.priority || undefined,
         workflow_type: form.workflow_type || undefined,
@@ -742,10 +736,9 @@ const AddTask = ({
                   label="Description"
                   value={form.description}
                   onChange={handleChange}
-                  placeholder="Enter a brief description of the task..."
+                  placeholder="Optional — uses task title if left empty"
                   rows={3}
                   maxLength={500}
-                  required
                 />
                 <div className="add-task-char-count">
                   {(form.description || '').length}/500

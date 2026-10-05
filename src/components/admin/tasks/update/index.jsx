@@ -725,19 +725,14 @@ const UpdateTask = ({
           .map((item) => ({ ...item, text: String(item.text || '').trim() }))
           .filter((item) => item.text.length > 0)
         : [];
-      if (movItemsClean.length === 0) {
-        const msg =
-          'At least one Means of Verification (MOV) item is required for every task.';
-        setError(msg);
-        toast.error(msg);
-        setSaving(false);
-        return;
-      }
 
       // FIXED: Do NOT encode MOV into description - send it separately via mov_items field
+      // When no MOV text is submitted, omit MOV fields so existing data is not wiped.
+      const titleTrimmed = String(form.title || '').trim();
+      const descriptionTrimmed = String(form.description || '').trim();
       const payload = {
-        title: form.title || undefined,
-        description: form.description || undefined,
+        title: titleTrimmed || undefined,
+        description: descriptionTrimmed || titleTrimmed || undefined,
         priority: form.priority || undefined,
         status: form.status || undefined,
         workflow_type: form.workflow_type || undefined,
@@ -773,11 +768,15 @@ const UpdateTask = ({
         recurrence_end_type: form.recurrence_end_type || undefined,
         recurrence_end_date: form.recurrence_end_date || undefined,
         recurrence_end_occurrences: form.recurrence_end_occurrences ? parseInt(form.recurrence_end_occurrences) : undefined,
-        mov_items: movItemsClean.map((item) => item.text),
-        mov_assignments: movItemsClean.map((item, mov_index) => ({
-          mov_index,
-          user_id: assignedUsers.length === 1 ? assignedUsers[0].id : item.user_id,
-        })),
+        ...(movItemsClean.length > 0
+          ? {
+              mov_items: movItemsClean.map((item) => item.text),
+              mov_assignments: movItemsClean.map((item, mov_index) => ({
+                mov_index,
+                user_id: assignedUsers.length === 1 ? assignedUsers[0].id : item.user_id,
+              })),
+            }
+          : {}),
       };
       const res = await axiosInstance.patch(`/tasks/${id}`, payload);
       const updatedTask = res?.data?.data || null;
@@ -895,7 +894,7 @@ const UpdateTask = ({
                   label="Description"
                   value={form.description}
                   onChange={handleChange}
-                  placeholder="Enter a brief description of the task..."
+                  placeholder="Optional — uses task title if left empty"
                   rows={3}
                   maxLength={500}
                 />
