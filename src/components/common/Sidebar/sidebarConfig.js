@@ -522,7 +522,8 @@ const adminDepartmentItems = () => [
   //     {label: "Website Donation Projects", path: "/dms/website_donation_projects/list", type: "list", icon: FiGrid},
   //     {label: "Home Hero Slides", path: "/dms/website_home_hero/list", type: "list", icon: FiLayers},
   //     {label: "Recurring Donations", path: "/dms/recurring-donations/list", type: "list", module: "recurring_donations", icon: FiRepeat},
-  //     {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", icon: FiRepeat},
+  //     {label: "Reminder Logs", path: "/dms/recurring-reminder-logs/list", type: "list", module: "recurring_reminder_logs", icon: FiMail},
+  //     {label: "Recurring Donors", path: "/dms/recurring-donors/list", type: "list", module: "recurring_donors", icon: FiRepeat},
   //     {label: "Donation Boxes", path: "/dms/donation_box/list", type: "list", icon: FiBox},
   //     {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
   //     {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
@@ -804,14 +805,23 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     path: '/dms/recurring-donations/list',
     type: 'list',
     module: 'recurring_donations',
-    icon: FiRepeat
-  },
-  {
-    label: 'Reminder Logs',
-    path: '/dms/recurring-reminder-logs/list',
-    type: 'list',
-    module: 'recurring_reminder_logs',
-    icon: FiMail
+    icon: FiRepeat,
+    subItems: [
+      {
+        label: 'Subscriptions',
+        path: '/dms/recurring-donations/list',
+        type: 'list',
+        module: 'recurring_donations',
+        icon: FiList,
+      },
+      {
+        label: 'Reminder Logs',
+        path: '/dms/recurring-reminder-logs/list',
+        type: 'list',
+        module: 'recurring_reminder_logs',
+        icon: FiMail,
+      },
+    ],
   },
   {
     label: 'Recurring Donors',

@@ -84,6 +84,16 @@ export const canViewModule = (permissions, department, module) => {
     return true;
   }
 
+  // Recurring reminder logs: own flags, or recurring donations list/view
+  if (department === 'fund_raising' && module === 'recurring_reminder_logs') {
+    const fr = permissions[department];
+    if (!fr) return false;
+    const specific = fr.recurring_reminder_logs;
+    if (specific?.view === true || specific?.list_view === true) return true;
+    const recurring = fr.recurring_donations;
+    return recurring?.view === true || recurring?.list_view === true;
+  }
+
   // CSR donors / CSR POCs share access in sidebar when either submodule is granted
   if (
     department === 'fund_raising' &&
