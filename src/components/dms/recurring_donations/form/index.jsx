@@ -1,6 +1,11 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
+import DonationPendingAttachments, {
+  uploadPendingRecurringDonationAttachments,
+} from '../../donations/shared/DonationPendingAttachments';
+import '../../donations/shared/DonationPendingAttachments.css';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
@@ -89,6 +94,8 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [pendingAttachments, setPendingAttachments] = useState([]);
+  const attachmentsRef = useRef(null);
   const [isStripe, setIsStripe] = useState(false);
 
   const canAccess = useMemo(() => {
@@ -249,6 +256,29 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
         throw new Error(res.data?.message || 'Save failed');
       }
       const savedId = isEdit ? id : res.data?.data?.id;
+      const toUpload =
+        attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;
+      if (savedId && toUpload.length > 0) {
+        const { uploaded, failed } = await uploadPendingRecurringDonationAttachments({
+          axiosInstance,
+          recurringDonationId: savedId,
+          items: toUpload,
+        });
+        if (uploaded > 0) {
+          toast.success(
+            uploaded === 1
+              ? 'Attachment uploaded successfully.'
+              : `${uploaded} attachments uploaded successfully.`,
+          );
+        }
+        if (failed > 0) {
+          toast.error(
+            failed === 1
+              ? 'Failed to upload 1 attachment.'
+              : `Failed to upload ${failed} attachments.`,
+          );
+        }
+      }
       navigate(
         savedId
           ? `/dms/recurring-donations/view/${savedId}`
@@ -503,6 +533,17 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
               />
               Donor consented to recurring donations
             </label>
+          </div>
+
+          <div className="form-section">
+            <DonationPendingAttachments
+              ref={attachmentsRef}
+              items={pendingAttachments}
+              onChange={setPendingAttachments}
+              disabled={saving}
+              title="Attachments"
+              fileInputId="recurring-donation-form-attachment-file"
+            />
           </div>
 
           <div className="form-actions">

@@ -13,10 +13,12 @@ import {
   FiEdit2,
   FiX,
   FiTrash2,
+  FiPaperclip,
 } from 'react-icons/fi';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission, isSuperAdmin, canReconcileRecurring } from '../../../../utils/permissions';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
+import RecurringAttachmentPanel from '../shared/RecurringAttachmentPanel';
 
 const INSTALLMENT_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -48,6 +50,7 @@ const RecurringDonationView = () => {
   const [deletingInstallment, setDeletingInstallment] = useState(false);
   const [deleteSubTarget, setDeleteSubTarget] = useState(false);
   const [deletingSub, setDeletingSub] = useState(false);
+  const [installmentAttachmentTarget, setInstallmentAttachmentTarget] = useState(null);
 
   const isFrAdmin = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
@@ -552,6 +555,15 @@ const RecurringDonationView = () => {
           </section>
 
           <section className="view-section">
+            <RecurringAttachmentPanel
+              entityId={subscription.id}
+              attachments={subscription.attachments || []}
+              canUpdate={canUpdate}
+              onChanged={load}
+            />
+          </section>
+
+          <section className="view-section">
             <h3>
               <FiUser style={{ marginRight: 8 }} />
               Donor
@@ -724,6 +736,7 @@ const RecurringDonationView = () => {
                     <th>Donation / invoice</th>
                     <th>Paid at</th>
                     <th>Reason</th>
+                    <th style={{ width: 120 }}>Attachments</th>
                     {showInstallmentActions && (
                       <th style={{ width: 140 }}>Actions</th>
                     )}
@@ -836,6 +849,17 @@ const RecurringDonationView = () => {
                           </td>
                           <td>{formatDate(inst.paid_at)}</td>
                           <td>{inst.stripe_billing_reason || '-'}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="btn-secondary"
+                              onClick={() => setInstallmentAttachmentTarget(inst)}
+                              title="Manage installment attachments"
+                            >
+                              <FiPaperclip style={{ marginRight: 4, verticalAlign: -2 }} />
+                              {(inst.attachments || []).length}
+                            </button>
+                          </td>
                           {showInstallmentActions && (
                             <td>
                               {isEditing ? (
@@ -898,7 +922,7 @@ const RecurringDonationView = () => {
                       <td
                         colSpan={
                           (canMarkPaid ? 1 : 0) +
-                          8 +
+                          9 +
                           (showInstallmentActions ? 1 : 0)
                         }
                         style={{ textAlign: 'center' }}
@@ -913,6 +937,58 @@ const RecurringDonationView = () => {
           </section>
         </div>
       </div>
+
+      {installmentAttachmentTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(15, 23, 42, 0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1200,
+            padding: 16,
+          }}
+          onMouseDown={() => setInstallmentAttachmentTarget(null)}
+        >
+          <div
+            style={{
+              width: 'min(640px, 100%)',
+              maxHeight: '85vh',
+              overflow: 'auto',
+              background: '#fff',
+              borderRadius: 12,
+              padding: 20,
+              boxShadow: '0 20px 40px rgba(15, 23, 42, 0.18)',
+            }}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <RecurringAttachmentPanel
+              entityId={installmentAttachmentTarget.id}
+              attachments={installmentAttachmentTarget.attachments || []}
+              canUpdate={canUpdate}
+              title={`Installment #${installmentAttachmentTarget.id} attachments`}
+              compact
+              onChanged={async () => {
+                await load();
+                setInstallmentAttachmentTarget(null);
+              }}
+            />
+            <div style={{ marginTop: 12 }}>
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => setInstallmentAttachmentTarget(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <ConfirmationModal
         isOpen={!!deleteInstallmentTarget}
