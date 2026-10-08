@@ -335,7 +335,6 @@ const AddTask = ({
   const [error, setError] = useState('');
   const [assignedUsers, setAssignedUsers] = useState([]);
   const [assignedUserDepartments, setAssignedUserDepartments] = useState({});
-  const [reportedByUsers, setReportedByUsers] = useState([]);
   const [approverUsers, setApproverUsers] = useState([]);
   const [movItems, setMovItems] = useState([{ text: '', user_id: null }]);
   const [pendingAttachments, setPendingAttachments] = useState([]);
@@ -610,10 +609,6 @@ const AddTask = ({
                 'admin'
             }))
             : undefined,
-        reported_by_id:
-          Array.isArray(reportedByUsers) && reportedByUsers.length > 0
-            ? reportedByUsers[0].id
-            : undefined,
         project_name: form.project_name || undefined,
         recurrence_rule: form.recurrence_rule || undefined,
         recurrence_next_date: form.recurrence_next_date || undefined,
@@ -736,7 +731,7 @@ const AddTask = ({
                   label="Description"
                   value={form.description}
                   onChange={handleChange}
-                  placeholder="Optional — uses task title if left empty"
+                  placeholder="Enter task description"
                   rows={3}
                   maxLength={500}
                 />

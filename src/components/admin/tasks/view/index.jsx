@@ -218,8 +218,8 @@ const ViewTask = ({
         });
       }
 
-      // NOTE: created_by_id and reported_by_id are NOT included here because
-      // the backend already returns task.created_by and task.reported_by as full user objects
+      // NOTE: created_by_id and reported_to_id are NOT included here because
+      // the backend already returns task.created_by and task.reported_to as full user objects
       // via leftJoinAndSelect in the findOne method
 
       const allNeededIds = Array.from(
@@ -706,7 +706,7 @@ const ViewTask = ({
     canUpdate && !(isCurrentUserAssignee && Number(task?.created_by_id) !== Number(user?.id));
   const canView = taskPerms.canView === true;
   const canInteractWithNotes = canUpdate || canCreate || canView;
-  const canDeleteAttachment = canUpdate || canCreate;
+  const hasAttachmentDeletePermission = canUpdate || canCreate;
 
   const primaryAssigneeName =
     assignedUsers && assignedUsers.length > 0
@@ -731,6 +731,19 @@ const ViewTask = ({
     if (!user || !task) return false;
     return Number(task.created_by_id) === Number(user.id);
   }, [user, task]);
+
+  const canDeleteAttachment = (attachment) => {
+    if (!hasAttachmentDeletePermission) return false;
+    const taskCreatorId = Number(task?.created_by_id);
+    const uploadedById = Number(
+      attachment?.uploaded_by?.id ?? attachment?.uploaded_by_id ?? attachment?.uploaded_by,
+    );
+    return !(
+      isCurrentUserAssignee &&
+      !isCurrentUserCreator &&
+      uploadedById === taskCreatorId
+    );
+  };
 
   const assignmentUsersForDisplay = assignedUsers || [];
 
@@ -937,7 +950,10 @@ const ViewTask = ({
   };
 
   const handleRemoveAttachment = async (attachmentId) => {
-    if (!canDeleteAttachment) return;
+    const targetAttachment = (task?.attachments || []).find(
+      (item) => Number(item.id) === Number(attachmentId),
+    );
+    if (!canDeleteAttachment(targetAttachment)) return;
     if (!window.confirm('Are you sure you want to remove this attachment?')) {
       return;
     }
@@ -1041,7 +1057,7 @@ const ViewTask = ({
       currentStatus: String(task?.status || '').toLowerCase(),
       currentUserId: user?.id,
       createdByUserId: task?.created_by_id,
-      reportedById: task?.reported_by_id,
+      reportedById: task?.reported_to_id,
       approvalRequiredUserIds: task?.approval_required_user_ids,
       approvalsMeta: approvalState?.approvals_meta,
       currentUserHasActedOnApproval,
@@ -1417,7 +1433,7 @@ const ViewTask = ({
                           isAssignee: isCurrentUserAssignee,
                           currentUserId: user?.id,
                           createdByUserId: task.created_by_id,
-                          reportedById: task.reported_by_id,
+                          reportedById: task.reported_to_id,
                           approvalRequiredUserIds: task.approval_required_user_ids,
                           approvalsMeta: approvalState?.approvals_meta,
                           currentUserHasActedOnApproval,
@@ -1435,7 +1451,7 @@ const ViewTask = ({
                             isAssignee={isCurrentUserAssignee}
                             currentUserId={user?.id}
                             createdByUserId={task.created_by_id}
-                            reportedById={task.reported_by_id}
+                            reportedById={task.reported_to_id}
                             approvalRequiredUserIds={task.approval_required_user_ids}
                             approvalsMeta={approvalState?.approvals_meta}
                             currentUserHasActedOnApproval={currentUserHasActedOnApproval}
@@ -1664,7 +1680,7 @@ const ViewTask = ({
                                       >
                                         View
                                       </a>
-                                      {canDeleteAttachment && (
+                                      {canDeleteAttachment(a) && (
                                         <button
                                           type="button"
                                           className="attachment-remove-button"
@@ -1690,16 +1706,12 @@ const ViewTask = ({
                     <h3 className="task-task-view-section-title">Task Information</h3>
                     <div className="task-view-grid task-view-grid--info">
                       <div className="task-view-item">
-                        <span className="task-view-item-label">Task Type</span>
-                        <span className="task-view-item-value">{taskTypeLabel}</span>
+                        <span className="task-view-item-label">Created Date</span>
+                        <span className="task-view-item-value">{formatDateOnly(task.created_at)}</span>
                       </div>
                       <div className="task-view-item">
-                        <span className="task-view-item-label">Priority</span>
-                        <span className="task-view-item-value">
-                          <span className={`task-view-priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
-                            {capitalize(task.priority)}
-                          </span>
-                        </span>
+                        <span className="task-view-item-label">Start Date</span>
+                        <span className="task-view-item-value">{formatDateOnly(task.start_date)}</span>
                       </div>
                       <div className="task-view-item">
                         <span className="task-view-item-label">Due Date</span>
@@ -1712,6 +1724,16 @@ const ViewTask = ({
                           )}
                         </span>
                       </div>
+                      {showCompletedDate && (
+                        <div className="task-view-item">
+                          <span className="task-view-item-label">Completed Date</span>
+                          <span className="task-view-item-value">{formatDateOnly(task.completed_date)}</span>
+                        </div>
+                      )}
+                      <div className="task-view-item">
+                        <span className="task-view-item-label">Task Type</span>
+                        <span className="task-view-item-value">{taskTypeLabel}</span>
+                      </div>
                       <div className="task-view-item">
                         <span className="task-view-item-label">Workflow</span>
                         <span className="task-view-item-value">{capitalize(task.workflow_type)}</span>
@@ -1720,28 +1742,26 @@ const ViewTask = ({
                         <span className="task-view-item-label">Status</span>
                         <span className="task-view-item-value">{getStatusBadge(task.status)}</span>
                       </div>
-                      {showCompletedDate && (
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Completed Date</span>
-                          <span className="task-view-item-value">{formatDateOnly(task.completed_date)}</span>
-                        </div>
-                      )}
+                      <div className="task-view-item">
+                        <span className="task-view-item-label">Priority</span>
+                        <span className="task-view-item-value">
+                          <span className={`task-view-priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
+                            {capitalize(task.priority)}
+                          </span>
+                        </span>
+                      </div>
                       <div className="task-view-item">
                         <span className="task-view-item-label">Project / Program</span>
                         <span className="task-view-item-value">{task.project_name || '—'}</span>
                       </div>
                       <div className="task-view-item">
-                        <span className="task-view-item-label">Created Date</span>
-                        <span className="task-view-item-value">{formatDateOnly(task.created_at)}</span>
-                      </div>
-                      <div className="task-view-item">
                         <span className="task-view-item-label">Created by</span>
                         <span className="task-view-item-value">{getUserDisplayName(task.created_by)}</span>
                       </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Start Date</span>
-                        <span className="task-view-item-value">{formatDateOnly(task.start_date)}</span>
-                      </div>
+                      {/* <div className="task-view-item">
+                        <span className="task-view-item-label">Reporting Manager</span>
+                        <span className="task-view-item-value">{getUserDisplayName(task.reported_to)}</span>
+                      </div> */}
                       {isApprovalWorkflow &&
                         ['approved', 'rejected'].includes(String(task?.status || '').toLowerCase()) &&
                         task?.approved_by && (
@@ -2075,7 +2095,7 @@ const ViewTask = ({
                                           >
                                             View
                                           </a>
-                                          {canDeleteAttachment && (
+                                          {canDeleteAttachment(a) && (
                                             <button
                                               type="button"
                                               className="attachment-remove-button"

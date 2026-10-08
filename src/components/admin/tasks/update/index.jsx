@@ -316,7 +316,6 @@ const UpdateTask = ({
   const [originalWorkflowType, setOriginalWorkflowType] = useState('');
   const [assignedUsers, setAssignedUsers] = useState([]);
   const [assignedUserDepartments, setAssignedUserDepartments] = useState({});
-  const [reportedByUsers, setReportedByUsers] = useState([]);
   const [approverUsers, setApproverUsers] = useState([]);
   const [movItems, setMovItems] = useState([{ text: '', user_id: null }]);
   const [pendingAttachments, setPendingAttachments] = useState([]);
@@ -453,7 +452,7 @@ const UpdateTask = ({
       setLoading(true);
       setError('');
       try {
-        const res = await axiosInstance.get(`/tasks/${id}?include_all_mov=true`);
+        const res = await axiosInstance.get(`/tasks/${id}`);
         const t = res.data.data;
         const { baseDescription, movItems: movFromDescription } = splitDescriptionAndMov(
           t.description || '',
@@ -578,11 +577,6 @@ const UpdateTask = ({
           setAssignedUsers([]);
         }
 
-        if (t.reported_by) {
-          setReportedByUsers([t.reported_by]);
-        } else {
-          setReportedByUsers([]);
-        }
         setOriginalStatus(t.status || '');
         setOriginalWorkflowType(t.workflow_type || 'standard');
       } catch (e) {
@@ -757,10 +751,6 @@ const UpdateTask = ({
           approverUsers && approverUsers.length > 0
             ? approverUsers.map((u) => u.id)
             : undefined,
-        reported_by_id:
-          Array.isArray(reportedByUsers) && reportedByUsers.length > 0
-            ? reportedByUsers[0].id
-            : undefined,
         recurrence_rule:
           form.task_type === 'recurring' ? form.recurrence_rule || undefined : undefined,
         recurrence_next_date:
@@ -780,7 +770,7 @@ const UpdateTask = ({
       };
       const res = await axiosInstance.patch(`/tasks/${id}`, payload);
       const updatedTask = res?.data?.data || null;
-      toast.success('Task updated. Email notification will be sent if configured.');
+      toast.success('Task updated.');
 
       const toUpload =
         attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;
@@ -894,7 +884,7 @@ const UpdateTask = ({
                   label="Description"
                   value={form.description}
                   onChange={handleChange}
-                  placeholder="Optional — uses task title if left empty"
+                  placeholder="Enter task description"
                   rows={3}
                   maxLength={500}
                 />
