@@ -2036,12 +2036,12 @@ const ViewTask = ({
                     <div className="tv-column tv-column--side">
                       <TaskActivityTimeline activities={task.activities || []} />
 
-                      {!isApproverView && (
+                      {/* {!isApproverView && (
                         <div className="task-view-section tv-time-card">
                           <h3 className="task-task-view-section-title">Time Tracking</h3>
                           <TimeTracker taskId={task.id} taskStatus={task.status} />
                         </div>
-                      )}
+                      )} */}
 
                       <div className="task-notes-panel">
                         <div
