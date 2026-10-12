@@ -250,7 +250,7 @@
   .add-task-page {
     padding: 1rem 0.5rem 2rem;
   }
-
+  
   .add-task-card {
     padding: 1rem 0.85rem 1.25rem;
     border-radius: var(--border-radius);
@@ -265,7 +265,7 @@
   .add-task-split-row {
     grid-template-columns: 1fr;
   }
-
+  
   .assign-users-row {
     grid-template-columns: 1fr;
   }
@@ -293,7 +293,7 @@
   .add-task-section-title {
     font-size: 0.9rem;
   }
-
+  
   .add-task-submit {
     padding: 0.6rem 1.25rem;
   }
@@ -407,7 +407,6 @@
   gap: 0.65rem;
   margin-bottom: 0.5rem;
 }
-
 .mov-item-row .mov-assignment-button {
   flex: 0 0 auto;
   margin-bottom: 4px;
@@ -623,15 +622,8 @@
 }
 
 @keyframes taskSelectFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .task-custom-select-dropdown-header {
@@ -726,3 +718,4 @@
   color: #d1d5db;
   font-size: 0.75rem;
 }
+

@@ -847,14 +847,15 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   const getActionMenuItems = (task) => {
     const status = String(task.status).toLowerCase();
     const canViewDetail = taskPerms.canViewDetail === true;
+    const canUpdate = taskPerms.canUpdate === true;
     const canDelete = canDeleteTaskByCurrentUser(task);
     const canEditThisTask = canEditTaskByCurrentUser(task);
     const canEditCompleted = taskPerms.canEditCompleted === true;
     const isAssignee = isTaskAssignedToCurrentUser(task);
     const canChangeAsAssignee =
       isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
-    // Keep quick status actions consistent with the board's assignee-only rule.
-    const canChangeStatus = canChangeAsAssignee;
+    // Preserve module-level update permission; otherwise status actions require assignee access.
+    const canChangeStatus = canUpdate || canChangeAsAssignee;
 
     return [
       {
@@ -916,6 +917,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
   const renderTaskCard = (t) => {
     const status = String(t.status || '').toLowerCase();
+    const canUpdate = taskPerms.canUpdate === true;
     const canEditThisTask = canEditTaskByCurrentUser(t);
     const canDeleteThisTask = canDeleteTaskByCurrentUser(t);
     const isAssignee = isTaskAssignedToCurrentUser(t);
@@ -1004,7 +1006,8 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             >
               <FiEdit2 />
             </button>
-            {canChangeAsAssignee && (
+             {/* Keep authorized task managers' status controls alongside assignee controls. */}
+             {(canUpdate || canChangeAsAssignee) && (
               <div className="tl-tasks-status-menu">
                 <button
                   type="button"
@@ -1105,10 +1108,12 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   };
 
   const handleQuickStatusChange = async (task, nextStatus) => {
+    const canUpdate = taskPerms.canUpdate === true;
     const isAssignee = isTaskAssignedToCurrentUser(task);
     const canChangeAsAssignee =
-      isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
-    if (!canChangeAsAssignee) {
+    isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
+    // Match the visible controls: module update permission or assignee-specific permission.
+    if (!canUpdate && !canChangeAsAssignee) {
       toast.error(hoverText('update') || 'You do not have permission to update tasks');
       return;
     }

@@ -351,6 +351,7 @@ const ProgressUpdate = ({
 
   return (
     <>
+      {/* Show the shared overlay while the MOV check is being saved. */}
       <Loader loading={loading} />
       <div className="task-progress">
         <div className="task-progress-header">

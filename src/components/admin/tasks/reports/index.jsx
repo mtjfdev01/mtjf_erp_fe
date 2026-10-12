@@ -2446,7 +2446,7 @@ const TaskReports = () => {
           <option value="last_year">Last Year</option>
         </select>
       </div>
-
+{/* tasks dropdown  should be hidden when the team performance view is active */}
       {taskScopeCaps.showTasksDropdown && !showTeamPerformance && (
         <div className="task-filter-group">
           <span className="task-filter-label">Tasks</span>
