@@ -18,6 +18,7 @@ import {
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
+  formatLiteracySummary,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -36,6 +37,7 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
       (Date.now() - new Date(person.date_of_birth).getTime()) /
         (365.25 * 24 * 60 * 60 * 1000),
     );
+  const literacy = formatLiteracySummary(person);
   return (
     <li style={{ marginBottom: 8 }}>
       <Link to={`/dms/aid/people/view/${person.id}`}>{person.full_name}</Link>
@@ -48,7 +50,7 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
           ? ` · Disability${person.disability_type ? `: ${person.disability_type}` : ''}`
           : ''}
         {person.marital_status ? ` · ${person.marital_status}` : ''}
-        {person.literacy_status ? ` · Literacy: ${person.literacy_status}` : ''}
+        {literacy ? ` · Literacy: ${literacy}` : ''}
       </span>
       {notes ? (
         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{notes}</div>
@@ -759,17 +761,9 @@ const AidApplicationView = () => {
                         Address: {app.beneficiary.address}
                       </p>
                     )}
-                    {(app.beneficiary.occupation || app.beneficiary.monthly_income) && (
+                    {formatLiteracySummary(app.beneficiary) && (
                       <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        {app.beneficiary.occupation
-                          ? `Profession: ${app.beneficiary.occupation}`
-                          : null}
-                        {app.beneficiary.occupation && app.beneficiary.monthly_income
-                          ? ' · '
-                          : ''}
-                        {app.beneficiary.monthly_income
-                          ? `Income: PKR ${app.beneficiary.monthly_income}`
-                          : null}
+                        Literacy: {formatLiteracySummary(app.beneficiary)}
                       </p>
                     )}
                   </>
@@ -888,13 +882,9 @@ const AidApplicationView = () => {
                         Address: {app.writer.address}
                       </p>
                     )}
-                    {(app.writer.occupation || app.writer.monthly_income) && (
+                    {formatLiteracySummary(app.writer) && (
                       <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        {app.writer.occupation ? `Profession: ${app.writer.occupation}` : null}
-                        {app.writer.occupation && app.writer.monthly_income ? ' · ' : ''}
-                        {app.writer.monthly_income
-                          ? `Income: PKR ${app.writer.monthly_income}`
-                          : null}
+                        Literacy: {formatLiteracySummary(app.writer)}
                       </p>
                     )}
                   </>

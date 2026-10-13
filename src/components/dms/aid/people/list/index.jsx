@@ -18,8 +18,19 @@ import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
-import { AID_GENDERS } from '../../aidConstants';
+import AidLiteracyFields from '../../shared/AidLiteracyFields';
+import { AID_GENDERS, emptyLiteracyFields } from '../../aidConstants';
 import '../../aid.css';
+
+const emptyCreatePerson = () => ({
+  full_name: '',
+  cnic: '',
+  phone: '',
+  gender: '',
+  city: '',
+  address: '',
+  ...emptyLiteracyFields(),
+});
 
 const AidPeopleList = () => {
   const navigate = useNavigate();
@@ -46,16 +57,7 @@ const AidPeopleList = () => {
   const [tempFilters, setTempFilters] = useState({ search: '' });
   const [appliedFilters, setAppliedFilters] = useState({ search: '' });
   const [showCreate, setShowCreate] = useState(false);
-  const [person, setPerson] = useState({
-    full_name: '',
-    cnic: '',
-    phone: '',
-    gender: '',
-    city: '',
-    address: '',
-    occupation: '',
-    monthly_income: '',
-  });
+  const [person, setPerson] = useState(emptyCreatePerson);
   const [saving, setSaving] = useState(false);
 
   const handleSortChange = (field, order) => {
@@ -115,22 +117,26 @@ const AidPeopleList = () => {
     setError('');
     try {
       const res = await axiosInstance.post('/aid/people', {
-        ...person,
         full_name: person.full_name.trim(),
         gender: person.gender || undefined,
         cnic: person.cnic || undefined,
+        phone: person.phone || undefined,
+        city: person.city || undefined,
+        address: person.address || undefined,
+        literacy_status: person.literacy_status || undefined,
+        literacy_category: person.literacy_category || undefined,
+        student_class: person.student_class || undefined,
+        student_class_type: person.student_class_type || undefined,
+        student_class_name: person.student_class_name || undefined,
+        monthly_income: person.monthly_income || undefined,
+        occupation: person.literacy_category || undefined,
+        has_disability: !!person.has_disability,
+        disability_type: person.has_disability
+          ? person.disability_type || undefined
+          : undefined,
       });
       setShowCreate(false);
-      setPerson({
-        full_name: '',
-        cnic: '',
-        phone: '',
-        gender: '',
-        city: '',
-        address: '',
-        occupation: '',
-        monthly_income: '',
-      });
+      setPerson(emptyCreatePerson());
       navigate(`/dms/aid/people/view/${res.data?.data?.id}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create person');
@@ -187,18 +193,6 @@ const AidPeopleList = () => {
                   value={person.city}
                   onChange={(e) => setPerson((p) => ({ ...p, city: e.target.value }))}
                 />
-                <FormInput
-                  label="Profession"
-                  value={person.occupation}
-                  onChange={(e) => setPerson((p) => ({ ...p, occupation: e.target.value }))}
-                  placeholder="Optional"
-                />
-                <FormInput
-                  label="Monthly income (PKR)"
-                  value={person.monthly_income}
-                  onChange={(e) => setPerson((p) => ({ ...p, monthly_income: e.target.value }))}
-                  placeholder="Optional"
-                />
                 <FormTextarea
                   label="Address"
                   value={person.address}
@@ -206,6 +200,10 @@ const AidPeopleList = () => {
                   rows={2}
                   placeholder="Full address"
                 />
+              </div>
+              <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                <h4 className="aid-family-panel__title">Literacy</h4>
+                <AidLiteracyFields value={person} onChange={setPerson} />
               </div>
               <div style={{ marginTop: 12 }}>
                 <PrimaryButton type="submit" loading={saving} loadingText="Saving…">

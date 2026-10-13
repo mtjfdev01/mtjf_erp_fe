@@ -10,16 +10,17 @@ import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
 import {
-  AID_EDUCATION_LEVELS,
   AID_FAMILY_SECTIONS,
   AID_GENDERS,
   AID_MARITAL_STATUS,
   aidStatusTone,
+  emptyLiteracyFields,
   formatAidStatus,
-  formatEducation,
+  formatLiteracySummary,
   formatMaritalStatus,
   personAge,
 } from '../../aidConstants';
+import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
 
@@ -30,13 +31,11 @@ const emptyRelative = {
   gender: '',
   date_of_birth: '',
   marital_status: '',
-  occupation: '',
-  monthly_income: '',
-  education_level: '',
   is_alive: true,
   address: '',
   city: '',
   notes: '',
+  ...emptyLiteracyFields(),
 };
 
 const AidPersonView = () => {
@@ -78,9 +77,14 @@ const AidPersonView = () => {
           gender: p.gender || '',
           date_of_birth: p.date_of_birth ? String(p.date_of_birth).slice(0, 10) : '',
           marital_status: p.marital_status || '',
-          occupation: p.occupation || '',
-          education_level: p.education_level || '',
+          literacy_status: p.literacy_status || '',
+          literacy_category: p.literacy_category || '',
+          student_class: p.student_class || '',
+          student_class_type: p.student_class_type || '',
+          student_class_name: p.student_class_name || '',
           monthly_income: p.monthly_income || '',
+          has_disability: !!p.has_disability,
+          disability_type: p.disability_type || '',
           is_alive: p.is_alive !== false,
           health_notes: p.health_notes || '',
           address: p.address || '',
@@ -106,14 +110,28 @@ const AidPersonView = () => {
     setError('');
     try {
       await axiosInstance.patch(`/aid/people/${id}`, {
-        ...profile,
         full_name: profile.full_name.trim(),
+        cnic: profile.cnic || null,
+        phone: profile.phone || null,
         gender: profile.gender || null,
         marital_status: profile.marital_status || null,
-        education_level: profile.education_level || null,
         date_of_birth: profile.date_of_birth || null,
+        literacy_status: profile.literacy_status || null,
+        literacy_category: profile.literacy_category || null,
+        student_class: profile.student_class || null,
+        student_class_type: profile.student_class_type || null,
+        student_class_name: profile.student_class_name || null,
         monthly_income: profile.monthly_income || null,
-        cnic: profile.cnic || null,
+        occupation: profile.literacy_category || profile.occupation || null,
+        has_disability: !!profile.has_disability,
+        disability_type: profile.has_disability
+          ? profile.disability_type || null
+          : null,
+        is_alive: profile.is_alive !== false,
+        health_notes: profile.health_notes || null,
+        address: profile.address || null,
+        city: profile.city || null,
+        notes: profile.notes || null,
       });
       setEditingProfile(false);
       await load();
@@ -163,9 +181,17 @@ const AidPersonView = () => {
           gender: relative.gender || undefined,
           date_of_birth: relative.date_of_birth || undefined,
           marital_status: relative.marital_status || undefined,
-          occupation: relative.occupation || undefined,
+          literacy_status: relative.literacy_status || undefined,
+          literacy_category: relative.literacy_category || undefined,
+          student_class: relative.student_class || undefined,
+          student_class_type: relative.student_class_type || undefined,
+          student_class_name: relative.student_class_name || undefined,
           monthly_income: relative.monthly_income || undefined,
-          education_level: relative.education_level || undefined,
+          occupation: relative.literacy_category || undefined,
+          has_disability: !!relative.has_disability,
+          disability_type: relative.has_disability
+            ? relative.disability_type || undefined
+            : undefined,
           is_alive: relative.is_alive,
           address: relative.address || undefined,
           city: relative.city || undefined,
@@ -253,9 +279,7 @@ const AidPersonView = () => {
             p.gender,
             a != null ? `${a} yrs` : null,
             p.marital_status ? formatMaritalStatus(p.marital_status) : null,
-            p.occupation,
-            p.monthly_income ? `PKR ${p.monthly_income}/mo` : null,
-            p.education_level ? formatEducation(p.education_level) : null,
+            formatLiteracySummary(p) || null,
             p.cnic ? `CNIC ${p.cnic}` : null,
             p.phone,
             p.city,
@@ -364,24 +388,6 @@ const AidPersonView = () => {
                 options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
               />
               <FormInput
-                label="Profession"
-                value={profile.occupation}
-                onChange={(e) => setProfile((p) => ({ ...p, occupation: e.target.value }))}
-                placeholder="Optional"
-              />
-              <FormSelect
-                label="Education"
-                value={profile.education_level}
-                onChange={(e) => setProfile((p) => ({ ...p, education_level: e.target.value }))}
-                options={[{ value: '', label: '—' }, ...AID_EDUCATION_LEVELS]}
-              />
-              <FormInput
-                label="Monthly income (PKR)"
-                value={profile.monthly_income}
-                onChange={(e) => setProfile((p) => ({ ...p, monthly_income: e.target.value }))}
-                placeholder="Optional"
-              />
-              <FormInput
                 label="City"
                 value={profile.city}
                 onChange={(e) => setProfile((p) => ({ ...p, city: e.target.value }))}
@@ -394,6 +400,13 @@ const AidPersonView = () => {
                 />
                 Alive
               </label>
+            </div>
+            <div className="aid-family-panel" style={{ marginTop: 12 }}>
+              <h4 className="aid-family-panel__title">Literacy</h4>
+              <AidLiteracyFields
+                value={profile}
+                onChange={setProfile}
+              />
             </div>
             <FormTextarea
               label="Address"
@@ -434,16 +447,8 @@ const AidPersonView = () => {
               <strong>{formatMaritalStatus(person.marital_status)}</strong>
             </div>
             <div className="aid-meta-row">
-              <span>Profession</span>
-              <strong>{person.occupation || '—'}</strong>
-            </div>
-            <div className="aid-meta-row">
-              <span>Education</span>
-              <strong>{formatEducation(person.education_level)}</strong>
-            </div>
-            <div className="aid-meta-row">
-              <span>Monthly income</span>
-              <strong>{person.monthly_income ? `PKR ${person.monthly_income}` : '—'}</strong>
+              <span>Literacy</span>
+              <strong>{formatLiteracySummary(person) || '—'}</strong>
             </div>
             <div className="aid-meta-row">
               <span>Date of birth</span>
@@ -562,35 +567,18 @@ const AidPersonView = () => {
                         }
                       />
                       <FormInput
-                        label="Profession"
-                        value={relative.occupation}
-                        onChange={(e) =>
-                          setRelative((p) => ({ ...p, occupation: e.target.value }))
-                        }
-                        placeholder="Optional"
-                      />
-                      <FormInput
-                        label="Monthly income (PKR)"
-                        value={relative.monthly_income}
-                        onChange={(e) =>
-                          setRelative((p) => ({ ...p, monthly_income: e.target.value }))
-                        }
-                        placeholder="Optional"
-                      />
-                      <FormSelect
-                        label="Education"
-                        value={relative.education_level}
-                        onChange={(e) =>
-                          setRelative((p) => ({ ...p, education_level: e.target.value }))
-                        }
-                        options={[{ value: '', label: '—' }, ...AID_EDUCATION_LEVELS]}
-                      />
-                      <FormInput
                         label="City"
                         value={relative.city}
                         onChange={(e) =>
                           setRelative((p) => ({ ...p, city: e.target.value }))
                         }
+                      />
+                    </div>
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <h4 className="aid-family-panel__title">Literacy</h4>
+                      <AidLiteracyFields
+                        value={relative}
+                        onChange={setRelative}
                       />
                     </div>
                     <FormTextarea

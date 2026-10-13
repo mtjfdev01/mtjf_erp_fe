@@ -57,7 +57,6 @@ const RelativeFields = ({
   onChange,
   genderHint,
   compact,
-  showLiteracy = false,
 }) => (
   <div className={`aid-relative-block${compact ? ' aid-relative-block--compact' : ''}`}>
     {title ? <h4 className="aid-relative-block__title">{title}</h4> : null}
@@ -110,24 +109,7 @@ const RelativeFields = ({
         Alive
       </label>
     </div>
-    {showLiteracy ? (
-      <AidLiteracyFields value={value} onChange={onChange} />
-    ) : (
-      <div className="form-grid-2">
-        <FormInput
-          label="Profession"
-          value={value.occupation}
-          onChange={(e) => onChange({ ...value, occupation: e.target.value })}
-          placeholder="Optional"
-        />
-        <FormInput
-          label="Monthly income (PKR)"
-          value={value.monthly_income}
-          onChange={(e) => onChange({ ...value, monthly_income: e.target.value })}
-          placeholder="Optional"
-        />
-      </div>
-    )}
+    <AidLiteracyFields value={value} onChange={onChange} />
     <FormTextarea
       label="Address"
       value={value.address}
@@ -713,7 +695,6 @@ const AidApplicationAdd = () => {
                   onChange={setSpouse}
                   genderHint={spouseLabel}
                   compact
-                  showLiteracy
                 />
               </div>
             )}
@@ -791,7 +772,6 @@ const AidApplicationAdd = () => {
                         )
                       }
                       compact
-                      showLiteracy
                     />
                     <div style={{ marginTop: 12 }}>
                       <AidDependentsIntake
@@ -912,7 +892,6 @@ const AidApplicationAdd = () => {
                       )
                     }
                     compact
-                    showLiteracy
                   />
                 </div>
               ))}

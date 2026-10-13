@@ -50,11 +50,13 @@ export const AID_EDUCATION_LEVELS = [
   { value: 'other', label: 'Other' },
 ];
 
+/** Literacy root — Educated / UnEducated (per intake diagram). */
 export const AID_LITERACY_STATUS = [
   { value: 'educated', label: 'Educated' },
   { value: 'uneducated', label: 'UnEducated' },
 ];
 
+/** Educated → Student | Job | Self Employed | Business | Others */
 export const AID_LITERACY_CATEGORIES_EDUCATED = [
   { value: 'student', label: 'Student' },
   { value: 'job', label: 'Job' },
@@ -63,12 +65,49 @@ export const AID_LITERACY_CATEGORIES_EDUCATED = [
   { value: 'others', label: 'Others' },
 ];
 
+/** UnEducated → Skilled Laborer | Laborer | Self Employed | Others */
 export const AID_LITERACY_CATEGORIES_UNEDUCATED = [
   { value: 'skilled_laborer', label: 'Skilled Laborer' },
   { value: 'laborer', label: 'Laborer' },
   { value: 'self_employed', label: 'Self Employed' },
   { value: 'others', label: 'Others' },
 ];
+
+/** Student → Class options */
+export const AID_STUDENT_CLASSES = [
+  { value: 'nursery', label: 'Nursery' },
+  { value: 'kg', label: 'KG' },
+  { value: '1', label: '1st' },
+  { value: '2', label: '2nd' },
+  { value: '3', label: '3rd' },
+  { value: '4', label: '4th' },
+  { value: '5', label: '5th' },
+  { value: '6', label: '6th' },
+  { value: '7', label: '7th' },
+  { value: '8', label: '8th' },
+  { value: '9', label: '9th' },
+  { value: '10', label: '10th / Matric' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'bachelor', label: 'Bachelor' },
+  { value: 'master', label: 'Master' },
+  { value: 'other', label: 'Other' },
+];
+
+/** Student → type of class */
+export const AID_STUDENT_CLASS_TYPES = [
+  { value: 'science', label: 'Science' },
+  { value: 'arts', label: 'Arts' },
+  { value: 'commerce', label: 'Commerce' },
+  { value: 'medical', label: 'Medical' },
+  { value: 'engineering', label: 'Engineering' },
+  { value: 'general', label: 'General' },
+  { value: 'other', label: 'Other' },
+];
+
+const LITERACY_CATEGORY_LABELS = Object.fromEntries([
+  ...AID_LITERACY_CATEGORIES_EDUCATED,
+  ...AID_LITERACY_CATEGORIES_UNEDUCATED,
+].map((o) => [o.value, o.label]));
 
 export const AID_YES_NO = [
   { value: 'yes', label: 'Yes' },
@@ -183,6 +222,40 @@ export function literacyCategoriesFor(status) {
   if (status === 'educated') return AID_LITERACY_CATEGORIES_EDUCATED;
   if (status === 'uneducated') return AID_LITERACY_CATEGORIES_UNEDUCATED;
   return [];
+}
+
+/** Human-readable literacy line for views (Educated → Job → income, etc.). */
+export function formatLiteracySummary(person) {
+  if (!person) return '';
+  const status = String(person.literacy_status || '').toLowerCase();
+  if (!status) return '';
+  const statusLabel =
+    status === 'educated'
+      ? 'Educated'
+      : status === 'uneducated'
+        ? 'UnEducated'
+        : status;
+  const cat = String(person.literacy_category || '').toLowerCase();
+  const catLabel = LITERACY_CATEGORY_LABELS[cat] || cat;
+  const parts = [statusLabel];
+  if (catLabel) parts.push(catLabel);
+  if (status === 'educated' && cat === 'student') {
+    const studentBits = [
+      person.student_class,
+      person.student_class_type,
+      person.student_class_name,
+    ].filter(Boolean);
+    if (studentBits.length) parts.push(studentBits.join(' / '));
+  }
+  if (
+    (cat === 'job' || cat === 'skilled_laborer') &&
+    person.monthly_income
+  ) {
+    parts.push(`Income PKR ${person.monthly_income}`);
+  } else if (person.monthly_income && !cat) {
+    parts.push(`Income PKR ${person.monthly_income}`);
+  }
+  return parts.join(' · ');
 }
 
 export function ageFromDob(dob) {
