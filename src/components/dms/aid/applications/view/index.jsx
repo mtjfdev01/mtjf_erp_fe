@@ -19,6 +19,7 @@ import {
   formatAidStatus,
   formatAidRequestType,
   formatLiteracySummary,
+  formatPropertyOwnershipSummary,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -38,6 +39,7 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
         (365.25 * 24 * 60 * 60 * 1000),
     );
   const literacy = formatLiteracySummary(person);
+  const property = formatPropertyOwnershipSummary(person);
   return (
     <li style={{ marginBottom: 8 }}>
       <Link to={`/dms/aid/people/view/${person.id}`}>{person.full_name}</Link>
@@ -51,6 +53,7 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
           : ''}
         {person.marital_status ? ` · ${person.marital_status}` : ''}
         {literacy ? ` · Literacy: ${literacy}` : ''}
+        {property ? ` · ${property}` : ''}
       </span>
       {notes ? (
         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{notes}</div>
@@ -764,6 +767,11 @@ const AidApplicationView = () => {
                     {formatLiteracySummary(app.beneficiary) && (
                       <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
                         Literacy: {formatLiteracySummary(app.beneficiary)}
+                      </p>
+                    )}
+                    {formatPropertyOwnershipSummary(app.beneficiary) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        Property: {formatPropertyOwnershipSummary(app.beneficiary)}
                       </p>
                     )}
                   </>

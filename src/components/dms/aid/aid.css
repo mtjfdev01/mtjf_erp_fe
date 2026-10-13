@@ -12,6 +12,16 @@
   margin-top: 0.25rem;
 }
 
+.aid-property-ownership {
+  margin-top: 0.25rem;
+}
+
+.aid-property-ownership__details {
+  margin-top: 0.35rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
 .aid-children-intake__head {
   display: grid;
   grid-template-columns: 1fr minmax(140px, 200px);

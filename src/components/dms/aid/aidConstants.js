@@ -114,6 +114,32 @@ export const AID_YES_NO = [
   { value: 'no', label: 'No' },
 ];
 
+/** Property type when Do you have land? = Yes */
+export const AID_PROPERTY_TYPES = [
+  { value: 'agri', label: 'Agri' },
+  { value: 'commercial', label: 'Commercial' },
+  { value: 'plot', label: 'Plot' },
+  { value: 'others', label: 'Others' },
+];
+
+export const emptyPropertyOwnershipFields = () => ({
+  has_land: false,
+  property_type: '',
+  property_details: '',
+});
+
+export function formatPropertyOwnershipSummary(person) {
+  if (!person || person.has_land == null) return '';
+  if (!person.has_land) return 'Land: No';
+  const type =
+    AID_PROPERTY_TYPES.find((t) => t.value === person.property_type)?.label ||
+    person.property_type ||
+    '—';
+  const parts = [`Land: Yes · Type: ${type}`];
+  if (person.property_details) parts.push(person.property_details);
+  return parts.join(' · ');
+}
+
 export const emptyLiteracyFields = () => ({
   literacy_status: '',
   literacy_category: '',
@@ -325,6 +351,7 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   education_level: '',
   is_alive: true,
   ...emptyLiteracyFields(),
+  ...emptyPropertyOwnershipFields(),
   _relation_type: relationType,
   _has_dependents: false,
   _dependents: [],

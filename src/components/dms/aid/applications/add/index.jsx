@@ -11,6 +11,7 @@ import { PrimaryButton } from '../../../../common/buttons';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 import AidUserAssignField from '../../shared/AidUserAssignField';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
+import AidPropertyOwnership from '../../shared/AidPropertyOwnership';
 import AidChildrenIntake from '../../shared/AidChildrenIntake';
 import AidSiblingsIntake from '../../shared/AidSiblingsIntake';
 import AidDependentsIntake from '../../shared/AidDependentsIntake';
@@ -21,6 +22,7 @@ import {
   AID_GENDERS,
   AID_YES_NO,
   emptyLiteracyFields,
+  emptyPropertyOwnershipFields,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
   mapSiblingRelationToKinship,
@@ -44,6 +46,7 @@ const emptyPerson = {
   has_disability: false,
   disability_type: '',
   ...emptyLiteracyFields(),
+  ...emptyPropertyOwnershipFields(),
 };
 
 const emptyRelative = () => ({ ...emptyPerson });
@@ -138,6 +141,11 @@ const cleanPersonPayload = (p) => {
     student_class_name: p.student_class_name || undefined,
     has_disability: !!p.has_disability,
     disability_type: p.has_disability ? p.disability_type || undefined : undefined,
+    has_land: !!p.has_land,
+    property_type: p.has_land ? p.property_type || undefined : undefined,
+    property_details: p.has_land
+      ? p.property_details || undefined
+      : undefined,
     is_alive: p.is_alive !== false,
     address: p.address || undefined,
     city: p.city || undefined,
@@ -640,13 +648,24 @@ const AidApplicationAdd = () => {
             )}
 
             {beneficiaryMode !== 'existing' && (
-              <div className="aid-family-panel" style={{ marginTop: 12 }}>
-                <h4 className="aid-family-panel__title">Literacy (beneficiary / family head)</h4>
-                <AidLiteracyFields
-                  value={beneficiary}
-                  onChange={setBeneficiary}
-                />
-              </div>
+              <>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <h4 className="aid-family-panel__title">
+                    Literacy (beneficiary / family head)
+                  </h4>
+                  <AidLiteracyFields
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                  />
+                </div>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <AidPropertyOwnership
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                    title="Property ownership (beneficiary)"
+                  />
+                </div>
+              </>
             )}
 
             {isMarried && (
@@ -773,6 +792,27 @@ const AidApplicationAdd = () => {
                       }
                       compact
                     />
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <AidPropertyOwnership
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _has_dependents: row._has_dependents,
+                                    _dependents: row._dependents,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                        title={`${typeLabel} — property ownership`}
+                      />
+                    </div>
                     <div style={{ marginTop: 12 }}>
                       <AidDependentsIntake
                         title={`${typeLabel} — others under sponsorship / dependents`}
