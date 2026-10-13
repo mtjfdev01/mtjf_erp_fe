@@ -12,6 +12,14 @@ import SearchableDropdown from '../../../../common/SearchableDropdown';
 import AidUserAssignField from '../../shared/AidUserAssignField';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import AidPropertyOwnership from '../../shared/AidPropertyOwnership';
+import AidResidentHousing from '../../shared/AidResidentHousing';
+import AidLivestockIntake from '../../shared/AidLivestockIntake';
+import AidVehicleIntake from '../../shared/AidVehicleIntake';
+import AidEligibilityStatus from '../../shared/AidEligibilityStatus';
+import AidEducationApplicationFields from '../../shared/AidEducationApplicationFields';
+import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
+import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
+import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
 import AidChildrenIntake from '../../shared/AidChildrenIntake';
 import AidSiblingsIntake from '../../shared/AidSiblingsIntake';
 import AidDependentsIntake from '../../shared/AidDependentsIntake';
@@ -23,6 +31,14 @@ import {
   AID_YES_NO,
   emptyLiteracyFields,
   emptyPropertyOwnershipFields,
+  emptyResidentHousingFields,
+  emptyLivestockFields,
+  emptyVehicleFields,
+  emptyEligibilityStatusFields,
+  emptyEducationDetails,
+  emptyRationDetails,
+  emptyMarriageGiftDetails,
+  emptyFinancialAssistanceDetails,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
   mapSiblingRelationToKinship,
@@ -47,6 +63,36 @@ const emptyPerson = {
   disability_type: '',
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
+  ...emptyResidentHousingFields(),
+  ...emptyLivestockFields(),
+  ...emptyVehicleFields(),
+  ...emptyEligibilityStatusFields(),
+};
+
+const cleanLivestockEntries = (p) => {
+  if (!p?.has_livestock) return { has_livestock: false, livestock_entries: undefined };
+  const rows = (p.livestock_entries || [])
+    .map((row) => {
+      const qty = Number(row.quantity);
+      if (!row.animal_type || !Number.isFinite(qty) || qty <= 0) return null;
+      const entry = {
+        animal_type: row.animal_type,
+        quantity: Math.floor(qty),
+        ownership: row.ownership || 'personal',
+      };
+      if (entry.ownership === 'sharing') {
+        if (row.owner_name?.trim()) entry.owner_name = row.owner_name.trim();
+        if (row.owner_contact?.trim()) {
+          entry.owner_contact = row.owner_contact.trim();
+        }
+      }
+      return entry;
+    })
+    .filter(Boolean);
+  return {
+    has_livestock: true,
+    livestock_entries: rows.length ? rows : undefined,
+  };
 };
 
 const emptyRelative = () => ({ ...emptyPerson });
@@ -146,6 +192,28 @@ const cleanPersonPayload = (p) => {
     property_details: p.has_land
       ? p.property_details || undefined
       : undefined,
+    resident_type: p.resident_type || undefined,
+    resident_ownership_status: p.resident_ownership_status || undefined,
+    resident_ownership_other: p.resident_ownership_other || undefined,
+    rented_amount:
+      p.resident_type === 'rented' && p.rented_amount !== ''
+        ? p.rented_amount
+        : undefined,
+    house_area_marla:
+      p.house_area_marla !== '' && p.house_area_marla != null
+        ? p.house_area_marla
+        : undefined,
+    house_details: p.house_details || undefined,
+    ...cleanLivestockEntries(p),
+    has_vehicle: !!p.has_vehicle,
+    vehicle_type:
+      p.has_vehicle && p.vehicle_type?.trim()
+        ? p.vehicle_type.trim()
+        : undefined,
+    necta_status: p.necta_status || undefined,
+    necta_document_url: p.necta_document_url || undefined,
+    necta_document_name: p.necta_document_name || undefined,
+    bisp_status: p.bisp_status || undefined,
     is_alive: p.is_alive !== false,
     address: p.address || undefined,
     city: p.city || undefined,
@@ -168,6 +236,16 @@ const AidApplicationAdd = () => {
     requested_aid_type: 'health',
     writer_relation: 'self',
   });
+  const [educationDetails, setEducationDetails] = useState(
+    emptyEducationDetails(),
+  );
+  const [rationDetails, setRationDetails] = useState(emptyRationDetails());
+  const [marriageGiftDetails, setMarriageGiftDetails] = useState(
+    emptyMarriageGiftDetails(),
+  );
+  const [financialAssistanceDetails, setFinancialAssistanceDetails] = useState(
+    emptyFinancialAssistanceDetails(),
+  );
   const [assignedUser, setAssignedUser] = useState(null);
   const [familyHeads, setFamilyHeads] = useState([emptyFamilyHeadRow('father')]);
   const [spouse, setSpouse] = useState(emptyRelative());
@@ -181,11 +259,11 @@ const AidApplicationAdd = () => {
   const [formTab, setFormTab] = useState('request');
 
   const FORM_TABS = [
-    { id: 'request', label: 'Request' },
+    { id: 'request', label: 'Application' },
     { id: 'assignment', label: 'Assignment' },
     { id: 'beneficiary', label: 'Beneficiary' },
     { id: 'family', label: 'Family Head' },
-    { id: 'writer', label: 'Writer' },
+    { id: 'writer', label: 'Applicant' },
   ];
 
   const beneficiaryGender =
@@ -384,6 +462,18 @@ const AidApplicationAdd = () => {
         title: form.title || null,
         request_summary: form.request_summary || null,
         requested_aid_type: form.requested_aid_type,
+        ...(form.requested_aid_type === 'education'
+          ? { education_details: educationDetails }
+          : {}),
+        ...(form.requested_aid_type === 'ration'
+          ? { ration_details: rationDetails }
+          : {}),
+        ...(form.requested_aid_type === 'marriage_gift'
+          ? { marriage_gift_details: marriageGiftDetails }
+          : {}),
+        ...(form.requested_aid_type === 'financial_assistance'
+          ? { financial_assistance_details: financialAssistanceDetails }
+          : {}),
         writer_relation: writerIsSelf ? 'self' : form.writer_relation,
         family_members: buildFamilyMembers(),
         ...(assignedUser?.id
@@ -409,10 +499,10 @@ const AidApplicationAdd = () => {
       if (writerIsSelf) {
         payload.writer_relation = 'self';
       } else if (writerMode === 'existing') {
-        if (!writerId) throw new Error('Select application writer');
+        if (!writerId) throw new Error('Select applicant');
         payload.writer_person_id = Number(writerId);
       } else {
-        if (!writer.full_name.trim()) throw new Error('Writer name is required');
+        if (!writer.full_name.trim()) throw new Error('Applicant name is required');
         payload.writer = cleanPersonPayload(writer);
       }
 
@@ -469,7 +559,7 @@ const AidApplicationAdd = () => {
 
           {formTab === 'request' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Request</h3>
+            <h3 className="form-section-heading">Application</h3>
             <div className="form-grid-2">
               <FormInput
                 label="Title"
@@ -482,24 +572,79 @@ const AidApplicationAdd = () => {
                 label="Aid type"
                 name="requested_aid_type"
                 value={form.requested_aid_type}
-                onChange={(e) =>
-                  setForm((p) => ({ ...p, requested_aid_type: e.target.value }))
-                }
+                onChange={(e) => {
+                  const next = e.target.value;
+                  setForm((p) => ({ ...p, requested_aid_type: next }));
+                  if (next === 'education') {
+                    setEducationDetails((prev) =>
+                      prev?.education_history?.length
+                        ? prev
+                        : emptyEducationDetails(),
+                    );
+                  }
+                  if (next === 'ration') {
+                    setRationDetails((prev) =>
+                      prev?.family_had_wheat != null
+                        ? prev
+                        : emptyRationDetails(),
+                    );
+                  }
+                  if (next === 'marriage_gift') {
+                    setMarriageGiftDetails((prev) =>
+                      prev?.items?.length ? prev : emptyMarriageGiftDetails(),
+                    );
+                  }
+                  if (next === 'financial_assistance') {
+                    setFinancialAssistanceDetails((prev) =>
+                      prev?.monthly_household_income != null
+                        ? prev
+                        : emptyFinancialAssistanceDetails(),
+                    );
+                  }
+                }}
                 options={AID_REQUEST_TYPES}
               />
             </div>
             <div className="aid-field-spaced">
               <FormTextarea
-                label="Request summary"
+                label={
+                  form.requested_aid_type === 'ration'
+                    ? 'Application'
+                    : 'Application summary'
+                }
                 name="request_summary"
                 value={form.request_summary}
                 onChange={(e) =>
                   setForm((p) => ({ ...p, request_summary: e.target.value }))
                 }
-                rows={3}
+                rows={form.requested_aid_type === 'ration' ? 6 : 3}
                 placeholder="Describe the need…"
               />
             </div>
+            {form.requested_aid_type === 'education' && (
+              <AidEducationApplicationFields
+                value={educationDetails}
+                onChange={setEducationDetails}
+              />
+            )}
+            {form.requested_aid_type === 'ration' && (
+              <AidRationApplicationFields
+                value={rationDetails}
+                onChange={setRationDetails}
+              />
+            )}
+            {form.requested_aid_type === 'marriage_gift' && (
+              <AidMarriageGiftApplicationFields
+                value={marriageGiftDetails}
+                onChange={setMarriageGiftDetails}
+              />
+            )}
+            {form.requested_aid_type === 'financial_assistance' && (
+              <AidFinancialAssistanceFields
+                value={financialAssistanceDetails}
+                onChange={setFinancialAssistanceDetails}
+              />
+            )}
           </div>
           )}
 
@@ -665,6 +810,34 @@ const AidApplicationAdd = () => {
                     title="Property ownership (beneficiary)"
                   />
                 </div>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <AidResidentHousing
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                    title="Resident (beneficiary)"
+                  />
+                </div>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <AidLivestockIntake
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                    title="Livestock (beneficiary)"
+                  />
+                </div>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <AidVehicleIntake
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                    title="Vehicle (beneficiary)"
+                  />
+                </div>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <AidEligibilityStatus
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                    title="NECTA / BISP (beneficiary)"
+                  />
+                </div>
               </>
             )}
 
@@ -813,6 +986,90 @@ const AidApplicationAdd = () => {
                         title={`${typeLabel} — property ownership`}
                       />
                     </div>
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <AidResidentHousing
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _has_dependents: row._has_dependents,
+                                    _dependents: row._dependents,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                        title={`${typeLabel} — resident`}
+                      />
+                    </div>
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <AidLivestockIntake
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _has_dependents: row._has_dependents,
+                                    _dependents: row._dependents,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                        title={`${typeLabel} — livestock`}
+                      />
+                    </div>
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <AidVehicleIntake
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _has_dependents: row._has_dependents,
+                                    _dependents: row._dependents,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                        title={`${typeLabel} — vehicle`}
+                      />
+                    </div>
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <AidEligibilityStatus
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _has_dependents: row._has_dependents,
+                                    _dependents: row._dependents,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                        title={`${typeLabel} — NECTA / BISP`}
+                      />
+                    </div>
                     <div style={{ marginTop: 12 }}>
                       <AidDependentsIntake
                         title={`${typeLabel} — others under sponsorship / dependents`}
@@ -942,7 +1199,7 @@ const AidApplicationAdd = () => {
 
           {formTab === 'writer' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Application writer</h3>
+            <h3 className="form-section-heading">Applicant</h3>
             <label className="aid-toggle aid-toggle--block">
               <input
                 type="checkbox"
@@ -954,14 +1211,14 @@ const AidApplicationAdd = () => {
                   }
                 }}
               />
-              Beneficiary is also the writer
+              Beneficiary is also the applicant
             </label>
 
             {!writerIsSelf && (
               <div className="aid-writer-fields">
                 <div className="form-grid-2">
                   <FormSelect
-                    label="Writer relation to beneficiary"
+                    label="Applicant relation to beneficiary"
                     value={form.writer_relation}
                     onChange={(e) =>
                       setForm((p) => ({ ...p, writer_relation: e.target.value }))
@@ -977,11 +1234,11 @@ const AidApplicationAdd = () => {
                       setWriterMode(e.target.checked ? 'existing' : 'new')
                     }
                   />
-                  Link existing writer
+                  Link existing applicant
                 </label>
                 {writerMode === 'existing' ? (
                   <SearchableDropdown
-                    label="Search writer"
+                    label="Search applicant"
                     placeholder="Name, CNIC…"
                     onSearch={searchPeople}
                     onSelect={(item) => setWriterId(item.id)}
@@ -991,7 +1248,7 @@ const AidApplicationAdd = () => {
                   />
                 ) : (
                   <RelativeFields
-                    title="Writer details"
+                    title="Applicant details"
                     value={writer}
                     onChange={setWriter}
                     compact

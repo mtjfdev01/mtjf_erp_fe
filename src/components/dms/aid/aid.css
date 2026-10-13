@@ -22,6 +22,40 @@
   border-top: 1px dashed #e2e8f0;
 }
 
+.aid-resident-housing {
+  margin-top: 0.25rem;
+}
+
+.aid-livestock-intake {
+  margin-top: 0.25rem;
+}
+
+.aid-vehicle-intake {
+  margin-top: 0.25rem;
+}
+
+.aid-eligibility-status {
+  margin-top: 0.25rem;
+}
+
+.aid-eligibility-status__necta-doc {
+  margin-top: 0.65rem;
+}
+
+.aid-file-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.aid-file-label input[type='file'] {
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
 .aid-children-intake__head {
   display: grid;
   grid-template-columns: 1fr minmax(140px, 200px);

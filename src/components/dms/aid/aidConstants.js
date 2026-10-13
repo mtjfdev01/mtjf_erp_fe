@@ -10,6 +10,9 @@ export const AID_STATUS_OPTIONS = [
 export const AID_REQUEST_TYPES = [
   { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
+  { value: 'ration', label: 'Ration' },
+  { value: 'marriage_gift', label: 'Marriage Gift' },
+  { value: 'financial_assistance', label: 'Financial Assistance' },
   { value: 'clean_water', label: 'Clean Water' },
   { value: 'apna_ghar', label: 'Apna Ghar' },
   { value: 'disaster_relief', label: 'Disaster Relief' },
@@ -19,6 +22,113 @@ export const AID_REQUEST_TYPES = [
   { value: 'community_services', label: 'Community Services' },
   { value: 'other', label: 'Other' },
 ];
+
+/** Education History — Class dropdown starting from Matric */
+export const AID_EDUCATION_HISTORY_CLASSES = [
+  { value: 'matric', label: 'Matric' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'bachelor', label: 'Bachelor' },
+  { value: 'master', label: 'Master' },
+  { value: 'mphil', label: 'MPhil' },
+  { value: 'phd', label: 'PhD' },
+  { value: 'other', label: 'Other' },
+];
+
+/** Scholarship — Current Degree starting from Intermediate */
+export const AID_SCHOLARSHIP_DEGREES = [
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'bachelor', label: 'Bachelor' },
+  { value: 'master', label: 'Master' },
+  { value: 'mphil', label: 'MPhil' },
+  { value: 'phd', label: 'PhD' },
+  { value: 'other', label: 'Other' },
+];
+
+export const AID_SCHOLARSHIP_CLASS_MODES = [
+  { value: 'annual', label: 'Annual' },
+  { value: 'semester', label: 'Semester' },
+];
+
+export const emptyEducationHistoryRow = () => ({
+  class_level: '',
+  board_institute: '',
+  year: '',
+  marks_obtained: '',
+  total_marks: '',
+  percentage: '',
+  attachment_url: '',
+  attachment_name: '',
+});
+
+export const emptyScholarshipRow = () => ({
+  current_degree: '',
+  institute_name: '',
+  city: '',
+  annual_fee: '',
+  start_date: '',
+  end_date: '',
+  total_years: '',
+  class_mode: '',
+});
+
+export const emptyEducationDetails = () => ({
+  education_history: [emptyEducationHistoryRow()],
+  scholarships: [emptyScholarshipRow()],
+  income_source_before: '',
+  continue_education_if_not_approved: '',
+});
+
+export function calcEducationPercentage(obtained, total) {
+  const o = Number(obtained);
+  const t = Number(total);
+  if (!Number.isFinite(o) || !Number.isFinite(t) || t <= 0) return '';
+  return String(Math.round((o / t) * 10000) / 100);
+}
+
+/** Monthly Ration Program — Application tab special structure */
+export const emptyRationDetails = () => ({
+  persons_male: '',
+  persons_female: '',
+  persons_kids: '',
+  family_had_wheat: '',
+  wheat_quantity_kg: '',
+  how_know_mtjf: '',
+  ration_arrangements_before: '',
+  support_years: '',
+  support_months: '',
+  alternative_if_not_approved: '',
+});
+
+/** Marriage Gift — default available item */
+export const emptyMarriageGiftItem = (name = '') => ({ name });
+
+/** Marriage Gift — Application tab special structure */
+export const emptyMarriageGiftDetails = () => ({
+  date_of_marriage: '',
+  already_married_nikah: '',
+  nikah_date: '',
+  bride_groom_relationship: '',
+  earlier_children_marriage_expenses: '',
+  items: [emptyMarriageGiftItem('Paiti set')],
+  others: '',
+});
+
+/** Financial Assistance — Financial Condition section */
+export const emptyFinancialAssistanceDetails = () => ({
+  monthly_household_income: '',
+  income_source: '',
+  monthly_expenses: '',
+  earning_members: '',
+  dependent_members: '',
+  has_loans: '',
+  loan_amount: '',
+  loan_details: '',
+  amount_requested: '',
+  support_months: '',
+  purpose: '',
+  how_managed_so_far: '',
+  alternative_if_not_approved: '',
+});
 
 export const AID_WRITER_RELATIONS = [
   { value: 'self', label: 'Self (beneficiary)' },
@@ -137,6 +247,156 @@ export function formatPropertyOwnershipSummary(person) {
     '—';
   const parts = [`Land: Yes · Type: ${type}`];
   if (person.property_details) parts.push(person.property_details);
+  return parts.join(' · ');
+}
+
+/** Resident type: Own House | Rented | Sham Lot */
+export const AID_RESIDENT_TYPES = [
+  { value: 'own_house', label: 'Own House' },
+  { value: 'rented', label: 'Rented' },
+  { value: 'sham_lot', label: 'Sham Lot' },
+];
+
+export const emptyResidentHousingFields = () => ({
+  resident_type: '',
+  resident_ownership_status: '',
+  resident_ownership_other: '',
+  rented_amount: '',
+  house_area_marla: '',
+  house_details: '',
+});
+
+export const AID_LIVESTOCK_ANIMALS = [
+  { value: 'goat', label: 'Goat' },
+  { value: 'cow', label: 'Cow' },
+  { value: 'buffalo', label: 'Buffalo' },
+];
+
+export const AID_LIVESTOCK_OWNERSHIP = [
+  { value: 'personal', label: 'Personal' },
+  { value: 'sharing', label: 'Sharing' },
+];
+
+export const emptyLivestockRow = () => ({
+  animal_type: 'goat',
+  quantity: '',
+  ownership: 'personal',
+  owner_name: '',
+  owner_contact: '',
+});
+
+export const emptyLivestockFields = () => ({
+  has_livestock: false,
+  livestock_entries: [],
+});
+
+export const AID_VEHICLE_TYPES = [
+  { value: 'motorcycle', label: 'Motorcycle' },
+  { value: 'car', label: 'Car' },
+  { value: 'van', label: 'Van / Suzuki' },
+  { value: 'truck', label: 'Truck' },
+  { value: 'tractor', label: 'Tractor' },
+  { value: 'bicycle', label: 'Bicycle' },
+  { value: 'other', label: 'Other (specify)' },
+];
+
+export const emptyVehicleFields = () => ({
+  has_vehicle: false,
+  vehicle_type: '',
+});
+
+export function formatVehicleSummary(person) {
+  if (!person || person.has_vehicle == null) return '';
+  if (!person.has_vehicle) return 'Vehicle: No';
+  const t = person.vehicle_type || '';
+  const label =
+    AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—';
+  return `Vehicle: Yes · ${label}`;
+}
+
+export const AID_NECTA_STATUS = [
+  { value: 'clear', label: 'Clear' },
+  { value: 'not_clear', label: 'Not Clear' },
+];
+
+export const AID_BISP_STATUS = [
+  { value: 'eligible', label: 'Eligible' },
+  { value: 'not_eligible', label: 'Not Eligible' },
+];
+
+export const emptyEligibilityStatusFields = () => ({
+  necta_status: '',
+  necta_document_url: '',
+  necta_document_name: '',
+  bisp_status: '',
+});
+
+export function formatEligibilityStatusSummary(person) {
+  if (!person) return '';
+  const parts = [];
+  if (person.necta_status) {
+    const n =
+      AID_NECTA_STATUS.find((x) => x.value === person.necta_status)?.label ||
+      person.necta_status;
+    parts.push(`NECTA: ${n}`);
+  }
+  if (person.necta_document_url) parts.push('NECTA doc attached');
+  if (person.bisp_status) {
+    const b =
+      AID_BISP_STATUS.find((x) => x.value === person.bisp_status)?.label ||
+      person.bisp_status;
+    parts.push(`BISP: ${b}`);
+  }
+  return parts.join(' · ');
+}
+
+export function formatLivestockSummary(person) {
+  if (!person || person.has_livestock == null) return '';
+  if (!person.has_livestock) return 'Livestock: No';
+  const entries = Array.isArray(person.livestock_entries)
+    ? person.livestock_entries
+    : [];
+  if (!entries.length) return 'Livestock: Yes';
+  const animalLabel = (t) =>
+    AID_LIVESTOCK_ANIMALS.find((a) => a.value === t)?.label || t;
+  const ownLabel = (o) =>
+    AID_LIVESTOCK_OWNERSHIP.find((x) => x.value === o)?.label || o;
+  return entries
+    .map((row) => {
+      const bits = [
+        `${animalLabel(row.animal_type)} × ${row.quantity ?? '—'}`,
+        ownLabel(row.ownership),
+      ];
+      if (row.ownership === 'sharing' && row.owner_name) {
+        bits.push(`Owner: ${row.owner_name}`);
+      }
+      if (row.ownership === 'sharing' && row.owner_contact) {
+        bits.push(row.owner_contact);
+      }
+      return bits.join(' · ');
+    })
+    .join('; ');
+}
+
+export function formatResidentHousingSummary(person) {
+  if (!person?.resident_type) return '';
+  const typeLabel =
+    AID_RESIDENT_TYPES.find((t) => t.value === person.resident_type)?.label ||
+    person.resident_type;
+  const parts = [`Resident: ${typeLabel}`];
+  if (person.resident_ownership_status) {
+    parts.push(`Ownership: ${person.resident_ownership_status}`);
+  }
+  if (person.resident_ownership_other) {
+    parts.push(`Other: ${person.resident_ownership_other}`);
+  }
+  if (person.resident_type === 'rented' && person.rented_amount != null && person.rented_amount !== '') {
+    parts.push(`Rent PKR ${person.rented_amount}`);
+  }
+  if (person.house_area_marla != null && person.house_area_marla !== '') {
+    parts.push(`${person.house_area_marla} Marla`);
+  }
+  if (person.house_details) parts.push(person.house_details);
   return parts.join(' · ');
 }
 
@@ -352,6 +612,10 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   is_alive: true,
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
+  ...emptyResidentHousingFields(),
+  ...emptyLivestockFields(),
+  ...emptyVehicleFields(),
+  ...emptyEligibilityStatusFields(),
   _relation_type: relationType,
   _has_dependents: false,
   _dependents: [],

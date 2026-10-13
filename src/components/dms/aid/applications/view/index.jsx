@@ -11,6 +11,10 @@ import AidUserAssignField, {
   formatAidUserLabel,
   toAssignableAidUser,
 } from '../../shared/AidUserAssignField';
+import AidEducationApplicationFields from '../../shared/AidEducationApplicationFields';
+import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
+import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
+import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
 import {
   AID_CEO_OPTIONS,
   AID_DELIVERY_OPTIONS,
@@ -20,6 +24,10 @@ import {
   formatAidRequestType,
   formatLiteracySummary,
   formatPropertyOwnershipSummary,
+  formatResidentHousingSummary,
+  formatLivestockSummary,
+  formatVehicleSummary,
+  formatEligibilityStatusSummary,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -40,6 +48,10 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
     );
   const literacy = formatLiteracySummary(person);
   const property = formatPropertyOwnershipSummary(person);
+  const resident = formatResidentHousingSummary(person);
+  const livestock = formatLivestockSummary(person);
+  const vehicle = formatVehicleSummary(person);
+  const eligibility = formatEligibilityStatusSummary(person);
   return (
     <li style={{ marginBottom: 8 }}>
       <Link to={`/dms/aid/people/view/${person.id}`}>{person.full_name}</Link>
@@ -54,6 +66,10 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
         {person.marital_status ? ` · ${person.marital_status}` : ''}
         {literacy ? ` · Literacy: ${literacy}` : ''}
         {property ? ` · ${property}` : ''}
+        {resident ? ` · ${resident}` : ''}
+        {livestock ? ` · ${livestock}` : ''}
+        {vehicle ? ` · ${vehicle}` : ''}
+        {eligibility ? ` · ${eligibility}` : ''}
       </span>
       {notes ? (
         <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{notes}</div>
@@ -269,7 +285,7 @@ const AidApplicationView = () => {
 
         <div className="aid-hero">
           <div>
-            <h2 style={{ margin: '0 0 6px' }}>{app.title || 'Aid request'}</h2>
+            <h2 style={{ margin: '0 0 6px' }}>{app.title || 'Aid application'}</h2>
             <p style={{ margin: 0, color: '#64748b' }}>{app.request_summary || 'No summary'}</p>
           </div>
           <span className={`aid-status-pill aid-status-pill--${aidStatusTone(status)}`}>
@@ -657,7 +673,7 @@ const AidApplicationView = () => {
               { id: 'case', label: 'Case details' },
               { id: 'beneficiary', label: 'Beneficiary' },
               { id: 'family', label: 'Family Head' },
-              { id: 'writer', label: 'Writer' },
+              { id: 'writer', label: 'Applicant' },
               { id: 'attachments', label: 'Attachments' },
             ].map((t) => (
               <button
@@ -740,6 +756,33 @@ const AidApplicationView = () => {
                 {app.ceo_rejection_reason && (
                   <p style={{ color: '#b91c1c' }}>CEO rejection: {app.ceo_rejection_reason}</p>
                 )}
+                {app.requested_aid_type === 'education' &&
+                  app.education_details && (
+                    <AidEducationApplicationFields
+                      value={app.education_details}
+                      readOnly
+                    />
+                  )}
+                {app.requested_aid_type === 'ration' && app.ration_details && (
+                  <AidRationApplicationFields
+                    value={app.ration_details}
+                    readOnly
+                  />
+                )}
+                {app.requested_aid_type === 'marriage_gift' &&
+                  app.marriage_gift_details && (
+                    <AidMarriageGiftApplicationFields
+                      value={app.marriage_gift_details}
+                      readOnly
+                    />
+                  )}
+                {app.requested_aid_type === 'financial_assistance' &&
+                  app.financial_assistance_details && (
+                    <AidFinancialAssistanceFields
+                      value={app.financial_assistance_details}
+                      readOnly
+                    />
+                  )}
               </section>
             )}
 
@@ -772,6 +815,38 @@ const AidApplicationView = () => {
                     {formatPropertyOwnershipSummary(app.beneficiary) && (
                       <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
                         Property: {formatPropertyOwnershipSummary(app.beneficiary)}
+                      </p>
+                    )}
+                    {formatResidentHousingSummary(app.beneficiary) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        {formatResidentHousingSummary(app.beneficiary)}
+                      </p>
+                    )}
+                    {formatLivestockSummary(app.beneficiary) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        {formatLivestockSummary(app.beneficiary)}
+                      </p>
+                    )}
+                    {formatVehicleSummary(app.beneficiary) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        {formatVehicleSummary(app.beneficiary)}
+                      </p>
+                    )}
+                    {formatEligibilityStatusSummary(app.beneficiary) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        {formatEligibilityStatusSummary(app.beneficiary)}
+                      </p>
+                    )}
+                    {app.beneficiary.necta_document_url && (
+                      <p style={{ fontSize: 13, marginTop: 4 }}>
+                        <a
+                          href={app.beneficiary.necta_document_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {app.beneficiary.necta_document_name ||
+                            'NECTA document'}
+                        </a>
                       </p>
                     )}
                   </>
