@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FiAlignJustify, FiClipboard, FiFlag, FiGitBranch, FiPlus, FiTrash2 } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
@@ -797,8 +797,18 @@ const UpdateTask = ({
         }
       }
 
+      let latestTask = updatedTask;
+      try {
+        const fresh = await axiosInstance.get(`/tasks/${id}`);
+        if (fresh?.data?.data) {
+          latestTask = fresh.data.data;
+        }
+      } catch (_refetchErr) {
+        // Fallback to the PATCH response if refetch fails.
+      }
+
       if (isModal) {
-        onSaved?.(updatedTask || { id: Number(id) });
+        onSaved?.(latestTask || { id: Number(id) });
         onClose?.();
         return;
       }

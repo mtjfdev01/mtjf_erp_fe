@@ -854,6 +854,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     const isAssignee = isTaskAssignedToCurrentUser(task);
     const canChangeAsAssignee =
       isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
+    // Preserve module-level update permission; otherwise status actions require assignee access.
     const canChangeStatus = canUpdate || canChangeAsAssignee;
 
     return [
@@ -1005,7 +1006,8 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             >
               <FiEdit2 />
             </button>
-            {(canUpdate || canChangeAsAssignee) && (
+             {/* Keep authorized task managers' status controls alongside assignee controls. */}
+             {(canUpdate || canChangeAsAssignee) && (
               <div className="tl-tasks-status-menu">
                 <button
                   type="button"
@@ -1109,7 +1111,8 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     const canUpdate = taskPerms.canUpdate === true;
     const isAssignee = isTaskAssignedToCurrentUser(task);
     const canChangeAsAssignee =
-      isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
+    isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
+    // Match the visible controls: module update permission or assignee-specific permission.
     if (!canUpdate && !canChangeAsAssignee) {
       toast.error(hoverText('update') || 'You do not have permission to update tasks');
       return;
