@@ -7,12 +7,17 @@ import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
+import AidUserAssignField, {
+  formatAidUserLabel,
+  toAssignableAidUser,
+} from '../../shared/AidUserAssignField';
 import {
   AID_CEO_OPTIONS,
   AID_DELIVERY_OPTIONS,
   AID_VERIFICATION_CHECKLIST,
   aidStatusTone,
   formatAidStatus,
+  formatAidRequestType,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -20,28 +25,60 @@ import '../../aid.css';
 const emptyChecklist = () =>
   Object.fromEntries(AID_VERIFICATION_CHECKLIST.map((i) => [i.key, false]));
 
+const isSponsorshipDependent = (notes) =>
+  /dependent under (family head|guardian) sponsorship/i.test(String(notes || ''));
+
+const FamilyMemberLine = ({ person, relation, notes }) => {
+  if (!person) return null;
+  const age =
+    person.date_of_birth &&
+    Math.floor(
+      (Date.now() - new Date(person.date_of_birth).getTime()) /
+        (365.25 * 24 * 60 * 60 * 1000),
+    );
+  return (
+    <li style={{ marginBottom: 8 }}>
+      <Link to={`/dms/aid/people/view/${person.id}`}>{person.full_name}</Link>
+      <span style={{ fontSize: 13, color: '#64748b' }}>
+        {relation ? ` · ${String(relation).replace(/_/g, ' ')}` : ''}
+        {person.gender ? ` · ${person.gender}` : ''}
+        {Number.isFinite(age) && age >= 0 ? ` · Age ${age}` : ''}
+        {person.cnic ? ` · ${person.cnic}` : ''}
+        {person.has_disability
+          ? ` · Disability${person.disability_type ? `: ${person.disability_type}` : ''}`
+          : ''}
+        {person.marital_status ? ` · ${person.marital_status}` : ''}
+        {person.literacy_status ? ` · Literacy: ${person.literacy_status}` : ''}
+      </span>
+      {notes ? (
+        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{notes}</div>
+      ) : null}
+    </li>
+  );
+};
+
 const AidApplicationView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { permissions } = useAuth();
+  const isStaffElevated =
+    !!permissions?.super_admin || !!permissions?.fund_raising_manager;
   const canUpdate =
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.update') ||
-    permissions?.super_admin ||
-    permissions?.fund_raising_manager;
+    isStaffElevated ||
+    hasPermissionByPath(permissions, 'fund_raising.aid_applications.update');
   const canCeo =
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.ceo_approve') ||
-    permissions?.super_admin ||
-    permissions?.fund_raising_manager;
+    isStaffElevated ||
+    hasPermissionByPath(permissions, 'fund_raising.aid_applications.ceo_approve');
   const canDeliver =
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.deliver') ||
-    permissions?.super_admin ||
-    permissions?.fund_raising_manager;
+    isStaffElevated ||
+    hasPermissionByPath(permissions, 'fund_raising.aid_applications.deliver');
 
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
-  const [tab, setTab] = useState('verification');
+  const [panelTab, setPanelTab] = useState('case');
+  const [attachContext, setAttachContext] = useState('verification');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [verifyNotes, setVerifyNotes] = useState('');
@@ -49,9 +86,13 @@ const AidApplicationView = () => {
   const [leakageOverride, setLeakageOverride] = useState('');
   const [ceoDecision, setCeoDecision] = useState('approved');
   const [ceoReason, setCeoReason] = useState('');
-  const [deliveryStatus, setDeliveryStatus] = useState('delivered');
+  const [deliveryStatus, setDeliveryStatus] = useState('pending');
   const [deliveryNotes, setDeliveryNotes] = useState('');
   const [busy, setBusy] = useState(false);
+  const [assignedUser, setAssignedUser] = useState(null);
+  const [assignSaving, setAssignSaving] = useState(false);
+  const [familyTree, setFamilyTree] = useState(null);
+  const [kinship, setKinship] = useState([]);
 
   const load = useCallback(async () => {
     try {
@@ -60,6 +101,7 @@ const AidApplicationView = () => {
       const appRes = await axiosInstance.get(`/aid/applications/${id}`);
       const payload = appRes.data?.data || null;
       setApp(payload);
+      setAssignedUser(toAssignableAidUser(payload?.assigned_to));
       if (payload?.verification_checklist && typeof payload.verification_checklist === 'object') {
         setChecklist({
           ...emptyChecklist(),
@@ -78,6 +120,22 @@ const AidApplicationView = () => {
         setLeakageOverride(payload.leakage_override_reason);
       } else {
         setLeakageOverride('');
+      }
+
+      const beneficiaryId = payload?.beneficiary?.id || payload?.beneficiary_person_id;
+      if (beneficiaryId) {
+        try {
+          const peopleRes = await axiosInstance.get(`/aid/people/${beneficiaryId}`);
+          const peopleData = peopleRes.data?.data || {};
+          setFamilyTree(peopleData.family_tree || null);
+          setKinship(peopleData.kinship || []);
+        } catch {
+          setFamilyTree(null);
+          setKinship([]);
+        }
+      } else {
+        setFamilyTree(null);
+        setKinship([]);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load application');
@@ -107,12 +165,34 @@ const AidApplicationView = () => {
     if (!file) return;
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('context', tab);
+    fd.append('context', attachContext);
     await run(() =>
       axiosInstance.post(`/aid/applications/${id}/attachments/upload`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     );
+  };
+
+  const currentAssignedId = app?.assigned_to_user_id ?? app?.assigned_to?.id ?? null;
+  const nextAssignedId = assignedUser?.id ?? null;
+  const assignmentDirty =
+    String(currentAssignedId || '') !== String(nextAssignedId || '');
+
+  const saveAssignment = async () => {
+    setAssignSaving(true);
+    setActionError('');
+    try {
+      await axiosInstance.patch(`/aid/applications/${id}`, {
+        assigned_to_user_id: nextAssignedId ? Number(nextAssignedId) : null,
+      });
+      await load();
+    } catch (err) {
+      setActionError(
+        err.response?.data?.message || err.message || 'Failed to update assignment',
+      );
+    } finally {
+      setAssignSaving(false);
+    }
   };
 
   if (loading) {
@@ -154,7 +234,7 @@ const AidApplicationView = () => {
   const showVerify = canUpdate && ['submitted', 'under_review'].includes(status);
   const showCeo = canCeo && status === 'ceo_approval_required';
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
-  const tabAtt = attachments.filter((a) => a.context === tab);
+  const tabAtt = attachments.filter((a) => a.context === attachContext);
   const verifiedByName = app.verified_by
     ? [app.verified_by.first_name, app.verified_by.last_name].filter(Boolean).join(' ') ||
       app.verified_by.email
@@ -413,7 +493,7 @@ const AidApplicationView = () => {
             {showReject && (
               <button
                 type="button"
-                className="secondary-btn"
+                className="secondary-btn secondary-btn--danger"
                 disabled={busy}
                 onClick={() => setRejectOpen(true)}
               >
@@ -538,7 +618,7 @@ const AidApplicationView = () => {
             <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <button
                 type="button"
-                className="primary-btn"
+                className="primary-btn aid-btn--danger-solid"
                 disabled={busy || !rejectReason.trim()}
                 onClick={() => {
                   const reason = rejectReason.trim();
@@ -566,148 +646,320 @@ const AidApplicationView = () => {
           </div>
         )}
 
-        <div className="aid-sections">
-          <section className="aid-section">
-            <h3>Beneficiary</h3>
-            {app.beneficiary ? (
-              <>
-                <p>
-                  <Link to={`/dms/aid/people/view/${app.beneficiary.id}`}>
-                    {app.beneficiary.full_name}
-                  </Link>
-                </p>
-                <p style={{ fontSize: 13, color: '#64748b' }}>
-                  CNIC: {app.beneficiary.cnic || '—'} · Phone: {app.beneficiary.phone || '—'}
-                  {app.beneficiary.city ? ` · ${app.beneficiary.city}` : ''}
-                  {app.beneficiary.marital_status
-                    ? ` · ${app.beneficiary.marital_status}`
-                    : ''}
-                </p>
-                {app.beneficiary.address && (
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                    Address: {app.beneficiary.address}
-                  </p>
-                )}
-                {(app.beneficiary.occupation || app.beneficiary.monthly_income) && (
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                    {app.beneficiary.occupation
-                      ? `Profession: ${app.beneficiary.occupation}`
-                      : null}
-                    {app.beneficiary.occupation && app.beneficiary.monthly_income
-                      ? ' · '
-                      : ''}
-                    {app.beneficiary.monthly_income
-                      ? `Income: PKR ${app.beneficiary.monthly_income}`
-                      : null}
-                  </p>
-                )}
-              </>
-            ) : (
-              <p>—</p>
-            )}
-          </section>
-          <section className="aid-section">
-            <h3>Writer</h3>
-            {app.writer ? (
-              <>
-                <p>
-                  <Link to={`/dms/aid/people/view/${app.writer.id}`}>{app.writer.full_name}</Link>
-                </p>
-                <p style={{ fontSize: 13, color: '#64748b', textTransform: 'capitalize' }}>
-                  Relation: {app.writer_relation || '—'}
-                  {app.writer.phone ? ` · ${app.writer.phone}` : ''}
-                  {app.writer.city ? ` · ${app.writer.city}` : ''}
-                </p>
-                {app.writer.address && (
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                    Address: {app.writer.address}
-                  </p>
-                )}
-                {(app.writer.occupation || app.writer.monthly_income) && (
-                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                    {app.writer.occupation ? `Profession: ${app.writer.occupation}` : null}
-                    {app.writer.occupation && app.writer.monthly_income ? ' · ' : ''}
-                    {app.writer.monthly_income
-                      ? `Income: PKR ${app.writer.monthly_income}`
-                      : null}
-                  </p>
-                )}
-              </>
-            ) : (
-              <p>—</p>
-            )}
-          </section>
-          <section className="aid-section">
-            <h3>Case details</h3>
-            <p style={{ textTransform: 'capitalize' }}>Aid type: {app.requested_aid_type}</p>
-            <p>CEO: {app.ceo_approval_status}</p>
-            <p>Delivery: {app.delivery_status}</p>
-            <p>
-              Created by:{' '}
-              {app.created_by ? formatAuditActor(app.created_by) : '—'}
-            </p>
-            {app.rejection_reason && (
-              <p style={{ color: '#b91c1c' }}>Rejection: {app.rejection_reason}</p>
-            )}
-            {app.ceo_rejection_reason && (
-              <p style={{ color: '#b91c1c' }}>CEO rejection: {app.ceo_rejection_reason}</p>
-            )}
-          </section>
-        </div>
-
-        <section className="aid-section" style={{ marginTop: 16 }}>
-          <h3>Attachments</h3>
-          <div className="aid-tabs">
-            {['verification', 'delivery', 'profile'].map((t) => (
+        <div className="aid-panel">
+          <div className="aid-tabs aid-tabs--main" role="tablist">
+            {[
+              { id: 'case', label: 'Case details' },
+              { id: 'beneficiary', label: 'Beneficiary' },
+              { id: 'family', label: 'Family Head' },
+              { id: 'writer', label: 'Writer' },
+              { id: 'attachments', label: 'Attachments' },
+            ].map((t) => (
               <button
-                key={t}
+                key={t.id}
                 type="button"
-                className={`aid-tab ${tab === t ? 'aid-tab--active' : ''}`}
-                onClick={() => setTab(t)}
+                role="tab"
+                aria-selected={panelTab === t.id}
+                className={`aid-tab ${panelTab === t.id ? 'aid-tab--active' : ''}`}
+                onClick={() => setPanelTab(t.id)}
               >
-                {t}
+                {t.label}
               </button>
             ))}
           </div>
-          {canUpdate && (
-            <input
-              type="file"
-              style={{ marginBottom: 12 }}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) uploadFile(f);
-                e.target.value = '';
-              }}
-            />
-          )}
-          {tabAtt.length === 0 ? (
-            <p style={{ color: '#94a3b8' }}>No {tab} attachments.</p>
-          ) : (
-            <ul style={{ margin: 0, paddingLeft: 18 }}>
-              {tabAtt.map((a) => (
-                <li key={a.id} style={{ marginBottom: 6 }}>
-                  <a href={a.file_url} target="_blank" rel="noreferrer">
-                    {a.file_name}
-                  </a>
-                  {canUpdate && (
+
+          <div className="aid-panel__body">
+            {panelTab === 'case' && (
+              <section className="aid-section aid-section--flush">
+                <div className="aid-case-meta">
+                  <div className="aid-meta-row">
+                    <span>Aid type</span>
+                    <strong>{formatAidRequestType(app.requested_aid_type)}</strong>
+                  </div>
+                  <div className="aid-meta-row">
+                    <span>CEO</span>
+                    <strong>{app.ceo_approval_status || '—'}</strong>
+                  </div>
+                  <div className="aid-meta-row">
+                    <span>Delivery</span>
+                    <strong>{app.delivery_status || '—'}</strong>
+                  </div>
+                  <div className="aid-meta-row">
+                    <span>Created by</span>
+                    <strong>
+                      {app.created_by ? formatAuditActor(app.created_by) : '—'}
+                    </strong>
+                  </div>
+                  <div className="aid-meta-row">
+                    <span>Assigned to</span>
+                    <strong>
+                      {app.assigned_to ? formatAidUserLabel(app.assigned_to) : '—'}
+                    </strong>
+                  </div>
+                </div>
+
+                {canUpdate &&
+                  status !== 'rejected' &&
+                  status !== 'delivered' && (
+                  <div className="aid-assign-row">
+                    <AidUserAssignField
+                      value={assignedUser}
+                      onChange={setAssignedUser}
+                      hint="Change who owns this case, then save."
+                    />
+                    <div className="aid-assign-actions">
+                      <button
+                        type="button"
+                        className="primary-btn"
+                        disabled={busy || assignSaving || !assignmentDirty}
+                        onClick={saveAssignment}
+                      >
+                        {assignSaving ? 'Saving…' : 'Save assignment'}
+                      </button>
+                      {assignedUser && (
+                        <button
+                          type="button"
+                          className="secondary-btn"
+                          disabled={busy || assignSaving}
+                          onClick={() => setAssignedUser(null)}
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {app.rejection_reason && (
+                  <p style={{ color: '#b91c1c' }}>Rejection: {app.rejection_reason}</p>
+                )}
+                {app.ceo_rejection_reason && (
+                  <p style={{ color: '#b91c1c' }}>CEO rejection: {app.ceo_rejection_reason}</p>
+                )}
+              </section>
+            )}
+
+            {panelTab === 'beneficiary' && (
+              <section className="aid-section aid-section--flush">
+                {app.beneficiary ? (
+                  <>
+                    <p>
+                      <Link to={`/dms/aid/people/view/${app.beneficiary.id}`}>
+                        {app.beneficiary.full_name}
+                      </Link>
+                    </p>
+                    <p style={{ fontSize: 13, color: '#64748b' }}>
+                      CNIC: {app.beneficiary.cnic || '—'} · Phone: {app.beneficiary.phone || '—'}
+                      {app.beneficiary.city ? ` · ${app.beneficiary.city}` : ''}
+                      {app.beneficiary.marital_status
+                        ? ` · ${app.beneficiary.marital_status}`
+                        : ''}
+                    </p>
+                    {app.beneficiary.address && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        Address: {app.beneficiary.address}
+                      </p>
+                    )}
+                    {(app.beneficiary.occupation || app.beneficiary.monthly_income) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        {app.beneficiary.occupation
+                          ? `Profession: ${app.beneficiary.occupation}`
+                          : null}
+                        {app.beneficiary.occupation && app.beneficiary.monthly_income
+                          ? ' · '
+                          : ''}
+                        {app.beneficiary.monthly_income
+                          ? `Income: PKR ${app.beneficiary.monthly_income}`
+                          : null}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p>—</p>
+                )}
+              </section>
+            )}
+
+            {panelTab === 'family' && (
+              <section className="aid-section aid-section--flush">
+                {(() => {
+                  const tree = familyTree || {};
+                  const groups = [
+                    { key: 'parents', label: 'Parents' },
+                    { key: 'spouse', label: 'Spouse' },
+                    { key: 'children', label: 'Children' },
+                    { key: 'brothers', label: 'Brothers' },
+                    { key: 'sisters', label: 'Sisters' },
+                    { key: 'siblings', label: 'Siblings' },
+                    { key: 'extended', label: 'Guardians / extended' },
+                  ];
+                  const fromTree = groups.flatMap((g) =>
+                    (tree[g.key] || []).map((row) => ({
+                      ...row,
+                      group: g.label,
+                    })),
+                  );
+                  const dependents = (kinship || []).filter((e) =>
+                    isSponsorshipDependent(e.notes),
+                  );
+                  const dependentIds = new Set(
+                    dependents.map((e) => e.to_person_id || e.to_person?.id),
+                  );
+                  const core = fromTree.filter(
+                    (row) => !dependentIds.has(row.person?.id),
+                  );
+
+                  if (!core.length && !dependents.length) {
+                    return (
+                      <p style={{ color: '#94a3b8' }}>
+                        No family members linked yet.
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <>
+                      {groups.map((g) => {
+                        const rows = core.filter((r) => r.group === g.label);
+                        if (!rows.length) return null;
+                        return (
+                          <div key={g.key} style={{ marginBottom: 16 }}>
+                            <h4 className="aid-family-panel__title">{g.label}</h4>
+                            <ul style={{ margin: 0, paddingLeft: 18 }}>
+                              {rows.map((row) => (
+                                <FamilyMemberLine
+                                  key={`fam-${row.edge_id || row.person?.id}`}
+                                  person={row.person}
+                                  relation={row.relation_type}
+                                  notes={row.notes}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+
+                      {dependents.length > 0 && (
+                        <div style={{ marginBottom: 16 }}>
+                          <h4 className="aid-family-panel__title">
+                            Others under sponsorship / dependents
+                          </h4>
+                          <ul style={{ margin: 0, paddingLeft: 18 }}>
+                            {dependents.map((edge) => {
+                              const egoId =
+                                app.beneficiary?.id || app.beneficiary_person_id;
+                              const person =
+                                edge.from_person_id === egoId
+                                  ? edge.to_person
+                                  : edge.from_person || edge.to_person;
+                              return (
+                                <FamilyMemberLine
+                                  key={`dep-${edge.id}`}
+                                  person={person}
+                                  relation={edge.relation_type}
+                                  notes={edge.notes}
+                                />
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </section>
+            )}
+
+            {panelTab === 'writer' && (
+              <section className="aid-section aid-section--flush">
+                {app.writer ? (
+                  <>
+                    <p>
+                      <Link to={`/dms/aid/people/view/${app.writer.id}`}>
+                        {app.writer.full_name}
+                      </Link>
+                    </p>
+                    <p style={{ fontSize: 13, color: '#64748b', textTransform: 'capitalize' }}>
+                      Relation: {app.writer_relation || '—'}
+                      {app.writer.phone ? ` · ${app.writer.phone}` : ''}
+                      {app.writer.city ? ` · ${app.writer.city}` : ''}
+                    </p>
+                    {app.writer.address && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        Address: {app.writer.address}
+                      </p>
+                    )}
+                    {(app.writer.occupation || app.writer.monthly_income) && (
+                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
+                        {app.writer.occupation ? `Profession: ${app.writer.occupation}` : null}
+                        {app.writer.occupation && app.writer.monthly_income ? ' · ' : ''}
+                        {app.writer.monthly_income
+                          ? `Income: PKR ${app.writer.monthly_income}`
+                          : null}
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <p>—</p>
+                )}
+              </section>
+            )}
+
+            {panelTab === 'attachments' && (
+              <section className="aid-section aid-section--flush">
+                <div className="aid-tabs">
+                  {['verification', 'delivery', 'profile'].map((t) => (
                     <button
+                      key={t}
                       type="button"
-                      className="secondary-btn"
-                      style={{ marginLeft: 8, padding: '2px 8px', fontSize: 12 }}
-                      onClick={() =>
-                        run(() =>
-                          axiosInstance.delete(`/aid/applications/attachments/${a.id}`),
-                        )
-                      }
+                      className={`aid-tab ${attachContext === t ? 'aid-tab--active' : ''}`}
+                      onClick={() => setAttachContext(t)}
                     >
-                      Delete
+                      {t}
                     </button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                  ))}
+                </div>
+                {canUpdate && (
+                  <input
+                    type="file"
+                    style={{ marginBottom: 12 }}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) uploadFile(f);
+                      e.target.value = '';
+                    }}
+                  />
+                )}
+                {tabAtt.length === 0 ? (
+                  <p style={{ color: '#94a3b8' }}>No {attachContext} attachments.</p>
+                ) : (
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {tabAtt.map((a) => (
+                      <li key={a.id} style={{ marginBottom: 6 }}>
+                        <a href={a.file_url} target="_blank" rel="noreferrer">
+                          {a.file_name}
+                        </a>
+                        {canUpdate && (
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            style={{ marginLeft: 8, padding: '2px 8px', fontSize: 12 }}
+                            onClick={() =>
+                              run(() =>
+                                axiosInstance.delete(`/aid/applications/attachments/${a.id}`),
+                              )
+                            }
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
+          </div>
+        </div>
       </div>
 
     </>

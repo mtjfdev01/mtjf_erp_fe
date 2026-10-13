@@ -528,9 +528,8 @@ const adminDepartmentItems = () => [
   //     {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
   //     {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
   //     {label: "Online Donors", path: "/dms/online_donors/list", type: "list", module: "online_donors", icon: FiUsers},
-  //     // Enable later — Beneficiary Aid Applications (Phase 1)
-  //     // {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
-  //     // {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
+  //     {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
+  //     {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
   //     {label: "Offline Donors", path: "/dms/offline_donors/list", type: "list", module: "offline_donors", icon: FiUsers},
   //     {label: "CSR Donors", path: "/dms/csr-donors/list", type: "list", module: "organizations", icon: FiBriefcase},
   //     {label: "CSR Donations", path: "/dms/csr-donations/list", type: "list", module: "organizations", icon: BiSolidDonateHeart},
@@ -645,21 +644,20 @@ const geographicItems = (isUser = false) => [
 ];
 
 const fundRaisingDepartmentItems = (isUser = false) => [
-  // Enable later — Beneficiary Aid Applications (Phase 1)
-  // {
-  //   label: 'Aid Applications',
-  //   path: '/dms/aid/applications/list',
-  //   type: 'list',
-  //   module: 'aid_applications',
-  //   icon: FiLifeBuoy
-  // },
-  // {
-  //   label: 'Aid People',
-  //   path: '/dms/aid/people/list',
-  //   type: 'list',
-  //   module: 'aid_people',
-  //   icon: FiUsers
-  // },
+  {
+    label: 'Aid Applications',
+    path: '/dms/aid/applications/list',
+    type: 'list',
+    module: 'aid_applications',
+    icon: FiLifeBuoy
+  },
+  {
+    label: 'Aid People',
+    path: '/dms/aid/people/list',
+    type: 'list',
+    module: 'aid_people',
+    icon: FiUsers
+  },
   {
     label: 'Online Donations',
     path: '/donations/online_donations/list',

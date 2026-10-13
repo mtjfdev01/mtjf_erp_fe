@@ -137,15 +137,14 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'CSR POCs',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
-        // Enable later — Beneficiary Aid Applications (Phase 1)
-        // aid_people: {
-        //   label: 'Aid People',
-        //   actions: ['create', 'list_view', 'view', 'update', 'delete']
-        // },
-        // aid_applications: {
-        //   label: 'Aid Applications',
-        //   actions: ['create', 'list_view', 'view', 'update', 'delete', 'ceo_approve', 'deliver']
-        // },
+        aid_people: {
+          label: 'Aid People',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        aid_applications: {
+          label: 'Aid Applications',
+          actions: ['create', 'list_view', 'view', 'update', 'delete', 'ceo_approve', 'deliver']
+        },
         // donations_report: {
         //   label: 'Donations Report',
         //   actions: ['send', 'receive']

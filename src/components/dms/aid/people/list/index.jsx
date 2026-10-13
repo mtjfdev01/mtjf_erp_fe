@@ -142,7 +142,7 @@ const AidPeopleList = () => {
   return (
     <>
       <Navbar />
-      <div className="list-wrapper">
+      <div className="list-wrapper aid-list">
         <PageHeader
           title="Aid People"
           backPath="/dms/aid/applications/list"

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -8,12 +9,22 @@ import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
+import AidUserAssignField from '../../shared/AidUserAssignField';
+import AidLiteracyFields from '../../shared/AidLiteracyFields';
+import AidChildrenIntake from '../../shared/AidChildrenIntake';
+import AidSiblingsIntake from '../../shared/AidSiblingsIntake';
+import AidDependentsIntake from '../../shared/AidDependentsIntake';
 import {
   AID_REQUEST_TYPES,
   AID_WRITER_RELATIONS,
   AID_MARITAL_STATUS,
   AID_GENDERS,
-  AID_EDUCATION_LEVELS,
+  AID_YES_NO,
+  emptyLiteracyFields,
+  emptyFamilyHeadRow,
+  AID_FAMILY_HEAD_TYPES,
+  mapSiblingRelationToKinship,
+  mapDependentRelationToKinship,
 } from '../../aidConstants';
 import '../../aid.css';
 
@@ -30,14 +41,27 @@ const emptyPerson = {
   monthly_income: '',
   education_level: '',
   is_alive: true,
+  has_disability: false,
+  disability_type: '',
+  ...emptyLiteracyFields(),
 };
 
 const emptyRelative = () => ({ ...emptyPerson });
 
-const RelativeFields = ({ title, value, onChange, genderHint }) => (
-  <div className="aid-relative-block">
-    {title ? <h4 style={{ margin: '0 0 8px' }}>{title}</h4> : null}
-    <div className="form-grid">
+const familyHeadTypeLabel = (type) =>
+  AID_FAMILY_HEAD_TYPES.find((t) => t.value === type)?.label || type || 'Family head';
+
+const RelativeFields = ({
+  title,
+  value,
+  onChange,
+  genderHint,
+  compact,
+  showLiteracy = false,
+}) => (
+  <div className={`aid-relative-block${compact ? ' aid-relative-block--compact' : ''}`}>
+    {title ? <h4 className="aid-relative-block__title">{title}</h4> : null}
+    <div className="form-grid-2">
       <FormInput
         label="Full name"
         value={value.full_name}
@@ -73,29 +97,11 @@ const RelativeFields = ({ title, value, onChange, genderHint }) => (
         options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
       />
       <FormInput
-        label="Profession"
-        value={value.occupation}
-        onChange={(e) => onChange({ ...value, occupation: e.target.value })}
-        placeholder="Optional"
-      />
-      <FormInput
-        label="Monthly income (PKR)"
-        value={value.monthly_income}
-        onChange={(e) => onChange({ ...value, monthly_income: e.target.value })}
-        placeholder="Optional"
-      />
-      <FormSelect
-        label="Education"
-        value={value.education_level}
-        onChange={(e) => onChange({ ...value, education_level: e.target.value })}
-        options={[{ value: '', label: '—' }, ...AID_EDUCATION_LEVELS]}
-      />
-      <FormInput
         label="City"
         value={value.city}
         onChange={(e) => onChange({ ...value, city: e.target.value })}
       />
-      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14 }}>
+      <label className="aid-toggle">
         <input
           type="checkbox"
           checked={value.is_alive !== false}
@@ -104,6 +110,24 @@ const RelativeFields = ({ title, value, onChange, genderHint }) => (
         Alive
       </label>
     </div>
+    {showLiteracy ? (
+      <AidLiteracyFields value={value} onChange={onChange} />
+    ) : (
+      <div className="form-grid-2">
+        <FormInput
+          label="Profession"
+          value={value.occupation}
+          onChange={(e) => onChange({ ...value, occupation: e.target.value })}
+          placeholder="Optional"
+        />
+        <FormInput
+          label="Monthly income (PKR)"
+          value={value.monthly_income}
+          onChange={(e) => onChange({ ...value, monthly_income: e.target.value })}
+          placeholder="Optional"
+        />
+      </div>
+    )}
     <FormTextarea
       label="Address"
       value={value.address}
@@ -122,9 +146,16 @@ const cleanPersonPayload = (p) => {
     gender: p.gender || undefined,
     date_of_birth: p.date_of_birth || undefined,
     marital_status: p.marital_status || undefined,
-    occupation: p.occupation || undefined,
+    occupation: p.occupation || p.literacy_category || undefined,
     monthly_income: p.monthly_income || undefined,
     education_level: p.education_level || undefined,
+    literacy_status: p.literacy_status || undefined,
+    literacy_category: p.literacy_category || undefined,
+    student_class: p.student_class || undefined,
+    student_class_type: p.student_class_type || undefined,
+    student_class_name: p.student_class_name || undefined,
+    has_disability: !!p.has_disability,
+    disability_type: p.has_disability ? p.disability_type || undefined : undefined,
     is_alive: p.is_alive !== false,
     address: p.address || undefined,
     city: p.city || undefined,
@@ -144,16 +175,28 @@ const AidApplicationAdd = () => {
   const [form, setForm] = useState({
     title: '',
     request_summary: '',
-    requested_aid_type: 'ration',
+    requested_aid_type: 'health',
     writer_relation: 'self',
   });
-  const [father, setFather] = useState(emptyRelative());
-  const [mother, setMother] = useState(emptyRelative());
+  const [assignedUser, setAssignedUser] = useState(null);
+  const [familyHeads, setFamilyHeads] = useState([emptyFamilyHeadRow('father')]);
   const [spouse, setSpouse] = useState(emptyRelative());
-  const [guardians, setGuardians] = useState([]);
   const [siblings, setSiblings] = useState([{ ...emptyRelative(), _genderRole: 'brother' }]);
+  const [childrenRows, setChildrenRows] = useState([]);
+  const [siblingRows, setSiblingRows] = useState([]);
+  const [familyHeadHasDependents, setFamilyHeadHasDependents] = useState(false);
+  const [familyHeadDependents, setFamilyHeadDependents] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [formTab, setFormTab] = useState('request');
+
+  const FORM_TABS = [
+    { id: 'request', label: 'Request' },
+    { id: 'assignment', label: 'Assignment' },
+    { id: 'beneficiary', label: 'Beneficiary' },
+    { id: 'family', label: 'Family Head' },
+    { id: 'writer', label: 'Writer' },
+  ];
 
   const beneficiaryGender =
     beneficiaryMode === 'existing'
@@ -165,6 +208,7 @@ const AidApplicationAdd = () => {
       : beneficiary.marital_status;
 
   const isMarried = beneficiaryMarital === 'married';
+  const isSingle = beneficiaryMarital === 'single';
   const spouseLabel =
     beneficiaryGender === 'male'
       ? 'Wife'
@@ -179,18 +223,19 @@ const AidApplicationAdd = () => {
         : '';
 
   useEffect(() => {
-    if (!isMarried) return;
-    setSpouse((p) => ({
-      ...p,
-      gender: p.gender || spouseDefaultGender,
-      marital_status: p.marital_status || 'married',
-    }));
-  }, [isMarried, spouseDefaultGender]);
-
-  useEffect(() => {
-    setFather((p) => ({ ...p, gender: p.gender || 'male' }));
-    setMother((p) => ({ ...p, gender: p.gender || 'female' }));
-  }, []);
+    if (!isMarried) {
+      setChildrenRows([]);
+    } else {
+      setSpouse((p) => ({
+        ...p,
+        gender: p.gender || spouseDefaultGender,
+        marital_status: p.marital_status || 'married',
+      }));
+    }
+    if (!isSingle) {
+      setSiblingRows([]);
+    }
+  }, [isMarried, isSingle, spouseDefaultGender]);
 
   const searchPeople = async (term) => {
     const q = String(term || '').trim();
@@ -212,30 +257,57 @@ const AidApplicationAdd = () => {
 
   const buildFamilyMembers = () => {
     const members = [];
-    const fatherPayload = cleanPersonPayload(father);
-    if (fatherPayload) {
-      members.push({ relation_type: 'father', person: fatherPayload });
+    for (const head of familyHeads) {
+      const payload = cleanPersonPayload(head);
+      const relation = head._relation_type || 'other';
+      if (payload) members.push({ relation_type: relation, person: payload });
+      if (head._has_dependents) {
+        for (const dep of head._dependents || []) {
+          const depPayload = cleanPersonPayload(dep);
+          if (!depPayload) continue;
+          const depRelation = mapDependentRelationToKinship(
+            dep.relation_with_family_head,
+          );
+          members.push({
+            relation_type: depRelation,
+            person: depPayload,
+            notes: `Dependent under ${familyHeadTypeLabel(relation).toLowerCase()} sponsorship (${dep.relation_with_family_head || depRelation})`,
+          });
+        }
+      }
     }
-    const motherPayload = cleanPersonPayload(mother);
-    if (motherPayload) {
-      members.push({ relation_type: 'mother', person: motherPayload });
-    }
-    for (const g of guardians) {
-      const payload = cleanPersonPayload(g);
-      if (payload) members.push({ relation_type: 'guardian', person: payload });
-    }
-    for (const s of siblings) {
-      const payload = cleanPersonPayload(s);
-      if (!payload) continue;
-      const relation =
-        s._genderRole === 'sister' || payload.gender === 'female'
-          ? 'sister'
-          : s._genderRole === 'brother' || payload.gender === 'male'
-            ? 'brother'
-            : 'sibling';
-      if (!payload.gender && relation === 'sister') payload.gender = 'female';
-      if (!payload.gender && relation === 'brother') payload.gender = 'male';
-      members.push({ relation_type: relation, person: payload });
+    if (isSingle) {
+      for (const s of siblingRows) {
+        const payload = cleanPersonPayload(s);
+        if (!payload) continue;
+        const relation = mapSiblingRelationToKinship(s.relation_with_beneficiary);
+        if (!payload.gender && relation === 'sister') payload.gender = 'female';
+        if (!payload.gender && relation === 'brother') payload.gender = 'male';
+        const notes =
+          s.relation_with_beneficiary &&
+          !['brother', 'sister'].includes(s.relation_with_beneficiary)
+            ? `Relation: ${s.relation_with_beneficiary}`
+            : undefined;
+        members.push({
+          relation_type: relation,
+          person: payload,
+          notes,
+        });
+      }
+    } else {
+      for (const s of siblings) {
+        const payload = cleanPersonPayload(s);
+        if (!payload) continue;
+        const relation =
+          s._genderRole === 'sister' || payload.gender === 'female'
+            ? 'sister'
+            : s._genderRole === 'brother' || payload.gender === 'male'
+              ? 'brother'
+              : 'sibling';
+        if (!payload.gender && relation === 'sister') payload.gender = 'female';
+        if (!payload.gender && relation === 'brother') payload.gender = 'male';
+        members.push({ relation_type: relation, person: payload });
+      }
     }
     if (isMarried) {
       const spousePayload = cleanPersonPayload(spouse);
@@ -246,7 +318,34 @@ const AidApplicationAdd = () => {
         if (!spousePayload.marital_status) spousePayload.marital_status = 'married';
         members.push({ relation_type: 'spouse', person: spousePayload });
       }
+      for (const child of childrenRows) {
+        const payload = cleanPersonPayload(child);
+        if (!payload) continue;
+        const relation =
+          payload.gender === 'female'
+            ? 'daughter'
+            : payload.gender === 'male'
+              ? 'son'
+              : 'child';
+        members.push({ relation_type: relation, person: payload });
+      }
     }
+
+    if (familyHeadHasDependents) {
+      for (const dep of familyHeadDependents) {
+        const payload = cleanPersonPayload(dep);
+        if (!payload) continue;
+        const relation = mapDependentRelationToKinship(
+          dep.relation_with_family_head,
+        );
+        members.push({
+          relation_type: relation,
+          person: payload,
+          notes: `Dependent under family head sponsorship (${dep.relation_with_family_head || relation})`,
+        });
+      }
+    }
+
     return members;
   };
 
@@ -258,12 +357,37 @@ const AidApplicationAdd = () => {
       if (isMarried && !spouse.full_name.trim()) {
         throw new Error(`${spouseLabel} details are required for married beneficiaries`);
       }
-      const hasParentOrGuardian =
-        father.full_name.trim() ||
-        mother.full_name.trim() ||
-        guardians.some((g) => g.full_name?.trim());
-      if (!hasParentOrGuardian) {
-        throw new Error('Enter at least one parent or guardian');
+      if (isMarried) {
+        const incompleteChild = childrenRows.find(
+          (c) => c.full_name?.trim() && !c.literacy_status,
+        );
+        if (incompleteChild) {
+          throw new Error('Set Literacy for each child that has a name');
+        }
+        const namedKids = childrenRows.filter((c) => c.full_name?.trim());
+        if (childrenRows.length > 0 && namedKids.length !== childrenRows.length) {
+          throw new Error('Enter a name for every child row (or set No. of children to 0)');
+        }
+      }
+      if (isSingle && siblingRows.length > 0) {
+        const named = siblingRows.filter((s) => s.full_name?.trim());
+        if (named.length !== siblingRows.length) {
+          throw new Error(
+            'Enter a name for every sibling row (or set No. of siblings to 0)',
+          );
+        }
+        const missingRel = siblingRows.find((s) => !s.relation_with_beneficiary);
+        if (missingRel) {
+          throw new Error('Select Relation with beneficiary for each sibling');
+        }
+      }
+      const namedHeads = familyHeads.filter((h) => h.full_name?.trim());
+      if (!namedHeads.length) {
+        throw new Error('Enter at least one Family Head (Father / Mother / Guardian…)');
+      }
+      const missingType = namedHeads.find((h) => !h._relation_type);
+      if (missingType) {
+        throw new Error('Select Type for each Family Head');
       }
 
       const payload = {
@@ -272,6 +396,9 @@ const AidApplicationAdd = () => {
         requested_aid_type: form.requested_aid_type,
         writer_relation: writerIsSelf ? 'self' : form.writer_relation,
         family_members: buildFamilyMembers(),
+        ...(assignedUser?.id
+          ? { assigned_to_user_id: Number(assignedUser.id) }
+          : {}),
       };
 
       if (beneficiaryMode === 'existing') {
@@ -311,10 +438,13 @@ const AidApplicationAdd = () => {
 
   const familyHint = useMemo(() => {
     if (isMarried) {
-      return `Married beneficiary — collect ${spouseLabel.toLowerCase()}, parents/guardians, and siblings.`;
+      return `Select Family Head type (Father / Mother / Guardian…) and add ${spouseLabel.toLowerCase()} if married.`;
     }
-    return 'Collect parents/guardians and siblings for every beneficiary (married or single).';
-  }, [isMarried, spouseLabel]);
+    if (isSingle) {
+      return 'Select Family Head type (Father / Mother / Guardian…). Brothers/sisters are on the Beneficiary tab.';
+    }
+    return 'Add Family Head entries and select type for each (Father / Mother / Guardian…).';
+  }, [isMarried, isSingle, spouseLabel]);
 
   return (
     <>
@@ -326,215 +456,388 @@ const AidApplicationAdd = () => {
           onBackClick={() => navigate('/dms/aid/applications/list')}
           showAdd={false}
         />
-        <form className="form-card card" onSubmit={handleSubmit}>
-          {error && <div className="error-message">{error}</div>}
 
-          <h3 style={{ marginTop: 0 }}>Request</h3>
-          <div className="form-grid">
-            <FormInput
-              label="Title"
-              name="title"
-              value={form.title}
-              onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-              placeholder="Short need title"
-            />
-            <FormSelect
-              label="Aid type"
-              name="requested_aid_type"
-              value={form.requested_aid_type}
-              onChange={(e) => setForm((p) => ({ ...p, requested_aid_type: e.target.value }))}
-              options={AID_REQUEST_TYPES}
-            />
+        {error && (
+          <div className="status-message status-message--error">{error}</div>
+        )}
+
+        <form onSubmit={handleSubmit} className="form aid-application-form">
+          <div className="aid-tabs aid-tabs--main" role="tablist">
+            {FORM_TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={formTab === t.id}
+                className={`aid-tab ${formTab === t.id ? 'aid-tab--active' : ''}`}
+                onClick={() => setFormTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-          <FormTextarea
-            label="Request summary"
-            name="request_summary"
-            value={form.request_summary}
-            onChange={(e) => setForm((p) => ({ ...p, request_summary: e.target.value }))}
-            rows={3}
-            placeholder="Describe the need…"
-          />
 
-          <h3>Beneficiary</h3>
-          <label style={{ display: 'flex', gap: 8, marginBottom: 12, fontSize: 14 }}>
-            <input
-              type="checkbox"
-              checked={beneficiaryMode === 'existing'}
-              onChange={(e) => {
-                setBeneficiaryMode(e.target.checked ? 'existing' : 'new');
-                if (!e.target.checked) setExistingBeneficiary(null);
-              }}
-            />
-            Link existing person in system
-          </label>
-          {beneficiaryMode === 'existing' ? (
-            <SearchableDropdown
-              label="Search beneficiary"
-              placeholder="Name, CNIC, phone…"
-              onSearch={searchPeople}
-              onSelect={async (item) => {
-                setBeneficiaryId(item.id);
-                try {
-                  const res = await axiosInstance.get(`/aid/people/${item.id}`);
-                  setExistingBeneficiary(res.data?.data?.person || item.raw || null);
-                } catch {
-                  setExistingBeneficiary(item.raw || null);
-                }
-              }}
-              onClear={() => {
-                setBeneficiaryId(null);
-                setExistingBeneficiary(null);
-              }}
-              displayKey="name"
-              minSearchLength={2}
-            />
-          ) : (
-            <div className="form-grid">
+          {formTab === 'request' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Request</h3>
+            <div className="form-grid-2">
               <FormInput
-                label="Full name"
-                required
-                value={beneficiary.full_name}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, full_name: e.target.value }))}
-              />
-              <FormInput
-                label="CNIC (unique)"
-                value={beneficiary.cnic}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, cnic: e.target.value }))}
-                placeholder="Optional but unique if provided"
-              />
-              <FormInput
-                label="Phone"
-                value={beneficiary.phone}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, phone: e.target.value }))}
-              />
-              <FormInput
-                label="City"
-                value={beneficiary.city}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, city: e.target.value }))}
+                label="Title"
+                name="title"
+                value={form.title}
+                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                placeholder="Short need title"
               />
               <FormSelect
-                label="Gender"
-                required
-                value={beneficiary.gender}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, gender: e.target.value }))}
-                options={[{ value: '', label: '—' }, ...AID_GENDERS]}
-              />
-              <FormSelect
-                label="Marital status"
-                required
-                value={beneficiary.marital_status}
+                label="Aid type"
+                name="requested_aid_type"
+                value={form.requested_aid_type}
                 onChange={(e) =>
-                  setBeneficiary((p) => ({ ...p, marital_status: e.target.value }))
+                  setForm((p) => ({ ...p, requested_aid_type: e.target.value }))
                 }
-                options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
-              />
-              <FormInput
-                label="Date of birth"
-                type="date"
-                value={beneficiary.date_of_birth}
-                onChange={(e) =>
-                  setBeneficiary((p) => ({ ...p, date_of_birth: e.target.value }))
-                }
-              />
-              <FormInput
-                label="Profession"
-                value={beneficiary.occupation}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, occupation: e.target.value }))}
-                placeholder="Optional"
-              />
-              <FormInput
-                label="Monthly income (PKR)"
-                value={beneficiary.monthly_income}
-                onChange={(e) =>
-                  setBeneficiary((p) => ({ ...p, monthly_income: e.target.value }))
-                }
-                placeholder="Optional"
-              />
-              <FormTextarea
-                label="Address"
-                value={beneficiary.address}
-                onChange={(e) => setBeneficiary((p) => ({ ...p, address: e.target.value }))}
-                rows={2}
-                placeholder="Full address"
+                options={AID_REQUEST_TYPES}
               />
             </div>
+            <div className="aid-field-spaced">
+              <FormTextarea
+                label="Request summary"
+                name="request_summary"
+                value={form.request_summary}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, request_summary: e.target.value }))
+                }
+                rows={3}
+                placeholder="Describe the need…"
+              />
+            </div>
+          </div>
           )}
 
-          <div className="aid-family-intake">
-            <h3>Family data bank</h3>
-            <p className="aid-family-intake__hint">{familyHint}</p>
+          {formTab === 'assignment' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Assignment</h3>
+            <AidUserAssignField
+              value={assignedUser}
+              onChange={setAssignedUser}
+              hint="Optional — assign a fund-raising staff member to handle this case."
+            />
+          </div>
+          )}
+
+          {formTab === 'beneficiary' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Beneficiary</h3>
+            <label className="aid-toggle aid-toggle--block">
+              <input
+                type="checkbox"
+                checked={beneficiaryMode === 'existing'}
+                onChange={(e) => {
+                  setBeneficiaryMode(e.target.checked ? 'existing' : 'new');
+                  if (!e.target.checked) setExistingBeneficiary(null);
+                }}
+              />
+              Link existing person in system
+            </label>
+
+            {beneficiaryMode === 'existing' ? (
+              <SearchableDropdown
+                label="Search beneficiary"
+                placeholder="Name, CNIC, phone…"
+                onSearch={searchPeople}
+                onSelect={async (item) => {
+                  setBeneficiaryId(item.id);
+                  try {
+                    const res = await axiosInstance.get(`/aid/people/${item.id}`);
+                    setExistingBeneficiary(res.data?.data?.person || item.raw || null);
+                  } catch {
+                    setExistingBeneficiary(item.raw || null);
+                  }
+                }}
+                onClear={() => {
+                  setBeneficiaryId(null);
+                  setExistingBeneficiary(null);
+                }}
+                displayKey="name"
+                minSearchLength={2}
+              />
+            ) : (
+              <div className="form-grid-2">
+                <FormInput
+                  label="Full name"
+                  required
+                  value={beneficiary.full_name}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, full_name: e.target.value }))
+                  }
+                />
+                <FormInput
+                  label="CNIC (unique)"
+                  value={beneficiary.cnic}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, cnic: e.target.value }))
+                  }
+                  placeholder="Optional but unique if provided"
+                />
+                <FormInput
+                  label="Phone"
+                  value={beneficiary.phone}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, phone: e.target.value }))
+                  }
+                />
+                <FormInput
+                  label="City"
+                  value={beneficiary.city}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, city: e.target.value }))
+                  }
+                />
+                <FormSelect
+                  label="Gender"
+                  required
+                  value={beneficiary.gender}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, gender: e.target.value }))
+                  }
+                  options={[{ value: '', label: '—' }, ...AID_GENDERS]}
+                />
+                <FormSelect
+                  label="Marital status"
+                  required
+                  value={beneficiary.marital_status}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, marital_status: e.target.value }))
+                  }
+                  options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
+                />
+                <FormInput
+                  label="Date of birth"
+                  type="date"
+                  value={beneficiary.date_of_birth}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({ ...p, date_of_birth: e.target.value }))
+                  }
+                />
+                <FormSelect
+                  label="Disability"
+                  value={beneficiary.has_disability ? 'yes' : 'no'}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({
+                      ...p,
+                      has_disability: e.target.value === 'yes',
+                      disability_type:
+                        e.target.value === 'yes' ? p.disability_type : '',
+                    }))
+                  }
+                  options={AID_YES_NO}
+                />
+                {beneficiary.has_disability && (
+                  <FormInput
+                    label="Type of disability"
+                    value={beneficiary.disability_type || ''}
+                    onChange={(e) =>
+                      setBeneficiary((p) => ({
+                        ...p,
+                        disability_type: e.target.value,
+                      }))
+                    }
+                  />
+                )}
+                <div className="aid-span-2">
+                  <FormTextarea
+                    label="Address"
+                    value={beneficiary.address}
+                    onChange={(e) =>
+                      setBeneficiary((p) => ({ ...p, address: e.target.value }))
+                    }
+                    rows={2}
+                    placeholder="Full address"
+                  />
+                </div>
+              </div>
+            )}
+
+            {beneficiaryMode !== 'existing' && (
+              <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                <h4 className="aid-family-panel__title">Literacy (beneficiary / family head)</h4>
+                <AidLiteracyFields
+                  value={beneficiary}
+                  onChange={setBeneficiary}
+                />
+              </div>
+            )}
 
             {isMarried && (
-              <section className="aid-section" style={{ marginBottom: 12 }}>
+              <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                <AidChildrenIntake
+                  title="Children (if married)"
+                  childrenRows={childrenRows}
+                  onChange={setChildrenRows}
+                />
+              </div>
+            )}
+
+            {isSingle && (
+              <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                <AidSiblingsIntake
+                  title="Siblings — Brothers / Sisters (if single)"
+                  siblingRows={siblingRows}
+                  onChange={setSiblingRows}
+                />
+              </div>
+            )}
+
+            <div className="aid-family-panel" style={{ marginTop: 12 }}>
+              <AidDependentsIntake
+                title="Family head — others under sponsorship / dependents"
+                hasDependents={familyHeadHasDependents}
+                onHasDependentsChange={setFamilyHeadHasDependents}
+                rows={familyHeadDependents}
+                onChange={setFamilyHeadDependents}
+                relationLabel="Relation with FAMILY HEAD"
+              />
+            </div>
+          </div>
+          )}
+
+          {formTab === 'family' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Family Head</h3>
+            <p className="aid-section-hint">{familyHint}</p>
+
+            {isMarried && (
+              <div className="aid-family-panel">
                 <RelativeFields
                   title={`${spouseLabel} (required)`}
                   value={spouse}
                   onChange={setSpouse}
                   genderHint={spouseLabel}
+                  compact
+                  showLiteracy
                 />
-              </section>
+              </div>
             )}
 
-            <section className="aid-section" style={{ marginBottom: 12 }}>
-              <h4 style={{ marginTop: 0 }}>Parents (enter at least one parent or guardian)</h4>
-              <RelativeFields title="Father" value={father} onChange={setFather} />
-              <div style={{ height: 12 }} />
-              <RelativeFields title="Mother" value={mother} onChange={setMother} />
-            </section>
-
-            <section className="aid-section" style={{ marginBottom: 12 }}>
-              <div className="aid-family-section__head">
-                <h4 style={{ margin: 0 }}>Guardians</h4>
+            <div className="aid-family-panel">
+              <div className="aid-family-panel__head">
+                <h4 className="aid-family-panel__title">
+                  Family Head <span>(select type for each)</span>
+                </h4>
                 <button
                   type="button"
-                  className="secondary-btn"
-                  style={{ padding: '4px 10px', fontSize: 12 }}
-                  onClick={() => setGuardians((p) => [...p, emptyRelative()])}
+                  className="aid-mini-btn aid-mini-btn--add"
+                  onClick={() =>
+                    setFamilyHeads((p) => [...p, emptyFamilyHeadRow('guardian')])
+                  }
                 >
-                  + Add guardian
+                  + Add family head
                 </button>
               </div>
-              {guardians.length === 0 ? (
-                <p style={{ color: '#94a3b8', margin: 0, fontSize: 13 }}>
-                  Optional — add if parents are absent / deceased.
-                </p>
-              ) : (
-                guardians.map((g, idx) => (
-                  <div key={`g-${idx}`} style={{ marginTop: 10 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <strong style={{ fontSize: 13 }}>Guardian {idx + 1}</strong>
-                      <button
-                        type="button"
-                        className="secondary-btn"
-                        style={{ padding: '2px 8px', fontSize: 12 }}
-                        onClick={() =>
-                          setGuardians((list) => list.filter((_, i) => i !== idx))
-                        }
-                      >
-                        Remove
-                      </button>
+              {familyHeads.map((head, idx) => {
+                const typeLabel = familyHeadTypeLabel(head._relation_type);
+                return (
+                  <div key={`fh-${idx}`} className="aid-repeat-item">
+                    <div className="aid-repeat-item__head aid-repeat-item__head--select">
+                      <FormSelect
+                        label="Type"
+                        value={head._relation_type || 'father'}
+                        onChange={(e) => {
+                          const type = e.target.value;
+                          const preset = emptyFamilyHeadRow(type);
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    _relation_type: type,
+                                    gender: row.gender || preset.gender,
+                                  }
+                                : row,
+                            ),
+                          );
+                        }}
+                        options={AID_FAMILY_HEAD_TYPES}
+                        required
+                      />
+                      {familyHeads.length > 1 && (
+                        <button
+                          type="button"
+                          className="aid-mini-btn aid-mini-btn--remove"
+                          onClick={() =>
+                            setFamilyHeads((list) =>
+                              list.filter((_, i) => i !== idx),
+                            )
+                          }
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
                     <RelativeFields
-                      value={g}
+                      title={typeLabel}
+                      value={head}
                       onChange={(next) =>
-                        setGuardians((list) =>
-                          list.map((row, i) => (i === idx ? next : row)),
+                        setFamilyHeads((list) =>
+                          list.map((row, i) =>
+                            i === idx
+                              ? {
+                                  ...next,
+                                  _relation_type: row._relation_type,
+                                  _has_dependents: row._has_dependents,
+                                  _dependents: row._dependents,
+                                }
+                              : row,
+                          ),
                         )
                       }
+                      compact
+                      showLiteracy
                     />
+                    <div style={{ marginTop: 12 }}>
+                      <AidDependentsIntake
+                        title={`${typeLabel} — others under sponsorship / dependents`}
+                        hasDependents={!!head._has_dependents}
+                        onHasDependentsChange={(yes) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    _has_dependents: yes,
+                                    _dependents: yes
+                                      ? row._dependents?.length
+                                        ? row._dependents
+                                        : []
+                                      : [],
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                        rows={head._dependents || []}
+                        onChange={(deps) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx ? { ...row, _dependents: deps } : row,
+                            ),
+                          )
+                        }
+                        relationLabel="Relation with FAMILY HEAD"
+                      />
+                    </div>
                   </div>
-                ))
-              )}
-            </section>
+                );
+              })}
+            </div>
 
-            <section className="aid-section" style={{ marginBottom: 12 }}>
-              <div className="aid-family-section__head">
-                <h4 style={{ margin: 0 }}>Siblings (brothers / sisters)</h4>
-                <div style={{ display: 'flex', gap: 6 }}>
+            {!isSingle && (
+            <div className="aid-family-panel">
+              <div className="aid-family-panel__head">
+                <h4 className="aid-family-panel__title">Siblings</h4>
+                <div className="aid-family-panel__actions">
                   <button
                     type="button"
-                    className="secondary-btn"
-                    style={{ padding: '4px 10px', fontSize: 12 }}
+                    className="aid-mini-btn aid-mini-btn--brother"
                     onClick={() =>
                       setSiblings((p) => [
                         ...p,
@@ -546,8 +849,7 @@ const AidApplicationAdd = () => {
                   </button>
                   <button
                     type="button"
-                    className="secondary-btn"
-                    style={{ padding: '4px 10px', fontSize: 12 }}
+                    className="aid-mini-btn aid-mini-btn--sister"
                     onClick={() =>
                       setSiblings((p) => [
                         ...p,
@@ -560,8 +862,8 @@ const AidApplicationAdd = () => {
                 </div>
               </div>
               {siblings.map((s, idx) => (
-                <div key={`s-${idx}`} style={{ marginTop: 10 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <div key={`s-${idx}`} className="aid-repeat-item">
+                  <div className="aid-repeat-item__head aid-repeat-item__head--select">
                     <FormSelect
                       label="Sibling type"
                       value={s._genderRole || 'brother'}
@@ -592,8 +894,7 @@ const AidApplicationAdd = () => {
                     />
                     <button
                       type="button"
-                      className="secondary-btn"
-                      style={{ padding: '2px 8px', fontSize: 12, alignSelf: 'end' }}
+                      className="aid-mini-btn aid-mini-btn--remove"
                       onClick={() =>
                         setSiblings((list) => list.filter((_, i) => i !== idx))
                       }
@@ -610,57 +911,109 @@ const AidApplicationAdd = () => {
                         ),
                       )
                     }
+                    compact
+                    showLiteracy
                   />
                 </div>
               ))}
-            </section>
+            </div>
+            )}
           </div>
-
-          <h3>Application writer</h3>
-          <label style={{ display: 'flex', gap: 8, marginBottom: 12, fontSize: 14 }}>
-            <input
-              type="checkbox"
-              checked={writerIsSelf}
-              onChange={(e) => {
-                setWriterIsSelf(e.target.checked);
-                if (e.target.checked) setForm((p) => ({ ...p, writer_relation: 'self' }));
-              }}
-            />
-            Beneficiary is also the writer
-          </label>
-          {!writerIsSelf && (
-            <>
-              <FormSelect
-                label="Writer relation to beneficiary"
-                value={form.writer_relation}
-                onChange={(e) => setForm((p) => ({ ...p, writer_relation: e.target.value }))}
-                options={AID_WRITER_RELATIONS.filter((r) => r.value !== 'self')}
-              />
-              <label style={{ display: 'flex', gap: 8, margin: '12px 0', fontSize: 14 }}>
-                <input
-                  type="checkbox"
-                  checked={writerMode === 'existing'}
-                  onChange={(e) => setWriterMode(e.target.checked ? 'existing' : 'new')}
-                />
-                Link existing writer
-              </label>
-              {writerMode === 'existing' ? (
-                <SearchableDropdown
-                  label="Search writer"
-                  placeholder="Name, CNIC…"
-                  onSearch={searchPeople}
-                  onSelect={(item) => setWriterId(item.id)}
-                  onClear={() => setWriterId(null)}
-                  displayKey="name"
-                  minSearchLength={2}
-                />
-              ) : (
-                <RelativeFields title="Writer" value={writer} onChange={setWriter} />
-              )}
-            </>
           )}
 
-          <div className="form-actions" style={{ marginTop: 20 }}>
+          {formTab === 'writer' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Application writer</h3>
+            <label className="aid-toggle aid-toggle--block">
+              <input
+                type="checkbox"
+                checked={writerIsSelf}
+                onChange={(e) => {
+                  setWriterIsSelf(e.target.checked);
+                  if (e.target.checked) {
+                    setForm((p) => ({ ...p, writer_relation: 'self' }));
+                  }
+                }}
+              />
+              Beneficiary is also the writer
+            </label>
+
+            {!writerIsSelf && (
+              <div className="aid-writer-fields">
+                <div className="form-grid-2">
+                  <FormSelect
+                    label="Writer relation to beneficiary"
+                    value={form.writer_relation}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, writer_relation: e.target.value }))
+                    }
+                    options={AID_WRITER_RELATIONS.filter((r) => r.value !== 'self')}
+                  />
+                </div>
+                <label className="aid-toggle aid-toggle--block">
+                  <input
+                    type="checkbox"
+                    checked={writerMode === 'existing'}
+                    onChange={(e) =>
+                      setWriterMode(e.target.checked ? 'existing' : 'new')
+                    }
+                  />
+                  Link existing writer
+                </label>
+                {writerMode === 'existing' ? (
+                  <SearchableDropdown
+                    label="Search writer"
+                    placeholder="Name, CNIC…"
+                    onSearch={searchPeople}
+                    onSelect={(item) => setWriterId(item.id)}
+                    onClear={() => setWriterId(null)}
+                    displayKey="name"
+                    minSearchLength={2}
+                  />
+                ) : (
+                  <RelativeFields
+                    title="Writer details"
+                    value={writer}
+                    onChange={setWriter}
+                    compact
+                  />
+                )}
+              </div>
+            )}
+          </div>
+          )}
+
+          <div className="form-actions aid-form-actions">
+            <div className="aid-form-nav">
+              {FORM_TABS.findIndex((t) => t.id === formTab) > 0 && (
+                <button
+                  type="button"
+                  className="aid-nav-icon-btn aid-nav-icon-btn--prev"
+                  title="Previous"
+                  aria-label="Previous"
+                  onClick={() => {
+                    const idx = FORM_TABS.findIndex((t) => t.id === formTab);
+                    setFormTab(FORM_TABS[idx - 1].id);
+                  }}
+                >
+                  <FiChevronLeft size={22} />
+                </button>
+              )}
+              {FORM_TABS.findIndex((t) => t.id === formTab) < FORM_TABS.length - 1 && (
+                <button
+                  type="button"
+                  className="aid-nav-icon-btn aid-nav-icon-btn--next"
+                  title="Next"
+                  aria-label="Next"
+                  onClick={() => {
+                    const idx = FORM_TABS.findIndex((t) => t.id === formTab);
+                    setFormTab(FORM_TABS[idx + 1].id);
+                  }}
+                >
+                  <FiChevronRight size={22} />
+                </button>
+              )}
+            </div>
             <PrimaryButton type="submit" loading={saving} loadingText="Saving…">
               Submit application
             </PrimaryButton>

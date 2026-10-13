@@ -8,10 +8,15 @@ export const AID_STATUS_OPTIONS = [
 ];
 
 export const AID_REQUEST_TYPES = [
-  { value: 'cash', label: 'Cash' },
-  { value: 'ration', label: 'Ration' },
-  { value: 'medical', label: 'Medical' },
+  { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
+  { value: 'clean_water', label: 'Clean Water' },
+  { value: 'apna_ghar', label: 'Apna Ghar' },
+  { value: 'disaster_relief', label: 'Disaster Relief' },
+  { value: 'kasb_skill_development', label: 'KASB Skill Development' },
+  { value: 'seeds_of_change', label: 'Seeds of Change' },
+  { value: 'aas_lab_diagnostics', label: 'AAS Lab & Diagnostics' },
+  { value: 'community_services', label: 'Community Services' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -45,6 +50,152 @@ export const AID_EDUCATION_LEVELS = [
   { value: 'other', label: 'Other' },
 ];
 
+export const AID_LITERACY_STATUS = [
+  { value: 'educated', label: 'Educated' },
+  { value: 'uneducated', label: 'UnEducated' },
+];
+
+export const AID_LITERACY_CATEGORIES_EDUCATED = [
+  { value: 'student', label: 'Student' },
+  { value: 'job', label: 'Job' },
+  { value: 'self_employed', label: 'Self Employed' },
+  { value: 'business', label: 'Business' },
+  { value: 'others', label: 'Others' },
+];
+
+export const AID_LITERACY_CATEGORIES_UNEDUCATED = [
+  { value: 'skilled_laborer', label: 'Skilled Laborer' },
+  { value: 'laborer', label: 'Laborer' },
+  { value: 'self_employed', label: 'Self Employed' },
+  { value: 'others', label: 'Others' },
+];
+
+export const AID_YES_NO = [
+  { value: 'yes', label: 'Yes' },
+  { value: 'no', label: 'No' },
+];
+
+export const emptyLiteracyFields = () => ({
+  literacy_status: '',
+  literacy_category: '',
+  student_class: '',
+  student_class_type: '',
+  student_class_name: '',
+  monthly_income: '',
+  has_disability: false,
+  disability_type: '',
+});
+
+export const emptyChildRow = () => ({
+  full_name: '',
+  gender: '',
+  date_of_birth: '',
+  cnic: '',
+  marital_status: '',
+  has_disability: false,
+  disability_type: '',
+  ...emptyLiteracyFields(),
+});
+
+/** Relation with beneficiary — Brothers / Sisters (single marital flow). */
+export const AID_SIBLING_RELATIONS = [
+  { value: 'brother', label: 'Brother' },
+  { value: 'sister', label: 'Sister' },
+  { value: 'step_brother', label: 'Step Brother' },
+  { value: 'step_sister', label: 'Step Sister' },
+  { value: 'half_brother', label: 'Half Brother' },
+  { value: 'half_sister', label: 'Half Sister' },
+];
+
+export const emptySiblingRow = () => ({
+  full_name: '',
+  gender: '',
+  date_of_birth: '',
+  cnic: '',
+  marital_status: '',
+  relation_with_beneficiary: 'brother',
+  ...emptyLiteracyFields(),
+});
+
+export function mapSiblingRelationToKinship(relation) {
+  const r = String(relation || '').toLowerCase();
+  if (r.includes('sister')) return 'sister';
+  if (r.includes('brother')) return 'brother';
+  return 'sibling';
+}
+
+/** Relation with FAMILY HEAD for sponsored dependents. */
+export const AID_DEPENDENT_RELATIONS = [
+  { value: 'son', label: 'Son' },
+  { value: 'daughter', label: 'Daughter' },
+  { value: 'child', label: 'Child' },
+  { value: 'brother', label: 'Brother' },
+  { value: 'sister', label: 'Sister' },
+  { value: 'nephew', label: 'Nephew' },
+  { value: 'niece', label: 'Niece' },
+  { value: 'uncle', label: 'Uncle' },
+  { value: 'aunt', label: 'Aunt' },
+  { value: 'cousin', label: 'Cousin' },
+  { value: 'father', label: 'Father' },
+  { value: 'mother', label: 'Mother' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'in_law', label: 'In-law' },
+  { value: 'other', label: 'Other' },
+];
+
+export const emptyDependentRow = () => ({
+  full_name: '',
+  gender: '',
+  date_of_birth: '',
+  cnic: '',
+  marital_status: '',
+  has_disability: false,
+  disability_type: '',
+  relation_with_family_head: 'other',
+  ...emptyLiteracyFields(),
+});
+
+/** Map dependent relation to kinship edge type (closest supported enum). */
+export function mapDependentRelationToKinship(relation) {
+  const r = String(relation || '').toLowerCase();
+  const allowed = new Set([
+    'son',
+    'daughter',
+    'child',
+    'brother',
+    'sister',
+    'sibling',
+    'uncle',
+    'aunt',
+    'cousin',
+    'father',
+    'mother',
+    'guardian',
+    'in_law',
+    'other',
+  ]);
+  if (r === 'nephew' || r === 'niece') return 'cousin';
+  if (allowed.has(r)) return r;
+  return 'other';
+}
+
+export function literacyCategoriesFor(status) {
+  if (status === 'educated') return AID_LITERACY_CATEGORIES_EDUCATED;
+  if (status === 'uneducated') return AID_LITERACY_CATEGORIES_UNEDUCATED;
+  return [];
+}
+
+export function ageFromDob(dob) {
+  if (!dob) return '';
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
+  return age >= 0 ? String(age) : '';
+}
+
 export const AID_KINSHIP_TYPES = [
   { value: 'father', label: 'Father' },
   { value: 'mother', label: 'Mother' },
@@ -66,6 +217,45 @@ export const AID_KINSHIP_TYPES = [
   { value: 'in_law', label: 'In-law' },
   { value: 'other', label: 'Other' },
 ];
+
+/** Family Head tab — who stands as family head / caretaker relative to beneficiary */
+export const AID_FAMILY_HEAD_TYPES = [
+  { value: 'father', label: 'Father' },
+  { value: 'mother', label: 'Mother' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'grandfather', label: 'Grandfather' },
+  { value: 'grandmother', label: 'Grandmother' },
+  { value: 'uncle', label: 'Uncle' },
+  { value: 'aunt', label: 'Aunt' },
+  { value: 'other', label: 'Other' },
+];
+
+export const emptyFamilyHeadRow = (relationType = 'father') => ({
+  full_name: '',
+  cnic: '',
+  phone: '',
+  city: '',
+  address: '',
+  gender:
+    relationType === 'mother' ||
+    relationType === 'grandmother' ||
+    relationType === 'aunt'
+      ? 'female'
+      : relationType === 'father' ||
+          relationType === 'grandfather' ||
+          relationType === 'uncle'
+        ? 'male'
+        : '',
+  date_of_birth: '',
+  marital_status: '',
+  occupation: '',
+  education_level: '',
+  is_alive: true,
+  ...emptyLiteracyFields(),
+  _relation_type: relationType,
+  _has_dependents: false,
+  _dependents: [],
+});
 
 /** Quick-add family tree sections on person view */
 export const AID_FAMILY_SECTIONS = [
@@ -206,6 +396,10 @@ export const AID_VERIFICATION_CHECKLIST = [
 
 export function formatAidStatus(status) {
   return AID_STATUS_OPTIONS.find((o) => o.value === status)?.label || status || '—';
+}
+
+export function formatAidRequestType(type) {
+  return AID_REQUEST_TYPES.find((o) => o.value === type)?.label || type || '—';
 }
 
 export function formatMaritalStatus(status) {
