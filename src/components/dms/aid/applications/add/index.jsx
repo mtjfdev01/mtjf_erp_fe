@@ -1,6 +1,12 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import {
+  FiCheck,
+  FiChevronLeft,
+  FiChevronRight,
+  FiDownload,
+} from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -11,6 +17,7 @@ import { PrimaryButton } from '../../../../common/buttons';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 import AidUserAssignField from '../../shared/AidUserAssignField';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
+import AidFamilyHeadPersonalFields from '../../shared/AidFamilyHeadPersonalFields';
 import AidPropertyOwnership from '../../shared/AidPropertyOwnership';
 import AidResidentHousing from '../../shared/AidResidentHousing';
 import AidLivestockIntake from '../../shared/AidLivestockIntake';
@@ -22,9 +29,8 @@ import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplic
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
-import AidChildrenIntake from '../../shared/AidChildrenIntake';
-import AidSiblingsIntake from '../../shared/AidSiblingsIntake';
-import AidDependentsIntake from '../../shared/AidDependentsIntake';
+import AidFamilyMembersIntake from '../../shared/AidFamilyMembersIntake';
+import { downloadAsPng } from '../../shared/downloadAsPng';
 import {
   AID_REQUEST_TYPES,
   AID_WRITER_RELATIONS,
@@ -45,14 +51,18 @@ import {
   emptyConsentForm,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
+  formatCnicInput,
+  formatPkPhoneInput,
+  isValidCnic,
+  isValidPkPhone,
   AID_VULNERABILITIES,
-  mapSiblingRelationToKinship,
-  mapDependentRelationToKinship,
+  resolveRelatedPersonKinship,
 } from '../../aidConstants';
 import '../../aid.css';
 
 const emptyPerson = {
   full_name: '',
+  father_or_husband_name: '',
   cnic: '',
   phone: '',
   city: '',
@@ -63,10 +73,12 @@ const emptyPerson = {
   vulnerability: '',
   occupation: '',
   monthly_income: '',
+  household_dependency: '',
   education_level: '',
   is_alive: true,
   has_disability: false,
   disability_type: '',
+  existing_person_id: null,
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
   ...emptyResidentHousingFields(),
@@ -123,14 +135,22 @@ const RelativeFields = ({
         placeholder={genderHint || undefined}
       />
       <FormInput
-        label="CNIC"
+        label="CNIC (12345-1234567-1)"
         value={value.cnic}
-        onChange={(e) => onChange({ ...value, cnic: e.target.value })}
+        onChange={(e) =>
+          onChange({ ...value, cnic: formatCnicInput(e.target.value) })
+        }
+        placeholder="36101-XXXXXXX-X"
+        inputMode="numeric"
       />
       <FormInput
-        label="Phone"
+        label="Phone (03XXXXXXXXX)"
         value={value.phone}
-        onChange={(e) => onChange({ ...value, phone: e.target.value })}
+        onChange={(e) =>
+          onChange({ ...value, phone: formatPkPhoneInput(e.target.value) })
+        }
+        placeholder="03001234567"
+        inputMode="numeric"
       />
       <FormSelect
         label="Gender"
@@ -178,6 +198,7 @@ const cleanPersonPayload = (p) => {
   if (!p?.full_name?.trim()) return null;
   return {
     full_name: p.full_name.trim(),
+    father_or_husband_name: p.father_or_husband_name?.trim() || undefined,
     cnic: p.cnic || undefined,
     phone: p.phone || undefined,
     gender: p.gender || undefined,
@@ -186,6 +207,7 @@ const cleanPersonPayload = (p) => {
     vulnerability: p.vulnerability || undefined,
     occupation: p.occupation || p.literacy_category || undefined,
     monthly_income: p.monthly_income || undefined,
+    household_dependency: p.household_dependency || undefined,
     education_level: p.education_level || undefined,
     literacy_status: p.literacy_status || undefined,
     literacy_category: p.literacy_category || undefined,
@@ -258,23 +280,36 @@ const AidApplicationAdd = () => {
   const [assignedUser, setAssignedUser] = useState(null);
   const [familyHeads, setFamilyHeads] = useState([emptyFamilyHeadRow('father')]);
   const [spouse, setSpouse] = useState(emptyRelative());
-  const [siblings, setSiblings] = useState([{ ...emptyRelative(), _genderRole: 'brother' }]);
-  const [childrenRows, setChildrenRows] = useState([]);
-  const [siblingRows, setSiblingRows] = useState([]);
-  const [familyHeadHasDependents, setFamilyHeadHasDependents] = useState(false);
-  const [familyHeadDependents, setFamilyHeadDependents] = useState([]);
+  /** Beneficiary tab — any relatives (children, siblings, parents, …). */
+  const [beneficiaryMembers, setBeneficiaryMembers] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const [formTab, setFormTab] = useState('request');
+  const [formTab, setFormTab] = useState('writer');
+  const applicationCaptureRef = useRef(null);
+  const zakatCaptureRef = useRef(null);
+  const consentCaptureRef = useRef(null);
+  const [pngDownloading, setPngDownloading] = useState(false);
+
+  const handleDownloadPng = async (ref, fileName) => {
+    if (!ref?.current || pngDownloading) return;
+    setPngDownloading(true);
+    try {
+      await downloadAsPng(ref.current, fileName);
+    } catch (err) {
+      toast.error(err?.message || 'Failed to download PNG');
+    } finally {
+      setPngDownloading(false);
+    }
+  };
 
   const FORM_TABS = [
+    { id: 'writer', label: 'Applicant', hint: 'Who applied' },
+    { id: 'family', label: 'Family Head', hint: 'Household' },
+    { id: 'beneficiary', label: 'Beneficiary', hint: 'Person details' },
     { id: 'request', label: 'Application', hint: 'Need & aid type' },
     { id: 'zakat', label: 'Zakat', hint: 'Permission letter' },
     { id: 'consent', label: 'Consent', hint: 'Media consent' },
     { id: 'assignment', label: 'Assignment', hint: 'Case owner' },
-    { id: 'beneficiary', label: 'Beneficiary', hint: 'Person details' },
-    { id: 'family', label: 'Family Head', hint: 'Household' },
-    { id: 'writer', label: 'Applicant', hint: 'Who applied' },
   ];
   const stepIndex = FORM_TABS.findIndex((t) => t.id === formTab);
   const stepProgress = ((stepIndex + 1) / FORM_TABS.length) * 100;
@@ -289,7 +324,6 @@ const AidApplicationAdd = () => {
       : beneficiary.marital_status;
 
   const isMarried = beneficiaryMarital === 'married';
-  const isSingle = beneficiaryMarital === 'single';
   const spouseLabel =
     beneficiaryGender === 'male'
       ? 'Wife'
@@ -304,19 +338,14 @@ const AidApplicationAdd = () => {
         : '';
 
   useEffect(() => {
-    if (!isMarried) {
-      setChildrenRows([]);
-    } else {
+    if (isMarried) {
       setSpouse((p) => ({
         ...p,
         gender: p.gender || spouseDefaultGender,
         marital_status: p.marital_status || 'married',
       }));
     }
-    if (!isSingle) {
-      setSiblingRows([]);
-    }
-  }, [isMarried, isSingle, spouseDefaultGender]);
+  }, [isMarried, spouseDefaultGender]);
 
   const searchPeople = async (term) => {
     const q = String(term || '').trim();
@@ -336,94 +365,63 @@ const AidApplicationAdd = () => {
     }
   };
 
+  const pushRelatedMember = (members, row, opts = {}) => {
+    const relation =
+      opts.relation || resolveRelatedPersonKinship(row) || 'other';
+    const notes = opts.notes;
+    if (row?.existing_person_id) {
+      members.push({
+        relation_type: relation,
+        existing_person_id: Number(row.existing_person_id),
+        notes,
+      });
+      return;
+    }
+    const payload = cleanPersonPayload(row);
+    if (!payload) return;
+    if (!payload.gender && relation === 'sister') payload.gender = 'female';
+    if (!payload.gender && relation === 'brother') payload.gender = 'male';
+    if (!payload.gender && relation === 'daughter') payload.gender = 'female';
+    if (!payload.gender && relation === 'son') payload.gender = 'male';
+    if (!payload.gender && relation === 'mother') payload.gender = 'female';
+    if (!payload.gender && relation === 'father') payload.gender = 'male';
+    members.push({ relation_type: relation, person: payload, notes });
+  };
+
   const buildFamilyMembers = () => {
     const members = [];
     for (const head of familyHeads) {
       const payload = cleanPersonPayload(head);
       const relation = head._relation_type || 'other';
       if (payload) members.push({ relation_type: relation, person: payload });
-      if (head._has_dependents) {
-        for (const dep of head._dependents || []) {
-          const depPayload = cleanPersonPayload(dep);
-          if (!depPayload) continue;
-          const depRelation = mapDependentRelationToKinship(
-            dep.relation_with_family_head,
-          );
-          members.push({
-            relation_type: depRelation,
-            person: depPayload,
-            notes: `Dependent under ${familyHeadTypeLabel(relation).toLowerCase()} sponsorship (${dep.relation_with_family_head || depRelation})`,
-          });
-        }
-      }
-    }
-    if (isSingle) {
-      for (const s of siblingRows) {
-        const payload = cleanPersonPayload(s);
-        if (!payload) continue;
-        const relation = mapSiblingRelationToKinship(s.relation_with_beneficiary);
-        if (!payload.gender && relation === 'sister') payload.gender = 'female';
-        if (!payload.gender && relation === 'brother') payload.gender = 'male';
-        const notes =
-          s.relation_with_beneficiary &&
-          !['brother', 'sister'].includes(s.relation_with_beneficiary)
-            ? `Relation: ${s.relation_with_beneficiary}`
-            : undefined;
-        members.push({
-          relation_type: relation,
-          person: payload,
-          notes,
+      for (const rel of head._family_members || []) {
+        pushRelatedMember(members, rel, {
+          notes: `Relative of ${familyHeadTypeLabel(relation).toLowerCase()} (${rel.relation_type || 'other'})`,
         });
-      }
-    } else {
-      for (const s of siblings) {
-        const payload = cleanPersonPayload(s);
-        if (!payload) continue;
-        const relation =
-          s._genderRole === 'sister' || payload.gender === 'female'
-            ? 'sister'
-            : s._genderRole === 'brother' || payload.gender === 'male'
-              ? 'brother'
-              : 'sibling';
-        if (!payload.gender && relation === 'sister') payload.gender = 'female';
-        if (!payload.gender && relation === 'brother') payload.gender = 'male';
-        members.push({ relation_type: relation, person: payload });
-      }
-    }
-    if (isMarried) {
-      const spousePayload = cleanPersonPayload(spouse);
-      if (spousePayload) {
-        if (!spousePayload.gender && spouseDefaultGender) {
-          spousePayload.gender = spouseDefaultGender;
-        }
-        if (!spousePayload.marital_status) spousePayload.marital_status = 'married';
-        members.push({ relation_type: 'spouse', person: spousePayload });
-      }
-      for (const child of childrenRows) {
-        const payload = cleanPersonPayload(child);
-        if (!payload) continue;
-        const relation =
-          payload.gender === 'female'
-            ? 'daughter'
-            : payload.gender === 'male'
-              ? 'son'
-              : 'child';
-        members.push({ relation_type: relation, person: payload });
       }
     }
 
-    if (familyHeadHasDependents) {
-      for (const dep of familyHeadDependents) {
-        const payload = cleanPersonPayload(dep);
-        if (!payload) continue;
-        const relation = mapDependentRelationToKinship(
-          dep.relation_with_family_head,
-        );
+    for (const rel of beneficiaryMembers) {
+      pushRelatedMember(members, rel, {
+        notes: `Beneficiary family member (${rel.relation_type || 'other'})`,
+      });
+    }
+
+    if (isMarried) {
+      const spousePayload = cleanPersonPayload(spouse);
+      if (spouse.existing_person_id) {
         members.push({
-          relation_type: relation,
-          person: payload,
-          notes: `Dependent under family head sponsorship (${dep.relation_with_family_head || relation})`,
+          relation_type: 'spouse',
+          existing_person_id: Number(spouse.existing_person_id),
         });
+      } else if (spousePayload) {
+        if (!spousePayload.gender && spouseDefaultGender) {
+          spousePayload.gender = spouseDefaultGender;
+        }
+        if (!spousePayload.marital_status) {
+          spousePayload.marital_status = 'married';
+        }
+        members.push({ relation_type: 'spouse', person: spousePayload });
       }
     }
 
@@ -436,30 +434,32 @@ const AidApplicationAdd = () => {
     setError('');
     try {
       if (isMarried && !spouse.full_name.trim()) {
-        throw new Error(`${spouseLabel} details are required for married beneficiaries`);
-      }
-      if (isMarried) {
-        const incompleteChild = childrenRows.find(
-          (c) => c.full_name?.trim() && !c.literacy_status,
+        throw new Error(
+          `${spouseLabel} details are required for married beneficiaries`,
         );
-        if (incompleteChild) {
-          throw new Error('Set Literacy for each child that has a name');
-        }
-        const namedKids = childrenRows.filter((c) => c.full_name?.trim());
-        if (childrenRows.length > 0 && namedKids.length !== childrenRows.length) {
-          throw new Error('Enter a name for every child row (or set No. of children to 0)');
-        }
       }
-      if (isSingle && siblingRows.length > 0) {
-        const named = siblingRows.filter((s) => s.full_name?.trim());
-        if (named.length !== siblingRows.length) {
+      const allGenericMembers = [
+        ...beneficiaryMembers,
+        ...familyHeads.flatMap((h) => h._family_members || []),
+      ];
+      for (const m of allGenericMembers) {
+        if (!m.full_name?.trim()) {
           throw new Error(
-            'Enter a name for every sibling row (or set No. of siblings to 0)',
+            'Enter a name for every family member row (or remove empty ones)',
           );
         }
-        const missingRel = siblingRows.find((s) => !s.relation_with_beneficiary);
-        if (missingRel) {
-          throw new Error('Select Relation with beneficiary for each sibling');
+        if (!m.relation_type) {
+          throw new Error('Select Type for every family member');
+        }
+        if (m.cnic && !isValidCnic(m.cnic)) {
+          throw new Error(
+            'Family member CNIC must be 13 digits as 12345-1234567-1',
+          );
+        }
+        if (m.phone && !isValidPkPhone(m.phone)) {
+          throw new Error(
+            'Family member contact must be 11 digits starting with 03',
+          );
         }
       }
       const namedHeads = familyHeads.filter((h) => h.full_name?.trim());
@@ -469,6 +469,22 @@ const AidApplicationAdd = () => {
       const missingType = namedHeads.find((h) => !h._relation_type);
       if (missingType) {
         throw new Error('Select Type for each Family Head');
+      }
+      const badCnic = namedHeads.find((h) => h.cnic && !isValidCnic(h.cnic));
+      if (badCnic) {
+        throw new Error(
+          'Family Head CNIC must be 13 digits as 12345-1234567-1',
+        );
+      }
+      const badPhone = namedHeads.find((h) => h.phone && !isValidPkPhone(h.phone));
+      if (badPhone) {
+        throw new Error(
+          'Family Head contact must be 11 digits starting with 03',
+        );
+      }
+      const missingDob = namedHeads.find((h) => !h.date_of_birth);
+      if (missingDob) {
+        throw new Error('Enter Date of Birth for each Family Head');
       }
 
       const payload = {
@@ -532,14 +548,13 @@ const AidApplicationAdd = () => {
   };
 
   const familyHint = useMemo(() => {
+    const base =
+      'Add Family Head entries and select type for each (Father / Mother / Guardian…). Under each head you can add any family members (children, siblings, …).';
     if (isMarried) {
-      return `Select Family Head type (Father / Mother / Guardian…) and add ${spouseLabel.toLowerCase()} if married.`;
+      return `${base} Also add ${spouseLabel.toLowerCase()} if married.`;
     }
-    if (isSingle) {
-      return 'Select Family Head type (Father / Mother / Guardian…). Brothers/sisters are on the Beneficiary tab.';
-    }
-    return 'Add Family Head entries and select type for each (Father / Mother / Guardian…).';
-  }, [isMarried, isSingle, spouseLabel]);
+    return base;
+  }, [isMarried, spouseLabel]);
 
   return (
     <>
@@ -616,7 +631,22 @@ const AidApplicationAdd = () => {
 
           {formTab === 'request' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Application</h3>
+            <div className="aid-section-heading-row">
+              <h3 className="form-section-heading">Application</h3>
+              <button
+                type="button"
+                className="aid-png-download-btn"
+                title="Download as PNG"
+                aria-label="Download Application as PNG"
+                disabled={pngDownloading}
+                onClick={() =>
+                  handleDownloadPng(applicationCaptureRef, 'aid-application')
+                }
+              >
+                <FiDownload size={18} />
+              </button>
+            </div>
+            <div ref={applicationCaptureRef} className="aid-png-capture">
             <div className="form-grid-2">
               <FormInput
                 label="Title"
@@ -702,26 +732,59 @@ const AidApplicationAdd = () => {
                 onChange={setFinancialAssistanceDetails}
               />
             )}
+            </div>
           </div>
           )}
 
           {formTab === 'zakat' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Zakat Permission Letter</h3>
-            <AidZakatPermissionForm
-              value={zakatPermission}
-              onChange={setZakatPermission}
-            />
+            <div className="aid-section-heading-row">
+              <h3 className="form-section-heading">Zakat Permission Letter</h3>
+              <button
+                type="button"
+                className="aid-png-download-btn"
+                title="Download as PNG"
+                aria-label="Download Zakat form as PNG"
+                disabled={pngDownloading}
+                onClick={() =>
+                  handleDownloadPng(zakatCaptureRef, 'zakat-permission-letter')
+                }
+              >
+                <FiDownload size={18} />
+              </button>
+            </div>
+            <div ref={zakatCaptureRef} className="aid-png-capture">
+              <AidZakatPermissionForm
+                value={zakatPermission}
+                onChange={setZakatPermission}
+              />
+            </div>
           </div>
           )}
 
           {formTab === 'consent' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Consent Form</h3>
-            <AidConsentForm
-              value={consentForm}
-              onChange={setConsentForm}
-            />
+            <div className="aid-section-heading-row">
+              <h3 className="form-section-heading">Consent Form</h3>
+              <button
+                type="button"
+                className="aid-png-download-btn"
+                title="Download as PNG"
+                aria-label="Download Consent form as PNG"
+                disabled={pngDownloading}
+                onClick={() =>
+                  handleDownloadPng(consentCaptureRef, 'consent-form')
+                }
+              >
+                <FiDownload size={18} />
+              </button>
+            </div>
+            <div ref={consentCaptureRef} className="aid-png-capture">
+              <AidConsentForm
+                value={consentForm}
+                onChange={setConsentForm}
+              />
+            </div>
           </div>
           )}
 
@@ -929,34 +992,13 @@ const AidApplicationAdd = () => {
               </>
             )}
 
-            {isMarried && (
-              <div className="aid-family-panel" style={{ marginTop: 12 }}>
-                <AidChildrenIntake
-                  title="Children (if married)"
-                  childrenRows={childrenRows}
-                  onChange={setChildrenRows}
-                />
-              </div>
-            )}
-
-            {isSingle && (
-              <div className="aid-family-panel" style={{ marginTop: 12 }}>
-                <AidSiblingsIntake
-                  title="Siblings — Brothers / Sisters (if single)"
-                  siblingRows={siblingRows}
-                  onChange={setSiblingRows}
-                />
-              </div>
-            )}
-
             <div className="aid-family-panel" style={{ marginTop: 12 }}>
-              <AidDependentsIntake
-                title="Family head — others under sponsorship / dependents"
-                hasDependents={familyHeadHasDependents}
-                onHasDependentsChange={setFamilyHeadHasDependents}
-                rows={familyHeadDependents}
-                onChange={setFamilyHeadDependents}
-                relationLabel="Relation with FAMILY HEAD"
+              <AidFamilyMembersIntake
+                title="Beneficiary — family members"
+                hint="Add any relative of the beneficiary (child, sibling, parent, spouse, …). Select Type first."
+                rows={beneficiaryMembers}
+                onChange={setBeneficiaryMembers}
+                relationLabel="Type (relation to beneficiary)"
               />
             </div>
           </div>
@@ -1034,8 +1076,8 @@ const AidApplicationAdd = () => {
                         </button>
                       )}
                     </div>
-                    <RelativeFields
-                      title={typeLabel}
+                    <AidFamilyHeadPersonalFields
+                      title={`${typeLabel} — Primary Beneficiary / Family Head`}
                       value={head}
                       onChange={(next) =>
                         setFamilyHeads((list) =>
@@ -1044,15 +1086,35 @@ const AidApplicationAdd = () => {
                               ? {
                                   ...next,
                                   _relation_type: row._relation_type,
-                                  _has_dependents: row._has_dependents,
-                                  _dependents: row._dependents,
+                                  _family_members: row._family_members,
                                 }
                               : row,
                           ),
                         )
                       }
-                      compact
                     />
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <h4 className="aid-family-panel__title">
+                        {typeLabel} — literacy detail
+                      </h4>
+                      <AidLiteracyFields
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _family_members: row._family_members,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
                       <AidPropertyOwnership
                         value={head}
@@ -1064,8 +1126,7 @@ const AidApplicationAdd = () => {
                                     ...row,
                                     ...next,
                                     _relation_type: row._relation_type,
-                                    _has_dependents: row._has_dependents,
-                                    _dependents: row._dependents,
+                                    _family_members: row._family_members,
                                   }
                                 : row,
                             ),
@@ -1085,8 +1146,7 @@ const AidApplicationAdd = () => {
                                     ...row,
                                     ...next,
                                     _relation_type: row._relation_type,
-                                    _has_dependents: row._has_dependents,
-                                    _dependents: row._dependents,
+                                    _family_members: row._family_members,
                                   }
                                 : row,
                             ),
@@ -1106,8 +1166,7 @@ const AidApplicationAdd = () => {
                                     ...row,
                                     ...next,
                                     _relation_type: row._relation_type,
-                                    _has_dependents: row._has_dependents,
-                                    _dependents: row._dependents,
+                                    _family_members: row._family_members,
                                   }
                                 : row,
                             ),
@@ -1127,8 +1186,7 @@ const AidApplicationAdd = () => {
                                     ...row,
                                     ...next,
                                     _relation_type: row._relation_type,
-                                    _has_dependents: row._has_dependents,
-                                    _dependents: row._dependents,
+                                    _family_members: row._family_members,
                                   }
                                 : row,
                             ),
@@ -1148,8 +1206,7 @@ const AidApplicationAdd = () => {
                                     ...row,
                                     ...next,
                                     _relation_type: row._relation_type,
-                                    _has_dependents: row._has_dependents,
-                                    _dependents: row._dependents,
+                                    _family_members: row._family_members,
                                   }
                                 : row,
                             ),
@@ -1158,130 +1215,27 @@ const AidApplicationAdd = () => {
                         title={`${typeLabel} — NECTA / BISP`}
                       />
                     </div>
-                    <div style={{ marginTop: 12 }}>
-                      <AidDependentsIntake
-                        title={`${typeLabel} — others under sponsorship / dependents`}
-                        hasDependents={!!head._has_dependents}
-                        onHasDependentsChange={(yes) =>
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <AidFamilyMembersIntake
+                        title={`${typeLabel} — family members`}
+                        hint="Add any relative of this family head (child, sibling, parent, …). Select Type first."
+                        rows={head._family_members || []}
+                        onChange={(members) =>
                           setFamilyHeads((list) =>
                             list.map((row, i) =>
                               i === idx
-                                ? {
-                                    ...row,
-                                    _has_dependents: yes,
-                                    _dependents: yes
-                                      ? row._dependents?.length
-                                        ? row._dependents
-                                        : []
-                                      : [],
-                                  }
+                                ? { ...row, _family_members: members }
                                 : row,
                             ),
                           )
                         }
-                        rows={head._dependents || []}
-                        onChange={(deps) =>
-                          setFamilyHeads((list) =>
-                            list.map((row, i) =>
-                              i === idx ? { ...row, _dependents: deps } : row,
-                            ),
-                          )
-                        }
-                        relationLabel="Relation with FAMILY HEAD"
+                        relationLabel="Type (relation to family head)"
                       />
                     </div>
                   </div>
                 );
               })}
             </div>
-
-            {!isSingle && (
-            <div className="aid-family-panel">
-              <div className="aid-family-panel__head">
-                <h4 className="aid-family-panel__title">Siblings</h4>
-                <div className="aid-family-panel__actions">
-                  <button
-                    type="button"
-                    className="aid-mini-btn aid-mini-btn--brother"
-                    onClick={() =>
-                      setSiblings((p) => [
-                        ...p,
-                        { ...emptyRelative(), gender: 'male', _genderRole: 'brother' },
-                      ])
-                    }
-                  >
-                    + Brother
-                  </button>
-                  <button
-                    type="button"
-                    className="aid-mini-btn aid-mini-btn--sister"
-                    onClick={() =>
-                      setSiblings((p) => [
-                        ...p,
-                        { ...emptyRelative(), gender: 'female', _genderRole: 'sister' },
-                      ])
-                    }
-                  >
-                    + Sister
-                  </button>
-                </div>
-              </div>
-              {siblings.map((s, idx) => (
-                <div key={`s-${idx}`} className="aid-repeat-item">
-                  <div className="aid-repeat-item__head aid-repeat-item__head--select">
-                    <FormSelect
-                      label="Sibling type"
-                      value={s._genderRole || 'brother'}
-                      onChange={(e) => {
-                        const role = e.target.value;
-                        setSiblings((list) =>
-                          list.map((row, i) =>
-                            i === idx
-                              ? {
-                                  ...row,
-                                  _genderRole: role,
-                                  gender:
-                                    role === 'sister'
-                                      ? 'female'
-                                      : role === 'brother'
-                                        ? 'male'
-                                        : row.gender,
-                                }
-                              : row,
-                          ),
-                        );
-                      }}
-                      options={[
-                        { value: 'brother', label: 'Brother' },
-                        { value: 'sister', label: 'Sister' },
-                        { value: 'sibling', label: 'Sibling' },
-                      ]}
-                    />
-                    <button
-                      type="button"
-                      className="aid-mini-btn aid-mini-btn--remove"
-                      onClick={() =>
-                        setSiblings((list) => list.filter((_, i) => i !== idx))
-                      }
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <RelativeFields
-                    value={s}
-                    onChange={(next) =>
-                      setSiblings((list) =>
-                        list.map((row, i) =>
-                          i === idx ? { ...next, _genderRole: row._genderRole } : row,
-                        ),
-                      )
-                    }
-                    compact
-                  />
-                </div>
-              ))}
-            </div>
-            )}
           </div>
           )}
 

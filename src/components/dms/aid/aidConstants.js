@@ -214,8 +214,10 @@ export const AID_VULNERABILITIES = [
   { value: 'people_with_disabilities', label: 'People with Disabilities' },
   { value: 'indigent', label: 'Indigent' },
   { value: 'abandoned_women', label: 'Abandoned Women' },
+  { value: 'abandoned', label: 'Abandoned' },
   { value: 'women_headed_households', label: 'Women-Headed Households' },
   { value: 'elderly_no_support', label: 'Elderly with No Support' },
+  { value: 'chronic_illness', label: 'Chronic Illness' },
   { value: 'daily_wage_laborers', label: 'Daily Wage Laborers' },
   { value: 'idps', label: 'Internally Displaced Persons (IDPs)' },
   { value: 'religious_minorities', label: 'Religious Minorities in Need' },
@@ -227,9 +229,75 @@ export const AID_VULNERABILITIES = [
   { value: 'other', label: 'Other' },
 ];
 
-export function formatVulnerability(value) {
-  return AID_VULNERABILITIES.find((o) => o.value === value)?.label || value || '—';
+/** Chip multi-select on Family Head personal card (subset). */
+export const AID_VULNERABILITY_CHIPS = [
+  { value: 'widow', label: 'Widow' },
+  { value: 'orphan', label: 'Orphan' },
+  { value: 'disable', label: 'Disabled' },
+  { value: 'abandoned', label: 'Abandoned' },
+  { value: 'indigent', label: 'Indigent' },
+  { value: 'elderly_no_support', label: 'Elderly No Support' },
+  { value: 'chronic_illness', label: 'Chronic Illness' },
+  { value: 'other', label: 'Other' },
+];
+
+export function parseVulnerabilityList(value) {
+  if (!value) return [];
+  if (Array.isArray(value)) return value.filter(Boolean);
+  return String(value)
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 }
+
+export function joinVulnerabilityList(values) {
+  if (!Array.isArray(values) || !values.length) return '';
+  return values.filter(Boolean).join(',');
+}
+
+export function formatVulnerability(value) {
+  const list = parseVulnerabilityList(value);
+  if (!list.length) return '—';
+  return list
+    .map(
+      (v) =>
+        AID_VULNERABILITIES.find((o) => o.value === v)?.label ||
+        AID_VULNERABILITY_CHIPS.find((o) => o.value === v)?.label ||
+        v,
+    )
+    .join(', ');
+}
+
+/** Profession options (Family Head personal card). */
+export const AID_PROFESSIONS = [
+  { value: 'labourer', label: 'Labourer' },
+  { value: 'skilled_laborer', label: 'Skilled Labourer' },
+  { value: 'farmer', label: 'Farmer' },
+  { value: 'job', label: 'Job / Employee' },
+  { value: 'business', label: 'Business' },
+  { value: 'self_employed', label: 'Self Employed' },
+  { value: 'housewife', label: 'Housewife' },
+  { value: 'student', label: 'Student' },
+  { value: 'unemployed', label: 'Unemployed' },
+  { value: 'retired', label: 'Retired' },
+  { value: 'other', label: 'Other' },
+];
+
+/**
+ * Literacy (education) shown on Family Head personal card.
+ * Maps to education_level; "Post-Graduate" = masters.
+ */
+export const AID_LITERACY_EDUCATION_OPTIONS = [
+  { value: 'none', label: 'None / Illiterate' },
+  { value: 'primary', label: 'Primary' },
+  { value: 'middle', label: 'Middle' },
+  { value: 'matric', label: 'Matric' },
+  { value: 'intermediate', label: 'Intermediate' },
+  { value: 'bachelors', label: 'Graduate' },
+  { value: 'masters', label: 'Post-Graduate' },
+  { value: 'religious', label: 'Religious education' },
+  { value: 'other', label: 'Other' },
+];
 
 export const AID_EDUCATION_LEVELS = [
   { value: 'none', label: 'None / illiterate' },
@@ -242,6 +310,47 @@ export const AID_EDUCATION_LEVELS = [
   { value: 'religious', label: 'Religious education' },
   { value: 'other', label: 'Other' },
 ];
+
+/** Digits only, max 13 → display as 12345-1234567-1 */
+export function formatCnicInput(raw) {
+  const digits = String(raw || '')
+    .replace(/\D/g, '')
+    .slice(0, 13);
+  if (digits.length <= 5) return digits;
+  if (digits.length <= 12) {
+    return `${digits.slice(0, 5)}-${digits.slice(5)}`;
+  }
+  return `${digits.slice(0, 5)}-${digits.slice(5, 12)}-${digits.slice(12)}`;
+}
+
+export function isValidCnic(value) {
+  if (!value) return true;
+  const formatted = formatCnicInput(value);
+  return /^\d{5}-\d{7}-\d{1}$/.test(formatted);
+}
+
+/** PK mobile: digits only, max 11, prefer 03XXXXXXXXX */
+export function formatPkPhoneInput(raw) {
+  return String(raw || '')
+    .replace(/\D/g, '')
+    .slice(0, 11);
+}
+
+export function isValidPkPhone(value) {
+  if (!value) return true;
+  return /^03\d{9}$/.test(String(value).trim());
+}
+
+export function calcAgeFromDob(dob) {
+  if (!dob) return null;
+  const d = new Date(dob);
+  if (Number.isNaN(d.getTime())) return null;
+  const today = new Date();
+  let age = today.getFullYear() - d.getFullYear();
+  const m = today.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < d.getDate())) age -= 1;
+  return age >= 0 && age < 150 ? age : null;
+}
 
 /** Literacy root — Educated / UnEducated (per intake diagram). */
 export const AID_LITERACY_STATUS = [
@@ -494,15 +603,46 @@ export const emptyLiteracyFields = () => ({
   disability_type: '',
 });
 
-export const emptyChildRow = () => ({
+/** Household dependency (related-person / family member card). */
+export const AID_HOUSEHOLD_DEPENDENCY = [
+  { value: 'dependent_on_family_head', label: 'Dependent on Family Head' },
+  { value: 'dependent_on_beneficiary', label: 'Dependent on Beneficiary' },
+  { value: 'self_supporting', label: 'Self Supporting' },
+  { value: 'earning_member', label: 'Earning Member' },
+  { value: 'other', label: 'Other' },
+];
+
+/** Children — Type (relation) options. */
+export const AID_CHILD_RELATIONS = [
+  { value: 'son', label: 'Son' },
+  { value: 'daughter', label: 'Daughter' },
+  { value: 'child', label: 'Child' },
+  { value: 'grandchild', label: 'Grandchild' },
+];
+
+/** Shared empty person fields for related individuals. */
+export const emptyRelatedPersonBase = () => ({
   full_name: '',
+  father_or_husband_name: '',
   gender: '',
   date_of_birth: '',
   cnic: '',
+  phone: '',
   marital_status: '',
+  occupation: '',
+  monthly_income: '',
+  household_dependency: '',
   has_disability: false,
   disability_type: '',
+  existing_person_id: null,
+  relation_type: '',
   ...emptyLiteracyFields(),
+});
+
+export const emptyChildRow = () => ({
+  ...emptyRelatedPersonBase(),
+  relation_type: 'child',
+  relation_with_beneficiary: 'child',
 });
 
 /** Relation with beneficiary — Brothers / Sisters (single marital flow). */
@@ -513,16 +653,13 @@ export const AID_SIBLING_RELATIONS = [
   { value: 'step_sister', label: 'Step Sister' },
   { value: 'half_brother', label: 'Half Brother' },
   { value: 'half_sister', label: 'Half Sister' },
+  { value: 'sibling', label: 'Sibling' },
 ];
 
 export const emptySiblingRow = () => ({
-  full_name: '',
-  gender: '',
-  date_of_birth: '',
-  cnic: '',
-  marital_status: '',
+  ...emptyRelatedPersonBase(),
+  relation_type: 'brother',
   relation_with_beneficiary: 'brother',
-  ...emptyLiteracyFields(),
 });
 
 export function mapSiblingRelationToKinship(relation) {
@@ -539,6 +676,7 @@ export const AID_DEPENDENT_RELATIONS = [
   { value: 'child', label: 'Child' },
   { value: 'brother', label: 'Brother' },
   { value: 'sister', label: 'Sister' },
+  { value: 'sibling', label: 'Sibling' },
   { value: 'nephew', label: 'Nephew' },
   { value: 'niece', label: 'Niece' },
   { value: 'uncle', label: 'Uncle' },
@@ -551,17 +689,74 @@ export const AID_DEPENDENT_RELATIONS = [
   { value: 'other', label: 'Other' },
 ];
 
+/**
+ * Full type list for standardized "add any related person" flows
+ * (parents / children / siblings / extended).
+ */
+export const AID_RELATED_PERSON_TYPES = [
+  { value: 'father', label: 'Father (Parent)' },
+  { value: 'mother', label: 'Mother (Parent)' },
+  { value: 'spouse', label: 'Spouse' },
+  { value: 'son', label: 'Son (Child)' },
+  { value: 'daughter', label: 'Daughter (Child)' },
+  { value: 'child', label: 'Child' },
+  { value: 'brother', label: 'Brother (Sibling)' },
+  { value: 'sister', label: 'Sister (Sibling)' },
+  { value: 'sibling', label: 'Sibling' },
+  { value: 'step_brother', label: 'Step Brother' },
+  { value: 'step_sister', label: 'Step Sister' },
+  { value: 'uncle', label: 'Uncle' },
+  { value: 'aunt', label: 'Aunt' },
+  { value: 'cousin', label: 'Cousin' },
+  { value: 'grandfather', label: 'Grandfather' },
+  { value: 'grandmother', label: 'Grandmother' },
+  { value: 'grandchild', label: 'Grandchild' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'in_law', label: 'In-law' },
+  { value: 'other', label: 'Other' },
+];
+
 export const emptyDependentRow = () => ({
-  full_name: '',
-  gender: '',
-  date_of_birth: '',
-  cnic: '',
-  marital_status: '',
-  has_disability: false,
-  disability_type: '',
+  ...emptyRelatedPersonBase(),
+  relation_type: 'other',
   relation_with_family_head: 'other',
-  ...emptyLiteracyFields(),
+  household_dependency: 'dependent_on_family_head',
 });
+
+/** Resolve kinship edge type from any related-person row. */
+export function resolveRelatedPersonKinship(row) {
+  const raw =
+    row?.relation_type ||
+    row?.relation_with_beneficiary ||
+    row?.relation_with_family_head ||
+    '';
+  const r = String(raw || '').toLowerCase();
+  if (r.includes('sister')) return 'sister';
+  if (r.includes('brother')) return 'brother';
+  if (r === 'nephew' || r === 'niece') return 'cousin';
+  if (r === 'son' || r === 'daughter' || r === 'child') return r;
+  if (
+    [
+      'father',
+      'mother',
+      'spouse',
+      'sibling',
+      'uncle',
+      'aunt',
+      'cousin',
+      'grandfather',
+      'grandmother',
+      'grandchild',
+      'guardian',
+      'custody_holder',
+      'in_law',
+      'other',
+    ].includes(r)
+  ) {
+    return r;
+  }
+  return 'other';
+}
 
 /** Map dependent relation to kinship edge type (closest supported enum). */
 export function mapDependentRelationToKinship(relation) {
@@ -674,6 +869,7 @@ export const AID_FAMILY_HEAD_TYPES = [
 
 export const emptyFamilyHeadRow = (relationType = 'father') => ({
   full_name: '',
+  father_or_husband_name: '',
   cnic: '',
   phone: '',
   city: '',
@@ -690,9 +886,13 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
         : '',
   date_of_birth: '',
   marital_status: '',
+  vulnerability: '',
   occupation: '',
+  monthly_income: '',
   education_level: '',
   is_alive: true,
+  has_disability: false,
+  disability_type: '',
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
   ...emptyResidentHousingFields(),
@@ -700,8 +900,8 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   ...emptyVehicleFields(),
   ...emptyEligibilityStatusFields(),
   _relation_type: relationType,
-  _has_dependents: false,
-  _dependents: [],
+  /** Generic relatives of this family head (children, siblings, …). */
+  _family_members: [],
 });
 
 /** Quick-add family tree sections on person view */

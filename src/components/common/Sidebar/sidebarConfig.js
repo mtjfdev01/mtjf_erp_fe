@@ -750,13 +750,6 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiUsers
   },
   {
-    label: 'My To-Dos',
-    path: '/dms/todos',
-    type: 'list',
-    module: 'dms_todos',
-    icon: FiCheckSquare
-  },
-  {
     label: 'Volunteers',
     path: '/dms/volunteers/list',
     type: 'list',
@@ -1042,6 +1035,17 @@ const ceoOfficeItems = () => [
   },
 ];
 
+/** Independent My To-Dos section (was under Fund Raising). */
+const todosItems = () => [
+  {
+    label: 'My To-Dos',
+    path: '/dms/todos',
+    type: 'list',
+    module: 'dms_todos',
+    icon: FiCheckSquare,
+  },
+];
+
 // All department items for permission-based access
 const allDepartmentItems = (isUser = false) => [
   {
@@ -1055,6 +1059,12 @@ const allDepartmentItems = (isUser = false) => [
     label: 'CEO Office',
     icon: FiCoffee,
     items: ceoOfficeItems()
+  },
+  {
+    id: 'todos',
+    label: 'My To-Dos',
+    icon: FiCheckSquare,
+    items: todosItems()
   },
   // {
   //   id: 'store',
@@ -1145,6 +1155,12 @@ ceo_office: (isUser = false) => ({
     label: 'CEO Office',
     icon: FiCoffee,
     items: ceoOfficeItems()
+  }),
+  todos: () => ({
+    id: 'todos',
+    label: 'My To-Dos',
+    icon: FiCheckSquare,
+    items: todosItems()
   }),
   program: (isUser = false) => ({
     id: 'program',
@@ -1320,12 +1336,13 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isCeoRole = user.role === 'ceo' || user.role === 'pa';
   const isCeoDepartment = user.department === 'ceo';
 
-  // Super admin: Program (incl. Aid) + DMS Menu + Fund Raising + Tasks + Communication + CEO Office.
+  // Super admin: Program (incl. Aid) + DMS Menu + Fund Raising + To-Dos + Tasks + Communication + CEO Office.
   if (isSuperAdminRole || isSuperAdminPermission) {
     const sections = [
       departmentConfigs.program(false),
       departmentConfigs.admin(false),
       departmentConfigs.fund_raising(false),
+      departmentConfigs.todos(),
       departmentConfigs.ceo_office(false),
     ];
     sections.push(buildSuperAdminTaskingGroup());

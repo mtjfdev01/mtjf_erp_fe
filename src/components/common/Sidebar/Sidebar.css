@@ -111,6 +111,8 @@
   padding: 1rem;
   margin-bottom: 0.5rem;
   font-size: 1.1rem;
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .sidebar-group-icon {

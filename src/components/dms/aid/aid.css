@@ -1205,6 +1205,48 @@
   margin: 0 0 0.85rem;
 }
 
+.aid-section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.aid-section-heading-row .form-section-heading {
+  margin: 0;
+}
+
+.aid-png-download-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.aid-png-download-btn:hover:not(:disabled) {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+.aid-png-download-btn:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.aid-png-capture {
+  background: #fff;
+}
+
 .aid-section-hint {
   margin: 0 0 0.85rem;
   font-size: 0.875rem;
@@ -1404,6 +1446,269 @@
 .aid-repeat-item__head--select > *:first-child {
   flex: 1 1 180px;
   max-width: 220px;
+}
+
+/* Related person card (siblings / children / dependents) */
+.aid-related-person {
+  background: #fff;
+  border-radius: 8px;
+}
+
+.aid-related-person__title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  margin-bottom: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.aid-related-person__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.aid-related-person__field--full {
+  grid-column: 1 / -1;
+}
+
+.aid-related-person__hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.aid-related-person__hint.is-linked {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.aid-related-person__dob-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.aid-related-person__dob-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.aid-related-person__age {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #15803d;
+}
+
+.aid-related-person__dob .form-group,
+.aid-related-person__dob .form-field {
+  margin-bottom: 0;
+}
+
+.aid-related-person__dob label:empty,
+.aid-related-person__dob .form-label:empty {
+  display: none;
+}
+
+.aid-related-person__disability {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.95rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  cursor: pointer;
+}
+
+.aid-related-person__disability input {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #15803d;
+}
+
+.aid-related-person__literacy {
+  margin-top: 0.85rem;
+}
+
+@media (max-width: 720px) {
+  .aid-related-person__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Family Head — personal info card (screenshot layout) */
+.aid-fh-personal {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1.15rem 1.25rem 1.25rem;
+  margin-bottom: 0.85rem;
+}
+
+.aid-fh-personal__header {
+  margin-bottom: 1rem;
+}
+
+.aid-fh-personal__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.aid-fh-personal__subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.aid-fh-personal__field--full {
+  margin-bottom: 0.85rem;
+}
+
+.aid-fh-personal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+}
+
+.aid-fh-personal__dob-label-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+.aid-fh-personal__dob-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.aid-fh-personal__dob-label .required {
+  color: #dc2626;
+}
+
+.aid-fh-personal__age {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #15803d;
+}
+
+.aid-fh-personal__dob .form-group,
+.aid-fh-personal__dob .form-field {
+  margin-bottom: 0;
+}
+
+.aid-fh-personal__dob label:empty,
+.aid-fh-personal__dob .form-label:empty {
+  display: none;
+}
+
+.aid-fh-personal__vuln {
+  margin-top: 1.1rem;
+}
+
+.aid-fh-personal__vuln-label {
+  margin: 0 0 0.55rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.aid-fh-personal__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.aid-fh-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #334155;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.aid-fh-chip:hover {
+  border-color: #94a3b8;
+  background: #f1f5f9;
+}
+
+.aid-fh-chip.is-active {
+  border-color: #15803d;
+  background: #ecfdf5;
+  color: #166534;
+  font-weight: 600;
+}
+
+.aid-fh-personal__disability {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.aid-fh-personal__disability-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.aid-fh-personal__disability-check input {
+  margin-top: 0.2rem;
+  accent-color: #15803d;
+}
+
+.aid-fh-personal__disability-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.aid-fh-personal__disability-copy strong {
+  font-size: 0.875rem;
+  color: #0f172a;
+}
+
+.aid-fh-personal__disability-copy small {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.aid-fh-personal__disability .form-group,
+.aid-fh-personal__disability .form-field {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 720px) {
+  .aid-fh-personal__grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .aid-relative-block {

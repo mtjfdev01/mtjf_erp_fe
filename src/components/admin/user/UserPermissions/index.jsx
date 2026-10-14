@@ -73,6 +73,33 @@ const mergeFundRaisingDonorPermissions = (rawPermissions) => {
   return next;
 };
 
+/** Mirror legacy fund_raising.dms_todos into todos.dms_todos for the UI (keep legacy keys). */
+const mergeTodosPermissions = (rawPermissions) => {
+  if (!rawPermissions || typeof rawPermissions !== 'object') return rawPermissions;
+  const next = JSON.parse(JSON.stringify(rawPermissions));
+  const actions = ['create', 'list_view', 'view', 'update', 'delete'];
+  const legacy = next.fund_raising?.dms_todos;
+  const current = next.todos?.dms_todos;
+  const hasCurrent =
+    current &&
+    typeof current === 'object' &&
+    actions.some((a) => current[a] === true);
+
+  if (hasCurrent || !legacy || typeof legacy !== 'object') {
+    return next;
+  }
+
+  const mirrored = { scope: legacy.scope || 'self', view_all: legacy.view_all === true };
+  actions.forEach((a) => {
+    mirrored[a] = legacy[a] === true;
+  });
+  next.todos = { ...(next.todos || {}), dms_todos: mirrored };
+  return next;
+};
+
+const normalizePermissionsForUi = (raw) =>
+  mergeTodosPermissions(mergeFundRaisingDonorPermissions(raw));
+
 const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const { user: currentUser, checkAuth } = useAuth();
   const [permissions, setPermissions] = useState({});
@@ -84,7 +111,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   // Initialize permissions when user data is available
   useEffect(() => {
     if (user?.permissions?.permissions) {
-      setPermissions(mergeFundRaisingDonorPermissions(user.permissions.permissions));
+      setPermissions(normalizePermissionsForUi(user.permissions.permissions));
     }
   }, [user]);
 
@@ -116,10 +143,6 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         in_kind_donations: {
           label: 'In Kind Donations',
           actions: ['create', 'list_view', 'view', 'update', 'delete', 'completing', 'reconciler']
-        },
-        dms_todos: {
-          label: 'My To-Dos',
-          actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
         online_donors: {
           label: 'Online Donors',
@@ -530,6 +553,15 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    todos: {
+      label: 'My To-Dos',
+      submodules: {
+        dms_todos: {
+          label: 'My To-Dos',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        }
+      }
+    },
   };
 
   const SCOPE_OPTIONS = [
@@ -696,7 +728,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const handleSave = async () => {
     if (!user?.id) {
       try {
-        if (onSave) onSave(mergeFundRaisingDonorPermissions(permissions));
+        if (onSave) onSave(normalizePermissionsForUi(permissions));
       } catch (error) {
         setError('User ID is required');
       }
@@ -709,7 +741,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       // Create payload with only user data and permissions
       const updatePayload = {
         ...user,
-        permissions: mergeFundRaisingDonorPermissions(permissions)
+        permissions: normalizePermissionsForUi(permissions)
       };
       
       console.log('User before permissions update:', user);

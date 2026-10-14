@@ -336,6 +336,11 @@ const AidPersonView = () => {
               CNIC: {person.cnic || '—'} · Phone: {person.phone || '—'} ·{' '}
               {person.city || 'No city'}
             </p>
+            {person.father_or_husband_name ? (
+              <p style={{ margin: '6px 0 0', color: '#64748b' }}>
+                Father / Husband: {person.father_or_husband_name}
+              </p>
+            ) : null}
             {person.address && (
               <p style={{ margin: '6px 0 0', color: '#64748b' }}>Address: {person.address}</p>
             )}

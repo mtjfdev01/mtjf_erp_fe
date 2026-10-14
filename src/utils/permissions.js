@@ -15,8 +15,17 @@ export const hasPermission = (permissions, department, module, action) => {
   if (!permissions || !department || !module || !action) {
     return false;
   }
-  
-  return permissions[department]?.[module]?.[action] === true;
+
+  if (permissions[department]?.[module]?.[action] === true) {
+    return true;
+  }
+
+  // My To-Dos: new todos.dms_todos.* also accepts legacy fund_raising.dms_todos.*
+  if (department === 'todos' && module === 'dms_todos') {
+    return permissions.fund_raising?.dms_todos?.[action] === true;
+  }
+
+  return false;
 };
 
 /**
@@ -82,6 +91,20 @@ export const canViewModule = (permissions, department, module) => {
       permissions.fund_raising?.manager === true)
   ) {
     return true;
+  }
+
+  // My To-Dos: independent `todos` section; accept new + legacy fund_raising.dms_todos
+  if (department === 'todos' && module === 'dms_todos') {
+    if (
+      permissions.fund_raising_manager === true ||
+      permissions.fund_raising?.manager === true
+    ) {
+      return true;
+    }
+    const next = permissions.todos?.dms_todos;
+    if (next?.view === true || next?.list_view === true) return true;
+    const legacy = permissions.fund_raising?.dms_todos;
+    return legacy?.view === true || legacy?.list_view === true;
   }
 
   // Recurring reminder logs: own flags, or recurring donations list/view
@@ -260,13 +283,30 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
 
   for (const part of pathParts) {
     if (current === null || current === undefined || typeof current !== 'object') {
+      // My To-Dos: todos.dms_todos.* falls back to fund_raising.dms_todos.*
+      if (
+        pathParts[0] === 'todos' &&
+        pathParts[1] === 'dms_todos' &&
+        pathParts[2]
+      ) {
+        return permissions.fund_raising?.dms_todos?.[pathParts[2]] === true;
+      }
       return false;
     }
     current = current[part];
   }
 
-  // Check if the final value is true
-  return current === true;
+  if (current === true) return true;
+
+  if (
+    pathParts[0] === 'todos' &&
+    pathParts[1] === 'dms_todos' &&
+    pathParts[2]
+  ) {
+    return permissions.fund_raising?.dms_todos?.[pathParts[2]] === true;
+  }
+
+  return false;
 };
 
 /**

@@ -1,19 +1,16 @@
 import React from 'react';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
-import AidLiteracyFields from './AidLiteracyFields';
+import AidRelatedPersonFields from './AidRelatedPersonFields';
 import {
   AID_DEPENDENT_RELATIONS,
-  AID_GENDERS,
-  AID_MARITAL_STATUS,
   AID_YES_NO,
-  ageFromDob,
   emptyDependentRow,
 } from '../aidConstants';
 
 /**
- * "Others under sponsorship / dependents?" Yes/No → rows:
- * Name, Gender, DoB, Age, CNIC, Disability, Type, Marital Status, Literacy, Relation with FAMILY HEAD
+ * "Others under sponsorship / dependents?" Yes/No → standardized related-person cards.
+ * Each dependent is created as a person and linked by Type (relation).
  */
 const AidDependentsIntake = ({
   hasDependents,
@@ -21,7 +18,7 @@ const AidDependentsIntake = ({
   rows,
   onChange,
   title = 'Others under sponsorship / dependents',
-  relationLabel = 'Relation with FAMILY HEAD',
+  relationLabel = 'Type (relation with FAMILY HEAD)',
 }) => {
   const count = rows?.length || 0;
 
@@ -33,9 +30,9 @@ const AidDependentsIntake = ({
     onChange(list);
   };
 
-  const updateRow = (idx, partial) => {
+  const updateRow = (idx, next) => {
     onChange(
-      (rows || []).map((row, i) => (i === idx ? { ...row, ...partial } : row)),
+      (rows || []).map((row, i) => (i === idx ? { ...row, ...next } : row)),
     );
   };
 
@@ -58,7 +55,8 @@ const AidDependentsIntake = ({
         <>
           <div className="aid-children-intake__head" style={{ marginTop: 12 }}>
             <span className="aid-section-hint" style={{ margin: 0 }}>
-              Add each dependent under sponsorship
+              Add each dependent — Type first, then person details. Each is saved
+              as a person with a kinship link.
             </span>
             <FormInput
               label="No. of dependents"
@@ -72,82 +70,13 @@ const AidDependentsIntake = ({
           <div className="aid-children-list">
             {(rows || []).map((dep, idx) => (
               <div key={`dep-${idx}`} className="aid-child-card">
-                <div className="aid-child-card__title">Dependent {idx + 1}</div>
-                <div className="form-grid-2">
-                  <FormInput
-                    label="Name"
-                    value={dep.full_name}
-                    onChange={(e) => updateRow(idx, { full_name: e.target.value })}
-                    required
-                  />
-                  <FormSelect
-                    label="Gender"
-                    value={dep.gender}
-                    onChange={(e) => updateRow(idx, { gender: e.target.value })}
-                    options={[{ value: '', label: '—' }, ...AID_GENDERS]}
-                  />
-                  <FormInput
-                    label="DoB"
-                    type="date"
-                    value={dep.date_of_birth}
-                    onChange={(e) =>
-                      updateRow(idx, { date_of_birth: e.target.value })
-                    }
-                  />
-                  <FormInput
-                    label="Age"
-                    value={ageFromDob(dep.date_of_birth)}
-                    readOnly
-                    placeholder="From DoB"
-                  />
-                  <FormInput
-                    label="CNIC"
-                    value={dep.cnic}
-                    onChange={(e) => updateRow(idx, { cnic: e.target.value })}
-                  />
-                  <FormSelect
-                    label="Disability"
-                    value={dep.has_disability ? 'yes' : 'no'}
-                    onChange={(e) =>
-                      updateRow(idx, {
-                        has_disability: e.target.value === 'yes',
-                        disability_type:
-                          e.target.value === 'yes' ? dep.disability_type : '',
-                      })
-                    }
-                    options={AID_YES_NO}
-                  />
-                  {dep.has_disability && (
-                    <FormInput
-                      label="Type of disability"
-                      value={dep.disability_type || ''}
-                      onChange={(e) =>
-                        updateRow(idx, { disability_type: e.target.value })
-                      }
-                    />
-                  )}
-                  <FormSelect
-                    label="Marital status"
-                    value={dep.marital_status}
-                    onChange={(e) =>
-                      updateRow(idx, { marital_status: e.target.value })
-                    }
-                    options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
-                  />
-                  <FormSelect
-                    label={relationLabel}
-                    value={dep.relation_with_family_head || 'other'}
-                    onChange={(e) =>
-                      updateRow(idx, {
-                        relation_with_family_head: e.target.value,
-                      })
-                    }
-                    options={AID_DEPENDENT_RELATIONS}
-                  />
-                </div>
-                <AidLiteracyFields
+                <AidRelatedPersonFields
+                  cardTitle={`Dependent ${idx + 1}`}
                   value={dep}
                   onChange={(next) => updateRow(idx, next)}
+                  relationOptions={AID_DEPENDENT_RELATIONS}
+                  relationKey="relation_with_family_head"
+                  relationLabel={relationLabel}
                 />
               </div>
             ))}
