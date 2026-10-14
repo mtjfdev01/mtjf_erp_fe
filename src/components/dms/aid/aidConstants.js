@@ -130,6 +130,58 @@ export const emptyFinancialAssistanceDetails = () => ({
   alternative_if_not_approved: '',
 });
 
+/** Zakat Permission Letter — assets / eligibility (all applications) */
+export const emptyZakatPermission = () => ({
+  form_date: '',
+  application_no: '',
+  applicant_name: '',
+  age: '',
+  education: '',
+  gold: '',
+  silver: '',
+  cash: '',
+  commercial_goods: '',
+  surplus_items: '',
+  loan: '',
+  zakat_eligible: '',
+  declaration_accepted: false,
+  /** SecuGen thumb capture — null until device capture succeeds */
+  applicant_thumb: null,
+  /** ePad VP9801 signature — null until device capture succeeds */
+  applicant_signature: null,
+  lang: 'ur',
+});
+
+export function calcZakatAssetTotal(details) {
+  const d = details || {};
+  const keys = ['gold', 'silver', 'cash', 'commercial_goods', 'surplus_items'];
+  return keys.reduce((sum, k) => {
+    const n = Number(d[k]);
+    return sum + (Number.isFinite(n) ? n : 0);
+  }, 0);
+}
+
+export function calcZakatNetAfterLoan(details) {
+  const total = calcZakatAssetTotal(details);
+  const loan = Number(details?.loan);
+  const loanAmt = Number.isFinite(loan) ? loan : 0;
+  return Math.max(0, total - loanAmt);
+}
+
+/** Media / donor Consent Form (کنسنٹ فارم) — all applications */
+export const emptyConsentForm = () => ({
+  form_date: '',
+  application_no: '',
+  full_name: '',
+  parentage_or_spouse: '',
+  cnic: '',
+  sector: '',
+  consent_accepted: false,
+  applicant_thumb: null,
+  applicant_signature: null,
+  lang: 'ur',
+});
+
 export const AID_WRITER_RELATIONS = [
   { value: 'self', label: 'Self (beneficiary)' },
   { value: 'father', label: 'Father' },
@@ -147,6 +199,37 @@ export const AID_MARITAL_STATUS = [
   { value: 'divorced', label: 'Divorced' },
   { value: 'separated', label: 'Separated' },
 ];
+
+/** Beneficiary vulnerability categories */
+export const AID_VULNERABILITIES = [
+  { value: 'poor', label: 'Poor' },
+  { value: 'extreme_poor', label: 'Extreme Poor' },
+  { value: 'widow', label: 'Widow' },
+  { value: 'widows', label: 'Widows' },
+  { value: 'divorced', label: 'Divorced' },
+  { value: 'divorced_women', label: 'Divorced Women' },
+  { value: 'orphan', label: 'Orphan' },
+  { value: 'orphans', label: 'Orphans' },
+  { value: 'disable', label: 'Disable' },
+  { value: 'people_with_disabilities', label: 'People with Disabilities' },
+  { value: 'indigent', label: 'Indigent' },
+  { value: 'abandoned_women', label: 'Abandoned Women' },
+  { value: 'women_headed_households', label: 'Women-Headed Households' },
+  { value: 'elderly_no_support', label: 'Elderly with No Support' },
+  { value: 'daily_wage_laborers', label: 'Daily Wage Laborers' },
+  { value: 'idps', label: 'Internally Displaced Persons (IDPs)' },
+  { value: 'religious_minorities', label: 'Religious Minorities in Need' },
+  { value: 'desert_area_inhabitants', label: 'Desert Area Inhabitants' },
+  { value: 'unemployed_youth', label: 'Unemployed Youth' },
+  { value: 'students_ultra_poor', label: 'Students from Ultra-Poor Families' },
+  { value: 'malnourished_families', label: 'Malnourished Families' },
+  { value: 'natural_disaster_victims', label: 'Victims of Natural Disasters' },
+  { value: 'other', label: 'Other' },
+];
+
+export function formatVulnerability(value) {
+  return AID_VULNERABILITIES.find((o) => o.value === value)?.label || value || '—';
+}
 
 export const AID_EDUCATION_LEVELS = [
   { value: 'none', label: 'None / illiterate' },

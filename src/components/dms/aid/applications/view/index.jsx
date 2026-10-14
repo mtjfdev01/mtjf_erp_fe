@@ -15,6 +15,8 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
+import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
+import AidConsentForm from '../../shared/AidConsentForm';
 import {
   AID_CEO_OPTIONS,
   AID_DELIVERY_OPTIONS,
@@ -28,6 +30,7 @@ import {
   formatLivestockSummary,
   formatVehicleSummary,
   formatEligibilityStatusSummary,
+  formatVulnerability,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -783,6 +786,36 @@ const AidApplicationView = () => {
                       readOnly
                     />
                   )}
+                {app.zakat_permission && (
+                  <div style={{ marginTop: 12 }}>
+                    <h4
+                      className="aid-family-panel__title"
+                      style={{ marginBottom: 8 }}
+                    >
+                      Zakat Permission Letter
+                    </h4>
+                    <AidZakatPermissionForm
+                      value={app.zakat_permission}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </div>
+                )}
+                {app.consent_form && (
+                  <div style={{ marginTop: 12 }}>
+                    <h4
+                      className="aid-family-panel__title"
+                      style={{ marginBottom: 8 }}
+                    >
+                      Consent Form
+                    </h4>
+                    <AidConsentForm
+                      value={app.consent_form}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </div>
+                )}
               </section>
             )}
 
@@ -800,6 +833,9 @@ const AidApplicationView = () => {
                       {app.beneficiary.city ? ` · ${app.beneficiary.city}` : ''}
                       {app.beneficiary.marital_status
                         ? ` · ${app.beneficiary.marital_status}`
+                        : ''}
+                      {app.beneficiary.vulnerability
+                        ? ` · ${formatVulnerability(app.beneficiary.vulnerability)}`
                         : ''}
                     </p>
                     {app.beneficiary.address && (

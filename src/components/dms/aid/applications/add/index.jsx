@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiCheck, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -20,6 +20,8 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
+import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
+import AidConsentForm from '../../shared/AidConsentForm';
 import AidChildrenIntake from '../../shared/AidChildrenIntake';
 import AidSiblingsIntake from '../../shared/AidSiblingsIntake';
 import AidDependentsIntake from '../../shared/AidDependentsIntake';
@@ -39,8 +41,11 @@ import {
   emptyRationDetails,
   emptyMarriageGiftDetails,
   emptyFinancialAssistanceDetails,
+  emptyZakatPermission,
+  emptyConsentForm,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
+  AID_VULNERABILITIES,
   mapSiblingRelationToKinship,
   mapDependentRelationToKinship,
 } from '../../aidConstants';
@@ -55,6 +60,7 @@ const emptyPerson = {
   gender: '',
   date_of_birth: '',
   marital_status: '',
+  vulnerability: '',
   occupation: '',
   monthly_income: '',
   education_level: '',
@@ -177,6 +183,7 @@ const cleanPersonPayload = (p) => {
     gender: p.gender || undefined,
     date_of_birth: p.date_of_birth || undefined,
     marital_status: p.marital_status || undefined,
+    vulnerability: p.vulnerability || undefined,
     occupation: p.occupation || p.literacy_category || undefined,
     monthly_income: p.monthly_income || undefined,
     education_level: p.education_level || undefined,
@@ -246,6 +253,8 @@ const AidApplicationAdd = () => {
   const [financialAssistanceDetails, setFinancialAssistanceDetails] = useState(
     emptyFinancialAssistanceDetails(),
   );
+  const [zakatPermission, setZakatPermission] = useState(emptyZakatPermission());
+  const [consentForm, setConsentForm] = useState(emptyConsentForm());
   const [assignedUser, setAssignedUser] = useState(null);
   const [familyHeads, setFamilyHeads] = useState([emptyFamilyHeadRow('father')]);
   const [spouse, setSpouse] = useState(emptyRelative());
@@ -259,12 +268,16 @@ const AidApplicationAdd = () => {
   const [formTab, setFormTab] = useState('request');
 
   const FORM_TABS = [
-    { id: 'request', label: 'Application' },
-    { id: 'assignment', label: 'Assignment' },
-    { id: 'beneficiary', label: 'Beneficiary' },
-    { id: 'family', label: 'Family Head' },
-    { id: 'writer', label: 'Applicant' },
+    { id: 'request', label: 'Application', hint: 'Need & aid type' },
+    { id: 'zakat', label: 'Zakat', hint: 'Permission letter' },
+    { id: 'consent', label: 'Consent', hint: 'Media consent' },
+    { id: 'assignment', label: 'Assignment', hint: 'Case owner' },
+    { id: 'beneficiary', label: 'Beneficiary', hint: 'Person details' },
+    { id: 'family', label: 'Family Head', hint: 'Household' },
+    { id: 'writer', label: 'Applicant', hint: 'Who applied' },
   ];
+  const stepIndex = FORM_TABS.findIndex((t) => t.id === formTab);
+  const stepProgress = ((stepIndex + 1) / FORM_TABS.length) * 100;
 
   const beneficiaryGender =
     beneficiaryMode === 'existing'
@@ -474,6 +487,8 @@ const AidApplicationAdd = () => {
         ...(form.requested_aid_type === 'financial_assistance'
           ? { financial_assistance_details: financialAssistanceDetails }
           : {}),
+        zakat_permission: zakatPermission,
+        consent_form: consentForm,
         writer_relation: writerIsSelf ? 'self' : form.writer_relation,
         family_members: buildFamilyMembers(),
         ...(assignedUser?.id
@@ -542,19 +557,61 @@ const AidApplicationAdd = () => {
         )}
 
         <form onSubmit={handleSubmit} className="form aid-application-form">
-          <div className="aid-tabs aid-tabs--main" role="tablist">
-            {FORM_TABS.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={formTab === t.id}
-                className={`aid-tab ${formTab === t.id ? 'aid-tab--active' : ''}`}
-                onClick={() => setFormTab(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
+          <div className="aid-steps" role="navigation" aria-label="Application steps">
+            <div className="aid-steps__meta">
+              <span className="aid-steps__meta-label">
+                Step {stepIndex + 1} of {FORM_TABS.length}
+              </span>
+              <span className="aid-steps__meta-pct">
+                {Math.round(stepProgress)}% complete
+              </span>
+            </div>
+            <div
+              className="aid-steps__track"
+              role="progressbar"
+              aria-valuemin={1}
+              aria-valuemax={FORM_TABS.length}
+              aria-valuenow={stepIndex + 1}
+              aria-valuetext={FORM_TABS[stepIndex]?.label}
+            >
+              <div
+                className="aid-steps__fill"
+                style={{ width: `${stepProgress}%` }}
+              />
+            </div>
+            <ol className="aid-steps__list">
+              {FORM_TABS.map((t, i) => {
+                const done = i < stepIndex;
+                const active = i === stepIndex;
+                return (
+                  <li
+                    key={t.id}
+                    className={[
+                      'aid-steps__item',
+                      done ? 'aid-steps__item--done' : '',
+                      active ? 'aid-steps__item--active' : '',
+                    ]
+                      .filter(Boolean)
+                      .join(' ')}
+                  >
+                    <button
+                      type="button"
+                      className="aid-steps__btn"
+                      aria-current={active ? 'step' : undefined}
+                      onClick={() => setFormTab(t.id)}
+                    >
+                      <span className="aid-steps__marker" aria-hidden="true">
+                        {done ? <FiCheck size={11} strokeWidth={3} /> : i + 1}
+                      </span>
+                      <span className="aid-steps__copy">
+                        <span className="aid-steps__label">{t.label}</span>
+                        <span className="aid-steps__hint">{t.hint}</span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
 
           {formTab === 'request' && (
@@ -645,6 +702,26 @@ const AidApplicationAdd = () => {
                 onChange={setFinancialAssistanceDetails}
               />
             )}
+          </div>
+          )}
+
+          {formTab === 'zakat' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Zakat Permission Letter</h3>
+            <AidZakatPermissionForm
+              value={zakatPermission}
+              onChange={setZakatPermission}
+            />
+          </div>
+          )}
+
+          {formTab === 'consent' && (
+          <div className="form-section">
+            <h3 className="form-section-heading">Consent Form</h3>
+            <AidConsentForm
+              value={consentForm}
+              onChange={setConsentForm}
+            />
           </div>
           )}
 
@@ -744,6 +821,17 @@ const AidApplicationAdd = () => {
                     setBeneficiary((p) => ({ ...p, marital_status: e.target.value }))
                   }
                   options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
+                />
+                <FormSelect
+                  label="Vulnerability"
+                  value={beneficiary.vulnerability || ''}
+                  onChange={(e) =>
+                    setBeneficiary((p) => ({
+                      ...p,
+                      vulnerability: e.target.value,
+                    }))
+                  }
+                  options={[{ value: '', label: '—' }, ...AID_VULNERABILITIES]}
                 />
                 <FormInput
                   label="Date of birth"

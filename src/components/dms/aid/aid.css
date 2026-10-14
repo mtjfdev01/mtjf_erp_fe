@@ -100,6 +100,245 @@
   margin-bottom: 0.85rem;
 }
 
+/* ——— Beneficiary / Aid People list ——— */
+.aid-people-list__subtitle {
+  margin: -0.35rem 0 1rem;
+  padding: 0 0.15rem;
+  font-size: 0.875rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.aid-people-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.aid-people-cta:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+}
+
+.aid-people-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 12px;
+}
+
+.aid-people-search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.aid-people-search__icon {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.aid-people-search input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.6rem 0.85rem 0.6rem 2.35rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: #0f172a;
+  background: #f8fafc;
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aid-people-search input:focus {
+  background: #fff;
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.aid-people-status-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.aid-people-status-filter select {
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  color: #0f172a;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+  outline: none;
+}
+
+.aid-people-showing {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  color: #64748b;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.aid-people-table-wrap {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.aid-people-table {
+  margin: 0;
+}
+
+.aid-people-table thead th {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  background: #fafbfc;
+  border-bottom: 1px solid #eef2f7;
+  padding: 0.85rem 1rem;
+  white-space: nowrap;
+}
+
+.aid-people-table tbody td {
+  padding: 0.95rem 1rem;
+  vertical-align: middle;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 0.875rem;
+  color: #334155;
+}
+
+.aid-people-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.aid-people-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.aid-people-avatar {
+  flex-shrink: 0;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+}
+
+.aid-people-name-cell__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.aid-people-name-cell__name {
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aid-people-name-cell__meta {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.aid-people-empty-col {
+  min-width: 4rem;
+}
+
+.aid-people-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.aid-people-view-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.aid-people-footer {
+  margin-top: 0.75rem;
+}
+
+.aid-people-footer__range {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+@media (max-width: 720px) {
+  .aid-people-showing {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .aid-people-cta {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
 .aid-filter-chip {
   display: inline-flex;
   align-items: center;
@@ -560,6 +799,169 @@
   color: #1d4ed8;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
   border: 1px solid #e2e8f0;
+}
+
+/* Application wizard — step progress */
+.aid-steps {
+  margin: 0 0 0.85rem;
+  padding: 0.55rem 0.75rem 0.5rem;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
+}
+
+.aid-steps__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+
+.aid-steps__meta-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: 0.01em;
+}
+
+.aid-steps__meta-pct {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.aid-steps__track {
+  position: relative;
+  height: 3px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-bottom: 0.45rem;
+}
+
+.aid-steps__fill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #60a5fa 0%, #2563eb 55%, #1d4ed8 100%);
+  transition: width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.aid-steps__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+
+.aid-steps__item {
+  min-width: 0;
+}
+
+.aid-steps__btn {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.15rem 0.15rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: center;
+  border-radius: 8px;
+  transition: background 0.15s ease;
+}
+
+.aid-steps__btn:hover {
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.aid-steps__btn:focus-visible {
+  outline: 2px solid #93c5fd;
+  outline-offset: 1px;
+}
+
+.aid-steps__marker {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #fff;
+  border: 1.5px solid #cbd5e1;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.aid-steps__copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.aid-steps__label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aid-steps__hint {
+  display: none;
+}
+
+.aid-steps__item--done .aid-steps__marker {
+  background: linear-gradient(180deg, #34d399 0%, #10b981 100%);
+  border-color: #059669;
+  color: #fff;
+}
+
+.aid-steps__item--done .aid-steps__label {
+  color: #047857;
+}
+
+.aid-steps__item--active .aid-steps__marker {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  border-color: #1d4ed8;
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.18);
+}
+
+.aid-steps__item--active .aid-steps__label {
+  color: #1d4ed8;
+}
+
+@media (max-width: 720px) {
+  .aid-steps {
+    padding: 0.45rem 0.55rem 0.4rem;
+  }
+
+  .aid-steps__list {
+    display: flex;
+    gap: 0.15rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .aid-steps__item {
+    flex: 0 0 auto;
+    width: 4.75rem;
+  }
 }
 
 .aid-panel {
@@ -1046,4 +1448,297 @@
   .aid-assign-field {
     max-width: none;
   }
+}
+
+/* ——— Zakat Permission Letter ——— */
+.aid-zakat-form {
+  margin-top: 0.5rem;
+  padding: 1.1rem 1.15rem 1.25rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #fffefb 0%, #ffffff 40%);
+  box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+}
+
+.aid-zakat-form--rtl {
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Segoe UI', Tahoma, sans-serif;
+}
+
+.aid-zakat-form__lang {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.aid-zakat-form--rtl .aid-zakat-form__lang {
+  justify-content: flex-start;
+}
+
+.aid-zakat-form__lang-btn {
+  padding: 0.3rem 0.7rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  background: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.aid-zakat-form__lang-btn.is-active {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+  color: #fff;
+}
+
+.aid-zakat-form__lang-btn:disabled {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.aid-zakat-form__header {
+  text-align: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.aid-zakat-form__logo {
+  display: block;
+  width: auto;
+  height: 3.25rem;
+  margin: 0 auto 0.55rem;
+  object-fit: contain;
+}
+
+.aid-zakat-form__org {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.5;
+}
+
+.aid-zakat-form__title {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.aid-zakat-form__meta {
+  margin-bottom: 1rem;
+}
+
+.aid-zakat-form__table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.aid-zakat-form__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.aid-zakat-form__table th,
+.aid-zakat-form__table td {
+  border: 1px solid #e2e8f0;
+  padding: 0.55rem 0.65rem;
+  vertical-align: middle;
+}
+
+.aid-zakat-form__table th {
+  background: #f8fafc;
+  font-weight: 700;
+  color: #475569;
+  text-align: center;
+}
+
+.aid-zakat-form__table td:first-child {
+  text-align: center;
+  font-weight: 600;
+  color: #64748b;
+  width: 4.5rem;
+}
+
+.aid-zakat-form__amount {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-family: inherit;
+}
+
+.aid-zakat-form__total-row td {
+  background: #f1f5f9;
+  font-weight: 700;
+}
+
+.aid-zakat-form__loan-hint {
+  font-size: 0.8125rem;
+  color: #64748b;
+}
+
+.aid-zakat-form__eligible {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.75rem;
+  background: #f8fafc;
+  border-radius: 10px;
+  border: 1px solid #e8eef5;
+}
+
+.aid-zakat-form__eligible-label {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.aid-zakat-form__check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+}
+
+.aid-zakat-form__decls {
+  margin-bottom: 1rem;
+  padding: 0.85rem 0.9rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.aid-zakat-form__decls p {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.aid-zakat-form__accept {
+  margin-top: 0.25rem;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+.aid-zakat-form__device-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.aid-zakat-form__device-msg {
+  margin: 0 0 0.75rem;
+  font-size: 0.8125rem;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fcd34d;
+  border-radius: 8px;
+  padding: 0.45rem 0.65rem;
+}
+
+.aid-zakat-form__signs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.aid-zakat-capture {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.aid-zakat-capture__label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.aid-zakat-capture__pad {
+  min-height: 7.5rem;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 0.35rem;
+}
+
+.aid-zakat-capture--thumb .aid-zakat-capture__pad {
+  min-height: 8.5rem;
+  background:
+    radial-gradient(circle at center, #e2e8f0 0 28%, transparent 29%),
+    #f8fafc;
+}
+
+.aid-zakat-capture__img {
+  max-width: 100%;
+  max-height: 8rem;
+  object-fit: contain;
+  display: block;
+}
+
+.aid-zakat-capture__empty {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-align: center;
+  padding: 0.5rem;
+  line-height: 1.4;
+}
+
+.aid-zakat-capture__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .aid-zakat-form__signs {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aid-consent-form__title {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.aid-consent-form__body {
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.aid-consent-form__body p {
+  margin: 0 0 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.85;
+  color: #334155;
+  text-align: justify;
+}
+
+.aid-consent-form__sign-heading {
+  margin: 0 0 0.35rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #0f172a;
 }

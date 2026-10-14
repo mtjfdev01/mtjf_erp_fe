@@ -266,6 +266,22 @@ const buildSuperAdminComplaintsGroup = () => ({
 
 const programDepartmentItems = (isUser = false) => [
   {
+    label: 'Applications',
+    path: '/dms/aid/applications/list',
+    type: 'list',
+    module: 'aid_applications',
+    permissionDepartment: 'fund_raising',
+    icon: FiLifeBuoy
+  },
+  {
+    label: 'Beneficiaries',
+    path: '/dms/aid/people/list',
+    type: 'list',
+    module: 'aid_people',
+    permissionDepartment: 'fund_raising',
+    icon: FiUsers
+  },
+  {
     label: 'Tasking',
     path: '/tasks/list',
     type: 'list',
@@ -528,8 +544,6 @@ const adminDepartmentItems = () => [
   //     {label: "Donation Box Donations", path: "/dms/donation-box-donations/list", type: "list", icon: FiPackage},
   //     {label: "My To-Dos", path: "/dms/todos", type: "list", module: "dms_todos", icon: FiCheckSquare},
   //     {label: "Online Donors", path: "/dms/online_donors/list", type: "list", module: "online_donors", icon: FiUsers},
-  //     {label: "Aid Applications", path: "/dms/aid/applications/list", type: "list", module: "aid_applications", icon: FiLifeBuoy},
-  //     {label: "Aid People", path: "/dms/aid/people/list", type: "list", module: "aid_people", icon: FiUsers},
   //     {label: "Offline Donors", path: "/dms/offline_donors/list", type: "list", module: "offline_donors", icon: FiUsers},
   //     {label: "CSR Donors", path: "/dms/csr-donors/list", type: "list", module: "organizations", icon: FiBriefcase},
   //     {label: "CSR Donations", path: "/dms/csr-donations/list", type: "list", module: "organizations", icon: BiSolidDonateHeart},
@@ -644,20 +658,6 @@ const geographicItems = (isUser = false) => [
 ];
 
 const fundRaisingDepartmentItems = (isUser = false) => [
-  {
-    label: 'Aid Applications',
-    path: '/dms/aid/applications/list',
-    type: 'list',
-    module: 'aid_applications',
-    icon: FiLifeBuoy
-  },
-  {
-    label: 'Aid People',
-    path: '/dms/aid/people/list',
-    type: 'list',
-    module: 'aid_people',
-    icon: FiUsers
-  },
   {
     label: 'Online Donations',
     path: '/donations/online_donations/list',
@@ -1248,7 +1248,8 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
   }
 
   const moduleKey = item.module || parentModule;
-  const permDept = permissionDepartmentFor(department);
+  const permDept =
+    item.permissionDepartment || permissionDepartmentFor(department);
 
   // Explicit action (e.g. manage_overview) — must be granted on the module
   if (item.action) {
@@ -1266,7 +1267,7 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
 
   // Module-level visibility (view / list_view)
   if (moduleKey) {
-    return canViewModule(permissions, department, moduleKey);
+    return canViewModule(permissions, permDept, moduleKey);
   }
 
   // No module/action: keep for backward compatibility
@@ -1319,11 +1320,10 @@ export const getSidebarConfig = (user, permissions = null) => {
   const isCeoRole = user.role === 'ceo' || user.role === 'pa';
   const isCeoDepartment = user.department === 'ceo';
 
-  // Super admin: DMS Menu (admin) + dedicated Fund Raising list + Tasks + Communication + CEO Office.
-  // Fund Raising is included explicitly so Aid Applications / Aid People are easy to find
-  // (not only nested under DMS Menu → Fund Raising).
+  // Super admin: Program (incl. Aid) + DMS Menu + Fund Raising + Tasks + Communication + CEO Office.
   if (isSuperAdminRole || isSuperAdminPermission) {
     const sections = [
+      departmentConfigs.program(false),
       departmentConfigs.admin(false),
       departmentConfigs.fund_raising(false),
       departmentConfigs.ceo_office(false),

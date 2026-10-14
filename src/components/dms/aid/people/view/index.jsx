@@ -13,11 +13,13 @@ import {
   AID_FAMILY_SECTIONS,
   AID_GENDERS,
   AID_MARITAL_STATUS,
+  AID_VULNERABILITIES,
   aidStatusTone,
   emptyLiteracyFields,
   formatAidStatus,
   formatLiteracySummary,
   formatMaritalStatus,
+  formatVulnerability,
   personAge,
 } from '../../aidConstants';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
@@ -77,6 +79,7 @@ const AidPersonView = () => {
           gender: p.gender || '',
           date_of_birth: p.date_of_birth ? String(p.date_of_birth).slice(0, 10) : '',
           marital_status: p.marital_status || '',
+          vulnerability: p.vulnerability || '',
           literacy_status: p.literacy_status || '',
           literacy_category: p.literacy_category || '',
           student_class: p.student_class || '',
@@ -115,6 +118,7 @@ const AidPersonView = () => {
         phone: profile.phone || null,
         gender: profile.gender || null,
         marital_status: profile.marital_status || null,
+        vulnerability: profile.vulnerability || null,
         date_of_birth: profile.date_of_birth || null,
         literacy_status: profile.literacy_status || null,
         literacy_category: profile.literacy_category || null,
@@ -321,6 +325,9 @@ const AidPersonView = () => {
             <h2 style={{ margin: 0 }}>{person.full_name}</h2>
             <p style={{ margin: '6px 0 0', color: '#64748b' }}>
               {formatMaritalStatus(person.marital_status)}
+              {person.vulnerability
+                ? ` · ${formatVulnerability(person.vulnerability)}`
+                : ''}
               {age != null ? ` · ${age} yrs` : ''}
               {person.gender ? ` · ${person.gender}` : ''}
               {person.is_alive === false ? ' · Deceased' : ''}
@@ -386,6 +393,14 @@ const AidPersonView = () => {
                 value={profile.marital_status}
                 onChange={(e) => setProfile((p) => ({ ...p, marital_status: e.target.value }))}
                 options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
+              />
+              <FormSelect
+                label="Vulnerability"
+                value={profile.vulnerability || ''}
+                onChange={(e) =>
+                  setProfile((p) => ({ ...p, vulnerability: e.target.value }))
+                }
+                options={[{ value: '', label: '—' }, ...AID_VULNERABILITIES]}
               />
               <FormInput
                 label="City"

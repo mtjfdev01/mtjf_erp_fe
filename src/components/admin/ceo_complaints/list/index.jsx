@@ -19,6 +19,7 @@ import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
 import {
+  ENTRY_KIND_OPTIONS,
   ORGANIZATION_OPTIONS,
   COMPLAINANT_TYPE_OPTIONS,
   DEPARTMENT_OPTIONS,
@@ -31,6 +32,7 @@ import {
 
 const EMPTY_FILTERS = {
   search: '',
+  entry_kind: '',
   organization: '',
   branch: '',
   complainant_type: '',
@@ -211,6 +213,14 @@ const CeoComplaintsList = () => {
               placeholder="Number, name, phone, details..."
             />
             <DropdownFilter
+              filterKey="entry_kind"
+              label="Type"
+              data={ENTRY_KIND_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All"
+            />
+            <DropdownFilter
               filterKey="organization"
               label="Organization"
               data={ORGANIZATION_OPTIONS}
@@ -283,6 +293,7 @@ const CeoComplaintsList = () => {
             <thead>
               <tr>
                 <th>Number</th>
+                <th>Kind</th>
                 <th>Organization</th>
                 <th>Department</th>
                 <th>Complaint type</th>
@@ -295,13 +306,13 @@ const CeoComplaintsList = () => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center', padding: 24 }}>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: 24 }}>
                     Loading...
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan="8" style={{ textAlign: 'center' }}>
+                  <td colSpan="9" style={{ textAlign: 'center' }}>
                     No complaints found
                   </td>
                 </tr>
@@ -309,6 +320,12 @@ const CeoComplaintsList = () => {
                 rows.map((row) => (
                   <tr key={row.id}>
                     <td>{row.complaint_number}</td>
+                    <td>
+                      {labelFor(
+                        ENTRY_KIND_OPTIONS,
+                        row.entry_kind || 'complaint',
+                      )}
+                    </td>
                     <td>
                       {labelFor(ORGANIZATION_OPTIONS, row.organization)}
                       {row.branch ? (
@@ -318,7 +335,11 @@ const CeoComplaintsList = () => {
                       ) : null}
                     </td>
                     <td>{labelFor(DEPARTMENT_OPTIONS, row.department)}</td>
-                    <td>{labelFor(CATEGORY_OPTIONS, row.category)}</td>
+                    <td>
+                      {row.entry_kind === 'issue'
+                        ? '—'
+                        : labelFor(CATEGORY_OPTIONS, row.category)}
+                    </td>
                     <td>{labelFor(PRIORITY_OPTIONS, row.priority)}</td>
                     <td>
                       {canUpdate ? (
