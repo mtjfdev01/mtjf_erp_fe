@@ -67,6 +67,7 @@ const AidFamilyMembersIntake = ({
               <div className="aid-repeat-item__head">
                 <span className="aid-child-card__title" style={{ margin: 0 }}>
                   Family member {idx + 1}
+                  {row._from_applicant ? ' (Applicant)' : ''}
                 </span>
                 <button
                   type="button"
@@ -76,9 +77,14 @@ const AidFamilyMembersIntake = ({
                   Remove
                 </button>
               </div>
+              {row._from_applicant ? (
+                <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                  Prefill from relative applicant — linked to the beneficiary family.
+                </p>
+              ) : null}
               <AidRelatedPersonFields
                 value={row}
-                onChange={(next) => updateRow(idx, next)}
+                onChange={(next) => updateRow(idx, { ...next, _from_applicant: row._from_applicant })}
                 relationOptions={relationOptions}
                 relationKey="relation_type"
                 relationLabel={relationLabel}
