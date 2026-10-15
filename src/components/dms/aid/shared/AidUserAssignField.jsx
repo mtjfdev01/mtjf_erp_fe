@@ -22,9 +22,9 @@ const AidUserAssignField = ({
     {hint ? <p className="aid-section-hint">{hint}</p> : null}
     <SearchableDropdown
       label={label}
-      placeholder="Search fundraising users…"
+      placeholder="Search program users…"
       apiEndpoint="/users/options"
-      apiParams={{ department: 'fund_raising' }}
+      apiParams={{ department: 'program' }}
       value={value}
       displayKey="name"
       onSelect={(user) => onChange(toAssignableAidUser(user))}

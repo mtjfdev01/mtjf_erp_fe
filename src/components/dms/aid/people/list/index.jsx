@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { FiEye, FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { canViewModule, hasPermissionByPath } from '../../../../../utils/permissions';
+import {
+  canViewModule,
+  hasAidPermission,
+} from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import Pagination from '../../../../common/Pagination';
@@ -54,12 +57,14 @@ const AidPeopleList = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
   const canList =
-    canViewModule(permissions, 'fund_raising', 'aid_people') ||
+    canViewModule(permissions, 'program', 'aid_people') ||
     permissions?.super_admin ||
+    permissions?.program_manager ||
     permissions?.fund_raising_manager;
   const canCreate =
-    hasPermissionByPath(permissions, 'fund_raising.aid_people.create') ||
+    hasAidPermission(permissions, 'aid_people', 'create') ||
     permissions?.super_admin ||
+    permissions?.program_manager ||
     permissions?.fund_raising_manager;
 
   const [rows, setRows] = useState([]);

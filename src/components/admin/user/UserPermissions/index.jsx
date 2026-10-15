@@ -97,8 +97,52 @@ const mergeTodosPermissions = (rawPermissions) => {
   return next;
 };
 
+/** Mirror legacy fund_raising.aid_* into program.aid_* for the UI (keep legacy keys). */
+const mergeAidPermissions = (rawPermissions) => {
+  if (!rawPermissions || typeof rawPermissions !== 'object') return rawPermissions;
+  const next = JSON.parse(JSON.stringify(rawPermissions));
+  const modules = [
+    {
+      key: 'aid_people',
+      actions: ['create', 'list_view', 'view', 'update', 'delete'],
+    },
+    {
+      key: 'aid_applications',
+      actions: [
+        'create',
+        'list_view',
+        'view',
+        'update',
+        'delete',
+        'ceo_approve',
+        'deliver',
+      ],
+    },
+  ];
+
+  modules.forEach(({ key, actions }) => {
+    const legacy = next.fund_raising?.[key];
+    const current = next.program?.[key];
+    const hasCurrent =
+      current &&
+      typeof current === 'object' &&
+      actions.some((a) => current[a] === true);
+    if (hasCurrent || !legacy || typeof legacy !== 'object') return;
+
+    const mirrored = {};
+    actions.forEach((a) => {
+      mirrored[a] = legacy[a] === true;
+    });
+    next.program = { ...(next.program || {}), [key]: mirrored };
+  });
+
+  return next;
+};
+
 const normalizePermissionsForUi = (raw) =>
-  mergeTodosPermissions(mergeFundRaisingDonorPermissions(raw));
+  mergeAidPermissions(
+    mergeTodosPermissions(mergeFundRaisingDonorPermissions(raw)),
+  );
 
 const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const { user: currentUser, checkAuth } = useAuth();
@@ -160,14 +204,8 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'CSR POCs',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
-        aid_people: {
-          label: 'Aid People',
-          actions: ['create', 'list_view', 'view', 'update', 'delete']
-        },
-        aid_applications: {
-          label: 'Aid Applications',
-          actions: ['create', 'list_view', 'view', 'update', 'delete', 'ceo_approve', 'deliver']
-        },
+        // Aid Applications / Beneficiaries live under Program (primary).
+        // Legacy fund_raising.aid_* keys still work via dual-path guards.
         // donations_report: {
         //   label: 'Donations Report',
         //   actions: ['send', 'receive']
@@ -280,7 +318,22 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     program: {
       label: 'Program',
       submodules: {
-        
+        aid_applications: {
+          label: 'Applications',
+          actions: [
+            'create',
+            'list_view',
+            'view',
+            'update',
+            'delete',
+            'ceo_approve',
+            'deliver',
+          ],
+        },
+        aid_people: {
+          label: 'Beneficiaries',
+          actions: ['create', 'list_view', 'view', 'update', 'delete'],
+        },
         progress_tracking: {
           label: 'Progress Tracking',
           actions: ['create', 'list_view', 'view', 'update', 'delete']

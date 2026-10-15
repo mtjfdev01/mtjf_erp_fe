@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { hasPermissionByPath } from '../../../../../utils/permissions';
+import { hasAidPermission } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormSelect from '../../../../common/FormSelect';
@@ -17,10 +17,13 @@ import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplic
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
+import AidInvestigationPanel, {
+  isInvestigationComplete,
+  mergeInvestigationState,
+} from '../../shared/AidInvestigationPanel';
 import {
   AID_CEO_OPTIONS,
   AID_DELIVERY_OPTIONS,
-  AID_VERIFICATION_CHECKLIST,
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
@@ -34,9 +37,6 @@ import {
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
-
-const emptyChecklist = () =>
-  Object.fromEntries(AID_VERIFICATION_CHECKLIST.map((i) => [i.key, false]));
 
 const isSponsorshipDependent = (notes) =>
   /dependent under (family head|guardian) sponsorship/i.test(String(notes || ''));
@@ -86,16 +86,18 @@ const AidApplicationView = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
   const isStaffElevated =
-    !!permissions?.super_admin || !!permissions?.fund_raising_manager;
+    !!permissions?.super_admin ||
+    !!permissions?.program_manager ||
+    !!permissions?.fund_raising_manager;
   const canUpdate =
     isStaffElevated ||
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.update');
+    hasAidPermission(permissions, 'aid_applications', 'update');
   const canCeo =
     isStaffElevated ||
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.ceo_approve');
+    hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
   const canDeliver =
     isStaffElevated ||
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.deliver');
+    hasAidPermission(permissions, 'aid_applications', 'deliver');
 
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -106,7 +108,7 @@ const AidApplicationView = () => {
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [verifyNotes, setVerifyNotes] = useState('');
-  const [checklist, setChecklist] = useState(emptyChecklist);
+  const [investigation, setInvestigation] = useState({});
   const [leakageOverride, setLeakageOverride] = useState('');
   const [ceoDecision, setCeoDecision] = useState('approved');
   const [ceoReason, setCeoReason] = useState('');
@@ -126,18 +128,14 @@ const AidApplicationView = () => {
       const payload = appRes.data?.data || null;
       setApp(payload);
       setAssignedUser(toAssignableAidUser(payload?.assigned_to));
-      if (payload?.verification_checklist && typeof payload.verification_checklist === 'object') {
-        setChecklist({
-          ...emptyChecklist(),
-          ...Object.fromEntries(
-            AID_VERIFICATION_CHECKLIST.map((i) => [
-              i.key,
-              payload.verification_checklist[i.key] === true,
-            ]),
-          ),
-        });
-      } else {
-        setChecklist(emptyChecklist());
+      {
+        const items =
+          payload?.investigation_items ||
+          payload?.verification_checklist_items ||
+          [];
+        setInvestigation(
+          mergeInvestigationState(items, payload?.verification_checklist || {}),
+        );
       }
       if (payload?.verification_notes) setVerifyNotes(payload.verification_notes);
       if (payload?.leakage_override_reason) {
@@ -246,12 +244,13 @@ const AidApplicationView = () => {
     !!history.requires_override && !history.override_recorded;
   const leakageOverrideOk =
     !needsLeakageOverride || String(leakageOverride || '').trim().length >= 5;
-  const checklistItems =
-    app.verification_checklist_items?.length > 0
-      ? app.verification_checklist_items
-      : AID_VERIFICATION_CHECKLIST;
-  const checklistComplete = checklistItems.every(
-    (item) => !item.required || checklist[item.key] === true,
+  const investigationItems =
+    app.investigation_items?.length > 0
+      ? app.investigation_items
+      : app.verification_checklist_items || [];
+  const checklistComplete = isInvestigationComplete(
+    investigationItems,
+    investigation,
   );
   const showReject =
     canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
@@ -463,35 +462,23 @@ const AidApplicationView = () => {
           </div>
         )}
 
-        {(showVerify || app.verification_checklist) && (
+        {(showVerify || app.verification_checklist || investigationItems.length > 0) && (
           <section className="aid-section" style={{ marginBottom: 16 }}>
-            <h3>Home visit / verification checklist</h3>
             {(app.verified_at || verifiedByName) && (
               <p style={{ fontSize: 13, color: '#64748b', marginTop: 0 }}>
                 Verified by: {verifiedByName || '—'} · At: {formatWhen(app.verified_at)}
               </p>
             )}
-            <div className="aid-checklist">
-              {checklistItems.map((item) => (
-                <label key={item.key} className="aid-checklist__item">
-                  <input
-                    type="checkbox"
-                    checked={checklist[item.key] === true}
-                    disabled={!showVerify || busy}
-                    onChange={(e) =>
-                      setChecklist((p) => ({ ...p, [item.key]: e.target.checked }))
-                    }
-                  />
-                  <span>
-                    {item.label}
-                    {item.required ? ' *' : ''}
-                  </span>
-                </label>
-              ))}
-            </div>
+            <AidInvestigationPanel
+              items={investigationItems}
+              value={investigation}
+              onChange={setInvestigation}
+              disabled={!showVerify || busy}
+            />
             {showVerify && !checklistComplete && (
               <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
-                Tick all required items (*) before marking verified.
+                Mark every required claim Verified or Mismatch (with Found note).
+                Process checks must be Verified.
               </p>
             )}
             {showVerify && (
@@ -531,7 +518,7 @@ const AidApplicationView = () => {
                 disabled={busy || !checklistComplete || !leakageOverrideOk}
                 title={
                   !checklistComplete
-                    ? 'Complete all checklist items first'
+                    ? 'Complete investigation first'
                     : !leakageOverrideOk
                       ? 'Leakage override reason required'
                       : 'Submit verification'
@@ -540,7 +527,7 @@ const AidApplicationView = () => {
                   run(() =>
                     axiosInstance.post(`/aid/applications/${id}/verify`, {
                       verification_notes: verifyNotes || undefined,
-                      verification_checklist: checklist,
+                      verification_checklist: investigation,
                       leakage_override_reason: needsLeakageOverride
                         ? leakageOverride.trim()
                         : undefined,

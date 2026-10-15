@@ -270,7 +270,7 @@ const programDepartmentItems = (isUser = false) => [
     path: '/dms/aid/applications/list',
     type: 'list',
     module: 'aid_applications',
-    permissionDepartment: 'fund_raising',
+    permissionDepartment: 'program',
     icon: FiLifeBuoy
   },
   {
@@ -278,7 +278,7 @@ const programDepartmentItems = (isUser = false) => [
     path: '/dms/aid/people/list',
     type: 'list',
     module: 'aid_people',
-    permissionDepartment: 'fund_raising',
+    permissionDepartment: 'program',
     icon: FiUsers
   },
   {

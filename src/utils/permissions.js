@@ -25,8 +25,25 @@ export const hasPermission = (permissions, department, module, action) => {
     return permissions.fund_raising?.dms_todos?.[action] === true;
   }
 
+  // Aid Applications / Beneficiaries: program.aid_* also accepts fund_raising.aid_*
+  if (
+    (module === 'aid_people' || module === 'aid_applications') &&
+    (department === 'program' || department === 'fund_raising')
+  ) {
+    const other =
+      department === 'program' ? 'fund_raising' : 'program';
+    return permissions[other]?.[module]?.[action] === true;
+  }
+
   return false;
 };
+
+/**
+ * Aid Applications / Beneficiaries — program.aid_* (primary) or fund_raising.aid_* (legacy).
+ */
+export const hasAidPermission = (permissions, module, action) =>
+  hasPermission(permissions, 'program', module, action) ||
+  hasPermission(permissions, 'fund_raising', module, action);
 
 /**
  * Check if user has any permission for a specific module
@@ -105,6 +122,29 @@ export const canViewModule = (permissions, department, module) => {
     if (next?.view === true || next?.list_view === true) return true;
     const legacy = permissions.fund_raising?.dms_todos;
     return legacy?.view === true || legacy?.list_view === true;
+  }
+
+  // Aid Applications / Beneficiaries under Program (legacy fund_raising.aid_* still counts)
+  if (
+    (department === 'program' || department === 'fund_raising') &&
+    (module === 'aid_people' || module === 'aid_applications')
+  ) {
+    if (
+      permissions.program_manager === true ||
+      permissions.fund_raising_manager === true ||
+      permissions.fund_raising?.manager === true
+    ) {
+      return true;
+    }
+    const next = permissions.program?.[module];
+    const legacy = permissions.fund_raising?.[module];
+    if (next?.view === true || next?.list_view === true) return true;
+    if (legacy?.view === true || legacy?.list_view === true) return true;
+    if (module === 'aid_applications') {
+      if (next?.ceo_approve === true || next?.deliver === true) return true;
+      if (legacy?.ceo_approve === true || legacy?.deliver === true) return true;
+    }
+    return false;
   }
 
   // Recurring reminder logs: own flags, or recurring donations list/view
@@ -291,6 +331,15 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
       ) {
         return permissions.fund_raising?.dms_todos?.[pathParts[2]] === true;
       }
+      if (
+        (pathParts[0] === 'program' || pathParts[0] === 'fund_raising') &&
+        (pathParts[1] === 'aid_people' || pathParts[1] === 'aid_applications') &&
+        pathParts[2]
+      ) {
+        const other =
+          pathParts[0] === 'program' ? 'fund_raising' : 'program';
+        return permissions[other]?.[pathParts[1]]?.[pathParts[2]] === true;
+      }
       return false;
     }
     current = current[part];
@@ -304,6 +353,16 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
     pathParts[2]
   ) {
     return permissions.fund_raising?.dms_todos?.[pathParts[2]] === true;
+  }
+
+  if (
+    (pathParts[0] === 'program' || pathParts[0] === 'fund_raising') &&
+    (pathParts[1] === 'aid_people' || pathParts[1] === 'aid_applications') &&
+    pathParts[2]
+  ) {
+    const other =
+      pathParts[0] === 'program' ? 'fund_raising' : 'program';
+    return permissions[other]?.[pathParts[1]]?.[pathParts[2]] === true;
   }
 
   return false;
@@ -373,6 +432,7 @@ export const hasAnyPermission = (permissions, requiredPermissions) => {
 
 export default {
   hasPermission,
+  hasAidPermission,
   hasModuleAccess,
   hasDepartmentAccess,
   canViewModule,

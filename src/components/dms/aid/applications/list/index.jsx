@@ -3,7 +3,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiCheckCircle, FiTruck } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { canViewModule, hasPermissionByPath } from '../../../../../utils/permissions';
+import {
+  canViewModule,
+  hasAidPermission,
+} from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import Pagination from '../../../../common/Pagination';
@@ -32,24 +35,26 @@ const AidApplicationsList = () => {
   const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const isStaffElevated =
-    !!permissions?.super_admin || !!permissions?.fund_raising_manager;
+    !!permissions?.super_admin ||
+    !!permissions?.program_manager ||
+    !!permissions?.fund_raising_manager;
 
   const canCeo =
     isStaffElevated ||
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.ceo_approve');
+    hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
 
   const canDeliver =
     isStaffElevated ||
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.deliver');
+    hasAidPermission(permissions, 'aid_applications', 'deliver');
 
   const canList =
-    canViewModule(permissions, 'fund_raising', 'aid_applications') ||
+    canViewModule(permissions, 'program', 'aid_applications') ||
     canCeo ||
     canDeliver ||
     isStaffElevated;
 
   const canCreate =
-    hasPermissionByPath(permissions, 'fund_raising.aid_applications.create') ||
+    hasAidPermission(permissions, 'aid_applications', 'create') ||
     isStaffElevated;
 
   const [rows, setRows] = useState([]);

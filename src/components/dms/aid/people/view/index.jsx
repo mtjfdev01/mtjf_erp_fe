@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { hasPermissionByPath } from '../../../../../utils/permissions';
+import { hasAidPermission } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
@@ -45,8 +45,9 @@ const AidPersonView = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
   const canUpdate =
-    hasPermissionByPath(permissions, 'fund_raising.aid_people.update') ||
+    hasAidPermission(permissions, 'aid_people', 'update') ||
     permissions?.super_admin ||
+    permissions?.program_manager ||
     permissions?.fund_raising_manager;
 
   const [data, setData] = useState(null);

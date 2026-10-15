@@ -1153,6 +1153,170 @@
   margin-top: 0.2rem;
 }
 
+/* Field investigation — verify declared claims */
+.aid-investigation {
+  margin-bottom: 1rem;
+}
+
+.aid-investigation__title {
+  margin: 0 0 0.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.aid-investigation__hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.aid-investigation__sub {
+  margin: 1.1rem 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.aid-invest-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.aid-invest-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem 1rem;
+  align-items: start;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.aid-invest-row--ok {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+}
+
+.aid-invest-row--mismatch {
+  border-color: #fecaca;
+  background: #fff7f7;
+}
+
+.aid-invest-row__label {
+  font-size: 0.9rem;
+  font-weight: 650;
+  color: #0f172a;
+}
+
+.aid-invest-row__req {
+  color: #b45309;
+}
+
+.aid-invest-row__declared {
+  margin-top: 0.2rem;
+  font-size: 0.84rem;
+  color: #334155;
+  line-height: 1.4;
+}
+
+.aid-invest-row__declared-k {
+  display: inline-block;
+  margin-right: 0.4rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.aid-invest-row__declared--muted {
+  color: #94a3b8;
+}
+
+.aid-invest-row__found {
+  margin-top: 0.35rem;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #b91c1c;
+}
+
+.aid-invest-row__note {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #7f1d1d;
+}
+
+.aid-invest-row__note textarea {
+  width: 100%;
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  font-weight: 400;
+  color: #0f172a;
+  resize: vertical;
+  background: #fff;
+}
+
+.aid-invest-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  justify-content: flex-end;
+}
+
+.aid-invest-status__btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  color: #475569;
+  border-radius: 999px;
+  padding: 0.28rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.aid-invest-status__btn:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.aid-invest-status__btn--verified.is-active {
+  background: #166534;
+  border-color: #166534;
+  color: #fff;
+}
+
+.aid-invest-status__btn--mismatch.is-active {
+  background: #9a3412;
+  border-color: #9a3412;
+  color: #fff;
+}
+
+.aid-invest-status__btn--not_checked.is-active {
+  background: #475569;
+  border-color: #475569;
+  color: #fff;
+}
+
+@media (max-width: 720px) {
+  .aid-invest-row {
+    grid-template-columns: 1fr;
+  }
+
+  .aid-invest-status {
+    justify-content: flex-start;
+  }
+}
+
 .aid-leak-banner {
   background: #fef2f2;
   border: 1px solid #fca5a5;
