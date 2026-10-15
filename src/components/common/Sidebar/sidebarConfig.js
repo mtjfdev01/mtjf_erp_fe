@@ -266,6 +266,14 @@ const buildSuperAdminComplaintsGroup = () => ({
 
 const programDepartmentItems = (isUser = false) => [
   {
+    label: 'Welfare Overview',
+    path: '/dms/aid/overview',
+    type: 'list',
+    module: 'aid_applications',
+    permissionDepartment: 'program',
+    icon: FiBarChart2
+  },
+  {
     label: 'Applications',
     path: '/dms/aid/applications/list',
     type: 'list',
