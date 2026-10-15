@@ -178,6 +178,14 @@ const AidApplicationsList = () => {
             <Link to="/dms/aid/people/list" className="secondary-btn">
               People / family registry
             </Link>
+            {canCeo && (
+              <Link
+                to="/dms/aid/applications/approvals"
+                className="secondary-btn"
+              >
+                <FiCheckCircle /> Approvals
+              </Link>
+            )}
 
             {canCeo && (
               <button

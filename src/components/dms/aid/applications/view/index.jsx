@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import { hasAidPermission } from '../../../../../utils/permissions';
@@ -18,7 +18,9 @@ import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFie
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidInvestigationPanel, {
+  emptyRecommendation,
   isInvestigationComplete,
+  isRecommendationComplete,
   mergeInvestigationState,
 } from '../../shared/AidInvestigationPanel';
 import {
@@ -84,6 +86,9 @@ const FamilyMemberLine = ({ person, relation, notes }) => {
 const AidApplicationView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromApprovals = searchParams.get('from') === 'approvals';
+  const openCeoAction = searchParams.get('action') === 'approve';
   const { permissions } = useAuth();
   const isStaffElevated =
     !!permissions?.super_admin ||
@@ -109,6 +114,7 @@ const AidApplicationView = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [verifyNotes, setVerifyNotes] = useState('');
   const [investigation, setInvestigation] = useState({});
+  const [recommendation, setRecommendation] = useState(emptyRecommendation);
   const [leakageOverride, setLeakageOverride] = useState('');
   const [ceoDecision, setCeoDecision] = useState('approved');
   const [ceoReason, setCeoReason] = useState('');
@@ -136,6 +142,21 @@ const AidApplicationView = () => {
         setInvestigation(
           mergeInvestigationState(items, payload?.verification_checklist || {}),
         );
+      }
+      {
+        const saved = payload?.investigation_recommendation;
+        if (saved && typeof saved === 'object') {
+          setRecommendation({
+            ...emptyRecommendation(),
+            decision: saved.decision || 'approve_as_requested',
+            amount: saved.amount ?? '',
+            period_months: saved.period_months ?? 6,
+            remarks: saved.remarks || '',
+            found_monthly_income: saved.found_monthly_income ?? '',
+          });
+        } else {
+          setRecommendation(emptyRecommendation());
+        }
       }
       if (payload?.verification_notes) setVerifyNotes(payload.verification_notes);
       if (payload?.leakage_override_reason) {
@@ -217,6 +238,19 @@ const AidApplicationView = () => {
     }
   };
 
+  const status = app?.status;
+  const showCeo = canCeo && status === 'ceo_approval_required';
+
+  useEffect(() => {
+    if (!openCeoAction || !showCeo || loading || !app) return;
+    const t = window.setTimeout(() => {
+      document
+        .getElementById('aid-ceo-decision')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 200);
+    return () => window.clearTimeout(t);
+  }, [openCeoAction, showCeo, loading, id, app]);
+
   if (loading) {
     return (
       <>
@@ -236,7 +270,6 @@ const AidApplicationView = () => {
     );
   }
 
-  const status = app.status;
   const attachments = app.attachments || [];
   const flags = app.duplicate_flags || {};
   const history = app.aid_history || {};
@@ -252,10 +285,10 @@ const AidApplicationView = () => {
     investigationItems,
     investigation,
   );
+  const recommendationComplete = isRecommendationComplete(recommendation);
   const showReject =
     canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
   const showVerify = canUpdate && ['submitted', 'under_review'].includes(status);
-  const showCeo = canCeo && status === 'ceo_approval_required';
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
   const verifiedByName = app.verified_by
@@ -278,8 +311,18 @@ const AidApplicationView = () => {
       <div className="form-content aid-view">
         <PageHeader
           title={app.application_no}
-          backPath="/dms/aid/applications/list"
-          onBackClick={() => navigate('/dms/aid/applications/list')}
+          backPath={
+            fromApprovals
+              ? '/dms/aid/applications/approvals'
+              : '/dms/aid/applications/list'
+          }
+          onBackClick={() =>
+            navigate(
+              fromApprovals
+                ? '/dms/aid/applications/approvals'
+                : '/dms/aid/applications/list',
+            )
+          }
           showAdd={false}
         />
 
@@ -474,6 +517,43 @@ const AidApplicationView = () => {
               value={investigation}
               onChange={setInvestigation}
               disabled={!showVerify || busy}
+              vulnerability={app.vulnerability}
+              recommendation={recommendation}
+              onRecommendationChange={setRecommendation}
+              showRecommendation
+              submitDisabled={
+                busy ||
+                !checklistComplete ||
+                !recommendationComplete ||
+                !leakageOverrideOk
+              }
+              onSubmitReport={
+                showVerify
+                  ? () =>
+                      run(() =>
+                        axiosInstance.post(`/aid/applications/${id}/verify`, {
+                          verification_notes:
+                            verifyNotes || recommendation.remarks || undefined,
+                          verification_checklist: investigation,
+                          recommendation: {
+                            decision: recommendation.decision,
+                            amount:
+                              recommendation.decision === 'reject'
+                                ? null
+                                : Number(recommendation.amount),
+                            period_months: Number(recommendation.period_months) || null,
+                            remarks: recommendation.remarks,
+                            found_monthly_income: recommendation.found_monthly_income
+                              ? Number(recommendation.found_monthly_income)
+                              : null,
+                          },
+                          leakage_override_reason: needsLeakageOverride
+                            ? leakageOverride.trim()
+                            : undefined,
+                        }),
+                      )
+                  : undefined
+              }
             />
             {showVerify && !checklistComplete && (
               <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
@@ -481,27 +561,41 @@ const AidApplicationView = () => {
                 Process checks must be Verified.
               </p>
             )}
-            {showVerify && (
-              <div style={{ marginTop: 12 }}>
-                <FormTextarea
-                  label="Verification notes (optional)"
-                  value={verifyNotes}
-                  onChange={(e) => setVerifyNotes(e.target.value)}
-                  rows={2}
-                />
-              </div>
+            {showVerify && !recommendationComplete && (
+              <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
+                Complete Recommendation (decision, amount if approving, and
+                remarks).
+              </p>
             )}
             {!showVerify && app.verification_notes && (
               <p style={{ fontSize: 13, color: '#64748b' }}>
                 Notes: {app.verification_notes}
               </p>
             )}
+            {!showVerify && app.investigation_recommendation?.decision && (
+              <p style={{ fontSize: 13, color: '#166534', marginTop: 8 }}>
+                Recommendation:{' '}
+                {String(app.investigation_recommendation.decision).replace(
+                  /_/g,
+                  ' ',
+                )}
+                {app.investigation_recommendation.amount != null
+                  ? ` · PKR ${app.investigation_recommendation.amount}`
+                  : ''}
+                {app.investigation_recommendation.period_months
+                  ? ` · ${app.investigation_recommendation.period_months} months`
+                  : ''}
+              </p>
+            )}
           </section>
         )}
 
-        {(showReject || showVerify || showCeo || showDelivery) && (
-          <div className="aid-cta-strip">
-            {showReject && (
+        {(showReject || showCeo || showDelivery) && (
+          <div
+            id="aid-ceo-decision"
+            className={`aid-cta-strip${showCeo ? ' aid-ceo-panel' : ''}`}
+          >
+            {showReject && !showVerify && (
               <button
                 type="button"
                 className="secondary-btn secondary-btn--danger"
@@ -509,33 +603,6 @@ const AidApplicationView = () => {
                 onClick={() => setRejectOpen(true)}
               >
                 Reject
-              </button>
-            )}
-            {showVerify && (
-              <button
-                type="button"
-                className="primary-btn"
-                disabled={busy || !checklistComplete || !leakageOverrideOk}
-                title={
-                  !checklistComplete
-                    ? 'Complete investigation first'
-                    : !leakageOverrideOk
-                      ? 'Leakage override reason required'
-                      : 'Submit verification'
-                }
-                onClick={() =>
-                  run(() =>
-                    axiosInstance.post(`/aid/applications/${id}/verify`, {
-                      verification_notes: verifyNotes || undefined,
-                      verification_checklist: investigation,
-                      leakage_override_reason: needsLeakageOverride
-                        ? leakageOverride.trim()
-                        : undefined,
-                    }),
-                  )
-                }
-              >
-                Mark verified → CEO
               </button>
             )}
             {showCeo && (
@@ -546,6 +613,14 @@ const AidApplicationView = () => {
                   onChange={(e) => setCeoDecision(e.target.value)}
                   options={AID_CEO_OPTIONS}
                 />
+                {ceoDecision === 'rejected' ? (
+                  <FormTextarea
+                    label="CEO rejection reason"
+                    value={ceoReason}
+                    onChange={(e) => setCeoReason(e.target.value)}
+                    rows={2}
+                  />
+                ) : null}
                 <button
                   type="button"
                   className="primary-btn"
@@ -569,7 +644,9 @@ const AidApplicationView = () => {
                     )
                   }
                 >
-                  Record CEO decision
+                  {ceoDecision === 'approved'
+                    ? 'Approve application'
+                    : 'Record CEO decision'}
                 </button>
               </>
             )}

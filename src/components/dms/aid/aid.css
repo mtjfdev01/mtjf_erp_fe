@@ -400,6 +400,45 @@
   gap: 0.4rem;
 }
 
+.aid-icon-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.aid-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+  font-size: 1.05rem;
+}
+
+.aid-icon-btn:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.aid-icon-btn--approve {
+  border-color: #86efac;
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aid-icon-btn--approve:hover {
+  background: #bbf7d0;
+}
+
+.aid-ceo-panel {
+  scroll-margin-top: 1rem;
+}
+
 .aid-row--ceo-pending td {
   background: #fffbeb;
 }
@@ -1156,6 +1195,196 @@
 /* Field investigation — verify declared claims */
 .aid-investigation {
   margin-bottom: 1rem;
+}
+
+.aid-invest-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .aid-invest-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.aid-invest-side {
+  display: grid;
+  gap: 0.85rem;
+  position: sticky;
+  top: 0.75rem;
+}
+
+.aid-vuln-card {
+  background: #0f172a;
+  color: #f8fafc;
+  border-radius: 12px;
+  padding: 1rem 1.05rem;
+}
+
+.aid-vuln-card__label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.aid-vuln-card__score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.aid-vuln-card__pct {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.aid-vuln-card__old {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  text-decoration: line-through;
+}
+
+.aid-vuln-card__band {
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+.aid-vuln-card__deltas {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.aid-vuln-card__deltas li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.78rem;
+  color: #e2e8f0;
+}
+
+.aid-vuln-card__deltas strong {
+  color: #fca5a5;
+  white-space: nowrap;
+}
+
+.aid-vuln-card__empty,
+.aid-vuln-card__threshold {
+  margin: 0.65rem 0 0;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.aid-rec-card {
+  background: #fff;
+  border: 2px solid #166534;
+  border-radius: 12px;
+  padding: 0.95rem 1rem 1rem;
+}
+
+.aid-rec-card__title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: #14532d;
+}
+
+.aid-rec-options {
+  display: grid;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.aid-rec-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: #334155;
+  cursor: pointer;
+  background: #f8fafc;
+}
+
+.aid-rec-option.is-active {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #14532d;
+}
+
+.aid-rec-option--reject.is-active {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #991b1b;
+}
+
+.aid-rec-option input {
+  accent-color: #166534;
+}
+
+.aid-rec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+
+.aid-rec-field {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.aid-rec-field input,
+.aid-rec-field select,
+.aid-rec-field textarea {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  font-weight: 400;
+  color: #0f172a;
+  background: #fff;
+}
+
+.aid-rec-field textarea {
+  resize: vertical;
+  min-height: 88px;
+}
+
+.aid-rec-submit {
+  width: 100%;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: #166534;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aid-rec-submit:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .aid-investigation__title {

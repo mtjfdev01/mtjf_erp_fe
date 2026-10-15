@@ -274,6 +274,14 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiLifeBuoy
   },
   {
+    label: 'Approvals',
+    path: '/dms/aid/applications/approvals',
+    type: 'list',
+    module: 'aid_applications',
+    permissionDepartment: 'program',
+    icon: FiCheckCircle
+  },
+  {
     label: 'Beneficiaries',
     path: '/dms/aid/people/list',
     type: 'list',
