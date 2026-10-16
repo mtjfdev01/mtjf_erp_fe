@@ -79,8 +79,13 @@ const AidRelatedPersonFields = ({
       full_name: person.full_name || value.full_name || '',
       father_or_husband_name:
         person.father_or_husband_name || value.father_or_husband_name || '',
+      name_urdu: person.name_urdu || value.name_urdu || '',
       cnic: formatCnicInput(person.cnic || value.cnic || ''),
+      cnic_expiry: person.cnic_expiry || value.cnic_expiry || '',
       phone: formatPkPhoneInput(person.phone || value.phone || ''),
+      phone_alternate: person.phone_alternate || value.phone_alternate || '',
+      photo_url: person.photo_url || value.photo_url || '',
+      photo_name: person.photo_name || value.photo_name || '',
       gender: person.gender || value.gender || '',
       date_of_birth: person.date_of_birth || value.date_of_birth || '',
       marital_status: person.marital_status || value.marital_status || '',
@@ -101,6 +106,17 @@ const AidRelatedPersonFields = ({
       student_class: person.student_class || value.student_class || '',
       student_class_type: person.student_class_type || value.student_class_type || '',
       student_class_name: person.student_class_name || value.student_class_name || '',
+      address: person.address || value.address || '',
+      city: person.city || person.district || value.city || '',
+      province: person.province || value.province || '',
+      district: person.district || value.district || '',
+      tehsil: person.tehsil || value.tehsil || '',
+      union_council: person.union_council || value.union_council || '',
+      resident_type: person.resident_type || value.resident_type || '',
+      rented_amount:
+        person.rented_amount != null && person.rented_amount !== ''
+          ? String(person.rented_amount)
+          : value.rented_amount || '',
     });
     setLookupHint(`Linked existing person #${person.id} — ${person.full_name}`);
   };

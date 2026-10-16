@@ -624,10 +624,15 @@ export const AID_CHILD_RELATIONS = [
 export const emptyRelatedPersonBase = () => ({
   full_name: '',
   father_or_husband_name: '',
+  name_urdu: '',
   gender: '',
   date_of_birth: '',
   cnic: '',
+  cnic_expiry: '',
   phone: '',
+  phone_alternate: '',
+  photo_url: '',
+  photo_name: '',
   marital_status: '',
   occupation: '',
   monthly_income: '',
@@ -639,7 +644,14 @@ export const emptyRelatedPersonBase = () => ({
   disability_type: '',
   existing_person_id: null,
   relation_type: '',
+  province: '',
+  district: '',
+  tehsil: '',
+  union_council: '',
+  city: '',
+  address: '',
   ...emptyLiteracyFields(),
+  ...emptyResidentHousingFields(),
 });
 
 export const emptyChildRow = () => ({
@@ -922,10 +934,19 @@ const FAMILY_HEAD_MALE_TYPES = new Set([
 export const emptyFamilyHeadRow = (relationType = 'father') => ({
   full_name: '',
   father_or_husband_name: '',
+  name_urdu: '',
   cnic: '',
+  cnic_expiry: '',
   phone: '',
+  phone_alternate: '',
+  photo_url: '',
+  photo_name: '',
   city: '',
   address: '',
+  province: '',
+  district: '',
+  tehsil: '',
+  union_council: '',
   gender: FAMILY_HEAD_FEMALE_TYPES.has(relationType)
     ? 'female'
     : FAMILY_HEAD_MALE_TYPES.has(relationType)

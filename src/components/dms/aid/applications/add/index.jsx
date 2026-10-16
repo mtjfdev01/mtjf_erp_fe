@@ -63,10 +63,19 @@ import '../../aid.css';
 const emptyPerson = {
   full_name: '',
   father_or_husband_name: '',
+  name_urdu: '',
   cnic: '',
+  cnic_expiry: '',
   phone: '',
+  phone_alternate: '',
+  photo_url: '',
+  photo_name: '',
   city: '',
   address: '',
+  province: '',
+  district: '',
+  tehsil: '',
+  union_council: '',
   gender: '',
   date_of_birth: '',
   marital_status: '',
@@ -162,37 +171,24 @@ const RelativeFields = ({ title, value, onChange, compact }) => (
     className={`aid-relative-block${compact ? ' aid-relative-block--compact' : ''}`}
   >
     <AidFamilyHeadPersonalFields
-      title={title || 'Relative'}
-      subtitle=""
+      title={title || 'Identity'}
+      subtitle="CNIC is checked against the family registry as you type."
       value={value}
       onChange={onChange}
       afterGrid={
-        <>
-          <FormInput
-            label="City"
-            value={value?.city || ''}
-            onChange={(e) => onChange({ ...value, city: e.target.value })}
+        <label className="aid-toggle" style={{ alignSelf: 'end' }}>
+          <input
+            type="checkbox"
+            checked={value?.is_alive !== false}
+            onChange={(e) =>
+              onChange({ ...value, is_alive: e.target.checked })
+            }
           />
-          <label className="aid-toggle" style={{ alignSelf: 'end' }}>
-            <input
-              type="checkbox"
-              checked={value?.is_alive !== false}
-              onChange={(e) =>
-                onChange({ ...value, is_alive: e.target.checked })
-              }
-            />
-            Alive
-          </label>
-        </>
+          Alive
+        </label>
       }
     />
     <AidLiteracyFields value={value} onChange={onChange} />
-    <FormTextarea
-      label="Address"
-      value={value?.address || ''}
-      onChange={(e) => onChange({ ...value, address: e.target.value })}
-      rows={2}
-    />
   </div>
 );
 
@@ -201,8 +197,13 @@ const cleanPersonPayload = (p) => {
   return {
     full_name: p.full_name.trim(),
     father_or_husband_name: p.father_or_husband_name?.trim() || undefined,
+    name_urdu: p.name_urdu?.trim() || undefined,
     cnic: p.cnic || undefined,
+    cnic_expiry: p.cnic_expiry || undefined,
     phone: p.phone || undefined,
+    phone_alternate: p.phone_alternate?.trim() || undefined,
+    photo_url: p.photo_url || undefined,
+    photo_name: p.photo_name || undefined,
     gender: p.gender || undefined,
     date_of_birth: p.date_of_birth || undefined,
     marital_status: p.marital_status || undefined,
@@ -247,7 +248,11 @@ const cleanPersonPayload = (p) => {
     bisp_status: p.bisp_status || undefined,
     is_alive: p.is_alive !== false,
     address: p.address || undefined,
-    city: p.city || undefined,
+    city: p.city || p.district || undefined,
+    province: p.province || undefined,
+    district: p.district || undefined,
+    tehsil: p.tehsil || undefined,
+    union_council: p.union_council || undefined,
   };
 };
 
@@ -1089,8 +1094,10 @@ const AidApplicationAdd = () => {
             ) : (
               <>
                 <AidFamilyHeadPersonalFields
-                  title="Primary Beneficiary"
-                  subtitle="Person details for this application. CNIC and phone auto-format like Family Head."
+                  title="Identity of beneficiary"
+                  subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
+                  contactTitle="Contact & address"
+                  contactSubtitle="The investigator visits this address; add a landmark."
                   value={beneficiary}
                   onChange={(next) =>
                     setBeneficiary({
@@ -1099,29 +1106,6 @@ const AidApplicationAdd = () => {
                     })
                   }
                 />
-                <div className="form-grid-2" style={{ marginTop: 12 }}>
-                  <FormInput
-                    label="City"
-                    value={beneficiary.city || ''}
-                    onChange={(e) =>
-                      setBeneficiary((p) => ({ ...p, city: e.target.value }))
-                    }
-                  />
-                  <div className="aid-span-2">
-                    <FormTextarea
-                      label="Address"
-                      value={beneficiary.address || ''}
-                      onChange={(e) =>
-                        setBeneficiary((p) => ({
-                          ...p,
-                          address: e.target.value,
-                        }))
-                      }
-                      rows={2}
-                      placeholder="Full address"
-                    />
-                  </div>
-                </div>
               </>
             )}
 
@@ -1195,13 +1179,13 @@ const AidApplicationAdd = () => {
 
           {formTab === 'family' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Family Head</h3>
+            {/* <h3 className="form-section-heading">Family Head</h3>
             <p className="aid-section-hint">{familyHint}</p>
             <p className="aid-section-hint">
               For a single-person family, check both Applicant and Beneficiary
               on the Family Head. Otherwise mark Applicant / Beneficiary as
               needed (spouse or family members can also be the applicant).
-            </p>
+            </p> */}
 
             {isMarried && (
               <div className="aid-family-panel">
@@ -1324,16 +1308,19 @@ const AidApplicationAdd = () => {
                       />
                     </div>
                     <AidFamilyHeadPersonalFields
-                      title={`${typeLabel} — Family Head${
+                      title={`Identity of family head${
                         head.is_beneficiary || head.is_applicant
-                          ? ` (${[
+                          ? ` — ${typeLabel} (${[
                               head.is_beneficiary ? 'Beneficiary' : null,
                               head.is_applicant ? 'Applicant' : null,
                             ]
                               .filter(Boolean)
                               .join(' + ')})`
-                          : ''
+                          : ` — ${typeLabel}`
                       }`}
+                      subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
+                      contactTitle="Contact & address"
+                      contactSubtitle="The investigator visits this address; add a landmark."
                       value={head}
                       onChange={(next) =>
                         setFamilyHeads((list) =>
