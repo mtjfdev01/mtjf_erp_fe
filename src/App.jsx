@@ -138,6 +138,8 @@ import AidApprovalsList from './components/dms/aid/applications/approvals';
 import AidWelfareOverview from './components/dms/aid/overview';
 import AidApplicationAdd from './components/dms/aid/applications/add';
 import AidApplicationView from './components/dms/aid/applications/view';
+import AidEntryApplicationsList from './components/dms/aid/applications/entry/list';
+import AidEntryApplicationView from './components/dms/aid/applications/entry/view';
 import AidPeopleList from './components/dms/aid/people/list';
 import AidPersonView from './components/dms/aid/people/view';
 import { RecurringDonationsList, RecurringDonationView, AddRecurringDonation, UpdateRecurringDonation } from './components/dms/recurring_donations';
@@ -522,6 +524,8 @@ const App = () => {
 
                                 <Route path="/dms/aid/overview" element={<AidWelfareOverview />} />
                                 <Route path="/dms/aid/applications/list" element={<AidApplicationsList />} />
+                                <Route path="/dms/aid/applications/entry/list" element={<AidEntryApplicationsList />} />
+                                <Route path="/dms/aid/applications/entry/view/:id" element={<AidEntryApplicationView />} />
                                 <Route path="/dms/aid/applications/approvals" element={<AidApprovalsList />} />
                                 <Route path="/dms/aid/applications/add" element={<AidApplicationAdd />} />
                                 <Route path="/dms/aid/applications/view/:id" element={<AidApplicationView />} />

@@ -1,23 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
 import axiosInstance from '../../../../utils/axios';
-import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import AidLiteracyFields from './AidLiteracyFields';
+import AidFamilyHeadPersonalFields from './AidFamilyHeadPersonalFields';
 import {
-  AID_GENDERS,
   AID_HOUSEHOLD_DEPENDENCY,
-  AID_MARITAL_STATUS,
-  AID_PROFESSIONS,
-  ageFromDob,
-  calcAgeFromDob,
   formatCnicInput,
   formatPkPhoneInput,
 } from '../aidConstants';
 
 /**
- * Standardized person card for any related individual (sibling / child / dependent / …).
- * Type (relation) first, then screenshot fields + existing literacy tree.
- * Optional CNIC lookup links an existing person instead of creating a duplicate.
+ * Family member card — same personal layout as Family Head / Beneficiary,
+ * plus relation type, CNIC lookup, household dependency, and literacy detail.
  */
 const AidRelatedPersonFields = ({
   value,
@@ -29,8 +23,6 @@ const AidRelatedPersonFields = ({
   cardTitle,
 }) => {
   const patch = (partial) => onChange({ ...value, ...partial });
-  const ageYrs = calcAgeFromDob(value?.date_of_birth);
-  const ageLabel = ageFromDob(value?.date_of_birth);
   const [lookupHint, setLookupHint] = useState('');
   const [lookingUp, setLookingUp] = useState(false);
   const lookupTimer = useRef(null);
@@ -61,6 +53,7 @@ const AidRelatedPersonFields = ({
         lower === 'mother' ||
         lower === 'aunt' ||
         lower === 'grandmother' ||
+        lower === 'maternal_grandmother' ||
         lower === 'niece'
       ) {
         partial.gender = 'female';
@@ -70,6 +63,7 @@ const AidRelatedPersonFields = ({
         lower === 'father' ||
         lower === 'uncle' ||
         lower === 'grandfather' ||
+        lower === 'maternal_grandfather' ||
         lower === 'nephew'
       ) {
         partial.gender = 'male';
@@ -95,6 +89,9 @@ const AidRelatedPersonFields = ({
         person.monthly_income != null && person.monthly_income !== ''
           ? String(person.monthly_income)
           : value.monthly_income || '',
+      education_level: person.education_level || value.education_level || '',
+      necta_status: person.necta_status || value.necta_status || '',
+      vulnerability: person.vulnerability || value.vulnerability || '',
       household_dependency:
         person.household_dependency || value.household_dependency || '',
       has_disability: !!person.has_disability,
@@ -137,12 +134,14 @@ const AidRelatedPersonFields = ({
     }
   };
 
-  useEffect(() => () => {
-    if (lookupTimer.current) clearTimeout(lookupTimer.current);
-  }, []);
+  useEffect(
+    () => () => {
+      if (lookupTimer.current) clearTimeout(lookupTimer.current);
+    },
+    [],
+  );
 
-  const onCnicChange = (raw) => {
-    const formatted = formatCnicInput(raw);
+  const onCnicChange = (formatted) => {
     patch({ cnic: formatted, existing_person_id: null });
     setLookupHint('');
     if (lookupTimer.current) clearTimeout(lookupTimer.current);
@@ -155,140 +154,44 @@ const AidRelatedPersonFields = ({
         <div className="aid-related-person__title">{cardTitle}</div>
       ) : null}
 
-      <div className="aid-related-person__grid">
-        {relationOptions?.length ? (
-          <div className="aid-related-person__field--full">
-            <FormSelect
-              label={relationLabel}
-              value={relationValue}
-              onChange={(e) => setRelation(e.target.value)}
-              options={[{ value: '', label: 'Select type…' }, ...relationOptions]}
-              required
-            />
-          </div>
-        ) : null}
-
-        <div className="aid-related-person__field--full">
-          <FormInput
-            label="CNIC / B-Form Number (format: 12345-1234567-1)"
-            value={formatCnicInput(value?.cnic || '')}
-            onChange={(e) => onCnicChange(e.target.value)}
-            placeholder="Enter CNIC to search existing record..."
-            inputMode="numeric"
-            autoComplete="off"
+      <AidFamilyHeadPersonalFields
+        showTitle={false}
+        embedded
+        value={value}
+        onChange={onChange}
+        onCnicChange={onCnicChange}
+        cnicLookingUp={lookingUp}
+        cnicHint={lookupHint}
+        cnicLabel="CNIC NUMBER (FORMAT: 12345-1234567-1)"
+        cnicPlaceholder="Enter CNIC to search existing record..."
+        beforeFields={
+          relationOptions?.length ? (
+            <div className="aid-fh-personal__field aid-fh-personal__field--full">
+              <FormSelect
+                label={relationLabel}
+                value={relationValue}
+                onChange={(e) => setRelation(e.target.value)}
+                options={[
+                  { value: '', label: 'Select type…' },
+                  ...relationOptions,
+                ]}
+                required
+              />
+            </div>
+          ) : null
+        }
+        afterGrid={
+          <FormSelect
+            label="Household Dependency"
+            value={value?.household_dependency || ''}
+            onChange={(e) => patch({ household_dependency: e.target.value })}
+            options={[
+              { value: '', label: '—' },
+              ...AID_HOUSEHOLD_DEPENDENCY,
+            ]}
           />
-          {lookingUp ? (
-            <p className="aid-related-person__hint">Searching…</p>
-          ) : lookupHint ? (
-            <p
-              className={`aid-related-person__hint${
-                value?.existing_person_id ? ' is-linked' : ''
-              }`}
-            >
-              {lookupHint}
-            </p>
-          ) : null}
-        </div>
-
-        <FormInput
-          label="Full Name"
-          required
-          value={value?.full_name || ''}
-          onChange={(e) => patch({ full_name: e.target.value })}
-          placeholder="e.g. Rukhsana Bibi / رخصانہ بی بی"
-        />
-        <FormInput
-          label="Father / Husband Name"
-          value={value?.father_or_husband_name || ''}
-          onChange={(e) => patch({ father_or_husband_name: e.target.value })}
-          placeholder="e.g. Ahmed Ali"
-        />
-
-        <FormSelect
-          label="Gender"
-          value={value?.gender || ''}
-          onChange={(e) => patch({ gender: e.target.value })}
-          options={[{ value: '', label: '—' }, ...AID_GENDERS]}
-        />
-        <div className="aid-related-person__dob">
-          <div className="aid-related-person__dob-label-row">
-            <span className="aid-related-person__dob-label">Date of Birth</span>
-            {ageYrs != null ? (
-              <span className="aid-related-person__age">Age: {ageYrs} yrs</span>
-            ) : ageLabel ? (
-              <span className="aid-related-person__age">Age: {ageLabel} yrs</span>
-            ) : null}
-          </div>
-          <FormInput
-            label=""
-            type="date"
-            value={value?.date_of_birth || ''}
-            onChange={(e) => patch({ date_of_birth: e.target.value })}
-          />
-        </div>
-
-        <FormSelect
-          label="Profession"
-          value={value?.occupation || ''}
-          onChange={(e) => patch({ occupation: e.target.value })}
-          options={[{ value: '', label: '—' }, ...AID_PROFESSIONS]}
-        />
-        <FormInput
-          label="Monthly Income (PKR)"
-          type="number"
-          min="0"
-          value={value?.monthly_income ?? ''}
-          onChange={(e) => patch({ monthly_income: e.target.value })}
-          placeholder="0"
-        />
-
-        <FormSelect
-          label="Household Dependency"
-          value={value?.household_dependency || ''}
-          onChange={(e) => patch({ household_dependency: e.target.value })}
-          options={[{ value: '', label: '—' }, ...AID_HOUSEHOLD_DEPENDENCY]}
-        />
-        <FormSelect
-          label="Marital Status"
-          value={value?.marital_status || ''}
-          onChange={(e) => patch({ marital_status: e.target.value })}
-          options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
-        />
-
-        <FormInput
-          label="Contact Number (03XXXXXXXXX)"
-          value={formatPkPhoneInput(value?.phone || '')}
-          onChange={(e) =>
-            patch({ phone: formatPkPhoneInput(e.target.value) })
-          }
-          placeholder="03001234567"
-          inputMode="numeric"
-        />
-      </div>
-
-      <label className="aid-related-person__disability">
-        <span>Has Disability</span>
-        <input
-          type="checkbox"
-          checked={!!value?.has_disability}
-          onChange={(e) =>
-            patch({
-              has_disability: e.target.checked,
-              disability_type: e.target.checked
-                ? value?.disability_type || ''
-                : '',
-            })
-          }
-        />
-      </label>
-      {value?.has_disability ? (
-        <FormInput
-          label="Disability Type / Medical Detail"
-          value={value?.disability_type || ''}
-          onChange={(e) => patch({ disability_type: e.target.value })}
-          placeholder="e.g. Physical - Leg Impairment, Visual, Hearing"
-        />
-      ) : null}
+        }
+      />
 
       {showLiteracy ? (
         <div className="aid-related-person__literacy">

@@ -631,6 +631,9 @@ export const emptyRelatedPersonBase = () => ({
   marital_status: '',
   occupation: '',
   monthly_income: '',
+  education_level: '',
+  necta_status: '',
+  vulnerability: '',
   household_dependency: '',
   has_disability: false,
   disability_type: '',
@@ -710,6 +713,8 @@ export const AID_RELATED_PERSON_TYPES = [
   { value: 'cousin', label: 'Cousin' },
   { value: 'grandfather', label: 'Grandfather' },
   { value: 'grandmother', label: 'Grandmother' },
+  { value: 'maternal_grandfather', label: 'Maternal Grandfather' },
+  { value: 'maternal_grandmother', label: 'Maternal Grandmother' },
   { value: 'grandchild', label: 'Grandchild' },
   { value: 'guardian', label: 'Guardian' },
   { value: 'in_law', label: 'In-law' },
@@ -746,6 +751,8 @@ export function resolveRelatedPersonKinship(row) {
       'cousin',
       'grandfather',
       'grandmother',
+      'maternal_grandfather',
+      'maternal_grandmother',
       'grandchild',
       'guardian',
       'custody_holder',
@@ -848,6 +855,8 @@ export const AID_KINSHIP_TYPES = [
   { value: 'cousin', label: 'Cousin' },
   { value: 'grandfather', label: 'Grandfather' },
   { value: 'grandmother', label: 'Grandmother' },
+  { value: 'maternal_grandfather', label: 'Maternal Grandfather' },
+  { value: 'maternal_grandmother', label: 'Maternal Grandmother' },
   { value: 'grandchild', label: 'Grandchild' },
   { value: 'guardian', label: 'Guardian' },
   { value: 'custody_holder', label: 'Custody holder' },
@@ -859,13 +868,56 @@ export const AID_KINSHIP_TYPES = [
 export const AID_FAMILY_HEAD_TYPES = [
   { value: 'father', label: 'Father' },
   { value: 'mother', label: 'Mother' },
-  { value: 'guardian', label: 'Guardian' },
-  { value: 'grandfather', label: 'Grandfather' },
-  { value: 'grandmother', label: 'Grandmother' },
+  { value: 'spouse', label: 'Husband' },
+  { value: 'son', label: 'Son' },
+  { value: 'daughter', label: 'Daughter' },
+  { value: 'brother', label: 'Brother' },
+  { value: 'sister', label: 'Sister' },
+  { value: 'step_brother', label: 'Step Brother' },
+  { value: 'step_sister', label: 'Step Sister' },
+  { value: 'half_brother', label: 'Half Brother' },
+  { value: 'half_sister', label: 'Half Sister' },
+  { value: 'sibling', label: 'Sibling' },
   { value: 'uncle', label: 'Uncle' },
   { value: 'aunt', label: 'Aunt' },
+  { value: 'cousin', label: 'Cousin' },
+  { value: 'nephew', label: 'Nephew' },
+  { value: 'niece', label: 'Niece' },
+  { value: 'grandfather', label: 'Grandfather' },
+  { value: 'grandmother', label: 'Grandmother' },
+  { value: 'maternal_grandfather', label: 'Maternal Grandfather' },
+  { value: 'maternal_grandmother', label: 'Maternal Grandmother' },
+  { value: 'grandchild', label: 'Grandchild' },
+  { value: 'guardian', label: 'Guardian' },
+  { value: 'custody_holder', label: 'Custody holder' },
+  { value: 'in_law', label: 'In-law' },
   { value: 'other', label: 'Other' },
 ];
+
+const FAMILY_HEAD_FEMALE_TYPES = new Set([
+  'mother',
+  'daughter',
+  'sister',
+  'step_sister',
+  'half_sister',
+  'aunt',
+  'niece',
+  'grandmother',
+  'maternal_grandmother',
+]);
+
+const FAMILY_HEAD_MALE_TYPES = new Set([
+  'father',
+  'spouse',
+  'son',
+  'brother',
+  'step_brother',
+  'half_brother',
+  'uncle',
+  'nephew',
+  'grandfather',
+  'maternal_grandfather',
+]);
 
 export const emptyFamilyHeadRow = (relationType = 'father') => ({
   full_name: '',
@@ -874,16 +926,11 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   phone: '',
   city: '',
   address: '',
-  gender:
-    relationType === 'mother' ||
-    relationType === 'grandmother' ||
-    relationType === 'aunt'
-      ? 'female'
-      : relationType === 'father' ||
-          relationType === 'grandfather' ||
-          relationType === 'uncle'
-        ? 'male'
-        : '',
+  gender: FAMILY_HEAD_FEMALE_TYPES.has(relationType)
+    ? 'female'
+    : FAMILY_HEAD_MALE_TYPES.has(relationType)
+      ? 'male'
+      : '',
   date_of_birth: '',
   marital_status: '',
   vulnerability: '',
@@ -955,6 +1002,8 @@ export const AID_FAMILY_SECTIONS = [
     relations: [
       { value: 'grandfather', label: 'Grandfather' },
       { value: 'grandmother', label: 'Grandmother' },
+      { value: 'maternal_grandfather', label: 'Maternal Grandfather' },
+      { value: 'maternal_grandmother', label: 'Maternal Grandmother' },
     ],
     defaultRelation: 'grandfather',
   },
@@ -1001,13 +1050,34 @@ export const AID_GENDERS = [
 ];
 
 export const AID_ATTACHMENT_CONTEXTS = [
-  { value: 'profile', label: 'Profile (CNIC, bill, etc.)' },
+  { value: 'profile', label: 'Profile' },
   { value: 'verification', label: 'Verification' },
   { value: 'delivery', label: 'Delivery / handover' },
+  { value: 'site_visit', label: 'Site visit' },
+  { value: 'mepco_bill', label: 'Mepco Bill' },
+  { value: 'cnic', label: 'CNICs' },
+  { value: 'bay_form', label: 'Bay Forms' },
+  { value: 'death_certificate', label: 'Death Certificates' },
+  { value: 'marriage_certificate', label: 'Marriage Certificates' },
+  { value: 'education_certificate', label: 'Education Certificates' },
+  { value: 'e_stamp_paper', label: 'E-Stamp Paper' },
+  { value: 'zakat', label: 'Zakat form' },
+  { value: 'consent', label: 'Consent form' },
+];
+
+/** Optional application-intake document slots (create form Attachments tab). */
+export const AID_APPLICATION_DOC_TYPES = [
+  { value: 'mepco_bill', label: 'Mepco Bill' },
+  { value: 'cnic', label: 'CNICs' },
+  { value: 'bay_form', label: 'Bay Forms' },
+  { value: 'death_certificate', label: 'Death Certificates' },
+  { value: 'marriage_certificate', label: 'Marriage Certificates' },
+  { value: 'education_certificate', label: 'Education Certificates' },
+  { value: 'e_stamp_paper', label: 'E-Stamp Paper' },
 ];
 
 export const AID_VERIFICATION_CHECKLIST = [
-  { key: 'home_visited', label: 'Home / field visit completed', required: true },
+  { key: 'site_visit', label: 'Site Visit', required: true },
   {
     key: 'identity_confirmed',
     label: 'Beneficiary identity confirmed (name / CNIC)',

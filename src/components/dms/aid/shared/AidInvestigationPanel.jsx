@@ -29,10 +29,22 @@ export const emptyRecommendation = () => ({
 
 export const normalizeInvestigationEntry = (value) => {
   if (value === true || value === 'verified') {
-    return { status: 'verified', note: '' };
+    return {
+      status: 'verified',
+      note: '',
+      attachment_url: '',
+      attachment_name: '',
+      attachment_id: null,
+    };
   }
   if (value === 'mismatch') {
-    return { status: 'mismatch', note: '' };
+    return {
+      status: 'mismatch',
+      note: '',
+      attachment_url: '',
+      attachment_name: '',
+      attachment_id: null,
+    };
   }
   if (value && typeof value === 'object') {
     const statusRaw = String(value.status || '').toLowerCase();
@@ -45,9 +57,18 @@ export const normalizeInvestigationEntry = (value) => {
     return {
       status,
       note: String(value.note || value.notes || value.found || ''),
+      attachment_url: String(value.attachment_url || ''),
+      attachment_name: String(value.attachment_name || ''),
+      attachment_id: value.attachment_id ?? null,
     };
   }
-  return { status: 'not_checked', note: '' };
+  return {
+    status: 'not_checked',
+    note: '',
+    attachment_url: '',
+    attachment_name: '',
+    attachment_id: null,
+  };
 };
 
 export const emptyInvestigationState = (items = []) =>
@@ -62,8 +83,14 @@ export const mergeInvestigationState = (items = [], saved = {}) => {
   const base = emptyInvestigationState(items);
   if (!saved || typeof saved !== 'object') return base;
   for (const item of items) {
-    if (saved[item.key] !== undefined) {
-      base[item.key] = normalizeInvestigationEntry(saved[item.key]);
+    const raw =
+      saved[item.key] !== undefined
+        ? saved[item.key]
+        : item.key === 'site_visit'
+          ? saved.home_visited
+          : undefined;
+    if (raw !== undefined) {
+      base[item.key] = normalizeInvestigationEntry(raw);
     }
   }
   return base;
@@ -71,7 +98,16 @@ export const mergeInvestigationState = (items = [], saved = {}) => {
 
 export const isInvestigationComplete = (items = [], state = {}) =>
   (items || []).every((item) => {
-    const entry = normalizeInvestigationEntry(state[item.key]);
+    const entry = normalizeInvestigationEntry(
+      state[item.key] ??
+        (item.key === 'site_visit' ? state.home_visited : undefined),
+    );
+    if (item.accepts_file) {
+      return (
+        entry.status === 'verified' &&
+        String(entry.attachment_url || '').trim().length > 0
+      );
+    }
     const allowMismatch = item.allow_mismatch !== false && item.kind !== 'process';
     if (!allowMismatch) return entry.status === 'verified';
     if (!item.required) {
@@ -100,6 +136,96 @@ export const isRecommendationComplete = (rec = {}) => {
   return true;
 };
 
+/** Fallback section when API items omit `section` (older payloads). */
+const INVESTIGATION_KEY_SECTION = {
+  identity_of_head: 'family',
+  identity_of_beneficiary: 'beneficiary',
+  identity_of_applicant: 'applicant',
+  address: 'beneficiary',
+  household_size: 'family',
+  monthly_household_income: 'family',
+  occupation: 'family',
+  monthly_rent: 'family',
+  resident_housing: 'family',
+  land_property: 'family',
+  livestock: 'family',
+  vehicle: 'family',
+  siblings: 'family',
+  children: 'family',
+  spouse: 'family',
+  brother_lives_separately: 'family',
+  spouse_deceased: 'beneficiary',
+  disability: 'beneficiary',
+  necta_status: 'family',
+  bisp_status: 'family',
+  aid_request: 'case',
+  site_visit: 'case',
+  home_visited: 'case',
+  need_verified: 'case',
+  duplicates_reviewed: 'case',
+  eligible_recommended: 'case',
+};
+
+const TAB_TO_SECTION = {
+  case: 'case',
+  beneficiary: 'beneficiary',
+  family: 'family',
+  writer: 'applicant',
+};
+
+export const resolveInvestigationSection = (item) => {
+  if (item?.section) return item.section;
+  if (item?.kind === 'process') return 'case';
+  return INVESTIGATION_KEY_SECTION[item?.key] || 'case';
+};
+
+/**
+ * Case tab → all items. Other tabs → section-matched claims only (no process).
+ * Attachments → none.
+ * Beneficiary tab also shows family-head identity when there is no separate
+ * beneficiary identity (single-person household).
+ */
+export const filterInvestigationItemsByTab = (items = [], tab = 'case') => {
+  const list = Array.isArray(items) ? items : [];
+  if (!tab || tab === 'case') return list;
+  if (tab === 'attachments') return [];
+  const section = TAB_TO_SECTION[tab];
+  if (!section) return list;
+  const hasBeneficiaryIdentity = list.some(
+    (i) => i.key === 'identity_of_beneficiary',
+  );
+  return list.filter((item) => {
+    if (item.kind === 'process') return false;
+    const sec = resolveInvestigationSection(item);
+    if (sec === section) return true;
+    // Family tab also shows applicant claims (Applicant tab removed from view)
+    if (tab === 'family' && sec === 'applicant') return true;
+    if (
+      tab === 'beneficiary' &&
+      !hasBeneficiaryIdentity &&
+      item.key === 'identity_of_head'
+    ) {
+      return true;
+    }
+    return false;
+  });
+};
+
+const TAB_INVEST_COPY = {
+  case: {
+    title: 'Verify what was declared',
+    hint: 'Full investigation checklist for this case. A mismatch needs a Found note.',
+  },
+  beneficiary: {
+    title: 'Verify beneficiary claims',
+    hint: 'Checks linked to the beneficiary only.',
+  },
+  family: {
+    title: 'Verify family / applicant',
+    hint: 'Checks linked to the family head, household, and applicant.',
+  },
+};
+
 /**
  * Dynamic field investigation — Verified / Mismatch / Not checked per declared claim.
  * Optional sidebar: vulnerability after visit + investigator recommendation.
@@ -109,19 +235,40 @@ const AidInvestigationPanel = ({
   value = {},
   onChange,
   disabled = false,
-  title = 'Verify what was declared',
-  hint = 'Each claim from intake, checked on site. A mismatch needs a note.',
+  title,
+  hint,
+  /** View tab id: case | beneficiary | family | writer | attachments */
+  activeTab = 'case',
   vulnerability = null,
   recommendation = null,
   onRecommendationChange,
   onSubmitReport,
   submitDisabled = false,
   submitLabel = 'Submit report for approval',
-  showRecommendation = true,
+  showRecommendation,
+  /** Special permission: show “mark all verified” for the visible checklist */
+  canBulkVerify = false,
+  /** Upload handler for items with accepts_file (e.g. Site Visit) */
+  onUploadItemFile,
+  uploadingKey = null,
 }) => {
-  const list = Array.isArray(items) ? items : [];
+  const filtered = filterInvestigationItemsByTab(items, activeTab);
+  const list = filtered;
   const claims = list.filter((i) => i.kind !== 'process');
   const process = list.filter((i) => i.kind === 'process');
+  const copy = TAB_INVEST_COPY[activeTab] || TAB_INVEST_COPY.case;
+  const panelTitle = title ?? copy.title;
+  const panelHint = hint ?? copy.hint;
+  const showRec =
+    showRecommendation !== undefined
+      ? showRecommendation
+      : activeTab === 'case';
+
+  const allVisibleVerified =
+    list.length > 0 &&
+    list.every(
+      (item) => normalizeInvestigationEntry(value[item.key]).status === 'verified',
+    );
 
   const setEntry = (key, next) => {
     onChange({
@@ -131,6 +278,20 @@ const AidInvestigationPanel = ({
         ...next,
       },
     });
+  };
+
+  const setAllVisibleStatus = (status) => {
+    if (!list.length || !onChange) return;
+    const next = { ...value };
+    for (const item of list) {
+      const prev = normalizeInvestigationEntry(value[item.key]);
+      next[item.key] = {
+        ...prev,
+        status,
+        note: status === 'mismatch' ? prev.note : '',
+      };
+    }
+    onChange(next);
   };
 
   const setRec = (patch) => {
@@ -195,6 +356,56 @@ const AidInvestigationPanel = ({
               />
             </label>
           ) : null}
+          {item.accepts_file ? (
+            <div className="aid-invest-row__file">
+              {entry.attachment_url ? (
+                <div className="aid-invest-row__file-current">
+                  <a
+                    href={entry.attachment_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {entry.attachment_name || 'Attached file'}
+                  </a>
+                  {!disabled ? (
+                    <button
+                      type="button"
+                      className="aid-mini-btn aid-mini-btn--remove"
+                      onClick={() =>
+                        setEntry(item.key, {
+                          attachment_url: '',
+                          attachment_name: '',
+                          attachment_id: null,
+                        })
+                      }
+                    >
+                      Remove
+                    </button>
+                  ) : null}
+                </div>
+              ) : (
+                <label className="aid-invest-row__file-upload">
+                  <span>
+                    {uploadingKey === item.key
+                      ? 'Uploading…'
+                      : 'Attach site visit file *'}
+                  </span>
+                  <input
+                    type="file"
+                    disabled={disabled || uploadingKey === item.key}
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file && onUploadItemFile) {
+                        onUploadItemFile(item.key, file);
+                      }
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              )}
+            </div>
+          ) : null}
         </div>
         <div className="aid-invest-status" role="group" aria-label={item.label}>
           {statuses.map((s) => (
@@ -222,15 +433,58 @@ const AidInvestigationPanel = ({
 
   const rec = recommendation || emptyRecommendation();
 
+  if (activeTab === 'attachments') return null;
+  if (!list.length && !showRec) {
+    return (
+      <section className="aid-investigation aid-investigation--tab">
+        <p className="aid-section-hint">
+          No investigation claims for this tab. Open Case details for the full
+          checklist.
+        </p>
+      </section>
+    );
+  }
+
   return (
-    <section className="aid-investigation">
+    <section className="aid-investigation aid-investigation--tab">
       <div className="aid-invest-layout">
         <div className="aid-invest-main">
-          <h3 className="aid-investigation__title">{title}</h3>
-          {hint ? <p className="aid-investigation__hint">{hint}</p> : null}
+          <div className="aid-investigation__head">
+            <div>
+              <h3 className="aid-investigation__title">{panelTitle}</h3>
+              {panelHint ? (
+                <p className="aid-investigation__hint">{panelHint}</p>
+              ) : null}
+            </div>
+            {canBulkVerify && list.length > 0 ? (
+              <label
+                className={`aid-invest-bulk${
+                  allVisibleVerified ? ' is-checked' : ''
+                }${disabled ? ' is-disabled' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={allVisibleVerified}
+                  disabled={disabled}
+                  onChange={(e) =>
+                    setAllVisibleStatus(
+                      e.target.checked ? 'verified' : 'not_checked',
+                    )
+                  }
+                />
+                <span>
+                  <strong>Mark all verified</strong>
+                  <small>Updates every item on this tab</small>
+                </span>
+              </label>
+            ) : null}
+          </div>
 
           {!list.length ? (
-            <p className="aid-section-hint">No investigation claims available yet.</p>
+            <p className="aid-section-hint">
+              No investigation claims for this tab. Open Case details for the
+              full checklist.
+            </p>
           ) : (
             <>
               {claims.length > 0 ? (
@@ -246,7 +500,7 @@ const AidInvestigationPanel = ({
           )}
         </div>
 
-        {showRecommendation ? (
+        {showRec ? (
           <aside className="aid-invest-side">
             <div className="aid-vuln-card">
               <div className="aid-vuln-card__label">Vulnerability after visit</div>

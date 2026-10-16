@@ -52,6 +52,28 @@
   min-width: 140px;
 }
 
+.aid-wo-filters .date-filter-container {
+  min-width: 160px;
+}
+
+.aid-wo-filters .date-range-filter-container {
+  min-width: 280px;
+}
+
+.aid-wo-filters .date-filter-label,
+.aid-wo-filters .date-range-filter-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--wo-muted);
+}
+
+.aid-wo-filters .date-filter-input,
+.aid-wo-filters .date-range-filter-input {
+  height: 38px;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.875rem;
+}
+
 .aid-wo-export {
   display: inline-flex;
   align-items: center;

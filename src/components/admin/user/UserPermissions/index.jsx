@@ -103,6 +103,10 @@ const mergeAidPermissions = (rawPermissions) => {
   const next = JSON.parse(JSON.stringify(rawPermissions));
   const modules = [
     {
+      key: 'aid_overview',
+      actions: ['view'],
+    },
+    {
       key: 'aid_people',
       actions: ['create', 'list_view', 'view', 'update', 'delete'],
     },
@@ -116,6 +120,7 @@ const mergeAidPermissions = (rawPermissions) => {
         'delete',
         'ceo_approve',
         'deliver',
+        'bulk_verify',
       ],
     },
   ];
@@ -318,6 +323,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     program: {
       label: 'Program',
       submodules: {
+        aid_overview: {
+          label: 'Welfare Overview',
+          actions: ['view'],
+        },
         aid_applications: {
           label: 'Applications',
           actions: [
@@ -328,6 +337,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
             'delete',
             'ceo_approve',
             'deliver',
+            'bulk_verify',
           ],
         },
         aid_people: {
@@ -669,6 +679,9 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',
     reconciler: 'Reconciler (verify / change status)',
+    ceo_approve: 'CEO Approve',
+    deliver: 'Deliver',
+    bulk_verify: 'Bulk verify checklist',
   };
 
   const initializePermissions = () => {

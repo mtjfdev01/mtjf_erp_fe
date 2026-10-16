@@ -156,12 +156,14 @@ const AidPersonView = () => {
         section.defaultRelation === 'mother' ||
         section.defaultRelation === 'sister' ||
         section.defaultRelation === 'daughter' ||
-        section.defaultRelation === 'grandmother'
+        section.defaultRelation === 'grandmother' ||
+        section.defaultRelation === 'maternal_grandmother'
           ? 'female'
           : section.defaultRelation === 'father' ||
               section.defaultRelation === 'brother' ||
               section.defaultRelation === 'son' ||
-              section.defaultRelation === 'grandfather'
+              section.defaultRelation === 'grandfather' ||
+              section.defaultRelation === 'maternal_grandfather'
             ? 'male'
             : '',
     });

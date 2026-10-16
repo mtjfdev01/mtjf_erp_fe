@@ -22,20 +22,18 @@ import AidInvestigationPanel, {
   isInvestigationComplete,
   isRecommendationComplete,
   mergeInvestigationState,
+  normalizeInvestigationEntry,
 } from '../../shared/AidInvestigationPanel';
+import AidPersonProfileCard, {
+  AidFamilyMemberLine,
+  Fact,
+} from '../../shared/AidPersonProfileCard';
 import {
   AID_CEO_OPTIONS,
   AID_DELIVERY_OPTIONS,
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
-  formatLiteracySummary,
-  formatPropertyOwnershipSummary,
-  formatResidentHousingSummary,
-  formatLivestockSummary,
-  formatVehicleSummary,
-  formatEligibilityStatusSummary,
-  formatVulnerability,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -43,45 +41,12 @@ import '../../aid.css';
 const isSponsorshipDependent = (notes) =>
   /dependent under (family head|guardian) sponsorship/i.test(String(notes || ''));
 
-const FamilyMemberLine = ({ person, relation, notes }) => {
-  if (!person) return null;
-  const age =
-    person.date_of_birth &&
-    Math.floor(
-      (Date.now() - new Date(person.date_of_birth).getTime()) /
-        (365.25 * 24 * 60 * 60 * 1000),
-    );
-  const literacy = formatLiteracySummary(person);
-  const property = formatPropertyOwnershipSummary(person);
-  const resident = formatResidentHousingSummary(person);
-  const livestock = formatLivestockSummary(person);
-  const vehicle = formatVehicleSummary(person);
-  const eligibility = formatEligibilityStatusSummary(person);
-  return (
-    <li style={{ marginBottom: 8 }}>
-      <Link to={`/dms/aid/people/view/${person.id}`}>{person.full_name}</Link>
-      <span style={{ fontSize: 13, color: '#64748b' }}>
-        {relation ? ` · ${String(relation).replace(/_/g, ' ')}` : ''}
-        {person.gender ? ` · ${person.gender}` : ''}
-        {Number.isFinite(age) && age >= 0 ? ` · Age ${age}` : ''}
-        {person.cnic ? ` · ${person.cnic}` : ''}
-        {person.has_disability
-          ? ` · Disability${person.disability_type ? `: ${person.disability_type}` : ''}`
-          : ''}
-        {person.marital_status ? ` · ${person.marital_status}` : ''}
-        {literacy ? ` · Literacy: ${literacy}` : ''}
-        {property ? ` · ${property}` : ''}
-        {resident ? ` · ${resident}` : ''}
-        {livestock ? ` · ${livestock}` : ''}
-        {vehicle ? ` · ${vehicle}` : ''}
-        {eligibility ? ` · ${eligibility}` : ''}
-      </span>
-      {notes ? (
-        <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 2 }}>{notes}</div>
-      ) : null}
-    </li>
-  );
-};
+const StatusChip = ({ label, value, tone = 'muted' }) => (
+  <div className={`aid-status-chip aid-status-chip--${tone}`}>
+    <span className="aid-status-chip__label">{label}</span>
+    <strong className="aid-status-chip__value">{value || '—'}</strong>
+  </div>
+);
 
 const AidApplicationView = () => {
   const { id } = useParams();
@@ -103,12 +68,17 @@ const AidApplicationView = () => {
   const canDeliver =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'deliver');
+  const canBulkVerify =
+    isStaffElevated ||
+    hasAidPermission(permissions, 'aid_applications', 'bulk_verify');
 
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
   const [panelTab, setPanelTab] = useState('case');
+  // Applicant tab removed — keep legacy 'writer' links on Family
+  const activePanelTab = panelTab === 'writer' ? 'family' : panelTab;
   const [attachContext, setAttachContext] = useState('verification');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
@@ -125,6 +95,7 @@ const AidApplicationView = () => {
   const [assignSaving, setAssignSaving] = useState(false);
   const [familyTree, setFamilyTree] = useState(null);
   const [kinship, setKinship] = useState([]);
+  const [uploadingInvestKey, setUploadingInvestKey] = useState(null);
 
   const load = useCallback(async () => {
     try {
@@ -214,6 +185,41 @@ const AidApplicationView = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       }),
     );
+  };
+
+  const uploadInvestigationFile = async (itemKey, file) => {
+    if (!file || !itemKey) return;
+    setUploadingInvestKey(itemKey);
+    setActionError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('context', itemKey === 'site_visit' ? 'site_visit' : 'verification');
+      fd.append('description', itemKey);
+      const res = await axiosInstance.post(
+        `/aid/applications/${id}/attachments/upload`,
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      const row = res.data?.data;
+      setInvestigation((prev) => ({
+        ...prev,
+        [itemKey]: {
+          ...normalizeInvestigationEntry(prev[itemKey]),
+          status: 'verified',
+          attachment_url: row?.file_url || '',
+          attachment_name: row?.file_name || file.name,
+          attachment_id: row?.id ?? null,
+        },
+      }));
+      await load();
+    } catch (err) {
+      setActionError(
+        err.response?.data?.message || err.message || 'Failed to upload file',
+      );
+    } finally {
+      setUploadingInvestKey(null);
+    }
   };
 
   const currentAssignedId = app?.assigned_to_user_id ?? app?.assigned_to?.id ?? null;
@@ -504,91 +510,497 @@ const AidApplicationView = () => {
             )}
           </div>
         )}
+        <div className="aid-panel aid-panel--view">
+          <div className="aid-tabs aid-tabs--main" role="tablist">
+            {[
+              { id: 'case', label: 'Case details' },
+              { id: 'beneficiary', label: 'Beneficiary' },
+              { id: 'family', label: 'Family' },
+              { id: 'attachments', label: 'Attachments' },
+            ].map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={activePanelTab === t.id}
+                className={`aid-tab ${activePanelTab === t.id ? 'aid-tab--active' : ''}`}
+                onClick={() => setPanelTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
 
-        {(showVerify || app.verification_checklist || investigationItems.length > 0) && (
-          <section className="aid-section" style={{ marginBottom: 16 }}>
-            {(app.verified_at || verifiedByName) && (
-              <p style={{ fontSize: 13, color: '#64748b', marginTop: 0 }}>
-                Verified by: {verifiedByName || '—'} · At: {formatWhen(app.verified_at)}
-              </p>
-            )}
-            <AidInvestigationPanel
-              items={investigationItems}
-              value={investigation}
-              onChange={setInvestigation}
-              disabled={!showVerify || busy}
-              vulnerability={app.vulnerability}
-              recommendation={recommendation}
-              onRecommendationChange={setRecommendation}
-              showRecommendation
-              submitDisabled={
-                busy ||
-                !checklistComplete ||
-                !recommendationComplete ||
-                !leakageOverrideOk
-              }
-              onSubmitReport={
-                showVerify
-                  ? () =>
-                      run(() =>
-                        axiosInstance.post(`/aid/applications/${id}/verify`, {
-                          verification_notes:
-                            verifyNotes || recommendation.remarks || undefined,
-                          verification_checklist: investigation,
-                          recommendation: {
-                            decision: recommendation.decision,
-                            amount:
-                              recommendation.decision === 'reject'
-                                ? null
-                                : Number(recommendation.amount),
-                            period_months: Number(recommendation.period_months) || null,
-                            remarks: recommendation.remarks,
-                            found_monthly_income: recommendation.found_monthly_income
-                              ? Number(recommendation.found_monthly_income)
-                              : null,
-                          },
-                          leakage_override_reason: needsLeakageOverride
-                            ? leakageOverride.trim()
-                            : undefined,
-                        }),
-                      )
-                  : undefined
-              }
-            />
-            {showVerify && !checklistComplete && (
-              <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
-                Mark every required claim Verified or Mismatch (with Found note).
-                Process checks must be Verified.
-              </p>
-            )}
-            {showVerify && !recommendationComplete && (
-              <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
-                Complete Recommendation (decision, amount if approving, and
-                remarks).
-              </p>
-            )}
-            {!showVerify && app.verification_notes && (
-              <p style={{ fontSize: 13, color: '#64748b' }}>
-                Notes: {app.verification_notes}
-              </p>
-            )}
-            {!showVerify && app.investigation_recommendation?.decision && (
-              <p style={{ fontSize: 13, color: '#166534', marginTop: 8 }}>
-                Recommendation:{' '}
-                {String(app.investigation_recommendation.decision).replace(
-                  /_/g,
-                  ' ',
+          <div className="aid-panel__body">
+            {activePanelTab === 'case' && (
+              <section className="aid-section aid-section--flush">
+                <div className="aid-status-chip-row">
+                  <StatusChip
+                    label="Aid type"
+                    value={formatAidRequestType(app.requested_aid_type)}
+                    tone="info"
+                  />
+                  <StatusChip
+                    label="CEO"
+                    value={app.ceo_approval_status || '—'}
+                    tone={
+                      String(app.ceo_approval_status || '').includes('approv')
+                        ? 'success'
+                        : String(app.ceo_approval_status || '').includes('reject')
+                          ? 'danger'
+                          : 'muted'
+                    }
+                  />
+                  <StatusChip
+                    label="Delivery"
+                    value={app.delivery_status || '—'}
+                    tone={
+                      app.delivery_status === 'delivered'
+                        ? 'success'
+                        : app.delivery_status === 'pending'
+                          ? 'warn'
+                          : 'muted'
+                    }
+                  />
+                  <StatusChip
+                    label="Status"
+                    value={formatAidStatus(status)}
+                    tone={aidStatusTone(status) || 'muted'}
+                  />
+                </div>
+
+                <div className="aid-fact-grid aid-fact-grid--case">
+                  <Fact label="Created by">
+                    {app.created_by ? formatAuditActor(app.created_by) : '—'}
+                  </Fact>
+                  <Fact label="Assigned to">
+                    {app.assigned_to
+                      ? formatAidUserLabel(app.assigned_to)
+                      : '—'}
+                  </Fact>
+                  <Fact label="Applicant">
+                    {app.writer ? (
+                      <Link to={`/dms/aid/people/view/${app.writer.id}`}>
+                        {app.writer.full_name}
+                      </Link>
+                    ) : (
+                      '—'
+                    )}
+                  </Fact>
+                  <Fact label="Applicant relation">
+                    {app.writer_relation
+                      ? String(app.writer_relation).replace(/_/g, ' ')
+                      : '—'}
+                  </Fact>
+                </div>
+
+                {canUpdate &&
+                  status !== 'rejected' &&
+                  status !== 'delivered' && (
+                  <div className="aid-assign-block">
+                    <div className="aid-assign-block__head">
+                      <h4>Case assignment</h4>
+                      <p>Change who owns this case, then save.</p>
+                    </div>
+                    <div className="aid-assign-row">
+                      <AidUserAssignField
+                        value={assignedUser}
+                        onChange={setAssignedUser}
+                        hint=""
+                      />
+                      <div className="aid-assign-actions">
+                        <button
+                          type="button"
+                          className="primary-btn"
+                          disabled={busy || assignSaving || !assignmentDirty}
+                          onClick={saveAssignment}
+                        >
+                          {assignSaving ? 'Saving…' : 'Save assignment'}
+                        </button>
+                        {assignedUser && (
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            disabled={busy || assignSaving}
+                            onClick={() => setAssignedUser(null)}
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 )}
-                {app.investigation_recommendation.amount != null
-                  ? ` · PKR ${app.investigation_recommendation.amount}`
-                  : ''}
-                {app.investigation_recommendation.period_months
-                  ? ` · ${app.investigation_recommendation.period_months} months`
-                  : ''}
-              </p>
+                {app.rejection_reason && (
+                  <p className="aid-alert aid-alert--danger">
+                    Rejection: {app.rejection_reason}
+                  </p>
+                )}
+                {app.ceo_rejection_reason && (
+                  <p className="aid-alert aid-alert--danger">
+                    CEO rejection: {app.ceo_rejection_reason}
+                  </p>
+                )}
+                {app.requested_aid_type === 'education' &&
+                  app.education_details && (
+                    <div className="aid-detail-block">
+                      <AidEducationApplicationFields
+                        value={app.education_details}
+                        readOnly
+                      />
+                    </div>
+                  )}
+                {app.requested_aid_type === 'ration' && app.ration_details && (
+                  <div className="aid-detail-block">
+                    <AidRationApplicationFields
+                      value={app.ration_details}
+                      readOnly
+                    />
+                  </div>
+                )}
+                {app.requested_aid_type === 'marriage_gift' &&
+                  app.marriage_gift_details && (
+                    <div className="aid-detail-block">
+                      <AidMarriageGiftApplicationFields
+                        value={app.marriage_gift_details}
+                        readOnly
+                      />
+                    </div>
+                  )}
+                {app.requested_aid_type === 'financial_assistance' &&
+                  app.financial_assistance_details && (
+                    <div className="aid-detail-block">
+                      <AidFinancialAssistanceFields
+                        value={app.financial_assistance_details}
+                        readOnly
+                      />
+                    </div>
+                  )}
+                {app.zakat_permission && (
+                  <div className="aid-detail-block">
+                    <h4 className="aid-detail-block__title">
+                      Zakat Permission Letter
+                    </h4>
+                    <AidZakatPermissionForm
+                      value={app.zakat_permission}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </div>
+                )}
+                {app.consent_form && (
+                  <div className="aid-detail-block">
+                    <h4 className="aid-detail-block__title">Consent Form</h4>
+                    <AidConsentForm
+                      value={app.consent_form}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </div>
+                )}
+              </section>
             )}
-          </section>
-        )}
+
+            {activePanelTab === 'beneficiary' && (
+              <section className="aid-section aid-section--flush">
+                <AidPersonProfileCard
+                  person={app.beneficiary}
+                  title="Beneficiary"
+                  roles={{
+                    beneficiary: true,
+                    applicant:
+                      !app.writer ||
+                      app.writer.id === app.beneficiary?.id ||
+                      String(app.writer_relation || '').toLowerCase() ===
+                        'self',
+                  }}
+                />
+              </section>
+            )}
+
+            {activePanelTab === 'family' && (
+              <section className="aid-section aid-section--flush">
+                {app.writer &&
+                app.writer.id !== app.beneficiary?.id &&
+                String(app.writer_relation || '').toLowerCase() !== 'self' ? (
+                  <div className="aid-family-block" style={{ marginBottom: 14 }}>
+                    <h4 className="aid-family-block__title">Applicant</h4>
+                    <AidPersonProfileCard
+                      person={app.writer}
+                      title="Applicant"
+                      relation={app.writer_relation}
+                      roles={{ applicant: true }}
+                    />
+                  </div>
+                ) : null}
+                {(() => {
+                  const tree = familyTree || {};
+                  const groups = [
+                    { key: 'parents', label: 'Parents / Family head' },
+                    { key: 'spouse', label: 'Spouse' },
+                    { key: 'children', label: 'Children' },
+                    { key: 'brothers', label: 'Brothers' },
+                    { key: 'sisters', label: 'Sisters' },
+                    { key: 'siblings', label: 'Siblings' },
+                    { key: 'extended', label: 'Guardians / extended' },
+                  ];
+                  const fromTree = groups.flatMap((g) =>
+                    (tree[g.key] || []).map((row) => ({
+                      ...row,
+                      group: g.label,
+                    })),
+                  );
+                  const dependents = (kinship || []).filter((e) =>
+                    isSponsorshipDependent(e.notes),
+                  );
+                  const dependentIds = new Set(
+                    dependents.map((e) => e.to_person_id || e.to_person?.id),
+                  );
+                  const core = fromTree.filter(
+                    (row) => !dependentIds.has(row.person?.id),
+                  );
+
+                  if (!core.length && !dependents.length) {
+                    return (
+                      <p className="aid-empty-note">
+                        No family members linked yet.
+                      </p>
+                    );
+                  }
+
+                  return (
+                    <div className="aid-family-groups">
+                      {groups.map((g) => {
+                        const rows = core.filter((r) => r.group === g.label);
+                        if (!rows.length) return null;
+                        return (
+                          <div key={g.key} className="aid-family-block">
+                            <h4 className="aid-family-block__title">{g.label}</h4>
+                            <ul className="aid-family-list">
+                              {rows.map((row) => (
+                                <AidFamilyMemberLine
+                                  key={`fam-${row.edge_id || row.person?.id}`}
+                                  person={row.person}
+                                  relation={row.relation_type}
+                                  notes={row.notes}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+
+                      {dependents.length > 0 && (
+                        <div className="aid-family-block">
+                          <h4 className="aid-family-block__title">
+                            Others under sponsorship / dependents
+                          </h4>
+                          <ul className="aid-family-list">
+                            {dependents.map((edge) => {
+                              const egoId =
+                                app.beneficiary?.id || app.beneficiary_person_id;
+                              const person =
+                                edge.from_person_id === egoId
+                                  ? edge.to_person
+                                  : edge.from_person || edge.to_person;
+                              return (
+                                <AidFamilyMemberLine
+                                  key={`dep-${edge.id}`}
+                                  person={person}
+                                  relation={edge.relation_type}
+                                  notes={edge.notes}
+                                />
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </section>
+            )}
+
+            {activePanelTab === 'attachments' && (
+              <section className="aid-section aid-section--flush">
+                <div className="aid-attach-tabs">
+                  {[
+                    'verification',
+                    'site_visit',
+                    'mepco_bill',
+                    'cnic',
+                    'bay_form',
+                    'death_certificate',
+                    'marriage_certificate',
+                    'education_certificate',
+                    'e_stamp_paper',
+                    'zakat',
+                    'consent',
+                    'delivery',
+                    'profile',
+                  ].map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      className={`aid-attach-tab ${attachContext === t ? 'is-active' : ''}`}
+                      onClick={() => setAttachContext(t)}
+                    >
+                      {String(t).replace(/_/g, ' ')}
+                    </button>
+                  ))}
+                </div>
+                {canUpdate && (
+                  <label className="aid-attach-upload">
+                    <span>Upload file</span>
+                    <input
+                      type="file"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f) uploadFile(f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                )}
+                {tabAtt.length === 0 ? (
+                  <p className="aid-empty-note">
+                    No {attachContext} attachments.
+                  </p>
+                ) : (
+                  <ul className="aid-attach-list">
+                    {tabAtt.map((a) => (
+                      <li key={a.id}>
+                        <a href={a.file_url} target="_blank" rel="noreferrer">
+                          {a.file_name}
+                        </a>
+                        {canUpdate && (
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            style={{ padding: '2px 8px', fontSize: 12 }}
+                            onClick={() =>
+                              run(() =>
+                                axiosInstance.delete(
+                                  `/aid/applications/attachments/${a.id}`,
+                                ),
+                              )
+                            }
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
+
+            {(showVerify ||
+              app.verification_checklist ||
+              investigationItems.length > 0) &&
+              activePanelTab !== 'attachments' && (
+              <section className="aid-section aid-section--flush aid-section--investigation">
+                {activePanelTab === 'case' && (app.verified_at || verifiedByName) && (
+                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 0 }}>
+                    Verified by: {verifiedByName || '—'} · At:{' '}
+                    {formatWhen(app.verified_at)}
+                  </p>
+                )}
+                <AidInvestigationPanel
+                  items={investigationItems}
+                  value={investigation}
+                  onChange={setInvestigation}
+                  disabled={!showVerify || busy}
+                  canBulkVerify={canBulkVerify}
+                  onUploadItemFile={uploadInvestigationFile}
+                  uploadingKey={uploadingInvestKey}
+                  activeTab={activePanelTab}
+                  vulnerability={app.vulnerability}
+                  recommendation={recommendation}
+                  onRecommendationChange={setRecommendation}
+                  submitDisabled={
+                    busy ||
+                    !checklistComplete ||
+                    !recommendationComplete ||
+                    !leakageOverrideOk
+                  }
+                  onSubmitReport={
+                    showVerify && activePanelTab === 'case'
+                      ? () =>
+                          run(() =>
+                            axiosInstance.post(`/aid/applications/${id}/verify`, {
+                              verification_notes:
+                                verifyNotes ||
+                                recommendation.remarks ||
+                                undefined,
+                              verification_checklist: investigation,
+                              recommendation: {
+                                decision: recommendation.decision,
+                                amount:
+                                  recommendation.decision === 'reject'
+                                    ? null
+                                    : Number(recommendation.amount),
+                                period_months:
+                                  Number(recommendation.period_months) || null,
+                                remarks: recommendation.remarks,
+                                found_monthly_income:
+                                  recommendation.found_monthly_income
+                                    ? Number(
+                                        recommendation.found_monthly_income,
+                                      )
+                                    : null,
+                              },
+                              leakage_override_reason: needsLeakageOverride
+                                ? leakageOverride.trim()
+                                : undefined,
+                            }),
+                          )
+                      : undefined
+                  }
+                />
+                {activePanelTab === 'case' && showVerify && !checklistComplete && (
+                  <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
+                    Mark every required claim Verified or Mismatch (with Found
+                    note). Process checks must be Verified.
+                  </p>
+                )}
+                {activePanelTab === 'case' &&
+                  showVerify &&
+                  !recommendationComplete && (
+                  <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
+                    Complete Recommendation (decision, amount if approving, and
+                    remarks).
+                  </p>
+                )}
+                {activePanelTab === 'case' &&
+                  !showVerify &&
+                  app.verification_notes && (
+                  <p style={{ fontSize: 13, color: '#64748b' }}>
+                    Notes: {app.verification_notes}
+                  </p>
+                )}
+                {activePanelTab === 'case' &&
+                  !showVerify &&
+                  app.investigation_recommendation?.decision && (
+                    <p style={{ fontSize: 13, color: '#166534', marginTop: 8 }}>
+                      Recommendation:{' '}
+                      {String(app.investigation_recommendation.decision).replace(
+                        /_/g,
+                        ' ',
+                      )}
+                      {app.investigation_recommendation.amount != null
+                        ? ` · PKR ${app.investigation_recommendation.amount}`
+                        : ''}
+                      {app.investigation_recommendation.period_months
+                        ? ` · ${app.investigation_recommendation.period_months} months`
+                        : ''}
+                    </p>
+                  )}
+              </section>
+            )}
+          </div>
+        </div>
 
         {(showReject || showCeo || showDelivery) && (
           <div
@@ -733,406 +1145,6 @@ const AidApplicationView = () => {
             </div>
           </div>
         )}
-
-        <div className="aid-panel">
-          <div className="aid-tabs aid-tabs--main" role="tablist">
-            {[
-              { id: 'case', label: 'Case details' },
-              { id: 'beneficiary', label: 'Beneficiary' },
-              { id: 'family', label: 'Family Head' },
-              { id: 'writer', label: 'Applicant' },
-              { id: 'attachments', label: 'Attachments' },
-            ].map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                role="tab"
-                aria-selected={panelTab === t.id}
-                className={`aid-tab ${panelTab === t.id ? 'aid-tab--active' : ''}`}
-                onClick={() => setPanelTab(t.id)}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="aid-panel__body">
-            {panelTab === 'case' && (
-              <section className="aid-section aid-section--flush">
-                <div className="aid-case-meta">
-                  <div className="aid-meta-row">
-                    <span>Aid type</span>
-                    <strong>{formatAidRequestType(app.requested_aid_type)}</strong>
-                  </div>
-                  <div className="aid-meta-row">
-                    <span>CEO</span>
-                    <strong>{app.ceo_approval_status || '—'}</strong>
-                  </div>
-                  <div className="aid-meta-row">
-                    <span>Delivery</span>
-                    <strong>{app.delivery_status || '—'}</strong>
-                  </div>
-                  <div className="aid-meta-row">
-                    <span>Created by</span>
-                    <strong>
-                      {app.created_by ? formatAuditActor(app.created_by) : '—'}
-                    </strong>
-                  </div>
-                  <div className="aid-meta-row">
-                    <span>Assigned to</span>
-                    <strong>
-                      {app.assigned_to ? formatAidUserLabel(app.assigned_to) : '—'}
-                    </strong>
-                  </div>
-                </div>
-
-                {canUpdate &&
-                  status !== 'rejected' &&
-                  status !== 'delivered' && (
-                  <div className="aid-assign-row">
-                    <AidUserAssignField
-                      value={assignedUser}
-                      onChange={setAssignedUser}
-                      hint="Change who owns this case, then save."
-                    />
-                    <div className="aid-assign-actions">
-                      <button
-                        type="button"
-                        className="primary-btn"
-                        disabled={busy || assignSaving || !assignmentDirty}
-                        onClick={saveAssignment}
-                      >
-                        {assignSaving ? 'Saving…' : 'Save assignment'}
-                      </button>
-                      {assignedUser && (
-                        <button
-                          type="button"
-                          className="secondary-btn"
-                          disabled={busy || assignSaving}
-                          onClick={() => setAssignedUser(null)}
-                        >
-                          Clear
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                )}
-                {app.rejection_reason && (
-                  <p style={{ color: '#b91c1c' }}>Rejection: {app.rejection_reason}</p>
-                )}
-                {app.ceo_rejection_reason && (
-                  <p style={{ color: '#b91c1c' }}>CEO rejection: {app.ceo_rejection_reason}</p>
-                )}
-                {app.requested_aid_type === 'education' &&
-                  app.education_details && (
-                    <AidEducationApplicationFields
-                      value={app.education_details}
-                      readOnly
-                    />
-                  )}
-                {app.requested_aid_type === 'ration' && app.ration_details && (
-                  <AidRationApplicationFields
-                    value={app.ration_details}
-                    readOnly
-                  />
-                )}
-                {app.requested_aid_type === 'marriage_gift' &&
-                  app.marriage_gift_details && (
-                    <AidMarriageGiftApplicationFields
-                      value={app.marriage_gift_details}
-                      readOnly
-                    />
-                  )}
-                {app.requested_aid_type === 'financial_assistance' &&
-                  app.financial_assistance_details && (
-                    <AidFinancialAssistanceFields
-                      value={app.financial_assistance_details}
-                      readOnly
-                    />
-                  )}
-                {app.zakat_permission && (
-                  <div style={{ marginTop: 12 }}>
-                    <h4
-                      className="aid-family-panel__title"
-                      style={{ marginBottom: 8 }}
-                    >
-                      Zakat Permission Letter
-                    </h4>
-                    <AidZakatPermissionForm
-                      value={app.zakat_permission}
-                      applicationNo={app.application_no}
-                      readOnly
-                    />
-                  </div>
-                )}
-                {app.consent_form && (
-                  <div style={{ marginTop: 12 }}>
-                    <h4
-                      className="aid-family-panel__title"
-                      style={{ marginBottom: 8 }}
-                    >
-                      Consent Form
-                    </h4>
-                    <AidConsentForm
-                      value={app.consent_form}
-                      applicationNo={app.application_no}
-                      readOnly
-                    />
-                  </div>
-                )}
-              </section>
-            )}
-
-            {panelTab === 'beneficiary' && (
-              <section className="aid-section aid-section--flush">
-                {app.beneficiary ? (
-                  <>
-                    <p>
-                      <Link to={`/dms/aid/people/view/${app.beneficiary.id}`}>
-                        {app.beneficiary.full_name}
-                      </Link>
-                    </p>
-                    <p style={{ fontSize: 13, color: '#64748b' }}>
-                      CNIC: {app.beneficiary.cnic || '—'} · Phone: {app.beneficiary.phone || '—'}
-                      {app.beneficiary.city ? ` · ${app.beneficiary.city}` : ''}
-                      {app.beneficiary.marital_status
-                        ? ` · ${app.beneficiary.marital_status}`
-                        : ''}
-                      {app.beneficiary.vulnerability
-                        ? ` · ${formatVulnerability(app.beneficiary.vulnerability)}`
-                        : ''}
-                    </p>
-                    {app.beneficiary.address && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        Address: {app.beneficiary.address}
-                      </p>
-                    )}
-                    {formatLiteracySummary(app.beneficiary) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        Literacy: {formatLiteracySummary(app.beneficiary)}
-                      </p>
-                    )}
-                    {formatPropertyOwnershipSummary(app.beneficiary) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        Property: {formatPropertyOwnershipSummary(app.beneficiary)}
-                      </p>
-                    )}
-                    {formatResidentHousingSummary(app.beneficiary) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        {formatResidentHousingSummary(app.beneficiary)}
-                      </p>
-                    )}
-                    {formatLivestockSummary(app.beneficiary) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        {formatLivestockSummary(app.beneficiary)}
-                      </p>
-                    )}
-                    {formatVehicleSummary(app.beneficiary) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        {formatVehicleSummary(app.beneficiary)}
-                      </p>
-                    )}
-                    {formatEligibilityStatusSummary(app.beneficiary) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        {formatEligibilityStatusSummary(app.beneficiary)}
-                      </p>
-                    )}
-                    {app.beneficiary.necta_document_url && (
-                      <p style={{ fontSize: 13, marginTop: 4 }}>
-                        <a
-                          href={app.beneficiary.necta_document_url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {app.beneficiary.necta_document_name ||
-                            'NECTA document'}
-                        </a>
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p>—</p>
-                )}
-              </section>
-            )}
-
-            {panelTab === 'family' && (
-              <section className="aid-section aid-section--flush">
-                {(() => {
-                  const tree = familyTree || {};
-                  const groups = [
-                    { key: 'parents', label: 'Parents' },
-                    { key: 'spouse', label: 'Spouse' },
-                    { key: 'children', label: 'Children' },
-                    { key: 'brothers', label: 'Brothers' },
-                    { key: 'sisters', label: 'Sisters' },
-                    { key: 'siblings', label: 'Siblings' },
-                    { key: 'extended', label: 'Guardians / extended' },
-                  ];
-                  const fromTree = groups.flatMap((g) =>
-                    (tree[g.key] || []).map((row) => ({
-                      ...row,
-                      group: g.label,
-                    })),
-                  );
-                  const dependents = (kinship || []).filter((e) =>
-                    isSponsorshipDependent(e.notes),
-                  );
-                  const dependentIds = new Set(
-                    dependents.map((e) => e.to_person_id || e.to_person?.id),
-                  );
-                  const core = fromTree.filter(
-                    (row) => !dependentIds.has(row.person?.id),
-                  );
-
-                  if (!core.length && !dependents.length) {
-                    return (
-                      <p style={{ color: '#94a3b8' }}>
-                        No family members linked yet.
-                      </p>
-                    );
-                  }
-
-                  return (
-                    <>
-                      {groups.map((g) => {
-                        const rows = core.filter((r) => r.group === g.label);
-                        if (!rows.length) return null;
-                        return (
-                          <div key={g.key} style={{ marginBottom: 16 }}>
-                            <h4 className="aid-family-panel__title">{g.label}</h4>
-                            <ul style={{ margin: 0, paddingLeft: 18 }}>
-                              {rows.map((row) => (
-                                <FamilyMemberLine
-                                  key={`fam-${row.edge_id || row.person?.id}`}
-                                  person={row.person}
-                                  relation={row.relation_type}
-                                  notes={row.notes}
-                                />
-                              ))}
-                            </ul>
-                          </div>
-                        );
-                      })}
-
-                      {dependents.length > 0 && (
-                        <div style={{ marginBottom: 16 }}>
-                          <h4 className="aid-family-panel__title">
-                            Others under sponsorship / dependents
-                          </h4>
-                          <ul style={{ margin: 0, paddingLeft: 18 }}>
-                            {dependents.map((edge) => {
-                              const egoId =
-                                app.beneficiary?.id || app.beneficiary_person_id;
-                              const person =
-                                edge.from_person_id === egoId
-                                  ? edge.to_person
-                                  : edge.from_person || edge.to_person;
-                              return (
-                                <FamilyMemberLine
-                                  key={`dep-${edge.id}`}
-                                  person={person}
-                                  relation={edge.relation_type}
-                                  notes={edge.notes}
-                                />
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      )}
-                    </>
-                  );
-                })()}
-              </section>
-            )}
-
-            {panelTab === 'writer' && (
-              <section className="aid-section aid-section--flush">
-                {app.writer ? (
-                  <>
-                    <p>
-                      <Link to={`/dms/aid/people/view/${app.writer.id}`}>
-                        {app.writer.full_name}
-                      </Link>
-                    </p>
-                    <p style={{ fontSize: 13, color: '#64748b', textTransform: 'capitalize' }}>
-                      Relation: {app.writer_relation || '—'}
-                      {app.writer.phone ? ` · ${app.writer.phone}` : ''}
-                      {app.writer.city ? ` · ${app.writer.city}` : ''}
-                    </p>
-                    {app.writer.address && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        Address: {app.writer.address}
-                      </p>
-                    )}
-                    {formatLiteracySummary(app.writer) && (
-                      <p style={{ fontSize: 13, color: '#64748b', marginTop: 4 }}>
-                        Literacy: {formatLiteracySummary(app.writer)}
-                      </p>
-                    )}
-                  </>
-                ) : (
-                  <p>—</p>
-                )}
-              </section>
-            )}
-
-            {panelTab === 'attachments' && (
-              <section className="aid-section aid-section--flush">
-                <div className="aid-tabs">
-                  {['verification', 'delivery', 'profile'].map((t) => (
-                    <button
-                      key={t}
-                      type="button"
-                      className={`aid-tab ${attachContext === t ? 'aid-tab--active' : ''}`}
-                      onClick={() => setAttachContext(t)}
-                    >
-                      {t}
-                    </button>
-                  ))}
-                </div>
-                {canUpdate && (
-                  <input
-                    type="file"
-                    style={{ marginBottom: 12 }}
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) uploadFile(f);
-                      e.target.value = '';
-                    }}
-                  />
-                )}
-                {tabAtt.length === 0 ? (
-                  <p style={{ color: '#94a3b8' }}>No {attachContext} attachments.</p>
-                ) : (
-                  <ul style={{ margin: 0, paddingLeft: 18 }}>
-                    {tabAtt.map((a) => (
-                      <li key={a.id} style={{ marginBottom: 6 }}>
-                        <a href={a.file_url} target="_blank" rel="noreferrer">
-                          {a.file_name}
-                        </a>
-                        {canUpdate && (
-                          <button
-                            type="button"
-                            className="secondary-btn"
-                            style={{ marginLeft: 8, padding: '2px 8px', fontSize: 12 }}
-                            onClick={() =>
-                              run(() =>
-                                axiosInstance.delete(`/aid/applications/attachments/${a.id}`),
-                              )
-                            }
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </section>
-            )}
-          </div>
-        </div>
       </div>
 
     </>

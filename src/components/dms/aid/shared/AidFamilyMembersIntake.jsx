@@ -1,5 +1,6 @@
 import React from 'react';
 import AidRelatedPersonFields from './AidRelatedPersonFields';
+import AidApplicantCheckbox from './AidApplicantCheckbox';
 import {
   AID_RELATED_PERSON_TYPES,
   emptyRelatedPersonBase,
@@ -8,6 +9,7 @@ import {
 export const emptyFamilyMemberRow = () => ({
   ...emptyRelatedPersonBase(),
   relation_type: '',
+  is_applicant: false,
 });
 
 /**
@@ -22,13 +24,20 @@ const AidFamilyMembersIntake = ({
   addLabel = '+ Add family member',
   relationLabel = 'Type (relation)',
   relationOptions = AID_RELATED_PERSON_TYPES,
+  onMarkApplicant,
 }) => {
   const list = Array.isArray(rows) ? rows : [];
 
   const addRow = () => onChange([...list, emptyFamilyMemberRow()]);
 
-  const removeRow = (idx) =>
-    onChange(list.filter((_, i) => i !== idx));
+  const removeRow = (idx) => {
+    const removed = list[idx];
+    const next = list.filter((_, i) => i !== idx);
+    onChange(next);
+    if (removed?.is_applicant && onMarkApplicant) {
+      onMarkApplicant({ kind: 'beneficiary' });
+    }
+  };
 
   const updateRow = (idx, next) =>
     onChange(list.map((row, i) => (i === idx ? { ...row, ...next } : row)));
@@ -67,7 +76,7 @@ const AidFamilyMembersIntake = ({
               <div className="aid-repeat-item__head">
                 <span className="aid-child-card__title" style={{ margin: 0 }}>
                   Family member {idx + 1}
-                  {row._from_applicant ? ' (Applicant)' : ''}
+                  {row.is_applicant ? ' (Applicant)' : ''}
                 </span>
                 <button
                   type="button"
@@ -77,14 +86,21 @@ const AidFamilyMembersIntake = ({
                   Remove
                 </button>
               </div>
-              {row._from_applicant ? (
-                <p className="aid-section-hint" style={{ marginTop: 0 }}>
-                  Prefill from relative applicant — linked to the beneficiary family.
-                </p>
+              {onMarkApplicant ? (
+                <AidApplicantCheckbox
+                  checked={!!row.is_applicant}
+                  onChange={(yes) => {
+                    if (yes) onMarkApplicant({ kind: 'member', idx, row });
+                    else onMarkApplicant({ kind: 'beneficiary' });
+                  }}
+                  label="This family member is the applicant"
+                />
               ) : null}
               <AidRelatedPersonFields
                 value={row}
-                onChange={(next) => updateRow(idx, { ...next, _from_applicant: row._from_applicant })}
+                onChange={(next) =>
+                  updateRow(idx, { ...next, is_applicant: row.is_applicant })
+                }
                 relationOptions={relationOptions}
                 relationKey="relation_type"
                 relationLabel={relationLabel}

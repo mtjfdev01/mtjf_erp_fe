@@ -25,9 +25,11 @@ export const hasPermission = (permissions, department, module, action) => {
     return permissions.fund_raising?.dms_todos?.[action] === true;
   }
 
-  // Aid Applications / Beneficiaries: program.aid_* also accepts fund_raising.aid_*
+  // Aid Overview / Applications / Beneficiaries: program.aid_* also accepts fund_raising.aid_*
   if (
-    (module === 'aid_people' || module === 'aid_applications') &&
+    (module === 'aid_people' ||
+      module === 'aid_applications' ||
+      module === 'aid_overview') &&
     (department === 'program' || department === 'fund_raising')
   ) {
     const other =
@@ -39,7 +41,7 @@ export const hasPermission = (permissions, department, module, action) => {
 };
 
 /**
- * Aid Applications / Beneficiaries — program.aid_* (primary) or fund_raising.aid_* (legacy).
+ * Aid Overview / Applications / Beneficiaries — program.aid_* (primary) or fund_raising.aid_* (legacy).
  */
 export const hasAidPermission = (permissions, module, action) =>
   hasPermission(permissions, 'program', module, action) ||
@@ -124,10 +126,12 @@ export const canViewModule = (permissions, department, module) => {
     return legacy?.view === true || legacy?.list_view === true;
   }
 
-  // Aid Applications / Beneficiaries under Program (legacy fund_raising.aid_* still counts)
+  // Aid Overview / Applications / Beneficiaries under Program (legacy fund_raising.aid_* still counts)
   if (
     (department === 'program' || department === 'fund_raising') &&
-    (module === 'aid_people' || module === 'aid_applications')
+    (module === 'aid_people' ||
+      module === 'aid_applications' ||
+      module === 'aid_overview')
   ) {
     if (
       permissions.program_manager === true ||
@@ -141,8 +145,20 @@ export const canViewModule = (permissions, department, module) => {
     if (next?.view === true || next?.list_view === true) return true;
     if (legacy?.view === true || legacy?.list_view === true) return true;
     if (module === 'aid_applications') {
-      if (next?.ceo_approve === true || next?.deliver === true) return true;
-      if (legacy?.ceo_approve === true || legacy?.deliver === true) return true;
+      if (
+        next?.ceo_approve === true ||
+        next?.deliver === true ||
+        next?.bulk_verify === true
+      ) {
+        return true;
+      }
+      if (
+        legacy?.ceo_approve === true ||
+        legacy?.deliver === true ||
+        legacy?.bulk_verify === true
+      ) {
+        return true;
+      }
     }
     return false;
   }
@@ -333,7 +349,9 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
       }
       if (
         (pathParts[0] === 'program' || pathParts[0] === 'fund_raising') &&
-        (pathParts[1] === 'aid_people' || pathParts[1] === 'aid_applications') &&
+        (pathParts[1] === 'aid_people' ||
+          pathParts[1] === 'aid_applications' ||
+          pathParts[1] === 'aid_overview') &&
         pathParts[2]
       ) {
         const other =
@@ -357,7 +375,9 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
 
   if (
     (pathParts[0] === 'program' || pathParts[0] === 'fund_raising') &&
-    (pathParts[1] === 'aid_people' || pathParts[1] === 'aid_applications') &&
+    (pathParts[1] === 'aid_people' ||
+      pathParts[1] === 'aid_applications' ||
+      pathParts[1] === 'aid_overview') &&
     pathParts[2]
   ) {
     const other =

@@ -131,7 +131,7 @@ const AidApplicationsList = () => {
       <Navbar />
       <div className="list-wrapper aid-list">
         <PageHeader
-          title="Aid Applications"
+          title="Case Review"
           backPath="/dms"
           showAdd={!!canCreate}
           addPath="/dms/aid/applications/add"

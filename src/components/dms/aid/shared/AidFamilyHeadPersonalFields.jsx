@@ -16,8 +16,7 @@ import {
 } from '../aidConstants';
 
 /**
- * Family Head personal info card — matches Primary Beneficiary / Family Head intake layout.
- * Additive only; does not remove literacy tree / property / eligibility panels used elsewhere.
+ * Shared personal info card — Family Head, Beneficiary, and Family Members.
  */
 const AidFamilyHeadPersonalFields = ({
   value,
@@ -25,6 +24,14 @@ const AidFamilyHeadPersonalFields = ({
   title = 'Primary Beneficiary / Family Head',
   subtitle = 'The family head acts as the root beneficiary for this household file. All relationships and kinship links will reference this person.',
   showTitle = true,
+  cnicLabel = 'CNIC NUMBER (FORMAT: 12345-1234567-1)',
+  cnicPlaceholder = '36101-XXXXXXX-X (Auto-formats dashes)',
+  onCnicChange,
+  cnicHint = '',
+  cnicLookingUp = false,
+  beforeFields = null,
+  afterGrid = null,
+  embedded = false,
 }) => {
   const patch = (partial) => onChange({ ...value, ...partial });
   const age = calcAgeFromDob(value?.date_of_birth);
@@ -37,8 +44,19 @@ const AidFamilyHeadPersonalFields = ({
     patch({ vulnerability: joinVulnerabilityList(next) });
   };
 
+  const handleCnicChange = (raw) => {
+    const formatted = formatCnicInput(raw);
+    if (onCnicChange) {
+      onCnicChange(formatted);
+      return;
+    }
+    patch({ cnic: formatted });
+  };
+
   return (
-    <div className="aid-fh-personal">
+    <div
+      className={`aid-fh-personal${embedded ? ' aid-fh-personal--embedded' : ''}`}
+    >
       {showTitle ? (
         <header className="aid-fh-personal__header">
           <h4 className="aid-fh-personal__title">{title}</h4>
@@ -48,15 +66,28 @@ const AidFamilyHeadPersonalFields = ({
         </header>
       ) : null}
 
+      {beforeFields}
+
       <div className="aid-fh-personal__field aid-fh-personal__field--full">
         <FormInput
-          label="CNIC NUMBER (FORMAT: 12345-1234567-1)"
+          label={cnicLabel}
           value={formatCnicInput(value?.cnic || '')}
-          onChange={(e) => patch({ cnic: formatCnicInput(e.target.value) })}
-          placeholder="36101-XXXXXXX-X (Auto-formats dashes)"
+          onChange={(e) => handleCnicChange(e.target.value)}
+          placeholder={cnicPlaceholder}
           inputMode="numeric"
           autoComplete="off"
         />
+        {cnicLookingUp ? (
+          <p className="aid-fh-personal__cnic-hint">Searching…</p>
+        ) : cnicHint ? (
+          <p
+            className={`aid-fh-personal__cnic-hint${
+              value?.existing_person_id ? ' is-linked' : ''
+            }`}
+          >
+            {cnicHint}
+          </p>
+        ) : null}
       </div>
 
       <div className="aid-fh-personal__grid">
@@ -145,6 +176,8 @@ const AidFamilyHeadPersonalFields = ({
           onChange={(e) => patch({ necta_status: e.target.value })}
           options={[{ value: '', label: '—' }, ...AID_NECTA_STATUS]}
         />
+
+        {afterGrid}
       </div>
 
       <div className="aid-fh-personal__vuln">

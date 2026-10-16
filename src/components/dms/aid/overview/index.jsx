@@ -8,18 +8,13 @@ import { canViewModule, hasAidPermission } from '../../../../utils/permissions';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormSelect from '../../../common/FormSelect';
+import DateFilter from '../../../common/filters/DateFilter';
+import DateRangeFilter from '../../../common/filters/DateRangeFilter';
 import { AID_REQUEST_TYPES } from '../aidConstants';
 import '../aid.css';
 import './overview.css';
 
 Chart.register(...registerables);
-
-const PERIOD_OPTIONS = [
-  { value: 'this_month', label: 'This month' },
-  { value: 'last_month', label: 'Last month' },
-  { value: 'last_3_months', label: 'Last 3 months' },
-  { value: 'last_6_months', label: 'Last 6 months' },
-];
 
 const formatMoneyShort = (n) => {
   const v = Number(n) || 0;
@@ -41,14 +36,17 @@ const AidWelfareOverview = () => {
   const chartInstance = useRef(null);
 
   const canView =
-    canViewModule(permissions, 'program', 'aid_applications') ||
-    hasAidPermission(permissions, 'aid_applications', 'ceo_approve') ||
+    canViewModule(permissions, 'program', 'aid_overview') ||
+    hasAidPermission(permissions, 'aid_overview', 'view') ||
     permissions?.super_admin ||
     permissions?.program_manager;
 
-  const [period, setPeriod] = useState('this_month');
   const [program, setProgram] = useState('all');
-  const [district, setDistrict] = useState('all');
+  const [dateFilters, setDateFilters] = useState({
+    date: '',
+    start_date: '',
+    end_date: '',
+  });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,6 +61,16 @@ const AidWelfareOverview = () => {
     [],
   );
 
+  const handleDateFilterChange = (key, value) => {
+    setDateFilters((prev) => {
+      if (key === 'date') {
+        return { date: value, start_date: '', end_date: '' };
+      }
+      // Date range clears single date
+      return { ...prev, date: '', [key]: value };
+    });
+  };
+
   const load = async () => {
     if (!canView) {
       setError('You do not have permission to view welfare overview.');
@@ -74,9 +82,10 @@ const AidWelfareOverview = () => {
       setError('');
       const res = await axiosInstance.get('/aid/overview', {
         params: {
-          period,
+          date: dateFilters.date || undefined,
+          start_date: dateFilters.start_date || undefined,
+          end_date: dateFilters.end_date || undefined,
           program: program === 'all' ? undefined : program,
-          district: district === 'all' ? undefined : district,
         },
       });
       setData(res.data?.data || null);
@@ -90,7 +99,7 @@ const AidWelfareOverview = () => {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [period, program, district]);
+  }, [dateFilters.date, dateFilters.start_date, dateFilters.end_date, program]);
 
   useEffect(() => {
     if (!chartRef.current || !data?.monthly_apps_vs_approvals?.length) return;
@@ -173,29 +182,29 @@ const AidWelfareOverview = () => {
           <div>
             <div className="aid-wo-crumb">Welfare › Management</div>
             <p className="aid-wo-sub">
-              {data?.filters?.period_label || '—'} ·{' '}
-              {program === 'all' ? 'all programs' : program.replace(/_/g, ' ')} ·{' '}
-              {district === 'all' ? 'all districts' : district}
+              {data?.filters?.range_label || '—'} ·{' '}
+              {program === 'all' ? 'all programs' : program.replace(/_/g, ' ')}
             </p>
           </div>
           <div className="aid-wo-filters">
-            <FormSelect
-              label="Period"
-              value={period}
-              onChange={(e) => setPeriod(e.target.value)}
-              options={PERIOD_OPTIONS}
+            <DateFilter
+              filterKey="date"
+              label="Date"
+              filters={dateFilters}
+              onFilterChange={handleDateFilterChange}
+            />
+            <DateRangeFilter
+              startKey="start_date"
+              endKey="end_date"
+              label="Date range"
+              filters={dateFilters}
+              onFilterChange={handleDateFilterChange}
             />
             <FormSelect
               label="Program"
               value={program}
               onChange={(e) => setProgram(e.target.value)}
               options={programOptions}
-            />
-            <FormSelect
-              label="District"
-              value={district}
-              onChange={(e) => setDistrict(e.target.value)}
-              options={[{ value: 'all', label: 'All districts' }]}
             />
             <button
               type="button"
@@ -493,7 +502,8 @@ const AidWelfareOverview = () => {
             </table>
           </div>
           <div className="aid-wo-links">
-            <Link to="/dms/aid/applications/list">Applications list</Link>
+            <Link to="/dms/aid/applications/entry/list">Data entry</Link>
+            <Link to="/dms/aid/applications/list">Case review</Link>
             <Link to="/dms/aid/applications/approvals">Approvals queue</Link>
           </div>
         </section>

@@ -45,49 +45,79 @@ const AidRationApplicationFields = ({
       .filter(Boolean)
       .join(' ');
 
+    const wheatLabel =
+      details.family_had_wheat === 'yes'
+        ? details.wheat_quantity_kg
+          ? `Yes · ${details.wheat_quantity_kg} KG`
+          : 'Yes'
+        : details.family_had_wheat === 'no'
+          ? 'No'
+          : '—';
+    const wheatTone =
+      details.family_had_wheat === 'yes'
+        ? 'success'
+        : details.family_had_wheat === 'no'
+          ? 'muted'
+          : 'muted';
+
     return (
-      <div className="aid-ration-application" style={{ marginTop: 12 }}>
-        <div className="aid-family-panel">
-          <h4 className="aid-family-panel__title">Monthly Ration Program</h4>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            Persons: Male {details.persons_male || '0'} · Female{' '}
-            {details.persons_female || '0'} · Kids {details.persons_kids || '0'}
-            {totalPersons > 0 ? ` (total ${totalPersons})` : ''}
-          </p>
-          <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            Family had wheat:{' '}
-            {details.family_had_wheat === 'yes'
-              ? `Yes${
-                  details.wheat_quantity_kg
-                    ? ` · ${details.wheat_quantity_kg} KG`
-                    : ''
-                }`
-              : details.family_had_wheat === 'no'
-                ? 'No'
-                : '—'}
-          </p>
-          {details.how_know_mtjf && (
-            <p style={{ fontSize: 13, margin: '8px 0 0' }}>
-              <strong>How know about MTJF:</strong> {details.how_know_mtjf}
-            </p>
-          )}
-          {details.ration_arrangements_before && (
-            <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>Ration arrangements before MTJF:</strong>{' '}
-              {details.ration_arrangements_before}
-            </p>
-          )}
-          {duration && (
-            <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>Requested support duration:</strong> {duration}
-            </p>
-          )}
-          {details.alternative_if_not_approved && (
-            <p style={{ fontSize: 13, margin: '8px 0 0' }}>
-              <strong>If not approved, alternative plan:</strong>{' '}
-              {details.alternative_if_not_approved}
-            </p>
-          )}
+      <div className="aid-ration-card">
+        <div className="aid-ration-card__banner" aria-hidden />
+        <div className="aid-ration-card__head">
+          <div>
+            <p className="aid-ration-card__eyebrow">Aid type detail</p>
+            <h4 className="aid-ration-card__title">Monthly Ration Program</h4>
+          </div>
+          {duration ? (
+            <div className="aid-ration-card__duration">
+              <span>Requested duration</span>
+              <strong>{duration}</strong>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="aid-ration-card__stats">
+          <div className="aid-ration-stat">
+            <em>Male</em>
+            <strong>{details.persons_male || '0'}</strong>
+          </div>
+          <div className="aid-ration-stat">
+            <em>Female</em>
+            <strong>{details.persons_female || '0'}</strong>
+          </div>
+          <div className="aid-ration-stat">
+            <em>Kids</em>
+            <strong>{details.persons_kids || '0'}</strong>
+          </div>
+          <div className="aid-ration-stat aid-ration-stat--total">
+            <em>Total persons</em>
+            <strong>{totalPersons || '0'}</strong>
+          </div>
+          <div className={`aid-ration-stat aid-ration-stat--${wheatTone}`}>
+            <em>Family had wheat</em>
+            <strong>{wheatLabel}</strong>
+          </div>
+        </div>
+
+        <div className="aid-ration-card__notes">
+          {details.how_know_mtjf ? (
+            <div className="aid-ration-note">
+              <span>How they know about MTJF</span>
+              <p>{details.how_know_mtjf}</p>
+            </div>
+          ) : null}
+          {details.ration_arrangements_before ? (
+            <div className="aid-ration-note">
+              <span>Ration arrangements before MTJF</span>
+              <p>{details.ration_arrangements_before}</p>
+            </div>
+          ) : null}
+          {details.alternative_if_not_approved ? (
+            <div className="aid-ration-note aid-ration-note--warn">
+              <span>If not approved — alternative plan</span>
+              <p>{details.alternative_if_not_approved}</p>
+            </div>
+          ) : null}
         </div>
       </div>
     );

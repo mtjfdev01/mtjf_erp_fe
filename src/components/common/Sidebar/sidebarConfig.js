@@ -269,12 +269,20 @@ const programDepartmentItems = (isUser = false) => [
     label: 'Welfare Overview',
     path: '/dms/aid/overview',
     type: 'list',
-    module: 'aid_applications',
+    module: 'aid_overview',
     permissionDepartment: 'program',
     icon: FiBarChart2
   },
   {
-    label: 'Applications',
+    label: 'Data Entry',
+    path: '/dms/aid/applications/entry/list',
+    type: 'list',
+    module: 'aid_applications',
+    permissionDepartment: 'program',
+    icon: FiClipboard
+  },
+  {
+    label: 'Case Review',
     path: '/dms/aid/applications/list',
     type: 'list',
     module: 'aid_applications',
