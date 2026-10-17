@@ -1116,7 +1116,7 @@ const allDepartmentItems = (isUser = false) => [
   },
   {
     id: 'fund_raising',
-    label: 'Fund Raising',
+    label: 'CRD',
     icon: FiHeart,
     items: fundRaisingDepartmentItems(isUser)
   },
