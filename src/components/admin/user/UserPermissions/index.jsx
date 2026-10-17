@@ -73,6 +73,82 @@ const mergeFundRaisingDonorPermissions = (rawPermissions) => {
   return next;
 };
 
+/** Mirror legacy fund_raising.dms_todos into todos.dms_todos for the UI (keep legacy keys). */
+const mergeTodosPermissions = (rawPermissions) => {
+  if (!rawPermissions || typeof rawPermissions !== 'object') return rawPermissions;
+  const next = JSON.parse(JSON.stringify(rawPermissions));
+  const actions = ['create', 'list_view', 'view', 'update', 'delete'];
+  const legacy = next.fund_raising?.dms_todos;
+  const current = next.todos?.dms_todos;
+  const hasCurrent =
+    current &&
+    typeof current === 'object' &&
+    actions.some((a) => current[a] === true);
+
+  if (hasCurrent || !legacy || typeof legacy !== 'object') {
+    return next;
+  }
+
+  const mirrored = { scope: legacy.scope || 'self', view_all: legacy.view_all === true };
+  actions.forEach((a) => {
+    mirrored[a] = legacy[a] === true;
+  });
+  next.todos = { ...(next.todos || {}), dms_todos: mirrored };
+  return next;
+};
+
+/** Mirror legacy fund_raising.aid_* into program.aid_* for the UI (keep legacy keys). */
+const mergeAidPermissions = (rawPermissions) => {
+  if (!rawPermissions || typeof rawPermissions !== 'object') return rawPermissions;
+  const next = JSON.parse(JSON.stringify(rawPermissions));
+  const modules = [
+    {
+      key: 'aid_overview',
+      actions: ['view'],
+    },
+    {
+      key: 'aid_people',
+      actions: ['create', 'list_view', 'view', 'update', 'delete'],
+    },
+    {
+      key: 'aid_applications',
+      actions: [
+        'create',
+        'list_view',
+        'view',
+        'update',
+        'delete',
+        'ceo_approve',
+        'deliver',
+        'bulk_verify',
+      ],
+    },
+  ];
+
+  modules.forEach(({ key, actions }) => {
+    const legacy = next.fund_raising?.[key];
+    const current = next.program?.[key];
+    const hasCurrent =
+      current &&
+      typeof current === 'object' &&
+      actions.some((a) => current[a] === true);
+    if (hasCurrent || !legacy || typeof legacy !== 'object') return;
+
+    const mirrored = {};
+    actions.forEach((a) => {
+      mirrored[a] = legacy[a] === true;
+    });
+    next.program = { ...(next.program || {}), [key]: mirrored };
+  });
+
+  return next;
+};
+
+const normalizePermissionsForUi = (raw) =>
+  mergeAidPermissions(
+    mergeTodosPermissions(mergeFundRaisingDonorPermissions(raw)),
+  );
+
 const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const { user: currentUser, checkAuth } = useAuth();
   const [permissions, setPermissions] = useState({});
@@ -84,7 +160,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   // Initialize permissions when user data is available
   useEffect(() => {
     if (user?.permissions?.permissions) {
-      setPermissions(mergeFundRaisingDonorPermissions(user.permissions.permissions));
+      setPermissions(normalizePermissionsForUi(user.permissions.permissions));
     }
   }, [user]);
 
@@ -117,10 +193,6 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'In Kind Donations',
           actions: ['create', 'list_view', 'view', 'update', 'delete', 'completing', 'reconciler']
         },
-        dms_todos: {
-          label: 'My To-Dos',
-          actions: ['create', 'list_view', 'view', 'update', 'delete']
-        },
         online_donors: {
           label: 'Online Donors',
           actions: ['create', 'list_view', 'view', 'update', 'delete', 'csv_xport']
@@ -137,15 +209,8 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'CSR POCs',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
-        // Enable later — Beneficiary Aid Applications (Phase 1)
-        // aid_people: {
-        //   label: 'Aid People',
-        //   actions: ['create', 'list_view', 'view', 'update', 'delete']
-        // },
-        // aid_applications: {
-        //   label: 'Aid Applications',
-        //   actions: ['create', 'list_view', 'view', 'update', 'delete', 'ceo_approve', 'deliver']
-        // },
+        // Aid Applications / Beneficiaries live under Program (primary).
+        // Legacy fund_raising.aid_* keys still work via dual-path guards.
         // donations_report: {
         //   label: 'Donations Report',
         //   actions: ['send', 'receive']
@@ -258,7 +323,27 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     program: {
       label: 'Program',
       submodules: {
-        
+        aid_overview: {
+          label: 'Welfare Overview',
+          actions: ['view'],
+        },
+        aid_applications: {
+          label: 'Applications',
+          actions: [
+            'create',
+            'list_view',
+            'view',
+            'update',
+            'delete',
+            'ceo_approve',
+            'deliver',
+            'bulk_verify',
+          ],
+        },
+        aid_people: {
+          label: 'Beneficiaries',
+          actions: ['create', 'list_view', 'view', 'update', 'delete'],
+        },
         progress_tracking: {
           label: 'Progress Tracking',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
@@ -531,6 +616,15 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         }
       }
     },
+    todos: {
+      label: 'My To-Dos',
+      submodules: {
+        dms_todos: {
+          label: 'My To-Dos',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        }
+      }
+    },
   };
 
   const SCOPE_OPTIONS = [
@@ -585,6 +679,9 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',
     reconciler: 'Reconciler (verify / change status)',
+    ceo_approve: 'CEO Approve',
+    deliver: 'Deliver',
+    bulk_verify: 'Bulk verify checklist',
   };
 
   const initializePermissions = () => {
@@ -697,7 +794,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
   const handleSave = async () => {
     if (!user?.id) {
       try {
-        if (onSave) onSave(mergeFundRaisingDonorPermissions(permissions));
+        if (onSave) onSave(normalizePermissionsForUi(permissions));
       } catch (error) {
         setError('User ID is required');
       }
@@ -710,7 +807,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
       // Create payload with only user data and permissions
       const updatePayload = {
         ...user,
-        permissions: mergeFundRaisingDonorPermissions(permissions)
+        permissions: normalizePermissionsForUi(permissions)
       };
       
       console.log('User before permissions update:', user);

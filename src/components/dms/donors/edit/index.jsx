@@ -109,8 +109,18 @@ const EditDonor = ({
         recurring: d.recurring === true,
         recurring_consent: d.recurring_consent === true,
       });
-      setAssignedUser(d.assigned_to || null);
-      setReferrerUser(d.referred_by || null);
+      const withFullName = (u) =>
+        u
+          ? {
+              ...u,
+              full_name:
+                u.full_name ||
+                `${u.first_name || ''} ${u.last_name || ''}`.trim() ||
+                u.email,
+            }
+          : null;
+      setAssignedUser(withFullName(d.assigned_to));
+      setReferrerUser(withFullName(d.referred_by));
       setSelectedOrganization(primaryAff?.organization || null);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load donor');
@@ -592,12 +602,13 @@ const EditDonor = ({
                 </div>
                 <SearchableDropdown
                   label="Assign to Fundraising User (Optional)"
-                  placeholder="Search users by name or email..."
-                  apiEndpoint="/users"
+                  placeholder="Search fund raising users by name or email..."
+                  apiEndpoint="/users/options"
+                  apiParams={{ department: 'fund_raising' }}
                   onSelect={handleUserSelect}
                   onClear={handleUserClear}
                   value={assignedUser}
-                  displayKey="first_name"
+                  displayKey="full_name"
                   debounceDelay={500}
                   minSearchLength={2}
                   allowResearch={true}
@@ -605,12 +616,13 @@ const EditDonor = ({
                 />
                 <SearchableDropdown
                   label="Referrer (Optional)"
-                  placeholder="Search users by name or email..."
-                  apiEndpoint="/users"
+                  placeholder="Search fund raising users by name or email..."
+                  apiEndpoint="/users/options"
+                  apiParams={{ department: 'fund_raising' }}
                   onSelect={handleReferrerSelect}
                   onClear={handleReferrerClear}
                   value={referrerUser}
-                  displayKey="first_name"
+                  displayKey="full_name"
                   debounceDelay={500}
                   minSearchLength={2}
                   allowResearch={true}

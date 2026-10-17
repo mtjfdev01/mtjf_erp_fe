@@ -100,7 +100,10 @@ const CeoComplaintView = () => {
           {row && (
             <div className="detail-section">
               <div className="detail-grid">
-                <Detail label="Complaint number">{row.complaint_number}</Detail>
+                <Detail label="Number">{row.complaint_number}</Detail>
+                <Detail label="Kind">
+                  {row.entry_kind === 'issue' ? 'Issue' : 'Complaint'}
+                </Detail>
                 <Detail label="Status">
                   {labelFor(STATUS_OPTIONS, row.status)}
                 </Detail>

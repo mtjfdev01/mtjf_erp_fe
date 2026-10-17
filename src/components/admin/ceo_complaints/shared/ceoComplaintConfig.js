@@ -1,3 +1,8 @@
+export const ENTRY_KIND_OPTIONS = [
+  { value: 'complaint', label: 'Complaint' },
+  { value: 'issue', label: 'Issue' },
+];
+
 export const ORGANIZATION_OPTIONS = [
   { value: 'mtj_foundation', label: 'MTJ Foundation' },
   { value: 'aslab', label: 'Aslab' },

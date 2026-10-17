@@ -581,12 +581,13 @@ const RegisterDonor = () => {
                 </div>
                 <SearchableDropdown
                   label="Assign to User (Optional)"
-                  placeholder="Search users by name or email..."
-                  apiEndpoint="/users"
+                  placeholder="Search fund raising users by name or email..."
+                  apiEndpoint="/users/options"
+                  apiParams={{ department: 'fund_raising' }}
                   onSelect={handleUserSelect}
                   onClear={handleUserClear}
                   value={assignedUser}
-                  displayKey="first_name"
+                  displayKey="full_name"
                   debounceDelay={500}
                   minSearchLength={2}
                   allowResearch={true}
@@ -596,12 +597,13 @@ const RegisterDonor = () => {
                 />
                 <SearchableDropdown
                   label="Referrer (Optional)"
-                  placeholder="Search users by name or email..."
-                  apiEndpoint="/users"
+                  placeholder="Search fund raising users by name or email..."
+                  apiEndpoint="/users/options"
+                  apiParams={{ department: 'fund_raising' }}
                   onSelect={handleReferrerSelect}
                   onClear={handleReferrerClear}
                   value={referrerUser}
-                  displayKey="first_name"
+                  displayKey="full_name"
                   debounceDelay={500}
                   minSearchLength={2}
                   allowResearch={true}

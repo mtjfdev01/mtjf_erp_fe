@@ -363,7 +363,7 @@ const DmsTodosPage = () => {
       <div className="dms-todos-page">
         <PageHeader
           title="My To-Dos"
-          backPath="/fund_raising"
+          backPath="/"
           showAdd
           addTitle="Add To-Do"
           onAddClick={openAdd}
