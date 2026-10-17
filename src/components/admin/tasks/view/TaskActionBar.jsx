@@ -241,10 +241,10 @@ const TaskActionBar = ({
             </button>
           ))}
         </div>
-        <div className="task-action-bar-secondary">
+        <div className="tv2-more">
           <button
             type="button"
-            className="task-action-quick-toggle"
+            className="tv2-btn tv2-btn--ghost"
             onClick={() => setIsQuickOpen((prev) => !prev)}
             disabled={disabled}
             aria-haspopup="true"
@@ -258,7 +258,7 @@ const TaskActionBar = ({
                 <button
                   key={item.key}
                   type="button"
-                  className="task-action-quick-item"
+                  className="tv2-more-item"
                   onClick={() => handleQuickClick(item.key)}
                   disabled={disabled}
                 >
@@ -310,7 +310,7 @@ const TaskActionBar = ({
               <button
                 key={item.key}
                 type="button"
-                className="task-action-quick-item"
+                className="tv2-more-item"
                 onClick={() => handleQuickClick(item.key)}
                 disabled={disabled}
               >
@@ -320,7 +320,7 @@ const TaskActionBar = ({
             {disabledReassignTooltip && (
               <button
                 type="button"
-                className="task-action-quick-item"
+                className="tv2-more-item"
                 disabled
                 title={disabledReassignTooltip}
               >
