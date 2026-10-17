@@ -80,6 +80,7 @@ const AidRelatedPersonFields = ({
       father_or_husband_name:
         person.father_or_husband_name || value.father_or_husband_name || '',
       name_urdu: person.name_urdu || value.name_urdu || '',
+      caste: person.caste || value.caste || '',
       cnic: formatCnicInput(person.cnic || value.cnic || ''),
       cnic_expiry: person.cnic_expiry || value.cnic_expiry || '',
       phone: formatPkPhoneInput(person.phone || value.phone || ''),

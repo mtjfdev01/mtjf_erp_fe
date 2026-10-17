@@ -17,6 +17,7 @@ import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplic
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
+import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidInvestigationPanel, {
   emptyRecommendation,
   isInvestigationComplete,
@@ -34,6 +35,7 @@ import {
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
+  formatAidCaseSource,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -570,6 +572,9 @@ const AidApplicationView = () => {
                 </div>
 
                 <div className="aid-fact-grid aid-fact-grid--case">
+                  <Fact label="Case source">
+                    {formatAidCaseSource(app.case_source)}
+                  </Fact>
                   <Fact label="Created by">
                     {app.created_by ? formatAuditActor(app.created_by) : '—'}
                   </Fact>
@@ -677,26 +682,30 @@ const AidApplicationView = () => {
                     </div>
                   )}
                 {app.zakat_permission && (
-                  <div className="aid-detail-block">
-                    <h4 className="aid-detail-block__title">
-                      Zakat Permission Letter
-                    </h4>
+                  <AidCollapsibleSection
+                    className="aid-detail-block"
+                    title="Zakat Permission Letter"
+                    hint="Click to view"
+                  >
                     <AidZakatPermissionForm
                       value={app.zakat_permission}
                       applicationNo={app.application_no}
                       readOnly
                     />
-                  </div>
+                  </AidCollapsibleSection>
                 )}
                 {app.consent_form && (
-                  <div className="aid-detail-block">
-                    <h4 className="aid-detail-block__title">Consent Form</h4>
+                  <AidCollapsibleSection
+                    className="aid-detail-block"
+                    title="Consent Form"
+                    hint="Click to view"
+                  >
                     <AidConsentForm
                       value={app.consent_form}
                       applicationNo={app.application_no}
                       readOnly
                     />
-                  </div>
+                  </AidCollapsibleSection>
                 )}
               </section>
             )}

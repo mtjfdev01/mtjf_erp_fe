@@ -23,6 +23,14 @@ export const AID_REQUEST_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+/** Intake — how the case entered data entry. */
+export const AID_CASE_SOURCES = [
+  { value: 'walk_in', label: 'Walk-in at office' },
+  { value: 'field_survey', label: 'Field survey' },
+  { value: 'referral', label: 'Referral (donor / staff)' },
+  { value: 'call_center', label: 'Call center' },
+];
+
 /** Education History — Class dropdown starting from Matric */
 export const AID_EDUCATION_HISTORY_CLASSES = [
   { value: 'matric', label: 'Matric' },
@@ -625,6 +633,7 @@ export const emptyRelatedPersonBase = () => ({
   full_name: '',
   father_or_husband_name: '',
   name_urdu: '',
+  caste: '',
   gender: '',
   date_of_birth: '',
   cnic: '',
@@ -935,6 +944,7 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   full_name: '',
   father_or_husband_name: '',
   name_urdu: '',
+  caste: '',
   cnic: '',
   cnic_expiry: '',
   phone: '',
@@ -1138,6 +1148,10 @@ export function formatAidStatus(status) {
 
 export function formatAidRequestType(type) {
   return AID_REQUEST_TYPES.find((o) => o.value === type)?.label || type || '—';
+}
+
+export function formatAidCaseSource(source) {
+  return AID_CASE_SOURCES.find((o) => o.value === source)?.label || source || '—';
 }
 
 export function formatMaritalStatus(status) {
