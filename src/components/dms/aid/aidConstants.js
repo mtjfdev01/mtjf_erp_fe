@@ -7,6 +7,56 @@ export const AID_STATUS_OPTIONS = [
   { value: 'delivered', label: 'Delivered' },
 ];
 
+/** Data-entry list pipeline cards (maps to API `stage` filter). */
+export const AID_ENTRY_STAGES = [
+  { id: 'draft', label: 'Draft', hint: 'Incomplete intake' },
+  { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
+  { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
+  { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
+  { id: 'approved', label: 'Approved', hint: 'This month' },
+  { id: 'returned', label: 'Returned', hint: 'Need correction' },
+];
+
+export function formatAidEntryStage(stage) {
+  return AID_ENTRY_STAGES.find((s) => s.id === stage)?.label || stage || '—';
+}
+
+export function aidEntryStageTone(stage) {
+  switch (stage) {
+    case 'draft':
+      return 'muted';
+    case 'submitted':
+      return 'info';
+    case 'investigation':
+      return 'warn';
+    case 'pending_approval':
+      return 'purple';
+    case 'approved':
+      return 'success';
+    case 'returned':
+      return 'danger';
+    default:
+      return 'muted';
+  }
+}
+
+export function formatRelativeAidTime(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} d ago`;
+  return d.toLocaleDateString();
+}
+
 export const AID_REQUEST_TYPES = [
   { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
@@ -21,6 +71,14 @@ export const AID_REQUEST_TYPES = [
   { value: 'aas_lab_diagnostics', label: 'AAS Lab & Diagnostics' },
   { value: 'community_services', label: 'Community Services' },
   { value: 'other', label: 'Other' },
+];
+
+/** Intake — how the case entered data entry. */
+export const AID_CASE_SOURCES = [
+  { value: 'walk_in', label: 'Walk-in at office' },
+  { value: 'field_survey', label: 'Field survey' },
+  { value: 'referral', label: 'Referral (donor / staff)' },
+  { value: 'call_center', label: 'Call center' },
 ];
 
 /** Education History — Class dropdown starting from Matric */
@@ -625,6 +683,7 @@ export const emptyRelatedPersonBase = () => ({
   full_name: '',
   father_or_husband_name: '',
   name_urdu: '',
+  caste: '',
   gender: '',
   date_of_birth: '',
   cnic: '',
@@ -935,6 +994,7 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   full_name: '',
   father_or_husband_name: '',
   name_urdu: '',
+  caste: '',
   cnic: '',
   cnic_expiry: '',
   phone: '',
@@ -1138,6 +1198,10 @@ export function formatAidStatus(status) {
 
 export function formatAidRequestType(type) {
   return AID_REQUEST_TYPES.find((o) => o.value === type)?.label || type || '—';
+}
+
+export function formatAidCaseSource(source) {
+  return AID_CASE_SOURCES.find((o) => o.value === source)?.label || source || '—';
 }
 
 export function formatMaritalStatus(status) {

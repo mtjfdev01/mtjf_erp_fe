@@ -29,12 +29,15 @@ import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplic
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
+import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidFamilyMembersIntake from '../../shared/AidFamilyMembersIntake';
+import AidFamilyTreePanel from '../../shared/AidFamilyTreePanel';
 import AidApplicantCheckbox from '../../shared/AidApplicantCheckbox';
 import AidApplicationDocsIntake from '../../shared/AidApplicationDocsIntake';
 import { downloadAsPng } from '../../shared/downloadAsPng';
 import {
   AID_REQUEST_TYPES,
+  AID_CASE_SOURCES,
   AID_MARITAL_STATUS,
   AID_GENDERS,
   AID_YES_NO,
@@ -52,6 +55,7 @@ import {
   emptyConsentForm,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
+  calcAgeFromDob,
   formatCnicInput,
   formatPkPhoneInput,
   isValidCnic,
@@ -64,6 +68,7 @@ const emptyPerson = {
   full_name: '',
   father_or_husband_name: '',
   name_urdu: '',
+  caste: '',
   cnic: '',
   cnic_expiry: '',
   phone: '',
@@ -198,6 +203,7 @@ const cleanPersonPayload = (p) => {
     full_name: p.full_name.trim(),
     father_or_husband_name: p.father_or_husband_name?.trim() || undefined,
     name_urdu: p.name_urdu?.trim() || undefined,
+    caste: p.caste?.trim() || undefined,
     cnic: p.cnic || undefined,
     cnic_expiry: p.cnic_expiry || undefined,
     phone: p.phone || undefined,
@@ -269,6 +275,7 @@ const AidApplicationAdd = () => {
     title: '',
     request_summary: '',
     requested_aid_type: 'health',
+    case_source: 'walk_in',
   });
   const [educationDetails, setEducationDetails] = useState(
     emptyEducationDetails(),
@@ -317,6 +324,7 @@ const AidApplicationAdd = () => {
   const FORM_TABS = [
     { id: 'family', label: 'Family Registration', hint: 'Household' },
     { id: 'beneficiary', label: 'Beneficiary', hint: 'Person details' },
+    { id: 'family_tree', label: 'Family Tree', hint: 'Household map' },
     { id: 'request', label: 'Application', hint: 'Need & aid type' },
     { id: 'attachments', label: 'Attachments', hint: 'Docs & forms' },
     { id: 'assignment', label: 'Assignment', hint: 'Case owner' },
@@ -646,6 +654,7 @@ const AidApplicationAdd = () => {
       const payload = {
         title: form.title || null,
         request_summary: form.request_summary || null,
+        case_source: form.case_source || 'walk_in',
         requested_aid_type: form.requested_aid_type,
         ...(form.requested_aid_type === 'education'
           ? { education_details: educationDetails }
@@ -706,6 +715,14 @@ const AidApplicationAdd = () => {
       } else if (beneficiaryMode === 'existing') {
         if (!beneficiaryId) throw new Error('Select a beneficiary');
         payload.beneficiary_person_id = Number(beneficiaryId);
+        const dob = existingBeneficiary?.date_of_birth
+          ? String(existingBeneficiary.date_of_birth).slice(0, 10)
+          : '';
+        if (dob) {
+          await axiosInstance.patch(`/aid/people/${beneficiaryId}`, {
+            date_of_birth: dob,
+          });
+        }
       } else {
         validatePerson(beneficiary, 'Beneficiary');
         payload.beneficiary = {
@@ -973,11 +990,11 @@ const AidApplicationAdd = () => {
               disabled={saving}
             />
 
-            <div className="aid-family-panel" style={{ marginTop: 16 }}>
-              <div className="aid-section-heading-row">
-                <h4 className="aid-family-panel__title">
-                  Zakat Permission Letter
-                </h4>
+            <AidCollapsibleSection
+              className="aid-family-panel"
+              title="Zakat Permission Letter"
+              hint="Optional — click to fill or review"
+              actions={
                 <button
                   type="button"
                   className="aid-png-download-btn"
@@ -990,18 +1007,21 @@ const AidApplicationAdd = () => {
                 >
                   <FiDownload size={18} />
                 </button>
-              </div>
+              }
+            >
               <div ref={zakatCaptureRef} className="aid-png-capture">
                 <AidZakatPermissionForm
                   value={zakatPermission}
                   onChange={setZakatPermission}
                 />
               </div>
-            </div>
+            </AidCollapsibleSection>
 
-            <div className="aid-family-panel" style={{ marginTop: 12 }}>
-              <div className="aid-section-heading-row">
-                <h4 className="aid-family-panel__title">Consent Form</h4>
+            <AidCollapsibleSection
+              className="aid-family-panel"
+              title="Consent Form"
+              hint="Optional — click to fill or review"
+              actions={
                 <button
                   type="button"
                   className="aid-png-download-btn"
@@ -1014,14 +1034,15 @@ const AidApplicationAdd = () => {
                 >
                   <FiDownload size={18} />
                 </button>
-              </div>
+              }
+            >
               <div ref={consentCaptureRef} className="aid-png-capture">
                 <AidConsentForm
                   value={consentForm}
                   onChange={setConsentForm}
                 />
               </div>
-            </div>
+            </AidCollapsibleSection>
           </div>
           )}
 
@@ -1040,12 +1061,45 @@ const AidApplicationAdd = () => {
           <div className="form-section">
             <h3 className="form-section-heading">Beneficiary</h3>
             {headAsBeneficiary ? (
-              <p className="aid-section-hint">
-                Beneficiary is set from Family Head (
-                {familyHeadTypeLabel(headAsBeneficiary._relation_type)}
-                ). Edit their details on the Family Head step. You can still add
-                family members below.
-              </p>
+              <>
+                <p className="aid-section-hint">
+                  Beneficiary is set from Family Head (
+                  {familyHeadTypeLabel(headAsBeneficiary._relation_type)}
+                  ). Other details stay on the Family Head step; set date of
+                  birth here if needed. You can still add family members below.
+                </p>
+                <div
+                  className="aid-family-panel"
+                  style={{ marginTop: 12, maxWidth: '22rem' }}
+                >
+                  <div className="aid-fh-personal__dob-label-row">
+                    <span className="aid-fh-personal__dob-label">
+                      Date of birth (beneficiary){' '}
+                      <span className="required-mark">*</span>
+                    </span>
+                    {calcAgeFromDob(headAsBeneficiary.date_of_birth) != null ? (
+                      <span className="aid-fh-personal__age">
+                        Age: {calcAgeFromDob(headAsBeneficiary.date_of_birth)}{' '}
+                        yrs
+                      </span>
+                    ) : null}
+                  </div>
+                  <FormInput
+                    label=""
+                    type="date"
+                    required
+                    value={headAsBeneficiary.date_of_birth || ''}
+                    onChange={(e) => {
+                      const date_of_birth = e.target.value;
+                      setFamilyHeads((list) =>
+                        list.map((h) =>
+                          h.is_beneficiary ? { ...h, date_of_birth } : h,
+                        ),
+                      );
+                    }}
+                  />
+                </div>
+              </>
             ) : (
               <AidApplicantCheckbox
                 checked={!!beneficiary.is_applicant}
@@ -1071,26 +1125,74 @@ const AidApplicationAdd = () => {
             )}
 
             {headAsBeneficiary ? null : beneficiaryMode === 'existing' ? (
-              <SearchableDropdown
-                label="Search beneficiary"
-                placeholder="Name, CNIC, phone…"
-                onSearch={searchPeople}
-                onSelect={async (item) => {
-                  setBeneficiaryId(item.id);
-                  try {
-                    const res = await axiosInstance.get(`/aid/people/${item.id}`);
-                    setExistingBeneficiary(res.data?.data?.person || item.raw || null);
-                  } catch {
-                    setExistingBeneficiary(item.raw || null);
-                  }
-                }}
-                onClear={() => {
-                  setBeneficiaryId(null);
-                  setExistingBeneficiary(null);
-                }}
-                displayKey="name"
-                minSearchLength={2}
-              />
+              <>
+                <SearchableDropdown
+                  label="Search beneficiary"
+                  placeholder="Name, CNIC, phone…"
+                  onSearch={searchPeople}
+                  onSelect={async (item) => {
+                    setBeneficiaryId(item.id);
+                    try {
+                      const res = await axiosInstance.get(
+                        `/aid/people/${item.id}`,
+                      );
+                      setExistingBeneficiary(
+                        res.data?.data?.person || item.raw || null,
+                      );
+                    } catch {
+                      setExistingBeneficiary(item.raw || null);
+                    }
+                  }}
+                  onClear={() => {
+                    setBeneficiaryId(null);
+                    setExistingBeneficiary(null);
+                  }}
+                  displayKey="name"
+                  minSearchLength={2}
+                />
+                {existingBeneficiary ? (
+                  <div
+                    className="aid-family-panel"
+                    style={{ marginTop: 12, maxWidth: '22rem' }}
+                  >
+                    <div className="aid-fh-personal__dob-label-row">
+                      <span className="aid-fh-personal__dob-label">
+                        Date of birth (beneficiary)
+                      </span>
+                      {calcAgeFromDob(existingBeneficiary.date_of_birth) !=
+                      null ? (
+                        <span className="aid-fh-personal__age">
+                          Age:{' '}
+                          {calcAgeFromDob(existingBeneficiary.date_of_birth)}{' '}
+                          yrs
+                        </span>
+                      ) : null}
+                    </div>
+                    <FormInput
+                      label=""
+                      type="date"
+                      value={
+                        existingBeneficiary.date_of_birth
+                          ? String(existingBeneficiary.date_of_birth).slice(
+                              0,
+                              10,
+                            )
+                          : ''
+                      }
+                      onChange={(e) =>
+                        setExistingBeneficiary((p) => ({
+                          ...p,
+                          date_of_birth: e.target.value,
+                        }))
+                      }
+                    />
+                    <p className="aid-section-hint" style={{ marginTop: 8 }}>
+                      Changing DOB here updates the linked person when you
+                      submit.
+                    </p>
+                  </div>
+                ) : null}
+              </>
             ) : (
               <>
                 <AidFamilyHeadPersonalFields
@@ -1177,6 +1279,23 @@ const AidApplicationAdd = () => {
           </div>
           )}
 
+          {formTab === 'family_tree' && (
+            <div className="form-section">
+              <AidFamilyTreePanel
+                familyHeads={familyHeads}
+                spouse={spouse}
+                beneficiaryMembers={beneficiaryMembers}
+                beneficiary={
+                  headAsBeneficiary ||
+                  (beneficiaryMode === 'existing'
+                    ? existingBeneficiary
+                    : beneficiary)
+                }
+                headAsBeneficiary={headAsBeneficiary}
+              />
+            </div>
+          )}
+
           {formTab === 'family' && (
           <div className="form-section">
             {/* <h3 className="form-section-heading">Family Head</h3>
@@ -1234,7 +1353,29 @@ const AidApplicationAdd = () => {
                 const typeLabel = familyHeadTypeLabel(head._relation_type);
                 return (
                   <div key={`fh-${idx}`} className="aid-repeat-item">
-                    <div className="aid-role-check-row aid-role-check-row--inline3">
+                    <div
+                      className={`aid-role-check-row${
+                        idx === 0
+                          ? ' aid-role-check-row--inline4'
+                          : ' aid-role-check-row--inline3'
+                      }`}
+                    >
+                      {idx === 0 ? (
+                        <div className="aid-role-check-row__type">
+                          <FormSelect
+                            label="Case source"
+                            name="case_source"
+                            value={form.case_source || 'walk_in'}
+                            onChange={(e) =>
+                              setForm((p) => ({
+                                ...p,
+                                case_source: e.target.value,
+                              }))
+                            }
+                            options={AID_CASE_SOURCES}
+                          />
+                        </div>
+                      ) : null}
                       <div className="aid-role-check-row__type">
                         <FormSelect
                           label="Type"

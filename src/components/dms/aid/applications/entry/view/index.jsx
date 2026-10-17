@@ -9,14 +9,17 @@ import AidMarriageGiftApplicationFields from '../../../shared/AidMarriageGiftApp
 import AidFinancialAssistanceFields from '../../../shared/AidFinancialAssistanceFields';
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
+import AidCollapsibleSection from '../../../shared/AidCollapsibleSection';
 import AidPersonProfileCard, {
   AidFamilyMemberLine,
   Fact,
 } from '../../../shared/AidPersonProfileCard';
+import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import {
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
+  formatAidCaseSource,
 } from '../../../aidConstants';
 import { formatAuditActor } from '../../../../../common/audit/auditHistoryLabels';
 import '../../../aid.css';
@@ -25,6 +28,24 @@ const isSponsorshipDependent = (notes) =>
   /dependent under (family head|guardian) sponsorship/i.test(
     String(notes || ''),
   );
+
+const ENTRY_TABS = [
+  { id: 'application', label: 'Application' },
+  { id: 'beneficiary', label: 'Beneficiary' },
+  { id: 'family', label: 'Family' },
+  { id: 'family_tree', label: 'Family Tree' },
+  { id: 'attachments', label: 'Attachments' },
+];
+
+const FAMILY_GROUPS = [
+  { key: 'parents', label: 'Parents / Family head' },
+  { key: 'spouse', label: 'Spouse' },
+  { key: 'children', label: 'Children' },
+  { key: 'brothers', label: 'Brothers' },
+  { key: 'sisters', label: 'Sisters' },
+  { key: 'siblings', label: 'Siblings' },
+  { key: 'extended', label: 'Guardians / extended' },
+];
 
 /**
  * Simple read-only view of entered application data (no investigation workflow).
@@ -37,6 +58,7 @@ const AidEntryApplicationView = () => {
   const [kinship, setKinship] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [panelTab, setPanelTab] = useState('application');
 
   const load = useCallback(async () => {
     try {
@@ -105,16 +127,7 @@ const AidEntryApplicationView = () => {
 
   const status = app.status;
   const tree = familyTree || {};
-  const groups = [
-    { key: 'parents', label: 'Parents / Family head' },
-    { key: 'spouse', label: 'Spouse' },
-    { key: 'children', label: 'Children' },
-    { key: 'brothers', label: 'Brothers' },
-    { key: 'sisters', label: 'Sisters' },
-    { key: 'siblings', label: 'Siblings' },
-    { key: 'extended', label: 'Guardians / extended' },
-  ];
-  const fromTree = groups.flatMap((g) =>
+  const fromTree = FAMILY_GROUPS.flatMap((g) =>
     (tree[g.key] || []).map((row) => ({ ...row, group: g.label })),
   );
   const dependents = (kinship || []).filter((e) =>
@@ -130,6 +143,14 @@ const AidEntryApplicationView = () => {
     (app.writer &&
       app.writer.id !== app.beneficiary?.id &&
       String(app.writer_relation || '').toLowerCase() !== 'self');
+  const attachments = app.attachments || [];
+  const hasAidDetails =
+    (app.requested_aid_type === 'education' && app.education_details) ||
+    (app.requested_aid_type === 'ration' && app.ration_details) ||
+    (app.requested_aid_type === 'marriage_gift' &&
+      app.marriage_gift_details) ||
+    (app.requested_aid_type === 'financial_assistance' &&
+      app.financial_assistance_details);
 
   return (
     <>
@@ -172,180 +193,253 @@ const AidEntryApplicationView = () => {
           </div>
         </div>
 
-        <section className="aid-entry-section">
-          <h3 className="aid-entry-section__title">Application</h3>
-          <div className="aid-fact-grid aid-fact-grid--case">
-            <Fact label="Aid type">
-              {formatAidRequestType(app.requested_aid_type)}
-            </Fact>
-            <Fact label="Status">{formatAidStatus(status)}</Fact>
-            <Fact label="Entered by">
-              {app.created_by ? formatAuditActor(app.created_by) : '—'}
-            </Fact>
-            <Fact label="Applicant">
-              {app.writer ? (
-                <Link to={`/dms/aid/people/view/${app.writer.id}`}>
-                  {app.writer.full_name}
-                </Link>
-              ) : (
-                '—'
-              )}
-            </Fact>
-            <Fact label="Applicant relation">
-              {app.writer_relation
-                ? String(app.writer_relation).replace(/_/g, ' ')
-                : '—'}
-            </Fact>
+        <div className="aid-panel aid-panel--view">
+          <div className="aid-tabs aid-tabs--main" role="tablist">
+            {ENTRY_TABS.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                role="tab"
+                aria-selected={panelTab === t.id}
+                className={`aid-tab ${panelTab === t.id ? 'aid-tab--active' : ''}`}
+                onClick={() => setPanelTab(t.id)}
+              >
+                {t.label}
+              </button>
+            ))}
           </div>
-        </section>
 
-        <section className="aid-entry-section">
-          <h3 className="aid-entry-section__title">Beneficiary</h3>
-          <AidPersonProfileCard
-            person={app.beneficiary}
-            title="Beneficiary"
-            roles={{
-              beneficiary: true,
-              applicant:
-                !app.writer ||
-                app.writer.id === app.beneficiary?.id ||
-                String(app.writer_relation || '').toLowerCase() === 'self',
-            }}
-          />
-        </section>
-
-        {hasFamily ? (
-          <section className="aid-entry-section">
-            <h3 className="aid-entry-section__title">Family registration</h3>
-            {app.writer &&
-            app.writer.id !== app.beneficiary?.id &&
-            String(app.writer_relation || '').toLowerCase() !== 'self' ? (
-              <div className="aid-family-block" style={{ marginBottom: 14 }}>
-                <h4 className="aid-family-block__title">Applicant</h4>
-                <AidPersonProfileCard
-                  person={app.writer}
-                  title="Applicant"
-                  relation={app.writer_relation}
-                  roles={{ applicant: true }}
-                />
-              </div>
-            ) : null}
-
-            <div className="aid-family-groups">
-              {groups.map((g) => {
-                const rows = core.filter((r) => r.group === g.label);
-                if (!rows.length) return null;
-                return (
-                  <div key={g.key} className="aid-family-block">
-                    <h4 className="aid-family-block__title">{g.label}</h4>
-                    <ul className="aid-family-list">
-                      {rows.map((row) => (
-                        <AidFamilyMemberLine
-                          key={`fam-${row.edge_id || row.person?.id}`}
-                          person={row.person}
-                          relation={row.relation_type}
-                          notes={row.notes}
-                        />
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })}
-
-              {dependents.length > 0 && (
-                <div className="aid-family-block">
-                  <h4 className="aid-family-block__title">
-                    Others under sponsorship / dependents
-                  </h4>
-                  <ul className="aid-family-list">
-                    {dependents.map((edge) => {
-                      const egoId =
-                        app.beneficiary?.id || app.beneficiary_person_id;
-                      const person =
-                        edge.from_person_id === egoId
-                          ? edge.to_person
-                          : edge.from_person || edge.to_person;
-                      return (
-                        <AidFamilyMemberLine
-                          key={`dep-${edge.id}`}
-                          person={person}
-                          relation={edge.relation_type}
-                          notes={edge.notes}
-                        />
-                      );
-                    })}
-                  </ul>
+          <div className="aid-panel__body">
+            {panelTab === 'application' && (
+              <section className="aid-section aid-section--flush">
+                <div className="aid-fact-grid aid-fact-grid--case">
+                  <Fact label="Case source">
+                    {formatAidCaseSource(app.case_source)}
+                  </Fact>
+                  <Fact label="Aid type">
+                    {formatAidRequestType(app.requested_aid_type)}
+                  </Fact>
+                  <Fact label="Status">{formatAidStatus(status)}</Fact>
+                  <Fact label="Entered by">
+                    {app.created_by ? formatAuditActor(app.created_by) : '—'}
+                  </Fact>
+                  <Fact label="Applicant">
+                    {app.writer ? (
+                      <Link to={`/dms/aid/people/view/${app.writer.id}`}>
+                        {app.writer.full_name}
+                      </Link>
+                    ) : (
+                      '—'
+                    )}
+                  </Fact>
+                  <Fact label="Applicant relation">
+                    {app.writer_relation
+                      ? String(app.writer_relation).replace(/_/g, ' ')
+                      : '—'}
+                  </Fact>
                 </div>
-              )}
-            </div>
-          </section>
-        ) : null}
 
-        {(app.requested_aid_type === 'education' && app.education_details) ||
-        (app.requested_aid_type === 'ration' && app.ration_details) ||
-        (app.requested_aid_type === 'marriage_gift' &&
-          app.marriage_gift_details) ||
-        (app.requested_aid_type === 'financial_assistance' &&
-          app.financial_assistance_details) ? (
-          <section className="aid-entry-section">
-            <h3 className="aid-entry-section__title">Aid type details</h3>
-            {app.requested_aid_type === 'education' &&
-              app.education_details && (
-                <AidEducationApplicationFields
-                  value={app.education_details}
-                  readOnly
-                />
-              )}
-            {app.requested_aid_type === 'ration' && app.ration_details && (
-              <AidRationApplicationFields
-                value={app.ration_details}
-                readOnly
-              />
-            )}
-            {app.requested_aid_type === 'marriage_gift' &&
-              app.marriage_gift_details && (
-                <AidMarriageGiftApplicationFields
-                  value={app.marriage_gift_details}
-                  readOnly
-                />
-              )}
-            {app.requested_aid_type === 'financial_assistance' &&
-              app.financial_assistance_details && (
-                <AidFinancialAssistanceFields
-                  value={app.financial_assistance_details}
-                  readOnly
-                />
-              )}
-          </section>
-        ) : null}
+                {hasAidDetails ? (
+                  <div className="aid-detail-block">
+                    <h4 className="aid-detail-block__title">Aid type details</h4>
+                    {app.requested_aid_type === 'education' &&
+                      app.education_details && (
+                        <AidEducationApplicationFields
+                          value={app.education_details}
+                          readOnly
+                        />
+                      )}
+                    {app.requested_aid_type === 'ration' &&
+                      app.ration_details && (
+                        <AidRationApplicationFields
+                          value={app.ration_details}
+                          readOnly
+                        />
+                      )}
+                    {app.requested_aid_type === 'marriage_gift' &&
+                      app.marriage_gift_details && (
+                        <AidMarriageGiftApplicationFields
+                          value={app.marriage_gift_details}
+                          readOnly
+                        />
+                      )}
+                    {app.requested_aid_type === 'financial_assistance' &&
+                      app.financial_assistance_details && (
+                        <AidFinancialAssistanceFields
+                          value={app.financial_assistance_details}
+                          readOnly
+                        />
+                      )}
+                  </div>
+                ) : null}
 
-        {(app.zakat_permission || app.consent_form) && (
-          <section className="aid-entry-section">
-            <h3 className="aid-entry-section__title">Forms</h3>
-            {app.zakat_permission && (
-              <div className="aid-detail-block" style={{ borderTop: 'none' }}>
-                <h4 className="aid-detail-block__title">
-                  Zakat Permission Letter
-                </h4>
-                <AidZakatPermissionForm
-                  value={app.zakat_permission}
-                  applicationNo={app.application_no}
-                  readOnly
-                />
-              </div>
+                {app.zakat_permission && (
+                  <AidCollapsibleSection
+                    className="aid-detail-block"
+                    title="Zakat Permission Letter"
+                    hint="Click to view"
+                  >
+                    <AidZakatPermissionForm
+                      value={app.zakat_permission}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </AidCollapsibleSection>
+                )}
+                {app.consent_form && (
+                  <AidCollapsibleSection
+                    className="aid-detail-block"
+                    title="Consent Form"
+                    hint="Click to view"
+                  >
+                    <AidConsentForm
+                      value={app.consent_form}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </AidCollapsibleSection>
+                )}
+              </section>
             )}
-            {app.consent_form && (
-              <div className="aid-detail-block">
-                <h4 className="aid-detail-block__title">Consent Form</h4>
-                <AidConsentForm
-                  value={app.consent_form}
-                  applicationNo={app.application_no}
-                  readOnly
+
+            {panelTab === 'beneficiary' && (
+              <section className="aid-section aid-section--flush">
+                <AidPersonProfileCard
+                  person={app.beneficiary}
+                  title="Beneficiary"
+                  roles={{
+                    beneficiary: true,
+                    applicant:
+                      !app.writer ||
+                      app.writer.id === app.beneficiary?.id ||
+                      String(app.writer_relation || '').toLowerCase() ===
+                        'self',
+                  }}
                 />
-              </div>
+              </section>
             )}
-          </section>
-        )}
+
+            {panelTab === 'family' && (
+              <section className="aid-section aid-section--flush">
+                {hasFamily ? (
+                  <>
+                    {app.writer &&
+                    app.writer.id !== app.beneficiary?.id &&
+                    String(app.writer_relation || '').toLowerCase() !==
+                      'self' ? (
+                      <div
+                        className="aid-family-block"
+                        style={{ marginBottom: 14 }}
+                      >
+                        <h4 className="aid-family-block__title">Applicant</h4>
+                        <AidPersonProfileCard
+                          person={app.writer}
+                          title="Applicant"
+                          relation={app.writer_relation}
+                          roles={{ applicant: true }}
+                        />
+                      </div>
+                    ) : null}
+
+                    <div className="aid-family-groups">
+                      {FAMILY_GROUPS.map((g) => {
+                        const rows = core.filter((r) => r.group === g.label);
+                        if (!rows.length) return null;
+                        return (
+                          <div key={g.key} className="aid-family-block">
+                            <h4 className="aid-family-block__title">
+                              {g.label}
+                            </h4>
+                            <ul className="aid-family-list">
+                              {rows.map((row) => (
+                                <AidFamilyMemberLine
+                                  key={`fam-${row.edge_id || row.person?.id}`}
+                                  person={row.person}
+                                  relation={row.relation_type}
+                                  notes={row.notes}
+                                />
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })}
+
+                      {dependents.length > 0 && (
+                        <div className="aid-family-block">
+                          <h4 className="aid-family-block__title">
+                            Others under sponsorship / dependents
+                          </h4>
+                          <ul className="aid-family-list">
+                            {dependents.map((edge) => {
+                              const egoId =
+                                app.beneficiary?.id ||
+                                app.beneficiary_person_id;
+                              const person =
+                                edge.from_person_id === egoId
+                                  ? edge.to_person
+                                  : edge.from_person || edge.to_person;
+                              return (
+                                <AidFamilyMemberLine
+                                  key={`dep-${edge.id}`}
+                                  person={person}
+                                  relation={edge.relation_type}
+                                  notes={edge.notes}
+                                />
+                              );
+                            })}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <p className="aid-empty-note">
+                    No family members linked yet.
+                  </p>
+                )}
+              </section>
+            )}
+
+            {panelTab === 'family_tree' && (
+              <section className="aid-section aid-section--flush">
+                <AidFamilyTreePanel
+                  apiTree={familyTree || {}}
+                  rootPerson={app.beneficiary}
+                  showHeader={false}
+                  emptyHint="No linked family tree for this beneficiary yet."
+                />
+              </section>
+            )}
+
+            {panelTab === 'attachments' && (
+              <section className="aid-section aid-section--flush">
+                {attachments.length === 0 ? (
+                  <p className="aid-empty-note">No attachments on this entry.</p>
+                ) : (
+                  <ul className="aid-attach-list">
+                    {attachments.map((a) => (
+                      <li key={a.id}>
+                        <a
+                          href={a.file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {a.file_name || a.original_name || 'Attachment'}
+                        </a>
+                        {a.context ? (
+                          <span style={{ color: '#64748b', fontSize: 13 }}>
+                            {' '}
+                            · {String(a.context).replace(/_/g, ' ')}
+                          </span>
+                        ) : null}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+            )}
+          </div>
+        </div>
       </div>
     </>
   );

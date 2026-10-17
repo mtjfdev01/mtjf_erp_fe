@@ -204,6 +204,25 @@ const AidPersonProfileCard = ({
 
       <div className="aid-person-card__sections">
         <div className="aid-person-card__section">
+          <h5 className="aid-person-card__section-title">Identity</h5>
+          <div className="aid-fact-grid aid-fact-grid--compact">
+            <Fact label="Date of birth" icon={FiUser}>
+              {person.date_of_birth
+                ? `${String(person.date_of_birth).slice(0, 10)}${
+                    age != null ? ` (${age} yrs)` : ''
+                  }`
+                : '—'}
+            </Fact>
+            <Fact label="Caste" icon={FiUser}>
+              {person.caste || '—'}
+            </Fact>
+            <Fact label="Father / husband" icon={FiUser}>
+              {person.father_or_husband_name || '—'}
+            </Fact>
+          </div>
+        </div>
+
+        <div className="aid-person-card__section">
           <h5 className="aid-person-card__section-title">Livelihood</h5>
           <div className="aid-fact-grid aid-fact-grid--compact">
             <Fact label="Occupation" icon={FiBriefcase}>
