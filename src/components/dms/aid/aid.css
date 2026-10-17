@@ -5019,3 +5019,241 @@ a.aid-contact-chip:hover {
 .aid-family-panel.aid-collapse {
   padding: 0;
 }
+
+/* ??? Data-entry list board ??? */
+.aid-entry-stages {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 0 0 1.1rem;
+}
+
+.aid-entry-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.aid-entry-stage:hover {
+  border-color: #cbd5e1;
+}
+
+.aid-entry-stage--active {
+  border-color: #0f3d2e;
+  box-shadow: 0 0 0 1px #0f3d2e, 0 2px 8px rgba(15, 61, 46, 0.08);
+}
+
+.aid-entry-stage__label {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.aid-entry-stage__value {
+  font-size: 1.65rem;
+  font-weight: 750;
+  color: #0f172a;
+  line-height: 1.15;
+}
+
+.aid-entry-stage__hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.aid-entry-filters {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr)) auto;
+  gap: 0.75rem 1rem;
+  align-items: end;
+  margin: 0 0 1.15rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid #e8eef5;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.aid-entry-filters__field .form-group,
+.aid-entry-filters__field .form-field {
+  margin-bottom: 0;
+}
+
+.aid-entry-filters__actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding-bottom: 0.1rem;
+}
+
+.aid-entry-table-wrap {
+  border: 1px solid #e8eef5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.aid-entry-table {
+  margin: 0;
+}
+
+.aid-entry-table thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+  background: #f8fafc;
+  white-space: nowrap;
+}
+
+.aid-entry-table__app-no {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.aid-entry-table__head-name {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.aid-entry-table__head-cnic {
+  font-size: 0.78rem;
+  color: #94a3b8;
+  margin-top: 0.1rem;
+}
+
+.aid-vuln-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 5.5rem;
+}
+
+.aid-vuln-bar__track {
+  display: block;
+  width: 3.25rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.aid-vuln-bar__track i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #a16207;
+}
+
+.aid-vuln-bar__track--high i {
+  background: #166534;
+}
+
+.aid-vuln-bar__track--mid i {
+  background: #a16207;
+}
+
+.aid-vuln-bar__track--low i {
+  background: #94a3b8;
+}
+
+.aid-vuln-bar__pct {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: #334155;
+}
+
+.aid-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 650;
+  white-space: nowrap;
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.aid-stage-pill--info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.aid-stage-pill--warn {
+  background: #ffedd5;
+  color: #c2410c;
+}
+
+.aid-stage-pill--purple {
+  background: #f3e8ff;
+  color: #7e22ce;
+}
+
+.aid-stage-pill--success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aid-stage-pill--danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.aid-stage-pill--muted {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.aid-entry-open {
+  font-weight: 700;
+  color: #0f3d2e;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.875rem;
+}
+
+.aid-entry-open:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1200px) {
+  .aid-entry-stages {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .aid-entry-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .aid-entry-filters__field--search,
+  .aid-entry-filters__actions {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .aid-entry-stages {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .aid-entry-filters {
+    grid-template-columns: 1fr;
+  }
+}

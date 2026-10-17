@@ -7,6 +7,56 @@ export const AID_STATUS_OPTIONS = [
   { value: 'delivered', label: 'Delivered' },
 ];
 
+/** Data-entry list pipeline cards (maps to API `stage` filter). */
+export const AID_ENTRY_STAGES = [
+  { id: 'draft', label: 'Draft', hint: 'Incomplete intake' },
+  { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
+  { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
+  { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
+  { id: 'approved', label: 'Approved', hint: 'This month' },
+  { id: 'returned', label: 'Returned', hint: 'Need correction' },
+];
+
+export function formatAidEntryStage(stage) {
+  return AID_ENTRY_STAGES.find((s) => s.id === stage)?.label || stage || '—';
+}
+
+export function aidEntryStageTone(stage) {
+  switch (stage) {
+    case 'draft':
+      return 'muted';
+    case 'submitted':
+      return 'info';
+    case 'investigation':
+      return 'warn';
+    case 'pending_approval':
+      return 'purple';
+    case 'approved':
+      return 'success';
+    case 'returned':
+      return 'danger';
+    default:
+      return 'muted';
+  }
+}
+
+export function formatRelativeAidTime(value) {
+  if (!value) return '—';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '—';
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} d ago`;
+  return d.toLocaleDateString();
+}
+
 export const AID_REQUEST_TYPES = [
   { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
