@@ -2,7 +2,6 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FiEdit2, FiTrash2, FiEye, FiShield } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
-import { simpleDebounce } from '../../../../utils/debounce';
 import '../../../../styles/variables.css';
 import '../../../../styles/components.css';
 import Navbar from '../../../Navbar';
@@ -59,7 +58,6 @@ const UserList = () => {
   });
 
   const [searchInput, setSearchInput] = useState('');
-  const [isSearchPending, setIsSearchPending] = useState(false);
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -117,13 +115,22 @@ const UserList = () => {
     { value: 'joining_date', label: 'Joining Date' },
   ];
 
+  const handleSearch = useCallback(() => {
+    setFilters((prev) => ({
+      ...prev,
+      search: searchInput.trim(),
+    }));
+    setCurrentPage(1);
+  }, [searchInput]);
+
   const filterConfig = [
     {
       key: 'search',
       type: 'text',
-      placeholder: isSearchPending ? 'Searching... ' : 'Search users... ',
+      placeholder: 'Search users...',
       value: searchInput,
       width: '250px',
+      onEnter: handleSearch,
     },
     {
       key: 'department',
@@ -151,40 +158,17 @@ const UserList = () => {
         { value: 'user', label: 'User' },
       ],
     },
-  ];
-
-  const debouncedSearch = useMemo(
-    () =>
-      simpleDebounce((searchValue) => {
-        setFilters((prev) => ({
-          ...prev,
-          search: searchValue,
-        }));
-        setIsSearchPending(false);
-      }, 3000),
-    [],
-  );
-
-  const handleSearchInputChange = useCallback(
-    (value) => {
-      setSearchInput(value);
-      setIsSearchPending(true);
-      debouncedSearch(value);
+    {
+      key: 'search_btn',
+      type: 'button',
+      label: 'Search',
+      onClick: handleSearch,
     },
-    [debouncedSearch],
-  );
+  ];
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filters.search, filters.department, filters.role]);
-
-  useEffect(() => {
-    return () => {
-      if (debouncedSearch.cancel) {
-        debouncedSearch.cancel();
-      }
-    };
-  }, [debouncedSearch]);
+  }, [filters.department, filters.role]);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -251,13 +235,13 @@ const UserList = () => {
 
   const handleFilterChange = (filterKey, value) => {
     if (filterKey === 'search') {
-      handleSearchInputChange(value);
-    } else {
-      setFilters((prev) => ({
-        ...prev,
-        [filterKey]: value,
-      }));
+      setSearchInput(value);
+      return;
     }
+    setFilters((prev) => ({
+      ...prev,
+      [filterKey]: value,
+    }));
   };
 
   const handlePageChange = (page) => {
@@ -416,23 +400,6 @@ const UserList = () => {
             />
           )}
         </div>
-
-        {isSearchPending && (
-          <div
-            className="search-pending-indicator"
-            style={{
-              marginBottom: '1rem',
-              padding: '0.5rem',
-              backgroundColor: '#e3f2fd',
-              border: '1px solid #2196f3',
-              borderRadius: '4px',
-              color: '#1976d2',
-              fontSize: '0.875rem',
-            }}
-          >
-            Search will execute in 3 seconds after you stop typing...
-          </div>
-        )}
 
         {error && (
           <div className="status-message status-message--error">{error}</div>

@@ -49,6 +49,11 @@ const AidPersonView = () => {
     permissions?.super_admin ||
     permissions?.program_manager ||
     permissions?.fund_raising_manager;
+  const canDelete =
+    hasAidPermission(permissions, 'aid_people', 'delete') ||
+    permissions?.super_admin ||
+    permissions?.program_manager ||
+    permissions?.fund_raising_manager;
 
   const [data, setData] = useState(null);
   const [attachments, setAttachments] = useState([]);
@@ -348,11 +353,46 @@ const AidPersonView = () => {
               <p style={{ margin: '6px 0 0', color: '#64748b' }}>Address: {person.address}</p>
             )}
           </div>
-          {canUpdate && !editingProfile && (
-            <button type="button" className="secondary-btn" onClick={() => setEditingProfile(true)}>
-              Edit profile
-            </button>
-          )}
+          <div className="aid-entry-view__hero-actions">
+            {canUpdate && !editingProfile && (
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => setEditingProfile(true)}
+              >
+                Edit profile
+              </button>
+            )}
+            {canDelete && !editingProfile && (
+              <button
+                type="button"
+                className="secondary-btn"
+                disabled={busy}
+                onClick={async () => {
+                  if (
+                    !window.confirm(
+                      `Archive ${person.full_name}? Their CNIC can be reused for a new registration.`,
+                    )
+                  ) {
+                    return;
+                  }
+                  try {
+                    setBusy(true);
+                    await axiosInstance.delete(`/aid/people/${id}`);
+                    navigate('/dms/aid/people/list');
+                  } catch (err) {
+                    setError(
+                      err.response?.data?.message || 'Failed to archive person',
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Archive person
+              </button>
+            )}
+          </div>
         </div>
 
         <div className="aid-family-stats">

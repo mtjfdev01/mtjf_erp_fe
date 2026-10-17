@@ -112,6 +112,15 @@ export const canViewModule = (permissions, department, module) => {
     return true;
   }
 
+  // Role Creation / permission roles (admin.permission_roles or permissions.manage)
+  if (department === 'admin' && module === 'permission_roles') {
+    const mod = permissions.admin?.permission_roles;
+    if (mod?.view === true || mod?.list_view === true) return true;
+    const manage = permissions.permissions?.manage;
+    if (manage?.view === true || manage?.list_view === true) return true;
+    return false;
+  }
+
   // My To-Dos: independent `todos` section; accept new + legacy fund_raising.dms_todos
   if (department === 'todos' && module === 'dms_todos') {
     if (

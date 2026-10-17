@@ -9,7 +9,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
-import MultiSelect from '../../../common/MultiSelect';
+import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import UserPermissions from '../UserPermissions';
 import GeographicAssignmentPicker from '../GeographicAssignmentPicker';
 import {
@@ -47,7 +47,7 @@ const CreateUser = () => {
     manager_ids: [],
   });
 
-  const [managerOptions, setManagerOptions] = useState([]);
+  const [selectedManagers, setSelectedManagers] = useState([]);
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -63,23 +63,14 @@ const CreateUser = () => {
 
   const showGeographicAssignment = isGeographicAssignmentDepartment(form.department);
 
-  useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const res = await axiosInstance.get('/users/options');
-        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setManagerOptions(
-          list.map((u) => ({
-            value: String(u.id),
-            label: u.full_name || u.email,
-          })),
-        );
-      } catch (err) {
-        console.error('Error fetching manager options:', err);
-      }
-    };
-    fetchManagers();
-  }, []);
+  const handleManagersSelect = (users) => {
+    const next = Array.isArray(users) ? users : [];
+    setSelectedManagers(next);
+    setForm((prev) => ({
+      ...prev,
+      manager_ids: next.map((u) => String(u.id)),
+    }));
+  };
 
   const handleChange = e => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -236,6 +227,7 @@ const CreateUser = () => {
         password: '',
         manager_ids: [],
       });
+      setSelectedManagers([]);
       
       // Reset permissions and geographic assignments
       setUserPermissions({});
@@ -431,13 +423,32 @@ const CreateUser = () => {
                 onChange={handleChange}
               />
 
-              <MultiSelect
+              <SearchableMultiSelect
                 name="manager_ids"
                 label="Reports to (Managers)"
-                options={managerOptions}
-                value={form.manager_ids || []}
-                onChange={(next) => setForm((prev) => ({ ...prev, manager_ids: next }))}
-                placeholder="Select one or more managers..."
+                apiEndpoint="/users/options"
+                value={selectedManagers}
+                onSelect={handleManagersSelect}
+                onClear={() => handleManagersSelect([])}
+                displayKey="full_name"
+                valueKey="id"
+                allowResearch
+                debounceDelay={500}
+                minSearchLength={2}
+                placeholder="Search managers by name or email..."
+                renderOption={(user) => (
+                  <div style={{ padding: '8px' }}>
+                    <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                      {user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+                    {user.department && (
+                      <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+                        {user.department} • {user.role || 'User'}
+                      </div>
+                    )}
+                  </div>
+                )}
               />
 
               <FormInput

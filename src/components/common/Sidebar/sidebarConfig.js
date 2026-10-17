@@ -525,6 +525,13 @@ const adminDepartmentItems = () => [
     // ]
   },
   {
+    label: 'Role Creation',
+    path: '/admin/permission-roles',
+    type: 'list',
+    module: 'permission_roles',
+    icon: FiSettings,
+  },
+  {
     label: 'Dashboard',
     path: '/admin',
     type: 'list',
