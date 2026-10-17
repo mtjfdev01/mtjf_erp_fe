@@ -1,16 +1,31 @@
-
 import React, { useState, useMemo, useCallback } from 'react';
-import { FaUserClock, FaClipboard, FaSpinner, FaCheckCircle, FaExclamationTriangle, FaChartLine, FaUserCircle } from 'react-icons/fa';
 import axiosInstance from '@/utils/axios';
 import './index.css';
 
-const TeamPerformance = ({ 
-  taskAggregates, 
-  currentUser, 
-  duration, 
-  getDateRangeForDuration 
+const DURATION_OPTIONS = [
+  { value: 'today', label: 'Today' },
+  { value: 'this_week', label: 'This week' },
+  { value: 'this_month', label: 'This month' },
+  { value: 'this_year', label: 'This year' },
+];
+
+// Ring geometry for the completion donut
+const RING_RADIUS = 26;
+const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
+
+const TeamPerformance = ({
+  taskAggregates,
+  currentUser,
+  duration,
+  getDateRangeForDuration,
+  // Optional: pass these to enable the duration dropdown and "vs last month" trends.
+  // If omitted, the dropdown and trend lines are simply not rendered.
+  onDurationChange,
+  durationOptions = DURATION_OPTIONS,
+  previousSummary, // { members, totalTasks, inProgress, completed, overdue, avgRate }
+  comparisonLabel = 'vs last month',
 }) => {
-  // State management
+  // State management (unchanged)
   const [teamSearchQuery, setTeamSearchQuery] = useState('');
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [selectedMemberTasks, setSelectedMemberTasks] = useState(null);
@@ -25,13 +40,23 @@ const TeamPerformance = ({
     return name.slice(0, 2).toUpperCase();
   };
 
+  const formatRole = (role) =>
+    String(role || 'User')
+      .split('_')
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+      .join(' ');
+
   const getStatusConfig = (status, task) => {
     const s = (status || 'open').toLowerCase();
     if (s === 'completed' || s === 'closed') return { icon: '✓', label: 'Completed', class: 'completed' };
     if (s === 'in_progress') return { icon: '🔄', label: 'In Progress', class: 'in-progress' };
     if (s === 'overdue' || (task.due_date && new Date(task.due_date) < new Date() && s !== 'completed' && s !== 'closed'))
       return { icon: '⚠️', label: 'Overdue', class: 'overdue' };
-    return { icon: '⏳', label: String(status).split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' '), class: s.replace('_', '-') };
+    return {
+      icon: '⏳',
+      label: String(status).split('_').map((w) => (w ? w[0].toUpperCase() + w.slice(1) : '')).join(' '),
+      class: s.replace('_', '-'),
+    };
   };
 
   const getOverdueDays = (dueDate) => {
@@ -40,12 +65,27 @@ const TeamPerformance = ({
     return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
   };
 
-  // Filtered team members (exclude current user)
+  // Health of a member, used for the ring colour, the pill and the alert banner
+  const getHealth = (member) => {
+    const total = Number(member.count) || 0;
+    const rate = Number(member.rate) || 0;
+    if (total === 0) return { key: 'idle', label: 'No tasks' };
+    if (rate >= 70) return { key: 'on-track', label: 'On track' };
+    if (rate >= 40) return { key: 'watch', label: 'Watch' };
+    return { key: 'attention', label: 'Needs attention' };
+  };
+
+  const formatRate = (rate) => {
+    const n = Number(rate) || 0;
+    return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10);
+  };
+
+  // Filtered team members (exclude current user) - unchanged
   const filteredTeamMembers = useMemo(() => {
     if (!taskAggregates.users) return [];
 
     const currentUserId = Number(currentUser?.id);
-    const teamWithoutCurrentUser = taskAggregates.users.filter(member => {
+    const teamWithoutCurrentUser = taskAggregates.users.filter((member) => {
       const memberId = Number(member.id || member.user_id || member.userId);
       return memberId !== currentUserId;
     });
@@ -53,13 +93,14 @@ const TeamPerformance = ({
     if (!teamSearchQuery.trim()) return teamWithoutCurrentUser;
 
     const query = teamSearchQuery.toLowerCase();
-    return teamWithoutCurrentUser.filter(member =>
-      member.label.toLowerCase().includes(query) ||
-      (member.role && member.role.toLowerCase().includes(query))
+    return teamWithoutCurrentUser.filter(
+      (member) =>
+        member.label.toLowerCase().includes(query) ||
+        (member.role && member.role.toLowerCase().includes(query))
     );
   }, [taskAggregates.users, teamSearchQuery, currentUser?.id]);
 
-  // Team summary
+  // Team summary - unchanged
   const teamSummary = useMemo(() => {
     const list = filteredTeamMembers;
     const members = list.length;
@@ -67,55 +108,129 @@ const TeamPerformance = ({
     const completed = list.reduce((sum, m) => sum + (Number(m.completed_count) || 0), 0);
     const inProgress = list.reduce((sum, m) => sum + (Number(m.in_progress_count) || 0), 0);
     const overdue = list.reduce((sum, m) => sum + (Number(m.overdue_count) || 0), 0);
-    const avgRateRaw = members > 0 ? (list.reduce((s, m) => s + (Number(m.rate) || 0), 0) / members) : 0;
+    const avgRateRaw = members > 0 ? list.reduce((s, m) => s + (Number(m.rate) || 0), 0) / members : 0;
     const avgRate = Math.round(avgRateRaw);
     return { members, totalTasks, completed, inProgress, overdue, avgRate };
   }, [filteredTeamMembers]);
 
-  // Handle showing member tasks
-  const handleShowMemberTasks = useCallback(async (member) => {
-    setSelectedMemberTasks({ member, tasks: [] });
-    setShowMemberTasksModal(true);
-    setMemberTasksLoading(true);
+  // Members that need attention (worst first) for the alert banner
+  const attentionMembers = useMemo(
+    () =>
+      filteredTeamMembers
+        .filter((m) => getHealth(m).key === 'attention')
+        .sort((a, b) => (Number(a.rate) || 0) - (Number(b.rate) || 0)),
+    [filteredTeamMembers] // eslint-disable-line react-hooks/exhaustive-deps
+  );
 
-    try {
-      const range = getDateRangeForDuration(duration);
-      const memberId = member.id || member.user_id || member.userId;
+  // Handle showing member tasks - unchanged
+  const handleShowMemberTasks = useCallback(
+    async (member) => {
+      setSelectedMemberTasks({ member, tasks: [] });
+      setShowMemberTasksModal(true);
+      setMemberTasksLoading(true);
 
-      if (!memberId) {
-        setMemberTasksLoading(false);
-        return;
-      }
+      try {
+        const range = getDateRangeForDuration(duration);
+        const memberId = member.id || member.user_id || member.userId;
 
-      const payload = {
-        pagination: { page: 1, pageSize: 100 },
-        filters: {
-          start_date: range.from,
-          end_date: range.to,
-          assignee_id: memberId,
-          team_performance: true
+        if (!memberId) {
+          setMemberTasksLoading(false);
+          return;
         }
-      };
 
-      const res = await axiosInstance.post('/tasks/search', payload);
-      const tasks = Array.isArray(res.data?.data)
-        ? res.data.data
-        : Array.isArray(res.data?.data?.data)
-          ? res.data.data.data
-          : [];
+        const payload = {
+          pagination: { page: 1, pageSize: 100 },
+          filters: {
+            start_date: range.from,
+            end_date: range.to,
+            assignee_id: memberId,
+            team_performance: true,
+          },
+        };
 
-      setSelectedMemberTasks(prev => ({
-        ...prev,
-        tasks
-      }));
-    } catch (e) {
-      console.error('Error fetching member tasks:', e);
-    } finally {
-      setMemberTasksLoading(false);
+        const res = await axiosInstance.post('/tasks/search', payload);
+        const tasks = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data?.data?.data)
+            ? res.data.data.data
+            : [];
+
+        setSelectedMemberTasks((prev) => ({
+          ...prev,
+          tasks,
+        }));
+      } catch (e) {
+        console.error('Error fetching member tasks:', e);
+      } finally {
+        setMemberTasksLoading(false);
+      }
+    },
+    [duration, getDateRangeForDuration]
+  );
+
+  // Render helpers
+  const renderTrend = (current, previous, { goodWhenUp = true, suffix = '', neutral = false } = {}) => {
+    if (previous === undefined || previous === null) return null;
+    const delta = Math.round((Number(current) - Number(previous)) * 10) / 10;
+    if (delta === 0) {
+      return <div className="team-perf-trend team-perf-trend-flat">No change</div>;
     }
-  }, [duration, getDateRangeForDuration]);
+    const up = delta > 0;
+    let tone = 'neutral';
+    if (!neutral) tone = up === goodWhenUp ? 'good' : 'bad';
+    return (
+      <div className={`team-perf-trend team-perf-trend-${tone}`}>
+        <span aria-hidden="true">{up ? '▲' : '▼'}</span> {Math.abs(delta)}
+        {suffix} {comparisonLabel}
+      </div>
+    );
+  };
 
-  // Render functions
+  const renderSummaryCard = ({ label, value, trend, accent }) => (
+    <div className={`team-perfo-summary-item ${accent ? `team-perfo-summary-item-${accent}` : ''}`}>
+      <div className="team-perfo-summary-label">{label}</div>
+      <div className="team-perfo-summary-value">{value}</div>
+      {trend}
+    </div>
+  );
+
+  const renderRing = (member, health) => {
+    const rate = Math.min(100, Math.max(0, Number(member.rate) || 0));
+    const offset = RING_CIRCUMFERENCE * (1 - rate / 100);
+    return (
+      <div className="team-perf-ring" aria-label={`${Math.round(rate)}% complete`}>
+        <svg viewBox="0 0 64 64" width="64" height="64">
+          <circle className="team-perf-ring-track" cx="32" cy="32" r={RING_RADIUS} />
+          <circle
+            className={`team-perf-ring-value team-perf-ring-${health.key}`}
+            cx="32"
+            cy="32"
+            r={RING_RADIUS}
+            strokeDasharray={RING_CIRCUMFERENCE}
+            strokeDashoffset={offset}
+            transform="rotate(-90 32 32)"
+          />
+        </svg>
+        <span className="team-perf-ring-label">{Math.round(rate)}%</span>
+      </div>
+    );
+  };
+
+  const renderSplitBar = (member) => {
+    const total = Number(member.count) || 0;
+    const done = Number(member.completed_count) || 0;
+    const onTrack = Number(member.in_progress_count) || 0;
+    const overdue = Number(member.overdue_count) || 0;
+    const pct = (n) => (total > 0 ? (n / total) * 100 : 0);
+    return (
+      <div className="team-perf-splitbar" role="img" aria-label={`${done} completed, ${onTrack} in progress, ${overdue} overdue`}>
+        <span className="team-perf-split team-perf-split-done" style={{ width: `${pct(done)}%` }} />
+        <span className="team-perf-split team-perf-split-track" style={{ width: `${pct(onTrack)}%` }} />
+        <span className="team-perf-split team-perf-split-overdue" style={{ width: `${pct(overdue)}%` }} />
+      </div>
+    );
+  };
+
   const renderTaskCard = (task) => {
     const statusConfig = getStatusConfig(task.status, task);
     const overdueDays = getOverdueDays(task.due_date);
@@ -130,11 +245,12 @@ const TeamPerformance = ({
         </div>
         <div className="team-perf-modal-task-details">
           <div className="team-perf-modal-task-detail-item">
-            Priority: <span className={`priority-${(task.priority || 'medium').toLowerCase()}`}>{(task.priority || 'MEDIUM').toUpperCase()}</span>
+            Priority:{' '}
+            <span className={`priority-${(task.priority || 'medium').toLowerCase()}`}>
+              {(task.priority || 'MEDIUM').toUpperCase()}
+            </span>
           </div>
-          <div className="team-perf-modal-task-detail-item">
-            Department: {task.department || 'N/A'}
-          </div>
+          <div className="team-perf-modal-task-detail-item">Department: {task.department || 'N/A'}</div>
           <div className="team-perf-modal-task-detail-item">
             Due Date: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
           </div>
@@ -145,150 +261,150 @@ const TeamPerformance = ({
             </div>
           )}
 
-          {statusConfig.class === 'in_progress' && task.progress !== undefined && (
-            <div className="team-perf-modal-task-detail-item">
-              Progress: {task.progress}%
-            </div>
+          {statusConfig.class === 'in-progress' && task.progress !== undefined && (
+            <div className="team-perf-modal-task-detail-item">Progress: {task.progress}%</div>
           )}
 
           {statusConfig.class === 'overdue' && overdueDays > 0 && (
-            <div className="team-perf-modal-task-detail-item">
-              Days Overdue: {overdueDays}
-            </div>
+            <div className="team-perf-modal-task-detail-item">Days Overdue: {overdueDays}</div>
           )}
         </div>
       </div>
     );
   };
 
+  const topAttention = attentionMembers[0];
+
   return (
     <>
       <div className="team-perf-card">
-        <div className="team-perf-header">
+        {/* Header */}
+        <div className="team-perfo-header">
           <div className="team-perf-title-group">
-            <FaUserClock className="team-perf-icon" />
-            <h2 className="team-perf-title">Team Performance Dashboard</h2>
+            <h2 className="team-perf-title">Team performance</h2>
+            <p className="team-perf-subtitle">Task progress across your team</p>
           </div>
-          <div className="team-perf-header-actions">
+          <div className="team-perfo-header-actions">
             <div className={`team-perf-search-wrapper ${mobileSearchOpen ? 'team-perf-search-wrapper-open' : ''}`}>
-              <span
-                className="team-perf-search-icon"
-                onClick={() => setMobileSearchOpen(!mobileSearchOpen)}
-              >🔍</span>
+              <span className="team-perf-search-icon" onClick={() => setMobileSearchOpen(!mobileSearchOpen)}>
+                🔍
+              </span>
               <input
                 type="text"
                 className="team-perf-search-input"
-                placeholder="Search team members..."
+                placeholder="Search team members"
                 value={teamSearchQuery}
                 onChange={(e) => setTeamSearchQuery(e.target.value)}
               />
             </div>
-            <span className="team-perf-active-badge">
-              {filteredTeamMembers.length} Active Members
-            </span>
+            {typeof onDurationChange === 'function' && (
+              <select
+                className="team-perf-duration-select"
+                value={duration}
+                onChange={(e) => onDurationChange(e.target.value)}
+                aria-label="Duration"
+              >
+                {durationOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            )}
+            <span className="team-perf-active-badge">{filteredTeamMembers.length} active members</span>
           </div>
         </div>
 
-        <div className="team-perf-summary">
-                  <div className="team-perf-summary-item">
-                    <div className="team-perf-summary-value">
-                      <FaUserClock className="stat-icon" style={{ color: '#808e9b' }} />
-                      {teamSummary.members}
-                      <div className="team-perf-summary-label">Team Members</div>
-                    </div>
-                  </div>
-                  <div className="team-perf-summary-item">
-                    <div className="team-perf-summary-value">
-                      <FaClipboard className="stat-icon" style={{ color: '#077af5' }} />
-                      {teamSummary.totalTasks}
-                      <div className="team-perf-summary-label">Total Tasks</div>
-                    </div>
-                  </div>
-                  <div className="team-perf-summary-item">
-                    <div className="team-perf-summary-value">
-                      <FaSpinner className="stat-icon" style={{ color: '#fccf3a' }} />
-                      {teamSummary.inProgress}
-                      <div className="team-perf-summary-label">In Progress</div>
-                    </div>
-                  </div>
-                  <div className="team-perf-summary-item">
-                    <div className="team-perf-summary-value">
-                      <FaCheckCircle className="stat-icon" style={{ color: '#0feb42' }} />
-                      {teamSummary.completed}
-                      <div className="team-perf-summary-label">Completed</div>
-                    </div>
-                  </div>
-                  <div className="team-perf-summary-item">
-                    <div className="team-perf-summary-value">
-                      <FaExclamationTriangle className="stat-icon" style={{ color: '#ff3f34' }} />
-                      {teamSummary.overdue}
-                      <div className="team-perf-summary-label">Overdue</div>
-                    </div>
-                  </div>
-                  <div className="team-perf-summary-item">
-                    <div className="team-perf-summary-value">
-                      <FaChartLine className="stat-icon" style={{ color: '#077af5' }} />
-                      {teamSummary.avgRate}%
-                      <div className="team-perf-summary-label">Completion</div>
-                    </div>
-                  </div>
-                </div>
+        {/* Summary cards */}
+        <div className="team-perfo-summary">
+          {renderSummaryCard({
+            label: 'Team Members',
+            value: teamSummary.members,
+            trend: renderTrend(teamSummary.members, previousSummary?.members, { neutral: true }),
+          })}
+          {renderSummaryCard({
+            label: 'Total Tasks',
+            value: teamSummary.totalTasks,
+            trend: renderTrend(teamSummary.totalTasks, previousSummary?.totalTasks),
+          })}
+          {renderSummaryCard({
+            label: 'In Progress',
+            value: teamSummary.inProgress,
+            trend: renderTrend(teamSummary.inProgress, previousSummary?.inProgress, { neutral: true }),
+          })}
+          {renderSummaryCard({
+            label: 'Completed',
+            value: teamSummary.completed,
+            trend: renderTrend(teamSummary.completed, previousSummary?.completed),
+          })}
+          {renderSummaryCard({
+            label: 'Overdue',
+            value: teamSummary.overdue,
+            accent: 'overdue',
+            trend: renderTrend(teamSummary.overdue, previousSummary?.overdue, { goodWhenUp: false }),
+          })}
+          {renderSummaryCard({
+            label: 'Completion',
+            value: `${teamSummary.avgRate}%`,
+            accent: 'rate',
+            trend: renderTrend(teamSummary.avgRate, previousSummary?.avgRate, { suffix: '%' }),
+          })}
+        </div>
 
+        {/* Attention alert */}
+        {topAttention && (
+          <div className="team-perf-alert" role="alert">
+            <span className="team-perf-alert-dot" aria-hidden="true" />
+            <span>
+              <strong>{topAttention.label}</strong> needs attention: {formatRate(topAttention.rate)}% complete with{' '}
+              {Number(topAttention.overdue_count) || 0} overdue of {Number(topAttention.count) || 0} tasks.
+              {attentionMembers.length > 1 && ` ${attentionMembers.length - 1} more member(s) also need attention.`}
+            </span>
+          </div>
+        )}
+
+        {/* Member cards */}
         <div className="team-perf-grid">
           {filteredTeamMembers.length > 0 ? (
-            filteredTeamMembers.map((member, index) => (
-              <div key={index} className="team-perf-member-card">
-                <div className="team-perf-member-header">
-                  <div className="team-perf-member-avatar">
-                    <FaUserCircle size={40} />
-                  </div>
-                  <div className="team-perf-member-info">
-                    <div className="team-perf-member-name">{member.label}</div>
-                    <div className="team-perf-member-role">
-                      {String(member.role || 'User').split('_').map(w => w ? w[0].toUpperCase() + w.slice(1) : '').join(' ')}
+            filteredTeamMembers.map((member, index) => {
+              const health = getHealth(member);
+              return (
+                <div key={member.id || member.user_id || member.userId || index} className="team-perf-member-card">
+                  <div className="team-perf-member-header">
+                    <div className="team-perf-member-avatar">{(member.label || 'U').charAt(0).toUpperCase()}</div>
+                    <div className="team-perf-member-info">
+                      <div className="team-perf-member-name">{member.label}</div>
+                      <div className="team-perf-member-role">{formatRole(member.role)}</div>
                     </div>
+                    {renderRing(member, health)}
+                  </div>
+
+                  {renderSplitBar(member)}
+
+                  <div className="team-perf-legend">
+                    <span className="team-perf-legend-item">
+                      <i className="team-perf-dot team-perf-dot-done" />
+                      <b>{member.completed_count || 0}</b> completed
+                    </span>
+                    <span className="team-perf-legend-item">
+                      <i className="team-perf-dot team-perf-dot-track" />
+                      <b>{member.in_progress_count || 0}</b> in progress
+                    </span>
+                    <span className="team-perf-legend-item">
+                      <i className="team-perf-dot team-perf-dot-overdue" />
+                      <b>{member.overdue_count || 0}</b> overdue
+                    </span>
+                  </div>
+
+                  <div className="team-perf-member-footer-actions">
+                    <span className={`team-perf-pill team-perf-pill-${health.key}`}>{health.label}</span>
+                    <button className="team-perf-view-details-btn" onClick={() => handleShowMemberTasks(member)}>
+                      View {member.count || 0} tasks
+                    </button>
                   </div>
                 </div>
-                <div className="team-perf-member-stats">
-                  <div className="team-perf-stat-item team-perf-stat-item-total">
-                    <div className="team-perf-stat-value">{member.count}</div>
-                    <div className="team-perf-stat-label">Total Tasks</div>
-                  </div>
-                  <div className="team-perf-stat-item team-perf-stat-item-in-progress">
-                    <div className="team-perf-stat-value">{member.in_progress_count || 0}</div>
-                    <div className="team-perf-stat-label">In Progress</div>
-                  </div>
-                  <div className="team-perf-stat-item team-perf-stat-item-completed">
-                    <div className="team-perf-stat-value">{member.completed_count || 0}</div>
-                    <div className="team-perf-stat-label">Completed</div>
-                  </div>
-                  <div className="team-perf-stat-item team-perf-stat-item-overdue">
-                    <div className="team-perf-stat-value">{member.overdue_count || 0}</div>
-                    <div className="team-perf-stat-label">Overdue</div>
-                  </div>
-                </div>
-                <div className="team-perf-member-progress-group">
-                  <div className="team-perf-member-progress-label">
-                    <span>📈 Completion Rate</span>
-                    <span>{member.rate || 0}%</span>
-                  </div>
-                  <div className="team-perf-member-progress-container">
-                    <div
-                      className="team-perf-member-progress-bar"
-                      style={{ width: `${member.rate || 0}%` }}
-                    ></div>
-                  </div>
-                </div>
-                <div className="team-perf-member-footer-actions">
-                  <button
-                    className="team-perf-view-details-btn"
-                    onClick={() => handleShowMemberTasks(member)}
-                  >
-                    📋 View Details ({member.count} Tasks)
-                  </button>
-                </div>
-              </div>
-            ))
+              );
+            })
           ) : (
             <div className="team-perf-empty-search">
               {teamSearchQuery.trim()
@@ -299,7 +415,7 @@ const TeamPerformance = ({
         </div>
       </div>
 
-      {/* Task Details Modal */}
+      {/* Task Details Modal (unchanged) */}
       {showMemberTasksModal && selectedMemberTasks && (
         <div className="team-perf-modal-overlay" onClick={() => setShowMemberTasksModal(false)}>
           <div className="team-perf-modal-content" onClick={(e) => e.stopPropagation()}>
@@ -309,12 +425,16 @@ const TeamPerformance = ({
                   {getInitials(selectedMemberTasks.member.label || selectedMemberTasks.member.name)}
                 </div>
                 <div className="team-perf-modal-user-info">
-                  <h3 className="team-perf-modal-user-name">{selectedMemberTasks.member.label || selectedMemberTasks.member.name || 'User'}</h3>
+                  <h3 className="team-perf-modal-user-name">
+                    {selectedMemberTasks.member.label || selectedMemberTasks.member.name || 'User'}
+                  </h3>
                   <span className="team-perf-modal-user-role">{selectedMemberTasks.member.role || 'User'}</span>
                 </div>
               </div>
               <div className="team-perf-modal-header-right">
-                <button className="team-perf-modal-close" onClick={() => setShowMemberTasksModal(false)}>×</button>
+                <button className="team-perf-modal-close" onClick={() => setShowMemberTasksModal(false)}>
+                  ×
+                </button>
               </div>
             </div>
 
