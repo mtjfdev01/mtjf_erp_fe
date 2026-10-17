@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axiosInstance, { setAuthContextHandlingInitialLoad } from '../utils/axios';
 import { clearAllPersistedFilters } from '../hooks/usePersistedFilters';
 import { getOfflineMode } from '../offline/mode';
+import { isSuperAdmin } from '../utils/permissions';
 
 const AuthContext = createContext(null);
 
@@ -322,7 +323,19 @@ export const AuthProvider = ({ children }) => {
    * hasAnyPermission(['super_admin', 'communication.donation_receipts.send'])
    */
   const hasAnyPermission = (requiredPermissions) => {
-    if (!permissions || !requiredPermissions) {
+    if (!requiredPermissions) {
+      return false;
+    }
+
+    // Super Admin (flag or role) passes every permission check
+    if (
+      isSuperAdmin(permissions) ||
+      user?.role === 'super_admin'
+    ) {
+      return true;
+    }
+
+    if (!permissions) {
       return false;
     }
 

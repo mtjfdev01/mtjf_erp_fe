@@ -1301,7 +1301,7 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
   // Explicit action (e.g. manage_overview) — must be granted on the module
   if (item.action) {
     if (!moduleKey) return false;
-    if (permissions?.super_admin === true) return true;
+    if (isSuperAdmin(permissions)) return true;
     if (
       permDept === 'fund_raising' &&
       (permissions?.fund_raising_manager === true ||

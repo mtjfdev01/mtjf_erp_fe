@@ -4,6 +4,21 @@
  */
 
 /**
+ * Check if user is super admin
+ * @param {Object} permissions - User permissions object
+ * @returns {boolean} - Whether user is super admin
+ */
+export const isSuperAdmin = (permissions) => {
+  if (!permissions) return false;
+  return (
+    permissions.super_admin === true ||
+    (permissions.super_admin &&
+      typeof permissions.super_admin === 'object' &&
+      permissions.super_admin.super_admin === true)
+  );
+};
+
+/**
  * Check if user has a specific permission
  * @param {Object} permissions - User permissions object
  * @param {string} department - Department name
@@ -14,6 +29,10 @@
 export const hasPermission = (permissions, department, module, action) => {
   if (!permissions || !department || !module || !action) {
     return false;
+  }
+
+  if (isSuperAdmin(permissions)) {
+    return true;
   }
 
   if (permissions[department]?.[module]?.[action] === true) {
@@ -100,8 +119,8 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
-  // Super admin / FR manager: all fund_raising modules visible in sidebar
-  if (permissions.super_admin === true) {
+  // Super admin: full sidebar access (incl. Role Creation / permission_roles)
+  if (isSuperAdmin(permissions)) {
     return true;
   }
   if (
@@ -264,16 +283,6 @@ export const fundRaisingOrganizationsOrPocsHas = (permissions, action) => {
   return (
     fr.organizations?.[action] === true || fr.csr_pocs?.[action] === true
   );
-};
-
-/**
- * Check if user is super admin
- * @param {Object} permissions - User permissions object
- * @returns {boolean} - Whether user is super admin
- */
-export const isSuperAdmin = (permissions) => {
-  if (!permissions) return false;
-  return permissions.super_admin === true || (permissions.super_admin && typeof permissions.super_admin === 'object' && permissions.super_admin.super_admin === true);
 };
 
 /**

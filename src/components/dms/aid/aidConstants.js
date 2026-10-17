@@ -291,7 +291,6 @@ export const AID_VULNERABILITIES = [
 export const AID_VULNERABILITY_CHIPS = [
   { value: 'widow', label: 'Widow' },
   { value: 'orphan', label: 'Orphan' },
-  { value: 'disable', label: 'Disabled' },
   { value: 'abandoned', label: 'Abandoned' },
   { value: 'indigent', label: 'Indigent' },
   { value: 'elderly_no_support', label: 'Elderly No Support' },
