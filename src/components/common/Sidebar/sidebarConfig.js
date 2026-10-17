@@ -1229,7 +1229,7 @@ ceo_office: (isUser = false) => ({
   }),
   fund_raising: (isUser = false) => ({
     id: 'fund_raising',
-    label: 'Fund Raising',
+    label: 'CRD',
     icon: FiHeart,
     items: fundRaisingDepartmentItems(isUser)
   }),
