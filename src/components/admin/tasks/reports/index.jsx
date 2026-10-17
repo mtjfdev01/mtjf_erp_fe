@@ -235,72 +235,81 @@ const downloadCsv = (rows, fileName) => {
 
 function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, isMobile) {
   const drawLabels = (chart) => {
+    if (!chart.chartArea) return;
     const ctx = chart.ctx;
     const dataset = chart.data.datasets[0];
-    const total = dataset.data.reduce((sum, value) => sum + value, 0);
+    const isPlaceholder = Boolean(chart.data.isPlaceholder || dataset?.isPlaceholder || chart.data.hasData === false);
+    const total = isPlaceholder ? 0 : dataset.data.reduce((sum, value) => sum + value, 0);
+    const displayTotal = typeof chart.data.totalCount === 'number'
+      ? chart.data.totalCount
+      : (isPlaceholder ? 0 : total);
 
-    chart.data.datasets.forEach((dataset, i) => {
-      const meta = chart.getDatasetMeta(i);
-      meta.data.forEach((arc, index) => {
-        const value = dataset.data[index];
-        if (value === 0 || !arc) return;
+    // Only draw slice percentage/count labels when there is actual task data
+    if (!isPlaceholder && total > 0) {
+      chart.data.datasets.forEach((dataset, i) => {
+        const meta = chart.getDatasetMeta(i);
+        meta.data.forEach((arc, index) => {
+          const value = dataset.data[index];
+          if (value === 0 || !arc) return;
 
-        const percentage = Math.round((value / total) * 100);
+          const percentage = Math.round((value / total) * 100);
 
-        // Calculate arc length to determine if label fits
-        const startAngle = arc.startAngle;
-        const endAngle = arc.endAngle;
-        const arcLength = endAngle - startAngle;
+          // Calculate arc length to determine if label fits
+          const startAngle = arc.startAngle;
+          const endAngle = arc.endAngle;
+          const arcLength = endAngle - startAngle;
 
-        // Only draw label if arc is large enough (at least 12 degrees)
-        if (arcLength < 0.21) { // ~12 degrees in radians
-          return;
-        }
+          // Only draw label if arc is large enough (at least 12 degrees)
+          if (arcLength < 0.21) { // ~12 degrees in radians
+            return;
+          }
 
-        ctx.save();
-        const center = arc.getCenterPoint();
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillStyle = '#ffffff';
+          ctx.save();
+          const center = arc.getCenterPoint();
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillStyle = '#ffffff';
 
-        // Text shadow for better readability
-        ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-        ctx.shadowBlur = 2;
-        ctx.shadowOffsetX = 1;
-        ctx.shadowOffsetY = 1;
+          // Text shadow for better readability
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+          ctx.shadowBlur = 2;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 1;
 
-        // Only draw value if percentage > 2%, otherwise skip to save space
-        if (percentage >= 2) {
-          ctx.font = '600 11px "Plus Jakarta Sans", Inter, sans-serif';
-          ctx.fillText(value.toString(), center.x, center.y - 6);
-          ctx.font = '500 9px "Plus Jakarta Sans", Inter, sans-serif';
-          ctx.fillText(`(${percentage}%)`, center.x, center.y + 8);
-        } else if (percentage >= 1) {
-          // For very small percentages, only show the value
-          ctx.font = '600 10px "Plus Jakarta Sans", Inter, sans-serif';
-          ctx.fillText(value.toString(), center.x, center.y);
-        }
+          // Only draw value if percentage > 2%, otherwise skip to save space
+          if (percentage >= 2) {
+            ctx.font = '600 11px "Plus Jakarta Sans", Inter, sans-serif';
+            ctx.fillText(value.toString(), center.x, center.y - 6);
+            ctx.font = '500 9px "Plus Jakarta Sans", Inter, sans-serif';
+            ctx.fillText(`(${percentage}%)`, center.x, center.y + 8);
+          } else if (percentage >= 1) {
+            // For very small percentages, only show the value
+            ctx.font = '600 10px "Plus Jakarta Sans", Inter, sans-serif';
+            ctx.fillText(value.toString(), center.x, center.y);
+          }
 
-        ctx.restore();
+          ctx.restore();
+        });
       });
-    });
-
-    if (total > 0) {
-      ctx.save();
-      const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
-      const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      // Light text for the dark card surface
-      ctx.fillStyle = '#F8FAFC';
-      ctx.font = '800 26px "Plus Jakarta Sans", Inter, sans-serif';
-      ctx.fillText(total.toString(), centerX, centerY - 8);
-      ctx.font = '600 11px "Plus Jakarta Sans", Inter, sans-serif';
-      ctx.fillStyle = '#94A3B8';
-      ctx.fillText('Total Tasks', centerX, centerY + 14);
-      ctx.restore();
     }
+
+    // Always draw center summary (even if 0 tasks)
+    ctx.save();
+    const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
+    const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Light text for the dark card surface
+    ctx.fillStyle = '#F8FAFC';
+    ctx.font = '800 26px "Plus Jakarta Sans", Inter, sans-serif';
+    ctx.fillText(displayTotal.toString(), centerX, centerY - 8);
+    ctx.font = '600 11px "Plus Jakarta Sans", Inter, sans-serif';
+    ctx.fillStyle = '#94A3B8';
+    ctx.fillText('Total Tasks', centerX, centerY + 14);
+    ctx.restore();
   };
+
+  const isPlaceholder = Boolean(data.isPlaceholder || data.datasets?.[0]?.isPlaceholder || data.hasData === false);
 
   // If chart already exists, update it
   if (chartInstanceRef.current) {
@@ -321,6 +330,9 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
   }
   if (chartInstanceRef.current) {
     chartInstanceRef.current.data = data;
+    if (chartInstanceRef.current.options?.plugins?.tooltip) {
+      chartInstanceRef.current.options.plugins.tooltip.enabled = !isPlaceholder;
+    }
     chartInstanceRef.current.update('none'); // Use 'none' to prevent animation issues
     return;
   }
@@ -344,6 +356,14 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
       plugins: {
         legend: { display: false },
         tooltip: {
+          enabled: !isPlaceholder,
+          filter: function (tooltipItem) {
+            const chartData = tooltipItem?.chart?.data;
+            if (chartData?.hasData === false || chartData?.isPlaceholder || tooltipItem?.dataset?.isPlaceholder) {
+              return false;
+            }
+            return true;
+          },
           callbacks: {
             label: function (context) {
               const label = context.label || '';
@@ -1788,20 +1808,29 @@ const TaskReports = () => {
         isHidden: hiddenDoughnutStatuses.has(label)
       })).filter(item => item.value > 0);
 
-      const hasData = visibleData.length > 0;
-      const visibleLabels = hasData ? visibleData.map(item => item.label) : ['No Tasks'];
-      const visibleValues = hasData ? visibleData.map(item => item.isHidden ? 0 : item.value) : [1];
-      const visibleColors = hasData ? visibleData.map(item => item.color) : ['rgba(255, 255, 255, 0.08)'];
+      const hasVisibleData = visibleData.some(item => !item.isHidden && item.value > 0);
+      const isPlaceholder = !hasVisibleData;
+      const visibleLabels = hasVisibleData ? visibleData.map(item => item.label) : ['No Tasks'];
+      const visibleValues = hasVisibleData ? visibleData.map(item => item.isHidden ? 0 : item.value) : [1];
+      const visibleColors = hasVisibleData ? visibleData.map(item => item.color) : ['rgba(255, 255, 255, 0.08)'];
 
       const completionData = {
         labels: visibleLabels,
+        hasData: hasVisibleData,
+        isPlaceholder,
+        totalCount: hasVisibleData ? undefined : 0,
         datasets: [{
           label: 'Task Status',
           data: visibleValues,
           backgroundColor: visibleColors,
-          // Matches the dark card surface so slices look separated, not outlined
-          borderColor: '#1E293B',
-          borderWidth: 3
+          // Matches the dark card surface so slices look separated, not outlined.
+          // When empty placeholder, transparent border avoids 12 o'clock seam artifact.
+          borderColor: isPlaceholder ? 'transparent' : '#1E293B',
+          borderWidth: isPlaceholder ? 0 : 3,
+          hoverBackgroundColor: isPlaceholder ? ['rgba(255, 255, 255, 0.08)'] : undefined,
+          hoverBorderColor: isPlaceholder ? 'transparent' : undefined,
+          hoverBorderWidth: isPlaceholder ? 0 : undefined,
+          isPlaceholder
         }]
       };
 
