@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiPlus, FiClock, FiList, FiUsers,
   FiMoreHorizontal, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw,
-  FiX, FiExternalLink, FiFilter, FiSearch,
+  FiX, FiExternalLink, FiFilter, FiSearch, FiChevronDown, FiChevronUp,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
@@ -39,21 +39,43 @@ const GROUP_BY_OPTIONS = [
 
 const capitalize = (s) => (s ? s.split('_').map((w) => w[0].toUpperCase() + w.slice(1)).join(' ') : '');
 
+// Normalizes a Date or date string to local midnight (00:00:00)
+const startOfDay = (d) => {
+  const x = new Date(d);
+  x.setHours(0, 0, 0, 0);
+  return x;
+};
+
+// Parses a date-only string (e.g. 'YYYY-MM-DD' or ISO timestamp) to local date at midnight,
+// preventing unexpected timezone shifts that could cause tasks to misclassify between today and overdue.
+const parseDateOnly = (d) => {
+  if (!d) return null;
+  if (d instanceof Date) return startOfDay(d);
+  const s = String(d).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+    const [year, month, day] = s.slice(0, 10).split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  const parsed = new Date(d);
+  return Number.isNaN(parsed.getTime()) ? null : startOfDay(parsed);
+};
+
 const formatDate = (d) => {
   if (!d) return '-';
-  const date = new Date(d);
+  const date = parseDateOnly(d);
+  if (!date || Number.isNaN(date.getTime())) return '-';
   return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`;
 };
 
 const formatShortDate = (d) => {
-  const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return '-';
+  const date = parseDateOnly(d);
+  if (!date || Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
 const formatLongDate = (d) => {
-  const date = new Date(d);
-  if (Number.isNaN(date.getTime())) return '-';
+  const date = parseDateOnly(d);
+  if (!date || Number.isNaN(date.getTime())) return '-';
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
@@ -63,24 +85,25 @@ const formatTaskId = (t) => {
   return `#${String(id).padStart(5, '0')}`;
 };
 
-const startOfDay = (d) => {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  return x;
-};
-
-// A task becomes overdue only after 12:00 PM (noon) on the due date.
+// A task is overdue only if its due date was before today (yesterday or earlier)
 const isTaskOverdue = (task) => {
   if (!task || !task.due_date) return false;
-  const due = new Date(task.due_date);
-  if (Number.isNaN(due.getTime())) return false;
+  const due = parseDateOnly(task.due_date);
+  if (!due || Number.isNaN(due.getTime())) return false;
   const status = String(task.status || '').toLowerCase();
   if (DONE_STATUSES.includes(status)) return false;
-  const dueNoon = new Date(due);
-  dueNoon.setHours(12, 0, 0, 0);
-  return new Date() > dueNoon;
+  const today = startOfDay(new Date());
+  return today.getTime() > due.getTime();
 };
 
+/**
+ * Calculates due date metadata and urgency classification for a task.
+ * - 'done': for completed/closed/cancelled tasks
+ * - 'overdue': strictly for tasks due before today (dayDiff > 0)
+ * - 'today': for tasks due today (dayDiff === 0), ensuring the "Due today" group header displays
+ * - 'upcoming': for future due dates (dayDiff < 0)
+ * - 'none': for tasks without a due date
+ */
 const getDueMeta = (task) => {
   const status = String(task?.status || '').toLowerCase();
   if (DONE_STATUSES.includes(status)) {
@@ -88,20 +111,23 @@ const getDueMeta = (task) => {
     return { kind: 'done', text: when ? formatShortDate(when) : capitalize(status), days: 0 };
   }
   if (!task?.due_date) return { kind: 'none', text: 'No due date', days: 0 };
-  const due = new Date(task.due_date);
-  if (Number.isNaN(due.getTime())) return { kind: 'none', text: 'No due date', days: 0 };
+  const due = parseDateOnly(task.due_date);
+  if (!due || Number.isNaN(due.getTime())) return { kind: 'none', text: 'No due date', days: 0 };
 
   const now = new Date();
-  const dueNoon = new Date(due);
-  dueNoon.setHours(12, 0, 0, 0);
-  const dayDiff = Math.round((startOfDay(now).getTime() - startOfDay(due).getTime()) / DAY_MS);
+  const today = startOfDay(now);
+  const dayDiff = Math.round((today.getTime() - due.getTime()) / DAY_MS);
 
-  if (now > dueNoon) {
-    if (dayDiff <= 0) return { kind: 'overdue', text: 'Overdue today', days: 0 };
+  // If due date was before today, the task is overdue
+  if (dayDiff > 0) {
     return { kind: 'overdue', text: `${dayDiff} day${dayDiff === 1 ? '' : 's'} late`, days: dayDiff };
   }
+  // If due date is today, classify under 'today' so it displays under the "Due today" group header
+  if (dayDiff === 0) {
+    return { kind: 'today', text: 'Today', days: 0 };
+  }
+  // If due date is in the future
   const ahead = -dayDiff;
-  if (ahead <= 0) return { kind: 'today', text: 'Today', days: 0 };
   return { kind: 'upcoming', text: formatShortDate(due), days: ahead };
 };
 
@@ -125,9 +151,9 @@ const getInitials = (displayName) => {
 };
 
 const URGENCY_GROUPS = [
+  { key: 'overdue', label: 'Overdue', color: '#e5383b' },
   { key: 'today', label: 'Due today', color: '#f59e0b' },
   { key: 'upcoming', label: 'Upcoming', color: '#2f4bd8' },
-  { key: 'overdue', label: 'Overdue', color: '#e5383b' },
   { key: 'completed', label: 'Completed', color: '#16a34a' },
 ];
 
@@ -941,11 +967,20 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             type="button"
             className="tlx-group__collapse"
             onClick={() => setOpenCompleted((prev) => ({ ...prev, [g.key]: !open }))}
+            aria-expanded={open}
           >
             <span className="tlx-group__dot" style={{ background: g.color }} />
             <span className="tlx-group__label">{g.label}</span>
             <span className="tlx-group__count">{g.tasks.length}</span>
-            <span className="tlx-group__toggle">{open ? 'Collapse' : 'Expand'}</span>
+            {/* Collapse/Expand toggle with up and down arrow icons */}
+            <span className="tlx-group__toggle">
+              <span>{open ? 'Collapse' : 'Expand'}</span>
+              {open ? (
+                <FiChevronUp className="tlx-group__toggle-icon" aria-hidden />
+              ) : (
+                <FiChevronDown className="tlx-group__toggle-icon" aria-hidden />
+              )}
+            </span>
           </button>
           {open && (
             <div className="tlx-group__rows">
@@ -955,8 +990,15 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                   type="button"
                   className="tlx-more"
                   onClick={() => setExpandedGroups((prev) => ({ ...prev, [`${groupBy}:${g.key}`]: !expanded }))}
+                  aria-expanded={expanded}
                 >
-                  {expanded ? 'Show less' : `Show ${hiddenCount} more ${g.label.toLowerCase()}`}
+                  <span>{expanded ? 'Show less' : `Show ${hiddenCount} more ${g.label.toLowerCase()}`}</span>
+                  {/* Up and Down arrows indicating expand/collapse state */}
+                  {expanded ? (
+                    <FiChevronUp className="tlx-more__icon" aria-hidden />
+                  ) : (
+                    <FiChevronDown className="tlx-more__icon" aria-hidden />
+                  )}
                 </button>
               )}
             </div>
@@ -980,8 +1022,15 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             type="button"
             className="tlx-more"
             onClick={() => setExpandedGroups((prev) => ({ ...prev, [`${groupBy}:${g.key}`]: !expanded }))}
+            aria-expanded={expanded}
           >
-            {expanded ? 'Show less' : `Show ${hiddenCount} more ${g.label.toLowerCase()}`}
+            <span>{expanded ? 'Show less' : `Show ${hiddenCount} more ${g.label.toLowerCase()}`}</span>
+            {/* Up and Down arrows indicating expand/collapse state */}
+            {expanded ? (
+              <FiChevronUp className="tlx-more__icon" aria-hidden />
+            ) : (
+              <FiChevronDown className="tlx-more__icon" aria-hidden />
+            )}
           </button>
         )}
       </section>

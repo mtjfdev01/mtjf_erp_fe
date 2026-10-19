@@ -602,10 +602,20 @@
 }
 
 .tlx-group__toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   margin-left: auto;
   color: var(--tlx-accent);
   font-size: 0.82rem;
   font-weight: 700;
+}
+
+.tlx-group__toggle-icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
+  flex-shrink: 0;
 }
 
 .tlx-group--collapsible.is-open .tlx-group__rows {
@@ -613,7 +623,9 @@
 }
 
 .tlx-more {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   margin: 0.65rem 0 0 0.5rem;
   padding: 0;
   border: none;
@@ -623,10 +635,19 @@
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
+  transition: opacity 0.15s ease;
 }
 
 .tlx-more:hover {
   text-decoration: underline;
+  opacity: 0.85;
+}
+
+.tlx-more__icon {
+  width: 14px;
+  height: 14px;
+  stroke-width: 2.4;
+  flex-shrink: 0;
 }
 
 /* ---------- Task row ---------- */
