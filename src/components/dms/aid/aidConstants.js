@@ -73,6 +73,251 @@ export const AID_REQUEST_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
+/**
+ * SubProgram catalog (project rates) — Expected Amount by Program + SubProgram.
+ * Stored as aid_program under requested_aid_type (Program). amount / amount_max in PKR.
+ */
+export const AID_PROGRAMS = [
+  {
+    value: 'health_patient_care',
+    aid_type: 'health',
+    label: 'Patient Care Initiative',
+    uom: 'Per Patient',
+    amount: 10000,
+    zakat: true,
+    general: true,
+    narration:
+      'Includes consultancy fees, diagnostic tests, and the cost of medicines.',
+  },
+  {
+    value: 'health_medical_support',
+    aid_type: 'health',
+    label: 'Medical Support Initiative',
+    uom: 'Per Beneficiary',
+    amount: 40000,
+    zakat: true,
+    general: true,
+    narration:
+      'Provides direct financial assistance for essential surgical procedures, paid straight to partner hospitals.',
+  },
+  {
+    value: 'health_pwd_rehab',
+    aid_type: 'health',
+    label: 'Rehabilitation of PWDs',
+    uom: 'Per Beneficiary',
+    amount: 20000,
+    zakat: true,
+    general: true,
+    narration:
+      'Focuses on restoring independence/mobility by providing wheelchairs, crutches, walkers, etc.',
+  },
+  {
+    value: 'education_scholarship',
+    aid_type: 'education',
+    label: 'Scholarship',
+    uom: 'Per Student / Per Month',
+    amount: 15000,
+    zakat: true,
+    general: true,
+    narration:
+      'Encompasses tuition fees, accommodation, food, and stationery costs.',
+  },
+  {
+    value: 'education_dream_school',
+    aid_type: 'education',
+    label: 'Dream School',
+    uom: 'Per School / Per Month',
+    amount: 35000,
+    zakat: true,
+    general: true,
+    narration:
+      'Supports a school accommodating 40 students with a complete package (books, uniforms, shoes, etc.).',
+  },
+  {
+    value: 'education_hafiz',
+    aid_type: 'education',
+    label: 'For Hafiz',
+    uom: 'Per Student / Per Month',
+    amount: 5000,
+    zakat: true,
+    general: true,
+    narration:
+      "Includes teacher's salary, operational expenses, and other essential costs.",
+  },
+  {
+    value: 'education_alim',
+    aid_type: 'education',
+    label: 'For Alim',
+    uom: 'Per Student / Per Month',
+    amount: 18000,
+    zakat: true,
+    general: true,
+    narration: 'Encompasses fees, boarding/lodging, and food expenses.',
+  },
+  {
+    value: 'clean_water_hand_pump',
+    aid_type: 'clean_water',
+    label: 'Hand Pump',
+    uom: 'Per Unit',
+    amount: 70000,
+    amount_max: 90000,
+    zakat: true,
+    general: true,
+    narration:
+      'Projects involving hand pumps cater to varying depths of water levels.',
+  },
+  {
+    value: 'clean_water_afridev',
+    aid_type: 'clean_water',
+    label: 'Afridev Community Hand Pump',
+    uom: 'Per Unit',
+    amount: 125000,
+    zakat: false,
+    general: true,
+    narration:
+      'Recommended for areas with low water levels; designed for shallow depths.',
+  },
+  {
+    value: 'clean_water_filtration_no_civil',
+    aid_type: 'clean_water',
+    label: 'Filtration Plant (without construction)',
+    uom: 'Per Unit',
+    amount: 1500000,
+    zakat: false,
+    general: true,
+    narration:
+      'RO filtration plant with community participation; excludes civil construction.',
+  },
+  {
+    value: 'clean_water_filtration_full',
+    aid_type: 'clean_water',
+    label: 'Filtration Plant',
+    uom: 'Per Unit',
+    amount: 2500000,
+    zakat: false,
+    general: true,
+    narration:
+      'Solarized RO filtration plant including solar system, equipment, and civil construction.',
+  },
+  {
+    value: 'clean_water_solar_submersible',
+    aid_type: 'clean_water',
+    label: 'Solar Submersible Pump',
+    uom: 'Per Unit',
+    amount: 250000,
+    zakat: false,
+    general: true,
+    narration:
+      'Plains: borehole, submersible pump, 4 solar panels, and water tanks.',
+  },
+  {
+    value: 'clean_water_solar_turbine',
+    aid_type: 'clean_water',
+    label: 'Solar Submersible Pump / Turbine',
+    uom: 'Per Unit',
+    amount: 500000,
+    zakat: false,
+    general: true,
+    narration:
+      'Desert: borehole, pump/turbine, room, 8 solar panels, and water tanks.',
+  },
+  {
+    value: 'kasb_empowering_woman',
+    aid_type: 'kasb_skill_development',
+    label: 'Empowering a Woman',
+    uom: 'Per Beneficiary',
+    amount: 100000,
+    zakat: true,
+    general: true,
+    narration:
+      'Recommended for woman-headed families to promote sustainable livelihoods.',
+  },
+  {
+    value: 'marriage_gift_standard',
+    aid_type: 'marriage_gift',
+    label: 'Marriage Gift',
+    uom: 'Per Beneficiary',
+    amount: 150000,
+    zakat: true,
+    general: true,
+    narration:
+      'Support for deserving girls whose families cannot arrange marriage expenses.',
+  },
+  {
+    value: 'ration_feed_family_month',
+    aid_type: 'ration',
+    label: 'Feed a Family for whole month',
+    uom: 'Per Family',
+    amount: 8500,
+    zakat: true,
+    general: true,
+    narration:
+      'Monthly ration of essential food items for deserving families.',
+  },
+];
+
+export function getAidProgramsForType(aidType) {
+  return AID_PROGRAMS.filter((p) => p.aid_type === aidType);
+}
+
+export function getAidProgram(programKey) {
+  if (!programKey) return null;
+  return AID_PROGRAMS.find((p) => p.value === programKey) || null;
+}
+
+/** Format PKR for display (e.g. 1500000 → "1,500,000"). */
+export function formatPkrAmount(n) {
+  if (n == null || n === '') return '—';
+  const num = Number(n);
+  if (!Number.isFinite(num)) return '—';
+  return num.toLocaleString('en-PK');
+}
+
+/** Expected amount label from catalog or stored min/max. */
+export function formatExpectedAmount(programOrRow) {
+  if (!programOrRow) return '—';
+  const catalog =
+    typeof programOrRow === 'string'
+      ? getAidProgram(programOrRow)
+      : programOrRow.aid_program
+        ? getAidProgram(programOrRow.aid_program)
+        : programOrRow;
+  const min =
+    catalog?.amount ??
+    programOrRow.expected_amount ??
+    programOrRow.amount ??
+    null;
+  const max =
+    catalog?.amount_max ??
+    programOrRow.expected_amount_max ??
+    programOrRow.amount_max ??
+    null;
+  if (min == null && max == null) return '—';
+  if (max != null && Number(max) !== Number(min)) {
+    return `PKR ${formatPkrAmount(min)} – ${formatPkrAmount(max)}`;
+  }
+  return `PKR ${formatPkrAmount(min)}`;
+}
+
+export function formatAidProgramLabel(programKey) {
+  const p = getAidProgram(programKey);
+  return p?.label || programKey || '—';
+}
+
+/** Resolve expected amount fields when Program / SubProgram changes. */
+export function resolveExpectedAmountFields(aidType, programKey) {
+  const programs = getAidProgramsForType(aidType);
+  let key = programKey || '';
+  if (programs.length === 1) key = programs[0].value;
+  if (key && !programs.some((p) => p.value === key)) key = '';
+  const prog = getAidProgram(key);
+  return {
+    aid_program: prog?.value || '',
+    expected_amount: prog?.amount ?? null,
+    expected_amount_max: prog?.amount_max ?? null,
+  };
+}
+
 /** Intake — how the case entered data entry. */
 export const AID_CASE_SOURCES = [
   { value: 'walk_in', label: 'Walk-in at office' },
@@ -1197,6 +1442,14 @@ export function formatAidStatus(status) {
 
 export function formatAidRequestType(type) {
   return AID_REQUEST_TYPES.find((o) => o.value === type)?.label || type || '—';
+}
+
+/** Program + SubProgram label for lists (e.g. "Health · Patient Care Initiative"). */
+export function formatAidTypeWithProgram(aidType, programKey) {
+  const typeLabel = formatAidRequestType(aidType);
+  const prog = getAidProgram(programKey);
+  if (!prog) return typeLabel;
+  return `${typeLabel} · ${prog.label}`;
 }
 
 export function formatAidCaseSource(source) {

@@ -543,6 +543,7 @@ const App = () => {
                                 <Route path="/dms/aid/applications/entry/view/:id" element={<AidEntryApplicationView />} />
                                 <Route path="/dms/aid/applications/approvals" element={<AidApprovalsList />} />
                                 <Route path="/dms/aid/applications/add" element={<AidApplicationAdd />} />
+                                <Route path="/dms/aid/applications/edit/:id" element={<AidApplicationAdd />} />
                                 <Route path="/dms/aid/applications/view/:id" element={<AidApplicationView />} />
                                 <Route path="/dms/aid/people/list" element={<AidPeopleList />} />
                                 <Route path="/dms/aid/people/view/:id" element={<AidPersonView />} />

@@ -502,8 +502,8 @@ const AidWelfareOverview = () => {
             </table>
           </div>
           <div className="aid-wo-links">
-            <Link to="/dms/aid/applications/entry/list">Data entry</Link>
-            <Link to="/dms/aid/applications/list">Case review</Link>
+            <Link to="/dms/aid/applications/entry/list">Beneficiary Registration</Link>
+            <Link to="/dms/aid/applications/list">Verification Process</Link>
             <Link to="/dms/aid/applications/approvals">Approvals queue</Link>
           </div>
         </section>

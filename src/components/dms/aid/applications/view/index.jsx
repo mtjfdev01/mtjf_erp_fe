@@ -36,6 +36,8 @@ import {
   formatAidStatus,
   formatAidRequestType,
   formatAidCaseSource,
+  formatAidProgramLabel,
+  formatExpectedAmount,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -341,9 +343,24 @@ const AidApplicationView = () => {
             <h2 style={{ margin: '0 0 6px' }}>{app.title || 'Aid application'}</h2>
             <p style={{ margin: 0, color: '#64748b' }}>{app.request_summary || 'No summary'}</p>
           </div>
-          <span className={`aid-status-pill aid-status-pill--${aidStatusTone(status)}`}>
-            {formatAidStatus(status)}
-          </span>
+          <div className="aid-entry-view__hero-actions">
+            <span className={`aid-status-pill aid-status-pill--${aidStatusTone(status)}`}>
+              {formatAidStatus(status)}
+            </span>
+            {canUpdate &&
+            status !== 'rejected' &&
+            status !== 'delivered' ? (
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() =>
+                  navigate(`/dms/aid/applications/edit/${app.id}`)
+                }
+              >
+                Edit
+              </button>
+            ) : null}
+          </div>
         </div>
 
         {history.requires_override && (
@@ -538,8 +555,18 @@ const AidApplicationView = () => {
               <section className="aid-section aid-section--flush">
                 <div className="aid-status-chip-row">
                   <StatusChip
-                    label="Aid type"
+                    label="Program"
                     value={formatAidRequestType(app.requested_aid_type)}
+                    tone="info"
+                  />
+                  <StatusChip
+                    label="SubProgram"
+                    value={formatAidProgramLabel(app.aid_program)}
+                    tone="muted"
+                  />
+                  <StatusChip
+                    label="Expected Amount"
+                    value={formatExpectedAmount(app)}
                     tone="info"
                   />
                   <StatusChip

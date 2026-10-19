@@ -2,13 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FiEdit2, FiPlus, FiX } from 'react-icons/fi';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
+import AidRelatedPersonFields from './AidRelatedPersonFields';
 import {
-  AID_EDUCATION_LEVELS,
-  AID_GENDERS,
-  AID_MARITAL_STATUS,
   AID_RELATED_PERSON_TYPES,
   calcAgeFromDob,
   emptyRelatedPersonBase,
+  emptyPropertyOwnershipFields,
+  emptyLivestockFields,
+  emptyVehicleFields,
+  emptyEligibilityStatusFields,
   formatCnicInput,
   formatEducation,
   formatMaritalStatus,
@@ -53,8 +55,14 @@ const GUARDIANSHIP_REASONS = [
   { value: 'other', label: 'Other' },
 ];
 
+/** Same personal field shape as Family Head / Beneficiary (+ member extras). */
 export const emptyFamilyMemberRow = () => ({
   ...emptyRelatedPersonBase(),
+  ...emptyPropertyOwnershipFields(),
+  ...emptyLivestockFields(),
+  ...emptyVehicleFields(),
+  ...emptyEligibilityStatusFields(),
+  is_alive: true,
   relation_type: '',
   is_applicant: false,
   id_type: 'cnic',
@@ -190,41 +198,6 @@ const AidFamilyMembersIntake = ({
   };
 
   const patchDraft = (partial) => setDraft((p) => ({ ...p, ...partial }));
-
-  const setRelation = (next) => {
-    const lower = String(next || '').toLowerCase();
-    const partial = {
-      relation_type: next,
-      relation_with_family_head: next,
-      relation_with_beneficiary: next,
-    };
-    if (!draft.gender) {
-      if (
-        lower.includes('sister') ||
-        lower.includes('daughter') ||
-        lower === 'mother' ||
-        lower === 'aunt' ||
-        lower === 'grandmother' ||
-        lower === 'maternal_grandmother' ||
-        lower === 'niece' ||
-        lower === 'wife'
-      ) {
-        partial.gender = 'female';
-      } else if (
-        lower.includes('brother') ||
-        lower.includes('son') ||
-        lower === 'father' ||
-        lower === 'uncle' ||
-        lower === 'grandfather' ||
-        lower === 'maternal_grandfather' ||
-        lower === 'nephew' ||
-        lower === 'husband'
-      ) {
-        partial.gender = 'male';
-      }
-    }
-    patchDraft(partial);
-  };
 
   const saveDraft = () => {
     if (!String(draft.full_name || '').trim()) return;
@@ -434,27 +407,29 @@ const AidFamilyMembersIntake = ({
           </div>
 
           <div className="aid-fm-panel__body">
-            <FormSelect
-              label={relationLabel}
-              required
-              value={draft.relation_type || ''}
-              onChange={(e) => setRelation(e.target.value)}
-              options={[
-                { value: '', label: 'Select…' },
-                ...relationOptions,
-              ]}
-            />
-
-            <FormInput
-              label={
-                <>
-                  Full name <span className="required-mark">*</span>
-                </>
+            {/* Inherit Family Head personal fields (identity, contact, circumstances). */}
+            <AidRelatedPersonFields
+              value={draft}
+              onChange={(next) =>
+                setDraft((prev) => {
+                  let health_status = prev.health_status || '';
+                  if (next.has_disability) health_status = 'disability';
+                  else if (health_status === 'disability') health_status = '';
+                  return {
+                    ...prev,
+                    ...next,
+                    is_applicant: prev.is_applicant,
+                    under_guardianship: prev.under_guardianship,
+                    guardianship_reason: prev.guardianship_reason,
+                    guardianship_since: prev.guardianship_since,
+                    id_type: prev.id_type || 'cnic',
+                    health_status,
+                  };
+                })
               }
-              required
-              value={draft.full_name || ''}
-              onChange={(e) => patchDraft({ full_name: e.target.value })}
-              placeholder="Full name"
+              relationOptions={relationOptions}
+              relationLabel={relationLabel}
+              showLiteracy
             />
 
             <div className="aid-fm-panel__grid2">
@@ -464,94 +439,8 @@ const AidFamilyMembersIntake = ({
                 onChange={(e) => patchDraft({ id_type: e.target.value })}
                 options={ID_TYPE_OPTIONS}
               />
-              <FormInput
-                label="ID number"
-                value={formatCnicInput(draft.cnic || '')}
-                onChange={(e) =>
-                  patchDraft({ cnic: formatCnicInput(e.target.value) })
-                }
-                placeholder="00000-0000000-0"
-                inputMode="numeric"
-              />
-            </div>
-
-            <div className="aid-fm-panel__grid2">
-              <FormInput
-                label="Date of birth"
-                type="date"
-                value={draft.date_of_birth || ''}
-                onChange={(e) => patchDraft({ date_of_birth: e.target.value })}
-              />
               <FormSelect
-                label="Gender"
-                value={draft.gender || ''}
-                onChange={(e) => patchDraft({ gender: e.target.value })}
-                options={[{ value: '', label: '—' }, ...AID_GENDERS]}
-              />
-            </div>
-
-            <div className="aid-fm-panel__grid2">
-              <FormSelect
-                label="Education"
-                value={draft.education_level || ''}
-                onChange={(e) =>
-                  patchDraft({ education_level: e.target.value })
-                }
-                options={[
-                  { value: '', label: '—' },
-                  ...AID_EDUCATION_LEVELS,
-                ]}
-              />
-              <FormInput
-                label="Class / level"
-                value={draft.student_class || ''}
-                onChange={(e) => patchDraft({ student_class: e.target.value })}
-                placeholder="e.g. 8"
-              />
-            </div>
-
-            <FormInput
-              label="School / institution"
-              value={draft.student_class_name || ''}
-              onChange={(e) =>
-                patchDraft({ student_class_name: e.target.value })
-              }
-              placeholder="School / institution"
-            />
-
-            <div className="aid-fm-panel__grid2">
-              <FormInput
-                label="Occupation"
-                value={draft.occupation || ''}
-                onChange={(e) => patchDraft({ occupation: e.target.value })}
-                placeholder="Occupation"
-              />
-              <FormInput
-                label="Monthly income"
-                type="number"
-                min="0"
-                value={draft.monthly_income ?? ''}
-                onChange={(e) =>
-                  patchDraft({ monthly_income: e.target.value })
-                }
-                placeholder="PKR"
-              />
-            </div>
-
-            <div className="aid-fm-panel__grid2">
-              <FormSelect
-                label="Marital status"
-                value={draft.marital_status || ''}
-                onChange={(e) =>
-                  patchDraft({ marital_status: e.target.value })
-                }
-                options={[
-                  { value: '', label: '—' },
-                  ...AID_MARITAL_STATUS,
-                ]}
-              />
-              <FormSelect
-                label="Health / disability"
+                label="Health / disability (summary)"
                 value={draft.health_status || ''}
                 onChange={(e) => {
                   const health_status = e.target.value;
@@ -561,7 +450,7 @@ const AidFamilyMembersIntake = ({
                     disability_type:
                       health_status === 'disability'
                         ? draft.disability_type || 'Disability'
-                        : '',
+                        : draft.disability_type || '',
                   });
                 }}
                 options={HEALTH_OPTIONS}
@@ -578,7 +467,10 @@ const AidFamilyMembersIntake = ({
                       under_guardianship: e.target.checked,
                       household_dependency: e.target.checked
                         ? 'dependent_on_family_head'
-                        : '',
+                        : draft.household_dependency ===
+                            'dependent_on_family_head'
+                          ? ''
+                          : draft.household_dependency || '',
                     })
                   }
                 />

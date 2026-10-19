@@ -65,7 +65,7 @@ const AidRationApplicationFields = ({
         <div className="aid-ration-card__banner" aria-hidden />
         <div className="aid-ration-card__head">
           <div>
-            <p className="aid-ration-card__eyebrow">Aid type detail</p>
+            <p className="aid-ration-card__eyebrow">Program detail</p>
             <h4 className="aid-ration-card__title">Monthly Ration Program</h4>
           </div>
           {duration ? (
