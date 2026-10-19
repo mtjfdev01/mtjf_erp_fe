@@ -873,17 +873,34 @@ const AidApplicationAdd = () => {
     );
   };
 
-  /** Exactly one beneficiary source: Beneficiary tab or one Family Head. */
+  /** Exactly one beneficiary source: Beneficiary form, Family Head, or a family member. */
   const markBeneficiary = (target) => {
     const kind = target?.kind || 'form';
     setFamilyHeads((heads) =>
       heads.map((h, i) => ({
         ...h,
         is_beneficiary: kind === 'family_head' && target.idx === i,
+        _family_members: (h._family_members || []).map((m, mi) => ({
+          ...m,
+          is_beneficiary:
+            kind === 'head_member' &&
+            target.headIdx === i &&
+            target.idx === mi,
+        })),
       })),
     );
-    if (kind === 'family_head') {
-      // Family head is beneficiary — clear applicant on the separate beneficiary form
+    setBeneficiaryMembers((list) =>
+      list.map((m, i) => ({
+        ...m,
+        is_beneficiary: kind === 'beneficiary_member' && target.idx === i,
+      })),
+    );
+    if (
+      kind === 'family_head' ||
+      kind === 'head_member' ||
+      kind === 'beneficiary_member'
+    ) {
+      // Someone else is beneficiary — clear applicant on the separate beneficiary form
       setBeneficiary((b) => ({ ...b, is_applicant: false }));
     }
   };
@@ -1924,7 +1941,7 @@ const AidApplicationAdd = () => {
             <div className="aid-family-panel" style={{ marginTop: 12 }}>
               <AidFamilyMembersIntake
                 title="Beneficiary — family members"
-                hint="Add any relative. Select Type first. Mark one as applicant if they applied."
+                hint="Add any relative. Select Type first. Mark Applicant / Beneficiary if needed."
                 rows={beneficiaryMembers}
                 onChange={setBeneficiaryMembers}
                 relationLabel="Type (relation to beneficiary)"
@@ -1933,6 +1950,16 @@ const AidApplicationAdd = () => {
                     markApplicant({ kind: 'beneficiary_member', idx: sel.idx });
                   } else {
                     markApplicant({ kind: 'beneficiary' });
+                  }
+                }}
+                onMarkBeneficiary={(sel) => {
+                  if (sel.kind === 'member') {
+                    markBeneficiary({
+                      kind: 'beneficiary_member',
+                      idx: sel.idx,
+                    });
+                  } else {
+                    markBeneficiary({ kind: 'form' });
                   }
                 }}
               />
@@ -2313,7 +2340,7 @@ const AidApplicationAdd = () => {
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
                       <AidFamilyMembersIntake
                         title={`${typeLabel} — family members`}
-                        hint="Relatives under this family head. Mark one as applicant if they applied."
+                        hint="Relatives under this family head. Mark Applicant / Beneficiary if needed."
                         rows={head._family_members || []}
                         onChange={(members) =>
                           setFamilyHeads((list) =>
@@ -2334,6 +2361,17 @@ const AidApplicationAdd = () => {
                             });
                           } else {
                             markApplicant({ kind: 'beneficiary' });
+                          }
+                        }}
+                        onMarkBeneficiary={(sel) => {
+                          if (sel.kind === 'member') {
+                            markBeneficiary({
+                              kind: 'head_member',
+                              headIdx: idx,
+                              idx: sel.idx,
+                            });
+                          } else {
+                            markBeneficiary({ kind: 'form' });
                           }
                         }}
                       />

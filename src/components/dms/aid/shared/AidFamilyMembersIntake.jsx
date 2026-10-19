@@ -2,8 +2,11 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FiEdit2, FiPlus, FiX } from 'react-icons/fi';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
-import AidRelatedPersonFields from './AidRelatedPersonFields';
+import AidApplicantCheckbox from './AidApplicantCheckbox';
 import {
+  AID_EDUCATION_LEVELS,
+  AID_GENDERS,
+  AID_MARITAL_STATUS,
   AID_RELATED_PERSON_TYPES,
   calcAgeFromDob,
   emptyRelatedPersonBase,
@@ -46,15 +49,6 @@ const HEALTH_OPTIONS = [
   { value: 'other', label: 'Other' },
 ];
 
-const GUARDIANSHIP_REASONS = [
-  { value: '', label: '—' },
-  { value: 'orphan', label: 'Orphan' },
-  { value: 'abandoned', label: 'Abandoned' },
-  { value: 'parent_incapacity', label: 'Parent incapacity' },
-  { value: 'financial', label: 'Financial support' },
-  { value: 'other', label: 'Other' },
-];
-
 /** Same personal field shape as Family Head / Beneficiary (+ member extras). */
 export const emptyFamilyMemberRow = () => ({
   ...emptyRelatedPersonBase(),
@@ -65,10 +59,8 @@ export const emptyFamilyMemberRow = () => ({
   is_alive: true,
   relation_type: '',
   is_applicant: false,
+  is_beneficiary: false,
   id_type: 'cnic',
-  under_guardianship: false,
-  guardianship_reason: '',
-  guardianship_since: '',
   health_status: '',
 });
 
@@ -131,13 +123,9 @@ const healthLabel = (row) => {
   return 'None';
 };
 
-const isUnderGuardianship = (row) =>
-  !!row?.under_guardianship ||
-  row?.household_dependency === 'dependent_on_family_head';
-
 /**
  * Family members — table + filter chips + Add/Edit side panel.
- * Same data contract as before (rows / onChange / onMarkApplicant).
+ * Same data contract as before (rows / onChange / onMarkApplicant / onMarkBeneficiary).
  */
 const AidFamilyMembersIntake = ({
   rows = [],
@@ -148,6 +136,7 @@ const AidFamilyMembersIntake = ({
   relationLabel = 'Relation to head',
   relationOptions = AID_RELATED_PERSON_TYPES,
   onMarkApplicant,
+  onMarkBeneficiary,
 }) => {
   const list = Array.isArray(rows) ? rows : [];
   const [filter, setFilter] = useState('all');
@@ -183,7 +172,6 @@ const AidFamilyMembersIntake = ({
       ...emptyFamilyMemberRow(),
       ...row,
       id_type: row.id_type || 'cnic',
-      under_guardianship: isUnderGuardianship(row),
       health_status:
         row.health_status ||
         (row.has_disability ? 'disability' : row.disability_type ? 'other' : ''),
@@ -199,6 +187,41 @@ const AidFamilyMembersIntake = ({
 
   const patchDraft = (partial) => setDraft((p) => ({ ...p, ...partial }));
 
+  const setRelation = (next) => {
+    const lower = String(next || '').toLowerCase();
+    const partial = {
+      relation_type: next,
+      relation_with_family_head: next,
+      relation_with_beneficiary: next,
+    };
+    if (!draft.gender) {
+      if (
+        lower.includes('sister') ||
+        lower.includes('daughter') ||
+        lower === 'mother' ||
+        lower === 'aunt' ||
+        lower === 'grandmother' ||
+        lower === 'maternal_grandmother' ||
+        lower === 'niece' ||
+        lower === 'wife'
+      ) {
+        partial.gender = 'female';
+      } else if (
+        lower.includes('brother') ||
+        lower.includes('son') ||
+        lower === 'father' ||
+        lower === 'uncle' ||
+        lower === 'grandfather' ||
+        lower === 'maternal_grandfather' ||
+        lower === 'nephew' ||
+        lower === 'husband'
+      ) {
+        partial.gender = 'male';
+      }
+    }
+    patchDraft(partial);
+  };
+
   const saveDraft = () => {
     // Relatives are optional overall; only a name is needed to keep a filled row.
     if (!String(draft.full_name || '').trim()) return;
@@ -207,10 +230,8 @@ const AidFamilyMembersIntake = ({
     const nextRow = {
       ...draft,
       full_name: draft.full_name.trim(),
-      under_guardianship: !!draft.under_guardianship,
-      household_dependency: draft.under_guardianship
-        ? 'dependent_on_family_head'
-        : draft.household_dependency || '',
+      is_applicant: !!draft.is_applicant,
+      is_beneficiary: !!draft.is_beneficiary,
       has_disability: health === 'disability' || !!draft.has_disability,
       disability_type:
         health === 'disability'
@@ -222,16 +243,16 @@ const AidFamilyMembersIntake = ({
     };
 
     if (editIdx == null) {
+      const newIdx = list.length;
       onChange([...list, nextRow]);
       if (nextRow.is_applicant && onMarkApplicant) {
-        onMarkApplicant({ kind: 'member', idx: list.length, row: nextRow });
+        onMarkApplicant({ kind: 'member', idx: newIdx, row: nextRow });
+      }
+      if (nextRow.is_beneficiary && onMarkBeneficiary) {
+        onMarkBeneficiary({ kind: 'member', idx: newIdx, row: nextRow });
       }
     } else {
-      onChange(
-        list.map((row, i) =>
-          i === editIdx ? { ...nextRow, is_applicant: row.is_applicant } : row,
-        ),
-      );
+      onChange(list.map((row, i) => (i === editIdx ? nextRow : row)));
     }
     closePanel();
   };
@@ -241,6 +262,9 @@ const AidFamilyMembersIntake = ({
     onChange(list.filter((_, i) => i !== idx));
     if (removed?.is_applicant && onMarkApplicant) {
       onMarkApplicant({ kind: 'beneficiary' });
+    }
+    if (removed?.is_beneficiary && onMarkBeneficiary) {
+      onMarkBeneficiary({ kind: 'form' });
     }
     if (editIdx === idx) closePanel();
   };
@@ -332,9 +356,9 @@ const AidFamilyMembersIntake = ({
                       <td>
                         <div className="aid-fm-rel">
                           <span>{relationLabelOf(row, relationOptions)}</span>
-                          {isUnderGuardianship(row) ? (
-                            <span className="aid-fm-guard-tag">
-                              Under guardianship
+                          {row.is_beneficiary ? (
+                            <span className="aid-fm-beneficiary-tag">
+                              Beneficiary
                             </span>
                           ) : null}
                           {row.is_applicant ? (
@@ -384,10 +408,6 @@ const AidFamilyMembersIntake = ({
           </table>
         </div>
 
-        <p className="aid-fm-footnote">
-          Siblings or other relatives count as dependents only when marked{' '}
-          <strong>under guardianship</strong> of the head.
-        </p>
       </div>
 
       {panelOpen ? (
@@ -407,30 +427,60 @@ const AidFamilyMembersIntake = ({
           </div>
 
           <div className="aid-fm-panel__body">
-            {/* Inherit Family Head personal fields (identity, contact, circumstances). */}
-            <AidRelatedPersonFields
-              value={draft}
-              fieldsRequired={false}
-              onChange={(next) =>
-                setDraft((prev) => {
-                  let health_status = prev.health_status || '';
-                  if (next.has_disability) health_status = 'disability';
-                  else if (health_status === 'disability') health_status = '';
-                  return {
-                    ...prev,
-                    ...next,
-                    is_applicant: prev.is_applicant,
-                    under_guardianship: prev.under_guardianship,
-                    guardianship_reason: prev.guardianship_reason,
-                    guardianship_since: prev.guardianship_since,
-                    id_type: prev.id_type || 'cnic',
-                    health_status,
-                  };
-                })
-              }
-              relationOptions={relationOptions}
-              relationLabel={relationLabel}
-              showLiteracy
+            <div className="aid-fm-panel__roles">
+              <AidApplicantCheckbox
+                checked={!!draft.is_applicant}
+                variant="applicant"
+                label="Applicant"
+                onChange={(yes) => {
+                  patchDraft({ is_applicant: yes });
+                  if (!onMarkApplicant || editIdx == null) return;
+                  if (yes) {
+                    onMarkApplicant({
+                      kind: 'member',
+                      idx: editIdx,
+                      row: draft,
+                    });
+                  } else {
+                    onMarkApplicant({ kind: 'beneficiary' });
+                  }
+                }}
+              />
+              <AidApplicantCheckbox
+                checked={!!draft.is_beneficiary}
+                variant="beneficiary"
+                label="Beneficiary"
+                onChange={(yes) => {
+                  patchDraft({ is_beneficiary: yes });
+                  if (!onMarkBeneficiary || editIdx == null) return;
+                  if (yes) {
+                    onMarkBeneficiary({
+                      kind: 'member',
+                      idx: editIdx,
+                      row: draft,
+                    });
+                  } else {
+                    onMarkBeneficiary({ kind: 'form' });
+                  }
+                }}
+              />
+            </div>
+
+            <FormSelect
+              label={relationLabel}
+              value={draft.relation_type || ''}
+              onChange={(e) => setRelation(e.target.value)}
+              options={[
+                { value: '', label: 'Select…' },
+                ...relationOptions,
+              ]}
+            />
+
+            <FormInput
+              label="Full name"
+              value={draft.full_name || ''}
+              onChange={(e) => patchDraft({ full_name: e.target.value })}
+              placeholder="Full name"
             />
 
             <div className="aid-fm-panel__grid2">
@@ -440,8 +490,94 @@ const AidFamilyMembersIntake = ({
                 onChange={(e) => patchDraft({ id_type: e.target.value })}
                 options={ID_TYPE_OPTIONS}
               />
+              <FormInput
+                label="ID number"
+                value={formatCnicInput(draft.cnic || '')}
+                onChange={(e) =>
+                  patchDraft({ cnic: formatCnicInput(e.target.value) })
+                }
+                placeholder="00000-0000000-0"
+                inputMode="numeric"
+              />
+            </div>
+
+            <div className="aid-fm-panel__grid2">
+              <FormInput
+                label="Date of birth"
+                type="date"
+                value={draft.date_of_birth || ''}
+                onChange={(e) => patchDraft({ date_of_birth: e.target.value })}
+              />
               <FormSelect
-                label="Health / disability (summary)"
+                label="Gender"
+                value={draft.gender || ''}
+                onChange={(e) => patchDraft({ gender: e.target.value })}
+                options={[{ value: '', label: '—' }, ...AID_GENDERS]}
+              />
+            </div>
+
+            <div className="aid-fm-panel__grid2">
+              <FormSelect
+                label="Education"
+                value={draft.education_level || ''}
+                onChange={(e) =>
+                  patchDraft({ education_level: e.target.value })
+                }
+                options={[
+                  { value: '', label: '—' },
+                  ...AID_EDUCATION_LEVELS,
+                ]}
+              />
+              <FormInput
+                label="Class / level"
+                value={draft.student_class || ''}
+                onChange={(e) => patchDraft({ student_class: e.target.value })}
+                placeholder="e.g. 8"
+              />
+            </div>
+
+            <FormInput
+              label="School / institution"
+              value={draft.student_class_name || ''}
+              onChange={(e) =>
+                patchDraft({ student_class_name: e.target.value })
+              }
+              placeholder="School / institution"
+            />
+
+            <div className="aid-fm-panel__grid2">
+              <FormInput
+                label="Occupation"
+                value={draft.occupation || ''}
+                onChange={(e) => patchDraft({ occupation: e.target.value })}
+                placeholder="Occupation"
+              />
+              <FormInput
+                label="Monthly income"
+                type="number"
+                min="0"
+                value={draft.monthly_income ?? ''}
+                onChange={(e) =>
+                  patchDraft({ monthly_income: e.target.value })
+                }
+                placeholder="PKR"
+              />
+            </div>
+
+            <div className="aid-fm-panel__grid2">
+              <FormSelect
+                label="Marital status"
+                value={draft.marital_status || ''}
+                onChange={(e) =>
+                  patchDraft({ marital_status: e.target.value })
+                }
+                options={[
+                  { value: '', label: '—' },
+                  ...AID_MARITAL_STATUS,
+                ]}
+              />
+              <FormSelect
+                label="Health / disability"
                 value={draft.health_status || ''}
                 onChange={(e) => {
                   const health_status = e.target.value;
@@ -451,79 +587,12 @@ const AidFamilyMembersIntake = ({
                     disability_type:
                       health_status === 'disability'
                         ? draft.disability_type || 'Disability'
-                        : draft.disability_type || '',
+                        : '',
                   });
                 }}
                 options={HEALTH_OPTIONS}
               />
             </div>
-
-            <div className="aid-fm-guard-box">
-              <label className="aid-fm-guard-check">
-                <input
-                  type="checkbox"
-                  checked={!!draft.under_guardianship}
-                  onChange={(e) =>
-                    patchDraft({
-                      under_guardianship: e.target.checked,
-                      household_dependency: e.target.checked
-                        ? 'dependent_on_family_head'
-                        : draft.household_dependency ===
-                            'dependent_on_family_head'
-                          ? ''
-                          : draft.household_dependency || '',
-                    })
-                  }
-                />
-                <span>Under the head&apos;s guardianship</span>
-              </label>
-              {draft.under_guardianship ? (
-                <div className="aid-fm-panel__grid2">
-                  <FormSelect
-                    label="Reason"
-                    value={draft.guardianship_reason || ''}
-                    onChange={(e) =>
-                      patchDraft({ guardianship_reason: e.target.value })
-                    }
-                    options={GUARDIANSHIP_REASONS}
-                  />
-                  <FormInput
-                    label="Since (year)"
-                    value={draft.guardianship_since || ''}
-                    onChange={(e) =>
-                      patchDraft({ guardianship_since: e.target.value })
-                    }
-                    placeholder="e.g. 2020"
-                    inputMode="numeric"
-                  />
-                </div>
-              ) : null}
-            </div>
-
-            {onMarkApplicant ? (
-              <label className="aid-fm-applicant-check">
-                <input
-                  type="checkbox"
-                  checked={!!draft.is_applicant}
-                  onChange={(e) => {
-                    const yes = e.target.checked;
-                    patchDraft({ is_applicant: yes });
-                    if (editIdx != null) {
-                      if (yes) {
-                        onMarkApplicant({
-                          kind: 'member',
-                          idx: editIdx,
-                          row: draft,
-                        });
-                      } else {
-                        onMarkApplicant({ kind: 'beneficiary' });
-                      }
-                    }
-                  }}
-                />
-                <span>This family member is the applicant</span>
-              </label>
-            ) : null}
           </div>
 
           <div className="aid-fm-panel__foot">
