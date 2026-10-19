@@ -1020,6 +1020,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       currentUserId,
       createdByUserId: t.created_by_id,
       reportedById: t.reported_to_id,
+      // Array of all reporting manager IDs for multi-manager action authorization
       reportedByIds: t.reported_to_ids || t.reported_to,
       approvalRequiredUserIds: t.approval_required_user_ids,
       approvalsMeta: approvalTask?.approvals_meta || [],
