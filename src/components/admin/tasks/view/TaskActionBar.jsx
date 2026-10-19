@@ -31,6 +31,7 @@ const TaskActionBar = ({
   const [isQuickOpen, setIsQuickOpen] = useState(false);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
 
+  // Multi-manager support: resolve all reporting manager IDs from reportedByIds array or legacy reportedById
   const effectiveReporterIds = useMemo(() => {
     if (Array.isArray(reportedByIds) && reportedByIds.length > 0) {
       return reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0);
@@ -116,7 +117,7 @@ const TaskActionBar = ({
           baseButtons = [];
         }
       } else {
-        // For standard workflow, creator/reporter can close a completed task
+        // For standard workflow, creator or any configured reporting manager can close a completed task
         const isCreator = Number(currentUserId) === Number(createdByUserId);
         const isReporter =
           currentUserId != null &&
@@ -129,6 +130,7 @@ const TaskActionBar = ({
       }
     } else if (normalizedStatus === 'APPROVED') {
       const isCreator = Number(currentUserId) === Number(createdByUserId);
+      // For approval workflow, creator or any configured reporting manager can close an approved task
       const isReporter =
         currentUserId != null &&
         effectiveReporterIds.includes(Number(currentUserId));

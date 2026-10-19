@@ -256,6 +256,7 @@ const ViewTask = ({
         });
       }
 
+      // Extract all reporting manager IDs (supports multiple managers from reported_to_ids / reported_to arrays)
       const reportedIds = Array.isArray(task.reported_to_ids)
         ? task.reported_to_ids.map((idVal) => Number(idVal)).filter((n) => Number.isInteger(n) && n > 0)
         : Array.isArray(task.reported_to)
@@ -808,6 +809,12 @@ const ViewTask = ({
 
   const assignmentUsersForDisplay = assignedUsers || [];
 
+  /**
+   * Resolves reporting managers for UI display.
+   * Checks runtime-hydrated `task.reported_to_users` first, then maps manager IDs
+   * from `task.reported_to_ids` / `task.reported_to` using loaded `usersById`.
+   * Note: `reported_to_users_meta` has been removed; display relies solely on manager IDs.
+   */
   const reportingManagersForDisplay = useMemo(() => {
     if (!task) return [];
     if (Array.isArray(task.reported_to_users) && task.reported_to_users.length > 0) {
@@ -1158,6 +1165,7 @@ const ViewTask = ({
       currentUserId: user?.id,
       createdByUserId: task?.created_by_id,
       reportedById: task?.reported_to_id,
+      // Array of all reporting manager IDs for multi-manager action authorization
       reportedByIds: task?.reported_to_ids || task?.reported_to,
       approvalRequiredUserIds: task?.approval_required_user_ids,
       approvalsMeta: approvalState?.approvals_meta,
@@ -1659,7 +1667,10 @@ const ViewTask = ({
                       currentUserId={user?.id}
                       createdByUserId={task.created_by_id}
                       reportedById={task.reported_to_id}
-                      reportedByIds={task.reported_to_ids || task.reported_to}
+                      reportedByIds={
+                        // Pass array of all reporting manager IDs for multi-manager action controls
+                        task.reported_to_ids || task.reported_to
+                      }
                       approvalRequiredUserIds={task.approval_required_user_ids}
                       approvalsMeta={approvalState?.approvals_meta}
                       currentUserHasActedOnApproval={currentUserHasActedOnApproval}
