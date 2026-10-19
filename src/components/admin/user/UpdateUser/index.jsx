@@ -9,7 +9,7 @@ import PageHeader from '../../../common/PageHeader';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
-import MultiSelect from '../../../common/MultiSelect';
+import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import UserPermissions from '../UserPermissions';
 import GeographicAssignmentPicker from '../GeographicAssignmentPicker';
 import {
@@ -44,7 +44,7 @@ const UpdateUser = () => {
     manager_ids: [],
   });
 
-  const [managerOptions, setManagerOptions] = useState([]);
+  const [selectedManagers, setSelectedManagers] = useState([]);
 
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
@@ -106,25 +106,35 @@ const UpdateUser = () => {
 
   const showGeographicAssignment = isGeographicAssignmentDepartment(form.department);
 
-  useEffect(() => {
-    const fetchManagers = async () => {
-      try {
-        const res = await axiosInstance.get('/users/options');
-        const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
-        setManagerOptions(
-          list
-            .filter((u) => Number(u.id) !== Number(id))
-            .map((u) => ({
-              value: String(u.id),
-              label: u.full_name || u.email,
-            })),
-        );
-      } catch (err) {
-        console.error('Error fetching manager options:', err);
-      }
-    };
-    fetchManagers();
-  }, [id]);
+  const toManagerOption = (m) => ({
+    id: m.id,
+    first_name: m.first_name,
+    last_name: m.last_name,
+    email: m.email,
+    full_name:
+      m.full_name ||
+      `${m.first_name || ''} ${m.last_name || ''}`.trim() ||
+      m.email,
+    department: m.department,
+    role: m.role,
+  });
+
+  const handleManagersSelect = (users) => {
+    const next = Array.isArray(users) ? users : [];
+    setSelectedManagers(next);
+    setForm((prev) => ({
+      ...prev,
+      manager_ids: next.map((u) => String(u.id)),
+    }));
+  };
+
+  const searchManagers = async (term) => {
+    const res = await axiosInstance.get('/users/options', {
+      params: { search: term },
+    });
+    const list = Array.isArray(res.data) ? res.data : res.data?.data || [];
+    return list.filter((u) => Number(u.id) !== Number(id));
+  };
 
   useEffect(() => {
     fetchUser();
@@ -138,6 +148,20 @@ const UpdateUser = () => {
       const userData = response.data;
       console.log('Fetched user data:', userData);
       setUser(userData);
+
+      const managersFromApi = Array.isArray(userData.managers)
+        ? userData.managers.map(toManagerOption)
+        : [];
+      const managerIds =
+        managersFromApi.length > 0
+          ? managersFromApi.map((m) => String(m.id))
+          : Array.isArray(userData.manager_ids) && userData.manager_ids.length
+            ? userData.manager_ids.map(String)
+            : userData.manager_id
+              ? [String(userData.manager_id)]
+              : [];
+
+      setSelectedManagers(managersFromApi);
       setForm({
         first_name: userData.first_name || '',
         last_name: userData.last_name || '',
@@ -153,11 +177,7 @@ const UpdateUser = () => {
         joining_date: userData.joining_date || '',
         emergency_contact: userData.emergency_contact || '',
         blood_group: userData.blood_group || '',
-        manager_ids: Array.isArray(userData.manager_ids) && userData.manager_ids.length
-          ? userData.manager_ids.map(String)
-          : userData.manager_id
-            ? [String(userData.manager_id)]
-            : [],
+        manager_ids: managerIds,
       });
 
       setGeographicAssignments(normalizeGeographicAssignments(userData));
@@ -490,13 +510,32 @@ const UpdateUser = () => {
                 onChange={handleChange}
               />
 
-              <MultiSelect
+              <SearchableMultiSelect
                 name="manager_ids"
                 label="Reports to (Managers)"
-                options={managerOptions}
-                value={form.manager_ids || []}
-                onChange={(next) => setForm((prev) => ({ ...prev, manager_ids: next }))}
-                placeholder="Select one or more managers..."
+                onSearch={searchManagers}
+                value={selectedManagers}
+                onSelect={handleManagersSelect}
+                onClear={() => handleManagersSelect([])}
+                displayKey="full_name"
+                valueKey="id"
+                allowResearch
+                debounceDelay={500}
+                minSearchLength={2}
+                placeholder="Search managers by name or email..."
+                renderOption={(user) => (
+                  <div style={{ padding: '8px' }}>
+                    <div style={{ fontWeight: 500, marginBottom: '4px' }}>
+                      {user.full_name || `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.email}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{user.email}</div>
+                    {user.department && (
+                      <div style={{ fontSize: '11px', color: '#999', marginTop: '2px' }}>
+                        {user.department} • {user.role || 'User'}
+                      </div>
+                    )}
+                  </div>
+                )}
               />
 
               <FormInput

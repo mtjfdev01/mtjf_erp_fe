@@ -13,6 +13,8 @@ import AdminDashboard from './components/admin/dashboard/doughnut_charts/AdminDa
 import CreateUser from './components/admin/user/CreateUser';
 import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
+import PermissionRolesList from './components/admin/permission_roles/list';
+import PermissionRoleForm from './components/admin/permission_roles/form';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -282,6 +284,19 @@ const App = () => {
                                 <Route path="/admin/users" element={<UserList />} />
                                 <Route path="/admin/users/create" element={<CreateUser />} />
                                 <Route path="/admin/users/edit/:id" element={<UpdateUser />} />
+                                {/* Role Creation / Permission Roles */}
+                                <Route
+                                  path="/admin/permission-roles"
+                                  element={<PermissionRolesList />}
+                                />
+                                <Route
+                                  path="/admin/permission-roles/create"
+                                  element={<PermissionRoleForm />}
+                                />
+                                <Route
+                                  path="/admin/permission-roles/edit/:id"
+                                  element={<PermissionRoleForm />}
+                                />
                                 <Route path="/profile" element={<ProfileRedirect />} />
                                 <Route path="/users/:id" element={<UserView />} />
                                 <Route path="/users/:id/performance" element={<UserPerformance />} />

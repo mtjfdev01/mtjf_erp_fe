@@ -4,6 +4,21 @@
  */
 
 /**
+ * Check if user is super admin
+ * @param {Object} permissions - User permissions object
+ * @returns {boolean} - Whether user is super admin
+ */
+export const isSuperAdmin = (permissions) => {
+  if (!permissions) return false;
+  return (
+    permissions.super_admin === true ||
+    (permissions.super_admin &&
+      typeof permissions.super_admin === 'object' &&
+      permissions.super_admin.super_admin === true)
+  );
+};
+
+/**
  * Check if user has a specific permission
  * @param {Object} permissions - User permissions object
  * @param {string} department - Department name
@@ -14,6 +29,10 @@
 export const hasPermission = (permissions, department, module, action) => {
   if (!permissions || !department || !module || !action) {
     return false;
+  }
+
+  if (isSuperAdmin(permissions)) {
+    return true;
   }
 
   if (permissions[department]?.[module]?.[action] === true) {
@@ -100,8 +119,8 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
-  // Super admin / FR manager: all fund_raising modules visible in sidebar
-  if (permissions.super_admin === true) {
+  // Super admin: full sidebar access (incl. Role Creation / permission_roles)
+  if (isSuperAdmin(permissions)) {
     return true;
   }
   if (
@@ -110,6 +129,15 @@ export const canViewModule = (permissions, department, module) => {
       permissions.fund_raising?.manager === true)
   ) {
     return true;
+  }
+
+  // Role Creation / permission roles (admin.permission_roles or permissions.manage)
+  if (department === 'admin' && module === 'permission_roles') {
+    const mod = permissions.admin?.permission_roles;
+    if (mod?.view === true || mod?.list_view === true) return true;
+    const manage = permissions.permissions?.manage;
+    if (manage?.view === true || manage?.list_view === true) return true;
+    return false;
   }
 
   // My To-Dos: independent `todos` section; accept new + legacy fund_raising.dms_todos
@@ -255,16 +283,6 @@ export const fundRaisingOrganizationsOrPocsHas = (permissions, action) => {
   return (
     fr.organizations?.[action] === true || fr.csr_pocs?.[action] === true
   );
-};
-
-/**
- * Check if user is super admin
- * @param {Object} permissions - User permissions object
- * @returns {boolean} - Whether user is super admin
- */
-export const isSuperAdmin = (permissions) => {
-  if (!permissions) return false;
-  return permissions.super_admin === true || (permissions.super_admin && typeof permissions.super_admin === 'object' && permissions.super_admin.super_admin === true);
 };
 
 /**

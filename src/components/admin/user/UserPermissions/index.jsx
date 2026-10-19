@@ -434,6 +434,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Users',
           actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
         },
+        permission_roles: {
+          label: 'Role Creation',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         dashboard: {
           label: 'Dashboard',
           actions: ['view']

@@ -525,6 +525,13 @@ const adminDepartmentItems = () => [
     // ]
   },
   {
+    label: 'Role Creation',
+    path: '/admin/permission-roles',
+    type: 'list',
+    module: 'permission_roles',
+    icon: FiSettings,
+  },
+  {
     label: 'Dashboard',
     path: '/admin',
     type: 'list',
@@ -1222,7 +1229,7 @@ ceo_office: (isUser = false) => ({
   }),
   fund_raising: (isUser = false) => ({
     id: 'fund_raising',
-    label: 'Fund Raising',
+    label: 'CRD',
     icon: FiHeart,
     items: fundRaisingDepartmentItems(isUser)
   }),
@@ -1294,7 +1301,7 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
   // Explicit action (e.g. manage_overview) — must be granted on the module
   if (item.action) {
     if (!moduleKey) return false;
-    if (permissions?.super_admin === true) return true;
+    if (isSuperAdmin(permissions)) return true;
     if (
       permDept === 'fund_raising' &&
       (permissions?.fund_raising_manager === true ||

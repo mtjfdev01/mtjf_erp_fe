@@ -1200,6 +1200,7 @@ const AidApplicationAdd = () => {
                   subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
                   contactTitle="Contact & address"
                   contactSubtitle="The investigator visits this address; add a landmark."
+                  showResidenceFields={false}
                   value={beneficiary}
                   onChange={(next) =>
                     setBeneficiary({
@@ -1462,6 +1463,7 @@ const AidApplicationAdd = () => {
                       subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
                       contactTitle="Contact & address"
                       contactSubtitle="The investigator visits this address; add a landmark."
+                      showResidenceFields={false}
                       value={head}
                       onChange={(next) =>
                         setFamilyHeads((list) =>

@@ -59,6 +59,8 @@ const AidFamilyHeadPersonalFields = ({
   contactSubtitle = 'The investigator visits this address; add a landmark.',
   showTitle = true,
   showContact = true,
+  /** Residence type + monthly rent (hidden when collected elsewhere, e.g. AidResidentHousing). */
+  showResidenceFields = true,
   showExtended = true,
   showPhoto = true,
   showSidebar,
@@ -578,7 +580,11 @@ const AidFamilyHeadPersonalFields = ({
             />
           </div>
 
-          <div className="aid-fh-contact__grid aid-fh-contact__grid--bottom">
+          <div
+            className={`aid-fh-contact__grid aid-fh-contact__grid--bottom${
+              showResidenceFields ? '' : ' aid-fh-contact__grid--address-only'
+            }`}
+          >
             <div className="aid-fh-contact__address">
               <FormTextarea
                 label="Full address & landmark"
@@ -589,27 +595,31 @@ const AidFamilyHeadPersonalFields = ({
                 placeholder="House no., street, mohalla — near the main mosque"
               />
             </div>
-            <FormSelect
-              label="Residence"
-              value={value?.resident_type || ''}
-              onChange={(e) => {
-                const nextType = e.target.value;
-                patch({
-                  resident_type: nextType,
-                  ...(nextType !== 'rented' ? { rented_amount: '' } : {}),
-                });
-              }}
-              options={[{ value: '', label: '—' }, ...AID_RESIDENT_TYPES]}
-            />
-            <FormInput
-              label="Monthly rent (PKR)"
-              type="number"
-              min="0"
-              disabled={!isRented}
-              value={value?.rented_amount ?? ''}
-              onChange={(e) => patch({ rented_amount: e.target.value })}
-              placeholder="8,000"
-            />
+            {showResidenceFields ? (
+              <>
+                <FormSelect
+                  label="Residence"
+                  value={value?.resident_type || ''}
+                  onChange={(e) => {
+                    const nextType = e.target.value;
+                    patch({
+                      resident_type: nextType,
+                      ...(nextType !== 'rented' ? { rented_amount: '' } : {}),
+                    });
+                  }}
+                  options={[{ value: '', label: '—' }, ...AID_RESIDENT_TYPES]}
+                />
+                <FormInput
+                  label="Monthly rent (PKR)"
+                  type="number"
+                  min="0"
+                  disabled={!isRented}
+                  value={value?.rented_amount ?? ''}
+                  onChange={(e) => patch({ rented_amount: e.target.value })}
+                  placeholder="8,000"
+                />
+              </>
+            ) : null}
           </div>
         </section>
       ) : null}

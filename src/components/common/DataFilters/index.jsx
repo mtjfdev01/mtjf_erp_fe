@@ -11,7 +11,19 @@ const DataFilters = ({
   };
 
   const renderFilter = (filter) => {
-    const { key, type, placeholder, options, value, label, width = '200px' } = filter;
+    const {
+      key,
+      type,
+      placeholder,
+      options,
+      value,
+      label,
+      width = '200px',
+      onClick,
+      onEnter,
+      disabled = false,
+      className: filterClassName = 'primary_btn',
+    } = filter;
 
     switch (type) {
       case 'text':
@@ -22,6 +34,12 @@ const DataFilters = ({
               placeholder={placeholder}
               value={value || ''}
               onChange={(e) => handleFilterChange(key, e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && typeof onEnter === 'function') {
+                  e.preventDefault();
+                  onEnter();
+                }
+              }}
               className="form-input"
               style={{ width }}
             />
@@ -80,6 +98,20 @@ const DataFilters = ({
               className="form-input"
               style={{ width: '150px' }}
             />
+          </div>
+        );
+
+      case 'button':
+        return (
+          <div key={key} className="filter-item">
+            <button
+              type="button"
+              className={filterClassName}
+              onClick={() => onClick?.()}
+              disabled={disabled}
+            >
+              {label || placeholder || 'Search'}
+            </button>
           </div>
         );
 
