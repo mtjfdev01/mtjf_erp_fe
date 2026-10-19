@@ -156,10 +156,12 @@ export const isStatusActionAvailable = (action, context) => {
         context.currentUserId != null &&
         context.createdByUserId != null &&
         Number(context.currentUserId) === Number(context.createdByUserId);
+      const reporterIds = Array.isArray(context.reportedByIds)
+        ? context.reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0)
+        : (context.reportedById != null ? [Number(context.reportedById)] : []);
       const isReporter =
         context.currentUserId != null &&
-        context.reportedById != null &&
-        Number(context.currentUserId) === Number(context.reportedById);
+        reporterIds.includes(Number(context.currentUserId));
       const isCreatorOrReporter = isCreator || isReporter;
 
       if (

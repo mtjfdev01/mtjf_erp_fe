@@ -256,9 +256,11 @@ const ViewTask = ({
         });
       }
 
-      // NOTE: created_by_id and reported_to_id are NOT included here because
-      // the backend already returns task.created_by and task.reported_to as full user objects
-      // via leftJoinAndSelect in the findOne method
+      const reportedIds = Array.isArray(task.reported_to_ids)
+        ? task.reported_to_ids.map((idVal) => Number(idVal)).filter((n) => Number.isInteger(n) && n > 0)
+        : Array.isArray(task.reported_to)
+          ? task.reported_to.map((idVal) => Number(idVal)).filter((n) => Number.isInteger(n) && n > 0)
+          : (task.reported_to_id ? [Number(task.reported_to_id)] : []);
 
       const allNeededIds = Array.from(
         new Set([
@@ -267,6 +269,7 @@ const ViewTask = ({
           ...idsFromApprovers,
           ...approvalMetaIds,
           ...reassignmentIds,
+          ...reportedIds,
         ]),
       ).filter((n) => n != null && Number.isInteger(n) && n > 0);
 
@@ -805,6 +808,37 @@ const ViewTask = ({
 
   const assignmentUsersForDisplay = assignedUsers || [];
 
+  const reportingManagersForDisplay = useMemo(() => {
+    if (!task) return [];
+    if (Array.isArray(task.reported_to_users) && task.reported_to_users.length > 0) {
+      return task.reported_to_users;
+    }
+    const reporterIds = Array.isArray(task.reported_to_ids) && task.reported_to_ids.length > 0
+      ? task.reported_to_ids
+      : Array.isArray(task.reported_to) && task.reported_to.length > 0
+        ? task.reported_to
+        : task.reported_to_id
+          ? [task.reported_to_id]
+          : [];
+
+    if (reporterIds.length > 0) {
+      return reporterIds.map((idVal) => {
+        const id = Number(idVal);
+        return (
+          usersById[id] || {
+            id,
+            first_name: `User #${id}`,
+            department: '',
+          }
+        );
+      });
+    }
+    if (task.reported_to && typeof task.reported_to === 'object') {
+      return [task.reported_to];
+    }
+    return [];
+  }, [task, usersById]);
+
   const canEditMovChecklist = useMemo(() => {
     if (!task || !user) return false;
 
@@ -1124,6 +1158,7 @@ const ViewTask = ({
       currentUserId: user?.id,
       createdByUserId: task?.created_by_id,
       reportedById: task?.reported_to_id,
+      reportedByIds: task?.reported_to_ids || task?.reported_to,
       approvalRequiredUserIds: task?.approval_required_user_ids,
       approvalsMeta: approvalState?.approvals_meta,
       currentUserHasActedOnApproval,
@@ -1624,6 +1659,7 @@ const ViewTask = ({
                       currentUserId={user?.id}
                       createdByUserId={task.created_by_id}
                       reportedById={task.reported_to_id}
+                      reportedByIds={task.reported_to_ids || task.reported_to}
                       approvalRequiredUserIds={task.approval_required_user_ids}
                       approvalsMeta={approvalState?.approvals_meta}
                       currentUserHasActedOnApproval={currentUserHasActedOnApproval}
@@ -2109,6 +2145,17 @@ const ViewTask = ({
                           <span className="tv2-person-name">{getUserDisplayName(task.created_by)}</span>
                         </span>
                       </div>
+                      {/* {reportingManagersForDisplay.map((m) => (
+                        <div key={m.id || m.user_id} className="tv2-person">
+                          <span className="tv2-avatar tv2-avatar--lg">
+                            {getInitials(getUserDisplayName(m))}
+                          </span>
+                          <span className="tv2-person-text">
+                            <span className="tv2-person-role">Reporting Manager</span>
+                            <span className="tv2-person-name">{getUserDisplayName(m)}</span>
+                          </span>
+                        </div>
+                      ))} */}
                     </div>
 
                     <dl className="tv2-meta">
