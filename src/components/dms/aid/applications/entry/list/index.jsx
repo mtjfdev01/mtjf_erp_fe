@@ -13,6 +13,7 @@ import FormInput from '../../../../../common/FormInput';
 import FormSelect from '../../../../../common/FormSelect';
 import {
   AID_REQUEST_TYPES,
+  formatAidProgramLabel,
   AID_ENTRY_STAGES,
   formatAidRequestType,
   formatAidEntryStage,
@@ -183,7 +184,7 @@ const AidEntryApplicationsList = () => {
       <Navbar />
       <div className="list-wrapper aid-list aid-entry-list">
         <PageHeader
-          title="Application Data Entry"
+          title="Beneficiary Registration"
           backPath="/dms"
           showAdd={!!canCreate}
           addPath="/dms/aid/applications/add"
@@ -333,7 +334,16 @@ const AidEntryApplicationsList = () => {
                           </div>
                         </td>
                         <td>
-                          {formatAidRequestType(row.requested_aid_type)}
+                          <div>
+                            {formatAidRequestType(row.requested_aid_type)}
+                          </div>
+                          {row.aid_program ? (
+                            <div
+                              style={{ fontSize: 12, color: '#64748b' }}
+                            >
+                              {formatAidProgramLabel(row.aid_program)}
+                            </div>
+                          ) : null}
                         </td>
                         <td>{row.location || '—'}</td>
                         <td>{row.members_count ?? '—'}</td>
@@ -365,17 +375,33 @@ const AidEntryApplicationsList = () => {
                         <td>{row.assigned_to_label || '—'}</td>
                         <td>{formatRelativeAidTime(row.updated_at)}</td>
                         <td>
-                          <button
-                            type="button"
-                            className="aid-text-link aid-entry-open"
-                            onClick={() =>
-                              navigate(
-                                `/dms/aid/applications/entry/view/${row.id}`,
-                              )
-                            }
-                          >
-                            Open
-                          </button>
+                          <div className="aid-list-actions">
+                            <button
+                              type="button"
+                              className="aid-text-link aid-entry-open"
+                              onClick={() =>
+                                navigate(
+                                  `/dms/aid/applications/entry/view/${row.id}`,
+                                )
+                              }
+                            >
+                              Open
+                            </button>
+                            {row.status !== 'rejected' &&
+                            row.status !== 'delivered' ? (
+                              <button
+                                type="button"
+                                className="aid-text-link"
+                                onClick={() =>
+                                  navigate(
+                                    `/dms/aid/applications/edit/${row.id}`,
+                                  )
+                                }
+                              >
+                                Edit
+                              </button>
+                            ) : null}
+                          </div>
                         </td>
                       </tr>
                     );

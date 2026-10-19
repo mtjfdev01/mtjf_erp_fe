@@ -468,6 +468,18 @@
   }
 }
 
+.aid-approvals-list-content {
+  background: var(--wo-card);
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.25rem;
+  box-shadow: 0 1px 0 rgba(20, 35, 27, 0.04);
+  margin-bottom: 1rem;
+}
+
+.aid-approvals-list-content .table-container {
+  margin-top: 0.5rem;
+}
+
 @media print {
   .aid-wo-export,
   .navbar,

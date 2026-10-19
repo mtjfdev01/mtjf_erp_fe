@@ -62,6 +62,22 @@ const isGuarded = (p) =>
     String(p?._notes || p?.notes || ''),
   );
 
+const notesSayFamilyHead = (notes) =>
+  /family\s*head/i.test(String(notes || ''));
+
+const samePerson = (a, b) => {
+  if (!a || !b) return false;
+  if (a.id != null && b.id != null && Number(a.id) === Number(b.id)) {
+    return true;
+  }
+  const cnicA = String(a.cnic || '').replace(/\D/g, '');
+  const cnicB = String(b.cnic || '').replace(/\D/g, '');
+  if (cnicA && cnicB && cnicA === cnicB) return true;
+  const nameA = String(a.full_name || '').trim().toLowerCase();
+  const nameB = String(b.full_name || '').trim().toLowerCase();
+  return !!(nameA && nameB && nameA === nameB);
+};
+
 /** Map /aid/people/:id family_tree rows → person with relation. */
 const fromApiRows = (rows = [], prefix = 'api') =>
   (rows || [])
@@ -87,6 +103,14 @@ const nodeMeta = (person, roleHint) => {
   const lines = [];
   if (person.is_family_head) {
     lines.push('FAMILY HEAD');
+  } else if (person.is_beneficiary) {
+    lines.push('BENEFICIARY');
+    const bits = [role];
+    if (isLate(person)) bits.push('late');
+    else if (age != null) bits.push(String(age));
+    if (bits.filter(Boolean).length) {
+      lines.push(bits.filter(Boolean).join(' - '));
+    }
   } else {
     const bits = [role];
     if (isLate(person)) bits.push('late');
@@ -107,10 +131,15 @@ const nodeMeta = (person, roleHint) => {
   }
   if (!person.is_family_head && isGuarded(person)) {
     lines.push('Guardianship');
-  } else if (!person.is_family_head && person.occupation?.trim()) {
+  } else if (
+    !person.is_family_head &&
+    !person.is_beneficiary &&
+    person.occupation?.trim()
+  ) {
     lines.push('Earning');
   } else if (
     !person.is_family_head &&
+    !person.is_beneficiary &&
     !isLate(person) &&
     (person.city || person.district || person.address)
   ) {
@@ -204,6 +233,9 @@ const AidFamilyTreePanel = ({
   /** Saved kinship tree from people detail API */
   apiTree = null,
   rootPerson = null,
+  /** Applicant / writer when they are the registered Family Head (not self) */
+  familyHeadHint = null,
+  familyHeadRelation = '',
   emptyHint = 'No family members to show yet. Complete Family Registration first, then return here to see the household tree.',
   showHeader = true,
   selectedId = null,
@@ -215,70 +247,120 @@ const AidFamilyTreePanel = ({
         ? nodeMeta(
             {
               ...p,
-              _highlight: selectedId === p._tree_id,
+              _highlight: selectedId === p._tree_id || !!p._highlight,
             },
             role,
           )
         : null;
 
     // ——— API mode (entry / case review) ———
-    // rootPerson or a provided apiTree (even {}) — not intake `beneficiary`, which
-    // is also set on the registration form and must keep intake-mode layout.
+    // rootPerson = beneficiary (ego). Family Head may be a parent / writer.
     if (rootPerson != null || apiTree != null) {
-      const headSrc = rootPerson || beneficiary;
-      const headPerson = headSrc
-        ? {
-            ...headSrc,
-            is_family_head: true,
-            _tree_id: `root-${headSrc.id || 'head'}`,
-          }
-        : null;
-
       const tree = apiTree || {};
       const parents = fromApiRows(tree.parents, 'par');
       const grandparents = fromApiRows(tree.grandparents, 'gp');
-      const father =
-        parents.find((p) => relationOf(p) === 'father') ||
-        grandparents.find((p) =>
-          ['father', 'grandfather'].includes(relationOf(p)),
-        ) ||
-        null;
-      const mother =
-        parents.find((p) => relationOf(p) === 'mother') ||
-        grandparents.find((p) =>
-          ['mother', 'grandmother'].includes(relationOf(p)),
-        ) ||
-        null;
-      const fil =
-        grandparents.find((p) =>
-          ['maternal_grandfather', 'father_in_law'].includes(relationOf(p)),
-        ) ||
-        fromApiRows(tree.extended, 'ext').find(
-          (p) => relationOf(p) === 'father_in_law',
-        ) ||
-        null;
-      const mil =
-        grandparents.find((p) =>
-          ['maternal_grandmother', 'mother_in_law'].includes(relationOf(p)),
-        ) ||
-        fromApiRows(tree.extended, 'ext').find(
-          (p) => relationOf(p) === 'mother_in_law',
-        ) ||
-        null;
-
-      const spousePerson = fromApiRows(tree.spouse, 'sp')[0] || null;
+      const extended = fromApiRows(tree.extended, 'ext');
+      const spouseRows = fromApiRows(tree.spouse, 'sp');
       const siblings = [
         ...fromApiRows(tree.brothers, 'br'),
         ...fromApiRows(tree.sisters, 'sis'),
         ...fromApiRows(tree.siblings, 'sib'),
       ];
-      const children = [
+      let children = [
         ...fromApiRows(tree.children, 'ch'),
         ...fromApiRows(tree.grandchildren, 'gc'),
       ];
-      const extendedGuarded = fromApiRows(tree.extended, 'ext').filter((p) =>
-        isGuarded(p),
-      );
+      const extendedGuarded = extended.filter((p) => isGuarded(p));
+
+      const beneficiarySrc = rootPerson || beneficiary;
+      const noteHead =
+        [...parents, ...grandparents, ...extended, ...spouseRows, ...siblings, ...children].find(
+          (p) => notesSayFamilyHead(p._notes),
+        ) || null;
+
+      let resolvedHead = noteHead;
+      if (
+        !resolvedHead &&
+        familyHeadHint?.full_name &&
+        !samePerson(familyHeadHint, beneficiarySrc)
+      ) {
+        resolvedHead = {
+          ...familyHeadHint,
+          relation_type:
+            familyHeadRelation || familyHeadHint.relation_type || '',
+          _notes: 'Family head',
+          _tree_id: `hint-${familyHeadHint.id || 'head'}`,
+        };
+      }
+
+      const beneficiaryIsHead =
+        !resolvedHead || samePerson(resolvedHead, beneficiarySrc);
+
+      const headPerson = beneficiaryIsHead
+        ? beneficiarySrc
+          ? {
+              ...beneficiarySrc,
+              is_family_head: true,
+              is_beneficiary: true,
+              _tree_id: `root-${beneficiarySrc.id || 'head'}`,
+            }
+          : null
+        : {
+            ...resolvedHead,
+            is_family_head: true,
+            _tree_id: resolvedHead._tree_id || `head-${resolvedHead.id}`,
+          };
+
+      let father =
+        parents.find((p) => relationOf(p) === 'father') ||
+        grandparents.find((p) =>
+          ['father', 'grandfather'].includes(relationOf(p)),
+        ) ||
+        null;
+      let mother =
+        parents.find((p) => relationOf(p) === 'mother') ||
+        grandparents.find((p) =>
+          ['mother', 'grandmother'].includes(relationOf(p)),
+        ) ||
+        null;
+
+      // Family head sits in the mid “head” slot — don’t also show them as a parent.
+      if (headPerson && !beneficiaryIsHead) {
+        if (samePerson(father, headPerson)) father = null;
+        if (samePerson(mother, headPerson)) mother = null;
+      }
+
+      const fil =
+        grandparents.find((p) =>
+          ['maternal_grandfather', 'father_in_law'].includes(relationOf(p)),
+        ) ||
+        extended.find((p) => relationOf(p) === 'father_in_law') ||
+        null;
+      const mil =
+        grandparents.find((p) =>
+          ['maternal_grandmother', 'mother_in_law'].includes(relationOf(p)),
+        ) ||
+        extended.find((p) => relationOf(p) === 'mother_in_law') ||
+        null;
+
+      const spousePerson = spouseRows[0] || null;
+
+      if (
+        !beneficiaryIsHead &&
+        beneficiarySrc?.full_name &&
+        !children.some((c) => samePerson(c, beneficiarySrc)) &&
+        !siblings.some((s) => samePerson(s, beneficiarySrc))
+      ) {
+        children = [
+          {
+            ...beneficiarySrc,
+            relation_type: beneficiarySrc.gender === 'female' ? 'daughter' : 'son',
+            is_beneficiary: true,
+            _tree_id: `ben-${beneficiarySrc.id || 'ego'}`,
+          },
+          ...children,
+        ];
+      }
 
       return {
         paternal: {
@@ -289,15 +371,26 @@ const AidFamilyTreePanel = ({
           father: mark(fil, 'Father-in-law'),
           mother: mark(mil, 'Mother-in-law'),
         },
-        siblings: [...siblings, ...extendedGuarded].map((s) =>
-          mark(s, shortRel(relationOf(s))),
-        ),
+        siblings: [...siblings, ...extendedGuarded]
+          .filter((s) => !samePerson(s, headPerson))
+          .map((s) => mark(s, shortRel(relationOf(s)))),
         head: mark(headPerson, 'FAMILY HEAD'),
         spouse: mark(
-          spousePerson,
+          spousePerson && !samePerson(spousePerson, headPerson)
+            ? spousePerson
+            : null,
           headPerson?.gender === 'female' ? 'Husband' : 'Wife',
         ),
-        children: children.map((c) => mark(c, shortRel(relationOf(c)))),
+        children: children
+          .filter((c) => !samePerson(c, headPerson))
+          .map((c) =>
+            mark(
+              c,
+              c.is_beneficiary
+                ? 'Beneficiary'
+                : shortRel(relationOf(c)),
+            ),
+          ),
         hasAny: !!(
           headPerson ||
           father ||
@@ -312,23 +405,32 @@ const AidFamilyTreePanel = ({
     }
 
     // ——— Intake form mode ———
-    const primaryHead =
+    // Family Head = first named Family Head row (not the beneficiary by default).
+    const namedHeads = (familyHeads || []).filter((h) =>
+      String(h?.full_name || '').trim(),
+    );
+    const primaryHead = namedHeads[0] || null;
+    const beneficiaryPerson =
       headAsBeneficiary ||
-      familyHeads.find((h) => h.is_beneficiary) ||
-      familyHeads[0] ||
-      null;
+      (beneficiary?.full_name ? beneficiary : null);
+    const beneficiaryIsHead =
+      !!primaryHead?.is_beneficiary ||
+      samePerson(primaryHead, headAsBeneficiary) ||
+      (!primaryHead && !!beneficiaryPerson);
 
     const headPerson = primaryHead
       ? {
           ...primaryHead,
           is_family_head: true,
+          is_beneficiary: !!primaryHead.is_beneficiary,
           _tree_id: 'head-0',
           _highlight: selectedId === 'head-0',
         }
-      : beneficiary?.full_name
+      : beneficiaryPerson
         ? {
-            ...beneficiary,
+            ...beneficiaryPerson,
             is_family_head: true,
+            is_beneficiary: true,
             _tree_id: 'beneficiary',
             _highlight: selectedId === 'beneficiary',
           }
@@ -357,6 +459,19 @@ const AidFamilyTreePanel = ({
         memberPool.push({ ...m, _tree_id: `bm-${mi}` });
       }
     });
+    if (
+      !beneficiaryIsHead &&
+      beneficiaryPerson?.full_name &&
+      !samePerson(beneficiaryPerson, primaryHead)
+    ) {
+      memberPool.push({
+        ...beneficiaryPerson,
+        relation_type:
+          beneficiaryPerson.gender === 'female' ? 'daughter' : 'son',
+        is_beneficiary: true,
+        _tree_id: 'beneficiary-ego',
+      });
+    }
 
     const take = (pred) => {
       const hit = memberPool.find(pred);
@@ -364,8 +479,11 @@ const AidFamilyTreePanel = ({
     };
     const takeAll = (pred) => memberPool.filter(pred);
 
-    const father = take((p) => relationOf(p) === 'father');
-    const mother = take((p) => relationOf(p) === 'mother');
+    let father = take((p) => relationOf(p) === 'father');
+    let mother = take((p) => relationOf(p) === 'mother');
+    if (headPerson && relationOf(primaryHead) === 'father') father = null;
+    if (headPerson && relationOf(primaryHead) === 'mother') mother = null;
+
     const fil = take(
       (p) =>
         relationOf(p) === 'father_in_law' ||
@@ -399,8 +517,10 @@ const AidFamilyTreePanel = ({
       ].includes(relationOf(p)),
     );
 
-    const children = takeAll((p) =>
-      ['son', 'daughter', 'child', 'grandchild'].includes(relationOf(p)),
+    const children = takeAll(
+      (p) =>
+        ['son', 'daughter', 'child', 'grandchild'].includes(relationOf(p)) ||
+        !!p.is_beneficiary,
     );
 
     return {
@@ -418,7 +538,9 @@ const AidFamilyTreePanel = ({
         spousePerson,
         headPerson?.gender === 'female' ? 'Husband' : 'Wife',
       ),
-      children: children.map((c) => mark(c)),
+      children: children.map((c) =>
+        mark(c, c.is_beneficiary ? 'Beneficiary' : shortRel(relationOf(c))),
+      ),
       hasAny: !!(
         headPerson ||
         father ||
@@ -436,6 +558,8 @@ const AidFamilyTreePanel = ({
     beneficiaryMembers,
     beneficiary,
     headAsBeneficiary,
+    familyHeadHint,
+    familyHeadRelation,
     selectedId,
   ]);
 

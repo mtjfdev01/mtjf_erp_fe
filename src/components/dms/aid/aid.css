@@ -4319,7 +4319,18 @@ a.aid-contact-chip:hover {
 }
 
 .aid-fm-layout--panel-open {
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+  /* Wider panel so Family Head personal fields fit when inherited */
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
+}
+
+.aid-fm-panel .aid-fh-card,
+.aid-fm-panel .aid-related-person {
+  margin: 0;
+}
+
+.aid-fm-panel .aid-fh-personal__grid,
+.aid-fm-panel .aid-fh-contact__grid {
+  gap: 0.65rem;
 }
 
 .aid-fm-main__head {

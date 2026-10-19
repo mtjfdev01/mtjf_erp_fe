@@ -274,7 +274,7 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiBarChart2
   },
   {
-    label: 'Data Entry',
+    label: 'Beneficiary Registration',
     path: '/dms/aid/applications/entry/list',
     type: 'list',
     module: 'aid_applications',
@@ -282,7 +282,7 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiClipboard
   },
   {
-    label: 'Case Review',
+    label: 'Verification Process',
     path: '/dms/aid/applications/list',
     type: 'list',
     module: 'aid_applications',

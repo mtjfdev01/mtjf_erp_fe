@@ -328,7 +328,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           actions: ['view'],
         },
         aid_applications: {
-          label: 'Applications',
+          label: 'Beneficiary Registration / Verification',
           actions: [
             'create',
             'list_view',

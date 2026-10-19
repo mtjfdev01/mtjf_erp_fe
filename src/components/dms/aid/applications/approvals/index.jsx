@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FiCheckCircle, FiEye } from 'react-icons/fi';
+import { FiCheckCircle, FiDownload, FiEye } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
@@ -10,6 +10,9 @@ import {
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import Pagination from '../../../../common/Pagination';
+import FormSelect from '../../../../common/FormSelect';
+import DateFilter from '../../../../common/filters/DateFilter';
+import DateRangeFilter from '../../../../common/filters/DateRangeFilter';
 import {
   SearchFilter,
   DropdownFilter,
@@ -19,11 +22,15 @@ import {
 } from '../../../../common/filters';
 import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
 import {
+  AID_REQUEST_TYPES,
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
+  formatAidProgramLabel,
+  formatExpectedAmount,
 } from '../../aidConstants';
 import '../../aid.css';
+import '../../overview/overview.css';
 
 const CEO_PENDING = 'ceo_approval_required';
 
@@ -33,6 +40,13 @@ const STATUS_FILTERS = [
   { value: 'successful', label: 'CEO approved' },
   { value: 'delivered', label: 'Delivered' },
 ];
+
+const formatMoneyShort = (n) => {
+  const v = Number(n) || 0;
+  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
+  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
+  return String(Math.round(v));
+};
 
 const AidApprovalsList = () => {
   const navigate = useNavigate();
@@ -73,6 +87,36 @@ const AidApprovalsList = () => {
     status: initialStatus,
   });
 
+  const [program, setProgram] = useState(
+    searchParams.get('program') || 'all',
+  );
+  const [dateFilters, setDateFilters] = useState({
+    date: searchParams.get('date') || '',
+    start_date: searchParams.get('start_date') || '',
+    end_date: searchParams.get('end_date') || '',
+  });
+  const [overview, setOverview] = useState(null);
+  const [overviewLoading, setOverviewLoading] = useState(true);
+
+  const programOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All programs' },
+      ...AID_REQUEST_TYPES.filter(
+        (t) => !['cash', 'medical', 'other'].includes(t.value),
+      ),
+    ],
+    [],
+  );
+
+  const handleDateFilterChange = (key, value) => {
+    setDateFilters((prev) => {
+      if (key === 'date') {
+        return { date: value, start_date: '', end_date: '' };
+      }
+      return { ...prev, date: '', [key]: value };
+    });
+  };
+
   const handleSortChange = (field, order) => {
     setSortField(field);
     setSortOrder(order);
@@ -87,13 +131,48 @@ const AidApprovalsList = () => {
     { value: 'application_no', label: 'Application Number' },
   ];
 
+  const syncUrlParams = (next) => {
+    const params = new URLSearchParams();
+    if (next.status) params.set('status', next.status);
+    if (next.program && next.program !== 'all') {
+      params.set('program', next.program);
+    }
+    if (next.date) params.set('date', next.date);
+    if (next.start_date) params.set('start_date', next.start_date);
+    if (next.end_date) params.set('end_date', next.end_date);
+    setSearchParams(params, { replace: true });
+  };
+
   const applyFilters = (next) => {
     setTempFilters(next);
     setAppliedFilters(next);
     setCurrentPage(1);
-    const params = new URLSearchParams();
-    if (next.status) params.set('status', next.status);
-    setSearchParams(params, { replace: true });
+    syncUrlParams({
+      status: next.status,
+      program,
+      date: dateFilters.date,
+      start_date: dateFilters.start_date,
+      end_date: dateFilters.end_date,
+    });
+  };
+
+  const fetchOverview = async () => {
+    try {
+      setOverviewLoading(true);
+      const res = await axiosInstance.get('/aid/overview', {
+        params: {
+          date: dateFilters.date || undefined,
+          start_date: dateFilters.start_date || undefined,
+          end_date: dateFilters.end_date || undefined,
+          program: program === 'all' ? undefined : program,
+        },
+      });
+      setOverview(res.data?.data || null);
+    } catch {
+      setOverview(null);
+    } finally {
+      setOverviewLoading(false);
+    }
   };
 
   const fetchRows = async () => {
@@ -110,6 +189,7 @@ const AidApprovalsList = () => {
           queue: 'approvals',
           search: appliedFilters.search || undefined,
           status: appliedFilters.status || undefined,
+          requested_aid_type: program === 'all' ? undefined : program,
           page: currentPage,
           pageSize,
           sortField,
@@ -127,9 +207,21 @@ const AidApprovalsList = () => {
   };
 
   useEffect(() => {
+    fetchOverview();
+    syncUrlParams({
+      status: appliedFilters.status,
+      program,
+      date: dateFilters.date,
+      start_date: dateFilters.start_date,
+      end_date: dateFilters.end_date,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateFilters.date, dateFilters.start_date, dateFilters.end_date, program]);
+
+  useEffect(() => {
     fetchRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
+  }, [currentPage, pageSize, sortField, sortOrder, appliedFilters, program]);
 
   const openView = (id) => {
     navigate(`/dms/aid/applications/view/${id}?from=approvals`);
@@ -139,10 +231,27 @@ const AidApprovalsList = () => {
     navigate(`/dms/aid/applications/view/${id}?from=approvals&action=approve`);
   };
 
+  const handleExport = () => window.print();
+
+  const kpis = overview?.kpis || {};
+
+  if (!canList) {
+    return (
+      <>
+        <Navbar />
+        <div className="form-content">
+          <div className="error-message">
+            {error || 'You do not have permission to view approvals.'}
+          </div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
-      <div className="list-wrapper aid-list">
+      <div className="aid-welfare-overview aid-approvals-page">
         <PageHeader
           title="Aid Approvals"
           backPath="/dms/aid/applications/list"
@@ -151,7 +260,133 @@ const AidApprovalsList = () => {
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
         />
-        <div className="list-content">
+
+        <div className="aid-wo-top">
+          <div>
+            <div className="aid-wo-crumb">Welfare › Approvals</div>
+            <p className="aid-wo-sub">
+              {overview?.filters?.range_label || '—'} ·{' '}
+              {program === 'all'
+                ? 'all programs'
+                : formatAidRequestType(program)}
+            </p>
+          </div>
+          <div className="aid-wo-filters">
+            <DateFilter
+              filterKey="date"
+              label="Date"
+              filters={dateFilters}
+              onFilterChange={handleDateFilterChange}
+            />
+            <DateRangeFilter
+              startKey="start_date"
+              endKey="end_date"
+              label="Date range"
+              filters={dateFilters}
+              onFilterChange={handleDateFilterChange}
+            />
+            <FormSelect
+              label="Program"
+              value={program}
+              onChange={(e) => {
+                setProgram(e.target.value);
+                setCurrentPage(1);
+              }}
+              options={programOptions}
+            />
+            <button
+              type="button"
+              className="aid-wo-export"
+              onClick={handleExport}
+            >
+              <FiDownload /> Export PDF
+            </button>
+          </div>
+        </div>
+
+        {overviewLoading && !overview ? (
+          <div className="aid-wo-loading">Loading summary…</div>
+        ) : null}
+
+        <div className="aid-wo-kpis">
+          <div className="aid-wo-kpi">
+            <div className="aid-wo-kpi__label">Applications</div>
+            <div className="aid-wo-kpi__value">{kpis.applications ?? '—'}</div>
+            <div className="aid-wo-kpi__meta">
+              {kpis.applications_delta_pct != null ? (
+                <span
+                  className={
+                    kpis.applications_delta_pct >= 0
+                      ? 'aid-wo-up'
+                      : 'aid-wo-down'
+                  }
+                >
+                  {kpis.applications_delta_pct >= 0 ? '↑' : '↓'}{' '}
+                  {Math.abs(kpis.applications_delta_pct)}% vs prior
+                </span>
+              ) : (
+                '—'
+              )}
+            </div>
+          </div>
+          <div className="aid-wo-kpi">
+            <div className="aid-wo-kpi__label">Approved</div>
+            <div className="aid-wo-kpi__value">{kpis.approved ?? '—'}</div>
+            <div className="aid-wo-kpi__meta">
+              {kpis.approved_of_decisions_pct != null
+                ? `${kpis.approved_of_decisions_pct}% of final decisions`
+                : '—'}
+            </div>
+          </div>
+          <div className="aid-wo-kpi">
+            <div className="aid-wo-kpi__label">Disbursed</div>
+            <div className="aid-wo-kpi__value">
+              {formatMoneyShort(kpis.disbursed)}
+            </div>
+            <div className="aid-wo-kpi__meta">
+              PKR
+              {kpis.budget_used_pct != null
+                ? ` · ${kpis.budget_used_pct}% of ${formatMoneyShort(kpis.budget)} budget`
+                : ''}
+            </div>
+          </div>
+          <div className="aid-wo-kpi">
+            <div className="aid-wo-kpi__label">Families supported</div>
+            <div className="aid-wo-kpi__value">
+              {(kpis.families_supported ?? 0).toLocaleString()}
+            </div>
+            <div className="aid-wo-kpi__meta">Active this period</div>
+          </div>
+          <div className="aid-wo-kpi">
+            <div className="aid-wo-kpi__label">Intake → decision</div>
+            <div className="aid-wo-kpi__value">
+              {kpis.intake_to_decision_days != null
+                ? `${kpis.intake_to_decision_days} d`
+                : '—'}
+            </div>
+            <div
+              className={`aid-wo-kpi__meta${
+                kpis.intake_to_decision_days != null &&
+                kpis.intake_to_decision_days > (kpis.intake_target_days || 10)
+                  ? ' is-late'
+                  : ''
+              }`}
+            >
+              Target {kpis.intake_target_days || 10} days
+            </div>
+          </div>
+          <div className="aid-wo-kpi">
+            <div className="aid-wo-kpi__label">Avg vulnerability</div>
+            <div className="aid-wo-kpi__value">
+              {kpis.avg_vulnerability != null
+                ? `${kpis.avg_vulnerability}%`
+                : '—'}
+            </div>
+            <div className="aid-wo-kpi__meta">Of approved cases</div>
+          </div>
+        </div>
+
+        <div className="list-content aid-approvals-list-content">
           {error && <div className="error-message">{error}</div>}
 
           <div className="aid-list-banner">
@@ -222,7 +457,9 @@ const AidApprovalsList = () => {
                 <tr>
                   <th>Application</th>
                   <th>Beneficiary</th>
-                  <th>Aid type</th>
+                  <th>Program</th>
+                  <th>SubProgram</th>
+                  <th>Expected Amount</th>
                   <th>Recommendation</th>
                   <th>Status</th>
                   <th>Verified</th>
@@ -232,11 +469,11 @@ const AidApprovalsList = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7}>Loading…</td>
+                    <td colSpan={9}>Loading…</td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={7}>No approval applications found.</td>
+                    <td colSpan={9}>No approval applications found.</td>
                   </tr>
                 ) : (
                   rows.map((row) => {
@@ -248,7 +485,9 @@ const AidApprovalsList = () => {
                     return (
                       <tr
                         key={row.id}
-                        className={needsCeo ? 'aid-row--ceo-pending' : undefined}
+                        className={
+                          needsCeo ? 'aid-row--ceo-pending' : undefined
+                        }
                       >
                         <td>
                           <strong>{row.application_no}</strong>
@@ -258,6 +497,10 @@ const AidApprovalsList = () => {
                         </td>
                         <td>{row.beneficiary?.full_name || '—'}</td>
                         <td>{formatAidRequestType(row.requested_aid_type)}</td>
+                        <td>{formatAidProgramLabel(row.aid_program)}</td>
+                        <td style={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
+                          {formatExpectedAmount(row)}
+                        </td>
                         <td>
                           <div style={{ textTransform: 'capitalize' }}>
                             {recLabel}
@@ -273,7 +516,9 @@ const AidApprovalsList = () => {
                         </td>
                         <td>
                           <span
-                            className={`aid-status-pill aid-status-pill--${aidStatusTone(row.status)}`}
+                            className={`aid-status-pill aid-status-pill--${aidStatusTone(
+                              row.status,
+                            )}`}
                           >
                             {formatAidStatus(row.status)}
                           </span>

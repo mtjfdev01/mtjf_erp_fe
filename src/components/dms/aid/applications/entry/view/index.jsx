@@ -20,6 +20,8 @@ import {
   formatAidStatus,
   formatAidRequestType,
   formatAidCaseSource,
+  formatAidProgramLabel,
+  formatExpectedAmount,
 } from '../../../aidConstants';
 import { formatAuditActor } from '../../../../../common/audit/auditHistoryLabels';
 import '../../../aid.css';
@@ -165,7 +167,7 @@ const AidEntryApplicationView = () => {
 
         <div className="aid-hero">
           <div>
-            <p className="aid-entry-view__eyebrow">Data entry record</p>
+            <p className="aid-entry-view__eyebrow">Beneficiary registration record</p>
             <h2 style={{ margin: '0 0 6px' }}>
               {app.title || 'Aid application'}
             </h2>
@@ -181,6 +183,17 @@ const AidEntryApplicationView = () => {
             >
               {formatAidStatus(status)}
             </span>
+            {status !== 'rejected' && status !== 'delivered' ? (
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={() =>
+                  navigate(`/dms/aid/applications/edit/${app.id}`)
+                }
+              >
+                Edit
+              </button>
+            ) : null}
             <button
               type="button"
               className="secondary-btn"
@@ -188,7 +201,7 @@ const AidEntryApplicationView = () => {
                 navigate(`/dms/aid/applications/view/${app.id}`)
               }
             >
-              Open case review
+              Open verification process
             </button>
           </div>
         </div>
@@ -216,8 +229,14 @@ const AidEntryApplicationView = () => {
                   <Fact label="Case source">
                     {formatAidCaseSource(app.case_source)}
                   </Fact>
-                  <Fact label="Aid type">
+                  <Fact label="Program">
                     {formatAidRequestType(app.requested_aid_type)}
+                  </Fact>
+                  <Fact label="SubProgram">
+                    {formatAidProgramLabel(app.aid_program)}
+                  </Fact>
+                  <Fact label="Expected Amount">
+                    {formatExpectedAmount(app)}
                   </Fact>
                   <Fact label="Status">{formatAidStatus(status)}</Fact>
                   <Fact label="Entered by">
@@ -241,7 +260,7 @@ const AidEntryApplicationView = () => {
 
                 {hasAidDetails ? (
                   <div className="aid-detail-block">
-                    <h4 className="aid-detail-block__title">Aid type details</h4>
+                    <h4 className="aid-detail-block__title">Program details</h4>
                     {app.requested_aid_type === 'education' &&
                       app.education_details && (
                         <AidEducationApplicationFields
@@ -405,6 +424,14 @@ const AidEntryApplicationView = () => {
                 <AidFamilyTreePanel
                   apiTree={familyTree || {}}
                   rootPerson={app.beneficiary}
+                  familyHeadHint={
+                    app.writer &&
+                    app.writer.id !== app.beneficiary?.id &&
+                    String(app.writer_relation || '').toLowerCase() !== 'self'
+                      ? app.writer
+                      : null
+                  }
+                  familyHeadRelation={app.writer_relation || ''}
                   showHeader={false}
                   emptyHint="No linked family tree for this beneficiary yet."
                 />

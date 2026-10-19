@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiCheckCircle, FiTruck } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiCheckCircle, FiTruck } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
@@ -23,6 +23,7 @@ import {
   aidStatusTone,
   formatAidStatus,
   formatAidRequestType,
+  formatAidProgramLabel,
 } from '../../aidConstants';
 import '../../aid.css';
 
@@ -131,7 +132,7 @@ const AidApplicationsList = () => {
       <Navbar />
       <div className="list-wrapper aid-list">
         <PageHeader
-          title="Case Review"
+          title="Verification Process"
           backPath="/dms"
           showAdd={!!canCreate}
           addPath="/dms/aid/applications/add"
@@ -222,7 +223,7 @@ const AidApplicationsList = () => {
                 <tr>
                   <th>Application</th>
                   <th>Beneficiary</th>
-                  <th>Aid type</th>
+                  <th>Program</th>
                   <th>Status</th>
                   <th>Assigned</th>
                   <th>Actions</th>
@@ -255,7 +256,16 @@ const AidApplicationsList = () => {
                           </div>
                         </td>
                         <td>{row.beneficiary?.full_name || '—'}</td>
-                        <td>{formatAidRequestType(row.requested_aid_type)}</td>
+                        <td>
+                          <div>
+                            {formatAidRequestType(row.requested_aid_type)}
+                          </div>
+                          {row.aid_program ? (
+                            <div style={{ fontSize: 12, color: '#64748b' }}>
+                              {formatAidProgramLabel(row.aid_program)}
+                            </div>
+                          ) : null}
+                        </td>
                         <td>
                           <span
                             className={`aid-status-pill aid-status-pill--${aidStatusTone(row.status)}`}
@@ -281,6 +291,20 @@ const AidApplicationsList = () => {
                             >
                               <FiEye /> View
                             </button>
+                            {row.status !== 'rejected' &&
+                            row.status !== 'delivered' ? (
+                              <button
+                                type="button"
+                                className="secondary-btn"
+                                onClick={() =>
+                                  navigate(
+                                    `/dms/aid/applications/edit/${row.id}`,
+                                  )
+                                }
+                              >
+                                <FiEdit2 /> Edit
+                              </button>
+                            ) : null}
                             {needsCeo && (
                               <button
                                 type="button"
