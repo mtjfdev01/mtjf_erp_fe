@@ -1316,14 +1316,31 @@ const AidApplicationAdd = () => {
       }
 
       if (savedId) {
-        const docEntries = Object.entries(applicationDocs || {}).filter(
-          ([, slot]) => slot?.file,
-        );
-        for (const [context, slot] of docEntries) {
+        const uploads = [];
+        for (const [context, slot] of Object.entries(applicationDocs || {})) {
+          const list = Array.isArray(slot?.files)
+            ? slot.files
+            : Array.isArray(slot)
+              ? slot
+              : slot?.file
+                ? [slot]
+                : [];
+          list.forEach((item, i) => {
+            if (item?.file) {
+              uploads.push({
+                context,
+                file: item.file,
+                description:
+                  list.length > 1 ? `${context} (${i + 1})` : context,
+              });
+            }
+          });
+        }
+        for (const item of uploads) {
           const fd = new FormData();
-          fd.append('file', slot.file);
-          fd.append('context', context);
-          fd.append('description', context);
+          fd.append('file', item.file);
+          fd.append('context', item.context);
+          fd.append('description', item.description);
           await axiosInstance.post(
             `/aid/applications/${savedId}/attachments/upload`,
             fd,

@@ -1495,14 +1495,23 @@ export const AID_ATTACHMENT_CONTEXTS = [
 
 /** Optional application-intake document slots (create form Attachments tab). */
 export const AID_APPLICATION_DOC_TYPES = [
-  { value: 'mepco_bill', label: 'Mepco Bill' },
-  { value: 'cnic', label: 'CNICs' },
-  { value: 'bay_form', label: 'Bay Forms' },
-  { value: 'death_certificate', label: 'Death Certificates' },
-  { value: 'marriage_certificate', label: 'Marriage Certificates' },
-  { value: 'education_certificate', label: 'Education Certificates' },
-  { value: 'e_stamp_paper', label: 'E-Stamp Paper' },
+  { value: 'mepco_bill', label: 'Mepco Bill', multiple: false },
+  { value: 'cnic', label: 'CNICs', multiple: true },
+  { value: 'bay_form', label: 'Bay Forms', multiple: true },
+  { value: 'death_certificate', label: 'Death Certificates', multiple: true },
+  { value: 'marriage_certificate', label: 'Marriage Certificates', multiple: true },
+  { value: 'education_certificate', label: 'Education Certificates', multiple: true },
+  { value: 'e_stamp_paper', label: 'E-Stamp Paper', multiple: false },
 ];
+
+/** Normalize a docs slot to a list of { file?, name?, url? }. */
+export function normalizeApplicationDocSlot(slot) {
+  if (!slot) return [];
+  if (Array.isArray(slot)) return slot.filter(Boolean);
+  if (slot.files && Array.isArray(slot.files)) return slot.files.filter(Boolean);
+  if (slot.file || slot.name || slot.url) return [slot];
+  return [];
+}
 
 export const AID_VERIFICATION_CHECKLIST = [
   { key: 'site_visit', label: 'Site Visit', required: true },
