@@ -497,11 +497,20 @@ export const AID_WRITER_RELATIONS = [
 
 export const AID_MARITAL_STATUS = [
   { value: 'single', label: 'Single' },
+  { value: 'engaged', label: 'Engaged' },
   { value: 'married', label: 'Married' },
-  { value: 'widowed', label: 'Widowed' },
+  { value: 'widow', label: 'Widow' },
+  { value: 'widower', label: 'Widower' },
   { value: 'divorced', label: 'Divorced' },
   { value: 'separated', label: 'Separated' },
+  { value: 'khula', label: 'Khula' },
+  { value: 'abandoned', label: 'Abandoned' },
 ];
+
+/** Legacy stored values → display label (kept for older records). */
+const AID_MARITAL_STATUS_LEGACY = {
+  widowed: 'Widow',
+};
 
 /** Beneficiary vulnerability categories */
 export const AID_VULNERABILITIES = [
@@ -509,6 +518,7 @@ export const AID_VULNERABILITIES = [
   { value: 'extreme_poor', label: 'Extreme Poor' },
   { value: 'widow', label: 'Widow' },
   { value: 'widows', label: 'Widows' },
+  { value: 'widower', label: 'Widower' },
   { value: 'divorced', label: 'Divorced' },
   { value: 'divorced_women', label: 'Divorced Women' },
   { value: 'orphan', label: 'Orphan' },
@@ -535,6 +545,7 @@ export const AID_VULNERABILITIES = [
 /** Chip multi-select on Family Head personal card (subset). */
 export const AID_VULNERABILITY_CHIPS = [
   { value: 'widow', label: 'Widow' },
+  { value: 'widower', label: 'Widower' },
   { value: 'orphan', label: 'Orphan' },
   { value: 'abandoned', label: 'Abandoned' },
   { value: 'indigent', label: 'Indigent' },
@@ -726,20 +737,48 @@ export const AID_PROPERTY_TYPES = [
   { value: 'others', label: 'Others' },
 ];
 
+export const emptyPropertyRow = (overrides = {}) => ({
+  property_type: '',
+  property_area: '',
+  property_details: '',
+  ...overrides,
+});
+
 export const emptyPropertyOwnershipFields = () => ({
   has_land: false,
   property_type: '',
+  property_area: '',
   property_details: '',
+  property_entries: [],
 });
 
 export function formatPropertyOwnershipSummary(person) {
   if (!person || person.has_land == null) return '';
   if (!person.has_land) return 'Land: No';
+  const entries = Array.isArray(person.property_entries)
+    ? person.property_entries.filter(
+        (r) => r?.property_type || r?.property_area || r?.property_details,
+      )
+    : [];
+  if (entries.length) {
+    const bits = entries.map((r) => {
+      const type =
+        AID_PROPERTY_TYPES.find((t) => t.value === r.property_type)?.label ||
+        r.property_type ||
+        '—';
+      const parts = [type];
+      if (r.property_area) parts.push(String(r.property_area));
+      if (r.property_details) parts.push(String(r.property_details));
+      return parts.join(' · ');
+    });
+    return `Land: Yes · ${bits.join(' | ')}`;
+  }
   const type =
     AID_PROPERTY_TYPES.find((t) => t.value === person.property_type)?.label ||
     person.property_type ||
     '—';
   const parts = [`Land: Yes · Type: ${type}`];
+  if (person.property_area) parts.push(`Area: ${person.property_area}`);
   if (person.property_details) parts.push(person.property_details);
   return parts.join(' · ');
 }
@@ -751,6 +790,16 @@ export const AID_RESIDENT_TYPES = [
   { value: 'sham_lot', label: 'Sham Lot' },
 ];
 
+export const emptyResidentRow = (overrides = {}) => ({
+  resident_type: '',
+  resident_ownership_status: '',
+  resident_ownership_other: '',
+  rented_amount: '',
+  house_area_marla: '',
+  house_details: '',
+  ...overrides,
+});
+
 export const emptyResidentHousingFields = () => ({
   resident_type: '',
   resident_ownership_status: '',
@@ -758,6 +807,7 @@ export const emptyResidentHousingFields = () => ({
   rented_amount: '',
   house_area_marla: '',
   house_details: '',
+  resident_entries: [],
 });
 
 export const AID_LIVESTOCK_ANIMALS = [
@@ -794,14 +844,32 @@ export const AID_VEHICLE_TYPES = [
   { value: 'other', label: 'Other (specify)' },
 ];
 
+export const emptyVehicleRow = (overrides = {}) => ({
+  vehicle_type: '',
+  ...overrides,
+});
+
 export const emptyVehicleFields = () => ({
   has_vehicle: false,
   vehicle_type: '',
+  vehicle_entries: [],
 });
 
 export function formatVehicleSummary(person) {
   if (!person || person.has_vehicle == null) return '';
   if (!person.has_vehicle) return 'Vehicle: No';
+  const entries = Array.isArray(person.vehicle_entries)
+    ? person.vehicle_entries.filter((r) => r?.vehicle_type)
+    : [];
+  if (entries.length) {
+    const labels = entries.map((r) => {
+      const t = r.vehicle_type || '';
+      return (
+        AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—'
+      );
+    });
+    return `Vehicle: Yes · ${labels.join(' | ')}`;
+  }
   const t = person.vehicle_type || '';
   const label =
     AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—';
@@ -873,25 +941,37 @@ export function formatLivestockSummary(person) {
 }
 
 export function formatResidentHousingSummary(person) {
-  if (!person?.resident_type) return '';
-  const typeLabel =
-    AID_RESIDENT_TYPES.find((t) => t.value === person.resident_type)?.label ||
-    person.resident_type;
-  const parts = [`Resident: ${typeLabel}`];
-  if (person.resident_ownership_status) {
-    parts.push(`Ownership: ${person.resident_ownership_status}`);
+  if (!person) return '';
+  const entries = Array.isArray(person.resident_entries)
+    ? person.resident_entries.filter((r) => r?.resident_type)
+    : [];
+  const formatOne = (row) => {
+    const typeLabel =
+      AID_RESIDENT_TYPES.find((t) => t.value === row.resident_type)?.label ||
+      row.resident_type;
+    const parts = [typeLabel];
+    if (row.resident_ownership_status) {
+      parts.push(row.resident_ownership_status);
+    }
+    if (row.resident_ownership_other) parts.push(row.resident_ownership_other);
+    if (
+      row.resident_type === 'rented' &&
+      row.rented_amount != null &&
+      row.rented_amount !== ''
+    ) {
+      parts.push(`Rent PKR ${row.rented_amount}`);
+    }
+    if (row.house_area_marla != null && row.house_area_marla !== '') {
+      parts.push(`${row.house_area_marla} Marla`);
+    }
+    if (row.house_details) parts.push(row.house_details);
+    return parts.join(' · ');
+  };
+  if (entries.length) {
+    return `Resident: ${entries.map(formatOne).join(' | ')}`;
   }
-  if (person.resident_ownership_other) {
-    parts.push(`Other: ${person.resident_ownership_other}`);
-  }
-  if (person.resident_type === 'rented' && person.rented_amount != null && person.rented_amount !== '') {
-    parts.push(`Rent PKR ${person.rented_amount}`);
-  }
-  if (person.house_area_marla != null && person.house_area_marla !== '') {
-    parts.push(`${person.house_area_marla} Marla`);
-  }
-  if (person.house_details) parts.push(person.house_details);
-  return parts.join(' · ');
+  if (!person.resident_type) return '';
+  return `Resident: ${formatOne(person)}`;
 }
 
 export const emptyLiteracyFields = () => ({
@@ -1179,15 +1259,19 @@ export const AID_KINSHIP_TYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-/** Family Head tab — who stands as family head / caretaker relative to beneficiary */
-export const AID_FAMILY_HEAD_TYPES = [
+/** Direct blood relations for Family Head Type dropdown (Guardian is appended separately). */
+export const AID_FAMILY_HEAD_BLOOD_TYPES = [
   { value: 'father', label: 'Father' },
   { value: 'mother', label: 'Mother' },
-  { value: 'spouse', label: 'Husband' },
   { value: 'son', label: 'Son' },
   { value: 'daughter', label: 'Daughter' },
   { value: 'brother', label: 'Brother' },
   { value: 'sister', label: 'Sister' },
+];
+
+/** Shown as Subtype when Family Head Type = Guardian */
+export const AID_FAMILY_HEAD_GUARDIAN_SUBTYPES = [
+  { value: 'spouse', label: 'Husband' },
   { value: 'step_brother', label: 'Step Brother' },
   { value: 'step_sister', label: 'Step Sister' },
   { value: 'half_brother', label: 'Half Brother' },
@@ -1203,11 +1287,30 @@ export const AID_FAMILY_HEAD_TYPES = [
   { value: 'maternal_grandfather', label: 'Maternal Grandfather' },
   { value: 'maternal_grandmother', label: 'Maternal Grandmother' },
   { value: 'grandchild', label: 'Grandchild' },
-  { value: 'guardian', label: 'Guardian' },
   { value: 'custody_holder', label: 'Custody holder' },
   { value: 'in_law', label: 'In-law' },
   { value: 'other', label: 'Other' },
 ];
+
+/** Default Type dropdown: blood relations + Guardian at the end */
+export const AID_FAMILY_HEAD_TYPE_OPTIONS = [
+  ...AID_FAMILY_HEAD_BLOOD_TYPES,
+  { value: 'guardian', label: 'Guardian' },
+];
+
+/** Full lookup list (labels, hydrate, gender hints) */
+export const AID_FAMILY_HEAD_TYPES = [
+  ...AID_FAMILY_HEAD_BLOOD_TYPES,
+  { value: 'guardian', label: 'Guardian' },
+  ...AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
+];
+
+export const AID_FAMILY_HEAD_BLOOD_TYPE_VALUES = new Set(
+  AID_FAMILY_HEAD_BLOOD_TYPES.map((t) => t.value),
+);
+export const AID_FAMILY_HEAD_GUARDIAN_SUBTYPE_VALUES = new Set(
+  AID_FAMILY_HEAD_GUARDIAN_SUBTYPES.map((t) => t.value),
+);
 
 const FAMILY_HEAD_FEMALE_TYPES = new Set([
   'mother',
@@ -1457,7 +1560,10 @@ export function formatAidCaseSource(source) {
 }
 
 export function formatMaritalStatus(status) {
-  return AID_MARITAL_STATUS.find((o) => o.value === status)?.label || status || '—';
+  if (!status) return '—';
+  const key = String(status).toLowerCase();
+  if (AID_MARITAL_STATUS_LEGACY[key]) return AID_MARITAL_STATUS_LEGACY[key];
+  return AID_MARITAL_STATUS.find((o) => o.value === key)?.label || status || '—';
 }
 
 export function formatEducation(level) {

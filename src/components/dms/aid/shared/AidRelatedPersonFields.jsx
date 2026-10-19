@@ -21,6 +21,8 @@ const AidRelatedPersonFields = ({
   relationLabel = 'Type (relation)',
   showLiteracy = true,
   cardTitle,
+  /** Relatives (spouse, sons, siblings…) are optional by default. */
+  fieldsRequired = false,
 }) => {
   const patch = (partial) => onChange({ ...value, ...partial });
   const [lookupHint, setLookupHint] = useState('');
@@ -174,6 +176,7 @@ const AidRelatedPersonFields = ({
       <AidFamilyHeadPersonalFields
         showTitle={false}
         embedded
+        fieldsRequired={fieldsRequired}
         value={value}
         onChange={onChange}
         onCnicChange={onCnicChange}
@@ -192,7 +195,7 @@ const AidRelatedPersonFields = ({
                   { value: '', label: 'Select type…' },
                   ...relationOptions,
                 ]}
-                required
+                required={fieldsRequired}
               />
             </div>
           ) : null

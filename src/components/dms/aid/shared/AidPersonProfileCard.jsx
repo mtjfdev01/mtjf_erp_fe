@@ -11,6 +11,7 @@ import {
 } from 'react-icons/fi';
 import {
   formatLiteracySummary,
+  formatMaritalStatus,
   formatPropertyOwnershipSummary,
   formatResidentHousingSummary,
   formatLivestockSummary,
@@ -102,7 +103,9 @@ const AidPersonProfileCard = ({
     relation ? String(relation).replace(/_/g, ' ') : null,
     person.gender,
     age != null ? `${age} yrs` : null,
-    person.marital_status,
+    person.marital_status
+      ? formatMaritalStatus(person.marital_status)
+      : null,
   ].filter(Boolean);
 
   const hasLand = !!person.has_land;
@@ -336,7 +339,9 @@ export const AidFamilyMemberLine = ({ person, relation, notes }) => {
             person.gender,
             age != null ? `Age ${age}` : null,
             person.cnic,
-            person.marital_status,
+            person.marital_status
+              ? formatMaritalStatus(person.marital_status)
+              : null,
             person.has_disability
               ? `Disability${
                   person.disability_type ? `: ${person.disability_type}` : ''
