@@ -16,10 +16,138 @@
   margin-top: 0.25rem;
 }
 
-.aid-property-ownership__details {
-  margin-top: 0.35rem;
-  padding-top: 0.5rem;
-  border-top: 1px dashed #e2e8f0;
+.aid-property-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+/* Force: Land | Type | Area | Details | + on ONE line */
+.aid-property-inline {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  align-items: flex-end;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.aid-property-inline--land-only {
+  max-width: 260px;
+}
+
+.aid-property-inline--land-only .aid-property-inline__field {
+  flex: 1 1 auto;
+  width: 100%;
+}
+
+.aid-property-inline__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.aid-property-inline__field--land {
+  flex: 0 0 8.5rem;
+  width: 8.5rem;
+}
+
+.aid-property-inline__field--type {
+  flex: 0 0 8rem;
+  width: 8rem;
+}
+
+.aid-property-inline__field--area {
+  flex: 0 0 7.5rem;
+  width: 7.5rem;
+}
+
+.aid-property-inline__field--details {
+  flex: 1 1 auto;
+  min-width: 8rem;
+}
+
+.aid-property-inline__label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #374151;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.aid-property-inline__label--ghost {
+  visibility: hidden;
+  user-select: none;
+}
+
+.aid-property-inline__label .required-mark {
+  color: #dc2626;
+}
+
+.aid-property-inline__control {
+  width: 100% !important;
+  min-width: 0;
+  box-sizing: border-box;
+  min-height: 2.45rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #b8c2ce;
+  border-radius: 8px;
+  background: #fff;
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.aid-property-inline__control:focus {
+  outline: none;
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.18);
+}
+
+.aid-property-inline__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex: 0 0 auto;
+  padding-bottom: 0.05rem;
+}
+
+.aid-property-row__icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.15rem;
+  height: 2.15rem;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #0f172a;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.aid-property-row__icon-btn--add {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.aid-property-row__icon-btn--add:hover {
+  background: #dcfce7;
+}
+
+.aid-property-row__icon-btn--remove {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.aid-property-row__icon-btn--remove:hover {
+  background: #fee2e2;
 }
 
 .aid-resident-housing {
@@ -2532,12 +2660,25 @@ a.aid-contact-chip:hover {
   letter-spacing: 0.04em;
 }
 
+.aid-app-docs__file-list {
+  list-style: none;
+  margin: 0 0 0.55rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 .aid-app-docs__file {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
   font-size: 0.84rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
 }
 
 .aid-app-docs__upload {

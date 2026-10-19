@@ -61,6 +61,10 @@ import {
   emptyConsentForm,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
+  AID_FAMILY_HEAD_TYPE_OPTIONS,
+  AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
+  AID_FAMILY_HEAD_BLOOD_TYPE_VALUES,
+  AID_FAMILY_HEAD_GUARDIAN_SUBTYPE_VALUES,
   calcAgeFromDob,
   formatCnicInput,
   formatPkPhoneInput,
@@ -134,6 +138,137 @@ const cleanLivestockEntries = (p) => {
   };
 };
 
+const cleanPropertyEntries = (p) => {
+  if (!p?.has_land) {
+    return {
+      has_land: false,
+      property_type: undefined,
+      property_area: undefined,
+      property_details: undefined,
+      property_entries: undefined,
+    };
+  }
+  const raw =
+    Array.isArray(p.property_entries) && p.property_entries.length
+      ? p.property_entries
+      : [
+          {
+            property_type: p.property_type || '',
+            property_area: p.property_area || '',
+            property_details: p.property_details || '',
+          },
+        ];
+  const rows = raw
+    .map((row) => {
+      const property_type = String(row?.property_type || '').trim();
+      const property_area = String(row?.property_area || '').trim();
+      const property_details = String(row?.property_details || '').trim();
+      if (!property_type && !property_area && !property_details) return null;
+      return {
+        property_type: property_type || undefined,
+        property_area: property_area || undefined,
+        property_details: property_details || undefined,
+      };
+    })
+    .filter(Boolean);
+  const first = rows[0] || null;
+  return {
+    has_land: true,
+    property_type: first?.property_type || undefined,
+    property_area: first?.property_area || undefined,
+    property_details: first?.property_details || undefined,
+    property_entries: rows.length ? rows : undefined,
+  };
+};
+
+const cleanResidentEntries = (p) => {
+  const raw =
+    Array.isArray(p?.resident_entries) && p.resident_entries.length
+      ? p.resident_entries
+      : p?.resident_type
+        ? [
+            {
+              resident_type: p.resident_type || '',
+              resident_ownership_status: p.resident_ownership_status || '',
+              resident_ownership_other: p.resident_ownership_other || '',
+              rented_amount: p.rented_amount ?? '',
+              house_area_marla: p.house_area_marla ?? '',
+              house_details: p.house_details || '',
+            },
+          ]
+        : [];
+  const rows = raw
+    .map((row) => {
+      const resident_type = String(row?.resident_type || '').trim();
+      if (!resident_type) return null;
+      const entry = {
+        resident_type,
+        resident_ownership_status:
+          String(row?.resident_ownership_status || '').trim() || undefined,
+        resident_ownership_other:
+          String(row?.resident_ownership_other || '').trim() || undefined,
+        house_area_marla:
+          row?.house_area_marla !== '' && row?.house_area_marla != null
+            ? row.house_area_marla
+            : undefined,
+        house_details: String(row?.house_details || '').trim() || undefined,
+      };
+      if (resident_type === 'rented' && row?.rented_amount !== '' && row?.rented_amount != null) {
+        entry.rented_amount = row.rented_amount;
+      }
+      return entry;
+    })
+    .filter(Boolean);
+  const first = rows[0] || null;
+  if (!first) {
+    return {
+      resident_type: undefined,
+      resident_ownership_status: undefined,
+      resident_ownership_other: undefined,
+      rented_amount: undefined,
+      house_area_marla: undefined,
+      house_details: undefined,
+      resident_entries: undefined,
+    };
+  }
+  return {
+    resident_type: first.resident_type,
+    resident_ownership_status: first.resident_ownership_status,
+    resident_ownership_other: first.resident_ownership_other,
+    rented_amount: first.rented_amount,
+    house_area_marla: first.house_area_marla,
+    house_details: first.house_details,
+    resident_entries: rows,
+  };
+};
+
+const cleanVehicleEntries = (p) => {
+  if (!p?.has_vehicle) {
+    return {
+      has_vehicle: false,
+      vehicle_type: undefined,
+      vehicle_entries: undefined,
+    };
+  }
+  const raw =
+    Array.isArray(p.vehicle_entries) && p.vehicle_entries.length
+      ? p.vehicle_entries
+      : [{ vehicle_type: p.vehicle_type || '' }];
+  const rows = raw
+    .map((row) => {
+      const vehicle_type = String(row?.vehicle_type || '').trim();
+      if (!vehicle_type) return null;
+      return { vehicle_type };
+    })
+    .filter(Boolean);
+  const first = rows[0] || null;
+  return {
+    has_vehicle: true,
+    vehicle_type: first?.vehicle_type || undefined,
+    vehicle_entries: rows.length ? rows : undefined,
+  };
+};
+
 const emptyRelative = () => ({ ...emptyPerson });
 
 const familyHeadTypeLabel = (type) =>
@@ -146,6 +281,20 @@ const toFamilyHeadType = (relation) => {
   if (HEAD_TYPE_VALUES.has(r)) return r;
   if (r === 'husband') return 'spouse';
   return 'other';
+};
+
+/** Primary Type DD value: blood relation, or "guardian" when subtype / guardian. */
+const familyHeadPrimaryType = (relationType) => {
+  const t = String(relationType || 'father').toLowerCase();
+  if (AID_FAMILY_HEAD_BLOOD_TYPE_VALUES.has(t)) return t;
+  return 'guardian';
+};
+
+/** Subtype when primary is Guardian (Husband, custody, in-law, other). */
+const familyHeadSubtype = (relationType) => {
+  const t = String(relationType || '').toLowerCase();
+  if (AID_FAMILY_HEAD_GUARDIAN_SUBTYPE_VALUES.has(t)) return t;
+  return '';
 };
 
 /** Map API person → intake form row. */
@@ -188,19 +337,50 @@ const mapPersonToForm = (p, extras = {}) => {
     disability_type: p.disability_type || '',
     has_land: !!p.has_land,
     property_type: p.property_type || '',
+    property_area: p.property_area || '',
     property_details: p.property_details || '',
+    property_entries: Array.isArray(p.property_entries)
+      ? p.property_entries
+      : p.has_land && (p.property_type || p.property_details || p.property_area)
+        ? [
+            {
+              property_type: p.property_type || '',
+              property_area: p.property_area || '',
+              property_details: p.property_details || '',
+            },
+          ]
+        : [],
     resident_type: p.resident_type || '',
     resident_ownership_status: p.resident_ownership_status || '',
     resident_ownership_other: p.resident_ownership_other || '',
     rented_amount: p.rented_amount ?? '',
     house_area_marla: p.house_area_marla ?? '',
     house_details: p.house_details || '',
+    resident_entries: Array.isArray(p.resident_entries)
+      ? p.resident_entries
+      : p.resident_type
+        ? [
+            {
+              resident_type: p.resident_type || '',
+              resident_ownership_status: p.resident_ownership_status || '',
+              resident_ownership_other: p.resident_ownership_other || '',
+              rented_amount: p.rented_amount ?? '',
+              house_area_marla: p.house_area_marla ?? '',
+              house_details: p.house_details || '',
+            },
+          ]
+        : [],
     has_livestock: !!p.has_livestock,
     livestock_entries: Array.isArray(p.livestock_entries)
       ? p.livestock_entries
       : [],
     has_vehicle: !!p.has_vehicle,
     vehicle_type: p.vehicle_type || '',
+    vehicle_entries: Array.isArray(p.vehicle_entries)
+      ? p.vehicle_entries
+      : p.has_vehicle && p.vehicle_type
+        ? [{ vehicle_type: p.vehicle_type }]
+        : [],
     necta_status: p.necta_status || '',
     necta_document_url: p.necta_document_url || '',
     necta_document_name: p.necta_document_name || '',
@@ -254,12 +434,13 @@ const RelativeFields = ({ title, value, onChange, compact }) => (
   <div
     className={`aid-relative-block${compact ? ' aid-relative-block--compact' : ''}`}
   >
-    {/* Same personal field set as Family Head / Beneficiary */}
+    {/* Same personal field set as Family Head / Beneficiary — optional for relatives */}
     <AidFamilyHeadPersonalFields
       title={title || 'Identity'}
-      subtitle="CNIC is checked against the family registry as you type."
+      subtitle="Optional. CNIC is checked against the family registry as you type."
       contactTitle="Contact & address"
-      contactSubtitle="The investigator visits this address; add a landmark."
+      contactSubtitle="Optional. The investigator visits this address; add a landmark."
+      fieldsRequired={false}
       value={value}
       onChange={onChange}
       afterGrid={
@@ -307,29 +488,10 @@ const cleanPersonPayload = (p) => {
     student_class_name: p.student_class_name || undefined,
     has_disability: !!p.has_disability,
     disability_type: p.has_disability ? p.disability_type || undefined : undefined,
-    has_land: !!p.has_land,
-    property_type: p.has_land ? p.property_type || undefined : undefined,
-    property_details: p.has_land
-      ? p.property_details || undefined
-      : undefined,
-    resident_type: p.resident_type || undefined,
-    resident_ownership_status: p.resident_ownership_status || undefined,
-    resident_ownership_other: p.resident_ownership_other || undefined,
-    rented_amount:
-      p.resident_type === 'rented' && p.rented_amount !== ''
-        ? p.rented_amount
-        : undefined,
-    house_area_marla:
-      p.house_area_marla !== '' && p.house_area_marla != null
-        ? p.house_area_marla
-        : undefined,
-    house_details: p.house_details || undefined,
+    ...cleanPropertyEntries(p),
+    ...cleanResidentEntries(p),
     ...cleanLivestockEntries(p),
-    has_vehicle: !!p.has_vehicle,
-    vehicle_type:
-      p.has_vehicle && p.vehicle_type?.trim()
-        ? p.vehicle_type.trim()
-        : undefined,
+    ...cleanVehicleEntries(p),
     necta_status: p.necta_status || undefined,
     necta_document_url: p.necta_document_url || undefined,
     necta_document_name: p.necta_document_name || undefined,
@@ -636,12 +798,24 @@ const AidApplicationAdd = () => {
       : beneficiary.marital_status;
 
   const isMarried = beneficiaryMarital === 'married';
+  const maritalKey = String(beneficiaryMarital || '').toLowerCase();
+  /** Wife / Husband / late spouse — optional; never block submit if empty. */
+  const showSpouseSection = [
+    'married',
+    'widow',
+    'widower',
+    'widowed',
+  ].includes(maritalKey);
   const spouseLabel =
-    beneficiaryGender === 'male'
-      ? 'Wife'
-      : beneficiaryGender === 'female'
-        ? 'Husband'
-        : 'Spouse';
+    maritalKey === 'widow' || maritalKey === 'widowed'
+      ? 'Husband (late / optional)'
+      : maritalKey === 'widower'
+        ? 'Wife (late / optional)'
+        : beneficiaryGender === 'male'
+          ? 'Wife'
+          : beneficiaryGender === 'female'
+            ? 'Husband'
+            : 'Spouse';
   const spouseDefaultGender =
     beneficiaryGender === 'male'
       ? 'female'
@@ -715,14 +889,15 @@ const AidApplicationAdd = () => {
   };
 
   useEffect(() => {
-    if (isMarried) {
+    if (showSpouseSection) {
       setSpouse((p) => ({
         ...p,
         gender: p.gender || spouseDefaultGender,
-        marital_status: p.marital_status || 'married',
+        marital_status:
+          p.marital_status || (isMarried ? 'married' : p.marital_status || ''),
       }));
     }
-  }, [isMarried, spouseDefaultGender]);
+  }, [showSpouseSection, isMarried, spouseDefaultGender]);
 
   const searchPeople = async (term) => {
     const q = String(term || '').trim();
@@ -822,7 +997,7 @@ const AidApplicationAdd = () => {
       });
     }
 
-    if (isMarried) {
+    if (showSpouseSection) {
       const spousePayload = cleanPersonPayload(spouse);
       if (spouse.existing_person_id) {
         members.push({
@@ -834,7 +1009,7 @@ const AidApplicationAdd = () => {
         if (!spousePayload.gender && spouseDefaultGender) {
           spousePayload.gender = spouseDefaultGender;
         }
-        if (!spousePayload.marital_status) {
+        if (!spousePayload.marital_status && isMarried) {
           spousePayload.marital_status = 'married';
         }
         members.push({ relation_type: 'spouse', person: spousePayload });
@@ -849,23 +1024,24 @@ const AidApplicationAdd = () => {
     setSaving(true);
     setError('');
     try {
-      if (isMarried && !spouse.full_name.trim()) {
+      if (spouse.is_applicant && !spouse.full_name?.trim() && !spouse.existing_person_id) {
         throw new Error(
-          `${spouseLabel} details are required for married beneficiaries`,
+          `${spouseLabel} name is required when marked as applicant`,
         );
       }
       const allGenericMembers = [
         ...beneficiaryMembers,
         ...familyHeads.flatMap((h) => h._family_members || []),
       ];
+      // Relatives (sons, siblings, etc.) are optional — only validate rows that have a name.
       for (const m of allGenericMembers) {
         if (!m.full_name?.trim()) {
-          throw new Error(
-            'Enter a name for every family member row (or remove empty ones)',
-          );
-        }
-        if (!m.relation_type) {
-          throw new Error('Select Type for every family member');
+          if (m.is_applicant) {
+            throw new Error(
+              'Family member name is required when marked as applicant',
+            );
+          }
+          continue;
         }
         if (m.cnic && !isValidCnic(m.cnic)) {
           throw new Error(
@@ -881,12 +1057,22 @@ const AidApplicationAdd = () => {
       const namedHeads = familyHeads.filter((h) => h.full_name?.trim());
       if (!namedHeads.length) {
         throw new Error(
-          'Enter at least one Family Head (Father / Mother / Husband / Son / Brother…)',
+          'Enter at least one Family Head (Father / Mother / Son / Daughter / Brother / Sister, or Guardian)',
         );
       }
       const missingType = namedHeads.find((h) => !h._relation_type);
       if (missingType) {
         throw new Error('Select Type for each Family Head');
+      }
+      const missingGuardianSubtype = namedHeads.find(
+        (h) =>
+          familyHeadPrimaryType(h._relation_type) === 'guardian' &&
+          !familyHeadSubtype(h._relation_type),
+      );
+      if (missingGuardianSubtype) {
+        throw new Error(
+          'Select Subtype for each Guardian Family Head',
+        );
       }
       const badCnic = namedHeads.find((h) => h.cnic && !isValidCnic(h.cnic));
       if (badCnic) {
@@ -1130,14 +1316,31 @@ const AidApplicationAdd = () => {
       }
 
       if (savedId) {
-        const docEntries = Object.entries(applicationDocs || {}).filter(
-          ([, slot]) => slot?.file,
-        );
-        for (const [context, slot] of docEntries) {
+        const uploads = [];
+        for (const [context, slot] of Object.entries(applicationDocs || {})) {
+          const list = Array.isArray(slot?.files)
+            ? slot.files
+            : Array.isArray(slot)
+              ? slot
+              : slot?.file
+                ? [slot]
+                : [];
+          list.forEach((item, i) => {
+            if (item?.file) {
+              uploads.push({
+                context,
+                file: item.file,
+                description:
+                  list.length > 1 ? `${context} (${i + 1})` : context,
+              });
+            }
+          });
+        }
+        for (const item of uploads) {
           const fd = new FormData();
-          fd.append('file', slot.file);
-          fd.append('context', context);
-          fd.append('description', context);
+          fd.append('file', item.file);
+          fd.append('context', item.context);
+          fd.append('description', item.description);
           await axiosInstance.post(
             `/aid/applications/${savedId}/attachments/upload`,
             fd,
@@ -1165,12 +1368,12 @@ const AidApplicationAdd = () => {
 
   const familyHint = useMemo(() => {
     const base =
-      'Add Family Head entries and select type for each (Father / Mother / Husband / Son / Brother / Step Sibling / other blood relations…). Under each head you can add any family members.';
-    if (isMarried) {
-      return `${base} Also add ${spouseLabel.toLowerCase()} if married.`;
+      'Add Family Head entries and select type: Father, Mother, Son, Daughter, Brother, Sister, or Guardian (with subtype). Under each head you can add any family members.';
+    if (showSpouseSection) {
+      return `${base} You may optionally add ${spouseLabel.toLowerCase()} details.`;
     }
     return base;
-  }, [isMarried, spouseLabel]);
+  }, [showSpouseSection, spouseLabel]);
 
   if (loadingEdit) {
     return (
@@ -1764,7 +1967,7 @@ const AidApplicationAdd = () => {
               needed (spouse or family members can also be the applicant).
             </p> */}
 
-            {isMarried && (
+            {showSpouseSection && (
               <div className="aid-family-panel">
                 <AidApplicantCheckbox
                   checked={!!spouse.is_applicant}
@@ -1775,7 +1978,7 @@ const AidApplicationAdd = () => {
                   label={`${spouseLabel} is the applicant`}
                 />
                 <RelativeFields
-                  title={`${spouseLabel} (required)`}
+                  title={`${spouseLabel} (optional)`}
                   value={spouse}
                   onChange={(next) =>
                     setSpouse({ ...next, is_applicant: spouse.is_applicant })
@@ -1797,7 +2000,7 @@ const AidApplicationAdd = () => {
                     setFamilyHeads((p) => [
                       ...p,
                       {
-                        ...emptyFamilyHeadRow('guardian'),
+                        ...emptyFamilyHeadRow('father'),
                         is_applicant: false,
                         is_beneficiary: false,
                       },
@@ -1808,7 +2011,14 @@ const AidApplicationAdd = () => {
                 </button>
               </div>
               {familyHeads.map((head, idx) => {
-                const typeLabel = familyHeadTypeLabel(head._relation_type);
+                const primaryType = familyHeadPrimaryType(head._relation_type);
+                const subtype = familyHeadSubtype(head._relation_type);
+                const typeLabel =
+                  primaryType === 'guardian'
+                    ? subtype
+                      ? `Guardian — ${familyHeadTypeLabel(subtype)}`
+                      : 'Guardian'
+                    : familyHeadTypeLabel(primaryType);
                 return (
                   <div key={`fh-${idx}`} className="aid-repeat-item">
                     <div
@@ -1837,25 +2047,53 @@ const AidApplicationAdd = () => {
                       <div className="aid-role-check-row__type">
                         <FormSelect
                           label="Type"
-                          value={head._relation_type || 'father'}
+                          value={primaryType}
                           onChange={(e) => {
                             const type = e.target.value;
-                            const preset = emptyFamilyHeadRow(type);
+                            const nextRelation =
+                              type === 'guardian' ? 'guardian' : type;
+                            const preset = emptyFamilyHeadRow(nextRelation);
                             setFamilyHeads((list) =>
                               list.map((row, i) =>
                                 i === idx
                                   ? {
                                       ...row,
-                                      _relation_type: type,
+                                      _relation_type: nextRelation,
                                       gender: row.gender || preset.gender,
                                     }
                                   : row,
                               ),
                             );
                           }}
-                          options={AID_FAMILY_HEAD_TYPES}
+                          options={AID_FAMILY_HEAD_TYPE_OPTIONS}
                           required
                         />
+                        {primaryType === 'guardian' ? (
+                          <FormSelect
+                            label="Subtype"
+                            value={subtype}
+                            onChange={(e) => {
+                              const next = e.target.value || 'guardian';
+                              const preset = emptyFamilyHeadRow(next);
+                              setFamilyHeads((list) =>
+                                list.map((row, i) =>
+                                  i === idx
+                                    ? {
+                                        ...row,
+                                        _relation_type: next,
+                                        gender: row.gender || preset.gender,
+                                      }
+                                    : row,
+                                ),
+                              );
+                            }}
+                            options={[
+                              { value: '', label: 'Select subtype…' },
+                              ...AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
+                            ]}
+                            required
+                          />
+                        ) : null}
                         {familyHeads.length > 1 && (
                           <button
                             type="button"

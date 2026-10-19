@@ -31,8 +31,6 @@ const PK_PROVINCES = [
   { value: 'Gilgit-Baltistan', label: 'Gilgit-Baltistan' },
 ];
 
-const Req = () => <span className="required-mark">*</span>;
-
 const formatShortMonth = (raw) => {
   if (!raw) return '';
   const d = new Date(raw);
@@ -72,7 +70,11 @@ const AidFamilyHeadPersonalFields = ({
   beforeFields = null,
   afterGrid = null,
   embedded = false,
+  /** When false, personal fields are optional (spouse / sons / other relatives). */
+  fieldsRequired = true,
 }) => {
+  const Req = () =>
+    fieldsRequired ? <span className="required-mark">*</span> : null;
   const patch = (partial) => onChange({ ...value, ...partial });
   const age = calcAgeFromDob(value?.date_of_birth);
   const selectedVulns = parseVulnerabilityList(value?.vulnerability);
@@ -398,7 +400,7 @@ const AidFamilyHeadPersonalFields = ({
                     Full name (as on CNIC) <Req />
                   </>
                 }
-                required
+                required={fieldsRequired}
                 value={value?.full_name || ''}
                 onChange={(e) => patch({ full_name: e.target.value })}
                 placeholder="Nasreen Bibi"
@@ -419,7 +421,7 @@ const AidFamilyHeadPersonalFields = ({
                     Father / husband name <Req />
                   </>
                 }
-                required
+                required={fieldsRequired}
                 value={value?.father_or_husband_name || ''}
                 onChange={(e) =>
                   patch({ father_or_husband_name: e.target.value })
@@ -449,7 +451,7 @@ const AidFamilyHeadPersonalFields = ({
                 <FormInput
                   label=""
                   type="date"
-                  required
+                  required={fieldsRequired}
                   value={value?.date_of_birth || ''}
                   onChange={(e) => patch({ date_of_birth: e.target.value })}
                 />
@@ -485,7 +487,7 @@ const AidFamilyHeadPersonalFields = ({
 
               <FormSelect
                 label="Marital status"
-                required
+                required={fieldsRequired}
                 value={value?.marital_status || ''}
                 onChange={(e) => patch({ marital_status: e.target.value })}
                 options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
@@ -513,7 +515,7 @@ const AidFamilyHeadPersonalFields = ({
                   Mobile <Req />
                 </>
               }
-              required
+              required={fieldsRequired}
               value={formatPkPhoneInput(value?.phone || '')}
               onChange={(e) =>
                 patch({ phone: formatPkPhoneInput(e.target.value) })
@@ -546,7 +548,7 @@ const AidFamilyHeadPersonalFields = ({
                   District <Req />
                 </>
               }
-              required
+              required={fieldsRequired}
               value={value?.district || ''}
               onChange={(e) => {
                 const district = e.target.value;
@@ -564,7 +566,7 @@ const AidFamilyHeadPersonalFields = ({
                   Tehsil <Req />
                 </>
               }
-              required
+              required={fieldsRequired}
               value={value?.tehsil || ''}
               onChange={(e) => patch({ tehsil: e.target.value })}
               placeholder="Mian Channu"
@@ -588,7 +590,7 @@ const AidFamilyHeadPersonalFields = ({
             <div className="aid-fh-contact__address">
               <FormTextarea
                 label="Full address & landmark"
-                required
+                required={fieldsRequired}
                 value={value?.address || ''}
                 onChange={(e) => patch({ address: e.target.value })}
                 rows={3}

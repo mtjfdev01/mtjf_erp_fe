@@ -200,8 +200,8 @@ const AidFamilyMembersIntake = ({
   const patchDraft = (partial) => setDraft((p) => ({ ...p, ...partial }));
 
   const saveDraft = () => {
+    // Relatives are optional overall; only a name is needed to keep a filled row.
     if (!String(draft.full_name || '').trim()) return;
-    if (!String(draft.relation_type || '').trim()) return;
 
     const health = draft.health_status || '';
     const nextRow = {
@@ -410,6 +410,7 @@ const AidFamilyMembersIntake = ({
             {/* Inherit Family Head personal fields (identity, contact, circumstances). */}
             <AidRelatedPersonFields
               value={draft}
+              fieldsRequired={false}
               onChange={(next) =>
                 setDraft((prev) => {
                   let health_status = prev.health_status || '';
