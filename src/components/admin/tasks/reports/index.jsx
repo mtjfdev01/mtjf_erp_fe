@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import { FaArrowDown, FaArrowUp, FaBan, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard, FaEllipsisH, FaChevronLeft, FaChevronRight, FaChevronUp, FaChevronDown, FaCheck } from 'react-icons/fa';
+import { FaArrowDown, FaArrowUp, FaBan, FaCalendarAlt, FaChartLine, FaCheckCircle, FaCheckDouble, FaExclamationCircle, FaExclamationTriangle, FaFolderOpen, FaGripLines, FaHourglassHalf, FaLayerGroup, FaLock, FaDownload, FaSpinner, FaTimesCircle, FaUserCircle, FaUserClock, FaTasks, FaFlag, FaChartPie, FaBuilding, FaUsers, FaRegFolderOpen, FaProjectDiagram, FaClipboard, FaEllipsisH, FaChevronLeft, FaChevronRight, FaChevronUp, FaChevronDown, FaCheck } from 'react-icons/fa';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
@@ -244,6 +244,11 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
       ? chart.data.totalCount
       : (isPlaceholder ? 0 : total);
 
+    // Compute dynamic chart radius and responsive scale factor so labels scale smoothly with container width
+    const chartHeight = chart.chartArea.bottom - chart.chartArea.top;
+    const chartRadius = Math.min(chart.chartArea.right - chart.chartArea.left, chartHeight) / 2;
+    const scaleFactor = Math.min(1.15, Math.max(0.7, chartRadius / 70));
+
     // Only draw slice percentage/count labels when there is actual task data
     if (!isPlaceholder && total > 0) {
       chart.data.datasets.forEach((dataset, i) => {
@@ -254,13 +259,13 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
 
           const percentage = Math.round((value / total) * 100);
 
-          // Calculate arc length to determine if label fits
+          // Calculate arc angular span to verify label will fit comfortably
           const startAngle = arc.startAngle;
           const endAngle = arc.endAngle;
           const arcLength = endAngle - startAngle;
 
-          // Only draw label if arc is large enough (at least 12 degrees)
-          if (arcLength < 0.21) { // ~12 degrees in radians
+          // Only draw label if arc is large enough (~12 degrees in radians)
+          if (arcLength < 0.21) {
             return;
           }
 
@@ -270,22 +275,26 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
           ctx.textBaseline = 'middle';
           ctx.fillStyle = '#ffffff';
 
-          // Text shadow for better readability
+          // Text shadow for high contrast on dark donut slices
           ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
           ctx.shadowBlur = 2;
           ctx.shadowOffsetX = 1;
           ctx.shadowOffsetY = 1;
 
-          // Only draw value if percentage > 2%, otherwise skip to save space
-          if (percentage >= 2) {
-            ctx.font = '600 11px "Plus Jakarta Sans", Inter, sans-serif';
-            ctx.fillText(value.toString(), center.x, center.y - 6);
-            ctx.font = '500 9px "Plus Jakarta Sans", Inter, sans-serif';
-            ctx.fillText(`(${percentage}%)`, center.x, center.y + 8);
-          } else if (percentage >= 1) {
-            // For very small percentages, only show the value
-            ctx.font = '600 10px "Plus Jakarta Sans", Inter, sans-serif';
-            ctx.fillText(value.toString(), center.x, center.y);
+          // Substantial slice (>= 8%): render stacked value count and percentage
+          if (percentage >= 8) {
+            const sliceNumSize = Math.max(8, Math.min(9.5, Math.round(9 * scaleFactor)));
+            const slicePctSize = Math.max(7, Math.min(8, Math.round(7.5 * scaleFactor)));
+            ctx.font = `700 ${sliceNumSize}px "Plus Jakarta Sans", Inter, sans-serif`;
+            ctx.fillText(value.toString(), center.x, center.y - 3.5);
+            ctx.font = `600 ${slicePctSize}px "Plus Jakarta Sans", Inter, sans-serif`;
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.fillText(`(${percentage}%)`, center.x, center.y + 4.2);
+          } else if (percentage >= 3) {
+            // Narrow slice (3% - 7%): render only centered percentage to prevent text collision
+            const smallSliceSize = Math.max(7.5, Math.min(9, Math.round(8.5 * scaleFactor)));
+            ctx.font = `700 ${smallSliceSize}px "Plus Jakarta Sans", Inter, sans-serif`;
+            ctx.fillText(`(${percentage}%)`, center.x, center.y);
           }
 
           ctx.restore();
@@ -293,19 +302,30 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
       });
     }
 
-    // Always draw center summary (even if 0 tasks)
+    // Draw center doughnut summary (task total count + caption)
     ctx.save();
     const centerX = (chart.chartArea.left + chart.chartArea.right) / 2;
     const centerY = (chart.chartArea.top + chart.chartArea.bottom) / 2;
+
+    // Dynamically adjust font size based on numeric digit length to avoid overflow
+    const totalStr = displayTotal.toString();
+    const numLen = totalStr.length;
+    let baseNumSize = 18;
+    if (numLen >= 4) baseNumSize = 14;
+    else if (numLen === 3) baseNumSize = 16;
+
+    const totalFontSize = Math.round(baseNumSize * scaleFactor);
+    const labelFontSize = Math.max(8, Math.min(9.5, Math.round(9 * scaleFactor)));
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // Light text for the dark card surface
+    // Light text styling for dark card background
     ctx.fillStyle = '#F8FAFC';
-    ctx.font = '800 26px "Plus Jakarta Sans", Inter, sans-serif';
-    ctx.fillText(displayTotal.toString(), centerX, centerY - 8);
-    ctx.font = '600 11px "Plus Jakarta Sans", Inter, sans-serif';
+    ctx.font = `800 ${totalFontSize}px "Plus Jakarta Sans", Inter, sans-serif`;
+    ctx.fillText(totalStr, centerX, centerY - (labelFontSize * 0.55));
+    ctx.font = `600 ${labelFontSize}px "Plus Jakarta Sans", Inter, sans-serif`;
     ctx.fillStyle = '#94A3B8';
-    ctx.fillText('Total Tasks', centerX, centerY + 14);
+    ctx.fillText('Total Tasks', centerX, centerY + (totalFontSize * 0.58));
     ctx.restore();
   };
 
@@ -344,13 +364,13 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '62%',
+      cutout: '56%',
       layout: {
         padding: {
-          top: 12,
-          bottom: 12,
-          left: 12,
-          right: 12
+          top: 4,
+          bottom: 4,
+          left: 4,
+          right: 4
         }
       },
       plugins: {
@@ -924,7 +944,14 @@ const TaskReports = () => {
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarError, setCalendarError] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  // Controls expand / collapse state for scheduled tasks table (limits to 5 items when collapsed)
+  const [isScheduledTasksExpanded, setIsScheduledTasksExpanded] = useState(false);
   const dashboardRef = useRef(null);
+
+  // Reset table expand/collapse state whenever the user selects a different calendar date
+  useEffect(() => {
+    setIsScheduledTasksExpanded(false);
+  }, [selectedDay]);
 
   const checkUserScrollability = () => {
     if (userReportSliderRef.current) {
@@ -1186,45 +1213,33 @@ const TaskReports = () => {
     return map;
   }, [calendarDaysData]);
 
-  const selectedDayTasks = useMemo(() => {
-    if (!selectedDay) return [];
-    const dayData = calendarDaysMap[selectedDay];
-    if (Array.isArray(dayData?.tasks) && dayData.tasks.length > 0) {
-      return dayData.tasks;
+  const displayTasks = useMemo(() => {
+    if (selectedDay) {
+      if (Array.isArray(taskStats?.tasks)) {
+        return taskStats.tasks;
+      }
+      const dayData = calendarDaysMap[selectedDay];
+      if (Array.isArray(dayData?.tasks)) {
+        return dayData.tasks;
+      }
+      return [];
     }
-    if (Array.isArray(taskStats?.tasks) && taskStats.tasks.length > 0) {
-      return taskStats.tasks;
-    }
-    if (Array.isArray(dayData?.tasks)) {
-      return dayData.tasks;
-    }
-    return [];
+    return Array.isArray(taskStats?.tasks) ? taskStats.tasks : [];
   }, [selectedDay, taskStats, calendarDaysMap]);
 
-  const statsSummary = useMemo(() => {
-    const isDayView = Boolean(selectedDay);
-    const dayData = isDayView ? calendarDaysMap[selectedDay] : null;
+  const selectedDayTasks = displayTasks;
 
+  const statsSummary = useMemo(() => {
     let total = 0;
     let breakdown = {};
 
-    if (isDayView) {
-      if (Array.isArray(selectedDayTasks) && selectedDayTasks.length > 0) {
-        total = selectedDayTasks.length;
-        selectedDayTasks.forEach((t) => {
-          const st = String(t.status || 'open').toLowerCase();
-          breakdown[st] = (breakdown[st] || 0) + 1;
-        });
-      } else if (dayData && dayData.status_counts) {
-        total = dayData.total_tasks || 0;
-        breakdown = { ...dayData.status_counts };
-      } else if (taskStats) {
-        total = taskStats.total_tasks || 0;
-        breakdown = { ...(taskStats.status_breakdown || {}) };
-      }
-    } else {
-      total = taskStats?.total_tasks || 0;
-      breakdown = taskStats?.status_breakdown || {};
+    if (taskStats) {
+      total = taskStats.total_tasks || 0;
+      breakdown = taskStats.status_breakdown || {};
+    } else if (selectedDay && calendarDaysMap[selectedDay]) {
+      const dayData = calendarDaysMap[selectedDay];
+      total = dayData.total_tasks || 0;
+      breakdown = dayData.status_counts || {};
     }
 
     const sumBy = (keys) => keys.reduce((sum, key) => sum + (breakdown[key] || 0), 0);
@@ -1243,18 +1258,16 @@ const TaskReports = () => {
     const ended = closed;
     const completedTasks = completed + closed + approved;
     const completionRate =
-      total > 0
-        ? parseFloat(((completedTasks / total) * 100).toFixed(2))
-        : (taskStats?.completion_rate || 0);
+      typeof taskStats?.completion_rate === 'number'
+        ? taskStats.completion_rate
+        : (total > 0 ? parseFloat(((completedTasks / total) * 100).toFixed(2)) : 0);
 
-    let overdue = 0;
-    if (isDayView) {
+    let overdue = taskStats?.overdue_tasks || 0;
+    if (selectedDay && !taskStats) {
       const todayIso = new Date().toISOString().slice(0, 10);
       if (selectedDay < todayIso) {
         overdue = open + inProgress + pendingApproval + draft + blocked;
       }
-    } else {
-      overdue = taskStats?.overdue_tasks || 0;
     }
 
     const progressCompleted = closed + completed + approved;
@@ -1286,7 +1299,7 @@ const TaskReports = () => {
       progressNotStarted,
       completedTasks
     };
-  }, [taskStats, selectedDay, selectedDayTasks, calendarDaysMap]);
+  }, [taskStats, selectedDay, calendarDaysMap]);
 
   /** Counts per status in STATUS_LABELS order (used by the design's status rows + donut legend). */
   const statusValues = useMemo(() => ([
@@ -1301,6 +1314,15 @@ const TaskReports = () => {
   ]), [statsSummary]);
 
   const prioritySummary = useMemo(() => {
+    if (taskStats?.priority_breakdown) {
+      const breakdown = taskStats.priority_breakdown;
+      return {
+        low: breakdown.low || 0,
+        medium: breakdown.medium || 0,
+        high: breakdown.high || 0,
+        critical: breakdown.critical || 0
+      };
+    }
     if (selectedDay && Array.isArray(selectedDayTasks) && selectedDayTasks.length > 0) {
       const counts = { low: 0, medium: 0, high: 0, critical: 0 };
       selectedDayTasks.forEach((t) => {
@@ -1310,17 +1332,7 @@ const TaskReports = () => {
       });
       return counts;
     }
-    const breakdown = taskStats?.priority_breakdown || {};
-    const low = breakdown.low || 0;
-    const medium = breakdown.medium || 0;
-    const high = breakdown.high || 0;
-    const critical = breakdown.critical || 0;
-    return {
-      low,
-      medium,
-      high,
-      critical
-    };
+    return { low: 0, medium: 0, high: 0, critical: 0 };
   }, [taskStats, selectedDay, selectedDayTasks]);
 
   const formattedCurrentTime = useMemo(() => {
@@ -2836,184 +2848,20 @@ const TaskReports = () => {
           <div className="task-dashboard-layout">
             {!showTeamPerformance ? (
               <>
-                {/* ========== TOP SECTION: CALENDAR (light glass card) ========== */}
-                {/* Hidden when a date is selected, revealing the nested dashboard */}
-                {!selectedDay && (
-                  <section className="task-top-section">
-                    <div className="task-calendar-card">
-                      <div className="task-calendar-header">
-                        <div className="task-calendar-header-text">
-                          <h2>Select a date to view daily analytics</h2>
-                          <p>Click any day to drill down into detailed metrics.</p>
-                        </div>
-                      </div>
-
-                    <div className="task-calendar-toolbar">
-                      <div className="task-calendar-legend">
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch task-calendar-legend-swatch--today" /> Today
-                        </div>
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch task-calendar-legend-swatch--selected" /> Selected
-                        </div>
-                        <span className="task-calendar-legend-divider" />
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch" style={{ backgroundColor: '#fccf3a' }} /> In Progress
-                        </div>
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch" style={{ backgroundColor: '#0feb42' }} /> Completed
-                        </div>
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch" style={{ backgroundColor: '#A281C7' }} /> Pending Approval
-                        </div>
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch" style={{ backgroundColor: '#61C0AA' }} /> Approved
-                        </div>
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch" style={{ backgroundColor: '#077af5' }} /> Open
-                        </div>
-                        <div className="task-calendar-legend-item">
-                          <span className="task-calendar-legend-swatch" style={{ backgroundColor: '#6B7280' }} /> Closed
-                        </div>
-                      </div>
-                      <div className="task-calendar-nav">
-                        {calendarLoading && <FaSpinner className="task-calendar-loading-spinner task-spin" />}
-                        <button
-                          type="button"
-                          className="task-calendar-nav-btn"
-                          onClick={() => shiftCalendarMonth(-1)}
-                          aria-label="Previous month"
-                        >
-                          <FaChevronLeft />
-                        </button>
-                        <span className="task-calendar-month">{calendarMonthLabel}</span>
-                        <button
-                          type="button"
-                          className="task-calendar-nav-btn"
-                          onClick={() => shiftCalendarMonth(1)}
-                          aria-label="Next month"
-                        >
-                          <FaChevronRight />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="task-calendar-grid">
-                      {CALENDAR_DAY_LABELS.map((label) => (
-                        <div key={label} className="task-calendar-day-label">{label}</div>
-                      ))}
-                    </div>
-                    <div className="task-calendar-grid task-calendar-grid--days">
-                      {calendarCells.map((cell) => {
-                        if (cell.empty) {
-                          return <div key={cell.key} className="task-day-cell task-day-cell--empty" />;
-                        }
-                        const isSelected = selectedDay === cell.dateStr;
-                        const isToday = todayStr === cell.dateStr;
-                        const dayData = calendarDaysMap[cell.dateStr];
-                        const totalTasks = dayData?.total_tasks || 0;
-                        const statusCounts = dayData?.status_counts || {};
-
-                        const dayStatuses = Object.entries(statusCounts)
-                          .filter(([_, count]) => count > 0)
-                          .map(([st, count]) => ({
-                            status: st,
-                            count,
-                            label: CALENDAR_STATUS_CONFIG[st]?.label || st,
-                            color: CALENDAR_STATUS_CONFIG[st]?.color || '#94a3b8'
-                          }));
-
-                        return (
-                          <button
-                            type="button"
-                            key={cell.key}
-                            className={[
-                              'task-day-cell',
-                              isToday ? 'task-day-cell--today' : '',
-                              isSelected ? 'task-day-cell--selected' : '',
-                              totalTasks > 0 ? 'task-day-cell--has-tasks' : ''
-                            ].filter(Boolean).join(' ')}
-                            onClick={() => handleCalendarDayClick(cell.dateStr)}
-                            aria-pressed={isSelected}
-                            title={
-                              totalTasks > 0
-                                ? `${cell.dateStr}: ${totalTasks} task${totalTasks > 1 ? 's' : ''}`
-                                : `${cell.dateStr}: No tasks`
-                            }
-                          >
-                            <div className="task-day-cell-top">
-                              <span className="task-day-number">{cell.dayNumber}</span>
-                              <div className="task-day-cell-badges">
-                                {isToday && <span className="task-day-today-tag">Today</span>}
-                                {totalTasks > 0 && (
-                                  <span className="task-day-total-badge" title={`${totalTasks} task${totalTasks > 1 ? 's' : ''}`}>
-                                    {totalTasks}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {totalTasks > 0 ? (
-                              <div className="task-day-indicators">
-                                <div className="task-day-status-bar">
-                                  {dayStatuses.map(({ status, count, color, label }) => {
-                                    const widthPct = Math.max(8, (count / totalTasks) * 100);
-                                    return (
-                                      <div
-                                        key={status}
-                                        className="task-day-status-bar-segment"
-                                        style={{
-                                          width: `${widthPct}%`,
-                                          backgroundColor: color
-                                        }}
-                                        title={`${label}: ${count}`}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                                <div className="task-day-status-chips">
-                                  {dayStatuses.slice(0, 3).map(({ status, count, color, label }) => (
-                                    <span
-                                      key={status}
-                                      className="task-day-status-dot-item"
-                                      title={`${label}: ${count}`}
-                                    >
-                                      <span className="task-day-status-dot" style={{ backgroundColor: color }} />
-                                      <span className="task-day-status-count">{count}</span>
-                                    </span>
-                                  ))}
-                                  {dayStatuses.length > 3 && (
-                                    <span className="task-day-status-more">+{dayStatuses.length - 3}</span>
-                                  )}
-                                </div>
-                              </div>
-                            ) : (
-                              <div className="task-day-empty-indicator">
-                                <span className="task-day-no-tasks">-</span>
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </section>
-                )}
-
                 {/* ========== NESTED DARK DASHBOARD ========== */}
-                {selectedDay && (taskStats || calendarDaysMap[selectedDay]) && (
-                  <section className="task-nested-dashboard" ref={dashboardRef}>
-                    <div className="task-nested-header">
-                      <div>
-                        <h2>
-                          {selectedDay ? `Details for ${selectedDayLabel}` : `Overview · ${durationLabel}`}
-                        </h2>
-                        <p>
-                          {selectedDay
-                            ? 'Daily metrics and task details for the selected date.'
-                            : 'Task metrics for the selected duration and view.'}
-                        </p>
-                      </div>
+                <section className="task-nested-dashboard" ref={dashboardRef}>
+                  <div className="task-nested-header">
+                    <div>
+                      <h2>
+                        {selectedDay ? `Details for ${selectedDayLabel}` : `Overview · ${durationLabel}`}
+                      </h2>
+                      <p>
+                        {selectedDay
+                          ? 'Daily metrics and task details for the selected date.'
+                          : 'Task metrics for the selected duration and view.'}
+                      </p>
+                    </div>
+                    {selectedDay && (
                       <button
                         type="button"
                         className="task-back-btn task-back-btn--primary"
@@ -3021,7 +2869,8 @@ const TaskReports = () => {
                       >
                         ← Back to Overview
                       </button>
-                    </div>
+                    )}
+                  </div>
 
                     {/* ROW 1: KPIs */}
                     <div className="task-kpi-grid">
@@ -3047,43 +2896,116 @@ const TaskReports = () => {
                       </div>
                     </div>
 
-                    {/* ROW 2: Charts */}
+                    {/* ROW 2: Middle Analytics Grid (4-column responsive layout: Calendar, Priority, Status, Donut) */}
                     <div className="task-middle-grid">
-                      {/* Completion / Task Progress donut (Chart.js) */}
-                      <div className="task-dark-card task-dark-card--progress">
-                        <h3><FaChartLine /> Task progress</h3>
-                        <div className="task-donut-container">
-                          <div className="task-donut-canvas-wrap">
-                            <canvas ref={completionRateChartRef}></canvas>
+                      {/* 1. Interactive Calendar Card for date-based task drilldown */}
+                      <div className="task-dark-card task-calendar-card">
+                        <div className="task-calendar-header">
+                          <div className="task-calendar-header-text">
+                            <h3><FaCalendarAlt /> Calendar</h3>
                           </div>
-                          <div className="task-donut-legend">
-                            {STATUS_LABELS.map((label, index) => {
-                              const count = statusValues[index];
-                              if (count === 0) return null;
-                              const isHidden = hiddenDoughnutStatuses.has(label);
-                              return (
-                                <button
-                                  type="button"
-                                  key={label}
-                                  className={`task-donut-legend-item ${isHidden ? 'task-donut-legend-item--hidden' : ''}`}
-                                  onClick={() => toggleDonutStatusVisibility(label)}
-                                  title={isHidden ? `Show ${label}` : `Hide ${label}`}
-                                >
+                          <div className="task-calendar-nav">
+                            {calendarLoading && <FaSpinner className="task-calendar-loading-spinner task-spin" />}
+                            <button
+                              type="button"
+                              className="task-calendar-nav-btn"
+                              onClick={() => shiftCalendarMonth(-1)}
+                              aria-label="Previous month"
+                            >
+                              <FaChevronLeft />
+                            </button>
+                            <span className="task-calendar-month">{calendarMonthLabel}</span>
+                            <button
+                              type="button"
+                              className="task-calendar-nav-btn"
+                              onClick={() => shiftCalendarMonth(1)}
+                              aria-label="Next month"
+                            >
+                              <FaChevronRight />
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="task-calendar-grid task-calendar-grid--labels">
+                          {CALENDAR_DAY_LABELS.map((label) => (
+                            <div key={label} className="task-calendar-day-label">{label}</div>
+                          ))}
+                        </div>
+                        <div className="task-calendar-grid task-calendar-grid--days">
+                          {calendarCells.map((cell) => {
+                            if (cell.empty) {
+                              return <div key={cell.key} className="task-day-cell task-day-cell--empty" />;
+                            }
+                            const isSelected = selectedDay === cell.dateStr;
+                            const isToday = todayStr === cell.dateStr;
+                            const dayData = calendarDaysMap[cell.dateStr];
+                            const totalTasks = dayData?.total_tasks || 0;
+
+                            return (
+                              <button
+                                type="button"
+                                key={cell.key}
+                                className={[
+                                  'task-day-cell',
+                                  isToday ? 'task-day-cell--today' : '',
+                                  isSelected ? 'task-day-cell--selected' : '',
+                                  totalTasks > 0 ? 'task-day-cell--has-tasks' : ''
+                                ].filter(Boolean).join(' ')}
+                                onClick={() => handleCalendarDayClick(cell.dateStr)}
+                                aria-pressed={isSelected}
+                                title={
+                                  totalTasks > 0
+                                    ? `${cell.dateStr}: ${totalTasks} task${totalTasks > 1 ? 's' : ''}`
+                                    : `${cell.dateStr}: No tasks`
+                                }
+                              >
+                                <span className="task-day-number">{cell.dayNumber}</span>
+                                {totalTasks > 0 && (
                                   <span
-                                    className={`task-progress-dot ${STATUS_DOT_CLASSNAMES[index] || ''}`}
-                                    style={{ backgroundColor: STATUS_COLORS[index] || '' }}
-                                  />
-                                  <span className="task-donut-legend-label">{label}</span>
-                                  <span className="task-donut-legend-value">{count}</span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                          {taskStatsLoading && <div className="loading task-state-message">Loading task progress...</div>}
-                          {taskStatsError && <div className="error task-state-message task-state-message--error">{taskStatsError}</div>}
+                                    className="task-day-count"
+                                    aria-label={`${totalTasks} task${totalTasks > 1 ? 's' : ''}`}
+                                  >
+                                    {totalTasks > 99 ? '99+' : totalTasks}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        <div className="task-calendar-mini-legend">
+                          <span className="task-calendar-legend-item">
+                            <span className="task-calendar-legend-dot task-calendar-legend-dot--today" /> Today
+                          </span>
+                          <span className="task-calendar-legend-item">
+                            <span className="task-calendar-legend-dot task-calendar-legend-dot--selected" /> Selected
+                          </span>
+                          <span className="task-calendar-legend-item">
+                            <span className="task-calendar-legend-badge task-calendar-legend-badge--tasks">#</span> Tasks
+                          </span>
                         </div>
                       </div>
-
+                      {/* Priority overview vertical bars */}
+                      <div className="task-dark-card">
+                        <h3><FaFlag /> Priority overview</h3>
+                        <div className="task-priority-chart">
+                          {PRIORITY_ITEMS.map(({ key, label }) => {
+                            const value = prioritySummary[key];
+                            const heightPct = (value / maxPriorityCount) * 100;
+                            return (
+                              <div className="task-priority-bar-group" key={key}>
+                                <div
+                                  className={`task-priority-bar task-priority-bar--${key}`}
+                                  style={{ height: `${value > 0 ? Math.max(heightPct, 6) : 2}%` }}
+                                >
+                                  <span>{value}</span>
+                                </div>
+                                <span className="task-priority-label">{label}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
                       {/* Status overview rows */}
                       <div className="task-dark-card">
                         <h3><FaChartPie /> Status overview</h3>
@@ -3106,55 +3028,67 @@ const TaskReports = () => {
                           })}
                         </div>
                       </div>
-
-                      {/* Priority overview vertical bars */}
-                      <div className="task-dark-card">
-                        <h3><FaFlag /> Priority overview</h3>
-                        <div className="task-priority-chart">
-                          {PRIORITY_ITEMS.map(({ key, label }) => {
-                            const value = prioritySummary[key];
-                            const heightPct = (value / maxPriorityCount) * 100;
-                            return (
-                              <div className="task-priority-bar-group" key={key}>
-                                <div
-                                  className={`task-priority-bar task-priority-bar--${key}`}
-                                  style={{ height: `${value > 0 ? Math.max(heightPct, 6) : 2}%` }}
+                      {/* Completion / Task Progress donut (Chart.js) */}
+                      <div className="task-dark-card task-dark-card--progress">
+                        <h3><FaChartLine /> Task progress</h3>
+                        <div className="task-donut-container">
+                          <div className="task-donut-canvas-wrap">
+                            <canvas ref={completionRateChartRef}></canvas>
+                          </div>
+                          {/* <div className="task-donut-legend">
+                            {STATUS_LABELS.map((label, index) => {
+                              const count = statusValues[index];
+                              if (count === 0) return null;
+                              const isHidden = hiddenDoughnutStatuses.has(label);
+                              return (
+                                <button
+                                  type="button"
+                                  key={label}
+                                  className={`task-donut-legend-item ${isHidden ? 'task-donut-legend-item--hidden' : ''}`}
+                                  onClick={() => toggleDonutStatusVisibility(label)}
+                                  title={isHidden ? `Show ${label}` : `Hide ${label}`}
                                 >
-                                  <span>{value}</span>
-                                </div>
-                                <span className="task-priority-label">{label}</span>
-                              </div>
-                            );
-                          })}
+                                  <span
+                                    className={`task-progress-dot ${STATUS_DOT_CLASSNAMES[index] || ''}`}
+                                    style={{ backgroundColor: STATUS_COLORS[index] || '' }}
+                                  />
+                                  <span className="task-donut-legend-label">{label}</span>
+                                  <span className="task-donut-legend-value">{count}</span>
+                                </button>
+                              );
+                            })}
+                          </div> */}
+                          {taskStatsLoading && <div className="loading task-state-message">Loading task progress...</div>}
+                          {taskStatsError && <div className="error task-state-message task-state-message--error">{taskStatsError}</div>}
                         </div>
                       </div>
                     </div>
 
-                    {/* ROW 3: Scheduled Tasks for Selected Date */}
-                    {selectedDay && (
-                      <div className="task-dark-card task-scheduled-card">
-                        <div className="task-scheduled-header">
-                          <div className="task-scheduled-title-wrap">
-                            <h3>
-                              <FaTasks /> Tasks Scheduled for {selectedDayLabel}
-                            </h3>
-                            <span className="task-scheduled-badge">
-                              {selectedDayTasks.length} {selectedDayTasks.length === 1 ? 'Task' : 'Tasks'}
-                            </span>
-                          </div>
+                    {/* ROW 3: Scheduled Tasks for Selected Date / Overview */}
+                    <div className="task-dark-card task-scheduled-card">
+                      <div className="task-scheduled-header">
+                        <div className="task-scheduled-title-wrap">
+                          <h3>
+                            <FaTasks /> {selectedDay ? `Tasks Scheduled for ${selectedDayLabel}` : `Tasks Overview · ${durationLabel}`}
+                          </h3>
+                          <span className="task-scheduled-badge">
+                            {displayTasks.length} {displayTasks.length === 1 ? 'Task' : 'Tasks'}
+                          </span>
                         </div>
+                      </div>
 
-                        {taskStatsLoading ? (
-                          <div className="task-scheduled-loading">
-                            <FaSpinner className="task-spin" /> Loading tasks scheduled for {selectedDayLabel}...
-                          </div>
-                        ) : selectedDayTasks.length === 0 ? (
-                          <div className="task-scheduled-empty">
-                            <FaRegFolderOpen className="task-empty-icon" />
-                            <h4>No tasks scheduled for this date</h4>
-                            <p>There are no tasks due or recurring on {selectedDayLabel}.</p>
-                          </div>
-                        ) : (
+                      {taskStatsLoading ? (
+                        <div className="task-scheduled-loading">
+                          <FaSpinner className="task-spin" /> {selectedDay ? `Loading tasks scheduled for ${selectedDayLabel}...` : 'Loading tasks...'}
+                        </div>
+                      ) : displayTasks.length === 0 ? (
+                        <div className="task-scheduled-empty">
+                          <FaRegFolderOpen className="task-empty-icon" />
+                          <h4>{selectedDay ? 'No tasks scheduled for this date' : 'No tasks found'}</h4>
+                          <p>{selectedDay ? `There are no tasks due or recurring on ${selectedDayLabel}.` : 'There are no tasks scheduled for the selected duration.'}</p>
+                        </div>
+                      ) : (
+                        <>
                           <div className="task-scheduled-table-wrap">
                             <table className="task-scheduled-table">
                               <thead>
@@ -3169,7 +3103,8 @@ const TaskReports = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {selectedDayTasks.map((task) => (
+                                {/* Clamped to initial 5 rows when collapsed; shows full list when isScheduledTasksExpanded is true */}
+                                {(isScheduledTasksExpanded ? displayTasks : displayTasks.slice(0, 5)).map((task) => (
                                   <tr
                                     key={task.id}
                                     className="task-scheduled-row"
@@ -3236,11 +3171,32 @@ const TaskReports = () => {
                               </tbody>
                             </table>
                           </div>
-                        )}
-                      </div>
-                    )}
+                          {/* Expand / Collapse toggle for lists exceeding 5 records */}
+                          {displayTasks.length > 5 && (
+                            <div className="task-scheduled-more-wrap">
+                              <button
+                                type="button"
+                                className="task-scheduled-more-btn"
+                                onClick={() => setIsScheduledTasksExpanded((prev) => !prev)}
+                                aria-expanded={isScheduledTasksExpanded}
+                              >
+                                <span>
+                                  {isScheduledTasksExpanded
+                                    ? 'Collapse'
+                                    : `See More (${displayTasks.length - 5} more ${displayTasks.length - 5 === 1 ? 'record' : 'records'})`}
+                                </span>
+                                {isScheduledTasksExpanded ? (
+                                  <FaChevronUp className="task-scheduled-more-icon" />
+                                ) : (
+                                  <FaChevronDown className="task-scheduled-more-icon" />
+                                )}
+                              </button>
+                            </div>
+                          )}
+                        </>
+                      )}
+                    </div>
                   </section>
-                )}
               </>
             ) : (
               taskStats && taskAggregates && (
