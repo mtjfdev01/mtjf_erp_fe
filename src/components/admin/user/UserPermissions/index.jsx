@@ -118,10 +118,14 @@ const mergeAidPermissions = (rawPermissions) => {
         'view',
         'update',
         'delete',
+        'approve_draft',
         'ceo_approve',
         'deliver',
-        'bulk_verify',
       ],
+    },
+    {
+      key: 'aid_verification',
+      actions: ['list_view', 'view', 'update', 'bulk_verify'],
     },
   ];
 
@@ -140,6 +144,30 @@ const mergeAidPermissions = (rawPermissions) => {
     });
     next.program = { ...(next.program || {}), [key]: mirrored };
   });
+
+  // Soft-migrate: older roles stored verify flags on aid_applications only
+  const apps =
+    next.program?.aid_applications || next.fund_raising?.aid_applications;
+  const hasVerification =
+    next.program?.aid_verification &&
+    typeof next.program.aid_verification === 'object' &&
+    ['list_view', 'view', 'update', 'bulk_verify'].some(
+      (a) => next.program.aid_verification[a] === true,
+    );
+  if (!hasVerification && apps && typeof apps === 'object') {
+    const mirrored = {
+      list_view: apps.list_view === true || apps.view === true,
+      view: apps.view === true || apps.list_view === true,
+      update: apps.update === true,
+      bulk_verify: apps.bulk_verify === true,
+    };
+    if (Object.values(mirrored).some(Boolean)) {
+      next.program = {
+        ...(next.program || {}),
+        aid_verification: mirrored,
+      };
+    }
+  }
 
   return next;
 };
@@ -328,17 +356,21 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           actions: ['view'],
         },
         aid_applications: {
-          label: 'Beneficiary Registration / Verification',
+          label: 'Beneficiary Registration / Approvals',
           actions: [
             'create',
             'list_view',
             'view',
             'update',
             'delete',
+            'approve_draft',
             'ceo_approve',
             'deliver',
-            'bulk_verify',
           ],
+        },
+        aid_verification: {
+          label: 'Verification Process',
+          actions: ['list_view', 'view', 'update', 'bulk_verify'],
         },
         aid_people: {
           label: 'Beneficiaries',
@@ -683,6 +715,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     bypass_location: 'Bypass location (GPS + territory filter)',
     completing: 'Completing',
     reconciler: 'Reconciler (verify / change status)',
+    approve_draft: 'Approve draft (to verification)',
     ceo_approve: 'CEO Approve',
     deliver: 'Deliver',
     bulk_verify: 'Bulk verify checklist',

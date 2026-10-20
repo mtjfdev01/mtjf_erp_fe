@@ -2485,6 +2485,30 @@ a.aid-contact-chip:hover {
   min-height: 88px;
 }
 
+.aid-rec-save {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.55rem;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aid-rec-save:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.aid-rec-save:disabled,
+.aid-invest-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .aid-rec-submit {
   width: 100%;
   border: none;
@@ -2500,6 +2524,30 @@ a.aid-contact-chip:hover {
 .aid-rec-submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.aid-investigation__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.aid-invest-save {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aid-invest-save:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .aid-investigation__head {

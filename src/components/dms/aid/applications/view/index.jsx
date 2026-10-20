@@ -21,6 +21,8 @@ import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidInvestigationPanel, {
   emptyRecommendation,
+  enrichInvestigationFromAttachments,
+  getInvestigationIncompleteReasons,
   isInvestigationComplete,
   isRecommendationComplete,
   mergeInvestigationState,
@@ -66,6 +68,7 @@ const AidApplicationView = () => {
     !!permissions?.fund_raising_manager;
   const canUpdate =
     isStaffElevated ||
+    hasAidPermission(permissions, 'aid_verification', 'update') ||
     hasAidPermission(permissions, 'aid_applications', 'update');
   const canCeo =
     isStaffElevated ||
@@ -75,6 +78,7 @@ const AidApplicationView = () => {
     hasAidPermission(permissions, 'aid_applications', 'deliver');
   const canBulkVerify =
     isStaffElevated ||
+    hasAidPermission(permissions, 'aid_verification', 'bulk_verify') ||
     hasAidPermission(permissions, 'aid_applications', 'bulk_verify');
 
   const [app, setApp] = useState(null);
@@ -102,6 +106,7 @@ const AidApplicationView = () => {
   const [kinship, setKinship] = useState([]);
   const [uploadingInvestKey, setUploadingInvestKey] = useState(null);
   const [attachUploading, setAttachUploading] = useState(false);
+  const [investSaving, setInvestSaving] = useState(false);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     try {
@@ -116,8 +121,16 @@ const AidApplicationView = () => {
           payload?.investigation_items ||
           payload?.verification_checklist_items ||
           [];
+        const merged = mergeInvestigationState(
+          items,
+          payload?.verification_checklist || {},
+        );
         setInvestigation(
-          mergeInvestigationState(items, payload?.verification_checklist || {}),
+          enrichInvestigationFromAttachments(
+            items,
+            merged,
+            payload?.attachments || [],
+          ),
         );
       }
       {
@@ -234,17 +247,33 @@ const AidApplicationView = () => {
         fd,
       );
       const row = res.data?.data;
-      setInvestigation((prev) => ({
-        ...prev,
-        [itemKey]: {
-          ...normalizeInvestigationEntry(prev[itemKey]),
-          status: 'verified',
-          attachment_url: row?.file_url || '',
-          attachment_name: row?.file_name || file.name,
-          attachment_id: row?.id ?? null,
-        },
-      }));
-      await load({ silent: true });
+      const nextEntry = {
+        ...normalizeInvestigationEntry(investigation[itemKey]),
+        status: 'verified',
+        attachment_url: row?.file_url || '',
+        attachment_name: row?.file_name || file.name,
+        attachment_id: row?.id ?? null,
+      };
+      const nextInvestigation = {
+        ...investigation,
+        [itemKey]: nextEntry,
+      };
+      setInvestigation(nextInvestigation);
+      // Persist on checklist so a reload cannot wipe the attachment link.
+      await axiosInstance.patch(`/aid/applications/${id}`, {
+        verification_checklist: nextInvestigation,
+      });
+      setApp((prev) =>
+        prev
+          ? {
+              ...prev,
+              attachments: row?.id
+                ? [row, ...(prev.attachments || [])]
+                : prev.attachments || [],
+              verification_checklist: nextInvestigation,
+            }
+          : prev,
+      );
       toast.success('File attached');
     } catch (err) {
       const msg =
@@ -325,7 +354,49 @@ const AidApplicationView = () => {
     investigationItems,
     investigation,
   );
+  const checklistGaps = getInvestigationIncompleteReasons(
+    investigationItems,
+    investigation,
+  );
   const recommendationComplete = isRecommendationComplete(recommendation);
+
+  const saveInvestigationProgress = async () => {
+    if (!id || investSaving) return;
+    setInvestSaving(true);
+    setActionError('');
+    try {
+      await axiosInstance.patch(`/aid/applications/${id}`, {
+        verification_notes: verifyNotes || recommendation.remarks || undefined,
+        verification_checklist: investigation,
+        investigation_recommendation: {
+          decision: recommendation.decision,
+          amount:
+            recommendation.decision === 'reject'
+              ? null
+              : recommendation.amount !== '' &&
+                  recommendation.amount != null
+                ? Number(recommendation.amount)
+                : null,
+          period_months: Number(recommendation.period_months) || null,
+          remarks: recommendation.remarks || '',
+          found_monthly_income: recommendation.found_monthly_income
+            ? Number(recommendation.found_monthly_income)
+            : null,
+        },
+      });
+      await load({ silent: true });
+      toast.success('Investigation progress saved');
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to save investigation progress';
+      setActionError(msg);
+      toast.error(msg);
+    } finally {
+      setInvestSaving(false);
+    }
+  };
   const showReject =
     canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
   const showVerify = canUpdate && ['submitted', 'under_review'].includes(status);
@@ -563,6 +634,7 @@ const AidApplicationView = () => {
           <div className="aid-tabs aid-tabs--main" role="tablist">
             {[
               { id: 'case', label: 'Case details' },
+              { id: 'field_process', label: 'Field process' },
               { id: 'beneficiary', label: 'Beneficiary' },
               { id: 'family', label: 'Family' },
               { id: 'attachments', label: 'Attachments' },
@@ -990,8 +1062,14 @@ const AidApplicationView = () => {
                   vulnerability={app.vulnerability}
                   recommendation={recommendation}
                   onRecommendationChange={setRecommendation}
+                  onSaveProgress={
+                    showVerify ? saveInvestigationProgress : undefined
+                  }
+                  saveProgressBusy={investSaving}
+                  saveProgressDisabled={busy || investSaving}
                   submitDisabled={
                     busy ||
+                    investSaving ||
                     !checklistComplete ||
                     !recommendationComplete ||
                     !leakageOverrideOk
@@ -1030,11 +1108,30 @@ const AidApplicationView = () => {
                       : undefined
                   }
                 />
-                {activePanelTab === 'case' && showVerify && !checklistComplete && (
-                  <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
-                    Mark every required claim Verified or Mismatch (with Found
-                    note). Process checks must be Verified.
-                  </p>
+                {(activePanelTab === 'case' ||
+                  activePanelTab === 'field_process') &&
+                  showVerify &&
+                  !checklistComplete && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#b45309',
+                      marginBottom: 0,
+                    }}
+                  >
+                    <p style={{ margin: '0 0 0.35rem' }}>
+                      Submit stays disabled until every required check is done.
+                      Use <strong>Save progress</strong> anytime.
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                      {checklistGaps.slice(0, 6).map((r) => (
+                        <li key={r}>{r}</li>
+                      ))}
+                      {checklistGaps.length > 6 ? (
+                        <li>+{checklistGaps.length - 6} more…</li>
+                      ) : null}
+                    </ul>
+                  </div>
                 )}
                 {activePanelTab === 'case' &&
                   showVerify &&

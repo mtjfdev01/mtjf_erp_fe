@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../../utils/axios';
+import { useAuth } from '../../../../../../context/AuthContext';
+import { hasAidPermission } from '../../../../../../utils/permissions';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
 import AidEducationApplicationFields from '../../../shared/AidEducationApplicationFields';
@@ -55,12 +57,22 @@ const FAMILY_GROUPS = [
 const AidEntryApplicationView = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { permissions } = useAuth();
+  const isStaffElevated =
+    !!permissions?.super_admin ||
+    !!permissions?.program_manager ||
+    !!permissions?.fund_raising_manager;
+  const canApproveDraft =
+    hasAidPermission(permissions, 'aid_applications', 'approve_draft') ||
+    isStaffElevated;
+
   const [app, setApp] = useState(null);
   const [familyTree, setFamilyTree] = useState(null);
   const [kinship, setKinship] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [panelTab, setPanelTab] = useState('application');
+  const [approving, setApproving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -98,6 +110,24 @@ const AidEntryApplicationView = () => {
   useEffect(() => {
     load();
   }, [load]);
+
+  const approveDraft = async () => {
+    if (!canApproveDraft || !app?.id) return;
+    try {
+      setApproving(true);
+      setError('');
+      const res = await axiosInstance.post(
+        `/aid/applications/${app.id}/approve-draft`,
+      );
+      setApp(res.data?.data || app);
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 'Failed to approve draft application',
+      );
+    } finally {
+      setApproving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -186,7 +216,7 @@ const AidEntryApplicationView = () => {
             {status !== 'rejected' && status !== 'delivered' ? (
               <button
                 type="button"
-                className="primary-btn"
+                className="secondary-btn"
                 onClick={() =>
                   navigate(`/dms/aid/applications/edit/${app.id}`)
                 }
@@ -194,15 +224,27 @@ const AidEntryApplicationView = () => {
                 Edit
               </button>
             ) : null}
-            <button
-              type="button"
-              className="secondary-btn"
-              onClick={() =>
-                navigate(`/dms/aid/applications/view/${app.id}`)
-              }
-            >
-              Open verification process
-            </button>
+            {canApproveDraft && status === 'draft' ? (
+              <button
+                type="button"
+                className="primary-btn"
+                disabled={approving}
+                onClick={approveDraft}
+              >
+                {approving ? 'Approving…' : 'Approve for verification'}
+              </button>
+            ) : null}
+            {status !== 'draft' ? (
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() =>
+                  navigate(`/dms/aid/applications/view/${app.id}`)
+                }
+              >
+                Open verification process
+              </button>
+            ) : null}
           </div>
         </div>
 

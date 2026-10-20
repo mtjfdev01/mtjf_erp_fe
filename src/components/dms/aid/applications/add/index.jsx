@@ -65,6 +65,7 @@ import {
   AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
   AID_FAMILY_HEAD_BLOOD_TYPE_VALUES,
   AID_FAMILY_HEAD_GUARDIAN_SUBTYPE_VALUES,
+  AID_FAMILY_HEAD_SELF_TYPE,
   calcAgeFromDob,
   formatCnicInput,
   formatPkPhoneInput,
@@ -285,9 +286,10 @@ const toFamilyHeadType = (relation) => {
   return 'other';
 };
 
-/** Primary Type DD value: blood relation, or "guardian" when subtype / guardian. */
+/** Primary Type DD value: self, blood relation, or "guardian" when subtype / guardian. */
 const familyHeadPrimaryType = (relationType) => {
   const t = String(relationType || 'father').toLowerCase();
+  if (t === AID_FAMILY_HEAD_SELF_TYPE) return AID_FAMILY_HEAD_SELF_TYPE;
   if (AID_FAMILY_HEAD_BLOOD_TYPE_VALUES.has(t)) return t;
   return 'guardian';
 };
@@ -1393,7 +1395,7 @@ const AidApplicationAdd = () => {
       } else {
         const res = await axiosInstance.post('/aid/applications', payload);
         savedId = res.data?.data?.id;
-        toast.success('Application created');
+        toast.success('Application saved as draft');
       }
 
       if (savedId) {
@@ -2104,12 +2106,6 @@ const AidApplicationAdd = () => {
               {familyHeads.map((head, idx) => {
                 const primaryType = familyHeadPrimaryType(head._relation_type);
                 const subtype = familyHeadSubtype(head._relation_type);
-                const typeLabel =
-                  primaryType === 'guardian'
-                    ? subtype
-                      ? `Guardian — ${familyHeadTypeLabel(subtype)}`
-                      : 'Guardian'
-                    : familyHeadTypeLabel(primaryType);
                 return (
                   <div key={`fh-${idx}`} className="aid-repeat-item">
                     <div
@@ -2238,13 +2234,13 @@ const AidApplicationAdd = () => {
                     <AidFamilyHeadPersonalFields
                       title={`Identity of family head${
                         head.is_beneficiary || head.is_applicant
-                          ? ` — ${typeLabel} (${[
+                          ? ` (${[
                               head.is_beneficiary ? 'Beneficiary' : null,
                               head.is_applicant ? 'Applicant' : null,
                             ]
                               .filter(Boolean)
                               .join(' + ')})`
-                          : ` — ${typeLabel}`
+                          : ''
                       }`}
                       subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
                       contactTitle="Contact & address"
@@ -2269,7 +2265,7 @@ const AidApplicationAdd = () => {
                     />
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
                       <h4 className="aid-family-panel__title">
-                        {typeLabel} — literacy detail
+                        Family Head — literacy detail
                       </h4>
                       <AidLiteracyFields
                         value={head}
@@ -2310,7 +2306,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title={`${typeLabel} — property ownership`}
+                        title="Family Head — property ownership"
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
@@ -2332,7 +2328,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title={`${typeLabel} — resident`}
+                        title="Family Head — resident"
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
@@ -2354,7 +2350,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title={`${typeLabel} — livestock`}
+                        title="Family Head — livestock"
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
@@ -2376,12 +2372,12 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title={`${typeLabel} — vehicle`}
+                        title="Family Head — vehicle"
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
                       <AidFamilyMembersIntake
-                        title={`${typeLabel} — family members`}
+                        title="Family Head — family members"
                         hint="Relatives under this family head. Mark Applicant / Beneficiary if needed."
                         rows={head._family_members || []}
                         onChange={(members) =>

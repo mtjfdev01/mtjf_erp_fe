@@ -51,7 +51,12 @@ const AidEntryApplicationsList = () => {
     hasAidPermission(permissions, 'aid_applications', 'create') ||
     isStaffElevated;
 
+  const canApproveDraft =
+    hasAidPermission(permissions, 'aid_applications', 'approve_draft') ||
+    isStaffElevated;
+
   const [rows, setRows] = useState([]);
+  const [approvingId, setApprovingId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +99,22 @@ const AidEntryApplicationsList = () => {
     applyFilters(next);
   };
 
+  const approveDraft = async (rowId) => {
+    if (!canApproveDraft || !rowId) return;
+    try {
+      setApprovingId(rowId);
+      setError('');
+      await axiosInstance.post(`/aid/applications/${rowId}/approve-draft`);
+      await fetchRows();
+    } catch (err) {
+      setError(
+        err.response?.data?.message || 'Failed to approve draft application',
+      );
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
   const fetchRows = async () => {
     if (!canList) {
       setError('You do not have permission to view aid applications.');
@@ -105,6 +126,7 @@ const AidEntryApplicationsList = () => {
       setError('');
       const res = await axiosInstance.get('/aid/applications', {
         params: {
+          queue: 'entry',
           search: appliedFilters.search || undefined,
           stage: appliedFilters.stage || undefined,
           requested_aid_type: appliedFilters.requested_aid_type || undefined,
@@ -399,6 +421,18 @@ const AidEntryApplicationsList = () => {
                                 }
                               >
                                 Edit
+                              </button>
+                            ) : null}
+                            {canApproveDraft && row.status === 'draft' ? (
+                              <button
+                                type="button"
+                                className="aid-text-link"
+                                disabled={approvingId === row.id}
+                                onClick={() => approveDraft(row.id)}
+                              >
+                                {approvingId === row.id
+                                  ? 'Approving…'
+                                  : 'Approve'}
                               </button>
                             ) : null}
                           </div>

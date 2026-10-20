@@ -285,7 +285,7 @@ const programDepartmentItems = (isUser = false) => [
     label: 'Verification Process',
     path: '/dms/aid/applications/list',
     type: 'list',
-    module: 'aid_applications',
+    module: 'aid_verification',
     permissionDepartment: 'program',
     icon: FiLifeBuoy
   },
@@ -1081,7 +1081,7 @@ const todosItems = () => [
 const allDepartmentItems = (isUser = false) => [
   {
     id: 'program',
-    label: 'Program Department',
+    label: 'Cahrity Module',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   },
@@ -1195,7 +1195,7 @@ ceo_office: (isUser = false) => ({
   }),
   program: (isUser = false) => ({
     id: 'program',
-    label: 'Program Department',
+    label: 'Cahrity Module',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   }),
