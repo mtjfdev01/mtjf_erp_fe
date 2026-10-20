@@ -9,6 +9,7 @@ import {
   FiMail,
   FiPlusCircle,
   FiClipboard,
+  FiEdit,
   FiCheckSquare,
   FiCheckCircle,
   FiList,
@@ -272,6 +273,14 @@ const programDepartmentItems = (isUser = false) => [
     module: 'aid_overview',
     permissionDepartment: 'program',
     icon: FiBarChart2
+  },
+  {
+    label: 'Drafts',
+    path: '/dms/aid/applications/drafts/list',
+    type: 'list',
+    module: 'aid_drafts',
+    permissionDepartment: 'program',
+    icon: FiEdit
   },
   {
     label: 'Beneficiary Registration',

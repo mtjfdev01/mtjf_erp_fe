@@ -44,10 +44,11 @@ export const hasPermission = (permissions, department, module, action) => {
     return permissions.fund_raising?.dms_todos?.[action] === true;
   }
 
-  // Aid Overview / Applications / Verification / Beneficiaries: program.aid_* also accepts fund_raising.aid_*
+  // Aid Overview / Applications / Drafts / Verification / Beneficiaries
   if (
     (module === 'aid_people' ||
       module === 'aid_applications' ||
+      module === 'aid_drafts' ||
       module === 'aid_verification' ||
       module === 'aid_overview') &&
     (department === 'program' || department === 'fund_raising')
@@ -74,13 +75,32 @@ export const hasPermission = (permissions, department, module, action) => {
         return apps?.bulk_verify === true || apps?.update === true;
       }
     }
+
+    // Soft-migrate: drafts used to use aid_applications.create / approve_draft
+    if (module === 'aid_drafts') {
+      const apps =
+        permissions.program?.aid_applications ||
+        permissions.fund_raising?.aid_applications;
+      if (action === 'list_view' || action === 'view') {
+        return (
+          apps?.list_view === true ||
+          apps?.view === true ||
+          apps?.create === true ||
+          apps?.approve_draft === true
+        );
+      }
+      if (action === 'create' || action === 'update') {
+        return apps?.create === true || apps?.update === true;
+      }
+      if (action === 'approve_draft') return apps?.approve_draft === true;
+    }
   }
 
   return false;
 };
 
 /**
- * Aid Overview / Applications / Verification / Beneficiaries — program.aid_* (primary) or fund_raising.aid_* (legacy).
+ * Aid Overview / Applications / Drafts / Verification / Beneficiaries — program.aid_* (primary) or fund_raising.aid_* (legacy).
  */
 export const hasAidPermission = (permissions, module, action) =>
   hasPermission(permissions, 'program', module, action) ||
@@ -174,11 +194,12 @@ export const canViewModule = (permissions, department, module) => {
     return legacy?.view === true || legacy?.list_view === true;
   }
 
-  // Aid Overview / Applications / Verification / Beneficiaries under Program
+  // Aid Overview / Applications / Drafts / Verification / Beneficiaries under Program
   if (
     (department === 'program' || department === 'fund_raising') &&
     (module === 'aid_people' ||
       module === 'aid_applications' ||
+      module === 'aid_drafts' ||
       module === 'aid_verification' ||
       module === 'aid_overview')
   ) {
@@ -197,7 +218,6 @@ export const canViewModule = (permissions, department, module) => {
       if (
         next?.ceo_approve === true ||
         next?.deliver === true ||
-        next?.approve_draft === true ||
         next?.create === true
       ) {
         return true;
@@ -205,8 +225,33 @@ export const canViewModule = (permissions, department, module) => {
       if (
         legacy?.ceo_approve === true ||
         legacy?.deliver === true ||
-        legacy?.approve_draft === true ||
         legacy?.create === true
+      ) {
+        return true;
+      }
+    }
+    if (module === 'aid_drafts') {
+      if (
+        next?.create === true ||
+        next?.update === true ||
+        next?.approve_draft === true
+      ) {
+        return true;
+      }
+      if (
+        legacy?.create === true ||
+        legacy?.update === true ||
+        legacy?.approve_draft === true
+      ) {
+        return true;
+      }
+      const apps =
+        permissions.program?.aid_applications ||
+        permissions.fund_raising?.aid_applications;
+      if (
+        apps?.create === true ||
+        apps?.approve_draft === true ||
+        apps?.list_view === true
       ) {
         return true;
       }

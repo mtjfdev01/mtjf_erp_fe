@@ -15,9 +15,6 @@ import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
-import AidUserAssignField, {
-  toAssignableAidUser,
-} from '../../shared/AidUserAssignField';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import AidFamilyHeadPersonalFields from '../../shared/AidFamilyHeadPersonalFields';
 import AidPropertyOwnership from '../../shared/AidPropertyOwnership';
@@ -550,7 +547,6 @@ const AidApplicationAdd = () => {
   const [zakatPermission, setZakatPermission] = useState(emptyZakatPermission());
   const [consentForm, setConsentForm] = useState(emptyConsentForm());
   const [applicationDocs, setApplicationDocs] = useState({});
-  const [assignedUser, setAssignedUser] = useState(null);
   const [familyHeads, setFamilyHeads] = useState([
     {
       ...emptyFamilyHeadRow('father'),
@@ -563,12 +559,15 @@ const AidApplicationAdd = () => {
   const [beneficiaryMembers, setBeneficiaryMembers] = useState([]);
   const [saving, setSaving] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(isEdit);
+  const [editStatus, setEditStatus] = useState(null);
   const [error, setError] = useState('');
   const [formTab, setFormTab] = useState('family');
   const applicationCaptureRef = useRef(null);
   const zakatCaptureRef = useRef(null);
   const consentCaptureRef = useRef(null);
   const [pngDownloading, setPngDownloading] = useState(false);
+  const isDraftEdit = isEdit && editStatus === 'draft';
+  const draftsListPath = '/dms/aid/applications/drafts/list';
 
   const hydrateFromApplication = useCallback(async (appId) => {
     setLoadingEdit(true);
@@ -577,6 +576,8 @@ const AidApplicationAdd = () => {
       const appRes = await axiosInstance.get(`/aid/applications/${appId}`);
       const app = appRes.data?.data || appRes.data;
       if (!app?.id) throw new Error('Application not found');
+
+      setEditStatus(app.status || null);
 
       const closed =
         app.status === 'rejected' || app.status === 'delivered';
@@ -658,9 +659,6 @@ const AidApplicationAdd = () => {
         app.consent_form
           ? { ...emptyConsentForm(), ...app.consent_form }
           : emptyConsentForm(),
-      );
-      setAssignedUser(
-        app.assigned_to ? toAssignableAidUser(app.assigned_to) : null,
       );
 
       const tree = personDetail?.family_tree || {};
@@ -783,7 +781,6 @@ const AidApplicationAdd = () => {
     { id: 'family_tree', label: 'Family Tree', hint: 'Household map' },
     { id: 'request', label: 'Application', hint: 'Need & program' },
     { id: 'attachments', label: 'Attachments', hint: 'Docs & forms' },
-    { id: 'assignment', label: 'Assignment', hint: 'Case owner' },
   ];
   const stepIndex = FORM_TABS.findIndex((t) => t.id === formTab);
   const stepProgress = ((stepIndex + 1) / FORM_TABS.length) * 100;
@@ -1255,9 +1252,6 @@ const AidApplicationAdd = () => {
         consent_form: consentForm,
         writer_relation: 'self',
         family_members: buildFamilyMembers(),
-        ...(assignedUser?.id
-          ? { assigned_to_user_id: Number(assignedUser.id) }
-          : {}),
       };
 
       const validatePerson = (person, label) => {
@@ -1395,7 +1389,7 @@ const AidApplicationAdd = () => {
       } else {
         const res = await axiosInstance.post('/aid/applications', payload);
         savedId = res.data?.data?.id;
-        toast.success('Application saved as draft');
+        toast.success('Saved as draft — open Drafts to approve for verification');
       }
 
       if (savedId) {
@@ -1431,10 +1425,15 @@ const AidApplicationAdd = () => {
           );
         }
       }
+      const goDrafts = !isEdit || isDraftEdit;
       navigate(
         savedId
-          ? `/dms/aid/applications/entry/view/${savedId}`
-          : '/dms/aid/applications/entry/list',
+          ? goDrafts
+            ? `/dms/aid/applications/drafts/view/${savedId}`
+            : `/dms/aid/applications/entry/view/${savedId}`
+          : goDrafts
+            ? draftsListPath
+            : '/dms/aid/applications/entry/list',
       );
     } catch (err) {
       setError(
@@ -1442,7 +1441,7 @@ const AidApplicationAdd = () => {
           err.message ||
           (isEdit
             ? 'Failed to update application'
-            : 'Failed to create application'),
+            : 'Failed to save draft'),
       );
     } finally {
       setSaving(false);
@@ -1458,15 +1457,30 @@ const AidApplicationAdd = () => {
     return base;
   }, [showSpouseSection, spouseLabel]);
 
+  const formBackPath =
+    !isEdit || isDraftEdit
+      ? draftsListPath
+      : '/dms/aid/applications/entry/list';
+  const formTitle = !isEdit
+    ? 'New draft application'
+    : isDraftEdit
+      ? 'Edit draft'
+      : 'Edit Aid Application';
+  const submitLabel = !isEdit
+    ? 'Save as draft'
+    : isDraftEdit
+      ? 'Save draft'
+      : 'Save changes';
+
   if (loadingEdit) {
     return (
       <>
         <Navbar />
         <div className="form-content">
           <PageHeader
-            title="Edit Aid Application"
-            backPath="/dms/aid/applications/entry/list"
-            onBackClick={() => navigate('/dms/aid/applications/entry/list')}
+            title="Edit draft"
+            backPath={draftsListPath}
+            onBackClick={() => navigate(draftsListPath)}
             showAdd={false}
           />
           <p>Loading application…</p>
@@ -1480,15 +1494,23 @@ const AidApplicationAdd = () => {
       <Navbar />
       <div className="form-content">
         <PageHeader
-          title={isEdit ? 'Edit Aid Application' : 'New Aid Application'}
-          backPath="/dms/aid/applications/entry/list"
-          onBackClick={() => navigate('/dms/aid/applications/entry/list')}
+          title={formTitle}
+          backPath={formBackPath}
+          onBackClick={() => navigate(formBackPath)}
           showAdd={false}
         />
 
         {error && (
           <div className="status-message status-message--error">{error}</div>
         )}
+
+        {!isEdit || isDraftEdit ? (
+          <p className="aid-section-hint" style={{ marginBottom: 12 }}>
+            This form saves a <strong>draft</strong>. Assignment is done when
+            an approver uses <strong>Drafts → Approve</strong> (program user)
+            to send it to Verification Process.
+          </p>
+        ) : null}
 
         <form onSubmit={handleSubmit} className="form aid-application-form">
           <div className="aid-steps" role="navigation" aria-label="Application steps">
@@ -1786,17 +1808,6 @@ const AidApplicationAdd = () => {
                 />
               </div>
             </AidCollapsibleSection>
-          </div>
-          )}
-
-          {formTab === 'assignment' && (
-          <div className="form-section">
-            <h3 className="form-section-heading">Assignment</h3>
-            <AidUserAssignField
-              value={assignedUser}
-              onChange={setAssignedUser}
-              hint="Optional — assign a fund-raising staff member to handle this case."
-            />
           </div>
           )}
 
@@ -2453,7 +2464,7 @@ const AidApplicationAdd = () => {
               )}
             </div>
             <PrimaryButton type="submit" loading={saving} loadingText="Saving…">
-              {isEdit ? 'Save changes' : 'Submit application'}
+              {submitLabel}
             </PrimaryButton>
           </div>
         </form>

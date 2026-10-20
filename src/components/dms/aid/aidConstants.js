@@ -8,9 +8,8 @@ export const AID_STATUS_OPTIONS = [
   { value: 'delivered', label: 'Delivered' },
 ];
 
-/** Data-entry list pipeline cards (maps to API `stage` filter). */
+/** Data-entry list pipeline cards (maps to API `stage` filter). Drafts use the Drafts board. */
 export const AID_ENTRY_STAGES = [
-  { id: 'draft', label: 'Draft', hint: 'Awaiting registration approval' },
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
   { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
