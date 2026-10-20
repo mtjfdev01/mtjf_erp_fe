@@ -440,6 +440,8 @@ export const emptyZakatPermission = () => ({
   applicant_name: '',
   age: '',
   education: '',
+  cnic: '',
+  phone: '',
   gold: '',
   silver: '',
   cash: '',
@@ -1031,6 +1033,7 @@ export const emptyRelatedPersonBase = () => ({
   district: '',
   tehsil: '',
   union_council: '',
+  landmark: '',
   city: '',
   address: '',
   ...emptyLiteracyFields(),
@@ -1354,6 +1357,7 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   district: '',
   tehsil: '',
   union_council: '',
+  landmark: '',
   gender: FAMILY_HEAD_FEMALE_TYPES.has(relationType)
     ? 'female'
     : FAMILY_HEAD_MALE_TYPES.has(relationType)

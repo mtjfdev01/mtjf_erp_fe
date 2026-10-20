@@ -5,6 +5,8 @@ import {
   calcZakatAssetTotal,
   calcZakatNetAfterLoan,
   emptyZakatPermission,
+  formatCnicInput,
+  formatPkPhoneInput,
 } from '../aidConstants';
 
 const COPY = {
@@ -16,6 +18,8 @@ const COPY = {
     applicantName: 'درخواست دہندہ کا نام',
     age: 'عمر',
     education: 'تعلیم',
+    cnic: 'شناختی کارڈ نمبر',
+    phone: 'موبائل نمبر',
     sr: 'نمبر شمار',
     items: 'اشیاء',
     amount: 'مالیت',
@@ -53,6 +57,8 @@ const COPY = {
     applicantName: "Applicant's Name",
     age: 'Age',
     education: 'Education',
+    cnic: 'CNIC',
+    phone: 'Mobile',
     sr: 'Sr.',
     items: 'Items',
     amount: 'Value / Amount',
@@ -289,6 +295,25 @@ const AidZakatPermissionForm = ({
           value={details.education || ''}
           onChange={(e) => patch({ education: e.target.value })}
           readOnly={readOnly}
+        />
+        <FormInput
+          label={t.cnic}
+          value={formatCnicInput(details.cnic || '')}
+          onChange={(e) => patch({ cnic: formatCnicInput(e.target.value) })}
+          readOnly={readOnly}
+          placeholder="00000-0000000-0"
+          inputMode="numeric"
+        />
+        <FormInput
+          label={t.phone}
+          value={formatPkPhoneInput(details.phone || '')}
+          onChange={(e) =>
+            patch({ phone: formatPkPhoneInput(e.target.value) })
+          }
+          readOnly={readOnly}
+          placeholder="03000000000"
+          inputMode="numeric"
+          autoComplete="tel"
         />
       </div>
 

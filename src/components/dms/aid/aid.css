@@ -3748,7 +3748,10 @@ a.aid-contact-chip:hover {
   gap: 0.85rem 1rem;
 }
 
-.aid-fh-contact__uc {
+.aid-fh-contact__grid--mid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
   margin-top: 0.85rem;
 }
 
@@ -3774,6 +3777,10 @@ a.aid-contact-chip:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .aid-fh-contact__grid--mid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .aid-fh-contact__grid--bottom {
     grid-template-columns: 1fr 1fr;
   }
@@ -3794,6 +3801,7 @@ a.aid-contact-chip:hover {
 
   .aid-fh-personal__grid--identity,
   .aid-fh-contact__grid--top,
+  .aid-fh-contact__grid--mid,
   .aid-fh-contact__grid--bottom {
     grid-template-columns: 1fr;
   }
@@ -3950,6 +3958,18 @@ a.aid-contact-chip:hover {
 
 .aid-fh-personal__grid > .aid-span-2 {
   grid-column: span 2;
+}
+
+.aid-fh-personal__necta-bisp {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem 1rem;
+}
+
+@media (max-width: 640px) {
+  .aid-fh-personal__necta-bisp {
+    grid-template-columns: 1fr;
+  }
 }
 
 .aid-fh-personal__grid > .aid-span-full,

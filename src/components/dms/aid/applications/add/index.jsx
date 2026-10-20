@@ -68,6 +68,7 @@ import {
   calcAgeFromDob,
   formatCnicInput,
   formatPkPhoneInput,
+  formatEducation,
   isValidCnic,
   isValidPkPhone,
   resolveRelatedPersonKinship,
@@ -91,6 +92,7 @@ const emptyPerson = {
   district: '',
   tehsil: '',
   union_council: '',
+  landmark: '',
   gender: '',
   date_of_birth: '',
   marital_status: '',
@@ -319,6 +321,7 @@ const mapPersonToForm = (p, extras = {}) => {
     district: p.district || '',
     tehsil: p.tehsil || '',
     union_council: p.union_council || '',
+    landmark: p.landmark || '',
     gender: p.gender || '',
     date_of_birth: sliceDate(p.date_of_birth),
     marital_status: p.marital_status || '',
@@ -503,6 +506,7 @@ const cleanPersonPayload = (p) => {
     district: p.district || undefined,
     tehsil: p.tehsil || undefined,
     union_council: p.union_council || undefined,
+    landmark: p.landmark || undefined,
   };
 };
 
@@ -785,6 +789,66 @@ const AidApplicationAdd = () => {
   /** Family Head marked as the beneficiary (single-person household). */
   const headAsBeneficiary =
     familyHeads.find((h) => h.is_beneficiary) || null;
+
+  /** Person marked Applicant — used to auto-fill Zakat form header fields. */
+  const zakatApplicantPerson = useMemo(() => {
+    if (beneficiary.is_applicant) return beneficiary;
+    if (spouse.is_applicant) return spouse;
+    const head = familyHeads.find((h) => h.is_applicant);
+    if (head) return head;
+    const bm = beneficiaryMembers.find((m) => m.is_applicant);
+    if (bm) return bm;
+    for (let i = 0; i < familyHeads.length; i += 1) {
+      const m = (familyHeads[i]._family_members || []).find(
+        (row) => row.is_applicant,
+      );
+      if (m) return m;
+    }
+    return headAsBeneficiary || beneficiary;
+  }, [
+    beneficiary,
+    spouse,
+    familyHeads,
+    beneficiaryMembers,
+    headAsBeneficiary,
+  ]);
+
+  useEffect(() => {
+    const person = zakatApplicantPerson;
+    if (!person) return;
+    const age = calcAgeFromDob(person.date_of_birth);
+    const eduLabel = formatEducation(person.education_level);
+    const education =
+      eduLabel && eduLabel !== '—'
+        ? eduLabel
+        : person.education_level ||
+          person.student_class ||
+          person.literacy_category ||
+          '';
+    const today = new Date().toISOString().slice(0, 10);
+    setZakatPermission((prev) => {
+      const next = {
+        ...prev,
+        form_date: prev.form_date || today,
+        applicant_name: person.full_name || '',
+        age: age != null ? String(age) : '',
+        education: education || '',
+        cnic: formatCnicInput(person.cnic || ''),
+        phone: formatPkPhoneInput(person.phone || ''),
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.applicant_name === prev.applicant_name &&
+        next.age === prev.age &&
+        next.education === prev.education &&
+        next.cnic === prev.cnic &&
+        next.phone === prev.phone
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [zakatApplicantPerson]);
 
   const beneficiaryGender = headAsBeneficiary
     ? headAsBeneficiary.gender || ''
@@ -2313,28 +2377,6 @@ const AidApplicationAdd = () => {
                           )
                         }
                         title={`${typeLabel} — vehicle`}
-                      />
-                    </div>
-                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
-                      <AidEligibilityStatus
-                        value={head}
-                        onChange={(next) =>
-                          setFamilyHeads((list) =>
-                            list.map((row, i) =>
-                              i === idx
-                                ? {
-                                    ...row,
-                                    ...next,
-                                    _relation_type: row._relation_type,
-                                    _family_members: row._family_members,
-                                    is_applicant: row.is_applicant,
-                                    is_beneficiary: row.is_beneficiary,
-                                  }
-                                : row,
-                            ),
-                          )
-                        }
-                        title={`${typeLabel} — NECTA / BISP`}
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
