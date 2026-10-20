@@ -3,7 +3,10 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { hasAidPermission } from '../../../../../utils/permissions';
+import {
+  hasAidPermission,
+  isSuperAdmin,
+} from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormSelect from '../../../../common/FormSelect';
@@ -61,7 +64,7 @@ const AidApplicationView = () => {
   const [searchParams] = useSearchParams();
   const fromApprovals = searchParams.get('from') === 'approvals';
   const openCeoAction = searchParams.get('action') === 'approve';
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const isStaffElevated =
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
@@ -76,10 +79,11 @@ const AidApplicationView = () => {
   const canDeliver =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'deliver');
-  const canBulkVerify =
-    isStaffElevated ||
+  /** Mark all complete — also unlocks investigation for non-assignees */
+  const hasMarkAllComplete =
     hasAidPermission(permissions, 'aid_verification', 'bulk_verify') ||
     hasAidPermission(permissions, 'aid_applications', 'bulk_verify');
+  const canBulkVerify = isSuperAdmin(permissions) || hasMarkAllComplete;
 
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -289,6 +293,13 @@ const AidApplicationView = () => {
   const nextAssignedId = assignedUser?.id ?? null;
   const assignmentDirty =
     String(currentAssignedId || '') !== String(nextAssignedId || '');
+  const isAssignee =
+    user?.id != null &&
+    currentAssignedId != null &&
+    Number(user.id) === Number(currentAssignedId);
+  /** Investigation: assignee, super admin, or Mark all complete (bulk_verify) */
+  const canInvestigate =
+    isSuperAdmin(permissions) || hasMarkAllComplete || isAssignee;
 
   const saveAssignment = async () => {
     setAssignSaving(true);
@@ -399,7 +410,8 @@ const AidApplicationView = () => {
   };
   const showReject =
     canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
-  const showVerify = canUpdate && ['submitted', 'under_review'].includes(status);
+  const showVerify =
+    canInvestigate && ['submitted', 'under_review'].includes(status);
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
   const verifiedByName = app.verified_by
@@ -1050,6 +1062,13 @@ const AidApplicationView = () => {
                     {formatWhen(app.verified_at)}
                   </p>
                 )}
+                {!showVerify &&
+                ['submitted', 'under_review'].includes(status) ? (
+                  <p className="aid-section-hint">
+                    Investigation can only be performed by the assigned user,
+                    a super admin, or someone with Mark all complete permission.
+                  </p>
+                ) : null}
                 <AidInvestigationPanel
                   items={investigationItems}
                   value={investigation}

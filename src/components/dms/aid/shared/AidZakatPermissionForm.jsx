@@ -50,7 +50,7 @@ const COPY = {
       'SecuGen انگوٹھا / ePad VP9801 دستخط — فیلڈز اختیاری ہیں اور null رہ سکتی ہیں۔',
   },
   en: {
-    org: 'Maulana Tariq Jameel Foundation',
+    org: 'Maulana Tariq jamil Foundation',
     title: 'Permission Letter for Zakat',
     date: 'Date',
     appNo: 'Application No.',
@@ -77,7 +77,7 @@ const COPY = {
     decl1:
       'I declare that I am a Muslim and not a Syed, Hashmi, or Abbasi. I also declare that my ownership, after subtracting debts, of gold, silver, business goods, cash, and items beyond necessity does not equal the current market value of 52.5 tolas of silver (Nisab).',
     decl2:
-      'I authorize the management and representatives of Maulana Tariq Jameel Foundation that, as long as I remain eligible for Zakat, the organization may collect Zakat and Sadaqat funds or items on my behalf, take them into their ownership, and spend them on my needs or the needs of other deserving people.',
+      'I authorize the management and representatives of Maulana Tariq jamil Foundation that, as long as I remain eligible for Zakat, the organization may collect Zakat and Sadaqat funds or items on my behalf, take them into their ownership, and spend them on my needs or the needs of other deserving people.',
     accept: 'I agree to the declarations above',
     applicantThumb: 'Applicant thumb (SecuGen)',
     applicantSign: 'Applicant signature (ePad)',

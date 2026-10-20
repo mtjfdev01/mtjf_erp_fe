@@ -1204,7 +1204,7 @@ ceo_office: (isUser = false) => ({
   }),
   program: (isUser = false) => ({
     id: 'program',
-    label: 'Cahrity Module',
+    label: 'Charity Module',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   }),
