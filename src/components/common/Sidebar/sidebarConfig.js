@@ -9,6 +9,7 @@ import {
   FiMail,
   FiPlusCircle,
   FiClipboard,
+  FiEdit,
   FiCheckSquare,
   FiCheckCircle,
   FiList,
@@ -274,6 +275,14 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiBarChart2
   },
   {
+    label: 'Drafts',
+    path: '/dms/aid/applications/drafts/list',
+    type: 'list',
+    module: 'aid_drafts',
+    permissionDepartment: 'program',
+    icon: FiEdit
+  },
+  {
     label: 'Beneficiary Registration',
     path: '/dms/aid/applications/entry/list',
     type: 'list',
@@ -285,7 +294,7 @@ const programDepartmentItems = (isUser = false) => [
     label: 'Verification Process',
     path: '/dms/aid/applications/list',
     type: 'list',
-    module: 'aid_applications',
+    module: 'aid_verification',
     permissionDepartment: 'program',
     icon: FiLifeBuoy
   },
@@ -1081,7 +1090,7 @@ const todosItems = () => [
 const allDepartmentItems = (isUser = false) => [
   {
     id: 'program',
-    label: 'Program Department',
+    label: 'Cahrity Module',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   },
@@ -1195,7 +1204,7 @@ ceo_office: (isUser = false) => ({
   }),
   program: (isUser = false) => ({
     id: 'program',
-    label: 'Program Department',
+    label: 'Charity Module',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   }),

@@ -1,8 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { hasAidPermission } from '../../../../../utils/permissions';
+import {
+  hasAidPermission,
+  isSuperAdmin,
+} from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormSelect from '../../../../common/FormSelect';
@@ -20,6 +24,8 @@ import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidInvestigationPanel, {
   emptyRecommendation,
+  enrichInvestigationFromAttachments,
+  getInvestigationIncompleteReasons,
   isInvestigationComplete,
   isRecommendationComplete,
   mergeInvestigationState,
@@ -58,13 +64,14 @@ const AidApplicationView = () => {
   const [searchParams] = useSearchParams();
   const fromApprovals = searchParams.get('from') === 'approvals';
   const openCeoAction = searchParams.get('action') === 'approve';
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const isStaffElevated =
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
   const canUpdate =
     isStaffElevated ||
+    hasAidPermission(permissions, 'aid_verification', 'update') ||
     hasAidPermission(permissions, 'aid_applications', 'update');
   const canCeo =
     isStaffElevated ||
@@ -72,9 +79,11 @@ const AidApplicationView = () => {
   const canDeliver =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'deliver');
-  const canBulkVerify =
-    isStaffElevated ||
+  /** Mark all complete — also unlocks investigation for non-assignees */
+  const hasMarkAllComplete =
+    hasAidPermission(permissions, 'aid_verification', 'bulk_verify') ||
     hasAidPermission(permissions, 'aid_applications', 'bulk_verify');
+  const canBulkVerify = isSuperAdmin(permissions) || hasMarkAllComplete;
 
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -100,10 +109,12 @@ const AidApplicationView = () => {
   const [familyTree, setFamilyTree] = useState(null);
   const [kinship, setKinship] = useState([]);
   const [uploadingInvestKey, setUploadingInvestKey] = useState(null);
+  const [attachUploading, setAttachUploading] = useState(false);
+  const [investSaving, setInvestSaving] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError('');
       const appRes = await axiosInstance.get(`/aid/applications/${id}`);
       const payload = appRes.data?.data || null;
@@ -114,8 +125,16 @@ const AidApplicationView = () => {
           payload?.investigation_items ||
           payload?.verification_checklist_items ||
           [];
+        const merged = mergeInvestigationState(
+          items,
+          payload?.verification_checklist || {},
+        );
         setInvestigation(
-          mergeInvestigationState(items, payload?.verification_checklist || {}),
+          enrichInvestigationFromAttachments(
+            items,
+            merged,
+            payload?.attachments || [],
+          ),
         );
       }
       {
@@ -180,15 +199,39 @@ const AidApplicationView = () => {
   };
 
   const uploadFile = async (file) => {
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('context', attachContext);
-    await run(() =>
-      axiosInstance.post(`/aid/applications/${id}/attachments/upload`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }),
-    );
+    if (!file || !id) return;
+    setAttachUploading(true);
+    setActionError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('context', attachContext);
+      fd.append('description', attachContext);
+      const res = await axiosInstance.post(
+        `/aid/applications/${id}/attachments/upload`,
+        fd,
+      );
+      const row = res.data?.data;
+      if (row?.id) {
+        setApp((prev) =>
+          prev
+            ? {
+                ...prev,
+                attachments: [row, ...(prev.attachments || [])],
+              }
+            : prev,
+        );
+      }
+      await load({ silent: true });
+      toast.success('Attachment uploaded');
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || err.message || 'Failed to upload file';
+      setActionError(msg);
+      toast.error(msg);
+    } finally {
+      setAttachUploading(false);
+    }
   };
 
   const uploadInvestigationFile = async (itemKey, file) => {
@@ -198,29 +241,49 @@ const AidApplicationView = () => {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('context', itemKey === 'site_visit' ? 'site_visit' : 'verification');
+      fd.append(
+        'context',
+        itemKey === 'site_visit' ? 'site_visit' : 'verification',
+      );
       fd.append('description', itemKey);
       const res = await axiosInstance.post(
         `/aid/applications/${id}/attachments/upload`,
         fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       );
       const row = res.data?.data;
-      setInvestigation((prev) => ({
-        ...prev,
-        [itemKey]: {
-          ...normalizeInvestigationEntry(prev[itemKey]),
-          status: 'verified',
-          attachment_url: row?.file_url || '',
-          attachment_name: row?.file_name || file.name,
-          attachment_id: row?.id ?? null,
-        },
-      }));
-      await load();
-    } catch (err) {
-      setActionError(
-        err.response?.data?.message || err.message || 'Failed to upload file',
+      const nextEntry = {
+        ...normalizeInvestigationEntry(investigation[itemKey]),
+        status: 'verified',
+        attachment_url: row?.file_url || '',
+        attachment_name: row?.file_name || file.name,
+        attachment_id: row?.id ?? null,
+      };
+      const nextInvestigation = {
+        ...investigation,
+        [itemKey]: nextEntry,
+      };
+      setInvestigation(nextInvestigation);
+      // Persist on checklist so a reload cannot wipe the attachment link.
+      await axiosInstance.patch(`/aid/applications/${id}`, {
+        verification_checklist: nextInvestigation,
+      });
+      setApp((prev) =>
+        prev
+          ? {
+              ...prev,
+              attachments: row?.id
+                ? [row, ...(prev.attachments || [])]
+                : prev.attachments || [],
+              verification_checklist: nextInvestigation,
+            }
+          : prev,
       );
+      toast.success('File attached');
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || err.message || 'Failed to upload file';
+      setActionError(msg);
+      toast.error(msg);
     } finally {
       setUploadingInvestKey(null);
     }
@@ -230,6 +293,13 @@ const AidApplicationView = () => {
   const nextAssignedId = assignedUser?.id ?? null;
   const assignmentDirty =
     String(currentAssignedId || '') !== String(nextAssignedId || '');
+  const isAssignee =
+    user?.id != null &&
+    currentAssignedId != null &&
+    Number(user.id) === Number(currentAssignedId);
+  /** Investigation: assignee, super admin, or Mark all complete (bulk_verify) */
+  const canInvestigate =
+    isSuperAdmin(permissions) || hasMarkAllComplete || isAssignee;
 
   const saveAssignment = async () => {
     setAssignSaving(true);
@@ -295,10 +365,53 @@ const AidApplicationView = () => {
     investigationItems,
     investigation,
   );
+  const checklistGaps = getInvestigationIncompleteReasons(
+    investigationItems,
+    investigation,
+  );
   const recommendationComplete = isRecommendationComplete(recommendation);
+
+  const saveInvestigationProgress = async () => {
+    if (!id || investSaving) return;
+    setInvestSaving(true);
+    setActionError('');
+    try {
+      await axiosInstance.patch(`/aid/applications/${id}`, {
+        verification_notes: verifyNotes || recommendation.remarks || undefined,
+        verification_checklist: investigation,
+        investigation_recommendation: {
+          decision: recommendation.decision,
+          amount:
+            recommendation.decision === 'reject'
+              ? null
+              : recommendation.amount !== '' &&
+                  recommendation.amount != null
+                ? Number(recommendation.amount)
+                : null,
+          period_months: Number(recommendation.period_months) || null,
+          remarks: recommendation.remarks || '',
+          found_monthly_income: recommendation.found_monthly_income
+            ? Number(recommendation.found_monthly_income)
+            : null,
+        },
+      });
+      await load({ silent: true });
+      toast.success('Investigation progress saved');
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to save investigation progress';
+      setActionError(msg);
+      toast.error(msg);
+    } finally {
+      setInvestSaving(false);
+    }
+  };
   const showReject =
     canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
-  const showVerify = canUpdate && ['submitted', 'under_review'].includes(status);
+  const showVerify =
+    canInvestigate && ['submitted', 'under_review'].includes(status);
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
   const verifiedByName = app.verified_by
@@ -533,6 +646,7 @@ const AidApplicationView = () => {
           <div className="aid-tabs aid-tabs--main" role="tablist">
             {[
               { id: 'case', label: 'Case details' },
+              { id: 'field_process', label: 'Field process' },
               { id: 'beneficiary', label: 'Beneficiary' },
               { id: 'family', label: 'Family' },
               { id: 'attachments', label: 'Attachments' },
@@ -887,9 +1001,14 @@ const AidApplicationView = () => {
                 </div>
                 {canUpdate && (
                   <label className="aid-attach-upload">
-                    <span>Upload file</span>
+                    <span>
+                      {attachUploading
+                        ? 'Uploading…'
+                        : `Upload file (${String(attachContext).replace(/_/g, ' ')})`}
+                    </span>
                     <input
                       type="file"
+                      disabled={attachUploading || busy}
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) uploadFile(f);
@@ -943,6 +1062,13 @@ const AidApplicationView = () => {
                     {formatWhen(app.verified_at)}
                   </p>
                 )}
+                {!showVerify &&
+                ['submitted', 'under_review'].includes(status) ? (
+                  <p className="aid-section-hint">
+                    Investigation can only be performed by the assigned user,
+                    a super admin, or someone with Mark all complete permission.
+                  </p>
+                ) : null}
                 <AidInvestigationPanel
                   items={investigationItems}
                   value={investigation}
@@ -955,8 +1081,14 @@ const AidApplicationView = () => {
                   vulnerability={app.vulnerability}
                   recommendation={recommendation}
                   onRecommendationChange={setRecommendation}
+                  onSaveProgress={
+                    showVerify ? saveInvestigationProgress : undefined
+                  }
+                  saveProgressBusy={investSaving}
+                  saveProgressDisabled={busy || investSaving}
                   submitDisabled={
                     busy ||
+                    investSaving ||
                     !checklistComplete ||
                     !recommendationComplete ||
                     !leakageOverrideOk
@@ -995,11 +1127,30 @@ const AidApplicationView = () => {
                       : undefined
                   }
                 />
-                {activePanelTab === 'case' && showVerify && !checklistComplete && (
-                  <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
-                    Mark every required claim Verified or Mismatch (with Found
-                    note). Process checks must be Verified.
-                  </p>
+                {(activePanelTab === 'case' ||
+                  activePanelTab === 'field_process') &&
+                  showVerify &&
+                  !checklistComplete && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#b45309',
+                      marginBottom: 0,
+                    }}
+                  >
+                    <p style={{ margin: '0 0 0.35rem' }}>
+                      Submit stays disabled until every required check is done.
+                      Use <strong>Save progress</strong> anytime.
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                      {checklistGaps.slice(0, 6).map((r) => (
+                        <li key={r}>{r}</li>
+                      ))}
+                      {checklistGaps.length > 6 ? (
+                        <li>+{checklistGaps.length - 6} more…</li>
+                      ) : null}
+                    </ul>
+                  </div>
                 )}
                 {activePanelTab === 'case' &&
                   showVerify &&

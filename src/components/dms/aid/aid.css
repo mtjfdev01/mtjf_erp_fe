@@ -2485,6 +2485,30 @@ a.aid-contact-chip:hover {
   min-height: 88px;
 }
 
+.aid-rec-save {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.55rem;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aid-rec-save:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.aid-rec-save:disabled,
+.aid-invest-save:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .aid-rec-submit {
   width: 100%;
   border: none;
@@ -2500,6 +2524,30 @@ a.aid-contact-chip:hover {
 .aid-rec-submit:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.aid-investigation__head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.aid-invest-save {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.45rem 0.85rem;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aid-invest-save:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .aid-investigation__head {
@@ -3376,6 +3424,12 @@ a.aid-contact-chip:hover {
   min-width: 0;
 }
 
+/* Circumstances + anything after Contact: full width below the aside layout */
+.aid-fh-personal--with-aside > .aid-fh-card--extended {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 .aid-reg-aside {
   display: flex;
   flex-direction: column;
@@ -3748,7 +3802,10 @@ a.aid-contact-chip:hover {
   gap: 0.85rem 1rem;
 }
 
-.aid-fh-contact__uc {
+.aid-fh-contact__grid--mid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
   margin-top: 0.85rem;
 }
 
@@ -3774,6 +3831,10 @@ a.aid-contact-chip:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
+  .aid-fh-contact__grid--mid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .aid-fh-contact__grid--bottom {
     grid-template-columns: 1fr 1fr;
   }
@@ -3794,6 +3855,7 @@ a.aid-contact-chip:hover {
 
   .aid-fh-personal__grid--identity,
   .aid-fh-contact__grid--top,
+  .aid-fh-contact__grid--mid,
   .aid-fh-contact__grid--bottom {
     grid-template-columns: 1fr;
   }
@@ -3950,6 +4012,22 @@ a.aid-contact-chip:hover {
 
 .aid-fh-personal__grid > .aid-span-2 {
   grid-column: span 2;
+}
+
+.aid-fh-personal__grid--circumstances {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .aid-fh-personal__grid--circumstances {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .aid-fh-personal__grid--circumstances {
+    grid-template-columns: 1fr;
+  }
 }
 
 .aid-fh-personal__grid > .aid-span-full,
@@ -4169,7 +4247,7 @@ a.aid-contact-chip:hover {
 }
 
 .aid-zakat-form--rtl {
-  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Noto Nastaliq Urdu', 'jamil Noori Nastaleeq', 'Segoe UI', Tahoma, sans-serif;
 }
 
 .aid-zakat-form__lang {
@@ -4460,18 +4538,7 @@ a.aid-contact-chip:hover {
 }
 
 .aid-fm-layout--panel-open {
-  /* Wider panel so Family Head personal fields fit when inherited */
-  grid-template-columns: minmax(0, 1fr) minmax(360px, 520px);
-}
-
-.aid-fm-panel .aid-fh-card,
-.aid-fm-panel .aid-related-person {
-  margin: 0;
-}
-
-.aid-fm-panel .aid-fh-personal__grid,
-.aid-fm-panel .aid-fh-contact__grid {
-  gap: 0.65rem;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
 }
 
 .aid-fm-main__head {
@@ -4594,6 +4661,16 @@ a.aid-contact-chip:hover {
   font-weight: 650;
 }
 
+.aid-fm-beneficiary-tag {
+  display: inline-flex;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
 .aid-fm-health {
   display: inline-flex;
   padding: 0.15rem 0.5rem;
@@ -4698,6 +4775,23 @@ a.aid-contact-chip:hover {
 }
 
 .aid-fm-guard-check,
+.aid-fm-panel__roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+}
+
+.aid-fm-panel__roles .aid-role-check {
+  flex: 1 1 120px;
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+}
+
+.aid-fm-panel__roles .aid-role-check__hint {
+  display: none;
+}
+
 .aid-fm-applicant-check {
   display: flex;
   align-items: center;
@@ -4706,11 +4800,7 @@ a.aid-contact-chip:hover {
   font-weight: 600;
   color: #111827;
   cursor: pointer;
-  margin-bottom: 0.55rem;
-}
-
-.aid-fm-applicant-check {
-  margin: 0.15rem 0 0;
+  margin: 0.15rem 0 0.55rem;
   padding: 0.55rem 0.65rem;
   border: 1px solid #d1fae5;
   border-radius: 8px;

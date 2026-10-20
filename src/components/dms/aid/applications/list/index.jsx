@@ -29,6 +29,9 @@ import '../../aid.css';
 
 const CEO_PENDING_STATUS = 'ceo_approval_required';
 const DELIVERY_PENDING_STATUSES = new Set(['successful']);
+const VERIFICATION_STATUS_OPTIONS = AID_STATUS_OPTIONS.filter(
+  (o) => o.value !== 'draft',
+);
 
 const AidApplicationsList = () => {
   const navigate = useNavigate();
@@ -49,7 +52,8 @@ const AidApplicationsList = () => {
     hasAidPermission(permissions, 'aid_applications', 'deliver');
 
   const canList =
-    canViewModule(permissions, 'program', 'aid_applications') ||
+    canViewModule(permissions, 'program', 'aid_verification') ||
+    hasAidPermission(permissions, 'aid_verification', 'list_view') ||
     canCeo ||
     canDeliver ||
     isStaffElevated;
@@ -156,7 +160,7 @@ const AidApplicationsList = () => {
               <DropdownFilter
                 filterKey="status"
                 label="Status"
-                data={AID_STATUS_OPTIONS}
+                data={VERIFICATION_STATUS_OPTIONS}
                 filters={tempFilters}
                 onFilterChange={(k, v) => setTempFilters((p) => ({ ...p, [k]: v }))}
                 placeholder="All"

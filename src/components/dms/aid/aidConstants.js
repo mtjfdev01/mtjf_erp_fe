@@ -1,4 +1,5 @@
 export const AID_STATUS_OPTIONS = [
+  { value: 'draft', label: 'Draft' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'under_review', label: 'Under review' },
   { value: 'rejected', label: 'Rejected' },
@@ -7,9 +8,8 @@ export const AID_STATUS_OPTIONS = [
   { value: 'delivered', label: 'Delivered' },
 ];
 
-/** Data-entry list pipeline cards (maps to API `stage` filter). */
+/** Data-entry list pipeline cards (maps to API `stage` filter). Drafts use the Drafts board. */
 export const AID_ENTRY_STAGES = [
-  { id: 'draft', label: 'Draft', hint: 'Incomplete intake' },
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
   { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
@@ -440,6 +440,8 @@ export const emptyZakatPermission = () => ({
   applicant_name: '',
   age: '',
   education: '',
+  cnic: '',
+  phone: '',
   gold: '',
   silver: '',
   cash: '',
@@ -1031,6 +1033,7 @@ export const emptyRelatedPersonBase = () => ({
   district: '',
   tehsil: '',
   union_council: '',
+  landmark: '',
   city: '',
   address: '',
   ...emptyLiteracyFields(),
@@ -1292,18 +1295,22 @@ export const AID_FAMILY_HEAD_GUARDIAN_SUBTYPES = [
   { value: 'other', label: 'Other' },
 ];
 
-/** Default Type dropdown: blood relations + Guardian at the end */
+/** Default Type dropdown: Self + blood relations + Guardian at the end */
 export const AID_FAMILY_HEAD_TYPE_OPTIONS = [
+  { value: 'self', label: 'Self' },
   ...AID_FAMILY_HEAD_BLOOD_TYPES,
   { value: 'guardian', label: 'Guardian' },
 ];
 
 /** Full lookup list (labels, hydrate, gender hints) */
 export const AID_FAMILY_HEAD_TYPES = [
+  { value: 'self', label: 'Self' },
   ...AID_FAMILY_HEAD_BLOOD_TYPES,
   { value: 'guardian', label: 'Guardian' },
   ...AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
 ];
+
+export const AID_FAMILY_HEAD_SELF_TYPE = 'self';
 
 export const AID_FAMILY_HEAD_BLOOD_TYPE_VALUES = new Set(
   AID_FAMILY_HEAD_BLOOD_TYPES.map((t) => t.value),
@@ -1354,6 +1361,7 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   district: '',
   tehsil: '',
   union_council: '',
+  landmark: '',
   gender: FAMILY_HEAD_FEMALE_TYPES.has(relationType)
     ? 'female'
     : FAMILY_HEAD_MALE_TYPES.has(relationType)
@@ -1589,7 +1597,10 @@ export function aidStatusTone(status) {
     case 'ceo_approval_required':
       return 'warn';
     case 'under_review':
+    case 'submitted':
       return 'info';
+    case 'draft':
+      return 'muted';
     default:
       return 'muted';
   }

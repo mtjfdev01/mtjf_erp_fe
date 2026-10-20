@@ -5,6 +5,8 @@ import {
   calcZakatAssetTotal,
   calcZakatNetAfterLoan,
   emptyZakatPermission,
+  formatCnicInput,
+  formatPkPhoneInput,
 } from '../aidConstants';
 
 const COPY = {
@@ -16,6 +18,8 @@ const COPY = {
     applicantName: 'درخواست دہندہ کا نام',
     age: 'عمر',
     education: 'تعلیم',
+    cnic: 'شناختی کارڈ نمبر',
+    phone: 'موبائل نمبر',
     sr: 'نمبر شمار',
     items: 'اشیاء',
     amount: 'مالیت',
@@ -46,13 +50,15 @@ const COPY = {
       'SecuGen انگوٹھا / ePad VP9801 دستخط — فیلڈز اختیاری ہیں اور null رہ سکتی ہیں۔',
   },
   en: {
-    org: 'Maulana Tariq Jameel Foundation',
+    org: 'Maulana Tariq jamil Foundation',
     title: 'Permission Letter for Zakat',
     date: 'Date',
     appNo: 'Application No.',
     applicantName: "Applicant's Name",
     age: 'Age',
     education: 'Education',
+    cnic: 'CNIC',
+    phone: 'Mobile',
     sr: 'Sr.',
     items: 'Items',
     amount: 'Value / Amount',
@@ -71,7 +77,7 @@ const COPY = {
     decl1:
       'I declare that I am a Muslim and not a Syed, Hashmi, or Abbasi. I also declare that my ownership, after subtracting debts, of gold, silver, business goods, cash, and items beyond necessity does not equal the current market value of 52.5 tolas of silver (Nisab).',
     decl2:
-      'I authorize the management and representatives of Maulana Tariq Jameel Foundation that, as long as I remain eligible for Zakat, the organization may collect Zakat and Sadaqat funds or items on my behalf, take them into their ownership, and spend them on my needs or the needs of other deserving people.',
+      'I authorize the management and representatives of Maulana Tariq jamil Foundation that, as long as I remain eligible for Zakat, the organization may collect Zakat and Sadaqat funds or items on my behalf, take them into their ownership, and spend them on my needs or the needs of other deserving people.',
     accept: 'I agree to the declarations above',
     applicantThumb: 'Applicant thumb (SecuGen)',
     applicantSign: 'Applicant signature (ePad)',
@@ -289,6 +295,25 @@ const AidZakatPermissionForm = ({
           value={details.education || ''}
           onChange={(e) => patch({ education: e.target.value })}
           readOnly={readOnly}
+        />
+        <FormInput
+          label={t.cnic}
+          value={formatCnicInput(details.cnic || '')}
+          onChange={(e) => patch({ cnic: formatCnicInput(e.target.value) })}
+          readOnly={readOnly}
+          placeholder="00000-0000000-0"
+          inputMode="numeric"
+        />
+        <FormInput
+          label={t.phone}
+          value={formatPkPhoneInput(details.phone || '')}
+          onChange={(e) =>
+            patch({ phone: formatPkPhoneInput(e.target.value) })
+          }
+          readOnly={readOnly}
+          placeholder="03000000000"
+          inputMode="numeric"
+          autoComplete="tel"
         />
       </div>
 

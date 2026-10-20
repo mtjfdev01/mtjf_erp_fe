@@ -26,7 +26,6 @@ const emptyFilters = {
   search: '',
   requested_aid_type: '',
   district: '',
-  assigned_to_user_id: '',
   stage: '',
 };
 
@@ -47,10 +46,6 @@ const AidEntryApplicationsList = () => {
     hasAidPermission(permissions, 'aid_applications', 'create') ||
     isStaffElevated;
 
-  const canCreate =
-    hasAidPermission(permissions, 'aid_applications', 'create') ||
-    isStaffElevated;
-
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -64,7 +59,6 @@ const AidEntryApplicationsList = () => {
   const [appliedFilters, setAppliedFilters] = useState({ ...emptyFilters });
   const [stageCounts, setStageCounts] = useState({});
   const [districts, setDistricts] = useState([]);
-  const [investigators, setInvestigators] = useState([]);
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -105,11 +99,11 @@ const AidEntryApplicationsList = () => {
       setError('');
       const res = await axiosInstance.get('/aid/applications', {
         params: {
+          queue: 'entry',
           search: appliedFilters.search || undefined,
           stage: appliedFilters.stage || undefined,
           requested_aid_type: appliedFilters.requested_aid_type || undefined,
           district: appliedFilters.district || undefined,
-          assigned_to_user_id: appliedFilters.assigned_to_user_id || undefined,
           page: currentPage,
           pageSize,
           sortField,
@@ -133,34 +127,6 @@ const AidEntryApplicationsList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await axiosInstance.get('/users/options', {
-          params: { department: 'program', search: '', pageSize: 50 },
-        });
-        const list = res.data?.data || res.data || [];
-        if (!cancelled && Array.isArray(list)) {
-          setInvestigators(
-            list.map((u) => ({
-              value: String(u.id),
-              label:
-                [u.first_name, u.last_name].filter(Boolean).join(' ').trim() ||
-                u.email ||
-                `User #${u.id}`,
-            })),
-          );
-        }
-      } catch {
-        /* optional filter */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const districtOptions = useMemo(
     () => [
       { value: '', label: 'All districts' },
@@ -174,11 +140,6 @@ const AidEntryApplicationsList = () => {
     [],
   );
 
-  const investigatorOptions = useMemo(
-    () => [{ value: '', label: 'Anyone' }, ...investigators],
-    [investigators],
-  );
-
   return (
     <>
       <Navbar />
@@ -186,9 +147,7 @@ const AidEntryApplicationsList = () => {
         <PageHeader
           title="Beneficiary Registration"
           backPath="/dms"
-          showAdd={!!canCreate}
-          addPath="/dms/aid/applications/add"
-          addTitle="New application"
+          showAdd={false}
         />
         <div className="list-content">
           {error && <div className="error-message">{error}</div>}
@@ -254,19 +213,6 @@ const AidEntryApplicationsList = () => {
                 options={districtOptions}
               />
             </div>
-            <div className="aid-entry-filters__field">
-              <FormSelect
-                label="Investigator"
-                value={tempFilters.assigned_to_user_id}
-                onChange={(e) =>
-                  setTempFilters((p) => ({
-                    ...p,
-                    assigned_to_user_id: e.target.value,
-                  }))
-                }
-                options={investigatorOptions}
-              />
-            </div>
             <div className="aid-entry-filters__actions">
               <button
                 type="button"
@@ -296,7 +242,6 @@ const AidEntryApplicationsList = () => {
                   <th>Members</th>
                   <th>Vulnerability</th>
                   <th>Stage</th>
-                  <th>Assigned to</th>
                   <th>Updated</th>
                   <th>Action</th>
                 </tr>
@@ -304,11 +249,11 @@ const AidEntryApplicationsList = () => {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={10}>Loading…</td>
+                    <td colSpan={9}>Loading…</td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={10}>No applications found.</td>
+                    <td colSpan={9}>No applications found.</td>
                   </tr>
                 ) : (
                   rows.map((row) => {
@@ -372,7 +317,6 @@ const AidEntryApplicationsList = () => {
                             {formatAidEntryStage(stage)}
                           </span>
                         </td>
-                        <td>{row.assigned_to_label || '—'}</td>
                         <td>{formatRelativeAidTime(row.updated_at)}</td>
                         <td>
                           <div className="aid-list-actions">

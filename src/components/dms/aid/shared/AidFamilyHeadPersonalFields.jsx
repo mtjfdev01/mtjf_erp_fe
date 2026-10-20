@@ -7,6 +7,7 @@ import {
   AID_GENDERS,
   AID_LITERACY_EDUCATION_OPTIONS,
   AID_MARITAL_STATUS,
+  AID_BISP_STATUS,
   AID_NECTA_STATUS,
   AID_PROFESSIONS,
   AID_RESIDENT_TYPES,
@@ -20,16 +21,38 @@ import {
   parseVulnerabilityList,
 } from '../aidConstants';
 import AidRegistrationAside from './AidRegistrationAside';
+import {
+  PAKISTAN_PROVINCES,
+  getPakistanCities,
+} from '../../../../data/pakistanLocations';
 
-const PK_PROVINCES = [
-  { value: 'Punjab', label: 'Punjab' },
-  { value: 'Sindh', label: 'Sindh' },
-  { value: 'Khyber Pakhtunkhwa', label: 'Khyber Pakhtunkhwa' },
-  { value: 'Balochistan', label: 'Balochistan' },
-  { value: 'Islamabad Capital Territory', label: 'Islamabad Capital Territory' },
-  { value: 'Azad Jammu and Kashmir', label: 'Azad Jammu and Kashmir' },
-  { value: 'Gilgit-Baltistan', label: 'Gilgit-Baltistan' },
+const provinceSelectOptions = [
+  { value: '', label: '—' },
+  ...PAKISTAN_PROVINCES.map((p) => ({ value: p.value, label: p.label })),
 ];
+
+/** Cities for a province value or legacy full label. */
+const citiesForProvince = (provinceKey) => {
+  if (!provinceKey) return [];
+  const byValue = getPakistanCities(provinceKey);
+  if (byValue.length) return byValue;
+  const match = PAKISTAN_PROVINCES.find(
+    (p) => p.label === provinceKey || p.value === provinceKey,
+  );
+  return match?.cities || [];
+};
+
+const locationSelectOptions = (cities, current) => {
+  const opts = [
+    { value: '', label: '—' },
+    ...cities.map((c) => ({ value: c, label: c })),
+  ];
+  const cur = String(current || '').trim();
+  if (cur && !opts.some((o) => o.value === cur)) {
+    opts.push({ value: cur, label: cur });
+  }
+  return opts;
+};
 
 const formatShortMonth = (raw) => {
   if (!raw) return '';
@@ -160,6 +183,7 @@ const AidFamilyHeadPersonalFields = ({
       district: person.district || value?.district || '',
       tehsil: person.tehsil || value?.tehsil || '',
       union_council: person.union_council || value?.union_council || '',
+      landmark: person.landmark || value?.landmark || '',
       resident_type: person.resident_type || value?.resident_type || '',
       rented_amount:
         person.rented_amount != null && person.rented_amount !== ''
@@ -299,8 +323,35 @@ const AidFamilyHeadPersonalFields = ({
     .map((v) => AID_GENDERS.find((g) => g.value === v))
     .filter(Boolean);
 
-  const main = (
-    <div className="aid-fh-layout__main">
+  const provinceOptions = useMemo(() => {
+    const opts = [...provinceSelectOptions];
+    const cur = String(value?.province || '').trim();
+    if (cur && !opts.some((o) => o.value === cur)) {
+      opts.push({ value: cur, label: cur });
+    }
+    return opts;
+  }, [value?.province]);
+
+  const provinceCities = useMemo(
+    () => citiesForProvince(value?.province),
+    [value?.province],
+  );
+
+  const districtOptions = useMemo(
+    () => locationSelectOptions(provinceCities, value?.district),
+    [provinceCities, value?.district],
+  );
+  const tehsilOptions = useMemo(
+    () => locationSelectOptions(provinceCities, value?.tehsil),
+    [provinceCities, value?.tehsil],
+  );
+  const cityOptions = useMemo(
+    () => locationSelectOptions(provinceCities, value?.city),
+    [provinceCities, value?.city],
+  );
+
+  const identityAndContact = (
+    <>
       <section className="aid-fh-card aid-fh-card--identity">
         {showTitle ? (
           <header className="aid-fh-personal__header">
@@ -397,7 +448,7 @@ const AidFamilyHeadPersonalFields = ({
               <FormInput
                 label={
                   <>
-                    Full name (as on CNIC) <Req />
+                    Full name (CNIC) <Req />
                   </>
                 }
                 required={fieldsRequired}
@@ -418,7 +469,7 @@ const AidFamilyHeadPersonalFields = ({
               <FormInput
                 label={
                   <>
-                    Father / husband name <Req />
+                    Father / husband<Req />
                   </>
                 }
                 required={fieldsRequired}
@@ -429,12 +480,12 @@ const AidFamilyHeadPersonalFields = ({
                 placeholder="w/o Muhammad Akram (late)"
               />
 
-              <FormInput
-                label="Caste"
-                value={value?.caste || ''}
-                onChange={(e) => patch({ caste: e.target.value })}
-                placeholder="e.g. Rajput, Jat"
-                autoComplete="off"
+              <FormSelect
+                label="Marital status"
+                required={fieldsRequired}
+                value={value?.marital_status || ''}
+                onChange={(e) => patch({ marital_status: e.target.value })}
+                options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
               />
 
               <div className="aid-fh-personal__dob">
@@ -485,12 +536,12 @@ const AidFamilyHeadPersonalFields = ({
                 </div>
               </div>
 
-              <FormSelect
-                label="Marital status"
-                required={fieldsRequired}
-                value={value?.marital_status || ''}
-                onChange={(e) => patch({ marital_status: e.target.value })}
-                options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
+              <FormInput
+                label="Caste"
+                value={value?.caste || ''}
+                onChange={(e) => patch({ caste: e.target.value })}
+                placeholder="e.g. Rajput, Jat"
+                autoComplete="off"
               />
 
               {afterGrid}
@@ -520,15 +571,15 @@ const AidFamilyHeadPersonalFields = ({
               onChange={(e) =>
                 patch({ phone: formatPkPhoneInput(e.target.value) })
               }
-              placeholder="0300-0000000"
+              placeholder="03000000000"
               inputMode="numeric"
               autoComplete="tel"
             />
             <FormInput
-              label="Alternate contact (relation)"
+              label="Alternate contact"
               value={value?.phone_alternate || ''}
               onChange={(e) => patch({ phone_alternate: e.target.value })}
-              placeholder="0301-... (son / neighbour)"
+              placeholder="0301... (son / neighbour)"
             />
             <FormSelect
               label="Province"
@@ -538,11 +589,12 @@ const AidFamilyHeadPersonalFields = ({
                   province: e.target.value,
                   district: '',
                   tehsil: '',
+                  city: '',
                 })
               }
-              options={[{ value: '', label: '—' }, ...PK_PROVINCES]}
+              options={provinceOptions}
             />
-            <FormInput
+            <FormSelect
               label={
                 <>
                   District <Req />
@@ -550,17 +602,16 @@ const AidFamilyHeadPersonalFields = ({
               }
               required={fieldsRequired}
               value={value?.district || ''}
-              onChange={(e) => {
-                const district = e.target.value;
+              onChange={(e) =>
                 patch({
-                  district,
-                  city: district || value?.city || '',
+                  district: e.target.value,
                   tehsil: '',
-                });
-              }}
-              placeholder="Khanewal"
+                })
+              }
+              options={districtOptions}
+              disabled={!value?.province}
             />
-            <FormInput
+            <FormSelect
               label={
                 <>
                   Tehsil <Req />
@@ -569,16 +620,30 @@ const AidFamilyHeadPersonalFields = ({
               required={fieldsRequired}
               value={value?.tehsil || ''}
               onChange={(e) => patch({ tehsil: e.target.value })}
-              placeholder="Mian Channu"
+              options={tehsilOptions}
+              disabled={!value?.province}
             />
           </div>
 
-          <div className="aid-fh-contact__uc">
+          <div className="aid-fh-contact__grid aid-fh-contact__grid--mid">
+            <FormSelect
+              label="City"
+              value={value?.city || ''}
+              onChange={(e) => patch({ city: e.target.value })}
+              options={cityOptions}
+              disabled={!value?.province}
+            />
             <FormInput
               label="Union council / village"
               value={value?.union_council || ''}
               onChange={(e) => patch({ union_council: e.target.value })}
               placeholder="UC / Chak no."
+            />
+            <FormInput
+              label="Land Mark"
+              value={value?.landmark || ''}
+              onChange={(e) => patch({ landmark: e.target.value })}
+              placeholder="Near main mosque / chowk"
             />
           </div>
 
@@ -625,106 +690,112 @@ const AidFamilyHeadPersonalFields = ({
           </div>
         </section>
       ) : null}
-
-      {showExtended ? (
-        <section className="aid-fh-card aid-fh-card--extended">
-          <header className="aid-fh-personal__header">
-            <h4 className="aid-fh-personal__title">Circumstances</h4>
-            <p className="aid-fh-personal__subtitle">
-              Occupation, literacy, vulnerability, and disability details.
-            </p>
-          </header>
-
-          <div className="aid-fh-personal__grid">
-            <FormSelect
-              label="Profession"
-              value={value?.occupation || ''}
-              onChange={(e) => patch({ occupation: e.target.value })}
-              options={[{ value: '', label: '—' }, ...AID_PROFESSIONS]}
-            />
-            <FormInput
-              label="Monthly Income (PKR)"
-              type="number"
-              min="0"
-              value={value?.monthly_income ?? ''}
-              onChange={(e) => patch({ monthly_income: e.target.value })}
-              placeholder="e.g. 20000"
-            />
-            <FormSelect
-              label="Literacy"
-              value={value?.education_level || ''}
-              onChange={(e) => patch({ education_level: e.target.value })}
-              options={[
-                { value: '', label: '—' },
-                ...AID_LITERACY_EDUCATION_OPTIONS,
-              ]}
-            />
-            <FormSelect
-              label="NACTA Clearance Status"
-              value={value?.necta_status || ''}
-              onChange={(e) => patch({ necta_status: e.target.value })}
-              options={[{ value: '', label: '—' }, ...AID_NECTA_STATUS]}
-            />
-          </div>
-
-          <div className="aid-fh-personal__vuln">
-            <p className="aid-fh-personal__vuln-label">
-              Vulnerability Categories (Select all that apply)
-            </p>
-            <div className="aid-fh-personal__chips" role="group">
-              {AID_VULNERABILITY_CHIPS.map((chip) => {
-                const active = selectedVulns.includes(chip.value);
-                return (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    className={`aid-fh-chip${active ? ' is-active' : ''}`}
-                    aria-pressed={active}
-                    onClick={() => toggleVulnerability(chip.value)}
-                  >
-                    {active ? '✓ ' : '+ '}
-                    {chip.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="aid-fh-personal__disability">
-            <label className="aid-fh-personal__disability-check">
-              <input
-                type="checkbox"
-                checked={!!value?.has_disability}
-                onChange={(e) =>
-                  patch({
-                    has_disability: e.target.checked,
-                    disability_type: e.target.checked
-                      ? value?.disability_type || ''
-                      : '',
-                  })
-                }
-              />
-              <span className="aid-fh-personal__disability-copy">
-                <strong>Has Physical or Mental Disability</strong>
-                <small>
-                  Enables disability grant evaluation and special equipment
-                  distribution
-                </small>
-              </span>
-            </label>
-            {value?.has_disability ? (
-              <FormInput
-                label="Disability Type / Medical Detail"
-                value={value?.disability_type || ''}
-                onChange={(e) => patch({ disability_type: e.target.value })}
-                placeholder="e.g. Physical - Leg Impairment, Visual, Hearing, Spinal"
-              />
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-    </div>
+    </>
   );
+
+  const extended = showExtended ? (
+    <section className="aid-fh-card aid-fh-card--extended">
+      <header className="aid-fh-personal__header">
+        <h4 className="aid-fh-personal__title">Circumstances</h4>
+        <p className="aid-fh-personal__subtitle">
+          Occupation, literacy, vulnerability, and disability details.
+        </p>
+      </header>
+
+      <div className="aid-fh-personal__grid aid-fh-personal__grid--circumstances">
+        <FormSelect
+          label="Profession"
+          value={value?.occupation || ''}
+          onChange={(e) => patch({ occupation: e.target.value })}
+          options={[{ value: '', label: '—' }, ...AID_PROFESSIONS]}
+        />
+        <FormInput
+          label="Monthly Income (PKR)"
+          type="number"
+          min="0"
+          value={value?.monthly_income ?? ''}
+          onChange={(e) => patch({ monthly_income: e.target.value })}
+          placeholder="e.g. 20000"
+        />
+        <FormSelect
+          label="Literacy"
+          value={value?.education_level || ''}
+          onChange={(e) => patch({ education_level: e.target.value })}
+          options={[
+            { value: '', label: '—' },
+            ...AID_LITERACY_EDUCATION_OPTIONS,
+          ]}
+        />
+        <FormSelect
+          label="NACTA Clearance Status"
+          value={value?.necta_status || ''}
+          onChange={(e) => patch({ necta_status: e.target.value })}
+          options={[{ value: '', label: '—' }, ...AID_NECTA_STATUS]}
+        />
+        <FormSelect
+          label="BISP eligible"
+          value={value?.bisp_status || ''}
+          onChange={(e) => patch({ bisp_status: e.target.value })}
+          options={[{ value: '', label: '—' }, ...AID_BISP_STATUS]}
+        />
+      </div>
+
+      <div className="aid-fh-personal__vuln">
+        <p className="aid-fh-personal__vuln-label">
+          Vulnerability Categories (Select all that apply)
+        </p>
+        <div className="aid-fh-personal__chips" role="group">
+          {AID_VULNERABILITY_CHIPS.map((chip) => {
+            const active = selectedVulns.includes(chip.value);
+            return (
+              <button
+                key={chip.value}
+                type="button"
+                className={`aid-fh-chip${active ? ' is-active' : ''}`}
+                aria-pressed={active}
+                onClick={() => toggleVulnerability(chip.value)}
+              >
+                {active ? '✓ ' : '+ '}
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="aid-fh-personal__disability">
+        <label className="aid-fh-personal__disability-check">
+          <input
+            type="checkbox"
+            checked={!!value?.has_disability}
+            onChange={(e) =>
+              patch({
+                has_disability: e.target.checked,
+                disability_type: e.target.checked
+                  ? value?.disability_type || ''
+                  : '',
+              })
+            }
+          />
+          <span className="aid-fh-personal__disability-copy">
+            <strong>Has Physical or Mental Disability</strong>
+            <small>
+              Enables disability grant evaluation and special equipment
+              distribution
+            </small>
+          </span>
+        </label>
+        {value?.has_disability ? (
+          <FormInput
+            label="Disability Type / Medical Detail"
+            value={value?.disability_type || ''}
+            onChange={(e) => patch({ disability_type: e.target.value })}
+            placeholder="e.g. Physical - Leg Impairment, Visual, Hearing, Spinal"
+          />
+        ) : null}
+      </div>
+    </section>
+  ) : null;
 
   return (
     <div
@@ -733,24 +804,30 @@ const AidFamilyHeadPersonalFields = ({
       }`}
     >
       {sidebarEnabled ? (
-        <div className="aid-fh-layout">
-          {main}
-          <AidRegistrationAside
-            registryMatch={registryMatch}
-            registryLookingUp={registryLookingUp}
-            checklist={checklist}
-            onLinkExisting={() => {
-              if (!matchPayload?.person) return;
-              applyPersonFields(matchPayload.person, { link: true });
-            }}
-            onRegisterNew={() => {
-              setRegistryMatch(null);
-              patch({ existing_person_id: null });
-            }}
-          />
-        </div>
+        <>
+          <div className="aid-fh-layout">
+            <div className="aid-fh-layout__main">{identityAndContact}</div>
+            <AidRegistrationAside
+              registryMatch={registryMatch}
+              registryLookingUp={registryLookingUp}
+              checklist={checklist}
+              onLinkExisting={() => {
+                if (!matchPayload?.person) return;
+                applyPersonFields(matchPayload.person, { link: true });
+              }}
+              onRegisterNew={() => {
+                setRegistryMatch(null);
+                patch({ existing_person_id: null });
+              }}
+            />
+          </div>
+          {extended}
+        </>
       ) : (
-        main
+        <div className="aid-fh-layout__main">
+          {identityAndContact}
+          {extended}
+        </div>
       )}
     </div>
   );

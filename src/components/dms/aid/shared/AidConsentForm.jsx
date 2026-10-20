@@ -27,7 +27,7 @@ const COPY = {
       'SecuGen انگوٹھا / ePad VP9801 دستخط — فیلڈز اختیاری ہیں اور null رہ سکتی ہیں۔',
   },
   en: {
-    org: 'Maulana Tariq Jameel Foundation',
+    org: 'Maulana Tariq jamil Foundation',
     title: 'Consent Form',
     date: 'Date',
     appNo: 'Application No.',
@@ -36,7 +36,7 @@ const COPY = {
     cnic: 'CNIC',
     sector: 'Sector',
     body:
-      'I hereby grant Maulana Tariq Jameel Foundation full authority to use my photographs, videos, interviews, statements, and information written in the application form in their publications such as reports, websites, social, print and electronic media, advertisements, etc. Further, they may also share the above information with their donors. I have no objection to this.',
+      'I hereby grant Maulana Tariq jamil Foundation full authority to use my photographs, videos, interviews, statements, and information written in the application form in their publications such as reports, websites, social, print and electronic media, advertisements, etc. Further, they may also share the above information with their donors. I have no objection to this.',
     accept: 'I agree to the consent statement above',
     thumb: 'Applicant thumb (SecuGen)',
     sign: 'Applicant signature (ePad)',
