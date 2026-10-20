@@ -350,8 +350,8 @@ const AidFamilyHeadPersonalFields = ({
     [provinceCities, value?.city],
   );
 
-  const main = (
-    <div className="aid-fh-layout__main">
+  const identityAndContact = (
+    <>
       <section className="aid-fh-card aid-fh-card--identity">
         {showTitle ? (
           <header className="aid-fh-personal__header">
@@ -690,114 +690,112 @@ const AidFamilyHeadPersonalFields = ({
           </div>
         </section>
       ) : null}
-
-      {showExtended ? (
-        <section className="aid-fh-card aid-fh-card--extended">
-          <header className="aid-fh-personal__header">
-            <h4 className="aid-fh-personal__title">Circumstances</h4>
-            <p className="aid-fh-personal__subtitle">
-              Occupation, literacy, vulnerability, and disability details.
-            </p>
-          </header>
-
-          <div className="aid-fh-personal__grid">
-            <FormSelect
-              label="Profession"
-              value={value?.occupation || ''}
-              onChange={(e) => patch({ occupation: e.target.value })}
-              options={[{ value: '', label: '—' }, ...AID_PROFESSIONS]}
-            />
-            <FormInput
-              label="Monthly Income (PKR)"
-              type="number"
-              min="0"
-              value={value?.monthly_income ?? ''}
-              onChange={(e) => patch({ monthly_income: e.target.value })}
-              placeholder="e.g. 20000"
-            />
-            <FormSelect
-              label="Literacy"
-              value={value?.education_level || ''}
-              onChange={(e) => patch({ education_level: e.target.value })}
-              options={[
-                { value: '', label: '—' },
-                ...AID_LITERACY_EDUCATION_OPTIONS,
-              ]}
-            />
-            <div className="aid-fh-personal__necta-bisp aid-span-2">
-              <FormSelect
-                label="NACTA Clearance Status"
-                value={value?.necta_status || ''}
-                onChange={(e) => patch({ necta_status: e.target.value })}
-                options={[{ value: '', label: '—' }, ...AID_NECTA_STATUS]}
-              />
-              <FormSelect
-                label="BISP eligible"
-                value={value?.bisp_status || ''}
-                onChange={(e) => patch({ bisp_status: e.target.value })}
-                options={[{ value: '', label: '—' }, ...AID_BISP_STATUS]}
-              />
-            </div>
-          </div>
-
-          <div className="aid-fh-personal__vuln">
-            <p className="aid-fh-personal__vuln-label">
-              Vulnerability Categories (Select all that apply)
-            </p>
-            <div className="aid-fh-personal__chips" role="group">
-              {AID_VULNERABILITY_CHIPS.map((chip) => {
-                const active = selectedVulns.includes(chip.value);
-                return (
-                  <button
-                    key={chip.value}
-                    type="button"
-                    className={`aid-fh-chip${active ? ' is-active' : ''}`}
-                    aria-pressed={active}
-                    onClick={() => toggleVulnerability(chip.value)}
-                  >
-                    {active ? '✓ ' : '+ '}
-                    {chip.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="aid-fh-personal__disability">
-            <label className="aid-fh-personal__disability-check">
-              <input
-                type="checkbox"
-                checked={!!value?.has_disability}
-                onChange={(e) =>
-                  patch({
-                    has_disability: e.target.checked,
-                    disability_type: e.target.checked
-                      ? value?.disability_type || ''
-                      : '',
-                  })
-                }
-              />
-              <span className="aid-fh-personal__disability-copy">
-                <strong>Has Physical or Mental Disability</strong>
-                <small>
-                  Enables disability grant evaluation and special equipment
-                  distribution
-                </small>
-              </span>
-            </label>
-            {value?.has_disability ? (
-              <FormInput
-                label="Disability Type / Medical Detail"
-                value={value?.disability_type || ''}
-                onChange={(e) => patch({ disability_type: e.target.value })}
-                placeholder="e.g. Physical - Leg Impairment, Visual, Hearing, Spinal"
-              />
-            ) : null}
-          </div>
-        </section>
-      ) : null}
-    </div>
+    </>
   );
+
+  const extended = showExtended ? (
+    <section className="aid-fh-card aid-fh-card--extended">
+      <header className="aid-fh-personal__header">
+        <h4 className="aid-fh-personal__title">Circumstances</h4>
+        <p className="aid-fh-personal__subtitle">
+          Occupation, literacy, vulnerability, and disability details.
+        </p>
+      </header>
+
+      <div className="aid-fh-personal__grid aid-fh-personal__grid--circumstances">
+        <FormSelect
+          label="Profession"
+          value={value?.occupation || ''}
+          onChange={(e) => patch({ occupation: e.target.value })}
+          options={[{ value: '', label: '—' }, ...AID_PROFESSIONS]}
+        />
+        <FormInput
+          label="Monthly Income (PKR)"
+          type="number"
+          min="0"
+          value={value?.monthly_income ?? ''}
+          onChange={(e) => patch({ monthly_income: e.target.value })}
+          placeholder="e.g. 20000"
+        />
+        <FormSelect
+          label="Literacy"
+          value={value?.education_level || ''}
+          onChange={(e) => patch({ education_level: e.target.value })}
+          options={[
+            { value: '', label: '—' },
+            ...AID_LITERACY_EDUCATION_OPTIONS,
+          ]}
+        />
+        <FormSelect
+          label="NACTA Clearance Status"
+          value={value?.necta_status || ''}
+          onChange={(e) => patch({ necta_status: e.target.value })}
+          options={[{ value: '', label: '—' }, ...AID_NECTA_STATUS]}
+        />
+        <FormSelect
+          label="BISP eligible"
+          value={value?.bisp_status || ''}
+          onChange={(e) => patch({ bisp_status: e.target.value })}
+          options={[{ value: '', label: '—' }, ...AID_BISP_STATUS]}
+        />
+      </div>
+
+      <div className="aid-fh-personal__vuln">
+        <p className="aid-fh-personal__vuln-label">
+          Vulnerability Categories (Select all that apply)
+        </p>
+        <div className="aid-fh-personal__chips" role="group">
+          {AID_VULNERABILITY_CHIPS.map((chip) => {
+            const active = selectedVulns.includes(chip.value);
+            return (
+              <button
+                key={chip.value}
+                type="button"
+                className={`aid-fh-chip${active ? ' is-active' : ''}`}
+                aria-pressed={active}
+                onClick={() => toggleVulnerability(chip.value)}
+              >
+                {active ? '✓ ' : '+ '}
+                {chip.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="aid-fh-personal__disability">
+        <label className="aid-fh-personal__disability-check">
+          <input
+            type="checkbox"
+            checked={!!value?.has_disability}
+            onChange={(e) =>
+              patch({
+                has_disability: e.target.checked,
+                disability_type: e.target.checked
+                  ? value?.disability_type || ''
+                  : '',
+              })
+            }
+          />
+          <span className="aid-fh-personal__disability-copy">
+            <strong>Has Physical or Mental Disability</strong>
+            <small>
+              Enables disability grant evaluation and special equipment
+              distribution
+            </small>
+          </span>
+        </label>
+        {value?.has_disability ? (
+          <FormInput
+            label="Disability Type / Medical Detail"
+            value={value?.disability_type || ''}
+            onChange={(e) => patch({ disability_type: e.target.value })}
+            placeholder="e.g. Physical - Leg Impairment, Visual, Hearing, Spinal"
+          />
+        ) : null}
+      </div>
+    </section>
+  ) : null;
 
   return (
     <div
@@ -806,24 +804,30 @@ const AidFamilyHeadPersonalFields = ({
       }`}
     >
       {sidebarEnabled ? (
-        <div className="aid-fh-layout">
-          {main}
-          <AidRegistrationAside
-            registryMatch={registryMatch}
-            registryLookingUp={registryLookingUp}
-            checklist={checklist}
-            onLinkExisting={() => {
-              if (!matchPayload?.person) return;
-              applyPersonFields(matchPayload.person, { link: true });
-            }}
-            onRegisterNew={() => {
-              setRegistryMatch(null);
-              patch({ existing_person_id: null });
-            }}
-          />
-        </div>
+        <>
+          <div className="aid-fh-layout">
+            <div className="aid-fh-layout__main">{identityAndContact}</div>
+            <AidRegistrationAside
+              registryMatch={registryMatch}
+              registryLookingUp={registryLookingUp}
+              checklist={checklist}
+              onLinkExisting={() => {
+                if (!matchPayload?.person) return;
+                applyPersonFields(matchPayload.person, { link: true });
+              }}
+              onRegisterNew={() => {
+                setRegistryMatch(null);
+                patch({ existing_person_id: null });
+              }}
+            />
+          </div>
+          {extended}
+        </>
       ) : (
-        main
+        <div className="aid-fh-layout__main">
+          {identityAndContact}
+          {extended}
+        </div>
       )}
     </div>
   );

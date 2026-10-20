@@ -3376,6 +3376,12 @@ a.aid-contact-chip:hover {
   min-width: 0;
 }
 
+/* Circumstances + anything after Contact: full width below the aside layout */
+.aid-fh-personal--with-aside > .aid-fh-card--extended {
+  width: 100%;
+  margin-top: 1rem;
+}
+
 .aid-reg-aside {
   display: flex;
   flex-direction: column;
@@ -3960,14 +3966,18 @@ a.aid-contact-chip:hover {
   grid-column: span 2;
 }
 
-.aid-fh-personal__necta-bisp {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.85rem 1rem;
+.aid-fh-personal__grid--circumstances {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+@media (max-width: 1100px) {
+  .aid-fh-personal__grid--circumstances {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
-  .aid-fh-personal__necta-bisp {
+  .aid-fh-personal__grid--circumstances {
     grid-template-columns: 1fr;
   }
 }

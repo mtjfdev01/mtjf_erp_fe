@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import { hasAidPermission } from '../../../../../utils/permissions';
@@ -100,10 +101,11 @@ const AidApplicationView = () => {
   const [familyTree, setFamilyTree] = useState(null);
   const [kinship, setKinship] = useState([]);
   const [uploadingInvestKey, setUploadingInvestKey] = useState(null);
+  const [attachUploading, setAttachUploading] = useState(false);
 
-  const load = useCallback(async () => {
+  const load = useCallback(async ({ silent = false } = {}) => {
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       setError('');
       const appRes = await axiosInstance.get(`/aid/applications/${id}`);
       const payload = appRes.data?.data || null;
@@ -180,15 +182,39 @@ const AidApplicationView = () => {
   };
 
   const uploadFile = async (file) => {
-    if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('context', attachContext);
-    await run(() =>
-      axiosInstance.post(`/aid/applications/${id}/attachments/upload`, fd, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      }),
-    );
+    if (!file || !id) return;
+    setAttachUploading(true);
+    setActionError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('context', attachContext);
+      fd.append('description', attachContext);
+      const res = await axiosInstance.post(
+        `/aid/applications/${id}/attachments/upload`,
+        fd,
+      );
+      const row = res.data?.data;
+      if (row?.id) {
+        setApp((prev) =>
+          prev
+            ? {
+                ...prev,
+                attachments: [row, ...(prev.attachments || [])],
+              }
+            : prev,
+        );
+      }
+      await load({ silent: true });
+      toast.success('Attachment uploaded');
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || err.message || 'Failed to upload file';
+      setActionError(msg);
+      toast.error(msg);
+    } finally {
+      setAttachUploading(false);
+    }
   };
 
   const uploadInvestigationFile = async (itemKey, file) => {
@@ -198,12 +224,14 @@ const AidApplicationView = () => {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      fd.append('context', itemKey === 'site_visit' ? 'site_visit' : 'verification');
+      fd.append(
+        'context',
+        itemKey === 'site_visit' ? 'site_visit' : 'verification',
+      );
       fd.append('description', itemKey);
       const res = await axiosInstance.post(
         `/aid/applications/${id}/attachments/upload`,
         fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       );
       const row = res.data?.data;
       setInvestigation((prev) => ({
@@ -216,11 +244,13 @@ const AidApplicationView = () => {
           attachment_id: row?.id ?? null,
         },
       }));
-      await load();
+      await load({ silent: true });
+      toast.success('File attached');
     } catch (err) {
-      setActionError(
-        err.response?.data?.message || err.message || 'Failed to upload file',
-      );
+      const msg =
+        err.response?.data?.message || err.message || 'Failed to upload file';
+      setActionError(msg);
+      toast.error(msg);
     } finally {
       setUploadingInvestKey(null);
     }
@@ -887,9 +917,14 @@ const AidApplicationView = () => {
                 </div>
                 {canUpdate && (
                   <label className="aid-attach-upload">
-                    <span>Upload file</span>
+                    <span>
+                      {attachUploading
+                        ? 'Uploading…'
+                        : `Upload file (${String(attachContext).replace(/_/g, ' ')})`}
+                    </span>
                     <input
                       type="file"
+                      disabled={attachUploading || busy}
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) uploadFile(f);

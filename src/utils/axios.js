@@ -64,9 +64,19 @@ axiosInstance.interceptors.request.use(
     // Ensure credentials are included
     config.withCredentials = true;
 
-    // Let the browser set multipart boundary (required for file uploads)
+    // Let the browser set multipart boundary (required for file uploads).
+    // AxiosHeaders / instance defaults can keep application/json unless cleared.
     if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
-      delete config.headers['Content-Type'];
+      const headers = config.headers;
+      if (headers && typeof headers.setContentType === 'function') {
+        headers.setContentType(false);
+      } else if (headers) {
+        delete headers['Content-Type'];
+        delete headers['content-type'];
+        if (typeof headers.set === 'function') {
+          headers.set('Content-Type', false);
+        }
+      }
     }
 
     // Add CORS headers for preflight requests
