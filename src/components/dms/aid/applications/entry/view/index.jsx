@@ -18,6 +18,7 @@ import AidPersonProfileCard, {
 } from '../../../shared/AidPersonProfileCard';
 import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
+import AidApplicationPrintable from '../../../shared/AidApplicationPrintable';
 import {
   aidStatusTone,
   formatAidStatus,
@@ -40,6 +41,7 @@ const ENTRY_TABS = [
   { id: 'family', label: 'Family' },
   { id: 'family_tree', label: 'Family Tree' },
   { id: 'attachments', label: 'Attachments' },
+  { id: 'printable', label: 'Printable' },
 ];
 
 const FAMILY_GROUPS = [
@@ -563,6 +565,19 @@ const AidEntryApplicationView = () => {
                   </ul>
                 )}
               </section>
+            )}
+
+            {panelTab === 'printable' && (
+              <AidApplicationPrintable
+                app={app}
+                familyTree={familyTree}
+                kinship={kinship}
+                preparedBy={
+                  app.created_by
+                    ? formatAuditActor(app.created_by)
+                    : undefined
+                }
+              />
             )}
           </div>
         </div>

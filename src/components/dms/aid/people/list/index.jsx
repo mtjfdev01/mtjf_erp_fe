@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiEye, FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiEye, FiPlus, FiMinus, FiSearch, FiFilter } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
@@ -16,9 +16,11 @@ import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import {
+  AID_FAMILY_SECTIONS,
   AID_GENDERS,
   AID_VULNERABILITIES,
   emptyLiteracyFields,
+  personAge,
 } from '../../aidConstants';
 import '../../aid.css';
 
@@ -53,6 +55,30 @@ const nameInitial = (name) => {
   return t ? t.charAt(0).toUpperCase() : '?';
 };
 
+const formatRelationLabel = (relation) => {
+  const raw = String(relation || '').trim();
+  if (!raw) return '—';
+  return raw
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+/** Flatten /aid/people/:id family_tree into nested-table rows. */
+const flattenFamilyMembers = (tree = {}) => {
+  const members = [];
+  AID_FAMILY_SECTIONS.forEach((section) => {
+    (tree[section.key] || []).forEach((row) => {
+      if (!row?.person) return;
+      members.push({
+        key: row.edge_id || `${section.key}-${row.person.id}`,
+        person: row.person,
+        relation: row.relation_type || section.defaultRelation,
+      });
+    });
+  });
+  return members;
+};
+
 const AidPeopleList = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
@@ -82,6 +108,10 @@ const AidPeopleList = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [person, setPerson] = useState(emptyCreatePerson);
   const [saving, setSaving] = useState(false);
+
+  const [expandedId, setExpandedId] = useState(null);
+  const [familyCache, setFamilyCache] = useState({});
+  const [familyLoadingId, setFamilyLoadingId] = useState(null);
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -118,6 +148,7 @@ const AidPeopleList = () => {
       setRows(res.data?.data || []);
       setTotalItems(res.data?.total || 0);
       setTotalPages(res.data?.totalPages || 1);
+      setExpandedId(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load people');
     } finally {
@@ -133,6 +164,35 @@ const AidPeopleList = () => {
   const applySearch = () => {
     setCurrentPage(1);
     setAppliedSearch(searchInput.trim());
+  };
+
+  const loadFamily = async (personId) => {
+    if (familyCache[personId]) return;
+    setFamilyLoadingId(personId);
+    try {
+      const res = await axiosInstance.get(`/aid/people/${personId}`);
+      const tree = res.data?.data?.family_tree || {};
+      setFamilyCache((prev) => ({
+        ...prev,
+        [personId]: flattenFamilyMembers(tree),
+      }));
+    } catch {
+      setFamilyCache((prev) => ({
+        ...prev,
+        [personId]: [],
+      }));
+    } finally {
+      setFamilyLoadingId(null);
+    }
+  };
+
+  const toggleExpand = (personId) => {
+    if (expandedId === personId) {
+      setExpandedId(null);
+      return;
+    }
+    setExpandedId(personId);
+    loadFamily(personId);
   };
 
   const createPerson = async (e) => {
@@ -182,7 +242,7 @@ const AidPeopleList = () => {
       <Navbar />
       <div className="list-wrapper aid-list aid-people-list">
         <PageHeader
-          title="Beneficiary List"
+          title="Beneficiaries List"
           backPath="/dms/aid/applications/list"
           showAdd={false}
           rightElement={
@@ -323,33 +383,56 @@ const AidPeopleList = () => {
             </span>
           </div>
 
-          <div className="table-container aid-people-table-wrap">
-            <table className="data-table aid-people-table">
-              <thead>
-                <tr>
-                  <th>Beneficiary Name</th>
-                  <th>CNIC Number</th>
-                  <th>Phone</th>
-                  <th>City</th>
-                  <th>Program / Aid</th>
-                  <th>Expected Amount</th>
-                  <th>Status</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={8}>Loading…</td>
-                  </tr>
-                ) : rows.length === 0 ? (
-                  <tr>
-                    <td colSpan={8}>No beneficiaries found.</td>
-                  </tr>
-                ) : (
-                  rows.map((row) => (
-                    <tr key={row.id}>
-                      <td>
+          <div className="aid-people-collapse">
+            <div className="aid-people-collapse__head" aria-hidden="true">
+              <span className="aid-people-collapse__toggle-cell" />
+              <span>Beneficiary Name</span>
+              <span>CNIC Number</span>
+              <span>Phone</span>
+              <span>City</span>
+              <span>Program / Aid</span>
+              <span>Expected Amount</span>
+              <span>Status</span>
+              <span>Actions</span>
+            </div>
+
+            {loading ? (
+              <div className="aid-people-collapse__empty">Loading…</div>
+            ) : rows.length === 0 ? (
+              <div className="aid-people-collapse__empty">
+                No beneficiaries found.
+              </div>
+            ) : (
+              rows.map((row) => {
+                const isOpen = expandedId === row.id;
+                const members = familyCache[row.id];
+                const membersLoading = familyLoadingId === row.id;
+
+                return (
+                  <div
+                    key={row.id}
+                    className={`aid-people-collapse__item${
+                      isOpen ? ' aid-people-collapse__item--open' : ''
+                    }`}
+                  >
+                    <div className="aid-people-collapse__row">
+                      <div className="aid-people-collapse__toggle-cell">
+                        <button
+                          type="button"
+                          className="aid-people-collapse__toggle"
+                          aria-expanded={isOpen}
+                          aria-label={
+                            isOpen
+                              ? `Collapse ${row.full_name}`
+                              : `Expand ${row.full_name}`
+                          }
+                          onClick={() => toggleExpand(row.id)}
+                        >
+                          {isOpen ? <FiMinus size={14} /> : <FiPlus size={14} />}
+                        </button>
+                      </div>
+
+                      <div className="aid-people-collapse__cell aid-people-collapse__cell--name">
                         <div className="aid-people-name-cell">
                           <span
                             className="aid-people-avatar"
@@ -368,14 +451,27 @@ const AidPeopleList = () => {
                             )}
                           </div>
                         </div>
-                      </td>
-                      <td>{row.cnic || ''}</td>
-                      <td>{row.phone || ''}</td>
-                      <td>{row.city || ''}</td>
-                      <td className="aid-people-empty-col" />
-                      <td className="aid-people-empty-col" />
-                      <td className="aid-people-empty-col" />
-                      <td>
+                      </div>
+
+                      <div className="aid-people-collapse__cell">
+                        {row.cnic || '—'}
+                      </div>
+                      <div className="aid-people-collapse__cell">
+                        {row.phone || '—'}
+                      </div>
+                      <div className="aid-people-collapse__cell">
+                        {row.city || '—'}
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-empty-col">
+                        —
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-empty-col">
+                        —
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-empty-col">
+                        —
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-collapse__cell--actions">
                         <button
                           type="button"
                           className="aid-people-view-btn"
@@ -386,12 +482,79 @@ const AidPeopleList = () => {
                           <FiEye size={15} />
                           View
                         </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`aid-people-collapse__body${
+                        isOpen ? ' aid-people-collapse__body--open' : ''
+                      }`}
+                      aria-hidden={!isOpen}
+                    >
+                      <div className="aid-people-collapse__body-inner">
+                        <div className="aid-people-collapse__panel">
+                          {!isOpen && !members ? null : membersLoading ? (
+                            <div className="aid-people-collapse__panel-msg">
+                              Loading family members…
+                            </div>
+                          ) : !members || members.length === 0 ? (
+                            <div className="aid-people-collapse__panel-msg">
+                              No family members linked to this beneficiary.
+                            </div>
+                          ) : (
+                            <div className="aid-people-nested-wrap">
+                              <table className="aid-people-nested-table">
+                                <thead>
+                                  <tr>
+                                    <th>Member</th>
+                                    <th>Relation</th>
+                                    <th>Age</th>
+                                    <th>CNIC / B-Form</th>
+                                    <th>Phone</th>
+                                    <th>City</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {members.map((m) => {
+                                    const p = m.person;
+                                    const age = personAge(p.date_of_birth);
+                                    return (
+                                      <tr key={m.key}>
+                                        <td>
+                                          <button
+                                            type="button"
+                                            className="aid-text-link"
+                                            tabIndex={isOpen ? 0 : -1}
+                                            onClick={() =>
+                                              navigate(
+                                                `/dms/aid/people/view/${p.id}`,
+                                              )
+                                            }
+                                          >
+                                            {p.full_name || '—'}
+                                          </button>
+                                        </td>
+                                        <td>
+                                          {formatRelationLabel(m.relation)}
+                                        </td>
+                                        <td>{age != null ? age : '—'}</td>
+                                        <td>{p.cnic || '—'}</td>
+                                        <td>{p.phone || '—'}</td>
+                                        <td>{p.city || '—'}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
 
           {totalItems > 0 && (
