@@ -430,6 +430,7 @@ const AddJob = () => {
     title: '',
     slug: '', // Optional - auto-generated if not provided
     icon: '',
+    project: 'MTJ Foundation',
     department: 'IT',
     type: 'Full Time',
     location: '',
@@ -525,6 +526,12 @@ const AddJob = () => {
     navigate('/hr/careers/jobs/list');
   };
 
+  const projectOptions = [
+    { value: 'MTJ Foundation', label: 'MTJ Foundation' },
+    { value: 'Aas Lab', label: 'Aas Lab' },
+    { value: 'Aas Clinics', label: 'Aas Clinics' },
+  ];
+
   const departmentOptions = [
     { value: 'it', label: 'IT' },
     { value: 'marketing', label: 'Marketing' },
@@ -597,6 +604,15 @@ const AddJob = () => {
                 value={form.icon}
                 onChange={handleChange}
                 placeholder="e.g., https://example.com/icon.png"
+              />
+
+              <FormSelect
+                label="Project"
+                name="project"
+                value={form.project}
+                onChange={handleChange}
+                options={projectOptions}
+                required
               />
 
               <FormSelect

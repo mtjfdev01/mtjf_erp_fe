@@ -32,6 +32,7 @@ const JobsList = () => {
   const [tempFilters, setTempFilters] = useState({
     search: '',
     status: '',
+    project: '',
     department: '',
     type: '',
     location: ''
@@ -41,6 +42,7 @@ const JobsList = () => {
   const [appliedFilters, setAppliedFilters] = useState({
     search: '',
     status: '',
+    project: '',
     department: '',
     type: '',
     location: ''
@@ -71,6 +73,7 @@ const JobsList = () => {
     const emptyFilters = {
       search: '',
       status: '',
+      project: '',
       department: '',
       type: '',
       location: ''
@@ -98,6 +101,7 @@ const JobsList = () => {
         limit: pageSize.toString(),
         ...(appliedFilters.search && { search: appliedFilters.search }),
         ...(appliedFilters.status && { status: appliedFilters.status }),
+        ...(appliedFilters.project && { project: appliedFilters.project }),
         ...(appliedFilters.department && { department: appliedFilters.department }),
         ...(appliedFilters.type && { type: appliedFilters.type }),
         ...(appliedFilters.location && { location: appliedFilters.location })
@@ -228,6 +232,12 @@ const JobsList = () => {
     { value: 'draft', label: 'Draft' }
   ];
 
+  const projectOptions = [
+    { value: 'MTJ Foundation', label: 'MTJ Foundation' },
+    { value: 'Aas Lab', label: 'Aas Lab' },
+    { value: 'Aas Clinics', label: 'Aas Clinics' },
+  ];
+
   const departmentOptions = [
     { value: 'IT', label: 'IT' },
     { value: 'Marketing', label: 'Marketing' },
@@ -298,6 +308,15 @@ const JobsList = () => {
               onFilterChange={handleFilterChange}
               placeholder="All Status"
             />
+
+            <DropdownFilter
+              filterKey="project"
+              label="Project"
+              data={projectOptions}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All Projects"
+            />
             
             <DropdownFilter
               filterKey="department"
@@ -351,6 +370,7 @@ const JobsList = () => {
               <thead>
                 <tr>
                   <th>Title</th>
+                  <th>Project</th>
                   <th>Department</th>
                   <th>Type</th>
                   <th>Location</th>
@@ -377,6 +397,7 @@ const JobsList = () => {
                         )}
                       </div>
                     </td>
+                    <td>{job.project || '—'}</td>
                     <td>{getDepartmentBadge(job.department)}</td>
                     <td>{job.type}</td>
                     <td>{job.location}</td>

@@ -158,6 +158,10 @@ const ViewJob = () => {
                 <span className="view-item-value">{job.slug || '-'}</span>
               </div>
               <div className="view-item">
+                <span className="view-item-label">Project</span>
+                <span className="view-item-value">{job.project || '—'}</span>
+              </div>
+              <div className="view-item">
                 <span className="view-item-label">Department</span>
                 <span className="view-item-value">{getDepartmentBadge(job.department)}</span>
               </div>
