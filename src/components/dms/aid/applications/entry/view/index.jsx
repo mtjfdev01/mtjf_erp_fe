@@ -163,7 +163,7 @@ const AidEntryApplicationView = () => {
         <Navbar />
         <div className="form-content aid-view">
           <PageHeader
-            title={fromDrafts ? 'Draft' : 'Application entry'}
+            title={fromDrafts ? 'Data Entry' : 'Application'}
             backPath={listPath}
             onBackClick={() => navigate(listPath)}
             showAdd={false}
@@ -216,8 +216,8 @@ const AidEntryApplicationView = () => {
           <div>
             <p className="aid-entry-view__eyebrow">
               {status === 'draft'
-                ? 'Draft — approve to enter verification'
-                : 'Beneficiary registration record'}
+                ? 'Draft — consider to enter verification'
+                : 'Application record'}
             </p>
             <h2 style={{ margin: '0 0 6px' }}>
               {app.title || 'Aid application'}
@@ -255,7 +255,7 @@ const AidEntryApplicationView = () => {
                   setError('');
                 }}
               >
-                Approve for verification
+                Consider for verification
               </button>
             ) : null}
             {status !== 'draft' ? (
@@ -274,7 +274,7 @@ const AidEntryApplicationView = () => {
 
         {canApproveDraft && status === 'draft' && showApprovePanel ? (
           <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Approve draft</h3>
+            <h3 style={{ marginTop: 0 }}>Consider draft</h3>
             <AidUserAssignField
               label="Assign to program user"
               value={assignUser}
@@ -288,7 +288,7 @@ const AidEntryApplicationView = () => {
                 disabled={approving || !assignUser?.id}
                 onClick={approveDraft}
               >
-                {approving ? 'Approving…' : 'Approve & assign'}
+                {approving ? 'Considering…' : 'Consider & assign'}
               </button>
               <button
                 type="button"

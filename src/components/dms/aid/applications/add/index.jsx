@@ -1389,7 +1389,7 @@ const AidApplicationAdd = () => {
       } else {
         const res = await axiosInstance.post('/aid/applications', payload);
         savedId = res.data?.data?.id;
-        toast.success('Saved as draft — open Drafts to approve for verification');
+        toast.success('Saved as draft — open Data Entry to consider for verification');
       }
 
       if (savedId) {
@@ -1462,9 +1462,9 @@ const AidApplicationAdd = () => {
       ? draftsListPath
       : '/dms/aid/applications/entry/list';
   const formTitle = !isEdit
-    ? 'New draft application'
+    ? 'New application'
     : isDraftEdit
-      ? 'Edit draft'
+      ? 'Edit application'
       : 'Edit Aid Application';
   const submitLabel = !isEdit
     ? 'Save as draft'
@@ -1478,7 +1478,7 @@ const AidApplicationAdd = () => {
         <Navbar />
         <div className="form-content">
           <PageHeader
-            title="Edit draft"
+            title="Edit application"
             backPath={draftsListPath}
             onBackClick={() => navigate(draftsListPath)}
             showAdd={false}
@@ -1507,7 +1507,7 @@ const AidApplicationAdd = () => {
         {!isEdit || isDraftEdit ? (
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
             This form saves a <strong>draft</strong>. Assignment is done when
-            an approver uses <strong>Drafts → Approve</strong> (program user)
+            an approver uses <strong>Data Entry → Consider</strong> (program user)
             to send it to Verification Process.
           </p>
         ) : null}
