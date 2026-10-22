@@ -433,6 +433,24 @@ export const emptyFinancialAssistanceDetails = () => ({
   alternative_if_not_approved: '',
 });
 
+/** Clean Water — Application tab special structure */
+export const emptyCleanWaterDetails = () => ({
+  existing_source_of_water: '',
+  distance_from_home: '',
+  duration_without_clean_water: '',
+  location_of_project: '',
+  community_contribution_amount: '',
+});
+
+/** Zakat Permission Letter — religion options */
+export const AID_ZAKAT_RELIGIONS = [
+  { value: 'muslim', label: 'Muslim' },
+  { value: 'christian', label: 'Christian' },
+  { value: 'hindu', label: 'Hindu' },
+  { value: 'sikh', label: 'Sikh' },
+  { value: 'other', label: 'Other' },
+];
+
 /** Zakat Permission Letter — assets / eligibility (all applications) */
 export const emptyZakatPermission = () => ({
   form_date: '',
@@ -440,6 +458,7 @@ export const emptyZakatPermission = () => ({
   applicant_name: '',
   age: '',
   education: '',
+  religion: 'muslim',
   cnic: '',
   phone: '',
   gold: '',

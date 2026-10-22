@@ -19,6 +19,7 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
+import AidCleanWaterApplicationFields from '../../shared/AidCleanWaterApplicationFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
@@ -818,6 +819,15 @@ const AidApplicationView = () => {
                     <div className="aid-detail-block">
                       <AidFinancialAssistanceFields
                         value={app.financial_assistance_details}
+                        readOnly
+                      />
+                    </div>
+                  )}
+                {app.requested_aid_type === 'clean_water' &&
+                  app.clean_water_details && (
+                    <div className="aid-detail-block">
+                      <AidCleanWaterApplicationFields
+                        value={app.clean_water_details}
                         readOnly
                       />
                     </div>

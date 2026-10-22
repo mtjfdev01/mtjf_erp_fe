@@ -26,6 +26,7 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
+import AidCleanWaterApplicationFields from '../../shared/AidCleanWaterApplicationFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
@@ -54,6 +55,7 @@ import {
   emptyRationDetails,
   emptyMarriageGiftDetails,
   emptyFinancialAssistanceDetails,
+  emptyCleanWaterDetails,
   emptyZakatPermission,
   emptyConsentForm,
   emptyFamilyHeadRow,
@@ -544,6 +546,9 @@ const AidApplicationAdd = () => {
   const [financialAssistanceDetails, setFinancialAssistanceDetails] = useState(
     emptyFinancialAssistanceDetails(),
   );
+  const [cleanWaterDetails, setCleanWaterDetails] = useState(
+    emptyCleanWaterDetails(),
+  );
   const [zakatPermission, setZakatPermission] = useState(emptyZakatPermission());
   const [consentForm, setConsentForm] = useState(emptyConsentForm());
   const [applicationDocs, setApplicationDocs] = useState({});
@@ -649,6 +654,11 @@ const AidApplicationAdd = () => {
               ...app.financial_assistance_details,
             }
           : emptyFinancialAssistanceDetails(),
+      );
+      setCleanWaterDetails(
+        app.clean_water_details
+          ? { ...emptyCleanWaterDetails(), ...app.clean_water_details }
+          : emptyCleanWaterDetails(),
       );
       setZakatPermission(
         app.zakat_permission
@@ -1248,6 +1258,9 @@ const AidApplicationAdd = () => {
         ...(form.requested_aid_type === 'financial_assistance'
           ? { financial_assistance_details: financialAssistanceDetails }
           : {}),
+        ...(form.requested_aid_type === 'clean_water'
+          ? { clean_water_details: cleanWaterDetails }
+          : {}),
         zakat_permission: zakatPermission,
         consent_form: consentForm,
         writer_relation: 'self',
@@ -1636,6 +1649,13 @@ const AidApplicationAdd = () => {
                         : emptyFinancialAssistanceDetails(),
                     );
                   }
+                  if (next === 'clean_water') {
+                    setCleanWaterDetails((prev) =>
+                      prev?.existing_source_of_water != null
+                        ? prev
+                        : emptyCleanWaterDetails(),
+                    );
+                  }
                 }}
                 options={AID_REQUEST_TYPES}
               />
@@ -1740,6 +1760,12 @@ const AidApplicationAdd = () => {
               <AidFinancialAssistanceFields
                 value={financialAssistanceDetails}
                 onChange={setFinancialAssistanceDetails}
+              />
+            )}
+            {form.requested_aid_type === 'clean_water' && (
+              <AidCleanWaterApplicationFields
+                value={cleanWaterDetails}
+                onChange={setCleanWaterDetails}
               />
             )}
             </div>

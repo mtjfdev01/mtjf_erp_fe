@@ -9,6 +9,7 @@ import AidEducationApplicationFields from '../../../shared/AidEducationApplicati
 import AidRationApplicationFields from '../../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../../shared/AidFinancialAssistanceFields';
+import AidCleanWaterApplicationFields from '../../../shared/AidCleanWaterApplicationFields';
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../../shared/AidCollapsibleSection';
@@ -201,7 +202,8 @@ const AidEntryApplicationView = () => {
     (app.requested_aid_type === 'marriage_gift' &&
       app.marriage_gift_details) ||
     (app.requested_aid_type === 'financial_assistance' &&
-      app.financial_assistance_details);
+      app.financial_assistance_details) ||
+    (app.requested_aid_type === 'clean_water' && app.clean_water_details);
 
   return (
     <>
@@ -387,6 +389,13 @@ const AidEntryApplicationView = () => {
                       app.financial_assistance_details && (
                         <AidFinancialAssistanceFields
                           value={app.financial_assistance_details}
+                          readOnly
+                        />
+                      )}
+                    {app.requested_aid_type === 'clean_water' &&
+                      app.clean_water_details && (
+                        <AidCleanWaterApplicationFields
+                          value={app.clean_water_details}
                           readOnly
                         />
                       )}
