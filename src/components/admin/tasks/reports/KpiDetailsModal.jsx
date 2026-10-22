@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import {
   FaTimes,
@@ -17,17 +17,6 @@ import {
   FaInfoCircle
 } from 'react-icons/fa';
 import axiosInstance from '../../../../utils/axios';
-
-/**
- * Returns today's date formatted as 'YYYY-MM-DD' in the client's local timezone.
- */
-const getLocalTodayIso = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
 
 /** Status display configuration mapping */
 const STATUS_CONFIG = {
@@ -84,8 +73,7 @@ const KpiDetailsModal = ({
   initialStats,
   filterParams,
   selectedDay,
-  onSelectTask,
-  onRefresh
+  onSelectTask
 }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -93,21 +81,17 @@ const KpiDetailsModal = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState(kpiKey === 'completion_rate' ? 'progress' : 'list');
 
-  const todayIso = useMemo(() => getLocalTodayIso(), []);
-  const prevIsOpenRef = useRef(false);
+  const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  // Sync initialStats when modal opens or parent stats update
+  // Sync initialStats when modal opens
   useEffect(() => {
     if (isOpen) {
       if (initialStats) {
         setStatsData(initialStats);
       }
-      if (!prevIsOpenRef.current) {
-        setSearchQuery('');
-        setActiveTab(kpiKey === 'completion_rate' ? 'progress' : 'list');
-      }
+      setSearchQuery('');
+      setActiveTab(kpiKey === 'completion_rate' ? 'progress' : 'list');
     }
-    prevIsOpenRef.current = isOpen;
   }, [isOpen, initialStats, kpiKey]);
 
   // Fetch fresh task data from the backend API for the active report filters
@@ -116,11 +100,7 @@ const KpiDetailsModal = ({
     setLoading(true);
     setError(null);
     try {
-      const params = {
-        ...filterParams,
-        today: getLocalTodayIso(),
-      };
-      const res = await axiosInstance.get('/tasks/dashboard/stats', { params });
+      const res = await axiosInstance.get('/tasks/dashboard/stats', { params: filterParams });
       const data = res.data?.data || res.data;
       setStatsData(data);
     } catch (err) {
@@ -137,23 +117,6 @@ const KpiDetailsModal = ({
       fetchTaskData();
     }
   }, [isOpen, fetchTaskData]);
-
-  // Comprehensive refresh handler that triggers parent dashboard update and local modal data refresh
-  const handleRefresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      if (typeof onRefresh === 'function') {
-        await onRefresh();
-      }
-      await fetchTaskData();
-    } catch (err) {
-      console.error('Failed to refresh KPI modal tasks:', err);
-      setError(err.response?.data?.message || err.message || 'Failed to refresh tasks');
-    } finally {
-      setLoading(false);
-    }
-  }, [onRefresh, fetchTaskData]);
 
   // Close on Escape key press
   useEffect(() => {
@@ -193,7 +156,7 @@ const KpiDetailsModal = ({
     }
   }, [allTasks, kpiKey, todayIso, selectedDay]);
 
-  // Apply search query filter purely on the frontend in memory without API calls
+  // Apply search query filter
   const displayedTasks = useMemo(() => {
     if (!searchQuery.trim()) return categoryTasks;
     const q = searchQuery.toLowerCase().trim();
@@ -204,13 +167,9 @@ const KpiDetailsModal = ({
       const projectMatch = t.project_name?.toLowerCase().includes(q);
       const statusMatch = t.status?.toLowerCase().includes(q);
       const priorityMatch = t.priority?.toLowerCase().includes(q);
-      const typeMatch = t.task_type?.toLowerCase().includes(q) ||
-        (t.task_type === 'recurring' ? 'recurring' : 'one time').includes(q);
-      const dateStr = String(t.due_date || t.recurrence_next_date || '');
-      const dateMatch = dateStr.includes(q);
       const assigneeMatch = Array.isArray(t.assigned_users_meta) &&
         t.assigned_users_meta.some((u) => u.name?.toLowerCase().includes(q) || String(u.user_id).includes(q));
-      return titleMatch || idMatch || deptMatch || projectMatch || statusMatch || priorityMatch || typeMatch || dateMatch || assigneeMatch;
+      return titleMatch || idMatch || deptMatch || projectMatch || statusMatch || priorityMatch || assigneeMatch;
     });
   }, [categoryTasks, searchQuery]);
 
@@ -220,7 +179,7 @@ const KpiDetailsModal = ({
     const completed = allTasks.filter((t) => isCompletedStatus(t.status)).length;
     const inProgress = allTasks.filter((t) => ['in_progress', 'pending_approval'].includes(String(t.status || '').toLowerCase())).length;
     const notStarted = allTasks.filter((t) => ['open', 'draft'].includes(String(t.status || '').toLowerCase())).length;
-    const overdue = allTasks.filter((t) => isTaskOverdue(t, todayIso, selectedDay)).length;
+    const overdue = statsData?.overdue_tasks ?? allTasks.filter((t) => isTaskOverdue(t, todayIso, selectedDay)).length;
     const other = Math.max(0, total - completed - inProgress - notStarted);
 
     let rate = 0;
@@ -302,7 +261,7 @@ const KpiDetailsModal = ({
             <button
               type="button"
               className="task-kpi-modal-refresh-btn"
-              onClick={handleRefresh}
+              onClick={fetchTaskData}
               title="Refresh task data"
               disabled={loading}
               aria-label="Refresh"
@@ -696,8 +655,7 @@ KpiDetailsModal.propTypes = {
   initialStats: PropTypes.object,
   filterParams: PropTypes.object,
   selectedDay: PropTypes.string,
-  onSelectTask: PropTypes.func,
-  onRefresh: PropTypes.func
+  onSelectTask: PropTypes.func
 };
 
 KpiDetailsModal.defaultProps = {
@@ -707,8 +665,7 @@ KpiDetailsModal.defaultProps = {
   initialStats: null,
   filterParams: {},
   selectedDay: null,
-  onSelectTask: null,
-  onRefresh: null
+  onSelectTask: null
 };
 
 export default KpiDetailsModal;

@@ -112,7 +112,7 @@ const DatePill = ({
       <span className={`pill-text ${value ? '' : 'is-placeholder'}`}>
         {value ? formatPillDate(value) : placeholder}
       </span>
-      {!value && showDot && <span className="task-update-pill-dot" />}
+      {!value && showDot && <span className="pill-dot" />}
       <input
         ref={inputRef}
         type="date"
@@ -348,7 +348,7 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
                   {value || 'Project'}
                 </span>
               </span>
-              {!value && <span className="task-update-pill-dot" />}
+              {!value && <span className="pill-dot" />}
             </>
           ) : value ? (
             <span className="task-custom-select-value">{getDisplayValue()}</span>
@@ -993,28 +993,28 @@ const UpdateTask = ({
   //  - page : Navbar + centred page wrapper (no backdrop)
   const wrapShell = (card) =>
     isModal ? (
-      <div className="task-update-modal-backdrop">{card}</div>
+      <div className="add-task-modal-backdrop">{card}</div>
     ) : (
       <>
         <Navbar />
-        <div className="task-update-page task-update-page--redesigned">{card}</div>
+        <div className="add-task-page add-task-page--redesigned">{card}</div>
       </>
     );
 
   const popupHeader = (
-    <div className="task-update-modal-header">
-      <div className="task-update-breadcrumb">
+    <div className="task-form-modal-header">
+      <div className="task-form-breadcrumb">
         {departmentLabel && (
           <>
-            <span className="task-update-dept-chip">{departmentLabel} Department</span>
-            <span className="task-update-breadcrumb-sep">›</span>
+            <span className="task-form-dept-chip">{departmentLabel} Department</span>
+            <span className="task-form-breadcrumb-sep">›</span>
           </>
         )}
-        <h2 className="task-update-modal-title">Update task</h2>
+        <h2 className="task-form-modal-title">Update task</h2>
       </div>
       <button
         type="button"
-        className="task-update-modal-close"
+        className="task-form-modal-close"
         onClick={handleBack}
         aria-label="Close"
       >
@@ -1028,7 +1028,7 @@ const UpdateTask = ({
   /* ================================================================ */
   if (loading) {
     return wrapShell(
-      <div className="task-update-card task-update-card--popup">
+      <div className="add-task-card add-task-card--popup">
         {popupHeader}
         <div className="popup-loading">Loading task...</div>
       </div>
@@ -1057,13 +1057,13 @@ const UpdateTask = ({
     );
 
     return wrapShell(
-        <div className="task-update-card task-update-card--popup">
+        <div className="add-task-card add-task-card--popup">
           {popupHeader}
 
-          {error && <div className="task-update-error">{error}</div>}
+          {error && <div className="add-task-error">{error}</div>}
 
-          <form ref={formRef} onSubmit={handleSubmit} className="task-update-form">
-            <div className="task-update-body">
+          <form ref={formRef} onSubmit={handleSubmit} className="add-task-form">
+            <div className="add-task-body">
 
               {/* Title + description */}
               <div className="task-title-section">
@@ -1224,12 +1224,12 @@ const UpdateTask = ({
 
               {/* Assignees summary (2+ people) */}
               {assignedUsers.length > 1 && (
-                <div className="task-update-assignee-summary">
+                <div className="popup-assignee-summary">
                   <span>
                     {'\u2713'} {assignedUsers.length} users selected
                   </span>
                   {assignedUsers.map((u) => (
-                    <span key={u.id} className="task-update-assignee-chip">
+                    <span key={u.id} className="popup-assignee-chip">
                       <span className="chip-avatar">{getInitials(u)}</span>
                       {userDisplayName(u)}
                       <span className="chip-dept">
@@ -1411,17 +1411,17 @@ const UpdateTask = ({
             </div>
 
             {/* Footer */}
-            <div className="task-update-footer task-update-footer--end">
+            <div className="add-task-footer add-task-footer--end">
               <div className="footer-actions">
                 <button
                   type="button"
-                  className="task-update-cancel-btn"
+                  className="add-task-cancel-btn"
                   onClick={handleBack}
                 >
                   Cancel
                 </button>
                 <button
-                  className="task-update-submit"
+                  className="add-task-submit"
                   type="submit"
                   disabled={submitDisabled}
                   title={editTitle}

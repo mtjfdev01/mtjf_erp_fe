@@ -1,11 +1,3 @@
-export function getLocalTodayIso() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
 export const EMPTY_TASK_FILTERS = {
   search: '',
   department: '',
@@ -34,7 +26,6 @@ export function buildTasksSearchPayload({
   appliedFilters,
   assigneeId,
   activeTab,
-  groupBy,
 }) {
   const filters = {
     search: appliedFilters.search || undefined,
@@ -43,8 +34,6 @@ export function buildTasksSearchPayload({
     status: appliedFilters.status || undefined,
     priority: appliedFilters.priority || undefined,
     view_type: mapActiveTabToViewType(activeTab),
-    today: getLocalTodayIso(),
-    group_by: groupBy,
   };
 
   if (assigneeId) {

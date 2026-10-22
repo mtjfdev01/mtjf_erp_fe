@@ -150,15 +150,15 @@ const QuickActionModal = ({
   const showReport = actionKey === 'GENERATE_REPORT';
 
   return (
-    <div className="task-view-status-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="task-view-status-modal">
-        <div className="task-view-status-modal-header">
-          <h3 className="task-view-status-modal-title">
+    <div className="status-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="status-modal">
+        <div className="status-modal-header">
+          <h3 className="status-modal-title">
             {title}
           </h3>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="task-view-status-modal-body">
+          <div className="status-modal-body">
             {showAssignee && (
               <SearchableMultiSelect
                 label="Assign users"
@@ -174,15 +174,15 @@ const QuickActionModal = ({
                 minSearchLength={2}
                 disabled={loading}
                 renderOption={(user) => (
-                    <div className="task-view-assign-user-option">
-                      <div className="task-view-assign-user-name">
+                    <div className="assign-user-option">
+                      <div className="assign-user-name">
                         {user.first_name} {user.last_name}
                       </div>
-                      <div className="task-view-assign-user-email">
+                      <div className="assign-user-email">
                         {user.email}
                       </div>
                       {user.department && (
-                        <div className="task-view-assign-user-meta">
+                        <div className="assign-user-meta">
                           {user.department} • {user.role || 'User'}
                         </div>
                       )}
@@ -264,10 +264,10 @@ const QuickActionModal = ({
               </div>
             )}
           </div>
-          <div className="task-view-status-modal-footer">
+          <div className="status-modal-footer">
             <button
               type="button"
-              className="task-view-status-modal-cancel"
+              className="task-status-modal-cancel"
               onClick={onClose}
               disabled={loading}
             >

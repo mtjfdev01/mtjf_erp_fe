@@ -19,27 +19,6 @@ import KpiDetailsModal from './KpiDetailsModal';
 
 Chart.register(...registerables);
 
-const getLocalTodayIso = () => {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-};
-
-const isTaskOverdue = (task, todayIso, selectedDay) => {
-  const s = String(task.status || '').toLowerCase();
-  if (['completed', 'closed', 'approved', 'cancelled'].includes(s)) return false;
-  const taskDate = task.due_date || task.recurrence_next_date;
-  if (!taskDate) return false;
-  const dateStr = String(taskDate).slice(0, 10);
-  if (selectedDay && selectedDay < todayIso) {
-    return dateStr <= selectedDay;
-  }
-  return dateStr < todayIso;
-};
-
-
 const getResponsiveTooltipSizes = () => {
   const width = window.innerWidth;
   if (width < 480) {
@@ -1294,14 +1273,12 @@ const TaskReports = () => {
         ? taskStats.completion_rate
         : (total > 0 ? parseFloat(((completedTasks / total) * 100).toFixed(2)) : 0);
 
-    const todayIso = getLocalTodayIso();
-    let overdue = 0;
-    if (Array.isArray(taskStats?.tasks) && taskStats.tasks.length > 0) {
-      overdue = taskStats.tasks.filter((t) => isTaskOverdue(t, todayIso, selectedDay)).length;
-    } else if (typeof taskStats?.overdue_tasks === 'number') {
-      overdue = taskStats.overdue_tasks;
-    } else if (selectedDay && selectedDay < todayIso) {
-      overdue = open + inProgress + pendingApproval + draft + blocked;
+    let overdue = taskStats?.overdue_tasks || 0;
+    if (selectedDay && !taskStats) {
+      const todayIso = new Date().toISOString().slice(0, 10);
+      if (selectedDay < todayIso) {
+        overdue = open + inProgress + pendingApproval + draft + blocked;
+      }
     }
 
     const progressCompleted = closed + completed + approved;
@@ -1697,7 +1674,6 @@ const TaskReports = () => {
       department: statsDepartment,
       view_type: effectiveViewType,
       team_performance: showTeamPerformance ? true : undefined,
-      today: getLocalTodayIso(),
     };
   }, [selectedDay, showTeamPerformance, duration, getDateRangeForDuration, isGeneralAdminDashboard, selectedDepartment, taskScopeCaps.isSelfOnly, rolePerms.isAdmin, viewType]);
 
@@ -1832,7 +1808,6 @@ const TaskReports = () => {
         department: statsDepartment,
         view_type: effectiveViewType,
         team_performance: showTeamPerformance ? true : undefined,
-        today: getLocalTodayIso(),
       };
       const statsRes = await axiosInstance.get('/tasks/dashboard/stats', { params: statsParams });
       const statsData = statsRes.data?.data || statsRes.data;
@@ -3354,10 +3329,6 @@ const TaskReports = () => {
           selectedDay={selectedDay}
           onSelectTask={(taskId) => {
             setSelectedTaskId(taskId);
-          }}
-          onRefresh={async () => {
-            await fetchTaskReports();
-            await fetchCalendarData();
           }}
         />
         <TaskViewModal

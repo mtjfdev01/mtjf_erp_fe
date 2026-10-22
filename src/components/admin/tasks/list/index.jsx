@@ -27,7 +27,7 @@ import {
   TASK_PROJECT_PROGRAM_OPTIONS,
 } from '../shared/taskFilterOptions';
 
-const DONE_STATUSES = ['completed', 'closed', 'cancelled', 'approved'];
+const DONE_STATUSES = ['completed', 'closed', 'cancelled'];
 const INITIAL_VISIBLE = 3;
 const DAY_MS = 86400000;
 
@@ -110,9 +110,8 @@ const getDueMeta = (task) => {
     const when = task.completed_date || task.updated_at;
     return { kind: 'done', text: when ? formatShortDate(when) : capitalize(status), days: 0 };
   }
-  const taskDueDate = task?.due_date || task?.recurrence_next_date;
-  if (!taskDueDate) return { kind: 'none', text: 'No due date', days: 0 };
-  const due = parseDateOnly(taskDueDate);
+  if (!task?.due_date) return { kind: 'none', text: 'No due date', days: 0 };
+  const due = parseDateOnly(task.due_date);
   if (!due || Number.isNaN(due.getTime())) return { kind: 'none', text: 'No due date', days: 0 };
 
   const now = new Date();
@@ -152,9 +151,9 @@ const getInitials = (displayName) => {
 };
 
 const URGENCY_GROUPS = [
-  { key: 'overdue', label: 'Overdue', color: '#e5383b' },
-  { key: 'today', label: 'Today Tasks', color: '#f59e0b' },
+  { key: 'today', label: 'Due today', color: '#f59e0b' },
   { key: 'upcoming', label: 'Upcoming', color: '#2f4bd8' },
+  { key: 'overdue', label: 'Overdue', color: '#e5383b' },
   { key: 'completed', label: 'Completed', color: '#16a34a' },
 ];
 
@@ -209,7 +208,6 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     totalItems,
     totalPages,
     categoryCounts,
-    groupData,
     currentPage,
     pageSize,
     sortField,
@@ -227,7 +225,6 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     defaultPageSize: 10,
     defaultSortField: 'created_at',
     activeTab,
-    groupBy,
     assignedUser,
     refreshNonce,
   });
@@ -236,9 +233,8 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
   const isManager = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
-    const hasLeadershipRole = ['dept_head', 'manager', 'assistant_manager', 'team_lead', 'coordinator'].includes(role);
-    return hasLeadershipRole || (categoryCounts?.assigned_to_team > 0);
-  }, [user?.role, categoryCounts?.assigned_to_team]);
+    return ['dept_head', 'manager', 'assistant_manager', 'team_lead', 'coordinator'].includes(role);
+  }, [user?.role]);
 
   const statusFilterOptions = useMemo(
     () => [
@@ -862,19 +858,17 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     let pick = () => '';
 
     if (groupBy === 'status') {
-      const getStatusGroupKey = (task) => String(task.status || '').toLowerCase() || 'no_status';
-      const present = Array.from(new Set(rows.map(getStatusGroupKey)));
+      const present = Array.from(new Set(rows.map((t) => String(t.status || '').toLowerCase())));
       defs = present.map((s) => ({
-        key: s, label: s === 'no_status' ? 'No status' : capitalize(s), color: STATUS_GROUP_COLORS[s] || '#64748b',
+        key: s, label: capitalize(s) || 'No status', color: STATUS_GROUP_COLORS[s] || '#64748b',
       }));
-      pick = getStatusGroupKey;
+      pick = (t) => String(t.status || '').toLowerCase();
     } else if (groupBy === 'priority') {
       defs = PRIORITY_GROUPS;
       pick = (t) => String(t.priority || 'medium').toLowerCase();
     } else {
       defs = URGENCY_GROUPS;
       pick = (t) => {
-        if (t.urgency_group) return t.urgency_group;
         const kind = getDueMeta(t).kind;
         if (kind === 'done') return 'completed';
         if (kind === 'overdue') return 'overdue';
@@ -884,22 +878,9 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     }
 
     return defs
-      .map((def) => {
-        const hasServerGroups = groupData?.by === groupBy;
-        const matchingTasks = hasServerGroups && Array.isArray(groupData.groups?.[def.key])
-          ? groupData.groups[def.key]
-          : rows.filter((t) => pick(t) === def.key);
-        const count = hasServerGroups && groupData.counts?.[def.key] !== undefined
-          ? Number(groupData.counts[def.key])
-          : matchingTasks.length;
-        return {
-          ...def,
-          tasks: matchingTasks,
-          totalCount: count,
-        };
-      })
-      .filter((g) => g.tasks.length > 0 || (groupBy === 'urgency' && g.totalCount > 0));
-  }, [displayedApprovalTasks, groupBy, groupData]);
+      .map((def) => ({ ...def, tasks: rows.filter((t) => pick(t) === def.key) }))
+      .filter((g) => g.tasks.length > 0);
+  }, [displayedApprovalTasks, groupBy]);
 
   const selectedTask = useMemo(() => {
     if (selectedTaskId == null) return null;
@@ -975,7 +956,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   const renderGroup = (g) => {
     const isCompletedGroup = groupBy === 'urgency' && g.key === 'completed';
     // Collapse/Expand button is only displayed if more than 2 completed tasks exist
-    const hasCollapsibleToggle = isCompletedGroup && ((g.totalCount ?? g.tasks.length) > 2);
+    const hasCollapsibleToggle = isCompletedGroup && g.tasks.length > 2;
     // Completed group displays the first 3 completed tasks by default (open by default)
     const open = isCompletedGroup
       ? (hasCollapsibleToggle ? openCompleted[g.key] !== false : true)
@@ -996,7 +977,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             >
               <span className="tlx-group__dot" style={{ background: g.color }} />
               <span className="tlx-group__label">{g.label}</span>
-              <span className="tlx-group__count">{g.totalCount ?? g.tasks.length}</span>
+              <span className="tlx-group__count">{g.tasks.length}</span>
               {/* Collapse/Expand toggle with up and down arrow icons (only shown if > 2 tasks) */}
               <span className="tlx-group__toggle">
                 <span>{open ? 'Collapse' : 'Expand'}</span>
@@ -1011,7 +992,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             <header className="tlx-group__collapse tlx-group__collapse--static">
               <span className="tlx-group__dot" style={{ background: g.color }} />
               <span className="tlx-group__label">{g.label}</span>
-              <span className="tlx-group__count">{g.totalCount ?? g.tasks.length}</span>
+              <span className="tlx-group__count">{g.tasks.length}</span>
             </header>
           )}
           {open && (
@@ -1044,7 +1025,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
         <header className="tlx-group__header">
           <span className="tlx-group__dot" style={{ background: g.color }} />
           <span className="tlx-group__label">{g.label}</span>
-          <span className="tlx-group__count">{g.totalCount ?? g.tasks.length}</span>
+          <span className="tlx-group__count">{g.tasks.length}</span>
         </header>
         <div className="tlx-group__rows">
           {visible.map(renderTaskRow)}
@@ -1407,14 +1388,20 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             </div>
 
             <div className="tlx-toolbar">
-              <div className="tlx-filter-assignee">
-                  <TaskAssigneeFilter
-                    value={assignedUser}
-                    onSelect={setAssignedUser}
-                    onClear={() => setAssignedUser(null)}
-                    placeholder="Filter by assignee..."
-                  />
-                </div>
+              <div className="tlx-toolbar__search">
+                <FiSearch aria-hidden />
+                <input
+                  type="search"
+                  value={tempFilters.search || ''}
+                  onChange={(event) => handleFilterChange('search', event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') handleApplyFilters();
+                  }}
+                  placeholder="Filter..."
+                  aria-label="Filter tasks"
+                />
+              </div>
+
               <button
                 type="button"
                 className={`tlx-chip ${filtersOpen ? 'is-active' : ''}`}
@@ -1439,19 +1426,14 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
             <CollapsibleFilters open={filtersOpen}>
               <div className="filters-section tlx-filters">
-                <div className="tlx-toolbar__search">
-                <FiSearch aria-hidden />
-                <input
-                  type="search"
-                  value={tempFilters.search || ''}
-                  onChange={(event) => handleFilterChange('search', event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleApplyFilters();
-                  }}
-                  placeholder="Filter..."
-                  aria-label="Filter tasks"
-                />
-              </div>
+                <div className="tlx-filter-assignee">
+                  <TaskAssigneeFilter
+                    value={assignedUser}
+                    onSelect={setAssignedUser}
+                    onClear={() => setAssignedUser(null)}
+                    placeholder="Filter by assignee..."
+                  />
+                </div>
                 <DropdownFilter
                   filterKey="department"
                   label="Department"

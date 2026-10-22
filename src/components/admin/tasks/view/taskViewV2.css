@@ -1,14 +1,12 @@
 /* Task view v2 — modal / detail layout */
 
-.task-view-v2 .task-view-receipt-container,
-.task-view-v2 .task-receipt-container {
+.task-view-v2 .task-view-receipt-container {
   background: #f8fafc;
   box-shadow: none;
   border-radius: 0;
 }
 
-.task-view-v2 .receipt-body,
-.task-view-v2 .task-receipt-body {
+.task-view-v2 .receipt-body {
   padding: 1rem 1.25rem 1.5rem;
 }
 
@@ -420,7 +418,7 @@
   margin-bottom: 0;
 }
 
-.task-view-v2 .task-view-section-title {
+.task-view-v2 .task-task-view-section-title {
   font-size: 0.78rem;
   text-transform: none;
   letter-spacing: 0;
@@ -430,7 +428,7 @@
   padding-bottom: 0;
 }
 
-.task-view-v2 .task-view-section-title span {
+.task-view-v2 .task-task-view-section-title span {
   display: none;
 }
 
@@ -601,110 +599,11 @@
   background: #f8fafc;
 }
 
-.task-view-v2 .receipt-footer,
-.task-view-v2 .task-receipt-footer {
+.task-view-v2 .receipt-footer {
   margin-top: 1rem;
   padding: 0.75rem 1.25rem;
   background: #fff;
   border-top: 1px solid #e2e8f0;
   font-size: 0.75rem;
   color: #94a3b8;
-}
-
-
-/* =========================================================
-   Task View Status & Quick Action Modals (Self-contained)
-   ========================================================= */
-.task-view-status-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background-color: rgba(15, 23, 42, 0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2100;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  padding: 1rem;
-}
-
-.task-view-status-modal {
-  width: 100%;
-  max-width: 480px;
-  border-radius: 0.75rem;
-  background-color: #ffffff;
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.35);
-  padding: 1.25rem 1.5rem 1rem;
-  box-sizing: border-box;
-}
-
-.task-view-status-modal-header {
-  margin-bottom: 0.75rem;
-}
-
-.task-view-status-modal-title {
-  font-size: 1.1rem;
-  font-weight: 600;
-  margin: 0;
-  color: #0f172a;
-}
-
-.task-view-status-modal-body {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.task-view-status-modal-text {
-  margin: 0;
-  font-size: 0.9rem;
-  color: #475569;
-  line-height: 1.5;
-}
-
-.task-view-status-modal-footer {
-  margin-top: 1rem;
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.75rem;
-}
-
-.task-view-status-modal-cancel {
-  min-height: 40px;
-  padding: 0.4rem 1rem;
-  border-radius: 999px;
-  border: 1px solid #d1d5db;
-  background-color: #ffffff;
-  color: #111827;
-  cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 600;
-  transition: all 0.2s ease;
-}
-
-.task-view-status-modal-cancel:hover:not(:disabled) {
-  background-color: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.task-view-assign-user-option {
-  padding: 8px 12px;
-  border-bottom: 1px solid #f1f5f9;
-}
-
-.task-view-assign-user-name {
-  font-weight: 600;
-  color: #1e293b;
-  font-size: 0.88rem;
-}
-
-.task-view-assign-user-email {
-  font-size: 0.78rem;
-  color: #64748b;
-}
-
-.task-view-assign-user-meta {
-  font-size: 0.72rem;
-  color: #94a3b8;
-  margin-top: 2px;
 }

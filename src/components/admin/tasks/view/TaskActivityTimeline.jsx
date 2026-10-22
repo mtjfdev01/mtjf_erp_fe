@@ -136,7 +136,7 @@ export default function TaskActivityTimeline({ activities = [], compact = false 
 
   return (
     <div className="task-view-section tv-timeline-card">
-      <h3 className="task-view-section-title">Progress History</h3>
+      <h3 className="task-task-view-section-title">Progress History</h3>
       {listContent}
     </div>
   );
