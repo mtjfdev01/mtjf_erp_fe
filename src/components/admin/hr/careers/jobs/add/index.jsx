@@ -415,38 +415,122 @@
 
 // export default AddJob;
 
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../../../utils/axios';
 import FormInput from '../../../../../common/FormInput';
 import FormSelect from '../../../../../common/FormSelect';
 import FormTextarea from '../../../../../common/FormTextarea';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
+import { useAuth } from '../../../../../../context/AuthContext';
+import { hasPermission, isSuperAdmin } from '../../../../../../utils/permissions';
+
+const emptyForm = {
+  title: '',
+  slug: '',
+  icon: '',
+  project: 'MTJ Foundation',
+  department: 'IT',
+  type: 'Full Time',
+  location: '',
+  experience: [''],
+  skills: [''],
+  about: '',
+  qualifications: [''],
+  responsibilities: [''],
+  status: 'active',
+  is_featured: false,
+  posted_date: new Date().toISOString().split('T')[0],
+  closing_date: '',
+};
+
+const toDateInput = (value) => {
+  if (!value) return '';
+  const raw = String(value);
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw.slice(0, 10);
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().slice(0, 10);
+};
+
+const toArrayField = (value) => {
+  if (Array.isArray(value) && value.length > 0) return value.map(String);
+  if (typeof value === 'string' && value.trim()) return [value];
+  return [''];
+};
 
 const AddJob = () => {
   const navigate = useNavigate();
-  const [form, setForm] = useState({
-    title: '',
-    slug: '', // Optional - auto-generated if not provided
-    icon: '',
-    project: 'MTJ Foundation',
-    department: 'IT',
-    type: 'Full Time',
-    location: '',
-    experience: [''],
-    skills: [''],
-    about: '',
-    qualifications: [''],
-    responsibilities: [''],
-    status: 'active',
-    is_featured: false,
-    posted_date: new Date().toISOString().split('T')[0],
-    closing_date: ''
-  });
+  const { id } = useParams();
+  const isEdit = Boolean(id);
+  const { permissions } = useAuth();
 
+  const canAccess = useMemo(() => {
+    if (!permissions) return null;
+    if (isSuperAdmin(permissions)) return true;
+    return hasPermission(
+      permissions,
+      'hr',
+      'jobs',
+      isEdit ? 'update' : 'create',
+    );
+  }, [permissions, isEdit]);
+
+  const [form, setForm] = useState({ ...emptyForm });
+  const [loading, setLoading] = useState(isEdit);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isEdit || !id) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        setLoading(true);
+        const response = await axiosInstance.get(`/jobs/${id}`);
+        const job = response.data?.data;
+        if (!response.data?.success || !job) {
+          throw new Error(response.data?.message || 'Failed to load job');
+        }
+        if (cancelled) return;
+        setForm({
+          title: job.title || '',
+          slug: job.slug || '',
+          icon: job.icon || '',
+          project: job.project || 'MTJ Foundation',
+          department: job.department || 'IT',
+          type: job.type || 'Full Time',
+          location: job.location || '',
+          experience: toArrayField(job.experience),
+          skills: toArrayField(job.skills),
+          about: job.about || '',
+          qualifications: toArrayField(job.qualifications),
+          responsibilities: toArrayField(job.responsibilities),
+          status: job.status || 'active',
+          is_featured: Boolean(job.is_featured),
+          posted_date: toDateInput(job.posted_date) || emptyForm.posted_date,
+          closing_date: toDateInput(job.closing_date),
+        });
+        setError('');
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err.response?.data?.message ||
+              err.message ||
+              'Failed to load job. Please try again.',
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isEdit, id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -482,6 +566,14 @@ const AddJob = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (canAccess === false) {
+      setError(
+        isEdit
+          ? 'You do not have permission to update jobs'
+          : 'You do not have permission to create jobs',
+      );
+      return;
+    }
     setIsSubmitting(true);
 
     try {
@@ -509,21 +601,28 @@ const AddJob = () => {
         return;
       }
 
-      console.log('Submitting job data:', jobData);
-
-      await axiosInstance.post('/jobs', jobData);
+      if (isEdit) {
+        await axiosInstance.patch(`/jobs/${id}`, jobData);
+      } else {
+        await axiosInstance.post('/jobs', jobData);
+      }
 
       navigate('/hr/careers/jobs/list');
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add job. Please try again.');
-      console.error('Error adding job:', err);
+      setError(
+        err.response?.data?.message ||
+          (isEdit
+            ? 'Failed to update job. Please try again.'
+            : 'Failed to add job. Please try again.'),
+      );
+      console.error(isEdit ? 'Error updating job:' : 'Error adding job:', err);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleBack = () => {
-    navigate('/hr/careers/jobs/list');
+    navigate(isEdit ? `/hr/careers/jobs/view/${id}` : '/hr/careers/jobs/list');
   };
 
   const projectOptions = [
@@ -559,12 +658,41 @@ const AddJob = () => {
     { value: 'draft', label: 'Draft' }
   ];
 
+  if (canAccess === false) {
+    return (
+      <>
+        <Navbar />
+        <div className="form-content">
+          <PageHeader
+            title={isEdit ? 'Update Job' : 'Add Job'}
+            onBack={handleBack}
+          />
+          <div className="status-message status-message--error">
+            You do not have permission to {isEdit ? 'update' : 'create'} jobs.
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  if (loading) {
+    return (
+      <>
+        <Navbar />
+        <div className="form-content">
+          <PageHeader title="Update Job" onBack={handleBack} />
+          <div className="loading">Loading...</div>
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <Navbar />
       <div className="form-content">
         <PageHeader
-          title="Add Job"
+          title={isEdit ? 'Update Job' : 'Add Job'}
           onBack={handleBack}
         />
 
@@ -914,7 +1042,13 @@ const AddJob = () => {
               className="primary_btn"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Adding Job...' : 'Add Job'}
+              {isSubmitting
+                ? isEdit
+                  ? 'Updating Job...'
+                  : 'Adding Job...'
+                : isEdit
+                  ? 'Update Job'
+                  : 'Add Job'}
             </button>
           </div>
         </form>

@@ -9,6 +9,7 @@ import AidEducationApplicationFields from '../../../shared/AidEducationApplicati
 import AidRationApplicationFields from '../../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../../shared/AidFinancialAssistanceFields';
+import AidCleanWaterApplicationFields from '../../../shared/AidCleanWaterApplicationFields';
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../../shared/AidCollapsibleSection';
@@ -18,6 +19,7 @@ import AidPersonProfileCard, {
 } from '../../../shared/AidPersonProfileCard';
 import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
+import AidApplicationPrintable from '../../../shared/AidApplicationPrintable';
 import {
   aidStatusTone,
   formatAidStatus,
@@ -40,6 +42,7 @@ const ENTRY_TABS = [
   { id: 'family', label: 'Family' },
   { id: 'family_tree', label: 'Family Tree' },
   { id: 'attachments', label: 'Attachments' },
+  { id: 'printable', label: 'Printable' },
 ];
 
 const FAMILY_GROUPS = [
@@ -163,7 +166,7 @@ const AidEntryApplicationView = () => {
         <Navbar />
         <div className="form-content aid-view">
           <PageHeader
-            title={fromDrafts ? 'Draft' : 'Application entry'}
+            title={fromDrafts ? 'Data Entry' : 'Application'}
             backPath={listPath}
             onBackClick={() => navigate(listPath)}
             showAdd={false}
@@ -199,7 +202,8 @@ const AidEntryApplicationView = () => {
     (app.requested_aid_type === 'marriage_gift' &&
       app.marriage_gift_details) ||
     (app.requested_aid_type === 'financial_assistance' &&
-      app.financial_assistance_details);
+      app.financial_assistance_details) ||
+    (app.requested_aid_type === 'clean_water' && app.clean_water_details);
 
   return (
     <>
@@ -216,8 +220,8 @@ const AidEntryApplicationView = () => {
           <div>
             <p className="aid-entry-view__eyebrow">
               {status === 'draft'
-                ? 'Draft — approve to enter verification'
-                : 'Beneficiary registration record'}
+                ? 'Draft — consider to enter verification'
+                : 'Application record'}
             </p>
             <h2 style={{ margin: '0 0 6px' }}>
               {app.title || 'Aid application'}
@@ -255,7 +259,7 @@ const AidEntryApplicationView = () => {
                   setError('');
                 }}
               >
-                Approve for verification
+                Consider for verification
               </button>
             ) : null}
             {status !== 'draft' ? (
@@ -274,7 +278,7 @@ const AidEntryApplicationView = () => {
 
         {canApproveDraft && status === 'draft' && showApprovePanel ? (
           <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Approve draft</h3>
+            <h3 style={{ marginTop: 0 }}>Consider draft</h3>
             <AidUserAssignField
               label="Assign to program user"
               value={assignUser}
@@ -288,7 +292,7 @@ const AidEntryApplicationView = () => {
                 disabled={approving || !assignUser?.id}
                 onClick={approveDraft}
               >
-                {approving ? 'Approving…' : 'Approve & assign'}
+                {approving ? 'Considering…' : 'Consider & assign'}
               </button>
               <button
                 type="button"
@@ -385,6 +389,13 @@ const AidEntryApplicationView = () => {
                       app.financial_assistance_details && (
                         <AidFinancialAssistanceFields
                           value={app.financial_assistance_details}
+                          readOnly
+                        />
+                      )}
+                    {app.requested_aid_type === 'clean_water' &&
+                      app.clean_water_details && (
+                        <AidCleanWaterApplicationFields
+                          value={app.clean_water_details}
                           readOnly
                         />
                       )}
@@ -563,6 +574,19 @@ const AidEntryApplicationView = () => {
                   </ul>
                 )}
               </section>
+            )}
+
+            {panelTab === 'printable' && (
+              <AidApplicationPrintable
+                app={app}
+                familyTree={familyTree}
+                kinship={kinship}
+                preparedBy={
+                  app.created_by
+                    ? formatAuditActor(app.created_by)
+                    : undefined
+                }
+              />
             )}
           </div>
         </div>

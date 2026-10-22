@@ -180,24 +180,24 @@ const AidDraftsList = () => {
       <Navbar />
       <div className="list-wrapper aid-list aid-entry-list">
         <PageHeader
-          title="Drafts"
+          title="Data Entry"
           backPath="/dms"
           showAdd={!!canCreate}
           addPath="/dms/aid/applications/add"
-          addTitle="New draft"
+          addTitle="New application"
         />
         <div className="list-content">
           {error && <div className="error-message">{error}</div>}
 
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
-            New applications are saved as drafts here. Approve assigns a
+            New applications are saved as drafts here. Consider assigns a
             program user and sends the case to Verification Process.
           </p>
 
           {approveRowId && canApprove ? (
             <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
               <h3 style={{ marginTop: 0 }}>
-                Approve draft
+                Consider draft
                 {approveRow?.application_no
                   ? ` — ${approveRow.application_no}`
                   : ''}
@@ -216,8 +216,8 @@ const AidDraftsList = () => {
                   onClick={confirmApprove}
                 >
                   {approvingId === approveRowId
-                    ? 'Approving…'
-                    : 'Approve & assign'}
+                    ? 'Considering…'
+                    : 'Consider & assign'}
                 </button>
                 <button
                   type="button"
@@ -381,7 +381,7 @@ const AidDraftsList = () => {
                               disabled={!!approvingId}
                               onClick={() => openApprove(row.id)}
                             >
-                              Approve
+                              Consider
                             </button>
                           ) : null}
                         </div>

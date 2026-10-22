@@ -34,7 +34,7 @@
 
 /* When sidebar is collapsed */
 .sidebar--collapsed + .app-main {
-  margin-left: 5%;
+  margin-left: 64px;
 }
 
 /* Mobile Hamburger Icon */
