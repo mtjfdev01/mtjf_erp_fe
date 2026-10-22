@@ -15,8 +15,30 @@ import '../../../../styles/components.css';
 import './index.css';
 import TeamPerformance from './team-performance';
 import TaskViewModal from '../view/TaskViewModal';
+import KpiDetailsModal from './KpiDetailsModal';
 
 Chart.register(...registerables);
+
+const getLocalTodayIso = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const isTaskOverdue = (task, todayIso, selectedDay) => {
+  const s = String(task.status || '').toLowerCase();
+  if (['completed', 'closed', 'approved', 'cancelled'].includes(s)) return false;
+  const taskDate = task.due_date || task.recurrence_next_date;
+  if (!taskDate) return false;
+  const dateStr = String(taskDate).slice(0, 10);
+  if (selectedDay && selectedDay < todayIso) {
+    return dateStr <= selectedDay;
+  }
+  return dateStr < todayIso;
+};
+
 
 const getResponsiveTooltipSizes = () => {
   const width = window.innerWidth;
@@ -319,12 +341,12 @@ function createOrUpdateDoughnutChart(ctx, data, chartInstanceRef, chartSizes, is
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    // Light text styling for dark card background
-    ctx.fillStyle = '#F8FAFC';
+    // Dark text styling for light card background in White Mode
+    ctx.fillStyle = '#0F172A';
     ctx.font = `800 ${totalFontSize}px "Plus Jakarta Sans", Inter, sans-serif`;
     ctx.fillText(totalStr, centerX, centerY - (labelFontSize * 0.55));
     ctx.font = `600 ${labelFontSize}px "Plus Jakarta Sans", Inter, sans-serif`;
-    ctx.fillStyle = '#94A3B8';
+    ctx.fillStyle = '#64748B';
     ctx.fillText('Total Tasks', centerX, centerY + (totalFontSize * 0.58));
     ctx.restore();
   };
@@ -911,7 +933,7 @@ const TaskReports = () => {
 
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
-  const [viewType, setViewType] = useState("assigned"); // Initial view: current user's assigned tasks
+  const [viewType, setViewType] = useState("all"); // Initial view: all tasks
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [taskStats, setTaskStats] = useState(null);
   const [taskStatsLoading, setTaskStatsLoading] = useState(false);
@@ -944,6 +966,16 @@ const TaskReports = () => {
   const [calendarLoading, setCalendarLoading] = useState(false);
   const [calendarError, setCalendarError] = useState(null);
   const [selectedTaskId, setSelectedTaskId] = useState(null);
+  // Active KPI modal state: { key: 'total' | 'pending' | 'completed' | 'overdue' | 'completion_rate', title: string, color: string }
+  const [activeKpiModal, setActiveKpiModal] = useState(null);
+
+  const handleKpiCardClick = useCallback((kpiKey, title, color) => {
+    setActiveKpiModal({ key: kpiKey, title, color });
+  }, []);
+
+  const handleCloseKpiModal = useCallback(() => {
+    setActiveKpiModal(null);
+  }, []);
   // Controls expand / collapse state for scheduled tasks table (limits to 5 items when collapsed)
   const [isScheduledTasksExpanded, setIsScheduledTasksExpanded] = useState(false);
   const dashboardRef = useRef(null);
@@ -1254,7 +1286,7 @@ const TaskReports = () => {
     const cancelled = breakdown.cancelled || 0;
     const blocked = breakdown.blocked || 0;
 
-    const pending = sumBy(['draft', 'open', 'in_progress', 'rejected', 'cancelled', 'blocked']);
+    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'rejected', 'cancelled', 'blocked']);
     const ended = closed;
     const completedTasks = completed + closed + approved;
     const completionRate =
@@ -1262,12 +1294,14 @@ const TaskReports = () => {
         ? taskStats.completion_rate
         : (total > 0 ? parseFloat(((completedTasks / total) * 100).toFixed(2)) : 0);
 
-    let overdue = taskStats?.overdue_tasks || 0;
-    if (selectedDay && !taskStats) {
-      const todayIso = new Date().toISOString().slice(0, 10);
-      if (selectedDay < todayIso) {
-        overdue = open + inProgress + pendingApproval + draft + blocked;
-      }
+    const todayIso = getLocalTodayIso();
+    let overdue = 0;
+    if (Array.isArray(taskStats?.tasks) && taskStats.tasks.length > 0) {
+      overdue = taskStats.tasks.filter((t) => isTaskOverdue(t, todayIso, selectedDay)).length;
+    } else if (typeof taskStats?.overdue_tasks === 'number') {
+      overdue = taskStats.overdue_tasks;
+    } else if (selectedDay && selectedDay < todayIso) {
+      overdue = open + inProgress + pendingApproval + draft + blocked;
     }
 
     const progressCompleted = closed + completed + approved;
@@ -1631,6 +1665,60 @@ const TaskReports = () => {
     return { from, to };
   }, []);
 
+  const currentStatsFilterParams = useMemo(() => {
+    const range = selectedDay && !showTeamPerformance
+      ? { from: selectedDay, to: selectedDay }
+      : getDateRangeForDuration(duration);
+
+    let statsDepartment;
+    if (isGeneralAdminDashboard || showTeamPerformance) {
+      statsDepartment = selectedDepartment || undefined;
+    } else {
+      statsDepartment = undefined;
+    }
+
+    let effectiveViewType;
+    if (showTeamPerformance && !taskScopeCaps.isSelfOnly) {
+      effectiveViewType = undefined;
+    } else if (!rolePerms.isAdmin && viewType !== 'all') {
+      effectiveViewType = viewType;
+    } else if (!rolePerms.isAdmin && viewType === 'all') {
+      effectiveViewType = 'all';
+    } else if (rolePerms.isAdmin && viewType !== 'all') {
+      effectiveViewType = viewType;
+    } else {
+      effectiveViewType = undefined;
+    }
+
+    return {
+      start_date: range.from,
+      end_date: range.to,
+      date_field: selectedDay ? 'due_date' : undefined,
+      department: statsDepartment,
+      view_type: effectiveViewType,
+      team_performance: showTeamPerformance ? true : undefined,
+      today: getLocalTodayIso(),
+    };
+  }, [selectedDay, showTeamPerformance, duration, getDateRangeForDuration, isGeneralAdminDashboard, selectedDepartment, taskScopeCaps.isSelfOnly, rolePerms.isAdmin, viewType]);
+
+  const activeFilterContext = useMemo(() => {
+    const parts = [];
+    if (selectedDay) {
+      parts.push(`Date: ${selectedDayLabel}`);
+    } else {
+      parts.push(`Duration: ${durationLabel}`);
+    }
+    if (selectedDepartment) {
+      parts.push(`Dept: ${selectedDepartment}`);
+    }
+    if (viewType && viewType !== 'all') {
+      parts.push(`View: ${viewType === 'assigned' ? 'Assigned to Me' : viewType}`);
+    } else {
+      parts.push('View: All Tasks');
+    }
+    return parts.join(' · ');
+  }, [selectedDay, selectedDayLabel, durationLabel, selectedDepartment, viewType]);
+
   const fetchCalendarData = useCallback(async () => {
     if (!user) return;
     setCalendarLoading(true);
@@ -1744,6 +1832,7 @@ const TaskReports = () => {
         department: statsDepartment,
         view_type: effectiveViewType,
         team_performance: showTeamPerformance ? true : undefined,
+        today: getLocalTodayIso(),
       };
       const statsRes = await axiosInstance.get('/tasks/dashboard/stats', { params: statsParams });
       const statsData = statsRes.data?.data || statsRes.data;
@@ -1824,7 +1913,7 @@ const TaskReports = () => {
       const isPlaceholder = !hasVisibleData;
       const visibleLabels = hasVisibleData ? visibleData.map(item => item.label) : ['No Tasks'];
       const visibleValues = hasVisibleData ? visibleData.map(item => item.isHidden ? 0 : item.value) : [1];
-      const visibleColors = hasVisibleData ? visibleData.map(item => item.color) : ['rgba(255, 255, 255, 0.08)'];
+      const visibleColors = hasVisibleData ? visibleData.map(item => item.color) : ['#F1F5F9'];
 
       const completionData = {
         labels: visibleLabels,
@@ -1835,11 +1924,11 @@ const TaskReports = () => {
           label: 'Task Status',
           data: visibleValues,
           backgroundColor: visibleColors,
-          // Matches the dark card surface so slices look separated, not outlined.
+          // Matches the white card surface so slices look cleanly separated in White Mode.
           // When empty placeholder, transparent border avoids 12 o'clock seam artifact.
-          borderColor: isPlaceholder ? 'transparent' : '#1E293B',
+          borderColor: isPlaceholder ? 'transparent' : '#FFFFFF',
           borderWidth: isPlaceholder ? 0 : 3,
-          hoverBackgroundColor: isPlaceholder ? ['rgba(255, 255, 255, 0.08)'] : undefined,
+          hoverBackgroundColor: isPlaceholder ? ['#F1F5F9'] : undefined,
           hoverBorderColor: isPlaceholder ? 'transparent' : undefined,
           hoverBorderWidth: isPlaceholder ? 0 : undefined,
           isPlaceholder
@@ -2874,24 +2963,78 @@ const TaskReports = () => {
 
                     {/* ROW 1: KPIs */}
                     <div className="task-kpi-grid">
-                      <div className="task-kpi-card task-kpi-card--cyan">
-                        <div className="task-kpi-title"><FaLayerGroup /> Total tasks</div>
+                      <div
+                        className="task-kpi-card task-kpi-card--cyan task-kpi-card--interactive"
+                        onClick={() => handleKpiCardClick('total', 'Total Tasks', 'cyan')}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('total', 'Total Tasks', 'cyan'); }}
+                        title="Click to view all tasks"
+                      >
+                        <div className="task-kpi-title">
+                          <FaLayerGroup /> Total Tasks
+                          <span className="task-kpi-action-hint">View list →</span>
+                        </div>
                         <div className="task-kpi-value task-text-cyan">{statsSummary.total}</div>
                       </div>
-                      <div className="task-kpi-card task-kpi-card--yellow">
-                        <div className="task-kpi-title"><FaHourglassHalf /> Total pending</div>
+
+                      <div
+                        className="task-kpi-card task-kpi-card--yellow task-kpi-card--interactive"
+                        onClick={() => handleKpiCardClick('pending', 'Total Pending', 'yellow')}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('pending', 'Total Pending', 'yellow'); }}
+                        title="Click to view pending tasks"
+                      >
+                        <div className="task-kpi-title">
+                          <FaHourglassHalf /> Total Pending
+                          <span className="task-kpi-action-hint">View list →</span>
+                        </div>
                         <div className="task-kpi-value task-text-yellow">{statsSummary.pending}</div>
                       </div>
-                      <div className="task-kpi-card task-kpi-card--green">
-                        <div className="task-kpi-title"><FaCheck /> Total completed</div>
+
+                      <div
+                        className="task-kpi-card task-kpi-card--green task-kpi-card--interactive"
+                        onClick={() => handleKpiCardClick('completed', 'Total Completed', 'green')}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('completed', 'Total Completed', 'green'); }}
+                        title="Click to view completed tasks"
+                      >
+                        <div className="task-kpi-title">
+                          <FaCheck /> Total Completed
+                          <span className="task-kpi-action-hint">View list →</span>
+                        </div>
                         <div className="task-kpi-value task-text-green">{statsSummary.completedTasks}</div>
                       </div>
-                      <div className="task-kpi-card task-kpi-card--red">
-                        <div className="task-kpi-title"><FaExclamationTriangle /> Overdue tasks</div>
+
+                      <div
+                        className="task-kpi-card task-kpi-card--red task-kpi-card--interactive"
+                        onClick={() => handleKpiCardClick('overdue', 'Overdue Tasks', 'red')}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('overdue', 'Overdue Tasks', 'red'); }}
+                        title="Click to view overdue tasks"
+                      >
+                        <div className="task-kpi-title">
+                          <FaExclamationTriangle /> Overdue Tasks
+                          <span className="task-kpi-action-hint">View list →</span>
+                        </div>
                         <div className="task-kpi-value task-text-red">{statsSummary.overdue}</div>
                       </div>
-                      <div className="task-kpi-card task-kpi-card--purple">
-                        <div className="task-kpi-title"><FaChartLine /> Completion rate</div>
+
+                      <div
+                        className="task-kpi-card task-kpi-card--purple task-kpi-card--interactive"
+                        onClick={() => handleKpiCardClick('completion_rate', 'Completion Rate', 'purple')}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('completion_rate', 'Completion Rate', 'purple'); }}
+                        title="Click to view task progress visualization"
+                      >
+                        <div className="task-kpi-title">
+                          <FaChartLine /> Completion Rate
+                          <span className="task-kpi-action-hint">View progress →</span>
+                        </div>
                         <div className="task-kpi-value task-text-purple">{`${completionPercent}%`}</div>
                       </div>
                     </div>
@@ -2972,22 +3115,10 @@ const TaskReports = () => {
                             );
                           })}
                         </div>
-
-                        <div className="task-calendar-mini-legend">
-                          <span className="task-calendar-legend-item">
-                            <span className="task-calendar-legend-dot task-calendar-legend-dot--today" /> Today
-                          </span>
-                          <span className="task-calendar-legend-item">
-                            <span className="task-calendar-legend-dot task-calendar-legend-dot--selected" /> Selected
-                          </span>
-                          <span className="task-calendar-legend-item">
-                            <span className="task-calendar-legend-badge task-calendar-legend-badge--tasks">#</span> Tasks
-                          </span>
-                        </div>
                       </div>
                       {/* Priority overview vertical bars */}
                       <div className="task-dark-card">
-                        <h3><FaFlag /> Priority overview</h3>
+                        <h3><FaFlag /> Priority Overview</h3>
                         <div className="task-priority-chart">
                           {PRIORITY_ITEMS.map(({ key, label }) => {
                             const value = prioritySummary[key];
@@ -3008,7 +3139,7 @@ const TaskReports = () => {
                       </div>
                       {/* Status overview rows */}
                       <div className="task-dark-card">
-                        <h3><FaChartPie /> Status overview</h3>
+                        <h3><FaChartPie /> Status Overview</h3>
                         <div className="task-status-list">
                           {STATUS_LABELS.map((label, index) => {
                             const count = statusValues[index];
@@ -3030,7 +3161,7 @@ const TaskReports = () => {
                       </div>
                       {/* Completion / Task Progress donut (Chart.js) */}
                       <div className="task-dark-card task-dark-card--progress">
-                        <h3><FaChartLine /> Task progress</h3>
+                        <h3><FaChartLine /> Task Progress</h3>
                         <div className="task-donut-container">
                           <div className="task-donut-canvas-wrap">
                             <canvas ref={completionRateChartRef}></canvas>
@@ -3097,7 +3228,7 @@ const TaskReports = () => {
                                   <th>Status</th>
                                   <th>Priority</th>
                                   <th>Type</th>
-                                  <th>Project / Dept</th>
+                                  <th>Dept</th>
                                   <th>Assignees</th>
                                   <th>Action</th>
                                 </tr>
@@ -3210,6 +3341,25 @@ const TaskReports = () => {
             )}
           </div>
         </div>
+        <KpiDetailsModal
+          isOpen={Boolean(activeKpiModal)}
+          isBackgrounded={Boolean(selectedTaskId)}
+          onClose={handleCloseKpiModal}
+          kpiKey={activeKpiModal?.key}
+          kpiTitle={activeKpiModal?.title}
+          kpiColor={activeKpiModal?.color}
+          activeFilterContext={activeFilterContext}
+          initialStats={taskStats}
+          filterParams={currentStatsFilterParams}
+          selectedDay={selectedDay}
+          onSelectTask={(taskId) => {
+            setSelectedTaskId(taskId);
+          }}
+          onRefresh={async () => {
+            await fetchTaskReports();
+            await fetchCalendarData();
+          }}
+        />
         <TaskViewModal
           taskId={selectedTaskId}
           onClose={() => setSelectedTaskId(null)}

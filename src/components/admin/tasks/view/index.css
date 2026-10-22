@@ -6,17 +6,17 @@
 .tv2 {
   --tv-bg: #eeeef3;
   --tv-card: #ffffff;
-  --tv-ink: #16161d;
+  --tv-ink: #00a3e0;
   --tv-muted: #6b6f7b;
   --tv-faint: #9a9eab;
   --tv-line: #e4e4ec;
-  --tv-purple: #5b3df5;
-  --tv-purple-ink: #3b1fd1;
-  --tv-lav: #f2f0ff;
+  --tv-purple: #00a3e0;
+  --tv-purple-ink: #00a3e0;
+  --tv-lav: #f2fbfe;
   --tv-lav-line: #ddd6fd;
-  --tv-red: #d83b3b;
-  --tv-dark: #0d0e12;
-  --tv-dark-2: #1b1d25;
+  --tv-red: #e4002b;
+  --tv-dark: #000000;
+  --tv-dark-2: #000000;
 
   font-family: 'DM Sans', 'Hanken Grotesk', 'Inter', 'Segoe UI', system-ui, sans-serif;
   color: var(--tv-ink);
@@ -261,7 +261,7 @@
 }
 
 .tv2-step--done .tv2-step-num {
-  background: #3b2fa0;
+  color: var(--tv-ink);
   color: #ffffff;
 }
 
@@ -388,7 +388,7 @@
   background: transparent;
   border-radius: 6px;
   font-size: 13px;
-  color: var(--tv-ink);
+  color: var(--tv-muted);
   cursor: pointer;
   text-align: left;
 }
@@ -528,7 +528,7 @@
 /* Done when */
 
 .tv2-done {
-  background: var(--tv-lav);
+  background: #ffffff;
   border: 1px solid var(--tv-lav-line);
   border-radius: 14px;
   padding: 16px;
@@ -545,7 +545,7 @@
   margin: 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--tv-purple-ink);
+  color: var(--tv-muted);
 }
 
 .tv2-done-count {
@@ -591,9 +591,7 @@
   font-size: 10px;
 }
 
-.tv2-done .task-progress-bar {
-  background: #e3dffc;
-}
+
 
 .tv2-done .task-progress-bar-fill {
   background: var(--tv-purple);
@@ -634,8 +632,8 @@
 
 .tv2-done .mov-checklist-label {
   font-size: 13px;
-  font-weight: 600;
-  color: var(--tv-ink);
+  font-weight: 500;
+  color: var(--tv-muted);
 }
 
 .tv2-done .mov-checklist-info,
@@ -963,6 +961,7 @@
 .tv2-feed-item strong {
   color: var(--tv-ink);
   font-weight: 700;
+  text-transform: capitalize;
 }
 
 .tv2-feed-sub {
@@ -1121,6 +1120,9 @@
   font-size: 13px;
   font-weight: 700;
   overflow-wrap: anywhere;
+  text-transform: capitalize;
+  color: var(--tv-muted);
+
 }
 
 .tv2-meta {
@@ -1140,6 +1142,8 @@
   text-align: right;
   font-weight: 600;
   overflow-wrap: anywhere;
+  color: var(--tv-muted);
+
 }
 
 .tv2-meta dd.is-danger {
@@ -1247,7 +1251,7 @@
 }
 
 .tv2-reminder h3,
-.tv2-reminder .task-task-view-section-title {
+.tv2-reminder .task-view-section-title {
   margin: 0 0 8px;
   font-size: 10px;
   font-weight: 700;

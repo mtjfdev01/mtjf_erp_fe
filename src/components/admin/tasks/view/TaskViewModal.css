@@ -1,7 +1,9 @@
 .task-view-modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 2000;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -70,6 +72,6 @@
   background: #e2e8f0;
 }
 
-.task-view-modal-backdrop .status-modal-backdrop {
+.task-view-modal-backdrop .task-view-status-modal-backdrop {
   z-index: 1100;
 }

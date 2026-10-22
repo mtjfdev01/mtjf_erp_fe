@@ -116,16 +116,16 @@ const StatusUpdateModal = ({
     action === 'APPROVE' || action === 'REJECT' || action === 'SUBMIT_APPROVAL';
 
   return (
-    <div className="status-modal-backdrop" role="dialog" aria-modal="true">
-      <div className="status-modal">
-        <div className="status-modal-header">
-          <h3 className="status-modal-title">
+    <div className="task-view-status-modal-backdrop" role="dialog" aria-modal="true">
+      <div className="task-view-status-modal">
+        <div className="task-view-status-modal-header">
+          <h3 className="task-view-status-modal-title">
             {title}
           </h3>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="status-modal-body">
-            <p className="status-modal-text">
+          <div className="task-view-status-modal-body">
+            <p className="task-view-status-modal-text">
               This will update the task status. Do you want to continue?
             </p>
             {showNoteField && (
@@ -144,10 +144,10 @@ const StatusUpdateModal = ({
               </div>
             )}
           </div>
-          <div className="status-modal-footer">
+          <div className="task-view-status-modal-footer">
             <button
               type="button"
-              className="task-status-modal-cancel"
+              className="task-view-status-modal-cancel"
               onClick={onClose}
               disabled={loading}
             >

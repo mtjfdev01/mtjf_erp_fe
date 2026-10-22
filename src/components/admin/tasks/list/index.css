@@ -6,14 +6,14 @@
 .tlx-page {
   --tlx-bg: #f6f5f1;
   --tlx-surface: #ffffff;
-  --tlx-ink: #0f1115;
+  --tlx-ink: #000000;
   --tlx-muted: #6b7280;
   --tlx-line: #e8e6df;
-  --tlx-accent: #5b4bf0;
-  --tlx-accent-soft: #ebe8ff;
-  --tlx-red: #e5383b;
-  --tlx-amber: #f59e0b;
-  --tlx-green: #16a34a;
+  --tlx-accent: #00a3e0;
+  --tlx-accent-soft: #def3fa;
+  --tlx-red: #e4002b;
+  --tlx-amber: #eaaa00;
+  --tlx-green: #009a44;
   --tlx-radius: 12px;
 
   margin-top: 3.5rem;
@@ -48,9 +48,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  min-height: 48px;
+  min-height: 30px;
   margin: -1.1rem -1.25rem 0.85rem;
-  padding: 0 1.25rem;
+  padding: 0.5rem 1rem;
   background: var(--tlx-surface);
   border-bottom: 1px solid var(--tlx-line);
 }
@@ -66,7 +66,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0 0.55rem;
+  padding: 0.5rem 1rem;
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
@@ -74,6 +74,7 @@
   font: inherit;
   font-size: 0.82rem;
   font-weight: 600;
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -83,8 +84,8 @@
 
   
 .tlx-module-nav__tab.is-active {
-  border-bottom-color: var(--tlx-accent);
-  color: var(--tlx-ink);
+  background:  var(--tlx-ink);
+  color: var(--tlx-surface);
 }
 
 .tlx-module-nav__count {
@@ -99,7 +100,7 @@
   padding: 0 6px;
   border-radius: 999px;
   background: #ffedd5;
-  color: #9a4d00;
+  color: #9a6f1e;
   font-size: 0.72rem;
   font-weight: 700;
 }
@@ -135,6 +136,11 @@
   border-radius: 10px;
   max-width: 100%;
   overflow-x: auto;
+}
+
+/* Hide task scope filters (Mine, Assigned by me, Team) when Approvals tab is active */
+.tlx-head--approvals .tlx-scope {
+  display: none !important;
 }
 
 .tlx-scope__btn {
@@ -416,6 +422,16 @@
   border-radius: 10px;
 }
 
+.tl-tasks-list-assignment-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #000000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+}
+
 .tlx-filters .dropdown-filter-container {
   width: 100%;
   min-width: 0;
@@ -601,6 +617,11 @@
   text-align: left;
 }
 
+/* Static header for completed tasks when count <= 2 (no collapse toggle) */
+.tlx-group__collapse--static {
+  cursor: default;
+}
+
 .tlx-group__toggle {
   display: inline-flex;
   align-items: center;
@@ -701,7 +722,7 @@
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
   background: #f3e8ff;
-  color: #6b21a8;
+  color: #00a3e0;
   font-size: 0.68rem;
   font-weight: 700;
 }
@@ -734,10 +755,10 @@
   line-height: 1;
 }
 
-.tlx-prio--critical { background: #fde2e2; color: #c81e1e; }
+.tlx-prio--critical { background: #fde2e2; color: #e4002b; }
 .tlx-prio--high { background: #ffe6d5; color: #ea580c; }
-.tlx-prio--medium { background: #fdf0d2; color: #b7791f; }
-.tlx-prio--low { background: #dcf5e4; color: #15803d; }
+.tlx-prio--medium { background: #fdf0d2; color: #eaaa00; }
+.tlx-prio--low { background: #dcf5e4; color: #009a44; }
 
 /* Status pill */
 .tlx-status {
@@ -778,8 +799,8 @@
   white-space: nowrap;
 }
 
-.tlx-due--overdue { color: #c81e1e; }
-.tlx-due--today { color: #b7791f; }
+.tlx-due--overdue { color: #e4002b; }
+.tlx-due--today { color: #eaaa00; }
 .tlx-due--done { color: var(--tlx-green); font-weight: 600; }
 .tlx-due--none { color: var(--tlx-muted); font-weight: 500; }
 
@@ -976,7 +997,7 @@
   padding: 0.9rem 1.1rem;
   margin-bottom: 1.1rem;
   border-radius: 12px;
-  background: #0f1115;
+  background: #000000;
   color: #fff;
 }
 
@@ -985,7 +1006,7 @@
   font-size: 2.6rem;
   font-weight: 800;
   line-height: 1;
-  color: #ff6b6b;
+  color: #eaaa00;
 }
 
 .tlx-hero--today .tlx-hero__number { color: #fbbf24; }
@@ -1032,6 +1053,7 @@
   margin: 0;
   font-weight: 600;
   overflow-wrap: anywhere;
+  text-transform: capitalize;
 }
 
 .tlx-fields__status--open { color: #1d4ed8; }
@@ -1044,11 +1066,11 @@
 .tlx-fields__status--pending_approval { color: #7e22ce; }
 
 .tlx-fields__prio--critical,
-.tlx-fields__prio--high { color: #c81e1e; }
-.tlx-fields__prio--medium { color: #b7791f; }
+.tlx-fields__prio--high { color: #e4002b; }
+.tlx-fields__prio--medium { color: #eaaa00; }
 .tlx-fields__prio--low { color: var(--tlx-green); }
 
-.tlx-fields__late { color: #c81e1e; }
+.tlx-fields__late { color: #e4002b; }
 
 /* Checklist */
 .tlx-checklist {
