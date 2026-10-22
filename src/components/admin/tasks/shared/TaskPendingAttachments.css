@@ -1,15 +1,15 @@
-.task-pending-attachments {
+.tkpendatt {
   margin-top: 0;
 }
 
 /* The old attachment helper text/title were removed so the section can match the
    reference mockup, which keeps the upload area minimal and visually cleaner. */
-.task-pending-attachments .add-task-section-title,
-.task-pending-attachments__hint {
+.tkpendatt .tkpendatt-section-title,
+.tkpendatt-hint {
   display: none;
 }
 
-.task-pending-attachments__form {
+.tkpendatt-form {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -21,11 +21,11 @@
   background: transparent;
 }
 
-.task-pending-attachments__form--dropzone {
+.tkpendatt-form--dropzone {
   min-height: 60px;
 }
 
-.task-pending-attachments__dropzone-label {
+.tkpendatt-dropzone-label {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -39,23 +39,23 @@
   font-weight: 500;
 }
 
-.task-pending-attachments__dropzone-icon {
+.tkpendatt-dropzone-icon {
   width: 18px;
   height: 18px;
   color: #00a3e0;
   flex-shrink: 0;
 }
 
-.task-pending-attachments__browse-link {
+.tkpendatt-browse-link {
   color: #00a3e0;
   font-weight: 700;
 }
 
-.task-pending-attachments__meta {
+.tkpendatt-meta {
   color: #6b7280;
 }
 
-.task-pending-attachments__file-input {
+.tkpendatt-file-input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -63,7 +63,7 @@
   pointer-events: none;
 }
 
-.task-pending-attachments__selected {
+.tkpendatt-selected {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -72,7 +72,7 @@
   color: #475569;
 }
 
-.task-pending-attachments__list {
+.tkpendatt-list {
   list-style: none;
   margin: 12px 0 0;
   padding: 0;
@@ -84,7 +84,7 @@
 /* The selected file needs to be readable as its own item in the reference UI,
    so each queued attachment is presented in a compact row with a clear remove control. */
 
-.task-pending-attachments__item {
+.tkpendatt-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -95,7 +95,7 @@
   background: #ffffff;
 }
 
-.task-pending-attachments__item-main {
+.tkpendatt-item-main {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -103,7 +103,7 @@
   flex: 1;
 }
 
-.task-pending-attachments__file-name {
+.tkpendatt-file-name {
   font-size: 14px;
   color: #374151;
   font-weight: 600;
@@ -112,7 +112,7 @@
   white-space: nowrap;
 }
 
-.task-pending-attachments__remove {
+.tkpendatt-remove {
   width: 26px;
   height: 26px;
   border: 1px solid #dfe3ea;
@@ -129,17 +129,17 @@
   flex-shrink: 0;
 }
 
-.task-pending-attachments__remove:hover:not(:disabled) {
+.tkpendatt-remove:hover:not(:disabled) {
   border-color: #cbd5e1;
   color: #374151;
   background: #f9fafb;
 }
 
-.task-pending-attachments__remove:disabled {
+.tkpendatt-remove:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.task-pending-attachments__error {
+.tkpendatt-error {
   margin-top: 8px;
 }

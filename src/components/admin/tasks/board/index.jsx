@@ -449,53 +449,53 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
     <>
       <Navbar />
       <Loader loading={loading} />
-      <div className="trello-board-wrapper">
+      <div className="tkboard-wrapper">
         {/* <PageHeader title="Tasks Board" showBackButton={false} showAdd={false} /> */}
-        <div className="trello-board-content">
-          <div className="trello-board-toolbar">
-            <div className="trello-board-toolbar-top">
-              <div className="tl-scope-switch" role="tablist" aria-label="Task scope">
+        <div className="tkboard-content">
+          <div className="tkboard-toolbar">
+            <div className="tkboard-toolbar-top">
+              <div className="tkboard-scope-switch" role="tablist" aria-label="Task scope">
                 <button
                   type="button"
                   role="tab"
                   aria-selected={activeTab === 'assigned_to_me'}
-                  className={`tl-scope-switch__btn ${activeTab === 'assigned_to_me' ? 'is-active is-mine' : ''}`}
+                  className={`tkboard-scope-switch__btn ${activeTab === 'assigned_to_me' ? 'is-active is-mine' : ''}`}
                   onClick={() => handleTabChange('assigned_to_me')}
                   title="Assigned to me"
                 >
                   <FiUserCheck />
-                  <span className="tl-scope-switch__label">Me</span>
-                  <span className="tl-scope-switch__count">{tabCounts.assigned_to_me}</span>
+                  <span className="tkboard-scope-switch__label">Me</span>
+                  <span className="tkboard-scope-switch__count">{tabCounts.assigned_to_me}</span>
                 </button>
                 <button
                   type="button"
                   role="tab"
                   aria-selected={activeTab === 'other_tasks'}
-                  className={`tl-scope-switch__btn ${activeTab === 'other_tasks' ? 'is-active is-other' : ''}`}
+                  className={`tkboard-scope-switch__btn ${activeTab === 'other_tasks' ? 'is-active is-other' : ''}`}
                   onClick={() => handleTabChange('other_tasks')}
                   title="Assigned by me"
                 >
                   <FiList />
-                  <span className="tl-scope-switch__label">Others</span>
-                  <span className="tl-scope-switch__count">{tabCounts.other_tasks}</span>
+                  <span className="tkboard-scope-switch__label">Others</span>
+                  <span className="tkboard-scope-switch__count">{tabCounts.other_tasks}</span>
                 </button>
                 {isManager && (
                   <button
                     type="button"
                     role="tab"
                     aria-selected={activeTab === 'assigned_to_team'}
-                    className={`tl-scope-switch__btn ${activeTab === 'assigned_to_team' ? 'is-active is-team' : ''}`}
+                    className={`tkboard-scope-switch__btn ${activeTab === 'assigned_to_team' ? 'is-active is-team' : ''}`}
                     onClick={() => handleTabChange('assigned_to_team')}
                     title="Assigned to team"
                   >
                     <FiUsers />
-                    <span className="tl-scope-switch__label">Team</span>
-                    <span className="tl-scope-switch__count">{tabCounts.assigned_to_team}</span>
+                    <span className="tkboard-scope-switch__label">Team</span>
+                    <span className="tkboard-scope-switch__count">{tabCounts.assigned_to_team}</span>
                   </button>
                 )}
               </div>
 
-              <div className="trello-board-toolbar-assignee">
+              <div className="tkboard-toolbar-assignee">
                 <TaskAssigneeFilter
                   value={assignedUser}
                   onSelect={setAssignedUser}
@@ -504,10 +504,10 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                 />
               </div>
 
-              <div className="trello-board-toolbar-right">
+              <div className="tkboard-toolbar-right">
                 <button
                   type="button"
-                  className="tl-filter-clear-btn"
+                  className="tkboard-filter-clear-btn"
                   onClick={toggleFilters}
                 >
                   {filtersOpen ? 'Hide filters' : 'Show filters'}
@@ -527,7 +527,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
 
                 <button
                   type="button"
-                  className="trello-board-add-btn"
+                  className="tkboard-add-btn"
                   title="Add task"
                   disabled={!taskPerms.canCreate}
                   onClick={
@@ -542,7 +542,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
             </div>
 
             <CollapsibleFilters open={filtersOpen}>
-            <div className="trello-board-toolbar-filters filters-section">
+            <div className="tkboard-toolbar-filters filters-section">
               <SearchFilter
                 filterKey="search"
                 label="Search"
@@ -596,46 +596,46 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
             </CollapsibleFilters>
           </div>
 
-          {/* <p className="trello-board-hint">
+          {/* <p className="tkboard-hint">
             Drag cards or use ⋮ menu to move status. Click a card to open details.
           </p> */}
 
-          {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
+          {error && <div className="tkboard-status-message tkboard-status-message--error">{error}</div>}
 
           {!loading && visibleBoardColumns.length === 0 && (
-            <div className="trello-board-empty">
+            <div className="tkboard-empty">
               No columns selected. Open Show/hide columns and pick at least one.
             </div>
           )}
 
           {!loading && visibleBoardColumns.length > 0 && visibleTasks.length === 0 && (
-            <div className="trello-board-empty">No tasks in this view.</div>
+            <div className="tkboard-empty">No tasks in this view.</div>
           )}
 
           {(loading || visibleTasks.length > 0) && visibleBoardColumns.length > 0 && (
-          <div className="trello-board-scroll">
-            <div className="trello-board-columns">
+          <div className="tkboard-scroll">
+            <div className="tkboard-columns">
               {visibleBoardColumns.map((column) => (
                 <section
                   key={column.id}
-                  className={`trello-board-column ${dropColumnId === column.id ? 'trello-board-column--drag-over' : ''}`}
+                  className={`tkboard-column ${dropColumnId === column.id ? 'tkboard-column--drag-over' : ''}`}
                   onDragOver={(e) => handleColumnDragOver(e, column.id)}
                   onDragLeave={() => setDropColumnId(null)}
                   onDrop={(e) => handleColumnDrop(e, column.id)}
                 >
-                  <header className="trello-board-column-header">
-                    <div className="trello-board-column-title">
+                  <header className="tkboard-column-header">
+                    <div className="tkboard-column-title">
                       <span
-                        className="trello-board-column-dot"
+                        className="tkboard-column-dot"
                         style={{ backgroundColor: column.color }}
                       />
                       {column.label}
                     </div>
-                    <span className="trello-board-column-count">
+                    <span className="tkboard-column-count">
                       {(tasksByColumn[column.id] || []).length}
                     </span>
                   </header>
-                  <div className="trello-board-column-cards">
+                  <div className="tkboard-column-cards">
                     {(tasksByColumn[column.id] || []).map((task) => {
                       const due = formatDate(task.due_date);
                       const overdue = isOverdue(task);
@@ -644,7 +644,7 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                       return (
                         <article
                           key={task.id}
-                          className={`trello-board-card${draggingTaskId === task.id ? ' trello-board-card--dragging' : ''}${isUpdating ? ' trello-board-card--updating' : ''}`}
+                          className={`tkboard-card${draggingTaskId === task.id ? ' tkboard-card--dragging' : ''}${isUpdating ? ' tkboard-card--updating' : ''}`}
                           style={getCardColorStyle(task.id)}
                           draggable={draggable}
                           onDragStart={(e) => handleDragStart(e, task)}
@@ -662,13 +662,13 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                             }
                           }}
                         >
-                          <div className="trello-board-card-header">
+                          <div className="tkboard-card-header">
                             <span
-                              className={`trello-board-priority trello-board-priority--${task.priority || 'medium'}`}
+                              className={`tkboard-priority tkboard-priority--${task.priority || 'medium'}`}
                             >
                               {capitalize(task.priority || 'medium')}
                             </span>
-                            <span className="trello-board-card-dept" title={capitalize(task.department)}>
+                            <span className="tkboard-card-dept" title={capitalize(task.department)}>
                               {capitalize(task.department)}
                             </span>
                             <TaskCardMenu
@@ -696,11 +696,11 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
                               canMove={canChangeStatus(task)}
                             />
                           </div>
-                          <h4 className="trello-board-card-title">{task.title}</h4>
+                          <h4 className="tkboard-card-title">{task.title}</h4>
                           {due && (
-                            <div className="trello-board-card-meta">
+                            <div className="tkboard-card-meta">
                               <span
-                                className={`trello-board-card-due ${overdue ? 'trello-board-card-due--overdue' : ''}`}
+                                className={`tkboard-card-due ${overdue ? 'tkboard-card-due--overdue' : ''}`}
                               >
                                 {overdue ? 'Overdue · ' : ''}
                                 {due}

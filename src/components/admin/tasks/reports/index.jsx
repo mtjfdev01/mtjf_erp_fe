@@ -167,14 +167,14 @@ const PROGRAMS_LIST = [
 ];
 
 const STATUS_DOT_CLASSNAMES = [
-  'task-progress-dot--open',
-  'task-progress-dot--in-progress',
-  'task-progress-dot--pending-approval',
-  'task-progress-dot--approved',
-  'task-progress-dot--rejected',
-  'task-progress-dot--completed',
-  'task-progress-dot--closed',
-  'task-progress-dot--cancelled'
+  'tkreport-progress-dot--open',
+  'tkreport-progress-dot--in-progress',
+  'tkreport-progress-dot--pending-approval',
+  'tkreport-progress-dot--approved',
+  'tkreport-progress-dot--rejected',
+  'tkreport-progress-dot--completed',
+  'tkreport-progress-dot--closed',
+  'tkreport-progress-dot--cancelled'
 ];
 
 const DEPARTMENT_COLORS = [
@@ -816,16 +816,16 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
   }, [filteredProjects]);
 
   return (
-    <div className="task-report-card task-report-card--project-report">
-      <div className="task-report-card-header task-report-card-header--with-filter" ref={headerRef}>
-        <div className="task-report-header-left">
-          <FaProjectDiagram className="task-status-overview-icon" />
-          <h2 className="task-report-card-title">Project/Program-wise Task Report</h2>
+    <div className="tkreport-report-card tkreport-report-card--project-report">
+      <div className="tkreport-report-card-header tkreport-report-card-header--with-filter" ref={headerRef}>
+        <div className="tkreport-report-header-left">
+          <FaProjectDiagram className="tkreport-status-overview-icon" />
+          <h2 className="tkreport-report-card-title">Project/Program-wise Task Report</h2>
         </div>
-        <div className={`task-report-header-right ${showHeaderFilters ? 'task-report-header-right--visible' : ''}`}>
-          <div className="task-report-filter-inline">
+        <div className={`tkreport-report-header-right ${showHeaderFilters ? 'tkreport-report-header-right--visible' : ''}`}>
+          <div className="tkreport-report-filter-inline">
             <select
-              className="task-report-category-filter"
+              className="tkreport-report-category-filter"
               value={projectCategory}
               onChange={(e) => setProjectCategory(e.target.value)}
             >
@@ -835,7 +835,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
             </select>
             {projectCategory !== 'all' && (
               <button
-                className="task-report-filter-clear-inline"
+                className="tkreport-report-filter-clear-inline"
                 onClick={() => setProjectCategory('all')}
                 title="Clear Filter"
               >
@@ -844,7 +844,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
             )}
           </div>
           <button
-            className="task-report-export-button"
+            className="tkreport-report-export-button"
             onClick={handleExportProjectReport}
             title="Export report"
             type="button"
@@ -853,7 +853,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
           </button>
         </div>
         <button
-          className="task-report-header-menu-button"
+          className="tkreport-report-header-menu-button"
           onClick={() => setShowHeaderFilters(!showHeaderFilters)}
           title={showHeaderFilters ? "Hide filters" : "Show filters"}
           type="button"
@@ -861,20 +861,20 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
           <FaEllipsisH />
         </button>
       </div>
-      <div className="task-report-card-chart task-report-card-chart--wide" style={{ minHeight: '380px', height: 'auto', position: 'relative' }}>
-        <div className="task-report-slider-wrapper task-report-slider-wrapper--vertical">
+      <div className="tkreport-report-card-chart tkreport-report-card-chart--wide" style={{ minHeight: '380px', height: 'auto', position: 'relative' }}>
+        <div className="tkreport-report-slider-wrapper tkreport-report-slider-wrapper--vertical">
           {canScrollUp && (
             <button
-              className="task-report-slider-button task-report-slider-button--left"
+              className="tkreport-report-slider-button tkreport-report-slider-button--left"
               onClick={() => handleScroll(projectReportSliderRef, 'left', true)}
               type="button"
             >
               <FaChevronUp />
             </button>
           )}
-          <div className="task-report-slider-container task-report-slider-container--vertical" ref={projectReportSliderRef}>
+          <div className="tkreport-report-slider-container tkreport-report-slider-container--vertical" ref={projectReportSliderRef}>
             <div
-              className="task-report-chart-inner"
+              className="tkreport-report-chart-inner"
               style={{
                 width: '100%',
                 minWidth: '100%',
@@ -886,7 +886,7 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
           </div>
           {canScrollDown && (
             <button
-              className="task-report-slider-button task-report-slider-button--right"
+              className="tkreport-report-slider-button tkreport-report-slider-button--right"
               onClick={() => handleScroll(projectReportSliderRef, 'right', true)}
               type="button"
             >
@@ -2796,11 +2796,11 @@ const TaskReports = () => {
   }, [showFilterPopover]);
 
   const filterElement = (
-    <div className="task-dashboard-filters">
-      <div className="task-filter-group">
-        <span className="task-filter-label">Duration</span>
+    <div className="tkreport-dashboard-filters">
+      <div className="tkreport-filter-group">
+        <span className="tkreport-filter-label">Duration</span>
         <select
-          className="task-filter-select"
+          className="tkreport-filter-select"
           value={selectedDay && !showTeamPerformance ? 'custom' : duration}
           onChange={(e) => {
             // Picking a preset duration leaves single-day (calendar) mode.
@@ -2823,10 +2823,10 @@ const TaskReports = () => {
       </div>
       {/* tasks dropdown  should be hidden when the team performance view is active */}
       {taskScopeCaps.showTasksDropdown && !showTeamPerformance && (
-        <div className="task-filter-group">
-          <span className="task-filter-label">Tasks</span>
+        <div className="tkreport-filter-group">
+          <span className="tkreport-filter-label">Tasks</span>
           <select
-            className="task-filter-select"
+            className="tkreport-filter-select"
             value={viewType}
             onChange={(e) => setViewType(e.target.value)}
           >
@@ -2843,10 +2843,10 @@ const TaskReports = () => {
 
       {(rolePerms.isAdmin || rolePerms.scope === "org") &&
         isGeneralAdminDashboard && (
-          <div className="task-filter-group">
-            <span className="task-filter-label">Department</span>
+          <div className="tkreport-filter-group">
+            <span className="tkreport-filter-label">Department</span>
             <select
-              className="task-filter-select"
+              className="tkreport-filter-select"
               value={selectedDepartment}
               onChange={(e) => setSelectedDepartment(e.target.value)}
             >
@@ -2866,20 +2866,20 @@ const TaskReports = () => {
         )}
 
       {taskScopeCaps.canViewTeamToggle && (
-        <div className="task-filter-group task-filter-group--toggle">
-          <span className="task-filter-label">View Mode</span>
+        <div className="tkreport-filter-group tkreport-filter-group--toggle">
+          <span className="tkreport-filter-label">View Mode</span>
           <button
             type="button"
-            className={`task-filter-toggle-btn ${showTeamPerformance ? "active" : ""}`}
+            className={`tkreport-filter-toggle-btn ${showTeamPerformance ? "active" : ""}`}
             onClick={() => setShowTeamPerformance(!showTeamPerformance)}
           >
             {showTeamPerformance ? (
               <>
-                <FaClipboard className="task-filter-btn-icon" /> Main Dashboard
+                <FaClipboard className="tkreport-filter-btn-icon" /> Main Dashboard
               </>
             ) : (
               <>
-                <FaUsers className="task-filter-btn-icon" /> Team Performance
+                <FaUsers className="tkreport-filter-btn-icon" /> Team Performance
               </>
             )}
           </button>
@@ -2901,20 +2901,20 @@ const TaskReports = () => {
     <>
       <Navbar />
       <Loader loading={taskStatsLoading} />
-      <div className="task-report-container">
+      <div className="tkreport-report-container">
         <PageHeader
-          className="task-report-page-header"
+          className="tkreport-report-page-header"
           title="Tasks Dashboard"
           showBackButton={true}
           rightElement={filterElement}
         />
-        <div className="task-dashboard-shell">
-          <div className="task-dashboard-layout">
+        <div className="tkreport-dashboard-shell">
+          <div className="tkreport-dashboard-layout">
             {!showTeamPerformance ? (
               <>
                 {/* ========== NESTED DARK DASHBOARD ========== */}
-                <section className="task-nested-dashboard" ref={dashboardRef}>
-                  <div className="task-nested-header">
+                <section className="tkreport-nested-dashboard" ref={dashboardRef}>
+                  <div className="tkreport-nested-header">
                     <div>
                       <h2>
                         {selectedDay ? `Details for ${selectedDayLabel}` : `Overview · ${durationLabel}`}
@@ -2928,7 +2928,7 @@ const TaskReports = () => {
                     {selectedDay && (
                       <button
                         type="button"
-                        className="task-back-btn task-back-btn--primary"
+                        className="tkreport-back-btn tkreport-back-btn--primary"
                         onClick={() => setSelectedDay(null)}
                       >
                         ← Back to Overview
@@ -2937,105 +2937,105 @@ const TaskReports = () => {
                   </div>
 
                     {/* ROW 1: KPIs */}
-                    <div className="task-kpi-grid">
+                    <div className="tkreport-kpi-grid">
                       <div
-                        className="task-kpi-card task-kpi-card--cyan task-kpi-card--interactive"
+                        className="tkreport-kpi-card tkreport-kpi-card--cyan tkreport-kpi-card--interactive"
                         onClick={() => handleKpiCardClick('total', 'Total Tasks', 'cyan')}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('total', 'Total Tasks', 'cyan'); }}
                         title="Click to view all tasks"
                       >
-                        <div className="task-kpi-title">
+                        <div className="tkreport-kpi-title">
                           <FaLayerGroup /> Total Tasks
-                          <span className="task-kpi-action-hint">View list →</span>
+                          <span className="tkreport-kpi-action-hint">View list →</span>
                         </div>
-                        <div className="task-kpi-value task-text-cyan">{statsSummary.total}</div>
+                        <div className="tkreport-kpi-value tkreport-text-cyan">{statsSummary.total}</div>
                       </div>
 
                       <div
-                        className="task-kpi-card task-kpi-card--yellow task-kpi-card--interactive"
+                        className="tkreport-kpi-card tkreport-kpi-card--yellow tkreport-kpi-card--interactive"
                         onClick={() => handleKpiCardClick('pending', 'Total Pending', 'yellow')}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('pending', 'Total Pending', 'yellow'); }}
                         title="Click to view pending tasks"
                       >
-                        <div className="task-kpi-title">
+                        <div className="tkreport-kpi-title">
                           <FaHourglassHalf /> Total Pending
-                          <span className="task-kpi-action-hint">View list →</span>
+                          <span className="tkreport-kpi-action-hint">View list →</span>
                         </div>
-                        <div className="task-kpi-value task-text-yellow">{statsSummary.pending}</div>
+                        <div className="tkreport-kpi-value tkreport-text-yellow">{statsSummary.pending}</div>
                       </div>
 
                       <div
-                        className="task-kpi-card task-kpi-card--green task-kpi-card--interactive"
+                        className="tkreport-kpi-card tkreport-kpi-card--green tkreport-kpi-card--interactive"
                         onClick={() => handleKpiCardClick('completed', 'Total Completed', 'green')}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('completed', 'Total Completed', 'green'); }}
                         title="Click to view completed tasks"
                       >
-                        <div className="task-kpi-title">
+                        <div className="tkreport-kpi-title">
                           <FaCheck /> Total Completed
-                          <span className="task-kpi-action-hint">View list →</span>
+                          <span className="tkreport-kpi-action-hint">View list →</span>
                         </div>
-                        <div className="task-kpi-value task-text-green">{statsSummary.completedTasks}</div>
+                        <div className="tkreport-kpi-value tkreport-text-green">{statsSummary.completedTasks}</div>
                       </div>
 
                       <div
-                        className="task-kpi-card task-kpi-card--red task-kpi-card--interactive"
+                        className="tkreport-kpi-card tkreport-kpi-card--red tkreport-kpi-card--interactive"
                         onClick={() => handleKpiCardClick('overdue', 'Overdue Tasks', 'red')}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('overdue', 'Overdue Tasks', 'red'); }}
                         title="Click to view overdue tasks"
                       >
-                        <div className="task-kpi-title">
+                        <div className="tkreport-kpi-title">
                           <FaExclamationTriangle /> Overdue Tasks
-                          <span className="task-kpi-action-hint">View list →</span>
+                          <span className="tkreport-kpi-action-hint">View list →</span>
                         </div>
-                        <div className="task-kpi-value task-text-red">{statsSummary.overdue}</div>
+                        <div className="tkreport-kpi-value tkreport-text-red">{statsSummary.overdue}</div>
                       </div>
 
                       <div
-                        className="task-kpi-card task-kpi-card--purple task-kpi-card--interactive"
+                        className="tkreport-kpi-card tkreport-kpi-card--purple tkreport-kpi-card--interactive"
                         onClick={() => handleKpiCardClick('completion_rate', 'Completion Rate', 'purple')}
                         role="button"
                         tabIndex={0}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleKpiCardClick('completion_rate', 'Completion Rate', 'purple'); }}
                         title="Click to view task progress visualization"
                       >
-                        <div className="task-kpi-title">
+                        <div className="tkreport-kpi-title">
                           <FaChartLine /> Completion Rate
-                          <span className="task-kpi-action-hint">View progress →</span>
+                          <span className="tkreport-kpi-action-hint">View progress →</span>
                         </div>
-                        <div className="task-kpi-value task-text-purple">{`${completionPercent}%`}</div>
+                        <div className="tkreport-kpi-value tkreport-text-purple">{`${completionPercent}%`}</div>
                       </div>
                     </div>
 
                     {/* ROW 2: Middle Analytics Grid (4-column responsive layout: Calendar, Priority, Status, Donut) */}
-                    <div className="task-middle-grid">
+                    <div className="tkreport-middle-grid">
                       {/* 1. Interactive Calendar Card for date-based task drilldown */}
-                      <div className="task-dark-card task-calendar-card">
-                        <div className="task-calendar-header">
-                          <div className="task-calendar-header-text">
+                      <div className="tkreport-dark-card tkreport-calendar-card">
+                        <div className="tkreport-calendar-header">
+                          <div className="tkreport-calendar-header-text">
                             <h3><FaCalendarAlt /> Calendar</h3>
                           </div>
-                          <div className="task-calendar-nav">
-                            {calendarLoading && <FaSpinner className="task-calendar-loading-spinner task-spin" />}
+                          <div className="tkreport-calendar-nav">
+                            {calendarLoading && <FaSpinner className="tkreport-calendar-loading-spinner tkreport-spin" />}
                             <button
                               type="button"
-                              className="task-calendar-nav-btn"
+                              className="tkreport-calendar-nav-btn"
                               onClick={() => shiftCalendarMonth(-1)}
                               aria-label="Previous month"
                             >
                               <FaChevronLeft />
                             </button>
-                            <span className="task-calendar-month">{calendarMonthLabel}</span>
+                            <span className="tkreport-calendar-month">{calendarMonthLabel}</span>
                             <button
                               type="button"
-                              className="task-calendar-nav-btn"
+                              className="tkreport-calendar-nav-btn"
                               onClick={() => shiftCalendarMonth(1)}
                               aria-label="Next month"
                             >
@@ -3044,15 +3044,15 @@ const TaskReports = () => {
                           </div>
                         </div>
 
-                        <div className="task-calendar-grid task-calendar-grid--labels">
+                        <div className="tkreport-calendar-grid tkreport-calendar-grid--labels">
                           {CALENDAR_DAY_LABELS.map((label) => (
-                            <div key={label} className="task-calendar-day-label">{label}</div>
+                            <div key={label} className="tkreport-calendar-day-label">{label}</div>
                           ))}
                         </div>
-                        <div className="task-calendar-grid task-calendar-grid--days">
+                        <div className="tkreport-calendar-grid tkreport-calendar-grid--days">
                           {calendarCells.map((cell) => {
                             if (cell.empty) {
-                              return <div key={cell.key} className="task-day-cell task-day-cell--empty" />;
+                              return <div key={cell.key} className="tkreport-day-cell tkreport-day-cell--empty" />;
                             }
                             const isSelected = selectedDay === cell.dateStr;
                             const isToday = todayStr === cell.dateStr;
@@ -3064,10 +3064,10 @@ const TaskReports = () => {
                                 type="button"
                                 key={cell.key}
                                 className={[
-                                  'task-day-cell',
-                                  isToday ? 'task-day-cell--today' : '',
-                                  isSelected ? 'task-day-cell--selected' : '',
-                                  totalTasks > 0 ? 'task-day-cell--has-tasks' : ''
+                                  'tkreport-day-cell',
+                                  isToday ? 'tkreport-day-cell--today' : '',
+                                  isSelected ? 'tkreport-day-cell--selected' : '',
+                                  totalTasks > 0 ? 'tkreport-day-cell--has-tasks' : ''
                                 ].filter(Boolean).join(' ')}
                                 onClick={() => handleCalendarDayClick(cell.dateStr)}
                                 aria-pressed={isSelected}
@@ -3077,10 +3077,10 @@ const TaskReports = () => {
                                     : `${cell.dateStr}: No tasks`
                                 }
                               >
-                                <span className="task-day-number">{cell.dayNumber}</span>
+                                <span className="tkreport-day-number">{cell.dayNumber}</span>
                                 {totalTasks > 0 && (
                                   <span
-                                    className="task-day-count"
+                                    className="tkreport-day-count"
                                     aria-label={`${totalTasks} task${totalTasks > 1 ? 's' : ''}`}
                                   >
                                     {totalTasks > 99 ? '99+' : totalTasks}
@@ -3092,56 +3092,56 @@ const TaskReports = () => {
                         </div>
                       </div>
                       {/* Priority overview vertical bars */}
-                      <div className="task-dark-card">
+                      <div className="tkreport-dark-card">
                         <h3><FaFlag /> Priority Overview</h3>
-                        <div className="task-priority-chart">
+                        <div className="tkreport-priority-chart">
                           {PRIORITY_ITEMS.map(({ key, label }) => {
                             const value = prioritySummary[key];
                             const heightPct = (value / maxPriorityCount) * 100;
                             return (
-                              <div className="task-priority-bar-group" key={key}>
+                              <div className="tkreport-priority-bar-group" key={key}>
                                 <div
-                                  className={`task-priority-bar task-priority-bar--${key}`}
+                                  className={`tkreport-priority-bar tkreport-priority-bar--${key}`}
                                   style={{ height: `${value > 0 ? Math.max(heightPct, 6) : 2}%` }}
                                 >
                                   <span>{value}</span>
                                 </div>
-                                <span className="task-priority-label">{label}</span>
+                                <span className="tkreport-priority-label">{label}</span>
                               </div>
                             );
                           })}
                         </div>
                       </div>
                       {/* Status overview rows */}
-                      <div className="task-dark-card">
+                      <div className="tkreport-dark-card">
                         <h3><FaChartPie /> Status Overview</h3>
-                        <div className="task-status-list">
+                        <div className="tkreport-status-list">
                           {STATUS_LABELS.map((label, index) => {
                             const count = statusValues[index];
                             const pct = statsSummary.total > 0 ? Math.min(100, (count / statsSummary.total) * 100) : 0;
                             return (
-                              <div className="task-status-row" key={label}>
-                                <span className="task-status-row-label">{label}</span>
-                                <div className="task-status-track">
+                              <div className="tkreport-status-row" key={label}>
+                                <span className="tkreport-status-row-label">{label}</span>
+                                <div className="tkreport-status-track">
                                   <div
-                                    className="task-status-fill"
+                                    className="tkreport-status-fill"
                                     style={{ width: `${pct}%`, background: STATUS_COLORS[index] }}
                                   />
                                 </div>
-                                <span className="task-status-count">{count}</span>
+                                <span className="tkreport-status-count">{count}</span>
                               </div>
                             );
                           })}
                         </div>
                       </div>
                       {/* Completion / Task Progress donut (Chart.js) */}
-                      <div className="task-dark-card task-dark-card--progress">
+                      <div className="tkreport-dark-card tkreport-dark-card--progress">
                         <h3><FaChartLine /> Task Progress</h3>
-                        <div className="task-donut-container">
-                          <div className="task-donut-canvas-wrap">
+                        <div className="tkreport-donut-container">
+                          <div className="tkreport-donut-canvas-wrap">
                             <canvas ref={completionRateChartRef}></canvas>
                           </div>
-                          {/* <div className="task-donut-legend">
+                          {/* <div className="tkreport-donut-legend">
                             {STATUS_LABELS.map((label, index) => {
                               const count = statusValues[index];
                               if (count === 0) return null;
@@ -3150,53 +3150,53 @@ const TaskReports = () => {
                                 <button
                                   type="button"
                                   key={label}
-                                  className={`task-donut-legend-item ${isHidden ? 'task-donut-legend-item--hidden' : ''}`}
+                                  className={`tkreport-donut-legend-item ${isHidden ? 'tkreport-donut-legend-item--hidden' : ''}`}
                                   onClick={() => toggleDonutStatusVisibility(label)}
                                   title={isHidden ? `Show ${label}` : `Hide ${label}`}
                                 >
                                   <span
-                                    className={`task-progress-dot ${STATUS_DOT_CLASSNAMES[index] || ''}`}
+                                    className={`tkreport-progress-dot ${STATUS_DOT_CLASSNAMES[index] || ''}`}
                                     style={{ backgroundColor: STATUS_COLORS[index] || '' }}
                                   />
-                                  <span className="task-donut-legend-label">{label}</span>
-                                  <span className="task-donut-legend-value">{count}</span>
+                                  <span className="tkreport-donut-legend-label">{label}</span>
+                                  <span className="tkreport-donut-legend-value">{count}</span>
                                 </button>
                               );
                             })}
                           </div> */}
-                          {taskStatsLoading && <div className="loading task-state-message">Loading task progress...</div>}
-                          {taskStatsError && <div className="error task-state-message task-state-message--error">{taskStatsError}</div>}
+                          {taskStatsLoading && <div className="loading tkreport-state-message">Loading task progress...</div>}
+                          {taskStatsError && <div className="error tkreport-state-message tkreport-state-message--error">{taskStatsError}</div>}
                         </div>
                       </div>
                     </div>
 
                     {/* ROW 3: Scheduled Tasks for Selected Date / Overview */}
-                    <div className="task-dark-card task-scheduled-card">
-                      <div className="task-scheduled-header">
-                        <div className="task-scheduled-title-wrap">
+                    <div className="tkreport-dark-card tkreport-scheduled-card">
+                      <div className="tkreport-scheduled-header">
+                        <div className="tkreport-scheduled-title-wrap">
                           <h3>
                             <FaTasks /> {selectedDay ? `Tasks Scheduled for ${selectedDayLabel}` : `Tasks Overview · ${durationLabel}`}
                           </h3>
-                          <span className="task-scheduled-badge">
+                          <span className="tkreport-scheduled-badge">
                             {displayTasks.length} {displayTasks.length === 1 ? 'Task' : 'Tasks'}
                           </span>
                         </div>
                       </div>
 
                       {taskStatsLoading ? (
-                        <div className="task-scheduled-loading">
-                          <FaSpinner className="task-spin" /> {selectedDay ? `Loading tasks scheduled for ${selectedDayLabel}...` : 'Loading tasks...'}
+                        <div className="tkreport-scheduled-loading">
+                          <FaSpinner className="tkreport-spin" /> {selectedDay ? `Loading tasks scheduled for ${selectedDayLabel}...` : 'Loading tasks...'}
                         </div>
                       ) : displayTasks.length === 0 ? (
-                        <div className="task-scheduled-empty">
-                          <FaRegFolderOpen className="task-empty-icon" />
+                        <div className="tkreport-scheduled-empty">
+                          <FaRegFolderOpen className="tkreport-empty-icon" />
                           <h4>{selectedDay ? 'No tasks scheduled for this date' : 'No tasks found'}</h4>
                           <p>{selectedDay ? `There are no tasks due or recurring on ${selectedDayLabel}.` : 'There are no tasks scheduled for the selected duration.'}</p>
                         </div>
                       ) : (
                         <>
-                          <div className="task-scheduled-table-wrap">
-                            <table className="task-scheduled-table">
+                          <div className="tkreport-scheduled-table-wrap">
+                            <table className="tkreport-scheduled-table">
                               <thead>
                                 <tr>
                                   <th>Task</th>
@@ -3213,57 +3213,57 @@ const TaskReports = () => {
                                 {(isScheduledTasksExpanded ? displayTasks : displayTasks.slice(0, 5)).map((task) => (
                                   <tr
                                     key={task.id}
-                                    className="task-scheduled-row"
+                                    className="tkreport-scheduled-row"
                                     onClick={() => setSelectedTaskId(task.id)}
                                   >
-                                    <td className="task-scheduled-name">
-                                      <span className="task-scheduled-title" title={task.title}>{task.title}</span>
-                                      <span className="task-scheduled-id">#{task.id}</span>
+                                    <td className="tkreport-scheduled-name">
+                                      <span className="tkreport-scheduled-title" title={task.title}>{task.title}</span>
+                                      <span className="tkreport-scheduled-id">#{task.id}</span>
                                     </td>
                                     <td>
-                                      <span className={`task-badge-status task-badge-status--${task.status || 'open'}`}>
+                                      <span className={`tkreport-badge-status tkreport-badge-status--${task.status || 'open'}`}>
                                         {CALENDAR_STATUS_CONFIG[task.status]?.label || task.status}
                                       </span>
                                     </td>
                                     <td>
-                                      <span className={`task-badge-priority task-badge-priority--${task.priority || 'medium'}`}>
+                                      <span className={`tkreport-badge-priority tkreport-badge-priority--${task.priority || 'medium'}`}>
                                         {task.priority || 'medium'}
                                       </span>
                                     </td>
                                     <td>
-                                      <span className="task-type-tag">
+                                      <span className="tkreport-type-tag">
                                         {task.task_type === 'recurring' ? 'Recurring' : 'One Time'}
                                       </span>
                                     </td>
                                     <td>
-                                      <span className="task-project-text">
+                                      <span className="tkreport-project-text">
                                         {task.project_name || task.department || '—'}
                                       </span>
                                     </td>
                                     <td>
-                                      <div className="task-assignees-preview">
+                                      <div className="tkreport-assignees-preview">
                                         {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0 ? (
                                           task.assigned_users_meta.slice(0, 3).map((assignee, idx) => (
                                             <span
                                               key={idx}
-                                              className="task-assignee-avatar"
+                                              className="tkreport-assignee-avatar"
                                               title={assignee.name || `User ${assignee.user_id}`}
                                             >
                                               {(assignee.name ? assignee.name[0] : 'U').toUpperCase()}
                                             </span>
                                           ))
                                         ) : (
-                                          <span className="task-unassigned">Unassigned</span>
+                                          <span className="tkreport-unassigned">Unassigned</span>
                                         )}
                                         {task.assigned_users_meta?.length > 3 && (
-                                          <span className="task-assignee-more">+{task.assigned_users_meta.length - 3}</span>
+                                          <span className="tkreport-assignee-more">+{task.assigned_users_meta.length - 3}</span>
                                         )}
                                       </div>
                                     </td>
                                     <td>
                                       <button
                                         type="button"
-                                        className="task-view-action-btn"
+                                        className="tkreport-view-action-btn"
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           setSelectedTaskId(task.id);
@@ -3279,10 +3279,10 @@ const TaskReports = () => {
                           </div>
                           {/* Expand / Collapse toggle for lists exceeding 5 records */}
                           {displayTasks.length > 5 && (
-                            <div className="task-scheduled-more-wrap">
+                            <div className="tkreport-scheduled-more-wrap">
                               <button
                                 type="button"
-                                className="task-scheduled-more-btn"
+                                className="tkreport-scheduled-more-btn"
                                 onClick={() => setIsScheduledTasksExpanded((prev) => !prev)}
                                 aria-expanded={isScheduledTasksExpanded}
                               >
@@ -3292,9 +3292,9 @@ const TaskReports = () => {
                                     : `See More (${displayTasks.length - 5} more ${displayTasks.length - 5 === 1 ? 'record' : 'records'})`}
                                 </span>
                                 {isScheduledTasksExpanded ? (
-                                  <FaChevronUp className="task-scheduled-more-icon" />
+                                  <FaChevronUp className="tkreport-scheduled-more-icon" />
                                 ) : (
-                                  <FaChevronDown className="task-scheduled-more-icon" />
+                                  <FaChevronDown className="tkreport-scheduled-more-icon" />
                                 )}
                               </button>
                             </div>

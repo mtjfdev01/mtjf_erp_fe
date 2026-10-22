@@ -5499,3 +5499,66 @@ a.aid-contact-chip:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ——— Aid intake language toggle + RTL ——— */
+.aid-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-inline-start: auto;
+}
+
+.aid-application-form--rtl,
+.aid-application-form[dir='rtl'] {
+  text-align: right;
+}
+
+.aid-application-form--rtl .aid-steps__meta,
+.aid-application-form[dir='rtl'] .aid-steps__meta {
+  flex-direction: row-reverse;
+}
+
+.aid-application-form--rtl .aid-steps__list,
+.aid-application-form[dir='rtl'] .aid-steps__list {
+  direction: rtl;
+}
+
+.aid-application-form--rtl .aid-steps__btn,
+.aid-application-form[dir='rtl'] .aid-steps__btn {
+  text-align: right;
+}
+
+.aid-application-form--rtl .aid-section-heading-row,
+.aid-application-form[dir='rtl'] .aid-section-heading-row,
+.aid-application-form--rtl .aid-family-panel__head,
+.aid-application-form[dir='rtl'] .aid-family-panel__head,
+.aid-application-form--rtl .aid-fm-main__head,
+.aid-application-form[dir='rtl'] .aid-fm-main__head,
+.aid-application-form--rtl .aid-fm-panel__head,
+.aid-application-form[dir='rtl'] .aid-fm-panel__head,
+.aid-application-form--rtl .aid-fm-panel__foot,
+.aid-application-form[dir='rtl'] .aid-fm-panel__foot,
+.aid-application-form--rtl .aid-form-actions,
+.aid-application-form[dir='rtl'] .aid-form-actions {
+  flex-direction: row-reverse;
+}
+
+.aid-application-form--rtl .aid-form-nav,
+.aid-application-form[dir='rtl'] .aid-form-nav {
+  flex-direction: row-reverse;
+}
+
+.aid-application-form--rtl .aid-property-inline,
+.aid-application-form[dir='rtl'] .aid-property-inline {
+  direction: rtl;
+}
+
+.aid-application-form--rtl .aid-fm-layout--panel-open,
+.aid-application-form[dir='rtl'] .aid-fm-layout--panel-open {
+  direction: rtl;
+}
+
+.aid-application-form--rtl .aid-fh-personal__disability-check,
+.aid-application-form[dir='rtl'] .aid-fh-personal__disability-check {
+  flex-direction: row-reverse;
+}

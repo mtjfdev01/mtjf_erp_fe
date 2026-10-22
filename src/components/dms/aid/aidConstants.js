@@ -498,15 +498,15 @@ export const AID_WRITER_RELATIONS = [
 ];
 
 export const AID_MARITAL_STATUS = [
-  { value: 'single', label: 'Single' },
-  { value: 'engaged', label: 'Engaged' },
-  { value: 'married', label: 'Married' },
-  { value: 'widow', label: 'Widow' },
-  { value: 'widower', label: 'Widower' },
-  { value: 'divorced', label: 'Divorced' },
-  { value: 'separated', label: 'Separated' },
-  { value: 'khula', label: 'Khula' },
-  { value: 'abandoned', label: 'Abandoned' },
+  { value: 'single', label: 'Single', labelUr: 'غیر شادی شدہ' },
+  { value: 'engaged', label: 'Engaged', labelUr: 'منگنی' },
+  { value: 'married', label: 'Married', labelUr: 'شادی شدہ' },
+  { value: 'widow', label: 'Widow', labelUr: 'بیوہ' },
+  { value: 'widower', label: 'Widower', labelUr: 'بیوہ مرد' },
+  { value: 'divorced', label: 'Divorced', labelUr: 'مطلقہ' },
+  { value: 'separated', label: 'Separated', labelUr: 'علیحدہ' },
+  { value: 'khula', label: 'Khula', labelUr: 'خلع' },
+  { value: 'abandoned', label: 'Abandoned', labelUr: 'متروکہ' },
 ];
 
 /** Legacy stored values → display label (kept for older records). */
@@ -727,16 +727,21 @@ const LITERACY_CATEGORY_LABELS = Object.fromEntries([
 ].map((o) => [o.value, o.label]));
 
 export const AID_YES_NO = [
-  { value: 'yes', label: 'Yes' },
-  { value: 'no', label: 'No' },
+  { value: 'yes', label: 'Yes', labelUr: 'ہاں' },
+  { value: 'no', label: 'No', labelUr: 'نہیں' },
 ];
 
 /** Property type when Do you have land? = Yes */
 export const AID_PROPERTY_TYPES = [
-  { value: 'agri', label: 'Agri' },
-  { value: 'commercial', label: 'Commercial' },
-  { value: 'plot', label: 'Plot' },
-  { value: 'others', label: 'Others' },
+  { value: 'agri', label: 'Agri', labelUr: 'زراعتی' },
+  { value: 'commercial', label: 'Commercial', labelUr: 'تجارتی' },
+  {
+    value: 'residential_ownership',
+    label: 'Residential Unit',
+    labelUr: 'رہائشی یونٹ',
+  },
+  { value: 'plot', label: 'Plot', labelUr: 'پلاٹ' },
+  { value: 'others', label: 'Others', labelUr: 'دیگر' },
 ];
 
 export const emptyPropertyRow = (overrides = {}) => ({
@@ -837,13 +842,14 @@ export const emptyLivestockFields = () => ({
 });
 
 export const AID_VEHICLE_TYPES = [
-  { value: 'motorcycle', label: 'Motorcycle' },
-  { value: 'car', label: 'Car' },
-  { value: 'van', label: 'Van / Suzuki' },
-  { value: 'truck', label: 'Truck' },
-  { value: 'tractor', label: 'Tractor' },
-  { value: 'bicycle', label: 'Bicycle' },
-  { value: 'other', label: 'Other (specify)' },
+  { value: 'motorcycle', label: 'Motorcycle', labelUr: 'موٹر سائیکل' },
+  { value: 'car', label: 'Car', labelUr: 'کار' },
+  { value: 'van', label: 'Van / Suzuki', labelUr: 'وین / سوزوکی' },
+  { value: 'truck', label: 'Truck', labelUr: 'ٹرک' },
+  { value: 'tractor', label: 'Tractor', labelUr: 'ٹریکٹر' },
+  { value: 'bicycle', label: 'Bicycle', labelUr: 'سائیکل' },
+  { value: 'rickshaw', label: 'Rickshaw', labelUr: 'رکشہ' },
+  { value: 'other', label: 'Other (specify)', labelUr: 'دیگر (وضاحت)' },
 ];
 
 export const emptyVehicleRow = (overrides = {}) => ({
@@ -879,13 +885,13 @@ export function formatVehicleSummary(person) {
 }
 
 export const AID_NECTA_STATUS = [
-  { value: 'clear', label: 'Clear' },
-  { value: 'not_clear', label: 'Not Clear' },
+  { value: 'clear', label: 'Clear', labelUr: 'کلیر' },
+  { value: 'not_clear', label: 'Not Clear', labelUr: 'غیر کلیر' },
 ];
 
 export const AID_BISP_STATUS = [
-  { value: 'eligible', label: 'Eligible' },
-  { value: 'not_eligible', label: 'Not Eligible' },
+  { value: 'eligible', label: 'Eligible', labelUr: 'اہل' },
+  { value: 'not_eligible', label: 'Not Eligible', labelUr: 'غیر اہل' },
 ];
 
 export const emptyEligibilityStatusFields = () => ({
@@ -1095,28 +1101,36 @@ export const AID_DEPENDENT_RELATIONS = [
  * (parents / children / siblings / extended).
  */
 export const AID_RELATED_PERSON_TYPES = [
-  { value: 'father', label: 'Father (Parent)' },
-  { value: 'mother', label: 'Mother (Parent)' },
-  { value: 'spouse', label: 'Spouse' },
-  { value: 'son', label: 'Son (Child)' },
-  { value: 'daughter', label: 'Daughter (Child)' },
-  { value: 'child', label: 'Child' },
-  { value: 'brother', label: 'Brother (Sibling)' },
-  { value: 'sister', label: 'Sister (Sibling)' },
-  { value: 'sibling', label: 'Sibling' },
-  { value: 'step_brother', label: 'Step Brother' },
-  { value: 'step_sister', label: 'Step Sister' },
-  { value: 'uncle', label: 'Uncle' },
-  { value: 'aunt', label: 'Aunt' },
-  { value: 'cousin', label: 'Cousin' },
-  { value: 'grandfather', label: 'Grandfather' },
-  { value: 'grandmother', label: 'Grandmother' },
-  { value: 'maternal_grandfather', label: 'Maternal Grandfather' },
-  { value: 'maternal_grandmother', label: 'Maternal Grandmother' },
-  { value: 'grandchild', label: 'Grandchild' },
-  { value: 'guardian', label: 'Guardian' },
-  { value: 'in_law', label: 'In-law' },
-  { value: 'other', label: 'Other' },
+  { value: 'father', label: 'Father (Parent)', labelUr: 'والد' },
+  { value: 'mother', label: 'Mother (Parent)', labelUr: 'والدہ' },
+  { value: 'spouse', label: 'Spouse', labelUr: 'شریک حیات' },
+  { value: 'son', label: 'Son (Child)', labelUr: 'بیٹا' },
+  { value: 'daughter', label: 'Daughter (Child)', labelUr: 'بیٹی' },
+  { value: 'child', label: 'Child', labelUr: 'بچہ' },
+  { value: 'brother', label: 'Brother (Sibling)', labelUr: 'بھائی' },
+  { value: 'sister', label: 'Sister (Sibling)', labelUr: 'بہن' },
+  { value: 'sibling', label: 'Sibling', labelUr: 'بہن بھائی' },
+  { value: 'step_brother', label: 'Step Brother', labelUr: 'سوتیلا بھائی' },
+  { value: 'step_sister', label: 'Step Sister', labelUr: 'سوتیلی بہن' },
+  { value: 'uncle', label: 'Uncle', labelUr: 'چچا / ماموں' },
+  { value: 'aunt', label: 'Aunt', labelUr: 'چچی / خالہ' },
+  { value: 'cousin', label: 'Cousin', labelUr: 'کزن' },
+  { value: 'grandfather', label: 'Grandfather', labelUr: 'دادا' },
+  { value: 'grandmother', label: 'Grandmother', labelUr: 'دادی' },
+  {
+    value: 'maternal_grandfather',
+    label: 'Maternal Grandfather',
+    labelUr: 'نانا',
+  },
+  {
+    value: 'maternal_grandmother',
+    label: 'Maternal Grandmother',
+    labelUr: 'نانی',
+  },
+  { value: 'grandchild', label: 'Grandchild', labelUr: 'پوتا / پوتی' },
+  { value: 'guardian', label: 'Guardian', labelUr: 'سرپرست' },
+  { value: 'in_law', label: 'In-law', labelUr: 'سسرال' },
+  { value: 'other', label: 'Other', labelUr: 'دیگر' },
 ];
 
 export const emptyDependentRow = () => ({
@@ -1480,9 +1494,9 @@ export const AID_CEO_OPTIONS = [
 ];
 
 export const AID_GENDERS = [
-  { value: 'male', label: 'Male' },
-  { value: 'female', label: 'Female' },
-  { value: 'other', label: 'Other' },
+  { value: 'male', label: 'Male', labelUr: 'مرد' },
+  { value: 'female', label: 'Female', labelUr: 'عورت' },
+  { value: 'other', label: 'Other', labelUr: 'دیگر' },
 ];
 
 export const AID_ATTACHMENT_CONTEXTS = [

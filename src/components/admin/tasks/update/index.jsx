@@ -47,7 +47,7 @@ const DEPARTMENT_LABELS = {
 
 // "=" icon for the priority pill
 const EqualsIcon = ({ className = '' }) => (
-  <span className={`pill-equals-icon ${className}`} aria-hidden="true">=</span>
+  <span className={`tkupd-pill-equals-icon ${className}`} aria-hidden="true">=</span>
 );
 
 const formatPillDate = (value) => {
@@ -95,7 +95,7 @@ const DatePill = ({
 
   return (
     <div
-      className={`pill-input-wrapper task-pill-date ${value ? 'is-filled' : 'is-empty'} ${disabled ? 'is-disabled' : ''}`}
+      className={`tkupd-pill-input-wrapper tkupd-pill-date ${value ? 'is-filled' : 'is-empty'} ${disabled ? 'is-disabled' : ''}`}
       onClick={openPicker}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -108,11 +108,11 @@ const DatePill = ({
       aria-disabled={disabled}
       title={title}
     >
-      <Icon className="pill-icon" />
-      <span className={`pill-text ${value ? '' : 'is-placeholder'}`}>
+      <Icon className="tkupd-pill-icon" />
+      <span className={`tkupd-pill-text ${value ? '' : 'is-placeholder'}`}>
         {value ? formatPillDate(value) : placeholder}
       </span>
-      {!value && showDot && <span className="pill-dot" />}
+      {!value && showDot && <span className="tkupd-pill-dot" />}
       <input
         ref={inputRef}
         type="date"
@@ -120,7 +120,7 @@ const DatePill = ({
         value={value}
         onChange={onChange}
         disabled={disabled}
-        className="pill-native-date"
+        className="tkupd-pill-native-date"
         tabIndex={-1}
         aria-label={title}
       />
@@ -186,28 +186,28 @@ const TaskFormSelect = ({
         {label}
         {required && <span className="required-mark">*</span>}
       </label>
-      <div className="task-custom-select-container">
+      <div className="tkupd-custom-select-container">
         <div
-          className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${disabled ? 'is-disabled' : ''}`}
+          className={`tkupd-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${disabled ? 'is-disabled' : ''}`}
           onClick={handleToggle}
         >
-          <span className="task-custom-select-leading">
+          <span className="tkupd-custom-select-leading">
             {Icon && (
-              <Icon className={`task-custom-select-field-icon ${iconClassName}`} />
+              <Icon className={`tkupd-custom-select-field-icon ${iconClassName}`} />
             )}
-            <span className={`task-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
+            <span className={`tkupd-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
               {getDisplayLabel()}
             </span>
           </span>
-          <span className="task-custom-select-arrow">▼</span>
+          <span className="tkupd-custom-select-arrow">▼</span>
         </div>
 
         {isOpen && (
-          <div className="task-custom-select-dropdown">
+          <div className="tkupd-custom-select-dropdown">
             {showDefaultOption && (
               <button
                 type="button"
-                className={`task-custom-select-option ${!value ? 'is-selected' : ''}`}
+                className={`tkupd-custom-select-option ${!value ? 'is-selected' : ''}`}
                 onClick={() => handleSelect('')}
               >
                 {defaultOptionText || `Select ${label}`}
@@ -220,7 +220,7 @@ const TaskFormSelect = ({
                 <button
                   key={optValue}
                   type="button"
-                  className={`task-custom-select-option ${value === optValue ? 'is-selected' : ''}`}
+                  className={`tkupd-custom-select-option ${value === optValue ? 'is-selected' : ''}`}
                   onClick={() => handleSelect(optValue)}
                 >
                   {optLabel}
@@ -335,33 +335,33 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
           Project/Program <span className="required-mark">*</span>
         </label>
       )}
-      <div className="task-custom-select-container">
+      <div className="tkupd-custom-select-container">
         <div
-          className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${isPill ? (value ? 'is-filled has-clear' : 'is-empty') : ''}`}
+          className={`tkupd-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${isPill ? (value ? 'is-filled has-clear' : 'is-empty') : ''}`}
           onClick={handleToggle}
         >
           {isPill ? (
             <>
-              <span className="task-custom-select-leading">
-                <LeadIcon className="task-custom-select-field-icon" />
-                <span className={`task-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
+              <span className="tkupd-custom-select-leading">
+                <LeadIcon className="tkupd-custom-select-field-icon" />
+                <span className={`tkupd-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
                   {value || 'Project'}
                 </span>
               </span>
-              {!value && <span className="pill-dot" />}
+              {!value && <span className="tkupd-pill-dot" />}
             </>
           ) : value ? (
-            <span className="task-custom-select-value">{getDisplayValue()}</span>
+            <span className="tkupd-custom-select-value">{getDisplayValue()}</span>
           ) : (
-            <span className="task-custom-select-placeholder">Select Project or Program</span>
+            <span className="tkupd-custom-select-placeholder">Select Project or Program</span>
           )}
-          <span className="task-custom-select-arrow">▼</span>
+          <span className="tkupd-custom-select-arrow">▼</span>
         </div>
 
         {value && (
           <button
             type="button"
-            className="task-custom-select-clear-btn"
+            className="tkupd-custom-select-clear-btn"
             onClick={handleClear}
             aria-label="Clear project"
           >
@@ -370,28 +370,28 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
         )}
 
         {isOpen && (
-          <div className="task-custom-select-dropdown">
-            <div className="task-custom-select-dropdown-header">
-              <span className="task-custom-select-dropdown-title">
+          <div className="tkupd-custom-select-dropdown">
+            <div className="tkupd-custom-select-dropdown-header">
+              <span className="tkupd-custom-select-dropdown-title">
                 {selectionStep === 'category' ? 'Select Category' : projectCategory}
               </span>
               {selectionStep === 'item' && (
-                <button type="button" className="task-custom-select-back-link" onClick={handleBack}>
+                <button type="button" className="tkupd-custom-select-back-link" onClick={handleBack}>
                   {isPill ? '← Back' : '◀ Back'}
                 </button>
               )}
             </div>
 
-            <div className="task-custom-select-options-list">
+            <div className="tkupd-custom-select-options-list">
               {selectionStep === 'category' ? (
                 <>
-                  <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Projects')}>
-                    <span><span className="task-custom-select-option-icon">📁</span> Projects</span>
-                    <span className="task-custom-select-option-arrow">›</span>
+                  <button type="button" className="tkupd-custom-select-option" onClick={() => handleCategorySelect('Projects')}>
+                    <span><span className="tkupd-custom-select-option-icon">📁</span> Projects</span>
+                    <span className="tkupd-custom-select-option-arrow">›</span>
                   </button>
-                  <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Programs')}>
-                    <span><span className="task-custom-select-option-icon">📋</span> Programs</span>
-                    <span className="task-custom-select-option-arrow">›</span>
+                  <button type="button" className="tkupd-custom-select-option" onClick={() => handleCategorySelect('Programs')}>
+                    <span><span className="tkupd-custom-select-option-icon">📋</span> Programs</span>
+                    <span className="tkupd-custom-select-option-arrow">›</span>
                   </button>
                 </>
               ) : (
@@ -399,7 +399,7 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
                   <button
                     key={item}
                     type="button"
-                    className={`task-custom-select-option ${value === item ? 'is-selected' : ''}`}
+                    className={`tkupd-custom-select-option ${value === item ? 'is-selected' : ''}`}
                     onClick={() => handleItemSelect(item)}
                   >
                     {item}
@@ -993,28 +993,28 @@ const UpdateTask = ({
   //  - page : Navbar + centred page wrapper (no backdrop)
   const wrapShell = (card) =>
     isModal ? (
-      <div className="add-task-modal-backdrop">{card}</div>
+      <div className="tkupd-modal-backdrop">{card}</div>
     ) : (
       <>
         <Navbar />
-        <div className="add-task-page add-task-page--redesigned">{card}</div>
+        <div className="tkupd-page tkupd-page--redesigned">{card}</div>
       </>
     );
 
   const popupHeader = (
-    <div className="task-form-modal-header">
-      <div className="task-form-breadcrumb">
+    <div className="tkupd-modal-header">
+      <div className="tkupd-form-breadcrumb">
         {departmentLabel && (
           <>
-            <span className="task-form-dept-chip">{departmentLabel} Department</span>
-            <span className="task-form-breadcrumb-sep">›</span>
+            <span className="tkupd-form-dept-chip">{departmentLabel} Department</span>
+            <span className="tkupd-form-breadcrumb-sep">›</span>
           </>
         )}
-        <h2 className="task-form-modal-title">Update task</h2>
+        <h2 className="tkupd-modal-title">Update task</h2>
       </div>
       <button
         type="button"
-        className="task-form-modal-close"
+        className="tkupd-modal-close"
         onClick={handleBack}
         aria-label="Close"
       >
@@ -1028,9 +1028,9 @@ const UpdateTask = ({
   /* ================================================================ */
   if (loading) {
     return wrapShell(
-      <div className="add-task-card add-task-card--popup">
+      <div className="tkupd-card tkupd-card--popup">
         {popupHeader}
-        <div className="popup-loading">Loading task...</div>
+        <div className="tkupd-popup-loading">Loading task...</div>
       </div>
     );
   }
@@ -1057,27 +1057,27 @@ const UpdateTask = ({
     );
 
     return wrapShell(
-        <div className="add-task-card add-task-card--popup">
+        <div className="tkupd-card tkupd-card--popup">
           {popupHeader}
 
-          {error && <div className="add-task-error">{error}</div>}
+          {error && <div className="tkupd-error">{error}</div>}
 
-          <form ref={formRef} onSubmit={handleSubmit} className="add-task-form">
-            <div className="add-task-body">
+          <form ref={formRef} onSubmit={handleSubmit} className="tkupd-form">
+            <div className="tkupd-body">
 
               {/* Title + description */}
-              <div className="task-title-section">
+              <div className="tkupd-title-section">
                 <input
                   type="text"
                   name="title"
-                  className="task-title-input update-task-title-input"
+                  className="tkupd-title-legacy tkupd-title-input"
                   placeholder="Enter task title..."
                   value={form.title}
                   onChange={handleChange}
                 />
                 <textarea
                   name="description"
-                  className="task-desc-input"
+                  className="tkupd-desc-input"
                   placeholder="Enter task description..."
                   value={form.description}
                   onChange={handleChange}
@@ -1085,16 +1085,16 @@ const UpdateTask = ({
                   maxLength={500}
                 />
                 {(form.description || '').length > 0 && (
-                  <div className="task-desc-count">{(form.description || '').length}/500</div>
+                  <div className="tkupd-desc-count">{(form.description || '').length}/500</div>
                 )}
               </div>
 
               {/* Pills */}
-              <div className="task-meta-pills">
-                 <div className={`update-task-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+              <div className="tkupd-meta-pills">
+                 <div className={`tkupd-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
                   {assignedUsers.length > 0 && (
                     <span
-                      className="assignee-avatar"
+                      className="tkupd-assignee-avatar"
                       aria-hidden="true"
                       title={assignedUsers.map(userDisplayName).join(', ')}
                     >
@@ -1124,7 +1124,7 @@ const UpdateTask = ({
                   }}
                 />
 
-                <div className="task-pill-status">
+                <div className="tkupd-pill-status">
                   <TaskFormSelect
                     name="status"
                     label=""
@@ -1137,7 +1137,7 @@ const UpdateTask = ({
                 </div>
 
 
-                <div className={`task-pill-priority priority-${form.priority || 'medium'}`}>
+                <div className={`tkupd-pill-priority priority-${form.priority || 'medium'}`}>
                   <TaskFormSelect
                     name="priority"
                     label=""
@@ -1200,10 +1200,10 @@ const UpdateTask = ({
                 />
 
                 {form.workflow_type === 'approval_required' && (
-                  <div className={`update-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
-                    <FiClipboard className="update-task-approver-icon" aria-hidden="true" />
+                  <div className={`tkupd-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                    <FiClipboard className="tkupd-approver-icon" aria-hidden="true" />
                     <SearchableMultiSelect
-                      className="update-task-approvers-select"
+                      className="tkupd-approvers-select"
                       label=""
                       apiEndpoint="/users/options"
                       apiParams={multiSelectParams}
@@ -1224,15 +1224,15 @@ const UpdateTask = ({
 
               {/* Assignees summary (2+ people) */}
               {assignedUsers.length > 1 && (
-                <div className="popup-assignee-summary">
+                <div className="tkupd-popup-assignee-summary">
                   <span>
                     {'\u2713'} {assignedUsers.length} users selected
                   </span>
                   {assignedUsers.map((u) => (
-                    <span key={u.id} className="popup-assignee-chip">
-                      <span className="chip-avatar">{getInitials(u)}</span>
+                    <span key={u.id} className="tkupd-popup-assignee-chip">
+                      <span className="tkupd-chip-avatar">{getInitials(u)}</span>
                       {userDisplayName(u)}
-                      <span className="chip-dept">
+                      <span className="tkupd-chip-dept">
                         {formatDepartment(
                           assignedUserDepartments[u.id] || u.department || form.department || ''
                         )}
@@ -1244,7 +1244,7 @@ const UpdateTask = ({
 
               {/* Recurring options */}
               {form.task_type === 'recurring' && (
-                <div className="update-task-recurring-fields">
+                <div className="tkupd-recurring-fields">
                   <TaskFormSelect
                     name="recurrence_frequency"
                     label="Recurring frequency"
@@ -1303,14 +1303,14 @@ const UpdateTask = ({
               )}
 
               {/* Done when (MOV) */}
-              <div className="done-when-section">
-                <div className="done-when-header">
+              <div className="tkupd-done-when-section">
+                <div className="tkupd-done-when-header">
                   Done when... <span>Means of verification the assignee must tick off</span>
                 </div>
 
                 {movItems.map((item, index) => (
-                  <div key={index} className="done-when-input-wrapper">
-                    {/* <span className="done-when-checkbox" aria-hidden="true" /> */}
+                  <div key={index} className="tkupd-done-when-input-wrapper">
+                    {/* <span className="tkupd-done-when-checkbox" aria-hidden="true" /> */}
                     <input
                       type="text"
                       name={`mov_item_${index}`}
@@ -1330,7 +1330,7 @@ const UpdateTask = ({
                     {movItems.length > 1 && (
                       <button
                         type="button"
-                        className="done-when-remove-btn"
+                        className="tkupd-done-when-remove-btn"
                         onClick={() => handleMovRemove(index)}
                         title="Remove"
                         aria-label="Remove condition"
@@ -1341,21 +1341,21 @@ const UpdateTask = ({
                   </div>
                 ))}
 
-                <button type="button" className="done-when-add-btn" onClick={handleMovAdd}>
+                <button type="button" className="tkupd-done-when-add-btn" onClick={handleMovAdd}>
                   <FiPlus /> Add condition
                 </button>
               </div>
 
               {/* Current attachments (view / remove) */}
               {existingAttachments.length > 0 && (
-                <div className="popup-existing-attachments">
-                  <div className="popup-existing-attachments-title">Current attachments</div>
-                  <ul className="task-pending-attachments__list">
+                <div className="tkupd-popup-existing-attachments">
+                  <div className="tkupd-popup-existing-attachments-title">Current attachments</div>
+                  <ul className="tkpendatt-list">
                     {existingAttachments.map((a) => {
                       const displayName = a.description || a.file_name;
                       return (
-                        <li key={a.id} className="task-pending-attachments__item">
-                          <div className="task-pending-attachments__item-main">
+                        <li key={a.id} className="tkpendatt-item">
+                          <div className="tkpendatt-item-main">
                             <strong>{displayName}</strong>
                             {a.description &&
                               a.file_name &&
@@ -1363,18 +1363,18 @@ const UpdateTask = ({
                                 <span>{a.file_name}</span>
                               )}
                           </div>
-                          <div className="popup-attachment-actions">
+                          <div className="tkupd-popup-attachment-actions">
                             <a
                               href={getAttachmentHref(a.file_url)}
                               target="_blank"
                               rel="noreferrer"
-                              className="popup-attachment-link"
+                              className="tkupd-popup-attachment-link"
                             >
                               View
                             </a>
                             <button
                               type="button"
-                              className="task-pending-attachments__remove"
+                              className="tkpendatt-remove"
                               onClick={() => handleRemoveExistingAttachment(a.id)}
                               disabled={
                                 removingAttachmentId === a.id ||
@@ -1395,7 +1395,7 @@ const UpdateTask = ({
               )}
 
               {/* New attachments */}
-              <div className="attachment-dropzone">
+              <div className="tkupd-attachment-dropzone">
                 <TaskPendingAttachments
                   ref={attachmentsRef}
                   items={pendingAttachments}
@@ -1411,17 +1411,17 @@ const UpdateTask = ({
             </div>
 
             {/* Footer */}
-            <div className="add-task-footer add-task-footer--end">
-              <div className="footer-actions">
+            <div className="tkupd-footer tkupd-footer--end">
+              <div className="tkupd-footer-actions">
                 <button
                   type="button"
-                  className="add-task-cancel-btn"
+                  className="tkupd-cancel-btn"
                   onClick={handleBack}
                 >
                   Cancel
                 </button>
                 <button
-                  className="add-task-submit"
+                  className="tkupd-submit"
                   type="submit"
                   disabled={submitDisabled}
                   title={editTitle}

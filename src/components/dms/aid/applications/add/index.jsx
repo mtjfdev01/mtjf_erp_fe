@@ -34,6 +34,8 @@ import AidFamilyTreePanel from '../../shared/AidFamilyTreePanel';
 import AidApplicantCheckbox from '../../shared/AidApplicantCheckbox';
 import AidApplicationDocsIntake from '../../shared/AidApplicationDocsIntake';
 import { downloadAsPng } from '../../shared/downloadAsPng';
+import { AidLangProvider, useAidLang } from '../../lang/AidLangContext';
+import AidLangToggle from '../../lang/AidLangToggle';
 import {
   AID_REQUEST_TYPES,
   AID_CASE_SOURCES,
@@ -432,35 +434,37 @@ const mapRelationToWriterRelation = (rel) => {
   return 'relative';
 };
 
-const RelativeFields = ({ title, value, onChange, compact }) => (
-  <div
-    className={`aid-relative-block${compact ? ' aid-relative-block--compact' : ''}`}
-  >
-    {/* Same personal field set as Family Head / Beneficiary — optional for relatives */}
-    <AidFamilyHeadPersonalFields
-      title={title || 'Identity'}
-      subtitle="Optional. CNIC is checked against the family registry as you type."
-      contactTitle="Contact & address"
-      contactSubtitle="Optional. The investigator visits this address; add a landmark."
-      fieldsRequired={false}
-      value={value}
-      onChange={onChange}
-      afterGrid={
-        <label className="aid-toggle" style={{ alignSelf: 'end' }}>
-          <input
-            type="checkbox"
-            checked={value?.is_alive !== false}
-            onChange={(e) =>
-              onChange({ ...value, is_alive: e.target.checked })
-            }
-          />
-          Alive
-        </label>
-      }
-    />
-    <AidLiteracyFields value={value} onChange={onChange} />
-  </div>
-);
+const RelativeFields = ({ title, value, onChange, compact }) => {
+  const { t } = useAidLang();
+  return (
+    <div
+      className={`aid-relative-block${compact ? ' aid-relative-block--compact' : ''}`}
+    >
+      <AidFamilyHeadPersonalFields
+        title={title || t('identity')}
+        subtitle={t('identityOptionalSubtitle')}
+        contactTitle={t('contactAddress')}
+        contactSubtitle={t('contactOptionalSubtitle')}
+        fieldsRequired={false}
+        value={value}
+        onChange={onChange}
+        afterGrid={
+          <label className="aid-toggle" style={{ alignSelf: 'end' }}>
+            <input
+              type="checkbox"
+              checked={value?.is_alive !== false}
+              onChange={(e) =>
+                onChange({ ...value, is_alive: e.target.checked })
+              }
+            />
+            {t('alive')}
+          </label>
+        }
+      />
+      <AidLiteracyFields value={value} onChange={onChange} />
+    </div>
+  );
+};
 
 const cleanPersonPayload = (p) => {
   if (!p?.full_name?.trim()) return null;
@@ -509,7 +513,8 @@ const cleanPersonPayload = (p) => {
   };
 };
 
-const AidApplicationAdd = () => {
+const AidApplicationAddInner = () => {
+  const { t, lang, rtl } = useAidLang();
   const navigate = useNavigate();
   const { id: editIdParam } = useParams();
   const editId = editIdParam ? Number(editIdParam) : null;
@@ -776,11 +781,11 @@ const AidApplicationAdd = () => {
   };
 
   const FORM_TABS = [
-    { id: 'family', label: 'Family Registration', hint: 'Household' },
-    { id: 'beneficiary', label: 'Beneficiary', hint: 'Person details' },
-    { id: 'family_tree', label: 'Family Tree', hint: 'Household map' },
-    { id: 'request', label: 'Application', hint: 'Need & program' },
-    { id: 'attachments', label: 'Attachments', hint: 'Docs & forms' },
+    { id: 'family', label: t('tabFamily'), hint: t('tabFamilyHint') },
+    { id: 'beneficiary', label: t('tabBeneficiary'), hint: t('tabBeneficiaryHint') },
+    { id: 'family_tree', label: t('tabFamilyTree'), hint: t('tabFamilyTreeHint') },
+    { id: 'request', label: t('tabRequest'), hint: t('tabRequestHint') },
+    { id: 'attachments', label: t('tabAttachments'), hint: t('tabAttachmentsHint') },
   ];
   const stepIndex = FORM_TABS.findIndex((t) => t.id === formTab);
   const stepProgress = ((stepIndex + 1) / FORM_TABS.length) * 100;
@@ -871,14 +876,14 @@ const AidApplicationAdd = () => {
   ].includes(maritalKey);
   const spouseLabel =
     maritalKey === 'widow' || maritalKey === 'widowed'
-      ? 'Husband (late / optional)'
+      ? t('husbandLate')
       : maritalKey === 'widower'
-        ? 'Wife (late / optional)'
+        ? t('wifeLate')
         : beneficiaryGender === 'male'
-          ? 'Wife'
+          ? t('wife')
           : beneficiaryGender === 'female'
-            ? 'Husband'
-            : 'Spouse';
+            ? t('husband')
+            : t('spouse');
   const spouseDefaultGender =
     beneficiaryGender === 'male'
       ? 'female'
@@ -1462,15 +1467,15 @@ const AidApplicationAdd = () => {
       ? draftsListPath
       : '/dms/aid/applications/entry/list';
   const formTitle = !isEdit
-    ? 'New draft application'
+    ? t('newApplication')
     : isDraftEdit
-      ? 'Edit draft'
-      : 'Edit Aid Application';
+      ? t('editApplication')
+      : t('editAidApplication');
   const submitLabel = !isEdit
-    ? 'Save as draft'
+    ? t('saveAsDraft')
     : isDraftEdit
-      ? 'Save draft'
-      : 'Save changes';
+      ? t('saveDraft')
+      : t('saveChanges');
 
   if (loadingEdit) {
     return (
@@ -1478,12 +1483,13 @@ const AidApplicationAdd = () => {
         <Navbar />
         <div className="form-content">
           <PageHeader
-            title="Edit draft"
+            title={t('editApplication')}
             backPath={draftsListPath}
             onBackClick={() => navigate(draftsListPath)}
             showAdd={false}
+            rightElement={<AidLangToggle />}
           />
-          <p>Loading application…</p>
+          <p>{t('loadingApplication')}</p>
         </div>
       </>
     );
@@ -1498,6 +1504,7 @@ const AidApplicationAdd = () => {
           backPath={formBackPath}
           onBackClick={() => navigate(formBackPath)}
           showAdd={false}
+          rightElement={<AidLangToggle />}
         />
 
         {error && (
@@ -1506,20 +1513,27 @@ const AidApplicationAdd = () => {
 
         {!isEdit || isDraftEdit ? (
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
-            This form saves a <strong>draft</strong>. Assignment is done when
-            an approver uses <strong>Drafts → Approve</strong> (program user)
-            to send it to Verification Process.
+            {t('draftHint')}
           </p>
         ) : null}
 
-        <form onSubmit={handleSubmit} className="form aid-application-form">
-          <div className="aid-steps" role="navigation" aria-label="Application steps">
+        <form
+          onSubmit={handleSubmit}
+          className={`form aid-application-form${rtl ? ' aid-application-form--rtl' : ''}`}
+          dir={rtl ? 'rtl' : 'ltr'}
+          lang={lang}
+        >
+          <div
+            className="aid-steps"
+            role="navigation"
+            aria-label={t('applicationSteps')}
+          >
             <div className="aid-steps__meta">
               <span className="aid-steps__meta-label">
-                Step {stepIndex + 1} of {FORM_TABS.length}
+                {t('stepOf', { n: stepIndex + 1, total: FORM_TABS.length })}
               </span>
               <span className="aid-steps__meta-pct">
-                {Math.round(stepProgress)}% complete
+                {t('pctComplete', { n: Math.round(stepProgress) })}
               </span>
             </div>
             <div
@@ -1573,12 +1587,12 @@ const AidApplicationAdd = () => {
           {formTab === 'request' && (
           <div className="form-section">
             <div className="aid-section-heading-row">
-              <h3 className="form-section-heading">Application</h3>
+              <h3 className="form-section-heading">{t('application')}</h3>
               <button
                 type="button"
                 className="aid-png-download-btn"
-                title="Download as PNG"
-                aria-label="Download Application as PNG"
+                title={t('downloadPng')}
+                aria-label={t('downloadPng')}
                 disabled={pngDownloading}
                 onClick={() =>
                   handleDownloadPng(applicationCaptureRef, 'aid-application')
@@ -1590,14 +1604,14 @@ const AidApplicationAdd = () => {
             <div ref={applicationCaptureRef} className="aid-png-capture">
             <div className="form-grid-2">
               <FormInput
-                label="Title"
+                label={t('title')}
                 name="title"
                 value={form.title}
                 onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="Short need title"
+                placeholder={t('titlePlaceholder')}
               />
               <FormSelect
-                label="Program"
+                label={t('program')}
                 name="requested_aid_type"
                 value={form.requested_aid_type}
                 onChange={(e) => {
@@ -1641,7 +1655,7 @@ const AidApplicationAdd = () => {
               />
               {getAidProgramsForType(form.requested_aid_type).length > 0 ? (
                 <FormSelect
-                  label="SubProgram"
+                  label={t('subProgram')}
                   name="aid_program"
                   value={form.aid_program || ''}
                   required
@@ -1658,7 +1672,7 @@ const AidApplicationAdd = () => {
                     }));
                   }}
                   options={[
-                    { value: '', label: 'Select SubProgram…' },
+                    { value: '', label: t('selectSubProgram') },
                     ...getAidProgramsForType(form.requested_aid_type).map(
                       (p) => ({
                         value: p.value,
@@ -1669,7 +1683,7 @@ const AidApplicationAdd = () => {
                 />
               ) : null}
               <div className="form-group">
-                <label className="form-label">Expected Amount</label>
+                <label className="form-label">{t('expectedAmount')}</label>
                 <div
                   className="form-input"
                   style={{
@@ -1686,7 +1700,7 @@ const AidApplicationAdd = () => {
                         expected_amount: form.expected_amount,
                         expected_amount_max: form.expected_amount_max,
                       })
-                    : '—'}
+                    : t('dash')}
                 </div>
                 {getAidProgram(form.aid_program)?.uom ? (
                   <p className="aid-section-hint" style={{ marginTop: 6 }}>
@@ -1697,7 +1711,7 @@ const AidApplicationAdd = () => {
                   </p>
                 ) : (
                   <p className="aid-section-hint" style={{ marginTop: 6 }}>
-                    Select a Program and SubProgram to see the expected amount.
+                    {t('expectedAmountHint')}
                   </p>
                 )}
               </div>
@@ -1706,8 +1720,8 @@ const AidApplicationAdd = () => {
               <FormTextarea
                 label={
                   form.requested_aid_type === 'ration'
-                    ? 'Application'
-                    : 'Application summary'
+                    ? t('application')
+                    : t('needDescription')
                 }
                 name="request_summary"
                 value={form.request_summary}
@@ -1715,7 +1729,7 @@ const AidApplicationAdd = () => {
                   setForm((p) => ({ ...p, request_summary: e.target.value }))
                 }
                 rows={form.requested_aid_type === 'ration' ? 6 : 3}
-                placeholder="Describe the need…"
+                placeholder={t('needPlaceholder')}
               />
             </div>
             {form.requested_aid_type === 'education' && (
@@ -1748,7 +1762,7 @@ const AidApplicationAdd = () => {
 
           {formTab === 'attachments' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Attachments</h3>
+            <h3 className="form-section-heading">{t('attachments')}</h3>
             <AidApplicationDocsIntake
               value={applicationDocs}
               onChange={setApplicationDocs}
@@ -1757,14 +1771,14 @@ const AidApplicationAdd = () => {
 
             <AidCollapsibleSection
               className="aid-family-panel"
-              title="Zakat Permission Letter"
-              hint="Optional — click to fill or review"
+              title={t('zakatLetter')}
+              hint={t('optionalExpand')}
               actions={
                 <button
                   type="button"
                   className="aid-png-download-btn"
-                  title="Download as PNG"
-                  aria-label="Download Zakat form as PNG"
+                  title={t('downloadPng')}
+                  aria-label={t('downloadPng')}
                   disabled={pngDownloading}
                   onClick={() =>
                     handleDownloadPng(zakatCaptureRef, 'zakat-permission-letter')
@@ -1778,20 +1792,21 @@ const AidApplicationAdd = () => {
                 <AidZakatPermissionForm
                   value={zakatPermission}
                   onChange={setZakatPermission}
+                  uiLang={lang}
                 />
               </div>
             </AidCollapsibleSection>
 
             <AidCollapsibleSection
               className="aid-family-panel"
-              title="Consent Form"
-              hint="Optional — click to fill or review"
+              title={t('consentForm')}
+              hint={t('optionalExpand')}
               actions={
                 <button
                   type="button"
                   className="aid-png-download-btn"
-                  title="Download as PNG"
-                  aria-label="Download Consent form as PNG"
+                  title={t('downloadPng')}
+                  aria-label={t('downloadPng')}
                   disabled={pngDownloading}
                   onClick={() =>
                     handleDownloadPng(consentCaptureRef, 'consent-form')
@@ -1805,6 +1820,7 @@ const AidApplicationAdd = () => {
                 <AidConsentForm
                   value={consentForm}
                   onChange={setConsentForm}
+                  uiLang={lang}
                 />
               </div>
             </AidCollapsibleSection>
@@ -1813,14 +1829,12 @@ const AidApplicationAdd = () => {
 
           {formTab === 'beneficiary' && (
           <div className="form-section">
-            <h3 className="form-section-heading">Beneficiary</h3>
+            <h3 className="form-section-heading">{t('beneficiary')}</h3>
             {headAsBeneficiary ? (
               <>
                 <p className="aid-section-hint">
-                  Beneficiary is set from Family Head (
-                  {familyHeadTypeLabel(headAsBeneficiary._relation_type)}
-                  ). Other details stay on the Family Head step; set date of
-                  birth here if needed. You can still add family members below.
+                  {t('beneficiaryFromHead')} (
+                  {familyHeadTypeLabel(headAsBeneficiary._relation_type)})
                 </p>
                 <div
                   className="aid-family-panel"
@@ -1828,13 +1842,14 @@ const AidApplicationAdd = () => {
                 >
                   <div className="aid-fh-personal__dob-label-row">
                     <span className="aid-fh-personal__dob-label">
-                      Date of birth (beneficiary){' '}
+                      {t('dobBeneficiary')}{' '}
                       <span className="required-mark">*</span>
                     </span>
                     {calcAgeFromDob(headAsBeneficiary.date_of_birth) != null ? (
                       <span className="aid-fh-personal__age">
-                        Age: {calcAgeFromDob(headAsBeneficiary.date_of_birth)}{' '}
-                        yrs
+                        {t('ageYrs', {
+                          n: calcAgeFromDob(headAsBeneficiary.date_of_birth),
+                        })}
                       </span>
                     ) : null}
                   </div>
@@ -1860,8 +1875,8 @@ const AidApplicationAdd = () => {
                 onChange={(yes) => {
                   if (yes) markApplicant({ kind: 'beneficiary' });
                 }}
-                label="Beneficiary is the applicant"
-                hint="Uncheck by selecting applicant on Family Head or a family member."
+                label={t('beneficiaryIsApplicant')}
+                hint={t('beneficiaryIsApplicantHint')}
               />
             )}
             {!headAsBeneficiary && (
@@ -1874,15 +1889,17 @@ const AidApplicationAdd = () => {
                   if (!e.target.checked) setExistingBeneficiary(null);
                 }}
               />
-              Link existing person in system
+              {lang === 'ur'
+                ? 'موجودہ شخص سے لنک کریں'
+                : 'Link existing person in system'}
             </label>
             )}
 
             {headAsBeneficiary ? null : beneficiaryMode === 'existing' ? (
               <>
                 <SearchableDropdown
-                  label="Search beneficiary"
-                  placeholder="Name, CNIC, phone…"
+                  label={t('searchBeneficiary')}
+                  placeholder={t('searchBeneficiaryPlaceholder')}
                   onSearch={searchPeople}
                   onSelect={async (item) => {
                     setBeneficiaryId(item.id);
@@ -1911,14 +1928,16 @@ const AidApplicationAdd = () => {
                   >
                     <div className="aid-fh-personal__dob-label-row">
                       <span className="aid-fh-personal__dob-label">
-                        Date of birth (beneficiary)
+                        {t('dobBeneficiary')}
                       </span>
                       {calcAgeFromDob(existingBeneficiary.date_of_birth) !=
                       null ? (
                         <span className="aid-fh-personal__age">
-                          Age:{' '}
-                          {calcAgeFromDob(existingBeneficiary.date_of_birth)}{' '}
-                          yrs
+                          {t('ageYrs', {
+                            n: calcAgeFromDob(
+                              existingBeneficiary.date_of_birth,
+                            ),
+                          })}
                         </span>
                       ) : null}
                     </div>
@@ -1950,10 +1969,10 @@ const AidApplicationAdd = () => {
             ) : (
               <>
                 <AidFamilyHeadPersonalFields
-                  title="Identity of beneficiary"
-                  subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
-                  contactTitle="Contact & address"
-                  contactSubtitle="The investigator visits this address; add a landmark."
+                  title={t('identityBeneficiary')}
+                  subtitle={t('identityBeneficiarySubtitle')}
+                  contactTitle={t('contactAddress')}
+                  contactSubtitle={t('contactAddressSubtitle')}
                   showResidenceFields={false}
                   value={beneficiary}
                   onChange={(next) =>
@@ -1981,35 +2000,35 @@ const AidApplicationAdd = () => {
                   <AidPropertyOwnership
                     value={beneficiary}
                     onChange={setBeneficiary}
-                    title="Property ownership (beneficiary)"
+                    title={t('propertyBeneficiary')}
                   />
                 </div>
                 <div className="aid-family-panel" style={{ marginTop: 12 }}>
                   <AidResidentHousing
                     value={beneficiary}
                     onChange={setBeneficiary}
-                    title="Resident (beneficiary)"
+                    title={t('residentBeneficiary')}
                   />
                 </div>
                 <div className="aid-family-panel" style={{ marginTop: 12 }}>
                   <AidLivestockIntake
                     value={beneficiary}
                     onChange={setBeneficiary}
-                    title="Livestock (beneficiary)"
+                    title={t('livestockBeneficiary')}
                   />
                 </div>
                 <div className="aid-family-panel" style={{ marginTop: 12 }}>
                   <AidVehicleIntake
                     value={beneficiary}
                     onChange={setBeneficiary}
-                    title="Vehicle (beneficiary)"
+                    title={t('vehicleBeneficiary')}
                   />
                 </div>
                 <div className="aid-family-panel" style={{ marginTop: 12 }}>
                   <AidEligibilityStatus
                     value={beneficiary}
                     onChange={setBeneficiary}
-                    title="NECTA / BISP (beneficiary)"
+                    title={t('nectaBispBeneficiary')}
                   />
                 </div>
               </>
@@ -2017,11 +2036,11 @@ const AidApplicationAdd = () => {
 
             <div className="aid-family-panel" style={{ marginTop: 12 }}>
               <AidFamilyMembersIntake
-                title="Beneficiary — family members"
-                hint="Add any relative. Select Type first. Mark Applicant / Beneficiary if needed."
+                title={t('beneficiaryMembers')}
+                hint={t('beneficiaryMembersHint')}
                 rows={beneficiaryMembers}
                 onChange={setBeneficiaryMembers}
-                relationLabel="Type (relation to beneficiary)"
+                relationLabel={t('relationToBeneficiary')}
                 onMarkApplicant={(sel) => {
                   if (sel.kind === 'member') {
                     markApplicant({ kind: 'beneficiary_member', idx: sel.idx });
@@ -2079,10 +2098,10 @@ const AidApplicationAdd = () => {
                     if (yes) markApplicant({ kind: 'spouse' });
                     else markApplicant({ kind: 'beneficiary' });
                   }}
-                  label={`${spouseLabel} is the applicant`}
+                  label={t('isApplicant', { name: spouseLabel })}
                 />
                 <RelativeFields
-                  title={`${spouseLabel} (optional)`}
+                  title={t('optionalSection', { name: spouseLabel })}
                   value={spouse}
                   onChange={(next) =>
                     setSpouse({ ...next, is_applicant: spouse.is_applicant })
@@ -2095,7 +2114,7 @@ const AidApplicationAdd = () => {
             <div className="aid-family-panel">
               <div className="aid-family-panel__head">
                 <h4 className="aid-family-panel__title">
-                  Family Head <span>(select type for each)</span>
+                  {t('familyHeadSelect')}
                 </h4>
                 <button
                   type="button"
@@ -2111,7 +2130,7 @@ const AidApplicationAdd = () => {
                     ])
                   }
                 >
-                  + Add family head
+                  + {t('addFamilyHead')}
                 </button>
               </div>
               {familyHeads.map((head, idx) => {
@@ -2129,7 +2148,7 @@ const AidApplicationAdd = () => {
                       {idx === 0 ? (
                         <div className="aid-role-check-row__type">
                           <FormSelect
-                            label="Case source"
+                            label={t('caseSource')}
                             name="case_source"
                             value={form.case_source || 'walk_in'}
                             onChange={(e) =>
@@ -2144,7 +2163,7 @@ const AidApplicationAdd = () => {
                       ) : null}
                       <div className="aid-role-check-row__type">
                         <FormSelect
-                          label="Type"
+                          label={t('type')}
                           value={primaryType}
                           onChange={(e) => {
                             const type = e.target.value;
@@ -2168,7 +2187,7 @@ const AidApplicationAdd = () => {
                         />
                         {primaryType === 'guardian' ? (
                           <FormSelect
-                            label="Subtype"
+                            label={t('subtype')}
                             value={subtype}
                             onChange={(e) => {
                               const next = e.target.value || 'guardian';
@@ -2186,7 +2205,7 @@ const AidApplicationAdd = () => {
                               );
                             }}
                             options={[
-                              { value: '', label: 'Select subtype…' },
+                              { value: '', label: t('selectSubtype') },
                               ...AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
                             ]}
                             required
@@ -2212,7 +2231,7 @@ const AidApplicationAdd = () => {
                               }
                             }}
                           >
-                            Remove
+                            {t('remove')}
                           </button>
                         )}
                       </div>
@@ -2228,8 +2247,8 @@ const AidApplicationAdd = () => {
                             markApplicant({ kind: 'beneficiary' });
                           }
                         }}
-                        label="Applicant"
-                        hint="This Family Head submitted the application"
+                        label={t('applicant')}
+                        hint={t('applicantHeadHint')}
                       />
                       <AidApplicantCheckbox
                         checked={!!head.is_beneficiary}
@@ -2238,24 +2257,24 @@ const AidApplicationAdd = () => {
                           if (yes) markBeneficiary({ kind: 'family_head', idx });
                           else markBeneficiary({ kind: 'form' });
                         }}
-                        label="Beneficiary"
-                        hint="Single-person family — this head is the beneficiary"
+                        label={t('beneficiary')}
+                        hint={t('beneficiaryHeadHint')}
                       />
                     </div>
                     <AidFamilyHeadPersonalFields
-                      title={`Identity of family head${
+                      title={`${t('identityFamilyHead')}${
                         head.is_beneficiary || head.is_applicant
                           ? ` (${[
-                              head.is_beneficiary ? 'Beneficiary' : null,
-                              head.is_applicant ? 'Applicant' : null,
+                              head.is_beneficiary ? t('beneficiary') : null,
+                              head.is_applicant ? t('applicant') : null,
                             ]
                               .filter(Boolean)
                               .join(' + ')})`
                           : ''
                       }`}
-                      subtitle="CNIC is checked against the family registry as you type, to catch repeat or duplicate applications."
-                      contactTitle="Contact & address"
-                      contactSubtitle="The investigator visits this address; add a landmark."
+                      subtitle={t('identityBeneficiarySubtitle')}
+                      contactTitle={t('contactAddress')}
+                      contactSubtitle={t('contactAddressSubtitle')}
                       showResidenceFields={false}
                       value={head}
                       onChange={(next) =>
@@ -2317,7 +2336,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title="Family Head — property ownership"
+                        title={t('propertyHead')}
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
@@ -2339,7 +2358,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title="Family Head — resident"
+                        title={t('residentHead')}
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
@@ -2361,7 +2380,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title="Family Head — livestock"
+                        title={t('livestockHead')}
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
@@ -2383,13 +2402,13 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        title="Family Head — vehicle"
+                        title={t('vehicleHead')}
                       />
                     </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
                       <AidFamilyMembersIntake
-                        title="Family Head — family members"
-                        hint="Relatives under this family head. Mark Applicant / Beneficiary if needed."
+                        title={t('familyMembersHead')}
+                        hint={t('familyMembersHeadHint')}
                         rows={head._family_members || []}
                         onChange={(members) =>
                           setFamilyHeads((list) =>
@@ -2400,7 +2419,7 @@ const AidApplicationAdd = () => {
                             ),
                           )
                         }
-                        relationLabel="Type (relation to family head)"
+                        relationLabel={t('relationToHead')}
                         onMarkApplicant={(sel) => {
                           if (sel.kind === 'member') {
                             markApplicant({
@@ -2438,32 +2457,33 @@ const AidApplicationAdd = () => {
                 <button
                   type="button"
                   className="aid-nav-icon-btn aid-nav-icon-btn--prev"
-                  title="Previous"
-                  aria-label="Previous"
+                  title={t('previous')}
+                  aria-label={t('previous')}
                   onClick={() => {
-                    const idx = FORM_TABS.findIndex((t) => t.id === formTab);
+                    const idx = FORM_TABS.findIndex((tab) => tab.id === formTab);
                     setFormTab(FORM_TABS[idx - 1].id);
                   }}
                 >
-                  <FiChevronLeft size={22} />
+                  {rtl ? <FiChevronRight size={22} /> : <FiChevronLeft size={22} />}
                 </button>
               )}
-              {FORM_TABS.findIndex((t) => t.id === formTab) < FORM_TABS.length - 1 && (
+              {FORM_TABS.findIndex((tab) => tab.id === formTab) <
+                FORM_TABS.length - 1 && (
                 <button
                   type="button"
                   className="aid-nav-icon-btn aid-nav-icon-btn--next"
-                  title="Next"
-                  aria-label="Next"
+                  title={t('next')}
+                  aria-label={t('next')}
                   onClick={() => {
-                    const idx = FORM_TABS.findIndex((t) => t.id === formTab);
+                    const idx = FORM_TABS.findIndex((tab) => tab.id === formTab);
                     setFormTab(FORM_TABS[idx + 1].id);
                   }}
                 >
-                  <FiChevronRight size={22} />
+                  {rtl ? <FiChevronLeft size={22} /> : <FiChevronRight size={22} />}
                 </button>
               )}
             </div>
-            <PrimaryButton type="submit" loading={saving} loadingText="Saving…">
+            <PrimaryButton type="submit" loading={saving} loadingText={t('saving')}>
               {submitLabel}
             </PrimaryButton>
           </div>
@@ -2472,5 +2492,11 @@ const AidApplicationAdd = () => {
     </>
   );
 };
+
+const AidApplicationAdd = () => (
+  <AidLangProvider>
+    <AidApplicationAddInner />
+  </AidLangProvider>
+);
 
 export default AidApplicationAdd;

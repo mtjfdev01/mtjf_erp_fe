@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import { AID_YES_NO, emptyMarriageGiftItem } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Marriage Gift aid type — Application tab special structure
@@ -12,6 +14,12 @@ const AidMarriageGiftApplicationFields = ({
   onChange,
   readOnly = false,
 }) => {
+  const { t, lang } = useAidLang();
+  const dash = t('dash');
+  const yesNoOptions = useMemo(
+    () => aidOptionsForLang(AID_YES_NO, lang),
+    [lang],
+  );
   const details = value || {};
   const items = details.items?.length
     ? details.items
@@ -45,38 +53,38 @@ const AidMarriageGiftApplicationFields = ({
     return (
       <div className="aid-marriage-gift-application" style={{ marginTop: 12 }}>
         <div className="aid-family-panel">
-          <h4 className="aid-family-panel__title">Marriage Gift</h4>
+          <h4 className="aid-family-panel__title">{t('marriageGift')}</h4>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            Date of marriage: {details.date_of_marriage || '—'}
+            {t('dateOfMarriage')}: {details.date_of_marriage || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            Already married (نکاح):{' '}
+            {t('alreadyMarriedRo')}{' '}
             {details.already_married_nikah === 'yes'
-              ? `Yes${details.nikah_date ? ` · ${details.nikah_date}` : ''}`
+              ? `${t('yes')}${details.nikah_date ? ` · ${details.nikah_date}` : ''}`
               : details.already_married_nikah === 'no'
-                ? 'No'
-                : '—'}
+                ? t('no')
+                : dash}
           </p>
           {details.bride_groom_relationship && (
             <p style={{ fontSize: 13, margin: '8px 0 0' }}>
-              <strong>Bride–groom relationship:</strong>{' '}
+              <strong>{t('brideGroomRelationshipRo')}</strong>{' '}
               {details.bride_groom_relationship}
             </p>
           )}
           {details.earlier_children_marriage_expenses && (
             <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>Earlier children marriage expenses:</strong>{' '}
+              <strong>{t('earlierChildrenRo')}</strong>{' '}
               {details.earlier_children_marriage_expenses}
             </p>
           )}
           {namedItems.length > 0 && (
             <p style={{ fontSize: 13, margin: '8px 0 0' }}>
-              <strong>Available items:</strong> {namedItems.join(', ')}
+              <strong>{t('availableItemsRo')}</strong> {namedItems.join(', ')}
             </p>
           )}
           {details.others && (
             <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>Others:</strong> {details.others}
+              <strong>{t('others')}:</strong> {details.others}
             </p>
           )}
         </div>
@@ -87,16 +95,16 @@ const AidMarriageGiftApplicationFields = ({
   return (
     <div className="aid-marriage-gift-application">
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
-        <h4 className="aid-family-panel__title">Marriage Gift</h4>
+        <h4 className="aid-family-panel__title">{t('marriageGift')}</h4>
         <div className="form-grid-2">
           <FormInput
-            label="Date of marriage"
+            label={t('dateOfMarriage')}
             type="date"
             value={details.date_of_marriage || ''}
             onChange={(e) => patch({ date_of_marriage: e.target.value })}
           />
           <FormSelect
-            label="Have you already been married? (نکاح)"
+            label={t('alreadyMarried')}
             value={details.already_married_nikah || ''}
             onChange={(e) => {
               const next = e.target.value;
@@ -105,11 +113,11 @@ const AidMarriageGiftApplicationFields = ({
                 ...(next !== 'yes' ? { nikah_date: '' } : {}),
               });
             }}
-            options={[{ value: '', label: '—' }, ...AID_YES_NO]}
+            options={[{ value: '', label: dash }, ...yesNoOptions]}
           />
           {alreadyMarried && (
             <FormInput
-              label="If Yes, Date of Marriage (nikah)"
+              label={t('ifYesNikahDate')}
               type="date"
               value={details.nikah_date || ''}
               onChange={(e) => patch({ nikah_date: e.target.value })}
@@ -117,7 +125,7 @@ const AidMarriageGiftApplicationFields = ({
           )}
         </div>
         <FormTextarea
-          label="The relationship of the bride with the groom?"
+          label={t('brideGroomRelationship')}
           value={details.bride_groom_relationship || ''}
           onChange={(e) =>
             patch({ bride_groom_relationship: e.target.value })
@@ -125,7 +133,7 @@ const AidMarriageGiftApplicationFields = ({
           rows={2}
         />
         <FormTextarea
-          label="How did you arrange marriage expenses of your earlier children?"
+          label={t('earlierChildrenMarriageExpenses')}
           value={details.earlier_children_marriage_expenses || ''}
           onChange={(e) =>
             patch({ earlier_children_marriage_expenses: e.target.value })
@@ -137,7 +145,7 @@ const AidMarriageGiftApplicationFields = ({
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <div className="aid-family-panel__head">
           <h4 className="aid-family-panel__title">
-            Available items for Marriage
+            {t('availableItemsMarriage')}
           </h4>
           <button
             type="button"
@@ -146,14 +154,16 @@ const AidMarriageGiftApplicationFields = ({
               patch({ items: [...items, emptyMarriageGiftItem()] })
             }
           >
-            + Add
+            {t('addShort')}
           </button>
         </div>
         <div className="aid-children-list">
           {items.map((row, idx) => (
             <div key={`mg-item-${idx}`} className="aid-child-card">
               <div className="aid-repeat-item__head">
-                <div className="aid-child-card__title">Item {idx + 1}</div>
+                <div className="aid-child-card__title">
+                  {t('itemN', { n: idx + 1 })}
+                </div>
                 {items.length > 1 && (
                   <button
                     type="button"
@@ -162,25 +172,25 @@ const AidMarriageGiftApplicationFields = ({
                       patch({ items: items.filter((_, i) => i !== idx) })
                     }
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 )}
               </div>
               <FormInput
-                label="Item name"
+                label={t('itemName')}
                 value={row.name || ''}
                 onChange={(e) => updateItem(idx, e.target.value)}
-                placeholder={idx === 0 ? 'Paiti set' : 'Item name'}
+                placeholder={idx === 0 ? 'Paiti set' : t('itemName')}
               />
             </div>
           ))}
         </div>
         <FormTextarea
-          label="Others"
+          label={t('others')}
           value={details.others || ''}
           onChange={(e) => patch({ others: e.target.value })}
           rows={2}
-          placeholder="Any other items…"
+          placeholder={t('othersPlaceholder')}
         />
       </div>
     </div>

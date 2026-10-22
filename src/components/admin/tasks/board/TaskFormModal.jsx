@@ -28,14 +28,14 @@ export default function TaskFormModal({
 
   return (
     <div
-      className="task-form-modal-backdrop"
+      className="tkformmodal-backdrop"
       role="dialog"
       aria-modal="true"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) onClose?.();
       }}
     >
-      <div className="task-form-modal-panel">
+      <div className="tkformmodal-panel">
         {mode === 'add' ? (
           <AddTask
             isModal

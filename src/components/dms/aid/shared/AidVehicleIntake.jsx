@@ -1,10 +1,12 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FiPlus, FiX } from 'react-icons/fi';
 import {
   AID_VEHICLE_TYPES,
   AID_YES_NO,
   emptyVehicleRow,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 const selectValueOf = (vehicleType) => {
   const known = AID_VEHICLE_TYPES.some((t) => t.value === (vehicleType || ''));
@@ -16,7 +18,18 @@ const selectValueOf = (vehicleType) => {
  * Vehicle — one line when Yes:
  * Vehicle? | Type | (Specify if other) | +
  */
-const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
+const AidVehicleIntake = ({ value, onChange, title }) => {
+  const { t, lang } = useAidLang();
+  const panelTitle = title ?? t('vehicle');
+  const yesNoOptions = useMemo(
+    () => aidOptionsForLang(AID_YES_NO, lang),
+    [lang],
+  );
+  const vehicleTypes = useMemo(
+    () => aidOptionsForLang(AID_VEHICLE_TYPES, lang),
+    [lang],
+  );
+
   const hasVehicle = !!value?.has_vehicle;
   const rows =
     Array.isArray(value?.vehicle_entries) && value.vehicle_entries.length
@@ -58,20 +71,22 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
 
   return (
     <div className="aid-vehicle-intake">
-      {title ? <h4 className="aid-family-panel__title">{title}</h4> : null}
+      {panelTitle ? (
+        <h4 className="aid-family-panel__title">{panelTitle}</h4>
+      ) : null}
 
       {!hasVehicle ? (
         <div className="aid-property-inline aid-property-inline--land-only">
           <label className="aid-property-inline__field">
             <span className="aid-property-inline__label">
-              Do you have any vehicle?
+              {t('haveVehicle')}
             </span>
             <select
               className="aid-property-inline__control"
               value="no"
               onChange={onHasChange}
             >
-              {AID_YES_NO.map((o) => (
+              {yesNoOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -88,13 +103,15 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
               <div key={`veh-${idx}`} className="aid-property-inline">
                 {idx === 0 ? (
                   <label className="aid-property-inline__field aid-property-inline__field--land">
-                    <span className="aid-property-inline__label">Vehicle?</span>
+                    <span className="aid-property-inline__label">
+                      {t('vehicleQ')}
+                    </span>
                     <select
                       className="aid-property-inline__control"
                       value="yes"
                       onChange={onHasChange}
                     >
-                      {AID_YES_NO.map((o) => (
+                      {yesNoOptions.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
                         </option>
@@ -111,7 +128,7 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                 <label className="aid-property-inline__field aid-property-inline__field--type">
                   {idx === 0 ? (
                     <span className="aid-property-inline__label">
-                      Type <span className="required-mark">*</span>
+                      {t('type')} <span className="required-mark">*</span>
                     </span>
                   ) : (
                     <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -129,8 +146,8 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                     }}
                     required
                   >
-                    <option value="">—</option>
-                    {AID_VEHICLE_TYPES.map((o) => (
+                    <option value="">{t('dash')}</option>
+                    {vehicleTypes.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
                       </option>
@@ -138,11 +155,55 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                   </select>
                 </label>
 
+                <label className="aid-property-inline__field aid-property-inline__field--area">
+                  {idx === 0 ? (
+                    <span className="aid-property-inline__label">
+                      {t('quantity')}
+                    </span>
+                  ) : (
+                    <span className="aid-property-inline__label aid-property-inline__label--ghost">
+                      &nbsp;
+                    </span>
+                  )}
+                  <input
+                    className="aid-property-inline__control"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={row.quantity ?? ''}
+                    onChange={(e) =>
+                      updateRow(idx, { quantity: e.target.value })
+                    }
+                    placeholder="1"
+                  />
+                </label>
+
+                <label className="aid-property-inline__field aid-property-inline__field--details">
+                  {idx === 0 ? (
+                    <span className="aid-property-inline__label">
+                      {t('details')}
+                    </span>
+                  ) : (
+                    <span className="aid-property-inline__label aid-property-inline__label--ghost">
+                      &nbsp;
+                    </span>
+                  )}
+                  <input
+                    className="aid-property-inline__control"
+                    type="text"
+                    value={row.details || ''}
+                    onChange={(e) =>
+                      updateRow(idx, { details: e.target.value })
+                    }
+                    placeholder={t('optionalNotes')}
+                  />
+                </label>
+
                 {isOther ? (
                   <label className="aid-property-inline__field aid-property-inline__field--details">
                     {idx === 0 ? (
                       <span className="aid-property-inline__label">
-                        Specify
+                        {t('specify')}
                       </span>
                     ) : (
                       <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -169,8 +230,8 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                     <button
                       type="button"
                       className="aid-property-row__icon-btn aid-property-row__icon-btn--remove"
-                      aria-label="Remove vehicle"
-                      title="Remove"
+                      aria-label={t('removeVehicle')}
+                      title={t('remove')}
                       onClick={() => setRows(rows.filter((_, i) => i !== idx))}
                     >
                       <FiX />
@@ -180,8 +241,8 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                     <button
                       type="button"
                       className="aid-property-row__icon-btn aid-property-row__icon-btn--add"
-                      aria-label="Add vehicle"
-                      title="Add vehicle"
+                      aria-label={t('addVehicle')}
+                      title={t('addVehicle')}
                       onClick={() => setRows([...rows, emptyVehicleRow()])}
                     >
                       <FiPlus />

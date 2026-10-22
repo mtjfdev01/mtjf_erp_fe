@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import FormInput from '../../../common/FormInput';
 import mtjfLogo from '../../../../assets/mtjf_logo.png';
 import {
@@ -188,6 +188,7 @@ const AidZakatPermissionForm = ({
   onChange,
   readOnly = false,
   applicationNo,
+  uiLang,
 }) => {
   const details = { ...emptyZakatPermission(), ...(value || {}) };
   const lang = details.lang === 'en' ? 'en' : 'ur';
@@ -202,6 +203,16 @@ const AidZakatPermissionForm = ({
     if (readOnly || !onChange) return;
     onChange({ ...details, ...partial });
   };
+
+  useEffect(() => {
+    if (!uiLang || !onChange || readOnly) return;
+    if ((value?.lang || 'ur') === uiLang) return;
+    onChange({
+      ...emptyZakatPermission(),
+      ...(value || {}),
+      lang: uiLang,
+    });
+  }, [uiLang]);
 
   const runCapture = async (field, kind, source) => {
     setBusyKey(field);

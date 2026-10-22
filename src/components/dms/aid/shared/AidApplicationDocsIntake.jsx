@@ -3,6 +3,7 @@ import {
   AID_APPLICATION_DOC_TYPES,
   normalizeApplicationDocSlot,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
 
 /**
  * Optional application document uploads (create / edit intake).
@@ -16,6 +17,8 @@ const AidApplicationDocsIntake = ({
   onChange,
   disabled = false,
 }) => {
+  const { t, lang } = useAidLang();
+
   const setSlot = (key, next) => {
     if (disabled || !onChange) return;
     onChange({ ...value, [key]: next });
@@ -44,11 +47,13 @@ const AidApplicationDocsIntake = ({
     }
   };
 
+  const docTitle = (doc) =>
+    lang === 'ur' && doc.labelUr ? doc.labelUr : doc.label;
+
   return (
     <div className="aid-app-docs">
       <p className="aid-section-hint">
-        All document uploads are optional. CNICs and certificates accept
-        multiple files.
+        {t('docsHint')} {t('docsHintDetail')}
       </p>
       <div className="aid-app-docs__grid">
         {AID_APPLICATION_DOC_TYPES.map((doc) => {
@@ -56,16 +61,24 @@ const AidApplicationDocsIntake = ({
           return (
             <div key={doc.value} className="aid-app-docs__slot">
               <div className="aid-app-docs__slot-head">
-                <strong>{doc.label}</strong>
-                <span>{doc.multiple ? 'Multiple' : 'Optional'}</span>
+                <strong>{docTitle(doc)}</strong>
+                <span>
+                  {doc.multiple ? t('multiple') : t('optional')}
+                </span>
               </div>
 
               {files.length ? (
                 <ul className="aid-app-docs__file-list">
                   {files.map((slot, idx) => {
-                    const label = slot?.name || slot?.file?.name || `File ${idx + 1}`;
+                    const label =
+                      slot?.name ||
+                      slot?.file?.name ||
+                      t('fileN', { n: idx + 1 });
                     return (
-                      <li key={`${doc.value}-${idx}-${label}`} className="aid-app-docs__file">
+                      <li
+                        key={`${doc.value}-${idx}-${label}`}
+                        className="aid-app-docs__file"
+                      >
                         {slot?.url ? (
                           <a href={slot.url} target="_blank" rel="noreferrer">
                             {label}
@@ -79,7 +92,7 @@ const AidApplicationDocsIntake = ({
                             className="aid-mini-btn aid-mini-btn--remove"
                             onClick={() => removeAt(doc, idx)}
                           >
-                            Remove
+                            {t('remove')}
                           </button>
                         ) : null}
                       </li>
@@ -93,9 +106,9 @@ const AidApplicationDocsIntake = ({
                   <span>
                     {doc.multiple
                       ? files.length
-                        ? '+ Add more files'
-                        : 'Choose files'
-                      : 'Choose file'}
+                        ? t('addMoreFiles')
+                        : t('chooseFiles')
+                      : t('chooseFile')}
                   </span>
                   <input
                     type="file"

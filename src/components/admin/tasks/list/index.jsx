@@ -593,7 +593,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   const renderAssignees = (t) => {
     const meta = Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : [];
     if (meta.length === 0) {
-      return <span className="tl-person-badge">—</span>;
+      return <span className="tlx-person-badge">—</span>;
     }
 
     const maxAvatars = 3;
@@ -609,20 +609,20 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     };
 
     const renderPopover = (info) => (
-      <div className="tl-tasks-assignee-popover">
+      <div className="tlx-assignee-popover">
         {info ? (
-          <ul className="tl-tasks-assignee-list">
-            <li className="tl-tasks-assignee-list-item">
-              <div className="tl-tasks-assignee-name">{info.name}</div>
+          <ul className="tlx-assignee-list">
+            <li className="tlx-assignee-list-item">
+              <div className="tlx-assignee-name">{info.name}</div>
               {info.department && (
-                <div className="tl-tasks-assignee-department">
+                <div className="tlx-assignee-department">
                   department: {capitalize(info.department)}
                 </div>
               )}
             </li>
           </ul>
         ) : (
-          <div className="tl-tasks-assignee-empty">No assignee details</div>
+          <div className="tlx-assignee-empty">No assignee details</div>
         )}
       </div>
     );
@@ -635,9 +635,9 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       const displayName = getDisplayName(u, info);
       const isOpen = openAssigneeTaskId === t.id && openAssigneeUserId === u.user_id;
       return (
-        <div className="tl-tasks-list-assignment-cell">
-          <div className="tl-tasks-assignee-trigger" onClick={(e) => handleAssigneeClick(e, t, u.user_id)}>
-            <span className="tl-tasks-list-assignment-name" title={displayName}>{displayName}</span>
+        <div className="tlx-assignment-cell">
+          <div className="tlx-assignee-trigger" onClick={(e) => handleAssigneeClick(e, t, u.user_id)}>
+            <span className="tlx-assignment-name" title={displayName}>{displayName}</span>
             {isOpen && renderPopover(info)}
           </div>
         </div>
@@ -645,9 +645,9 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     }
 
     return (
-      <div className="tl-tasks-list-assignment-cell">
-        <div className="tl-task-card-assignees-group">
-          <div className="tl-avatar-stack">
+      <div className="tlx-assignment-cell">
+        <div className="tlx-card-assignees-group">
+          <div className="tlx-avatar-stack">
             {meta.slice(0, maxAvatars).map((u, idx) => {
               const info = Array.isArray(details) && details.length > 0
                 ? details.find((d) => d.id === u.user_id)
@@ -657,11 +657,11 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               return (
                 <div
                   key={u.user_id || idx}
-                  className="tl-tasks-assignee-trigger"
+                  className="tlx-assignee-trigger"
                   onClick={(e) => handleAssigneeClick(e, t, u.user_id)}
                 >
                   <div
-                    className="tl-avatar-circle"
+                    className="tlx-avatar-circle"
                     title={displayName || 'User'}
                     style={{ zIndex: meta.length - idx, backgroundColor: getAvatarColor(displayName) }}
                   >
@@ -672,7 +672,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               );
             })}
             {extraCount > 0 && (
-              <div className="tl-avatar-circle tl-avatar-extra" style={{ zIndex: 0 }}>+{extraCount}</div>
+              <div className="tlx-avatar-circle tlx-avatar-extra" style={{ zIndex: 0 }}>+{extraCount}</div>
             )}
           </div>
         </div>
@@ -1379,7 +1379,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                       <span className="tlx-scope__label">{label}</span>
                       <span className="tlx-scope__count">{count ?? 0}</span>
                       {badge > 0 && (
-                        <span className="tl-approval-pending-badge" title={`${badge} pending approval`}>{badge}</span>
+                        <span className="tlx-approval-pending-badge" title={`${badge} pending approval`}>{badge}</span>
                       )}
                     </button>
                   ))}
@@ -1481,14 +1481,14 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               </div>
             </CollapsibleFilters>
 
-            {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
+            {error && <div className="tlx-status-message tlx-status-message--error">{error}</div>}
 
             <div className="tlx-groups">
               {groups.length > 0 ? (
                 groups.map(renderGroup)
               ) : (
-                <div className="tl-empty-tab-state">
-                  <EmptyIcon className="tl-empty-icon" />
+                <div className="tlx-empty-tab-state">
+                  <EmptyIcon className="tlx-empty-icon" />
                   <p>{emptyText}</p>
                 </div>
               )}

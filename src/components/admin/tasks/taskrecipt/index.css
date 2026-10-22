@@ -9,18 +9,18 @@
     --text-light: #6C757D;
 }
 
-.task-receipt-page {
+.tkreceipt-page {
     background: #f5f7fa;
     color: var(--text-dark);
     line-height: 1.6;
     font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
 }
 
-.task-receipt-page * {
+.tkreceipt-page * {
     box-sizing: border-box;
 }
 
-.receipt-container {
+.tkreceipt-container {
     /* max-width: 900px; */
     margin: 0 auto;
     background: white;
@@ -30,7 +30,7 @@
 }
 
 /* Header */
-.receipt-header {
+.tkreceipt-header {
     background: linear-gradient(135deg, var(--primary-color), #1e4a8e);
     color: white;
     padding: 25px 30px;
@@ -39,13 +39,13 @@
     align-items: center;
 }
 
-.receipt-title {
+.tkreceipt-title {
     display: flex;
     align-items: center;
     gap: 15px;
 }
 
-.receipt-logo {
+.tkreceipt-logo {
     font-size: 28px;
     background: rgba(255,255,255,0.2);
     width: 50px;
@@ -56,12 +56,12 @@
     justify-content: center;
 }
 
-.receipt-title h1 {
+.tkreceipt-title h1 {
     font-size: 16px;
     font-weight: 600;
 }
 
-.task-id {
+.tkreceipt-task-id {
     background: rgba(255,255,255,0.15);
     padding: 6px 15px;
     border-radius: 20px;
@@ -70,7 +70,7 @@
 }
 
 /* Status Banner */
-.status-banner {
+.tkreceipt-status-banner {
     padding: 12px 30px;
     background: var(--success-color);
     color: white;
@@ -79,7 +79,7 @@
     align-items: center;
 }
 
-.receipt-status-badge {
+.tkreceipt-status-badge {
     background: rgba(255,255,255,0.2);
     padding: 5px 15px;
     border-radius: 20px;
@@ -87,7 +87,7 @@
     font-size: 0.8rem;
 }
 
-.print-btn {
+.tkreceipt-print-btn {
     background: white;
     color: var(--success-color);
     border: none;
@@ -101,27 +101,27 @@
     transition: transform 0.2s;
 }
 
-.print-btn:hover {
+.tkreceipt-print-btn:hover {
     transform: translateY(-2px);
 }
 
 /* Receipt Body */
-.receipt-body {
+.tkreceipt-body {
     padding: 15px;
 }
 
-.section {
+.tkreceipt-section {
     margin-bottom: 30px;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 25px;
 }
 
-.section:last-child {
+.tkreceipt-section:last-child {
     border-bottom: none;
     margin-bottom: 0;
 }
 
-.section-title {
+.tkreceipt-section-title {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -131,40 +131,40 @@
     color: var(--primary-color);
 }
 
-.section-title .icon {
+.tkreceipt-section-title .tkreceipt-icon {
     font-size: 20px;
 }
 
-.section-description {
+.tkreceipt-section-description {
     margin: 25px;
 }
 
-.section-description-card {
+.tkreceipt-section-description-card {
     background: var(--light-gray);
     padding: 20px;
     border-radius: 8px;
 }
 
-.section-description-text {
+.tkreceipt-section-description-text {
     font-style: italic;
     color: var(--text-light);
 }
 
 /* Grid Layout */
-.info-grid {
+.tkreceipt-info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
 }
 
-.info-card {
+.tkreceipt-info-card {
     background: var(--light-gray);
     padding: 20px;
     border-radius: 10px;
     border-left: 4px solid var(--primary-color);
 }
 
-.info-row {
+.tkreceipt-info-row {
     display: flex;
     justify-content: space-between;
     margin-bottom: 12px;
@@ -172,25 +172,25 @@
     border-bottom: 1px dashed var(--border-color);
 }
 
-.info-row:last-child {
+.tkreceipt-info-row:last-child {
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
 }
 
-.label {
+.tkreceipt-label {
     font-weight: 600;
     color: var(--text-light);
     min-width: 150px;
 }
 
-.value {
+.tkreceipt-value {
     font-weight: 500;
     text-align: right;
     flex: 1;
 }
 
-.badge {
+.tkreceipt-badge {
     display: inline-block;
     padding: 4px 12px;
     border-radius: 20px;
@@ -199,24 +199,24 @@
     margin-left: 8px;
 }
 
-.badge.priority-medium {
+.tkreceipt-badge.tkreceipt-priority-medium {
     background: #FFF3CD;
     color: #856404;
 }
 
-.badge.completed {
+.tkreceipt-badge.tkreceipt-completed {
     background: #D1E7DD;
     color: #0F5132;
 }
 
 /* Team Section */
-.team-members {
+.tkreceipt-team-members {
     display: flex;
     gap: 15px;
     flex-wrap: wrap;
 }
 
-.team-member {
+.tkreceipt-team-member {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -227,7 +227,7 @@
     min-width: 200px;
 }
 
-.member-avatar {
+.tkreceipt-member-avatar {
     width: 36px;
     height: 36px;
     background: var(--primary-color);
@@ -239,56 +239,56 @@
     font-weight: 600;
 }
 
-.member-info {
+.tkreceipt-member-info {
     flex: 1;
 }
 
-.member-name {
+.tkreceipt-member-name {
     font-weight: 600;
     font-size: 14px;
 }
 
-.member-email {
+.tkreceipt-member-email {
     font-size: 12px;
     color: var(--text-light);
 }
 
-.team-assignment-block {
+.tkreceipt-team-assignment-block {
     margin-bottom: 20px;
 }
 
-.team-assignment-title {
+.tkreceipt-team-assignment-title {
     margin-bottom: 15px;
     color: var(--text-light);
 }
 
 /* Time Tracking */
-.time-tracker {
+.tkreceipt-time-tracker {
     background: #E7F5FF;
     padding: 20px;
     border-radius: 10px;
     border: 1px solid #B6D4FE;
 }
 
-.time-header {
+.tkreceipt-time-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 15px;
 }
 
-.total-time {
+.tkreceipt-total-time {
     font-size: 24px;
     font-weight: 700;
     color: var(--primary-color);
 }
 
-.timer-controls {
+.tkreceipt-timer-controls {
     display: flex;
     gap: 10px;
 }
 
-.btn {
+.tkreceipt-btn {
     padding: 10px 20px;
     border: none;
     border-radius: 6px;
@@ -297,25 +297,25 @@
     transition: all 0.2s;
 }
 
-.btn-primary {
+.tkreceipt-btn-primary {
     background: var(--primary-color);
     color: white;
 }
 
-.btn-outline {
+.tkreceipt-btn-outline {
     background: white;
     color: var(--primary-color);
     border: 1px solid var(--primary-color);
 }
 
 /* Attachments */
-.attachments-grid {
+.tkreceipt-attachments-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
 }
 
-.attachment-card {
+.tkreceipt-attachment-card {
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 15px;
@@ -323,18 +323,18 @@
     cursor: pointer;
 }
 
-.attachment-card:hover {
+.tkreceipt-attachment-card:hover {
     transform: translateY(-3px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.1);
 }
 
-.file-icon {
+.tkreceipt-file-icon {
     font-size: 32px;
     margin-bottom: 10px;
     color: var(--primary-color);
 }
 
-.file-name {
+.tkreceipt-file-name {
     font-weight: 600;
     margin-bottom: 5px;
     white-space: nowrap;
@@ -342,13 +342,13 @@
     text-overflow: ellipsis;
 }
 
-.file-type {
+.tkreceipt-file-type {
     font-size: 12px;
     color: var(--text-light);
     margin-bottom: 10px;
 }
 
-.view-btn {
+.tkreceipt-view-btn {
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 600;
@@ -359,33 +359,33 @@
 }
 
 /* Comments */
-.comment {
+.tkreceipt-comment {
     background: var(--light-gray);
     padding: 15px;
     border-radius: 8px;
     margin-bottom: 15px;
 }
 
-.comment-header {
+.tkreceipt-comment-header {
     display: flex;
     justify-content: space-between;
 }
 
-.comment-author {
+.tkreceipt-comment-author {
     font-weight: 600;
     color: var(--primary-color);
 }
 
-.comment-time {
+.tkreceipt-comment-time {
     font-size: 12px;
     color: var(--text-light);
 }
 
-.comment-input {
+.tkreceipt-comment-input {
     margin-top: 20px;
 }
 
-.comment-input textarea {
+.tkreceipt-comment-input textarea {
     width: 100%;
     padding: 15px;
     border: 1px solid var(--border-color);
@@ -396,7 +396,7 @@
 }
 
 /* Footer */
-.receipt-footer {
+.tkreceipt-footer {
     background: var(--light-gray);
     padding: 20px 30px;
     text-align: center;
@@ -405,7 +405,7 @@
     font-size: 14px;
 }
 
-.metadata {
+.tkreceipt-metadata {
     display: flex;
     justify-content: space-between;
     margin-top: 10px;
@@ -414,47 +414,47 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-    .receipt-header {
+    .tkreceipt-header {
         flex-direction: column;
         gap: 15px;
         text-align: center;
     }
     
-    .info-grid {
+    .tkreceipt-info-grid {
         grid-template-columns: 1fr;
     }
     
-    .team-members {
+    .tkreceipt-team-members {
         flex-direction: column;
     }
     
-    .team-member {
+    .tkreceipt-team-member {
         min-width: auto;
     }
     
-    .status-banner {
+    .tkreceipt-status-banner {
         flex-direction: column;
         gap: 10px;
         text-align: center;
     }
     
-    .timer-controls {
+    .tkreceipt-timer-controls {
         flex-wrap: wrap;
         justify-content: center;
     }
 }
 
 @media print {
-    body {
+    body:has(.tkreceipt-page) {
         background: white;
         padding: 0;
     }
-    
-    .print-btn, .btn {
+
+    .tkreceipt-print-btn, .tkreceipt-btn {
         display: none;
     }
     
-    .receipt-container {
+    .tkreceipt-container {
         box-shadow: none;
         border: 1px solid #ddd;
     }

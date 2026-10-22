@@ -231,46 +231,46 @@ const KpiDetailsModal = ({
 
   return (
     <div
-      className={`task-kpi-modal-overlay ${isBackgrounded ? 'is-backgrounded' : ''}`}
+      className={`tkreport-kpi-modal-overlay ${isBackgrounded ? 'is-backgrounded' : ''}`}
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-labelledby="task-kpi-modal-title"
+      aria-labelledby="tkreport-kpi-modal-title"
     >
       <div
-        className={`task-kpi-modal-container task-kpi-modal-container--${kpiColor || 'purple'} task-kpi-modal-container--${kpiKey === 'completion_rate' && activeTab === 'progress' ? 'completion-progress' : 'task-list'}`}
+        className={`tkreport-kpi-modal-container tkreport-kpi-modal-container--${kpiColor || 'purple'} tkreport-kpi-modal-container--${kpiKey === 'completion_rate' && activeTab === 'progress' ? 'completion-progress' : 'tkreport-list'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="task-kpi-modal-header">
-          <div className="task-kpi-modal-title-group">
-            <span className={`task-kpi-modal-icon-badge task-kpi-modal-icon-badge--${kpiColor || 'purple'}`}>
+        <div className="tkreport-kpi-modal-header">
+          <div className="tkreport-kpi-modal-title-group">
+            <span className={`tkreport-kpi-modal-icon-badge tkreport-kpi-modal-icon-badge--${kpiColor || 'purple'}`}>
               {renderKpiIcon()}
             </span>
             <div>
-              <h3 id="task-kpi-modal-title" className="task-kpi-modal-title">
+              <h3 id="tkreport-kpi-modal-title" className="tkreport-kpi-modal-title">
                 {kpiTitle}
               </h3>
-              <p className="task-kpi-modal-subtitle">
+              <p className="tkreport-kpi-modal-subtitle">
                 {activeFilterContext || 'Current Report Filters'}
               </p>
             </div>
           </div>
 
-          <div className="task-kpi-modal-actions">
+          <div className="tkreport-kpi-modal-actions">
             <button
               type="button"
-              className="task-kpi-modal-refresh-btn"
+              className="tkreport-kpi-modal-refresh-btn"
               onClick={fetchTaskData}
               title="Refresh task data"
               disabled={loading}
               aria-label="Refresh"
             >
-              <FaSyncAlt className={loading ? 'task-spin' : ''} />
+              <FaSyncAlt className={loading ? 'tkreport-spin' : ''} />
             </button>
             <button
               type="button"
-              className="task-kpi-modal-close-btn"
+              className="tkreport-kpi-modal-close-btn"
               onClick={onClose}
               title="Close popup"
               aria-label="Close modal"
@@ -281,30 +281,30 @@ const KpiDetailsModal = ({
         </div>
 
         {/* Modal Toolbar / Tab Navigation */}
-        <div className="task-kpi-modal-toolbar">
+        <div className="tkreport-kpi-modal-toolbar">
           {kpiKey === 'completion_rate' ? (
-            <div className="task-kpi-modal-tabs">
+            <div className="tkreport-kpi-modal-tabs">
               <button
                 type="button"
-                className={`task-kpi-modal-tab ${activeTab === 'progress' ? 'is-active' : ''}`}
+                className={`tkreport-kpi-modal-tab ${activeTab === 'progress' ? 'is-active' : ''}`}
                 onClick={() => setActiveTab('progress')}
               >
                 <FaChartLine /> Progress Visualization
               </button>
               <button
                 type="button"
-                className={`task-kpi-modal-tab ${activeTab === 'list' ? 'is-active' : ''}`}
+                className={`tkreport-kpi-modal-tab ${activeTab === 'list' ? 'is-active' : ''}`}
                 onClick={() => setActiveTab('list')}
               >
                 <FaCheck /> Completed Tasks ({completionMetrics.completed})
               </button>
             </div>
           ) : (
-            <div className="task-kpi-modal-search-wrap">
-              <FaSearch className="task-kpi-modal-search-icon" />
+            <div className="tkreport-kpi-modal-search-wrap">
+              <FaSearch className="tkreport-kpi-modal-search-icon" />
               <input
                 type="text"
-                className="task-kpi-modal-search-input"
+                className="tkreport-kpi-modal-search-input"
                 placeholder="Search by title, ID, assignee, or dept..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -313,7 +313,7 @@ const KpiDetailsModal = ({
               {searchQuery && (
                 <button
                   type="button"
-                  className="task-kpi-modal-search-clear"
+                  className="tkreport-kpi-modal-search-clear"
                   onClick={() => setSearchQuery('')}
                   title="Clear search"
                 >
@@ -323,7 +323,7 @@ const KpiDetailsModal = ({
             </div>
           )}
 
-          <div className="task-kpi-modal-count-badge">
+          <div className="tkreport-kpi-modal-count-badge">
             {kpiKey === 'completion_rate' ? (
               <span>Rate: <strong>{completionMetrics.rate}%</strong></span>
             ) : (
@@ -336,21 +336,21 @@ const KpiDetailsModal = ({
         </div>
 
         {/* Modal Body */}
-        <div className={`task-kpi-modal-body ${kpiKey === 'completion_rate' && activeTab === 'progress' ? 'task-kpi-modal-body--progress' : 'task-kpi-modal-body--has-table'}`}>
+        <div className={`tkreport-kpi-modal-body ${kpiKey === 'completion_rate' && activeTab === 'progress' ? 'tkreport-kpi-modal-body--progress' : 'tkreport-kpi-modal-body--has-table'}`}>
           {loading && !statsData ? (
-            <div className="task-kpi-modal-loading">
-              <FaSpinner className="task-spin task-kpi-modal-spinner" />
+            <div className="tkreport-kpi-modal-loading">
+              <FaSpinner className="tkreport-spin tkreport-kpi-modal-spinner" />
               <h4>Loading task records...</h4>
               <p>Fetching accurate data according to active filters.</p>
             </div>
           ) : error ? (
-            <div className="task-kpi-modal-error">
-              <FaExclamationTriangle className="task-kpi-modal-error-icon" />
+            <div className="tkreport-kpi-modal-error">
+              <FaExclamationTriangle className="tkreport-kpi-modal-error-icon" />
               <h4>Failed to load tasks</h4>
               <p>{error}</p>
               <button
                 type="button"
-                className="task-kpi-modal-retry-btn"
+                className="tkreport-kpi-modal-retry-btn"
                 onClick={fetchTaskData}
               >
                 <FaSyncAlt /> Try Again
@@ -360,18 +360,18 @@ const KpiDetailsModal = ({
             /* =================================================================
                COMPLETION RATE: Progress Bar & Progress Visualization View
                ================================================================= */
-            <div className="task-kpi-progress-view">
+            <div className="tkreport-kpi-progress-view">
               {/* Hero Progress Card */}
-              <div className="task-kpi-progress-hero">
-                <div className="task-kpi-progress-hero-main">
-                  <div className="task-kpi-progress-hero-number">
-                    <span className="task-kpi-progress-val">{completionMetrics.rate}</span>
-                    <span className="task-kpi-progress-unit">%</span>
+              <div className="tkreport-kpi-progress-hero">
+                <div className="tkreport-kpi-progress-hero-main">
+                  <div className="tkreport-kpi-progress-hero-number">
+                    <span className="tkreport-kpi-progress-val">{completionMetrics.rate}</span>
+                    <span className="tkreport-kpi-progress-unit">%</span>
                   </div>
-                  <div className="task-kpi-progress-hero-meta">
-                    <span className="task-kpi-progress-hero-label">Overall Completion Rate</span>
+                  <div className="tkreport-kpi-progress-hero-meta">
+                    <span className="tkreport-kpi-progress-hero-label">Overall Completion Rate</span>
                     <span
-                      className={`task-kpi-progress-status-badge ${
+                      className={`tkreport-kpi-progress-status-badge ${
                         Number(completionMetrics.rate) >= 80
                           ? 'is-excellent'
                           : Number(completionMetrics.rate) >= 50
@@ -385,7 +385,7 @@ const KpiDetailsModal = ({
                         ? 'Moderate Progress'
                         : 'Needs Attention'}
                     </span>
-                    <p className="task-kpi-progress-hero-desc">
+                    <p className="tkreport-kpi-progress-hero-desc">
                       <strong>{completionMetrics.completed}</strong> of{' '}
                       <strong>{completionMetrics.total}</strong> total tasks are completed or approved.
                     </p>
@@ -393,14 +393,14 @@ const KpiDetailsModal = ({
                 </div>
 
                 {/* Primary Progress Bar */}
-                <div className="task-kpi-bar-wrapper">
-                  <div className="task-kpi-bar-track">
+                <div className="tkreport-kpi-bar-wrapper">
+                  <div className="tkreport-kpi-bar-track">
                     <div
-                      className="task-kpi-bar-fill"
+                      className="tkreport-kpi-bar-fill"
                       style={{ width: `${Math.min(100, Math.max(0, Number(completionMetrics.rate)))}%` }}
                     />
                   </div>
-                  <div className="task-kpi-bar-ticks">
+                  <div className="tkreport-kpi-bar-ticks">
                     <span>0%</span>
                     <span>25%</span>
                     <span>50%</span>
@@ -411,47 +411,47 @@ const KpiDetailsModal = ({
               </div>
 
               {/* Progress Breakdown Cards Grid */}
-              <div className="task-kpi-progress-stats-grid">
-                <div className="task-kpi-progress-stat-card is-completed">
-                  <div className="task-kpi-progress-stat-title">
-                    <span className="task-kpi-progress-dot is-completed" />
+              <div className="tkreport-kpi-progress-stats-grid">
+                <div className="tkreport-kpi-progress-stat-card is-completed">
+                  <div className="tkreport-kpi-progress-stat-title">
+                    <span className="tkreport-kpi-progress-dot is-completed" />
                     Completed Tasks
                   </div>
-                  <div className="task-kpi-progress-stat-num">{completionMetrics.completed}</div>
-                  <div className="task-kpi-progress-stat-sub">
+                  <div className="tkreport-kpi-progress-stat-num">{completionMetrics.completed}</div>
+                  <div className="tkreport-kpi-progress-stat-sub">
                     {completionMetrics.pctCompleted}% of total
                   </div>
                 </div>
 
-                <div className="task-kpi-progress-stat-card is-in-progress">
-                  <div className="task-kpi-progress-stat-title">
-                    <span className="task-kpi-progress-dot is-in-progress" />
+                <div className="tkreport-kpi-progress-stat-card is-in-progress">
+                  <div className="tkreport-kpi-progress-stat-title">
+                    <span className="tkreport-kpi-progress-dot is-in-progress" />
                     In Progress
                   </div>
-                  <div className="task-kpi-progress-stat-num">{completionMetrics.inProgress}</div>
-                  <div className="task-kpi-progress-stat-sub">
+                  <div className="tkreport-kpi-progress-stat-num">{completionMetrics.inProgress}</div>
+                  <div className="tkreport-kpi-progress-stat-sub">
                     {completionMetrics.pctInProgress}% of total
                   </div>
                 </div>
 
-                <div className="task-kpi-progress-stat-card is-open">
-                  <div className="task-kpi-progress-stat-title">
-                    <span className="task-kpi-progress-dot is-open" />
+                <div className="tkreport-kpi-progress-stat-card is-open">
+                  <div className="tkreport-kpi-progress-stat-title">
+                    <span className="tkreport-kpi-progress-dot is-open" />
                     Not Started / Open
                   </div>
-                  <div className="task-kpi-progress-stat-num">{completionMetrics.notStarted}</div>
-                  <div className="task-kpi-progress-stat-sub">
+                  <div className="tkreport-kpi-progress-stat-num">{completionMetrics.notStarted}</div>
+                  <div className="tkreport-kpi-progress-stat-sub">
                     {completionMetrics.pctNotStarted}% of total
                   </div>
                 </div>
 
-                <div className="task-kpi-progress-stat-card is-overdue">
-                  <div className="task-kpi-progress-stat-title">
-                    <span className="task-kpi-progress-dot is-overdue" />
+                <div className="tkreport-kpi-progress-stat-card is-overdue">
+                  <div className="tkreport-kpi-progress-stat-title">
+                    <span className="tkreport-kpi-progress-dot is-overdue" />
                     Overdue
                   </div>
-                  <div className="task-kpi-progress-stat-num">{completionMetrics.overdue}</div>
-                  <div className="task-kpi-progress-stat-sub">
+                  <div className="tkreport-kpi-progress-stat-num">{completionMetrics.overdue}</div>
+                  <div className="tkreport-kpi-progress-stat-sub">
                     {completionMetrics.total > 0
                       ? ((completionMetrics.overdue / completionMetrics.total) * 100).toFixed(1)
                       : '0.0'}
@@ -461,54 +461,54 @@ const KpiDetailsModal = ({
               </div>
 
               {/* Multi-Segment Proportional Distribution Bar */}
-              <div className="task-kpi-distribution-box">
-                <div className="task-kpi-distribution-header">
+              <div className="tkreport-kpi-distribution-box">
+                <div className="tkreport-kpi-distribution-header">
                   <h4>Task Lifecycle Distribution</h4>
-                  <span className="task-kpi-distribution-count">{completionMetrics.total} Total Tasks</span>
+                  <span className="tkreport-kpi-distribution-count">{completionMetrics.total} Total Tasks</span>
                 </div>
-                <div className="task-kpi-segment-bar">
+                <div className="tkreport-kpi-segment-bar">
                   <div
-                    className="task-kpi-segment is-completed"
+                    className="tkreport-kpi-segment is-completed"
                     style={{ width: `${completionMetrics.pctCompleted}%` }}
                     title={`Completed: ${completionMetrics.completed} (${completionMetrics.pctCompleted}%)`}
                   />
                   <div
-                    className="task-kpi-segment is-in-progress"
+                    className="tkreport-kpi-segment is-in-progress"
                     style={{ width: `${completionMetrics.pctInProgress}%` }}
                     title={`In Progress: ${completionMetrics.inProgress} (${completionMetrics.pctInProgress}%)`}
                   />
                   <div
-                    className="task-kpi-segment is-open"
+                    className="tkreport-kpi-segment is-open"
                     style={{ width: `${completionMetrics.pctNotStarted}%` }}
                     title={`Not Started: ${completionMetrics.notStarted} (${completionMetrics.pctNotStarted}%)`}
                   />
                   <div
-                    className="task-kpi-segment is-other"
+                    className="tkreport-kpi-segment is-other"
                     style={{ width: `${completionMetrics.pctOther}%` }}
                     title={`Other: ${completionMetrics.other} (${completionMetrics.pctOther}%)`}
                   />
                 </div>
-                <div className="task-kpi-distribution-legend">
-                  <span className="task-kpi-legend-item">
-                    <span className="task-kpi-legend-dot is-completed" /> Completed ({completionMetrics.completed})
+                <div className="tkreport-kpi-distribution-legend">
+                  <span className="tkreport-kpi-legend-item">
+                    <span className="tkreport-kpi-legend-dot is-completed" /> Completed ({completionMetrics.completed})
                   </span>
-                  <span className="task-kpi-legend-item">
-                    <span className="task-kpi-legend-dot is-in-progress" /> In Progress ({completionMetrics.inProgress})
+                  <span className="tkreport-kpi-legend-item">
+                    <span className="tkreport-kpi-legend-dot is-in-progress" /> In Progress ({completionMetrics.inProgress})
                   </span>
-                  <span className="task-kpi-legend-item">
-                    <span className="task-kpi-legend-dot is-open" /> Open ({completionMetrics.notStarted})
+                  <span className="tkreport-kpi-legend-item">
+                    <span className="tkreport-kpi-legend-dot is-open" /> Open ({completionMetrics.notStarted})
                   </span>
                   {completionMetrics.other > 0 && (
-                    <span className="task-kpi-legend-item">
-                      <span className="task-kpi-legend-dot is-other" /> Other ({completionMetrics.other})
+                    <span className="tkreport-kpi-legend-item">
+                      <span className="tkreport-kpi-legend-dot is-other" /> Other ({completionMetrics.other})
                     </span>
                   )}
                 </div>
               </div>
 
               {/* Footer CTA to inspect individual completed tasks */}
-              <div className="task-kpi-progress-footer-cta">
-                <div className="task-kpi-progress-footer-info">
+              <div className="tkreport-kpi-progress-footer-cta">
+                <div className="tkreport-kpi-progress-footer-info">
                   <FaInfoCircle />
                   <span>
                     Click below to inspect the individual completed task records contributing to this rate.
@@ -516,7 +516,7 @@ const KpiDetailsModal = ({
                 </div>
                 <button
                   type="button"
-                  className="task-kpi-view-completed-btn"
+                  className="tkreport-kpi-view-completed-btn"
                   onClick={() => setActiveTab('list')}
                 >
                   View Completed Tasks List <FaArrowRight />
@@ -528,8 +528,8 @@ const KpiDetailsModal = ({
                TASK LIST VIEW (for Total, Pending, Completed, and Overdue cards)
                ================================================================= */
             displayedTasks.length === 0 ? (
-              <div className="task-kpi-modal-empty">
-                <FaRegFolderOpen className="task-kpi-modal-empty-icon" />
+              <div className="tkreport-kpi-modal-empty">
+                <FaRegFolderOpen className="tkreport-kpi-modal-empty-icon" />
                 <h4>No tasks found</h4>
                 <p>
                   {searchQuery
@@ -539,7 +539,7 @@ const KpiDetailsModal = ({
                 {searchQuery && (
                   <button
                     type="button"
-                    className="task-kpi-modal-empty-clear-btn"
+                    className="tkreport-kpi-modal-empty-clear-btn"
                     onClick={() => setSearchQuery('')}
                   >
                     Clear Search
@@ -547,8 +547,8 @@ const KpiDetailsModal = ({
                 )}
               </div>
             ) : (
-              <div className="task-scheduled-table-wrap task-kpi-table-wrap">
-                <table className="task-scheduled-table">
+              <div className="tkreport-scheduled-table-wrap tkreport-kpi-table-wrap">
+                <table className="tkreport-scheduled-table">
                   <thead>
                     <tr>
                       <th>Task</th>
@@ -565,64 +565,64 @@ const KpiDetailsModal = ({
                     {displayedTasks.map((task) => (
                       <tr
                         key={task.id}
-                        className="task-scheduled-row"
+                        className="tkreport-scheduled-row"
                         onClick={() => onSelectTask && onSelectTask(task.id)}
                       >
-                        <td className="task-scheduled-name">
-                          <span className="task-scheduled-title" title={task.title}>
+                        <td className="tkreport-scheduled-name">
+                          <span className="tkreport-scheduled-title" title={task.title}>
                             {task.title}
                           </span>
-                          <span className="task-scheduled-id">#{task.id}</span>
+                          <span className="tkreport-scheduled-id">#{task.id}</span>
                         </td>
                         <td>
-                          <span className={`task-badge-status task-badge-status--${task.status || 'open'}`}>
+                          <span className={`tkreport-badge-status tkreport-badge-status--${task.status || 'open'}`}>
                             {STATUS_CONFIG[task.status]?.label || task.status}
                           </span>
                         </td>
                         <td>
-                          <span className={`task-badge-priority task-badge-priority--${task.priority || 'medium'}`}>
+                          <span className={`tkreport-badge-priority tkreport-badge-priority--${task.priority || 'medium'}`}>
                             {task.priority || 'medium'}
                           </span>
                         </td>
                         <td>
-                          <span className="task-type-tag">
+                          <span className="tkreport-type-tag">
                             {task.task_type === 'recurring' ? 'Recurring' : 'One Time'}
                           </span>
                         </td>
                         <td>
-                          <span className="task-project-text" title={task.project_name || task.department || ''}>
+                          <span className="tkreport-project-text" title={task.project_name || task.department || ''}>
                             {task.project_name || task.department || '—'}
                           </span>
                         </td>
                         <td>
-                          <span className="task-kpi-due-text">
+                          <span className="tkreport-kpi-due-text">
                             {task.due_date || task.recurrence_next_date || '—'}
                           </span>
                         </td>
                         <td>
-                          <div className="task-assignees-preview">
+                          <div className="tkreport-assignees-preview">
                             {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0 ? (
                               task.assigned_users_meta.slice(0, 3).map((assignee, idx) => (
                                 <span
                                   key={idx}
-                                  className="task-assignee-avatar"
+                                  className="tkreport-assignee-avatar"
                                   title={assignee.name || `User ${assignee.user_id}`}
                                 >
                                   {(assignee.name ? assignee.name[0] : 'U').toUpperCase()}
                                 </span>
                               ))
                             ) : (
-                              <span className="task-unassigned">Unassigned</span>
+                              <span className="tkreport-unassigned">Unassigned</span>
                             )}
                             {task.assigned_users_meta?.length > 3 && (
-                              <span className="task-assignee-more">+{task.assigned_users_meta.length - 3}</span>
+                              <span className="tkreport-assignee-more">+{task.assigned_users_meta.length - 3}</span>
                             )}
                           </div>
                         </td>
                         <td>
                           <button
                             type="button"
-                            className="task-view-action-btn"
+                            className="tkreport-view-action-btn"
                             onClick={(e) => {
                               e.stopPropagation();
                               if (onSelectTask) onSelectTask(task.id);

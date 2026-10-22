@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FiPlus, FiX } from 'react-icons/fi';
 import { AID_RESIDENT_TYPES, emptyResidentRow } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Resident — one line per house:
  * Type | Ownership | Other | (Rent) | Area | Details | +
  */
-const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
+const AidResidentHousing = ({ value, onChange, title }) => {
+  const { t, lang } = useAidLang();
+  const panelTitle = title ?? t('resident');
+  const residentTypes = useMemo(
+    () => aidOptionsForLang(AID_RESIDENT_TYPES, lang),
+    [lang],
+  );
+
   const rows =
     Array.isArray(value?.resident_entries) && value.resident_entries.length
       ? value.resident_entries
@@ -46,7 +55,9 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
 
   return (
     <div className="aid-resident-housing">
-      {title ? <h4 className="aid-family-panel__title">{title}</h4> : null}
+      {panelTitle ? (
+        <h4 className="aid-family-panel__title">{panelTitle}</h4>
+      ) : null}
       <div className="aid-property-rows">
         {rows.map((row, idx) => {
           const isRented = row.resident_type === 'rented';
@@ -54,7 +65,7 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
             <div key={`res-${idx}`} className="aid-property-inline">
               <label className="aid-property-inline__field aid-property-inline__field--type">
                 {idx === 0 ? (
-                  <span className="aid-property-inline__label">Type</span>
+                  <span className="aid-property-inline__label">{t('type')}</span>
                 ) : (
                   <span className="aid-property-inline__label aid-property-inline__label--ghost">
                     &nbsp;
@@ -71,8 +82,8 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
                     });
                   }}
                 >
-                  <option value="">—</option>
-                  {AID_RESIDENT_TYPES.map((o) => (
+                  <option value="">{t('dash')}</option>
+                  {residentTypes.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -123,7 +134,9 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
               {isRented ? (
                 <label className="aid-property-inline__field aid-property-inline__field--area">
                   {idx === 0 ? (
-                    <span className="aid-property-inline__label">Rent (PKR)</span>
+                    <span className="aid-property-inline__label">
+                      {t('rentPkr')}
+                    </span>
                   ) : (
                     <span className="aid-property-inline__label aid-property-inline__label--ghost">
                       &nbsp;
@@ -144,7 +157,7 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
 
               <label className="aid-property-inline__field aid-property-inline__field--area">
                 {idx === 0 ? (
-                  <span className="aid-property-inline__label">Area</span>
+                  <span className="aid-property-inline__label">{t('area')}</span>
                 ) : (
                   <span className="aid-property-inline__label aid-property-inline__label--ghost">
                     &nbsp;
@@ -159,14 +172,14 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
                   onChange={(e) =>
                     updateRow(idx, { house_area_marla: e.target.value })
                   }
-                  placeholder="Marla"
+                  placeholder={t('marla')}
                 />
               </label>
 
               <label className="aid-property-inline__field aid-property-inline__field--details">
                 {idx === 0 ? (
                   <span className="aid-property-inline__label">
-                    House details
+                    {t('houseDetails')}
                   </span>
                 ) : (
                   <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -180,7 +193,7 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
                   onChange={(e) =>
                     updateRow(idx, { house_details: e.target.value })
                   }
-                  placeholder="Description / notes"
+                  placeholder={t('houseDescPlaceholder')}
                 />
               </label>
 
@@ -189,8 +202,8 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
                   <button
                     type="button"
                     className="aid-property-row__icon-btn aid-property-row__icon-btn--remove"
-                    aria-label="Remove residence"
-                    title="Remove"
+                    aria-label={t('removeResidence')}
+                    title={t('remove')}
                     onClick={() => setRows(rows.filter((_, i) => i !== idx))}
                   >
                     <FiX />
@@ -200,8 +213,8 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
                   <button
                     type="button"
                     className="aid-property-row__icon-btn aid-property-row__icon-btn--add"
-                    aria-label="Add residence"
-                    title="Add residence"
+                    aria-label={t('addResidence')}
+                    title={t('addResidence')}
                     onClick={() => setRows([...rows, emptyResidentRow()])}
                   >
                     <FiPlus />

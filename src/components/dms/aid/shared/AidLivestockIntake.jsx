@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FiPlus, FiX } from 'react-icons/fi';
 import {
   AID_LIVESTOCK_ANIMALS,
@@ -6,12 +6,29 @@ import {
   AID_YES_NO,
   emptyLivestockRow,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Livestock — one line when Yes:
  * Livestock? | Type | Qty | Ownership | (Owner / Contact if sharing) | +
  */
-const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
+const AidLivestockIntake = ({ value, onChange, title }) => {
+  const { t, lang } = useAidLang();
+  const panelTitle = title ?? t('livestock');
+  const yesNoOptions = useMemo(
+    () => aidOptionsForLang(AID_YES_NO, lang),
+    [lang],
+  );
+  const animalTypes = useMemo(
+    () => aidOptionsForLang(AID_LIVESTOCK_ANIMALS, lang),
+    [lang],
+  );
+  const ownershipOptions = useMemo(
+    () => aidOptionsForLang(AID_LIVESTOCK_OWNERSHIP, lang),
+    [lang],
+  );
+
   const hasLivestock = !!value?.has_livestock;
   const rows =
     Array.isArray(value?.livestock_entries) && value.livestock_entries.length
@@ -43,20 +60,22 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
 
   return (
     <div className="aid-livestock-intake">
-      {title ? <h4 className="aid-family-panel__title">{title}</h4> : null}
+      {panelTitle ? (
+        <h4 className="aid-family-panel__title">{panelTitle}</h4>
+      ) : null}
 
       {!hasLivestock ? (
         <div className="aid-property-inline aid-property-inline--land-only">
           <label className="aid-property-inline__field">
             <span className="aid-property-inline__label">
-              Do you have livestock?
+              {t('haveLivestock')}
             </span>
             <select
               className="aid-property-inline__control"
               value="no"
               onChange={onHasChange}
             >
-              {AID_YES_NO.map((o) => (
+              {yesNoOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -73,14 +92,14 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                 {idx === 0 ? (
                   <label className="aid-property-inline__field aid-property-inline__field--land">
                     <span className="aid-property-inline__label">
-                      Livestock?
+                      {t('livestockQ')}
                     </span>
                     <select
                       className="aid-property-inline__control"
                       value="yes"
                       onChange={onHasChange}
                     >
-                      {AID_YES_NO.map((o) => (
+                      {yesNoOptions.map((o) => (
                         <option key={o.value} value={o.value}>
                           {o.label}
                         </option>
@@ -97,7 +116,7 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                 <label className="aid-property-inline__field aid-property-inline__field--type">
                   {idx === 0 ? (
                     <span className="aid-property-inline__label">
-                      Type <span className="required-mark">*</span>
+                      {t('type')} <span className="required-mark">*</span>
                     </span>
                   ) : (
                     <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -112,7 +131,7 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                     }
                     required
                   >
-                    {AID_LIVESTOCK_ANIMALS.map((o) => (
+                    {animalTypes.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
                       </option>
@@ -123,7 +142,7 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                 <label className="aid-property-inline__field aid-property-inline__field--area">
                   {idx === 0 ? (
                     <span className="aid-property-inline__label">
-                      Qty <span className="required-mark">*</span>
+                      {t('qty')} <span className="required-mark">*</span>
                     </span>
                   ) : (
                     <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -149,7 +168,9 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
 
                 <label className="aid-property-inline__field aid-property-inline__field--type">
                   {idx === 0 ? (
-                    <span className="aid-property-inline__label">Ownership</span>
+                    <span className="aid-property-inline__label">
+                      {t('ownership')}
+                    </span>
                   ) : (
                     <span className="aid-property-inline__label aid-property-inline__label--ghost">
                       &nbsp;
@@ -168,7 +189,7 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                       });
                     }}
                   >
-                    {AID_LIVESTOCK_OWNERSHIP.map((o) => (
+                    {ownershipOptions.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
                       </option>
@@ -181,7 +202,7 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                     <label className="aid-property-inline__field aid-property-inline__field--details">
                       {idx === 0 ? (
                         <span className="aid-property-inline__label">
-                          Owner name
+                          {t('ownerName')}
                         </span>
                       ) : (
                         <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -195,13 +216,13 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                         onChange={(e) =>
                           updateRow(idx, { owner_name: e.target.value })
                         }
-                        placeholder="Owner"
+                        placeholder={t('ownerName')}
                       />
                     </label>
                     <label className="aid-property-inline__field aid-property-inline__field--area">
                       {idx === 0 ? (
                         <span className="aid-property-inline__label">
-                          Contact
+                          {t('contact')}
                         </span>
                       ) : (
                         <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -226,8 +247,8 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                     <button
                       type="button"
                       className="aid-property-row__icon-btn aid-property-row__icon-btn--remove"
-                      aria-label="Remove animal"
-                      title="Remove"
+                      aria-label={t('removeAnimal')}
+                      title={t('remove')}
                       onClick={() => setRows(rows.filter((_, i) => i !== idx))}
                     >
                       <FiX />
@@ -237,8 +258,8 @@ const AidLivestockIntake = ({ value, onChange, title = 'Livestock' }) => {
                     <button
                       type="button"
                       className="aid-property-row__icon-btn aid-property-row__icon-btn--add"
-                      aria-label="Add animal"
-                      title="Add animal"
+                      aria-label={t('addAnimal')}
+                      title={t('addAnimal')}
                       onClick={() => setRows([...rows, emptyLivestockRow()])}
                     >
                       <FiPlus />
