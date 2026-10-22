@@ -79,6 +79,42 @@ const flattenFamilyMembers = (tree = {}) => {
   return members;
 };
 
+/**
+ * Family members = beneficiary + family head + linked relatives (unique by person id).
+ */
+const buildFamilyMemberRows = (payload) => {
+  const person = payload?.person;
+  const tree = payload?.family_tree || {};
+  const households = Array.isArray(payload?.households) ? payload.households : [];
+  const rows = [];
+  const seen = new Set();
+
+  const push = (key, p, relation) => {
+    if (!p?.id || seen.has(p.id)) return;
+    seen.add(p.id);
+    rows.push({ key, person: p, relation });
+  };
+
+  // Beneficiary / ego always counts as a family member
+  push(person?.id ? `self-${person.id}` : 'self', person, 'beneficiary');
+
+  // Family head (household) always counts when distinct from beneficiary
+  households.forEach((hh) => {
+    const headFromRole = (hh.members || []).find(
+      (m) =>
+        String(m.role_in_household || '').toLowerCase() === 'head' && m.person,
+    )?.person;
+    const head = headFromRole || hh.head_person || null;
+    push(head?.id ? `head-${head.id}` : 'head', head, 'family_head');
+  });
+
+  flattenFamilyMembers(tree).forEach((m) => {
+    push(m.key, m.person, m.relation);
+  });
+
+  return rows;
+};
+
 const AidPeopleList = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
@@ -171,10 +207,9 @@ const AidPeopleList = () => {
     setFamilyLoadingId(personId);
     try {
       const res = await axiosInstance.get(`/aid/people/${personId}`);
-      const tree = res.data?.data?.family_tree || {};
       setFamilyCache((prev) => ({
         ...prev,
-        [personId]: flattenFamilyMembers(tree),
+        [personId]: buildFamilyMemberRows(res.data?.data || {}),
       }));
     } catch {
       setFamilyCache((prev) => ({

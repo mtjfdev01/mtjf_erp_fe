@@ -553,6 +553,7 @@ export const AID_VULNERABILITY_CHIPS = [
   { value: 'indigent', label: 'Indigent' },
   { value: 'elderly_no_support', label: 'Elderly No Support' },
   { value: 'chronic_illness', label: 'Chronic Illness' },
+  { value: 'divorced', label: 'Divorced' },
   { value: 'other', label: 'Other' },
 ];
 
