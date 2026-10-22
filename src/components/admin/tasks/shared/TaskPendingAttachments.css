@@ -4,7 +4,8 @@
 
 /* The old attachment helper text/title were removed so the section can match the
    reference mockup, which keeps the upload area minimal and visually cleaner. */
-.task-pending-attachments .add-task-section-title,
+.task-pending-attachments .task-add-section-title,
+.task-pending-attachments .task-update-section-title,
 .task-pending-attachments__hint {
   display: none;
 }
@@ -42,12 +43,12 @@
 .task-pending-attachments__dropzone-icon {
   width: 18px;
   height: 18px;
-  color: #5b3df5;
+  color: #00a3e0;
   flex-shrink: 0;
 }
 
 .task-pending-attachments__browse-link {
-  color: #5b3df5;
+  color: #00a3e0;
   font-weight: 700;
 }
 

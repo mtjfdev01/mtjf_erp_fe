@@ -27,7 +27,7 @@ import {
   TASK_PROJECT_PROGRAM_OPTIONS,
 } from '../shared/taskFilterOptions';
 
-const DONE_STATUSES = ['completed', 'closed', 'cancelled'];
+const DONE_STATUSES = ['completed', 'closed', 'cancelled', 'approved'];
 const INITIAL_VISIBLE = 3;
 const DAY_MS = 86400000;
 
@@ -110,8 +110,9 @@ const getDueMeta = (task) => {
     const when = task.completed_date || task.updated_at;
     return { kind: 'done', text: when ? formatShortDate(when) : capitalize(status), days: 0 };
   }
-  if (!task?.due_date) return { kind: 'none', text: 'No due date', days: 0 };
-  const due = parseDateOnly(task.due_date);
+  const taskDueDate = task?.due_date || task?.recurrence_next_date;
+  if (!taskDueDate) return { kind: 'none', text: 'No due date', days: 0 };
+  const due = parseDateOnly(taskDueDate);
   if (!due || Number.isNaN(due.getTime())) return { kind: 'none', text: 'No due date', days: 0 };
 
   const now = new Date();
@@ -152,7 +153,7 @@ const getInitials = (displayName) => {
 
 const URGENCY_GROUPS = [
   { key: 'overdue', label: 'Overdue', color: '#e5383b' },
-  { key: 'today', label: 'Due today', color: '#f59e0b' },
+  { key: 'today', label: 'Today Tasks', color: '#f59e0b' },
   { key: 'upcoming', label: 'Upcoming', color: '#2f4bd8' },
   { key: 'completed', label: 'Completed', color: '#16a34a' },
 ];
@@ -208,6 +209,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     totalItems,
     totalPages,
     categoryCounts,
+    groupData,
     currentPage,
     pageSize,
     sortField,
@@ -225,6 +227,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     defaultPageSize: 10,
     defaultSortField: 'created_at',
     activeTab,
+    groupBy,
     assignedUser,
     refreshNonce,
   });
@@ -233,8 +236,9 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
   const isManager = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
-    return ['dept_head', 'manager', 'assistant_manager', 'team_lead', 'coordinator'].includes(role);
-  }, [user?.role]);
+    const hasLeadershipRole = ['dept_head', 'manager', 'assistant_manager', 'team_lead', 'coordinator'].includes(role);
+    return hasLeadershipRole || (categoryCounts?.assigned_to_team > 0);
+  }, [user?.role, categoryCounts?.assigned_to_team]);
 
   const statusFilterOptions = useMemo(
     () => [
@@ -858,17 +862,19 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     let pick = () => '';
 
     if (groupBy === 'status') {
-      const present = Array.from(new Set(rows.map((t) => String(t.status || '').toLowerCase())));
+      const getStatusGroupKey = (task) => String(task.status || '').toLowerCase() || 'no_status';
+      const present = Array.from(new Set(rows.map(getStatusGroupKey)));
       defs = present.map((s) => ({
-        key: s, label: capitalize(s) || 'No status', color: STATUS_GROUP_COLORS[s] || '#64748b',
+        key: s, label: s === 'no_status' ? 'No status' : capitalize(s), color: STATUS_GROUP_COLORS[s] || '#64748b',
       }));
-      pick = (t) => String(t.status || '').toLowerCase();
+      pick = getStatusGroupKey;
     } else if (groupBy === 'priority') {
       defs = PRIORITY_GROUPS;
       pick = (t) => String(t.priority || 'medium').toLowerCase();
     } else {
       defs = URGENCY_GROUPS;
       pick = (t) => {
+        if (t.urgency_group) return t.urgency_group;
         const kind = getDueMeta(t).kind;
         if (kind === 'done') return 'completed';
         if (kind === 'overdue') return 'overdue';
@@ -878,9 +884,22 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     }
 
     return defs
-      .map((def) => ({ ...def, tasks: rows.filter((t) => pick(t) === def.key) }))
-      .filter((g) => g.tasks.length > 0);
-  }, [displayedApprovalTasks, groupBy]);
+      .map((def) => {
+        const hasServerGroups = groupData?.by === groupBy;
+        const matchingTasks = hasServerGroups && Array.isArray(groupData.groups?.[def.key])
+          ? groupData.groups[def.key]
+          : rows.filter((t) => pick(t) === def.key);
+        const count = hasServerGroups && groupData.counts?.[def.key] !== undefined
+          ? Number(groupData.counts[def.key])
+          : matchingTasks.length;
+        return {
+          ...def,
+          tasks: matchingTasks,
+          totalCount: count,
+        };
+      })
+      .filter((g) => g.tasks.length > 0 || (groupBy === 'urgency' && g.totalCount > 0));
+  }, [displayedApprovalTasks, groupBy, groupData]);
 
   const selectedTask = useMemo(() => {
     if (selectedTaskId == null) return null;
@@ -955,7 +974,12 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
   const renderGroup = (g) => {
     const isCompletedGroup = groupBy === 'urgency' && g.key === 'completed';
-    const open = isCompletedGroup ? openCompleted[g.key] === true : true;
+    // Collapse/Expand button is only displayed if more than 2 completed tasks exist
+    const hasCollapsibleToggle = isCompletedGroup && ((g.totalCount ?? g.tasks.length) > 2);
+    // Completed group displays the first 3 completed tasks by default (open by default)
+    const open = isCompletedGroup
+      ? (hasCollapsibleToggle ? openCompleted[g.key] !== false : true)
+      : true;
     const expanded = expandedGroups[`${groupBy}:${g.key}`] === true;
     const visible = expanded ? g.tasks : g.tasks.slice(0, INITIAL_VISIBLE);
     const hiddenCount = g.tasks.length - visible.length;
@@ -963,25 +987,33 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     if (isCompletedGroup) {
       return (
         <section key={g.key} className={`tlx-group tlx-group--collapsible ${open ? 'is-open' : ''}`}>
-          <button
-            type="button"
-            className="tlx-group__collapse"
-            onClick={() => setOpenCompleted((prev) => ({ ...prev, [g.key]: !open }))}
-            aria-expanded={open}
-          >
-            <span className="tlx-group__dot" style={{ background: g.color }} />
-            <span className="tlx-group__label">{g.label}</span>
-            <span className="tlx-group__count">{g.tasks.length}</span>
-            {/* Collapse/Expand toggle with up and down arrow icons */}
-            <span className="tlx-group__toggle">
-              <span>{open ? 'Collapse' : 'Expand'}</span>
-              {open ? (
-                <FiChevronUp className="tlx-group__toggle-icon" aria-hidden />
-              ) : (
-                <FiChevronDown className="tlx-group__toggle-icon" aria-hidden />
-              )}
-            </span>
-          </button>
+          {hasCollapsibleToggle ? (
+            <button
+              type="button"
+              className="tlx-group__collapse"
+              onClick={() => setOpenCompleted((prev) => ({ ...prev, [g.key]: !open }))}
+              aria-expanded={open}
+            >
+              <span className="tlx-group__dot" style={{ background: g.color }} />
+              <span className="tlx-group__label">{g.label}</span>
+              <span className="tlx-group__count">{g.totalCount ?? g.tasks.length}</span>
+              {/* Collapse/Expand toggle with up and down arrow icons (only shown if > 2 tasks) */}
+              <span className="tlx-group__toggle">
+                <span>{open ? 'Collapse' : 'Expand'}</span>
+                {open ? (
+                  <FiChevronUp className="tlx-group__toggle-icon" aria-hidden />
+                ) : (
+                  <FiChevronDown className="tlx-group__toggle-icon" aria-hidden />
+                )}
+              </span>
+            </button>
+          ) : (
+            <header className="tlx-group__collapse tlx-group__collapse--static">
+              <span className="tlx-group__dot" style={{ background: g.color }} />
+              <span className="tlx-group__label">{g.label}</span>
+              <span className="tlx-group__count">{g.totalCount ?? g.tasks.length}</span>
+            </header>
+          )}
           {open && (
             <div className="tlx-group__rows">
               {visible.map(renderTaskRow)}
@@ -1012,7 +1044,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
         <header className="tlx-group__header">
           <span className="tlx-group__dot" style={{ background: g.color }} />
           <span className="tlx-group__label">{g.label}</span>
-          <span className="tlx-group__count">{g.tasks.length}</span>
+          <span className="tlx-group__count">{g.totalCount ?? g.tasks.length}</span>
         </header>
         <div className="tlx-group__rows">
           {visible.map(renderTaskRow)}
@@ -1347,45 +1379,42 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               </button>
             </div>
 
-            <div className="tlx-head">
-              <h1 className="tlx-head__title">Tasks</h1>
-              <div className="tlx-scope" role="tablist" aria-label="Task scope">
-                {scopeTabs.map(({ key, label, title, Icon, count, badge }) => (
-                  <button
-                    key={key}
-                    type="button"
-                    role="tab"
-                    aria-selected={activeTab === key}
-                    className={`tlx-scope__btn ${activeTab === key ? 'is-active' : ''}`}
-                    onClick={() => handleTabChange(key)}
-                    title={title}
-                  >
-                    <Icon aria-hidden />
-                    <span className="tlx-scope__label">{label}</span>
-                    <span className="tlx-scope__count">{count ?? 0}</span>
-                    {badge > 0 && (
-                      <span className="tl-approval-pending-badge" title={`${badge} pending approval`}>{badge}</span>
-                    )}
-                  </button>
-                ))}
-              </div>
+            <div className={`tlx-head ${activeTab === 'approval_tasks' ? 'tlx-head--approvals' : ''}`}>
+              <h1 className="tlx-head__title">{activeTab === 'approval_tasks' ? 'Approvals' : 'Tasks'}</h1>
+              {/* Task scope filters (Mine, Assigned by me, Team) are hidden when viewing the Approvals tab */}
+              {activeTab !== 'approval_tasks' && (
+                <div className="tlx-scope" role="tablist" aria-label="Task scope">
+                  {scopeTabs.map(({ key, label, title, Icon, count, badge }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      role="tab"
+                      aria-selected={activeTab === key}
+                      className={`tlx-scope__btn ${activeTab === key ? 'is-active' : ''}`}
+                      onClick={() => handleTabChange(key)}
+                      title={title}
+                    >
+                      <Icon aria-hidden />
+                      <span className="tlx-scope__label">{label}</span>
+                      <span className="tlx-scope__count">{count ?? 0}</span>
+                      {badge > 0 && (
+                        <span className="tl-approval-pending-badge" title={`${badge} pending approval`}>{badge}</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="tlx-toolbar">
-              <div className="tlx-toolbar__search">
-                <FiSearch aria-hidden />
-                <input
-                  type="search"
-                  value={tempFilters.search || ''}
-                  onChange={(event) => handleFilterChange('search', event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleApplyFilters();
-                  }}
-                  placeholder="Filter..."
-                  aria-label="Filter tasks"
-                />
-              </div>
-
+              <div className="tlx-filter-assignee">
+                  <TaskAssigneeFilter
+                    value={assignedUser}
+                    onSelect={setAssignedUser}
+                    onClear={() => setAssignedUser(null)}
+                    placeholder="Filter by assignee..."
+                  />
+                </div>
               <button
                 type="button"
                 className={`tlx-chip ${filtersOpen ? 'is-active' : ''}`}
@@ -1410,14 +1439,19 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
             <CollapsibleFilters open={filtersOpen}>
               <div className="filters-section tlx-filters">
-                <div className="tlx-filter-assignee">
-                  <TaskAssigneeFilter
-                    value={assignedUser}
-                    onSelect={setAssignedUser}
-                    onClear={() => setAssignedUser(null)}
-                    placeholder="Filter by assignee..."
-                  />
-                </div>
+                <div className="tlx-toolbar__search">
+                <FiSearch aria-hidden />
+                <input
+                  type="search"
+                  value={tempFilters.search || ''}
+                  onChange={(event) => handleFilterChange('search', event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') handleApplyFilters();
+                  }}
+                  placeholder="Filter..."
+                  aria-label="Filter tasks"
+                />
+              </div>
                 <DropdownFilter
                   filterKey="department"
                   label="Department"

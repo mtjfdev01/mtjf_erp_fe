@@ -90,7 +90,7 @@ const DatePill = ({ name, value, onChange, icon: Icon, placeholder, title, showD
       <span className={`pill-text ${value ? '' : 'is-placeholder'}`}>
         {value ? formatPillDate(value) : placeholder}
       </span>
-      {!value && showDot && <span className="pill-dot" />}
+      {!value && showDot && <span className="task-add-pill-dot" />}
       <input
         ref={inputRef}
         type="date"
@@ -307,7 +307,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
               {value || 'Project'}
             </span>
           </span>
-          {!value && <span className="pill-dot" />}
+          {!value && <span className="task-add-pill-dot" />}
           <span className="task-custom-select-arrow">▼</span>
         </div>
 
@@ -830,21 +830,21 @@ const AddTask = ({
   return (
     <>
       {!isModal && <Navbar />}
-      <div className={isModal ? 'add-task-modal-backdrop' : 'add-task-page'}>
-        <div className="add-task-card add-task-card--popup">
+      <div className={isModal ? 'task-add-modal-backdrop' : 'task-add-page'}>
+        <div className="task-add-card task-add-card--popup">
 
           {/* Header: [Department chip] › New task                    ✕ */}
-          <div className="task-form-modal-header">
-            <div className="task-form-breadcrumb">
-              <span className="task-form-dept-chip">{currentDepartmentLabel} Department</span>
-              <span className="task-form-breadcrumb-sep">›</span>
-              <h2 className="task-form-modal-title">
+          <div className="task-add-modal-header">
+            <div className="task-add-breadcrumb">
+              <span className="task-add-dept-chip">{currentDepartmentLabel} Department</span>
+              <span className="task-add-breadcrumb-sep">›</span>
+              <h2 className="task-add-modal-title">
                 {isModal ? 'New task' : 'Add Task'}
               </h2>
             </div>
             <button
               type="button"
-              className="task-form-modal-close"
+              className="task-add-modal-close"
               onClick={handleBack}
               aria-label="Close"
             >
@@ -852,16 +852,16 @@ const AddTask = ({
             </button>
           </div>
 
-          {error && <div className="add-task-error">{error}</div>}
+          {error && <div className="task-add-error">{error}</div>}
 
           {submitting && (
-            <div className="add-task-submitting-overlay">
+            <div className="task-add-submitting-overlay">
               Creating task, please wait...
             </div>
           )}
 
-          <form ref={formRef} onSubmit={handleSubmit} className="add-task-form">
-            <div className="add-task-body">
+          <form ref={formRef} onSubmit={handleSubmit} className="task-add-form">
+            <div className="task-add-body">
 
               {/* Main Title & Description */}
               <div className="task-title-section">
@@ -869,7 +869,7 @@ const AddTask = ({
                   ref={titleRef}
                   type="text"
                   name="title"
-                  className="task-title-input add-task-title-input"
+                  className="task-title-input task-add-title-input"
                   placeholder="Enter task title..."
                   value={form.title}
                   onChange={handleChange}
@@ -888,7 +888,7 @@ const AddTask = ({
 
               {/* Meta Pills Row */}
               <div className="task-meta-pills">
-                <div className={`add-task-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                <div className={`task-add-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
                   {assignedUsers.length > 0 && (
                     <span
                       className="assignee-avatar"
@@ -988,10 +988,10 @@ const AddTask = ({
 
                {/* Approvers */}
                 {form.workflow_type === 'approval_required' && (
-                  <div className={`add-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
-                    <FiClipboard className="add-task-approver-icon" aria-hidden="true" />
+                  <div className={`task-add-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                    <FiClipboard className="task-add-approver-icon" aria-hidden="true" />
                     <SearchableMultiSelect
-                      className="task-approvers-select add-task-approvers-select"
+                      className="task-approvers-select task-add-approvers-select"
                       label=""
                       apiEndpoint="/users/options"
                       apiParams={multiSelectParams}
@@ -1017,12 +1017,12 @@ const AddTask = ({
               </div>
 
               {assignedUsers.length > 1 && (
-                <div className="popup-assignee-summary">
-                  <span className="popup-assignee-count">
+                <div className="task-add-assignee-summary">
+                  <span className="task-add-assignee-count">
                     {'\u2713'} {assignedUsers.length} users selected
                   </span>
                   {assignedUsers.map((u) => (
-                    <span key={u.id} className="popup-assignee-chip">
+                    <span key={u.id} className="task-add-assignee-chip">
                       <span className="chip-avatar">{getInitials(u)}</span>
                       <span className="chip-name">{userDisplayName(u)}</span>
                       <span className="chip-dept">
@@ -1037,7 +1037,7 @@ const AddTask = ({
 
               {/* Recurring Conditional Block */}
               {form.task_type === 'recurring' && (
-                <div className="add-task-recurring-fields">
+                <div className="task-add-recurring-fields">
                   <TaskFormSelect
                     name="recurrence_frequency"
                     label="Recurring frequency"
@@ -1144,7 +1144,7 @@ const AddTask = ({
             </div>
 
             {/* Footer */}
-            <div className="add-task-footer">
+            <div className="task-add-footer">
               <label className="footer-checkbox-label">
                 <input
                   type="checkbox"
@@ -1157,13 +1157,13 @@ const AddTask = ({
               <div className="footer-actions">
                 <button
                   type="button"
-                  className="add-task-cancel-btn"
+                  className="task-add-cancel-btn"
                   onClick={handleBack}
                 >
                   Cancel
                 </button>
                 <button
-                  className="add-task-submit"
+                  className="task-add-submit"
                   type="submit"
                   disabled={submitting || !taskPerms.canCreate}
                   title={createTitle}

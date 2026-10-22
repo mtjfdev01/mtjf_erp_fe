@@ -107,7 +107,7 @@ export default function TaskCardMenu({
   const dropdown = open ? (
     <div
       ref={dropdownRef}
-      className="trello-card-menu-dropdown trello-card-menu-dropdown--portal"
+      className="task-board-card-menu-dropdown task-board-card-menu-dropdown--portal"
       style={
         dropdownStyle
           ? { top: `${dropdownStyle.top}px`, left: `${dropdownStyle.left}px` }
@@ -117,27 +117,27 @@ export default function TaskCardMenu({
     >
       <button
         type="button"
-        className={`trello-card-menu-item ${submenu === 'color' ? 'trello-card-menu-item--active' : ''}`}
+        className={`task-board-card-menu-item ${submenu === 'color' ? 'task-board-card-menu-item--active' : ''}`}
         onClick={() => onSubmenu(submenu === 'color' ? null : 'color')}
       >
         <FiDroplet />
         <span>Change Color</span>
-        <FiChevronRight className="trello-card-menu-chevron" />
+        <FiChevronRight className="task-board-card-menu-chevron" />
       </button>
       {submenu === 'color' && (
-        <div className="trello-card-menu-submenu">
+        <div className="task-board-card-menu-submenu">
           {CARD_COLOR_OPTIONS.map((opt) => (
             <button
               key={opt.id}
               type="button"
-              className="trello-card-menu-subitem"
+              className="task-board-card-menu-subitem"
               onClick={() => {
                 onColorChange(opt.id);
                 onClose();
               }}
             >
               <span
-                className="trello-card-menu-color-swatch"
+                className="task-board-card-menu-color-swatch"
                 style={{ background: opt.value, borderColor: opt.border }}
               />
               {opt.label}
@@ -148,21 +148,21 @@ export default function TaskCardMenu({
 
       <button
         type="button"
-        className={`trello-card-menu-item ${submenu === 'move' ? 'trello-card-menu-item--active' : ''}`}
+        className={`task-board-card-menu-item ${submenu === 'move' ? 'task-board-card-menu-item--active' : ''}`}
         onClick={() => onSubmenu(submenu === 'move' ? null : 'move')}
         disabled={!canMove}
       >
         <FiCornerDownRight />
         <span>Move To</span>
-        <FiChevronRight className="trello-card-menu-chevron" />
+        <FiChevronRight className="task-board-card-menu-chevron" />
       </button>
       {submenu === 'move' && (
-        <div className="trello-card-menu-submenu trello-card-menu-submenu--scroll">
+        <div className="task-board-card-menu-submenu task-board-card-menu-submenu--scroll">
           {moveTargets.map((col) => (
             <button
               key={col.id}
               type="button"
-              className="trello-card-menu-subitem"
+              className="task-board-card-menu-subitem"
               disabled={!canMove}
               onClick={() => {
                 onMoveTo(col.id);
@@ -170,7 +170,7 @@ export default function TaskCardMenu({
               }}
             >
               <span
-                className="trello-board-column-dot"
+                className="task-board-column-dot"
                 style={{ backgroundColor: col.color }}
               />
               {col.label}
@@ -179,11 +179,11 @@ export default function TaskCardMenu({
         </div>
       )}
 
-      <div className="trello-card-menu-divider" />
+      <div className="task-board-card-menu-divider" />
 
       <button
         type="button"
-        className="trello-card-menu-item"
+        className="task-board-card-menu-item"
         disabled={!canView}
         onClick={() => {
           onView();
@@ -196,7 +196,7 @@ export default function TaskCardMenu({
 
       <button
         type="button"
-        className="trello-card-menu-item"
+        className="task-board-card-menu-item"
         disabled={!canEdit}
         onClick={() => {
           onEdit();
@@ -207,11 +207,11 @@ export default function TaskCardMenu({
         <span>Edit Task</span>
       </button>
 
-      <div className="trello-card-menu-divider" />
+      <div className="task-board-card-menu-divider" />
 
       <button
         type="button"
-        className="trello-card-menu-item trello-card-menu-item--danger"
+        className="task-board-card-menu-item task-board-card-menu-item--danger"
         disabled={!canDelete}
         onClick={() => {
           onDelete();
@@ -225,11 +225,11 @@ export default function TaskCardMenu({
   ) : null;
 
   return (
-    <div className="trello-card-menu" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+    <div className="task-board-card-menu" ref={menuRef} onClick={(e) => e.stopPropagation()}>
       <button
         ref={triggerRef}
         type="button"
-        className="trello-card-menu-trigger"
+        className="task-board-card-menu-trigger"
         aria-label="Task actions"
         aria-expanded={open}
         onClick={(e) => {
