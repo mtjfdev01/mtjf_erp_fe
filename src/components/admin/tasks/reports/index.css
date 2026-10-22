@@ -11,27 +11,27 @@
   --t-bg: #F1F5F9;
   --t-surface: rgba(255, 255, 255, 0.9);
   --t-surface-border: rgba(255, 255, 255, 0.6);
-  --t-text: #0F172A;
+  --t-text: #000000;
   --t-muted: #64748B;
-  --t-primary: #6D28D9;
-  --t-primary-light: #8B5CF6;
+  --t-primary: #00a3e0;
+  --t-primary-light: #00a3e0;
 
   --t-dark-bg: #FFFFFF;
   --t-dark-card: #FFFFFF;
   --t-dark-border: #E2E8F0;
-  --t-dark-text: #0F172A;
+  --t-dark-text: #000000;
   --t-dark-muted: #64748B;
 
-  --t-cyan: #06B6D4;
-  --t-yellow: #F59E0B;
-  --t-green: #10B981;
-  --t-red: #EF4444;
-  --t-purple: #8B5CF6;
-  --t-orange: #F97316;
+  --t-cyan: #00a3e0;
+  --t-yellow: #eaaa00;
+  --t-green: #009a44;
+  --t-red: #e4002b;
+  --t-purple: #00a3e0;
+  --t-orange: #eaaa00;
 
   --t-shadow-lg: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
   --t-shadow-xl: 0 20px 40px -10px rgba(0, 0, 0, 0.12);
-  --t-shadow-glow: 0 0 20px rgba(109, 40, 217, 0.3);
+  --t-shadow-glow: 0 0 20px rgba(42, 136, 149, 0.3);
 
   --t-radius-xl: 24px;
   --t-radius-lg: 16px;
@@ -46,7 +46,7 @@
 
 /* ---------- Container & layout ---------- */
 .tkreport-report-container {
-  margin: 35px auto 0;
+  margin: 60px auto 0;
   padding: 1.5rem 2rem 2rem;
   width: 100%;
   min-height: 100vh;
@@ -163,11 +163,11 @@
 .tkreport-back-btn:hover { background: rgba(255, 255, 255, 0.2); transform: translateX(-4px); }
 .tkreport-back-btn--primary {
   background: var(--t-primary);
-  box-shadow: 0 4px 14px rgba(109, 40, 217, 0.35);
+  box-shadow: 0 4px 14px rgba(56, 213, 233, 0.35);
 }
 .tkreport-back-btn--primary:hover {
   background: var(--t-primary-light);
-  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 14px rgba(56, 213, 233, 0.35);
   transform: translateX(-4px);
 }
 
@@ -206,7 +206,7 @@
   border-radius: 4px;
   flex-shrink: 0;
 }
-.tkreport-calendar-legend-swatch--today { background: rgba(109, 40, 217, 0.15); border: 1px solid rgba(139, 92, 246, 0.4); }
+.tkreport-calendar-legend-swatch--today { box-shadow: 0 4px 14px rgba(56, 213, 233, 0.35); border: 1px solid rgba(139, 92, 246, 0.4); }
 .tkreport-calendar-legend-swatch--selected { background: var(--t-primary); }
 
 .tkreport-calendar-legend-divider {
@@ -250,7 +250,7 @@
   justify-content: center;
   width: 34px;
   height: 34px;
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  /* box-shadow: 0 4px 14px rgba(56, 213, 233, 0.35);; */
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.8);
   color: var(--t-primary);
@@ -306,7 +306,7 @@
 
 .tkreport-day-cell--today {
   background: rgba(245, 243, 255, 0.85);
-  border-color: rgba(139, 92, 246, 0.45);
+  /* box-shadow: 0 4px 14px rgba(56, 213, 233, 0.35); */
 }
 
 .tkreport-day-cell--has-tasks {
@@ -379,7 +379,7 @@
   color: var(--t-primary);
   font-size: 11px;
   font-weight: 800;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 0 4px 14px rgba(56, 213, 233, 0.35);
   line-height: 1;
 }
 .tkreport-day-cell--selected .tkreport-day-total-badge {
@@ -564,11 +564,11 @@
 
 .tkreport-kpi-value { font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
 
-.tkreport-text-cyan { color: #0284C7; }
-.tkreport-text-yellow { color: #D97706; }
-.tkreport-text-green { color: #059669; }
-.tkreport-text-red { color: #DC2626; }
-.tkreport-text-purple { color: #7C3AED; }
+.tkreport-text-cyan { color: #00a3e0; }
+.tkreport-text-yellow { color: #eaaa00; }
+.tkreport-text-green { color: #009a44; }
+.tkreport-text-red { color: #e4002b; }
+.tkreport-text-purple { color: #00a3e0; }
 
 /* ==========================================================================
    Middle Analytics Grid (Dark Dashboard: Calendar, Priority, Status, Donut)
@@ -724,12 +724,12 @@
 
 /* Highlight style for current calendar day (Today) */
 .tkreport-nested-dashboard .tkreport-day-cell--today {
-  border: 1px solid rgba(109, 40, 217, 0.4);
+  border: 1px solid rgba(40, 173, 217, 0.4);
   background: rgba(109, 40, 217, 0.06);
 }
 
 .tkreport-nested-dashboard .tkreport-day-cell--today .tkreport-day-number {
-  color: #6D28D9;
+  color: #00a3e0;
   font-weight: 800;
 }
 
@@ -738,7 +738,7 @@
 .tkreport-nested-dashboard .tkreport-day-cell--selected:hover {
   background: var(--t-primary) !important;
   border-color: var(--t-primary) !important;
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 163, 224, 0.35);
   z-index: 5;
 }
 
@@ -782,7 +782,7 @@
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.2px;
-  color: #0284C7;
+  color: #00a3e0;
   background: #E0F2FE;
   border: 1px solid #BAE6FD;
   box-shadow: none;
@@ -797,9 +797,9 @@
 }
 
 .tkreport-nested-dashboard .tkreport-day-cell--today:not(.tkreport-day-cell--selected) .tkreport-day-count {
-  background: rgba(109, 40, 217, 0.12);
-  border-color: rgba(109, 40, 217, 0.3);
-  color: #6D28D9;
+  background: rgba(40, 196, 217, 0.12);
+  border-color: rgba(40, 217, 211, 0.3);
+  color: #00a3e0;
 }
 
 /* Compact indicator legend at the base of the calendar card */
@@ -830,8 +830,9 @@
 }
 
 .tkreport-calendar-legend-dot--today {
-  border: 1.5px solid #8B5CF6;
-  background: rgba(139, 92, 246, 0.2);
+  box-shadow: 0 4px 14px rgba(40, 196, 217, 0.35);
+  border: 1.5px solid #00a3e0;
+  background: rgba(92, 218, 246, 0.2);
 }
 
 .tkreport-calendar-legend-dot--selected {
@@ -849,13 +850,13 @@
   font-size: 7.5px;
   font-weight: 700;
   line-height: 1;
-  color: #0284C7;
+  color: #00a3e0;
   background: #E0F2FE;
   border: 1px solid #BAE6FD;
 }
 
 .tkreport-calendar-legend-dot--tasks {
-  background: #0284C7;
+  background: #00a3e0;
 }
 
 /* Donut (Chart.js canvas) + legend */
@@ -898,7 +899,7 @@
 .tkreport-donut-legend-value { color: var(--t-dark-text); font-weight: 800; }
 
 .tkreport-state-message { margin-top: 8px; font-size: 11px; font-weight: 600; color: var(--t-dark-muted); text-align: center; }
-.tkreport-state-message--error { color: #DC2626; }
+.tkreport-state-message--error { color: #e4002b; }
 
 /* Status rows */
 .tkreport-status-list { display: flex; flex-direction: column; gap: 10px; }
@@ -943,10 +944,10 @@
   font-weight: 800;
   color: var(--t-dark-text);
 }
-.tkreport-priority-bar--low { background: linear-gradient(180deg, #34D399, #10B981); }
-.tkreport-priority-bar--medium { background: linear-gradient(180deg, #FBBF24, #F59E0B); }
+.tkreport-priority-bar--low { background: linear-gradient(180deg, #34D399, #009a44); }
+.tkreport-priority-bar--medium { background: linear-gradient(180deg, #FBBF24, #eaaa00); }
 .tkreport-priority-bar--high { background: linear-gradient(180deg, #FB923C, #F97316); }
-.tkreport-priority-bar--critical { background: linear-gradient(180deg, #F87171, #EF4444); }
+.tkreport-priority-bar--critical { background: linear-gradient(180deg, #F87171, #e4002b); }
 .tkreport-priority-label { font-size: 11px; font-weight: 600; color: var(--t-dark-muted); }
 
 /* Shared status dots (donut legend, legacy legends) */
@@ -957,14 +958,14 @@
   flex-shrink: 0;
   transition: transform 0.2s ease;
 }
-.tkreport-progress-dot--open { background-color: #077af5; }
-.tkreport-progress-dot--in-progress { background-color: #fccf3a; }
+.tkreport-progress-dot--open { background-color: #00a3e0; }
+.tkreport-progress-dot--in-progress { background-color: #eaaa00; }
 .tkreport-progress-dot--pending-approval { background-color: #A281C7; }
 .tkreport-progress-dot--approved { background-color: #61C0AA; }
-.tkreport-progress-dot--rejected { background-color: #ef4444; }
-.tkreport-progress-dot--completed { background-color: #0feb42; }
+.tkreport-progress-dot--rejected { background-color: #e4002b; }
+.tkreport-progress-dot--completed { background-color: #009a44; }
 .tkreport-progress-dot--closed { background-color: #6B7280; }
-.tkreport-progress-dot--cancelled { background-color: #f10a1d; }
+.tkreport-progress-dot--cancelled { background-color: #e4002b; }
 
 /* ---------- Scheduled tasks section (in nested dashboard - White Mode) ---------- */
 .tkreport-scheduled-card {
@@ -1013,8 +1014,8 @@
   align-items: center;
   padding: 3px 10px;
   border-radius: 999px;
-  background: #EDE9FE;
-  border: 1px solid #DDD6FE;
+  background: #e9fcfe;
+  border: 1px solid #d6effe;
   color: var(--t-primary);
   font-size: 12px;
   font-weight: 700;
@@ -1093,14 +1094,14 @@
   white-space: nowrap;
 }
 
-.tkreport-badge-status--open { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
-.tkreport-badge-status--in_progress { background: #FFFBEB; color: #B45309; border: 1px solid #FDE68A; }
-.tkreport-badge-status--pending_approval { background: #F5F3FF; color: #6D28D9; border: 1px solid #DDD6FE; }
-.tkreport-badge-status--approved { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
-.tkreport-badge-status--completed { background: #ECFDF5; color: #047857; border: 1px solid #A7F3D0; }
+.tkreport-badge-status--open { background: #EFF6FF; color: #00a3e0; border: 1px solid #BFDBFE; }
+.tkreport-badge-status--in_progress { background: #FFFBEB; color: #eaaa00; border: 1px solid #FDE68A; }
+.tkreport-badge-status--pending_approval { background: #F5F3FF; color: #00a3e0; border: 1px solid #DDD6FE; }
+.tkreport-badge-status--approved { background: #ECFDF5; color: #009a44; border: 1px solid #A7F3D0; }
+.tkreport-badge-status--completed { background: #ECFDF5; color: #009a44; border: 1px solid #A7F3D0; }
 .tkreport-badge-status--closed { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
-.tkreport-badge-status--rejected { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
-.tkreport-badge-status--cancelled { background: #FEF2F2; color: #B91C1C; border: 1px solid #FECACA; }
+.tkreport-badge-status--rejected { background: #FEF2F2; color: #e4002b; border: 1px solid #FECACA; }
+.tkreport-badge-status--cancelled { background: #FEF2F2; color: #e4002b; border: 1px solid #FECACA; }
 
 .tkreport-badge-priority {
   display: inline-flex;
@@ -1113,9 +1114,9 @@
 }
 
 .tkreport-badge-priority--low { background: #F1F5F9; color: #475569; border: 1px solid #E2E8F0; }
-.tkreport-badge-priority--medium { background: #E0F2FE; color: #0369A1; border: 1px solid #BAE6FD; }
+.tkreport-badge-priority--medium { background: #E0F2FE; color: #00a3e0; border: 1px solid #BAE6FD; }
 .tkreport-badge-priority--high { background: #FFEDD5; color: #C2410C; border: 1px solid #FED7AA; }
-.tkreport-badge-priority--critical { background: #FEE2E2; color: #B91C1C; border: 1px solid #FECACA; }
+.tkreport-badge-priority--critical { background: #FEE2E2; color: #e4002b; border: 1px solid #FECACA; }
 
 .tkreport-type-tag {
   font-size: 11px;
@@ -1166,9 +1167,9 @@
 
 .tkreport-view-action-btn {
   padding: 5px 12px;
-  border: 1px solid #DDD6FE;
+  border: 1px solid #d6fbfe;
   border-radius: 999px;
-  background: #F5F3FF;
+  background: #f3fffe;
   color: var(--t-primary);
   font-size: 11px;
   font-weight: 700;
@@ -1238,21 +1239,21 @@
   gap: 8px;
   padding: 8px 22px;
   border-radius: 999px;
-  border: 1px solid #DDD6FE;
-  background: #F5F3FF;
+  border: 1px solid #d6f8fe;
+  background: #f3fbff;
   color: var(--t-primary);
   font-size: 12.5px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 1px 3px rgba(109, 40, 217, 0.08);
+  /* box-shadow: 0 1px 3px rgba(40, 185, 217, 0.08); */
 }
 
 .tkreport-scheduled-more-btn:hover {
   background: var(--t-primary);
   border-color: var(--t-primary);
   color: #ffffff;
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.25);
+  /* box-shadow: 0 4px 12px rgba(40, 185, 217, 0.25); */
   transform: translateY(-1px);
 }
 
@@ -1367,26 +1368,26 @@
 
 .tkreport-report-container .tkreport-filter-select:hover,
 .tkreport-report-container .tkreport-filter-toggle-btn:hover {
-  border-color: #8B5CF6;
+  border-color: #00a3e0;
   background-color: #F8FAFC;
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.12);
+  box-shadow: 0 2px 8px rgba(40, 185, 217, 0.12);
 }
 
 .tkreport-report-container .tkreport-filter-select:focus {
   outline: none;
-  border-color: #6D28D9;
-  box-shadow: 0 0 0 3px rgba(109, 40, 217, 0.15);
+  border-color: #00a3e0;
+  box-shadow: 0 0 0 3px rgba(40, 185, 217, 0.15);
 }
 
 .tkreport-report-container .tkreport-filter-toggle-btn.active {
   border-color: transparent;
-  background: linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, #00a3e0 0%, #00a3e0 100%);
   color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);
+  box-shadow: 0 4px 12px rgba(40, 185, 217, 0.3);
 }
 
 .tkreport-report-container .tkreport-filter-toggle-btn.active:hover {
-  box-shadow: 0 6px 16px rgba(109, 40, 217, 0.4);
+  box-shadow: 0 6px 16px rgba(40, 185, 217, 0.4);
 }
 
 /* Filter popover (kept for the header popover variant) */
@@ -1604,7 +1605,7 @@
 .tkreport-team-search-wrapper { position: relative; display: flex; align-items: center; min-width: 280px; }
 .tkreport-team-search-icon { position: absolute; left: 12px; z-index: 2; font-size: 0.9rem; color: #94a3b8; pointer-events: none; }
 .tkreport-team-search-input { width: 100%; padding: 0.5rem 1rem 0.5rem 2.2rem; border: 1px solid #e2e8f0; border-radius: 999px; background-color: #f8fafc; color: #1e293b; font-size: 0.85rem; transition: all 0.2s ease; }
-.tkreport-team-search-input:focus { outline: none; border-color: #8B5CF6; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
+.tkreport-team-search-input:focus { outline: none; border-color: #00a3e0; background-color: #ffffff; box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15); }
 .tkreport-team-search-input::placeholder { color: #94a3b8; }
 .tkreport-team-empty-search { grid-column: 1 / -1; padding: 3rem; border: 2px dashed #e2e8f0; border-radius: 1rem; background-color: #f8fafc; color: #64748b; font-size: 0.95rem; font-weight: 500; text-align: center; }
 .tkreport-team-active-badge { padding: 0.5rem 0.75rem; border-radius: 999px; background: #30AEE3; color: #ffffff; font-size: 0.75rem; font-weight: 500; }
@@ -1617,7 +1618,7 @@
   padding: 1rem;
   border: 1px solid #f1f5f9;
   border-radius: 12px;
-  background: linear-gradient(135deg, #216d8e, #30AEE3);
+  background: linear-gradient(135deg, #216d8e, #00a3e0);
   color: #1e293b;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
 }
@@ -1629,7 +1630,7 @@
 
 .tkreport-team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 1.25rem; margin-top: 1rem; }
 .tkreport-team-member-card { padding: 1rem; border: 1px solid #f1f5f9; border-radius: 1rem; background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); transition: all 0.2s ease; }
-.tkreport-team-member-card:hover { transform: translateY(-3px); border-color: #30AEE3; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08); }
+.tkreport-team-member-card:hover { transform: translateY(-3px); border-color: #00a3e0; box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08); }
 .tkreport-team-member-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem; }
 .tkreport-team-member-avatar { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; color: #30AEE3; font-size: 1.1rem; }
 .tkreport-team-member-info { display: flex; flex-direction: column; }
@@ -1637,12 +1638,12 @@
 .tkreport-team-member-role { margin-top: 5px; color: #94a3b8; font-size: 0.65rem; font-weight: 600; }
 .tkreport-team-member-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 0.5rem; margin-bottom: 1rem; }
 .tkreport-team-stat-item { display: flex; flex-direction: column; flex: 1; min-width: 80px; padding: 0.5rem; border: 1px solid #e2e8f0; border-radius: 0.5rem; background-color: #f8fafc; text-align: center; }
-.tkreport-team-stat-item--total .tkreport-team-stat-value { color: #3B82F6; }
-.tkreport-team-stat-item--in-progress .tkreport-team-stat-value { color: #d97706; }
-.tkreport-team-stat-item--completed .tkreport-team-stat-value { color: #059669; }
-.tkreport-team-stat-item--overdue .tkreport-team-stat-value { color: #ef4444; }
+.tkreport-team-stat-item--total .tkreport-team-stat-value { color: #00a3e0; }
+.tkreport-team-stat-item--in-progress .tkreport-team-stat-value { color: #eaaa00; }
+.tkreport-team-stat-item--completed .tkreport-team-stat-value { color: #009a44; }
+.tkreport-team-stat-item--overdue .tkreport-team-stat-value { color: #e4002b; }
 .tkreport-team-stat-item--rate { border-color: #bfdbfe; background-color: #eff6ff; }
-.tkreport-team-stat-item--rate .tkreport-team-stat-value { color: #2563eb; }
+.tkreport-team-stat-item--rate .tkreport-team-stat-value { color: #00a3e0; }
 .tkreport-team-stat-value { font-size: 1rem; font-weight: 800; }
 .tkreport-team-stat-label { margin-top: 0.5rem; color: #94a3b8; font-size: 0.75rem; font-weight: 600; }
 .tkreport-team-member-progress-group { margin-bottom: 1rem; }
@@ -1670,41 +1671,41 @@
 .tkreport-team-modal-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem; margin-bottom: 2rem; padding: 1.5rem; border: 1px solid #e2e8f0; border-radius: 1rem; background: #ffffff; }
 .tkreport-team-modal-stat-item { text-align: center; }
 .tkreport-team-modal-stat-value { margin-bottom: 0.25rem; color: #1e293b; font-size: 1.5rem; font-weight: 700; }
-.tkreport-team-modal-stat-value--completed { color: #0feb42; }
-.tkreport-team-modal-stat-value--in-progress { color: #fccf3a; }
-.tkreport-team-modal-stat-value--overdue { color: #ef4444; }
+.tkreport-team-modal-stat-value--completed { color: #009a44; }
+.tkreport-team-modal-stat-value--in-progress { color: #eaaa00; }
+.tkreport-team-modal-stat-value--overdue { color: #e4002b; }
 .tkreport-team-modal-stat-value--open { color: #077af5; }
 .tkreport-team-modal-stat-value--approved { color: #61C0AA; }
-.tkreport-team-modal-stat-value--cancelled { color: #f10a1d; }
+.tkreport-team-modal-stat-value--cancelled { color: #e4002b; }
 .tkreport-team-modal-stat-value--pending-approval { color: #A281C7; }
 .tkreport-team-modal-stat-value--closed { color: #6b7280; }
-.tkreport-team-modal-stat-value--rejected { color: #f10a1d; }
+.tkreport-team-modal-stat-value--rejected { color: #e4002b; }
 .tkreport-team-modal-stat-label { color: #94a3b8; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
 .tkreport-team-modal-section-title { display: flex; align-items: center; gap: 0.5rem; margin: 0 0 1rem; color: #1e293b; font-size: 1rem; font-weight: 700; }
 .tkreport-team-modal-tkreport-list { display: flex; flex-direction: column; gap: 1rem; }
 .tkreport-team-modal-tkreport-item { padding: 1.5rem; border: 1px solid #f1f5f9; border-left: 5px solid #e2e8f0; border-radius: 1rem; background: #ffffff; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02); transition: all 0.2s ease; }
 .tkreport-team-modal-tkreport-item:hover { transform: translateX(5px); border-color: #cbd5e1; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); }
-.tkreport-team-modal-tkreport-item.status-completed { border-left-color: #0feb42; }
-.tkreport-team-modal-tkreport-item.status-in-progress { border-left-color: #fccf3a; }
-.tkreport-team-modal-tkreport-item.status-overdue { border-left-color: #ef4444; }
+.tkreport-team-modal-tkreport-item.status-completed { border-left-color: #009a44; }
+.tkreport-team-modal-tkreport-item.status-in-progress { border-left-color: #eaaa00; }
+.tkreport-team-modal-tkreport-item.status-overdue { border-left-color: #e4002b; }
 .tkreport-team-modal-tkreport-item.status-open { border-left-color: #077af5; }
 .tkreport-team-modal-tkreport-item.status-approved { border-left-color: #61C0AA; }
-.tkreport-team-modal-tkreport-item.status-cancelled { border-left-color: #f10a1d; }
+.tkreport-team-modal-tkreport-item.status-cancelled { border-left-color: #e4002b; }
 .tkreport-team-modal-tkreport-item.status-pending-approval { border-left-color: #A281C7; }
 .tkreport-team-modal-tkreport-item.status-closed { border-left-color: #6b7280; }
-.tkreport-team-modal-tkreport-item.status-rejected { border-left-color: #f10a1d; }
+.tkreport-team-modal-tkreport-item.status-rejected { border-left-color: #e4002b; }
 .tkreport-team-modal-tkreport-main { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
 .tkreport-team-modal-tkreport-title { color: #1e293b; font-size: 1.1rem; font-weight: 700; }
 .tkreport-team-modal-tkreport-status { display: flex; align-items: center; gap: 0.4rem; padding: 0.35rem 0.85rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
-.tkreport-team-modal-tkreport-status--completed { background: #ecfdf5; color: #0feb42; }
-.tkreport-team-modal-tkreport-status--in-progress { background: #fffbeb; color: #fccf3a; }
-.tkreport-team-modal-tkreport-status--overdue { background: #fef2f2; color: #ef4444; }
+.tkreport-team-modal-tkreport-status--completed { background: #ecfdf5; color: #009a44; }
+.tkreport-team-modal-tkreport-status--in-progress { background: #fffbeb; color: #eaaa00; }
+.tkreport-team-modal-tkreport-status--overdue { background: #fef2f2; color: #e4002b; }
 .tkreport-team-modal-tkreport-status--open { background: #e6fffa; color: #077af5; }
 .tkreport-team-modal-tkreport-status--approved { background: #e6fffa; color: #61C0AA; }
-.tkreport-team-modal-tkreport-status--cancelled { background: #fef2f2; color: #f10a1d; }
+.tkreport-team-modal-tkreport-status--cancelled { background: #fef2f2; color: #e4002b; }
 .tkreport-team-modal-tkreport-status--pending-approval { background: #fef2f2; color: #a281c7; }
 .tkreport-team-modal-tkreport-status--closed { background: #fef2f2; color: #6b7280; }
-.tkreport-team-modal-tkreport-status--rejected { background: #fef2f2; color: #f10a1d; }
+.tkreport-team-modal-tkreport-status--rejected { background: #fef2f2; color: #e4002b; }
 .tkreport-team-modal-tkreport-details { display: flex; gap: 2rem; color: #64748b; font-size: 0.8rem; }
 .tkreport-team-modal-tkreport-detail-item span { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; white-space: nowrap; }
 .tkreport-priority-high { color: #ffffff; }
@@ -2037,39 +2038,39 @@
 
 .tkreport-kpi-modal-icon-badge--cyan {
   background: #E0F2FE;
-  color: #0284C7;
+  color: #00a3e0;
   border: 1px solid #BAE6FD;
 }
 
 .tkreport-kpi-modal-icon-badge--yellow {
   background: #FEF3C7;
-  color: #D97706;
+  color: #eaaa00;
   border: 1px solid #FDE68A;
 }
 
 .tkreport-kpi-modal-icon-badge--green {
   background: #ECFDF5;
-  color: #059669;
+  color: #009a44;
   border: 1px solid #A7F3D0;
 }
 
 .tkreport-kpi-modal-icon-badge--red {
   background: #FEE2E2;
-  color: #DC2626;
+  color: #e4002b;
   border: 1px solid #FECACA;
 }
 
 .tkreport-kpi-modal-icon-badge--purple {
-  background: #EDE9FE;
-  color: #6D28D9;
-  border: 1px solid #DDD6FE;
+  background: #e9fcfe;
+  color: #00a3e0;
+  border: 1px solid #d6fdfe;
 }
 
 .tkreport-kpi-modal-title {
   margin: 0 0 2px;
   font-size: 17px;
   font-weight: 800;
-  color: #0F172A;
+  color: #000000;
   letter-spacing: -0.3px;
   line-height: 1.2;
 }
@@ -2115,7 +2116,7 @@
 
 .tkreport-kpi-modal-close-btn:hover {
   background: #FEE2E2;
-  color: #DC2626;
+  color: #e4002b;
   border-color: #FECACA;
   transform: rotate(90deg);
 }
@@ -2157,7 +2158,7 @@
   border: 1px solid #E2E8F0;
   border-radius: 999px;
   background: #FFFFFF;
-  color: #0F172A;
+  color: #e4002b;
   font-size: 12px;
   font-family: inherit;
   transition: all 0.2s ease;
@@ -2165,8 +2166,8 @@
 
 .tkreport-kpi-modal-search-input:focus {
   outline: none;
-  border-color: #8B5CF6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15);
+  border-color: #00a3e0;
+  box-shadow: 0 0 0 3px rgba(92, 218, 246, 0.15);
 }
 
 .tkreport-kpi-modal-search-clear {
@@ -2212,10 +2213,10 @@
 }
 
 .tkreport-kpi-modal-tab.is-active {
-  background: #6D28D9;
-  border-color: #6D28D9;
+  background: #00a3e0;
+  border-color: #00a3e0;
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 163, 224, 0.3);
 }
 
 .tkreport-kpi-modal-count-badge {
@@ -2223,9 +2224,9 @@
   align-items: center;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #EDE9FE;
-  border: 1px solid #DDD6FE;
-  color: #6D28D9;
+  background: #e9fbfe;
+  border: 1px solid #d6f9fe;
+  color: #00a3e0;
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
@@ -2267,7 +2268,7 @@
 
 .tkreport-kpi-modal-spinner {
   font-size: 28px;
-  color: #6D28D9;
+  color: #00a3e0;
   margin-bottom: 12px;
 }
 
@@ -2279,7 +2280,7 @@
 
 .tkreport-kpi-modal-error-icon {
   font-size: 32px;
-  color: #EF4444;
+  color: #e4002b;
   margin-bottom: 12px;
 }
 
@@ -2308,7 +2309,7 @@
   border-radius: 999px;
   border: 1px solid #E2E8F0;
   background: #F8FAFC;
-  color: #6D28D9;
+  color: #00a3e0;
   font-size: 11.5px;
   font-weight: 700;
   cursor: pointer;
@@ -2316,16 +2317,16 @@
 }
 
 .tkreport-kpi-modal-retry-btn {
-  background: #6D28D9;
+  background: #00a3e0;
   color: #FFFFFF;
-  border-color: #6D28D9;
+  border-color: #00a3e0;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 
 .tkreport-kpi-modal-retry-btn:hover {
-  background: #5B21B6;
+  background: #00a3e0;
 }
 
 /* ==========================================================================
@@ -2429,8 +2430,8 @@
 
 /* Hero Progress Card */
 .tkreport-kpi-progress-hero {
-  background: linear-gradient(135deg, #FAF5FF 0%, #F5F3FF 100%);
-  border: 1px solid #E9D5FF;
+  background: linear-gradient(135deg, #f5fdff 0%, #f3feff 100%);
+  border: 1px solid #d5f5ff;
   border-radius: 14px;
   padding: 16px 20px;
   display: flex;
@@ -2454,7 +2455,7 @@
 .tkreport-kpi-progress-val {
   font-size: 44px;
   font-weight: 800;
-  color: #6D28D9;
+  color: #00a3e0;
   line-height: 1;
   letter-spacing: -1.5px;
 }
@@ -2462,7 +2463,7 @@
 .tkreport-kpi-progress-unit {
   font-size: 22px;
   font-weight: 800;
-  color: #8B5CF6;
+  color: #00a3e0;
   margin-left: 2px;
 }
 
@@ -2492,19 +2493,19 @@
 
 .tkreport-kpi-progress-status-badge.is-excellent {
   background: #ECFDF5;
-  color: #047857;
+  color: #009a44;
   border: 1px solid #A7F3D0;
 }
 
 .tkreport-kpi-progress-status-badge.is-good {
   background: #FEF3C7;
-  color: #B45309;
+  color: #eaaa00;
   border: 1px solid #FDE68A;
 }
 
 .tkreport-kpi-progress-status-badge.is-needs-work {
   background: #FEE2E2;
-  color: #B91C1C;
+  color: #e4002b;
   border: 1px solid #FECACA;
 }
 
@@ -2534,9 +2535,9 @@
 .tkreport-kpi-bar-fill {
   height: 100%;
   border-radius: 999px;
-  background: linear-gradient(90deg, #8B5CF6 0%, #6D28D9 60%, #10B981 100%);
+  background: linear-gradient(90deg, #00a3e0 0%, #0088c3 60%, #10B981 100%);
   transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 2px 8px rgba(109, 40, 217, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 163, 224, 0.3);
 }
 
 .tkreport-kpi-bar-ticks {
@@ -2585,23 +2586,23 @@
 }
 
 .tkreport-kpi-progress-dot.is-completed,
-.tkreport-kpi-legend-dot.is-completed { background: #10B981; }
+.tkreport-kpi-legend-dot.is-completed { background: #009a44; }
 
 .tkreport-kpi-progress-dot.is-in-progress,
-.tkreport-kpi-legend-dot.is-in-progress { background: #F59E0B; }
+.tkreport-kpi-legend-dot.is-in-progress { background: #eaaa00; }
 
 .tkreport-kpi-progress-dot.is-open,
-.tkreport-kpi-legend-dot.is-open { background: #3B82F6; }
+.tkreport-kpi-legend-dot.is-open { background: #00a3e0; }
 
 .tkreport-kpi-progress-dot.is-overdue,
-.tkreport-kpi-legend-dot.is-overdue { background: #EF4444; }
+.tkreport-kpi-legend-dot.is-overdue { background: #e4002b; }
 
 .tkreport-kpi-legend-dot.is-other { background: #94A3B8; }
 
 .tkreport-kpi-progress-stat-num {
   font-size: 22px;
   font-weight: 800;
-  color: #0F172A;
+  color: #000000;
   letter-spacing: -0.5px;
 }
 
@@ -2657,9 +2658,9 @@
   min-width: 0;
 }
 
-.tkreport-kpi-segment.is-completed { background: #10B981; }
-.tkreport-kpi-segment.is-in-progress { background: #F59E0B; }
-.tkreport-kpi-segment.is-open { background: #3B82F6; }
+.tkreport-kpi-segment.is-completed { background: #009a44; }
+.tkreport-kpi-segment.is-in-progress { background: #eaaa00; }
+.tkreport-kpi-segment.is-open { background: #00a3e0; }
 .tkreport-kpi-segment.is-other { background: #94A3B8; }
 
 .tkreport-kpi-distribution-legend {
@@ -2692,8 +2693,8 @@
   align-items: center;
   padding: 10px 14px;
   border-radius: 12px;
-  background: #EDE9FE;
-  border: 1px solid #DDD6FE;
+  background: #e9fbfe;
+  border: 1px solid #d6f6fe;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -2704,12 +2705,12 @@
   gap: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: #5B21B6;
+  color: #00a3e0;
 }
 
 .tkreport-kpi-progress-footer-info svg {
   font-size: 14px;
-  color: #6D28D9;
+  color: #00a3e0;
   flex-shrink: 0;
 }
 
@@ -2720,7 +2721,7 @@
   padding: 6px 14px;
   border-radius: 999px;
   border: none;
-  background: #6D28D9;
+  background: #00a3e0;
   color: #FFFFFF;
   font-size: 11.5px;
   font-weight: 700;
