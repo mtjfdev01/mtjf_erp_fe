@@ -555,7 +555,7 @@ const KpiDetailsModal = ({
                       <th>Status</th>
                       <th>Priority</th>
                       <th>Type</th>
-                      <th>Dept / Project</th>
+                      <th>Dept</th>
                       <th>Due Date</th>
                       <th>Assignees</th>
                       <th>Action</th>

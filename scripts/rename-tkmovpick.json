@@ -1,0 +1,23 @@
+{
+  "files": [
+    "components/admin/tasks/shared/MovAssignmentPicker.css",
+    "components/admin/tasks/shared/MovAssignmentPicker.jsx"
+  ],
+  "map": {
+    "mov-assignment-avatar--fallback": "tkmovpick-avatar--fallback",
+    "mov-assignment-avatar": "tkmovpick-avatar",
+    "mov-assignment-button": "tkmovpick-button",
+    "mov-assignment-close": "tkmovpick-close",
+    "mov-assignment-modal-backdrop": "tkmovpick-modal-backdrop",
+    "mov-assignment-modal-header": "tkmovpick-modal-header",
+    "mov-assignment-modal-hint": "tkmovpick-modal-hint",
+    "mov-assignment-mode-btn": "tkmovpick-mode-btn",
+    "mov-assignment-mode-toggle": "tkmovpick-mode-toggle",
+    "mov-assignment-selected-icon": "tkmovpick-selected-icon",
+    "mov-assignment-unassign": "tkmovpick-unassign",
+    "mov-assignment-user-details": "tkmovpick-user-details",
+    "mov-assignment-user-list": "tkmovpick-user-list",
+    "mov-assignment-user": "tkmovpick-user",
+    "mov-assignment-modal": "tkmovpick-modal"
+  }
+}
