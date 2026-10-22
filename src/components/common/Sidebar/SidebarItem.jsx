@@ -2,11 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import './Sidebar.css';
 
-const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
+const SidebarItem = ({ item, activeItem, onNavigate }) => {
   const [expanded, setExpanded] = useState(false);
-  const tooltipProps = collapsed
-    ? { 'data-tooltip': item.label, title: item.label }
-    : {};
 
   const toggleExpanded = () => setExpanded(!expanded);
 
@@ -57,7 +54,6 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
             to={item.path}
             className={headerClassName}
             onClick={handleHeaderWithSubItemsClick}
-            {...tooltipProps}
           >
             {item.icon && (
               <span className="sidebar-item-icon">
@@ -85,7 +81,6 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
                 toggleExpanded();
               }
             }}
-            {...tooltipProps}
           >
             {item.icon && <span className="sidebar-item-icon"><item.icon /></span>}
             <span className="sidebar-item-label">{item.label}</span>
@@ -99,7 +94,6 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
           to={item.path}
           className={headerClassName}
           onClick={handleNavigate}
-          {...tooltipProps}
         >
           {item.icon && <span className="sidebar-item-icon"><item.icon /></span>}
           <span className="sidebar-item-label">{item.label}</span>

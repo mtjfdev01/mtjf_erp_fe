@@ -202,103 +202,103 @@ const TaskReceipt = () => {
         />
         <div className="view-content">
           <div className="task-receipt-page">
-            <div className="task-receipt-container">
-              <div className="task-receipt-header">
-                <div className="task-receipt-title">
-                  <div className="task-receipt-logo">📋</div>
+            <div className="receipt-container">
+              <div className="receipt-header">
+                <div className="receipt-title">
+                  <div className="receipt-logo">📋</div>
                   <div>
                     <h1>{task.title || 'Task receipt'}</h1>
                   </div>
                 </div>
-                <div className="task-receipt-id">{formatTaskId(task)}</div>
+                <div className="task-id">{formatTaskId(task)}</div>
               </div>
 
-              <div className="task-receipt-status-banner">
+              <div className="status-banner">
                 <div>
                   <strong>Task Status:</strong>
-                  <span className="task-receipt-status-badge">{statusLabel}</span>
+                  <span className="receipt-status-badge">{statusLabel}</span>
                 </div>
-                <button className="task-receipt-print-btn" onClick={handlePrint}>
+                <button className="print-btn" onClick={handlePrint}>
                   🖨️ Print Receipt
                 </button>
               </div>
 
-               <div className="task-receipt-section task-receipt-section-desc">
-                  <div className="task-receipt-section-title">
-                    <span className="task-receipt-section-icon">📝</span>
+               <div className="section section-description">
+                  <div className="section-title">
+                    <span className="icon">📝</span>
                     Description
                   </div>
-                  <div className="task-receipt-section-desc-card">
-                    <p className="task-receipt-section-desc-text">
+                  <div className="section-description-card">
+                    <p className="section-description-text">
                       {task.description || 'No description'}
                     </p>
                   </div>
                 </div>
 
-              <div className="task-receipt-body">
-                <div className="task-receipt-section">
-                  <div className="task-receipt-section-title">
-                    <span className="task-receipt-section-icon">📋</span>
+              <div className="receipt-body">
+                <div className="section">
+                  <div className="section-title">
+                    <span className="icon">📋</span>
                     Task Information
                   </div>
-                  <div className="task-receipt-info-grid">
-                    <div className="task-receipt-info-card">
-                      {/* <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Task Title:</span>
-                        <span className="task-receipt-value">{task.title}</span>
+                  <div className="info-grid">
+                    <div className="info-card">
+                      {/* <div className="info-row">
+                        <span className="label">Task Title:</span>
+                        <span className="value">{task.title}</span>
                       </div>
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Status:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Status:</span>
+                        <span className="value">
                           {statusLabel}
                           <span className="badge completed">Status</span>
                         </span>
                       </div> */}
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Priority:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Priority:</span>
+                        <span className="value">
                           {capitalize(task.priority)}
-                          <span className="task-receipt-badge task-receipt-priority-medium">
+                          <span className="badge priority-medium">
                             Priority
                           </span>
                         </span>
                       </div>
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Task Type:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Task Type:</span>
+                        <span className="value">
                           {capitalize(task.task_type) || 'One-time'}
                         </span>
                       </div>
-                        <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Workflow:</span>
-                        <span className="task-receipt-value">
+                        <div className="info-row">
+                        <span className="label">Workflow:</span>
+                        <span className="value">
                           {capitalize(task.workflow_type)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="task-receipt-info-card">
-                        <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Created By:</span>
-                        <span className="task-receipt-value">
+                    <div className="info-card">
+                        <div className="info-row">
+                        <span className="label">Created By:</span>
+                        <span className="value">
                           {getUserDisplayName(task.created_by)}
                         </span>
                       </div>
-                      {/* <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Department:</span>
-                        <span className="task-receipt-value">
+                      {/* <div className="info-row">
+                        <span className="label">Department:</span>
+                        <span className="value">
                           {capitalize(task.department)}
                         </span>
                       </div> */}
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Project/Program:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Project/Program:</span>
+                        <span className="value">
                           {task.project_name || '-'}
                         </span>
                       </div>
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Approvers:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Approvers:</span>
+                        <span className="value">
                           {approvers.length > 0
                             ? approvers.map((u) => getUserDisplayName(u)).join(', ')
                             : '-'}
@@ -309,74 +309,74 @@ const TaskReceipt = () => {
                   </div>
                 </div>
 
-                <div className="task-receipt-section">
-                  <div className="task-receipt-section-title">
-                    <span className="task-receipt-section-icon">⏰</span>
+                <div className="section">
+                  <div className="section-title">
+                    <span className="icon">⏰</span>
                     Timeline
                   </div>
-                  <div className="task-receipt-info-grid">
-                    <div className="task-receipt-info-card">
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Start Date:</span>
-                        <span className="task-receipt-value">
+                  <div className="info-grid">
+                    <div className="info-card">
+                      <div className="info-row">
+                        <span className="label">Start Date:</span>
+                        <span className="value">
                           {formatDate(task.start_date)}
                         </span>
                       </div>
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Due Date:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Due Date:</span>
+                        <span className="value">
                           {formatDate(task.due_date)}
                         </span>
                       </div>
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Completed Date:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Completed Date:</span>
+                        <span className="value">
                           {formatDate(task.completed_date)}
                         </span>
                       </div>
                     </div>
 
-                    <div className="task-receipt-info-card">
-                      {/* <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Recurrence Rule:</span>
-                        <span className="task-receipt-value">
+                    <div className="info-card">
+                      {/* <div className="info-row">
+                        <span className="label">Recurrence Rule:</span>
+                        <span className="value">
                           {task.recurrence_rule || '-'}
                         </span>
                       </div> */}
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Next Recurrence:</span>
-                        <span className="task-receipt-value">
+                      <div className="info-row">
+                        <span className="label">Next Recurrence:</span>
+                        <span className="value">
                           {formatDate(task.recurrence_next_date)}
                         </span>
                       </div>
-                      <div className="task-receipt-info-row">
-                        <span className="task-receipt-label">Duration:</span>
-                        <span className="task-receipt-value">{durationLabel}</span>
+                      <div className="info-row">
+                        <span className="label">Duration:</span>
+                        <span className="value">{durationLabel}</span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="task-receipt-section">
-                  <div className="task-receipt-section-title">
-                    <span className="task-receipt-section-icon">👥</span>
+                <div className="section">
+                  <div className="section-title">
+                    <span className="icon">👥</span>
                     Team & Assignment
                   </div>
 
-                  <div className="task-receipt-assignment-block">
-                    <h4 className="task-receipt-assignment-title">
+                  <div className="team-assignment-block">
+                    <h4 className="team-assignment-title">
                       Assigned To:
                     </h4>
-                    <div className="task-receipt-task-receipt-team-members">
+                    <div className="team-members">
                       {assignedUsers.map((u) => {
                         const name = getUserDisplayName(u);
                         const initial = name ? name.charAt(0).toUpperCase() : '?';
                         return (
-                          <div key={u.id} className="task-receipt-team-member">
-                            <div className="task-receipt-member-avatar">{initial}</div>
-                            <div className="task-receipt-member-info">
-                              <div className="task-receipt-member-name">{name}</div>
-                              <div className="task-receipt-member-email">
+                          <div key={u.id} className="team-member">
+                            <div className="member-avatar">{initial}</div>
+                            <div className="member-info">
+                              <div className="member-name">{name}</div>
+                              <div className="member-email">
                                 {u.department || task.department}
                               </div>
                             </div>
@@ -384,9 +384,9 @@ const TaskReceipt = () => {
                         );
                       })}
                       {assignedUsers.length === 0 && (
-                        <div className="task-receipt-team-member">
-                          <div className="task-receipt-member-info">
-                            <div className="task-receipt-member-name">No assignees</div>
+                        <div className="team-member">
+                          <div className="member-info">
+                            <div className="member-name">No assignees</div>
                           </div>
                         </div>
                       )}
@@ -394,29 +394,29 @@ const TaskReceipt = () => {
                   </div>
                 </div>
 
-                <div className="task-receipt-section">
-                  <div className="task-receipt-section-title">
-                    <span className="task-receipt-section-icon">📎</span>
+                <div className="section">
+                  <div className="section-title">
+                    <span className="icon">📎</span>
                     Attachments
                   </div>
-                  <div className="task-receipt-attachments-grid">
+                  <div className="attachments-grid">
                     {attachments.map((a) => {
                       const rawType = a.file_type || '';
                       const shortType = rawType.includes('/')
                         ? rawType.split('/')[1]
                         : rawType;
                       return (
-                        <div key={a.id} className="task-receipt-attachment-card">
-                          <div className="task-receipt-file-icon">📄</div>
-                          <div className="task-receipt-file-name">{a.file_name}</div>
-                          <div className="task-receipt-file-type">
+                        <div key={a.id} className="attachment-card">
+                          <div className="file-icon">📄</div>
+                          <div className="file-name">{a.file_name}</div>
+                          <div className="file-type">
                             {shortType || rawType || 'File'}
                           </div>
                           <a
                             href={getAttachmentHref(a.file_url)}
                             target="_blank"
                             rel="noreferrer"
-                            className="task-receipt-view-btn"
+                            className="view-btn"
                           >
                             👁️ VIEW FILE
                           </a>
@@ -424,15 +424,15 @@ const TaskReceipt = () => {
                       );
                     })}
                     {attachments.length === 0 && (
-                      <div className="task-receipt-attachment-card">
-                        <div className="task-receipt-file-name">No attachments</div>
+                      <div className="attachment-card">
+                        <div className="file-name">No attachments</div>
                       </div>
                     )}
                   </div>
                 </div>
-                <div className="task-receipt-section">
-                  <div className="task-receipt-section-title">
-                    <span className="task-receipt-section-icon">💬</span>
+                <div className="section">
+                  <div className="section-title">
+                    <span className="icon">💬</span>
                     Comments & Activity
                   </div>
 
@@ -446,25 +446,25 @@ const TaskReceipt = () => {
                         ? authorName.charAt(0).toUpperCase()
                         : 'S';
                     return (
-                      <div key={c.id} className="task-receipt-comment">
-                        <div className="task-receipt-comment-header">
-                          <span className="task-receipt-comment-author">{authorName}</span>
-                          <span className="task-receipt-comment-time">
+                      <div key={c.id} className="comment">
+                        <div className="comment-header">
+                          <span className="comment-author">{authorName}</span>
+                          <span className="comment-time">
                             {formatDate(c.created_at)}
                           </span>
                         </div>
-                        <div className="task-receipt-comment-body">
+                        <div className="comment-body">
                           <p>{c.content}</p>
                         </div>
-                        <div className="task-receipt-comment-avatar">
-                          <span className="task-receipt-member-avatar">{initial}</span>
+                        <div className="comment-avatar">
+                          <span className="member-avatar">{initial}</span>
                         </div>
                       </div>
                     );
                   })}
                   {comments.length === 0 && (
-                    <div className="task-receipt-comment">
-                      <div className="task-receipt-comment-body">
+                    <div className="comment">
+                      <div className="comment-body">
                         <p>No comments</p>
                       </div>
                     </div>
@@ -472,9 +472,9 @@ const TaskReceipt = () => {
                 </div>
               </div>
 
-              <div className="task-receipt-footer">
+              <div className="receipt-footer">
                 <div>MTJ Foundation • Task Management System</div>
-                <div className="task-receipt-metadata">
+                <div className="metadata">
                   <span>Generated: {formatDate(new Date())}</span>
                   <span>User: Task receipt</span>
                   <span>Document ID: {formatTaskId(task)}</span>

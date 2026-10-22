@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { FiEdit2, FiPlus, FiX } from 'react-icons/fi';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
@@ -143,20 +143,6 @@ const AidFamilyMembersIntake = ({
   const [panelOpen, setPanelOpen] = useState(false);
   const [editIdx, setEditIdx] = useState(null);
   const [draft, setDraft] = useState(emptyFamilyMemberRow());
-  const layoutRef = useRef(null);
-
-  // After the panel mounts at full height, bring the whole members+form
-  // block to the top of the screen so the complete form is visible.
-  useEffect(() => {
-    if (!panelOpen || !layoutRef.current) return;
-    const id = requestAnimationFrame(() => {
-      layoutRef.current?.scrollIntoView?.({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    });
-    return () => cancelAnimationFrame(id);
-  }, [panelOpen]);
 
   const counts = useMemo(() => {
     const c = { all: list.length, spouse: 0, children: 0, siblings: 0, other: 0 };
@@ -283,6 +269,11 @@ const AidFamilyMembersIntake = ({
     if (editIdx === idx) closePanel();
   };
 
+  useEffect(() => {
+    if (panelOpen) return undefined;
+    return undefined;
+  }, [panelOpen]);
+
   const filters = [
     { key: 'all', label: `All ${counts.all}` },
     { key: 'spouse', label: `Spouse ${counts.spouse}` },
@@ -293,7 +284,6 @@ const AidFamilyMembersIntake = ({
 
   return (
     <div
-      ref={layoutRef}
       className={`aid-fm-layout${panelOpen ? ' aid-fm-layout--panel-open' : ''}`}
     >
       <div className="aid-fm-main">

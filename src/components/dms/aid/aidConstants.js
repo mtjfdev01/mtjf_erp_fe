@@ -433,24 +433,6 @@ export const emptyFinancialAssistanceDetails = () => ({
   alternative_if_not_approved: '',
 });
 
-/** Clean Water — Application tab special structure */
-export const emptyCleanWaterDetails = () => ({
-  existing_source_of_water: '',
-  distance_from_home: '',
-  duration_without_clean_water: '',
-  location_of_project: '',
-  community_contribution_amount: '',
-});
-
-/** Zakat Permission Letter — religion options */
-export const AID_ZAKAT_RELIGIONS = [
-  { value: 'muslim', label: 'Muslim' },
-  { value: 'christian', label: 'Christian' },
-  { value: 'hindu', label: 'Hindu' },
-  { value: 'sikh', label: 'Sikh' },
-  { value: 'other', label: 'Other' },
-];
-
 /** Zakat Permission Letter — assets / eligibility (all applications) */
 export const emptyZakatPermission = () => ({
   form_date: '',
@@ -458,7 +440,6 @@ export const emptyZakatPermission = () => ({
   applicant_name: '',
   age: '',
   education: '',
-  religion: 'muslim',
   cnic: '',
   phone: '',
   gold: '',
@@ -572,7 +553,6 @@ export const AID_VULNERABILITY_CHIPS = [
   { value: 'indigent', label: 'Indigent' },
   { value: 'elderly_no_support', label: 'Elderly No Support' },
   { value: 'chronic_illness', label: 'Chronic Illness' },
-  { value: 'divorced', label: 'Divorced' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -755,7 +735,6 @@ export const AID_YES_NO = [
 export const AID_PROPERTY_TYPES = [
   { value: 'agri', label: 'Agri' },
   { value: 'commercial', label: 'Commercial' },
-  { value: 'residential_ownership', label: 'Residential Unit' },
   { value: 'plot', label: 'Plot' },
   { value: 'others', label: 'Others' },
 ];
@@ -864,14 +843,11 @@ export const AID_VEHICLE_TYPES = [
   { value: 'truck', label: 'Truck' },
   { value: 'tractor', label: 'Tractor' },
   { value: 'bicycle', label: 'Bicycle' },
-  { value: 'rickshaw', label: 'Rickshaw' },
   { value: 'other', label: 'Other (specify)' },
 ];
 
 export const emptyVehicleRow = (overrides = {}) => ({
   vehicle_type: '',
-  quantity: '',
-  details: '',
   ...overrides,
 });
 
@@ -890,11 +866,9 @@ export function formatVehicleSummary(person) {
   if (entries.length) {
     const labels = entries.map((r) => {
       const t = r.vehicle_type || '';
-      const typeLabel =
-        AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—';
-      const qty = r.quantity != null && r.quantity !== '' ? ` ×${r.quantity}` : '';
-      const details = r.details ? ` (${r.details})` : '';
-      return `${typeLabel}${qty}${details}`;
+      return (
+        AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—'
+      );
     });
     return `Vehicle: Yes · ${labels.join(' | ')}`;
   }
@@ -1011,8 +985,6 @@ export const emptyLiteracyFields = () => ({
   monthly_income: '',
   has_disability: false,
   disability_type: '',
-  disability_certificate_url: '',
-  disability_certificate_name: '',
 });
 
 /** Household dependency (related-person / family member card). */
@@ -1055,8 +1027,6 @@ export const emptyRelatedPersonBase = () => ({
   household_dependency: '',
   has_disability: false,
   disability_type: '',
-  disability_certificate_url: '',
-  disability_certificate_name: '',
   existing_person_id: null,
   relation_type: '',
   province: '',
@@ -1066,7 +1036,6 @@ export const emptyRelatedPersonBase = () => ({
   landmark: '',
   city: '',
   address: '',
-  current_address: '',
   ...emptyLiteracyFields(),
   ...emptyResidentHousingFields(),
 });
@@ -1388,7 +1357,6 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   photo_name: '',
   city: '',
   address: '',
-  current_address: '',
   province: '',
   district: '',
   tehsil: '',
@@ -1408,8 +1376,6 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   is_alive: true,
   has_disability: false,
   disability_type: '',
-  disability_certificate_url: '',
-  disability_certificate_name: '',
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
   ...emptyResidentHousingFields(),

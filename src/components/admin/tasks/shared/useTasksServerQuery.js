@@ -8,7 +8,6 @@ export default function useTasksServerQuery({
   defaultPageSize = 30,
   defaultSortField = 'created_at',
   activeTab,
-  groupBy,
   assignedUser,
   refreshNonce = 0,
 }) {
@@ -40,7 +39,6 @@ export default function useTasksServerQuery({
     assigned_to_team: 0,
     other_tasks: 0,
   });
-  const [groupData, setGroupData] = useState(null);
   const [localRefreshNonce, setLocalRefreshNonce] = useState(0);
   const requestIdRef = useRef(0);
 
@@ -116,7 +114,6 @@ export default function useTasksServerQuery({
         appliedFilters,
         assigneeId,
         activeTab,
-        groupBy,
       });
       const res = await axiosInstance.post('/tasks/search', payload);
       if (requestId !== requestIdRef.current) return;
@@ -126,7 +123,6 @@ export default function useTasksServerQuery({
       if (res.data?.categoryCounts) {
         setCategoryCounts(res.data.categoryCounts);
       }
-      setGroupData(res.data?.groupData || null);
     } catch (e) {
       if (requestId === requestIdRef.current) {
         setError(e.response?.data?.message || 'Failed to fetch tasks.');
@@ -142,7 +138,6 @@ export default function useTasksServerQuery({
     sortField,
     sortOrder,
     appliedFilters,
-    groupBy,
     assignedUser?.id,
     activeTab,
   ]);
@@ -166,7 +161,6 @@ export default function useTasksServerQuery({
     totalItems,
     totalPages,
     categoryCounts,
-    groupData,
     currentPage,
     pageSize,
     sortField,

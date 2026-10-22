@@ -14,7 +14,7 @@ const selectValueOf = (vehicleType) => {
 
 /**
  * Vehicle — one line when Yes:
- * Vehicle? | Type | Quantity | Details | (Specify if other) | +
+ * Vehicle? | Type | (Specify if other) | +
  */
 const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
   const hasVehicle = !!value?.has_vehicle;
@@ -138,46 +138,6 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                   </select>
                 </label>
 
-                <label className="aid-property-inline__field aid-property-inline__field--area">
-                  {idx === 0 ? (
-                    <span className="aid-property-inline__label">Quantity</span>
-                  ) : (
-                    <span className="aid-property-inline__label aid-property-inline__label--ghost">
-                      &nbsp;
-                    </span>
-                  )}
-                  <input
-                    className="aid-property-inline__control"
-                    type="number"
-                    min="1"
-                    step="1"
-                    value={row.quantity ?? ''}
-                    onChange={(e) =>
-                      updateRow(idx, { quantity: e.target.value })
-                    }
-                    placeholder="1"
-                  />
-                </label>
-
-                <label className="aid-property-inline__field aid-property-inline__field--details">
-                  {idx === 0 ? (
-                    <span className="aid-property-inline__label">Details</span>
-                  ) : (
-                    <span className="aid-property-inline__label aid-property-inline__label--ghost">
-                      &nbsp;
-                    </span>
-                  )}
-                  <input
-                    className="aid-property-inline__control"
-                    type="text"
-                    value={row.details || ''}
-                    onChange={(e) =>
-                      updateRow(idx, { details: e.target.value })
-                    }
-                    placeholder="Optional notes"
-                  />
-                </label>
-
                 {isOther ? (
                   <label className="aid-property-inline__field aid-property-inline__field--details">
                     {idx === 0 ? (
@@ -196,11 +156,13 @@ const AidVehicleIntake = ({ value, onChange, title = 'Vehicle' }) => {
                       onChange={(e) =>
                         updateRow(idx, { vehicle_type: e.target.value })
                       }
-                      placeholder="e.g. Chingchi"
+                      placeholder="e.g. Rickshaw"
                       required
                     />
                   </label>
-                ) : null}
+                ) : (
+                  <span className="aid-property-inline__field aid-property-inline__field--details" />
+                )}
 
                 <div className="aid-property-inline__actions">
                   {rows.length > 1 ? (

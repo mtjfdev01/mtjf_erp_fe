@@ -19,7 +19,6 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
-import AidCleanWaterApplicationFields from '../../shared/AidCleanWaterApplicationFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
@@ -647,10 +646,10 @@ const AidApplicationView = () => {
           <div className="aid-tabs aid-tabs--main" role="tablist">
             {[
               { id: 'case', label: 'Case details' },
+              { id: 'field_process', label: 'Field process' },
               { id: 'beneficiary', label: 'Beneficiary' },
               { id: 'family', label: 'Family' },
               { id: 'attachments', label: 'Attachments' },
-              { id: 'field_process', label: 'Field process' },
             ].map((t) => (
               <button
                 key={t.id}
@@ -819,15 +818,6 @@ const AidApplicationView = () => {
                     <div className="aid-detail-block">
                       <AidFinancialAssistanceFields
                         value={app.financial_assistance_details}
-                        readOnly
-                      />
-                    </div>
-                  )}
-                {app.requested_aid_type === 'clean_water' &&
-                  app.clean_water_details && (
-                    <div className="aid-detail-block">
-                      <AidCleanWaterApplicationFields
-                        value={app.clean_water_details}
                         readOnly
                       />
                     </div>
@@ -1066,179 +1056,134 @@ const AidApplicationView = () => {
               investigationItems.length > 0) &&
               activePanelTab !== 'attachments' && (
               <section className="aid-section aid-section--flush aid-section--investigation">
-                {(() => {
-                  const investigationBlock = (
-                    <>
-                      {activePanelTab === 'case' &&
-                        (app.verified_at || verifiedByName) && (
-                          <p
-                            style={{
-                              fontSize: 13,
-                              color: '#64748b',
-                              marginTop: 0,
-                            }}
-                          >
-                            Verified by: {verifiedByName || '—'} · At:{' '}
-                            {formatWhen(app.verified_at)}
-                          </p>
-                        )}
-                      {!showVerify &&
-                      ['submitted', 'under_review'].includes(status) ? (
-                        <p className="aid-section-hint">
-                          Investigation can only be performed by the assigned
-                          user, a super admin, or someone with Mark all complete
-                          permission.
-                        </p>
-                      ) : null}
-                      <AidInvestigationPanel
-                        items={investigationItems}
-                        value={investigation}
-                        onChange={setInvestigation}
-                        disabled={!showVerify || busy}
-                        canBulkVerify={canBulkVerify}
-                        onUploadItemFile={uploadInvestigationFile}
-                        uploadingKey={uploadingInvestKey}
-                        activeTab={activePanelTab}
-                        vulnerability={app.vulnerability}
-                        recommendation={recommendation}
-                        onRecommendationChange={setRecommendation}
-                        onSaveProgress={
-                          showVerify ? saveInvestigationProgress : undefined
-                        }
-                        saveProgressBusy={investSaving}
-                        saveProgressDisabled={busy || investSaving}
-                        submitDisabled={
-                          busy ||
-                          investSaving ||
-                          !checklistComplete ||
-                          !recommendationComplete ||
-                          !leakageOverrideOk
-                        }
-                        onSubmitReport={
-                          showVerify && activePanelTab === 'case'
-                            ? () =>
-                                run(() =>
-                                  axiosInstance.post(
-                                    `/aid/applications/${id}/verify`,
-                                    {
-                                      verification_notes:
-                                        verifyNotes ||
-                                        recommendation.remarks ||
-                                        undefined,
-                                      verification_checklist: investigation,
-                                      recommendation: {
-                                        decision: recommendation.decision,
-                                        amount:
-                                          recommendation.decision === 'reject'
-                                            ? null
-                                            : Number(recommendation.amount),
-                                        period_months:
-                                          Number(recommendation.period_months) ||
-                                          null,
-                                        remarks: recommendation.remarks,
-                                        found_monthly_income:
-                                          recommendation.found_monthly_income
-                                            ? Number(
-                                                recommendation.found_monthly_income,
-                                              )
-                                            : null,
-                                      },
-                                      leakage_override_reason:
-                                        needsLeakageOverride
-                                          ? leakageOverride.trim()
-                                          : undefined,
-                                    },
-                                  ),
-                                )
-                            : undefined
-                        }
-                      />
-                      {(activePanelTab === 'case' ||
-                        activePanelTab === 'field_process') &&
-                        showVerify &&
-                        !checklistComplete && (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: '#b45309',
-                              marginBottom: 0,
-                            }}
-                          >
-                            <p style={{ margin: '0 0 0.35rem' }}>
-                              Submit stays disabled until every required check is
-                              done. Use <strong>Save progress</strong> anytime.
-                            </p>
-                            <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
-                              {checklistGaps.slice(0, 6).map((r) => (
-                                <li key={r}>{r}</li>
-                              ))}
-                              {checklistGaps.length > 6 ? (
-                                <li>+{checklistGaps.length - 6} more…</li>
-                              ) : null}
-                            </ul>
-                          </div>
-                        )}
-                      {activePanelTab === 'case' &&
-                        showVerify &&
-                        !recommendationComplete && (
-                          <p
-                            style={{
-                              fontSize: 12,
-                              color: '#b45309',
-                              marginBottom: 0,
-                            }}
-                          >
-                            Complete Recommendation (decision, amount if
-                            approving, and remarks).
-                          </p>
-                        )}
-                      {activePanelTab === 'case' &&
-                        !showVerify &&
-                        app.verification_notes && (
-                          <p style={{ fontSize: 13, color: '#64748b' }}>
-                            Notes: {app.verification_notes}
-                          </p>
-                        )}
-                      {activePanelTab === 'case' &&
-                        !showVerify &&
-                        app.investigation_recommendation?.decision && (
-                          <p
-                            style={{
-                              fontSize: 13,
-                              color: '#166534',
-                              marginTop: 8,
-                            }}
-                          >
-                            Recommendation:{' '}
-                            {String(
-                              app.investigation_recommendation.decision,
-                            ).replace(/_/g, ' ')}
-                            {app.investigation_recommendation.amount != null
-                              ? ` · PKR ${app.investigation_recommendation.amount}`
-                              : ''}
-                            {app.investigation_recommendation.period_months
-                              ? ` · ${app.investigation_recommendation.period_months} months`
-                              : ''}
-                          </p>
-                        )}
-                    </>
-                  );
-
-                  if (activePanelTab === 'case') {
-                    return (
-                      <AidCollapsibleSection
-                        title="Verification"
-                        hint="Click to expand checklist"
-                        defaultOpen={false}
-                        className="aid-detail-block"
-                      >
-                        {investigationBlock}
-                      </AidCollapsibleSection>
-                    );
+                {activePanelTab === 'case' && (app.verified_at || verifiedByName) && (
+                  <p style={{ fontSize: 13, color: '#64748b', marginTop: 0 }}>
+                    Verified by: {verifiedByName || '—'} · At:{' '}
+                    {formatWhen(app.verified_at)}
+                  </p>
+                )}
+                {!showVerify &&
+                ['submitted', 'under_review'].includes(status) ? (
+                  <p className="aid-section-hint">
+                    Investigation can only be performed by the assigned user,
+                    a super admin, or someone with Mark all complete permission.
+                  </p>
+                ) : null}
+                <AidInvestigationPanel
+                  items={investigationItems}
+                  value={investigation}
+                  onChange={setInvestigation}
+                  disabled={!showVerify || busy}
+                  canBulkVerify={canBulkVerify}
+                  onUploadItemFile={uploadInvestigationFile}
+                  uploadingKey={uploadingInvestKey}
+                  activeTab={activePanelTab}
+                  vulnerability={app.vulnerability}
+                  recommendation={recommendation}
+                  onRecommendationChange={setRecommendation}
+                  onSaveProgress={
+                    showVerify ? saveInvestigationProgress : undefined
                   }
-
-                  return investigationBlock;
-                })()}
+                  saveProgressBusy={investSaving}
+                  saveProgressDisabled={busy || investSaving}
+                  submitDisabled={
+                    busy ||
+                    investSaving ||
+                    !checklistComplete ||
+                    !recommendationComplete ||
+                    !leakageOverrideOk
+                  }
+                  onSubmitReport={
+                    showVerify && activePanelTab === 'case'
+                      ? () =>
+                          run(() =>
+                            axiosInstance.post(`/aid/applications/${id}/verify`, {
+                              verification_notes:
+                                verifyNotes ||
+                                recommendation.remarks ||
+                                undefined,
+                              verification_checklist: investigation,
+                              recommendation: {
+                                decision: recommendation.decision,
+                                amount:
+                                  recommendation.decision === 'reject'
+                                    ? null
+                                    : Number(recommendation.amount),
+                                period_months:
+                                  Number(recommendation.period_months) || null,
+                                remarks: recommendation.remarks,
+                                found_monthly_income:
+                                  recommendation.found_monthly_income
+                                    ? Number(
+                                        recommendation.found_monthly_income,
+                                      )
+                                    : null,
+                              },
+                              leakage_override_reason: needsLeakageOverride
+                                ? leakageOverride.trim()
+                                : undefined,
+                            }),
+                          )
+                      : undefined
+                  }
+                />
+                {(activePanelTab === 'case' ||
+                  activePanelTab === 'field_process') &&
+                  showVerify &&
+                  !checklistComplete && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: '#b45309',
+                      marginBottom: 0,
+                    }}
+                  >
+                    <p style={{ margin: '0 0 0.35rem' }}>
+                      Submit stays disabled until every required check is done.
+                      Use <strong>Save progress</strong> anytime.
+                    </p>
+                    <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
+                      {checklistGaps.slice(0, 6).map((r) => (
+                        <li key={r}>{r}</li>
+                      ))}
+                      {checklistGaps.length > 6 ? (
+                        <li>+{checklistGaps.length - 6} more…</li>
+                      ) : null}
+                    </ul>
+                  </div>
+                )}
+                {activePanelTab === 'case' &&
+                  showVerify &&
+                  !recommendationComplete && (
+                  <p style={{ fontSize: 12, color: '#b45309', marginBottom: 0 }}>
+                    Complete Recommendation (decision, amount if approving, and
+                    remarks).
+                  </p>
+                )}
+                {activePanelTab === 'case' &&
+                  !showVerify &&
+                  app.verification_notes && (
+                  <p style={{ fontSize: 13, color: '#64748b' }}>
+                    Notes: {app.verification_notes}
+                  </p>
+                )}
+                {activePanelTab === 'case' &&
+                  !showVerify &&
+                  app.investigation_recommendation?.decision && (
+                    <p style={{ fontSize: 13, color: '#166534', marginTop: 8 }}>
+                      Recommendation:{' '}
+                      {String(app.investigation_recommendation.decision).replace(
+                        /_/g,
+                        ' ',
+                      )}
+                      {app.investigation_recommendation.amount != null
+                        ? ` · PKR ${app.investigation_recommendation.amount}`
+                        : ''}
+                      {app.investigation_recommendation.period_months
+                        ? ` · ${app.investigation_recommendation.period_months} months`
+                        : ''}
+                    </p>
+                  )}
               </section>
             )}
           </div>
