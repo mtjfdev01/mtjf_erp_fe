@@ -755,6 +755,7 @@ export const AID_YES_NO = [
 export const AID_PROPERTY_TYPES = [
   { value: 'agri', label: 'Agri' },
   { value: 'commercial', label: 'Commercial' },
+  { value: 'residential_ownership', label: 'Residential Unit' },
   { value: 'plot', label: 'Plot' },
   { value: 'others', label: 'Others' },
 ];
@@ -863,11 +864,14 @@ export const AID_VEHICLE_TYPES = [
   { value: 'truck', label: 'Truck' },
   { value: 'tractor', label: 'Tractor' },
   { value: 'bicycle', label: 'Bicycle' },
+  { value: 'rickshaw', label: 'Rickshaw' },
   { value: 'other', label: 'Other (specify)' },
 ];
 
 export const emptyVehicleRow = (overrides = {}) => ({
   vehicle_type: '',
+  quantity: '',
+  details: '',
   ...overrides,
 });
 
@@ -886,9 +890,11 @@ export function formatVehicleSummary(person) {
   if (entries.length) {
     const labels = entries.map((r) => {
       const t = r.vehicle_type || '';
-      return (
-        AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—'
-      );
+      const typeLabel =
+        AID_VEHICLE_TYPES.find((x) => x.value === t)?.label || t || '—';
+      const qty = r.quantity != null && r.quantity !== '' ? ` ×${r.quantity}` : '';
+      const details = r.details ? ` (${r.details})` : '';
+      return `${typeLabel}${qty}${details}`;
     });
     return `Vehicle: Yes · ${labels.join(' | ')}`;
   }
@@ -1005,6 +1011,8 @@ export const emptyLiteracyFields = () => ({
   monthly_income: '',
   has_disability: false,
   disability_type: '',
+  disability_certificate_url: '',
+  disability_certificate_name: '',
 });
 
 /** Household dependency (related-person / family member card). */
@@ -1047,6 +1055,8 @@ export const emptyRelatedPersonBase = () => ({
   household_dependency: '',
   has_disability: false,
   disability_type: '',
+  disability_certificate_url: '',
+  disability_certificate_name: '',
   existing_person_id: null,
   relation_type: '',
   province: '',
@@ -1056,6 +1066,7 @@ export const emptyRelatedPersonBase = () => ({
   landmark: '',
   city: '',
   address: '',
+  current_address: '',
   ...emptyLiteracyFields(),
   ...emptyResidentHousingFields(),
 });
@@ -1377,6 +1388,7 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   photo_name: '',
   city: '',
   address: '',
+  current_address: '',
   province: '',
   district: '',
   tehsil: '',
@@ -1396,6 +1408,8 @@ export const emptyFamilyHeadRow = (relationType = 'father') => ({
   is_alive: true,
   has_disability: false,
   disability_type: '',
+  disability_certificate_url: '',
+  disability_certificate_name: '',
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
   ...emptyResidentHousingFields(),

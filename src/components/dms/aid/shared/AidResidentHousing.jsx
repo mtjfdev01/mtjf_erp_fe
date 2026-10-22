@@ -4,7 +4,7 @@ import { AID_RESIDENT_TYPES, emptyResidentRow } from '../aidConstants';
 
 /**
  * Resident — one line per house:
- * Type | Ownership | Other | (Rent) | Area | Details | +
+ * Type | (Rent) | Area | Details | +
  */
 const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
   const rows =
@@ -14,8 +14,6 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
         ? [
             emptyResidentRow({
               resident_type: value.resident_type || '',
-              resident_ownership_status: value.resident_ownership_status || '',
-              resident_ownership_other: value.resident_ownership_other || '',
               rented_amount: value.rented_amount ?? '',
               house_area_marla: value.house_area_marla ?? '',
               house_details: value.house_details || '',
@@ -30,8 +28,6 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
     return {
       resident_entries: nextRows,
       resident_type: first.resident_type || '',
-      resident_ownership_status: first.resident_ownership_status || '',
-      resident_ownership_other: first.resident_ownership_other || '',
       rented_amount: first.rented_amount ?? '',
       house_area_marla: first.house_area_marla ?? '',
       house_details: first.house_details || '',
@@ -78,46 +74,6 @@ const AidResidentHousing = ({ value, onChange, title = 'Resident' }) => {
                     </option>
                   ))}
                 </select>
-              </label>
-
-              <label className="aid-property-inline__field aid-property-inline__field--area">
-                {idx === 0 ? (
-                  <span className="aid-property-inline__label">Ownership</span>
-                ) : (
-                  <span className="aid-property-inline__label aid-property-inline__label--ghost">
-                    &nbsp;
-                  </span>
-                )}
-                <input
-                  className="aid-property-inline__control"
-                  type="text"
-                  value={row.resident_ownership_status || ''}
-                  onChange={(e) =>
-                    updateRow(idx, {
-                      resident_ownership_status: e.target.value,
-                    })
-                  }
-                  placeholder="Status"
-                />
-              </label>
-
-              <label className="aid-property-inline__field aid-property-inline__field--area">
-                {idx === 0 ? (
-                  <span className="aid-property-inline__label">Other</span>
-                ) : (
-                  <span className="aid-property-inline__label aid-property-inline__label--ghost">
-                    &nbsp;
-                  </span>
-                )}
-                <input
-                  className="aid-property-inline__control"
-                  type="text"
-                  value={row.resident_ownership_other || ''}
-                  onChange={(e) =>
-                    updateRow(idx, { resident_ownership_other: e.target.value })
-                  }
-                  placeholder="Optional"
-                />
               </label>
 
               {isRented ? (

@@ -4255,6 +4255,10 @@ a.aid-contact-chip:hover {
   align-items: start;
 }
 
+.aid-fh-contact__grid--address-only {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .aid-fh-contact__address .form-group,
 .aid-fh-contact__address .form-field {
   margin-bottom: 0;
@@ -4273,11 +4277,12 @@ a.aid-contact-chip:hover {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .aid-fh-contact__grid--bottom {
+  .aid-fh-contact__grid--bottom:not(.aid-fh-contact__grid--address-only) {
     grid-template-columns: 1fr 1fr;
   }
 
-  .aid-fh-contact__address {
+  .aid-fh-contact__grid--bottom:not(.aid-fh-contact__grid--address-only)
+    .aid-fh-contact__address {
     grid-column: 1 / -1;
   }
 }
@@ -4569,23 +4574,36 @@ a.aid-contact-chip:hover {
 
 .aid-fh-personal__disability {
   margin-top: 1rem;
-  padding: 0.9rem 1rem;
+  padding: 0.75rem 1rem;
   border: 1px solid #e2e8f0;
   border-radius: 10px;
   background: #f8fafc;
+  display: flex;
+  align-items: end;
+  gap: 0.85rem 1rem;
+  flex-wrap: wrap;
+}
+
+.aid-fh-personal__disability.is-open {
+  display: grid;
+  grid-template-columns: minmax(11rem, auto) minmax(0, 1.4fr) minmax(11rem, 0.9fr);
+  align-items: end;
 }
 
 .aid-fh-personal__disability-check {
   display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
+  align-items: center;
+  gap: 0.55rem;
   cursor: pointer;
-  margin-bottom: 0;
+  margin: 0;
+  min-height: 42px;
+  white-space: nowrap;
 }
 
 .aid-fh-personal__disability-check input {
-  margin-top: 0.2rem;
+  margin: 0;
   accent-color: #15803d;
+  flex-shrink: 0;
 }
 
 .aid-fh-personal__disability-copy {
@@ -4605,9 +4623,57 @@ a.aid-contact-chip:hover {
   line-height: 1.35;
 }
 
+.aid-fh-personal__disability-type .form-group,
+.aid-fh-personal__disability-type .form-field,
 .aid-fh-personal__disability .form-group,
 .aid-fh-personal__disability .form-field {
-  margin-top: 0.75rem;
+  margin: 0;
+}
+
+.aid-fh-personal__disability-cert {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.aid-fh-personal__disability-cert-label {
+  font-size: 0.8rem;
+  font-weight: 650;
+  color: #334155;
+}
+
+.aid-fh-personal__disability-cert .aid-app-docs__upload {
+  min-height: 42px;
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.aid-fh-personal__disability-cert-file {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  min-height: 42px;
+}
+
+.aid-fh-personal__disability-cert-error {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .aid-fh-personal__disability.is-open {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .aid-fh-personal__disability-check {
+    min-height: auto;
+  }
 }
 
 @media (max-width: 720px) {
@@ -4973,6 +5039,8 @@ a.aid-contact-chip:hover {
   grid-template-columns: minmax(0, 1fr);
   gap: 1rem;
   align-items: start;
+  /* Clear fixed navbar (64px) when scrollIntoView runs */
+  scroll-margin-top: 72px;
 }
 
 .aid-fm-layout--panel-open {
@@ -5168,10 +5236,8 @@ a.aid-contact-chip:hover {
   box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
   display: flex;
   flex-direction: column;
-  max-height: calc(100vh - 8rem);
   position: sticky;
-  top: 1rem;
-  overflow: hidden;
+  top: 72px; /* below fixed navbar */
 }
 
 .aid-fm-panel__head {
@@ -5192,7 +5258,6 @@ a.aid-contact-chip:hover {
 
 .aid-fm-panel__body {
   padding: 0.9rem 1rem;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;

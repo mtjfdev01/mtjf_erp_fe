@@ -102,6 +102,7 @@ const AidFamilyHeadPersonalFields = ({
   const age = calcAgeFromDob(value?.date_of_birth);
   const selectedVulns = parseVulnerabilityList(value?.vulnerability);
   const photoInputRef = useRef(null);
+  const disabilityCertInputRef = useRef(null);
   const lookupTimer = useRef(null);
   const previewUrl = value?._photo_preview || value?.photo_url || '';
   const isRented = value?.resident_type === 'rented';
@@ -110,6 +111,8 @@ const AidFamilyHeadPersonalFields = ({
   const [registryMatch, setRegistryMatch] = useState(null);
   const [registryLookingUp, setRegistryLookingUp] = useState(false);
   const [matchPayload, setMatchPayload] = useState(null);
+  const [disabilityCertUploading, setDisabilityCertUploading] = useState(false);
+  const [disabilityCertError, setDisabilityCertError] = useState('');
 
   useEffect(
     () => () => {
@@ -197,7 +200,47 @@ const AidFamilyHeadPersonalFields = ({
       vulnerability: person.vulnerability || value?.vulnerability || '',
       has_disability: !!person.has_disability,
       disability_type: person.disability_type || '',
+      disability_certificate_url: person.disability_certificate_url || '',
+      disability_certificate_name: person.disability_certificate_name || '',
+      current_address: person.current_address || value?.current_address || '',
     });
+  };
+
+  const uploadDisabilityCertificate = async (file) => {
+    if (!file) return;
+    const mime = String(file.type || '').toLowerCase();
+    const name = String(file.name || '').toLowerCase();
+    const ok =
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'].includes(
+        mime,
+      ) || /\.(jpe?g|png|webp|pdf)$/i.test(name);
+    if (!ok) {
+      setDisabilityCertError('Only JPG, PNG, WEBP, or PDF files are allowed');
+      return;
+    }
+    setDisabilityCertUploading(true);
+    setDisabilityCertError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('context', 'disability');
+      const res = await axiosInstance.post(
+        '/aid/applications/documents/upload',
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      const data = res.data?.data || {};
+      patch({
+        disability_certificate_url: data.url || '',
+        disability_certificate_name: data.file_name || file.name,
+      });
+    } catch (err) {
+      setDisabilityCertError(
+        err.response?.data?.message || err.message || 'Upload failed',
+      );
+    } finally {
+      setDisabilityCertUploading(false);
+    }
   };
 
   const lookupRegistry = async (formattedCnic) => {
@@ -654,12 +697,22 @@ const AidFamilyHeadPersonalFields = ({
           >
             <div className="aid-fh-contact__address">
               <FormTextarea
-                label="Full address & landmark"
+                label="Full address as per CNIC"
                 required={fieldsRequired}
                 value={value?.address || ''}
                 onChange={(e) => patch({ address: e.target.value })}
                 rows={3}
-                placeholder="House no., street, mohalla — near the main mosque"
+                placeholder="Address printed on CNIC"
+              />
+            </div>
+            <div className="aid-fh-contact__address">
+              <FormTextarea
+                label="Current address"
+                required={fieldsRequired}
+                value={value?.current_address || ''}
+                onChange={(e) => patch({ current_address: e.target.value })}
+                rows={3}
+                placeholder="Where they live now — house, street, landmark"
               />
             </div>
             {showResidenceFields ? (
@@ -763,7 +816,11 @@ const AidFamilyHeadPersonalFields = ({
         </div>
       </div>
 
-      <div className="aid-fh-personal__disability">
+      <div
+        className={`aid-fh-personal__disability${
+          value?.has_disability ? ' is-open' : ''
+        }`}
+      >
         <label className="aid-fh-personal__disability-check">
           <input
             type="checkbox"
@@ -774,24 +831,82 @@ const AidFamilyHeadPersonalFields = ({
                 disability_type: e.target.checked
                   ? value?.disability_type || ''
                   : '',
+                ...(e.target.checked
+                  ? {}
+                  : {
+                      disability_certificate_url: '',
+                      disability_certificate_name: '',
+                    }),
               })
             }
           />
           <span className="aid-fh-personal__disability-copy">
-            <strong>Has Physical or Mental Disability</strong>
-            <small>
-              Enables disability grant evaluation and special equipment
-              distribution
-            </small>
+            <strong>Has Physical Disability</strong>
           </span>
         </label>
         {value?.has_disability ? (
-          <FormInput
-            label="Disability Type / Medical Detail"
-            value={value?.disability_type || ''}
-            onChange={(e) => patch({ disability_type: e.target.value })}
-            placeholder="e.g. Physical - Leg Impairment, Visual, Hearing, Spinal"
-          />
+          <>
+            <div className="aid-fh-personal__disability-type">
+              <FormInput
+                label="Disability Type / Medical Detail"
+                value={value?.disability_type || ''}
+                onChange={(e) => patch({ disability_type: e.target.value })}
+                placeholder="e.g. Leg impairment, Visual, Hearing, Spinal"
+              />
+            </div>
+            <div className="aid-fh-personal__disability-cert">
+              <span className="aid-fh-personal__disability-cert-label">
+                Disability certificate
+              </span>
+              {value?.disability_certificate_url ? (
+                <div className="aid-fh-personal__disability-cert-file">
+                  <a
+                    href={value.disability_certificate_url}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {value.disability_certificate_name || 'View certificate'}
+                  </a>
+                  <button
+                    type="button"
+                    className="aid-mini-btn aid-mini-btn--remove"
+                    onClick={() =>
+                      patch({
+                        disability_certificate_url: '',
+                        disability_certificate_name: '',
+                      })
+                    }
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="aid-app-docs__upload">
+                  <span>
+                    {disabilityCertUploading
+                      ? 'Uploading…'
+                      : 'Attach certificate (JPG / PNG / PDF)'}
+                  </span>
+                  <input
+                    ref={disabilityCertInputRef}
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
+                    disabled={disabilityCertUploading}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      e.target.value = '';
+                      uploadDisabilityCertificate(file);
+                    }}
+                  />
+                </label>
+              )}
+              {disabilityCertError ? (
+                <p className="aid-fh-personal__disability-cert-error">
+                  {disabilityCertError}
+                </p>
+              ) : null}
+            </div>
+          </>
         ) : null}
       </div>
     </section>
