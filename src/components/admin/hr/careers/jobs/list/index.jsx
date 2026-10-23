@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../../../utils/axios';
 import Navbar from '../../../../../Navbar';
@@ -9,38 +9,16 @@ import Pagination from '../../../../../common/Pagination';
 import { SearchFilter, DropdownFilter, DateFilter, DateRangeFilter, RefreshButton } from '../../../../../common/filters';
 import { ClearButton } from '../../../../../common/filters/index';
 import { SearchButton } from '../../../../../common/filters/index';
-import { useAuth } from '../../../../../../context/AuthContext';
-import { hasPermission, isSuperAdmin } from '../../../../../../utils/permissions';
 
 import { FiEye, FiTrash2, FiEdit, FiBriefcase } from 'react-icons/fi';
 
 const JobsList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [jobToDelete, setJobToDelete] = useState(null);
-
-  const canCreate = useMemo(
-    () =>
-      isSuperAdmin(permissions) ||
-      hasPermission(permissions, 'hr', 'jobs', 'create'),
-    [permissions],
-  );
-  const canUpdate = useMemo(
-    () =>
-      isSuperAdmin(permissions) ||
-      hasPermission(permissions, 'hr', 'jobs', 'update'),
-    [permissions],
-  );
-  const canDelete = useMemo(
-    () =>
-      isSuperAdmin(permissions) ||
-      hasPermission(permissions, 'hr', 'jobs', 'delete'),
-    [permissions],
-  );
   
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
@@ -221,19 +199,19 @@ const JobsList = () => {
       onClick: () => navigate(`/hr/careers/jobs/view/${job.id}`),
       visible: true
     },
-    {
-      icon: <FiEdit />,
-      label: 'Edit',
-      color: '#2563eb',
-      onClick: () => navigate(`/hr/careers/jobs/edit/${job.id}`),
-      visible: canUpdate
-    },
+    // {
+    //   icon: <FiEdit />,
+    //   label: 'Edit',
+    //   color: '#2563eb',
+    //   onClick: () => navigate(`/hr/careers/jobs/edit/${job.id}`),
+    //   visible: true
+    // },
     {
       icon: <FiTrash2 />,
       label: 'Delete',
       color: '#f44336',
       onClick: () => handleDeleteClick(job),
-      visible: canDelete
+      visible: true
     }
   ];
 
@@ -281,7 +259,7 @@ const JobsList = () => {
           <PageHeader 
             title="Jobs" 
             showBackButton={false} 
-            showAdd={canCreate}
+            showAdd={true}
             addPath="/hr/careers/jobs/add"
           />
           <div className="loading">Loading...</div>
@@ -297,7 +275,7 @@ const JobsList = () => {
         <PageHeader 
           title="Jobs" 
           showBackButton={false} 
-          showAdd={canCreate}
+          showAdd={true}
           addPath="/hr/careers/jobs/add"
         />
         

@@ -110,84 +110,72 @@ const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
   }
 
   return (
-    <div className="view-section task-due-reminders-panel">
-      <h3 className="view-section-title">
-        <span>⏰</span> Due date email reminders
-      </h3>
-      <p className="task-due-reminders-note">
-        Pick any date and time (<strong>Asia/Karachi</strong>). Email is sent during
-        that hour. Each reminder is sent once, then removed.
-        {hasDueDate && (
-          <>
-            {' '}
-            Task due: <strong>{formatRemindDate(dueDate)}</strong>
-          </>
-        )}
-      </p>
+    <section className="task-due-reminders-panel task-due-reminders-panel--card">
+      <h3 className="task-due-reminders-panel__title">Email reminder (PKT)</h3>
 
       {!hasDueDate && (
-        <div className="task-due-reminders-empty">
+        <div className="task-due-reminders-panel__empty">
           Add a due date to this task before setting reminders.
         </div>
       )}
 
       {hasDueDate && (
-        <form onSubmit={handleAdd} className="task-due-reminders-form">
-          <div className="task-due-reminders-form-row">
+        <form onSubmit={handleAdd} className="task-due-reminders-panel__form">
+          <div className="task-due-reminders-panel__fields">
             <FormInput
-              label="Reminder date"
+              label=""
               name="remind_on_date"
               type="date"
               value={remindOnDate}
               onChange={(e) => setRemindOnDate(e.target.value)}
               disabled={disabled || saving}
+              aria-label="Reminder date"
               required
             />
             <FormInput
-              label="Reminder time (PKT)"
+              label=""
               name="remind_at_time"
               type="time"
               value={remindAtTime}
               onChange={(e) => setRemindAtTime(e.target.value)}
               disabled={disabled || saving}
+              aria-label="Reminder time (PKT)"
               required
             />
           </div>
-          <div className="form-actions">
+          <div className="task-due-reminders-panel__actions">
             <PrimaryButton
+              className="task-due-reminders-panel__submit"
               type="submit"
               disabled={disabled || saving || !hasDueDate}
               loading={saving}
               loadingText="Adding..."
             >
-              Add reminder
+              Set reminder
             </PrimaryButton>
           </div>
         </form>
       )}
 
-      <div className="task-due-reminders-list-wrap">
-        {loading && <p className="task-due-reminders-muted">Loading reminders…</p>}
-        {!loading && reminders.length === 0 && (
-          <p className="task-due-reminders-muted">No reminders scheduled yet.</p>
-        )}
+      <div className="task-due-reminders-panel__list-wrap">
+        {loading && <p className="task-due-reminders-panel__muted">Loading reminders…</p>}
         {!loading && reminders.length > 0 && (
-          <ul className="task-due-reminders-list">
+          <ul className="task-due-reminders-panel__list">
             {reminders.map((r) => (
-              <li key={r.id} className="task-due-reminder-item">
-                <div className="task-due-reminder-item__main">
-                  <span className="task-due-reminder-item__when">
+              <li key={r.id} className="task-due-reminders-panel__item">
+                <div className="task-due-reminders-panel__item-main">
+                  <span className="task-due-reminders-panel__item-when">
                     {formatRemindDate(r.remind_on_date)} at{' '}
                     {formatHourLabel(r.remind_at_hour)}
                   </span>
-                  <span className="task-due-reminder-item__meta">
+                  <span className="task-due-reminders-panel__item-meta">
                     Scheduled email reminder
                   </span>
                 </div>
                 {!disabled && (
                   <button
                     type="button"
-                    className="task-due-reminder-item__remove"
+                    className="task-due-reminders-panel__remove"
                     onClick={() => handleDelete(r.id)}
                   >
                     Remove
@@ -198,7 +186,7 @@ const TaskDueRemindersPanel = ({ taskId, dueDate, isAssignee, disabled }) => {
           </ul>
         )}
       </div>
-    </div>
+    </section>
   );
 };
 

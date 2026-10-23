@@ -308,7 +308,10 @@ const TAB_INVEST_COPY = {
     title: 'Verify what was declared',
     hint: 'Declared claims for this case. A mismatch needs a Found note.',
   },
-
+  field_process: {
+    title: 'Field process',
+    hint: 'Site visit and field checks — mark Verified and add a Found note for each item.',
+  },
   beneficiary: {
     title: 'Verify beneficiary claims',
     hint: 'Checks linked to the beneficiary only.',
@@ -316,10 +319,6 @@ const TAB_INVEST_COPY = {
   family: {
     title: 'Verify family / applicant',
     hint: 'Checks linked to the family head, household, and applicant.',
-  },
-  field_process: {
-    title: 'Field Process',
-    hint: 'Site visit and field checks — mark Verified and add a Found note for each item.',
   },
 };
 

@@ -14,21 +14,21 @@ const UserRow = ({ user, isSelected, onSelect }) => {
   return (
     <button
       type="button"
-      className={`mov-assignment-user${isSelected ? ' is-selected' : ''}`}
+      className={`tkmovpick-user${isSelected ? ' is-selected' : ''}`}
       onClick={onSelect}
     >
       {avatar ? (
-        <img className="mov-assignment-avatar" src={avatar} alt="" />
+        <img className="tkmovpick-avatar" src={avatar} alt="" />
       ) : (
-        <span className="mov-assignment-avatar mov-assignment-avatar--fallback">
+        <span className="tkmovpick-avatar tkmovpick-avatar--fallback">
           {getUserName(user).charAt(0).toUpperCase()}
         </span>
       )}
-      <span className="mov-assignment-user-details">
+      <span className="tkmovpick-user-details">
         <strong>{getUserName(user)}</strong>
         {user.email && <small>{user.email}</small>}
       </span>
-      {isSelected && <FiCheck className="mov-assignment-selected-icon" />}
+      {isSelected && <FiCheck className="tkmovpick-selected-icon" />}
     </button>
   );
 };
@@ -75,15 +75,15 @@ const MovAssignmentPicker = ({
     <>
       <button
         type="button"
-        className="mov-assignment-button"
+        className="tkmovpick-button"
         onClick={() => setIsOpen(true)}
         disabled={disabled || assignedUsers.length === 0}
       >
         {displayUser ? (
           getAvatar(displayUser) ? (
-            <img className="mov-assignment-avatar" src={getAvatar(displayUser)} alt="" />
+            <img className="tkmovpick-avatar" src={getAvatar(displayUser)} alt="" />
           ) : (
-            <span className="mov-assignment-avatar mov-assignment-avatar--fallback">
+            <span className="tkmovpick-avatar tkmovpick-avatar--fallback">
               {getUserName(displayUser).charAt(0).toUpperCase()}
             </span>
           )
@@ -92,22 +92,22 @@ const MovAssignmentPicker = ({
       </button>
 
       {isOpen && (
-        <div className="mov-assignment-modal-backdrop" role="presentation" onMouseDown={() => setIsOpen(false)}>
-          <div className="mov-assignment-modal" role="dialog" aria-modal="true" aria-label="Assign MOV user" onMouseDown={(event) => event.stopPropagation()}>
-            <div className="mov-assignment-modal-header">
+        <div className="tkmovpick-modal-backdrop" role="presentation" onMouseDown={() => setIsOpen(false)}>
+          <div className="tkmovpick-modal" role="dialog" aria-modal="true" aria-label="Assign MOV user" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="tkmovpick-modal-header">
               <h3>Assign MOV User</h3>
-              <button type="button" className="mov-assignment-close" onClick={() => setIsOpen(false)} aria-label="Close">
+              <button type="button" className="tkmovpick-close" onClick={() => setIsOpen(false)} aria-label="Close">
                 <FiX />
               </button>
             </div>
 
             {canAssignAll && (
-              <div className="mov-assignment-mode-toggle" role="tablist" aria-label="Assignment scope">
+              <div className="tkmovpick-mode-toggle" role="tablist" aria-label="Assignment scope">
                 <button
                   type="button"
                   role="tab"
                   aria-selected={mode === 'single'}
-                  className={`mov-assignment-mode-btn${mode === 'single' ? ' is-active' : ''}`}
+                  className={`tkmovpick-mode-btn${mode === 'single' ? ' is-active' : ''}`}
                   onClick={() => setMode('single')}
                 >
                   This MOV only
@@ -116,7 +116,7 @@ const MovAssignmentPicker = ({
                   type="button"
                   role="tab"
                   aria-selected={mode === 'all'}
-                  className={`mov-assignment-mode-btn${mode === 'all' ? ' is-active' : ''}`}
+                  className={`tkmovpick-mode-btn${mode === 'all' ? ' is-active' : ''}`}
                   onClick={() => setMode('all')}
                 >
                   All MOVs
@@ -124,13 +124,13 @@ const MovAssignmentPicker = ({
               </div>
             )}
 
-            <p className="mov-assignment-modal-hint">
+            <p className="tkmovpick-modal-hint">
               {mode === 'all' && canAssignAll
                 ? 'Pick a user to assign every MOV item to them.'
                 : 'Pick a user to assign only this MOV item.'}
             </p>
 
-            <div className="mov-assignment-user-list">
+            <div className="tkmovpick-user-list">
               {assignedUsers.map((user) => (
                 <UserRow
                   key={user.id}
@@ -144,7 +144,7 @@ const MovAssignmentPicker = ({
             {mode === 'single' && assignedUsers.length > 1 && (
               <button
                 type="button"
-                className="mov-assignment-unassign"
+                className="tkmovpick-unassign"
                 onClick={() => {
                   onChange(null);
                   setIsOpen(false);

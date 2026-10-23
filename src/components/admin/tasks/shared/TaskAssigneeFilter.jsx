@@ -15,7 +15,7 @@ export default function TaskAssigneeFilter({
   placeholder = 'Search users by name or email...',
 }) {
   return (
-    <div className="task-assignee-filter">
+    <div className="tkassignee-filter">
       <SearchableDropdown
         label=""
         placeholder={placeholder}

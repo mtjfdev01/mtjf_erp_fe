@@ -28,23 +28,23 @@ export default function BoardColumnPicker({
   const visibleCount = visibleColumnIds.size;
 
   return (
-    <div className="trello-board-column-picker" ref={pickerRef}>
+    <div className="tkboard-column-picker" ref={pickerRef}>
       <button
         type="button"
-        className={`trello-board-column-picker-trigger ${open ? 'trello-board-column-picker-trigger--open' : ''}`}
+        className={`tkboard-column-picker-trigger ${open ? 'tkboard-column-picker-trigger--open' : ''}`}
         onClick={onToggle}
         aria-expanded={open}
       >
         <FiEye />
         <span>Show/hide columns</span>
-        <FiChevronDown className="trello-board-column-picker-chevron" />
+        <FiChevronDown className="tkboard-column-picker-chevron" />
       </button>
 
       {open && (
-        <div className="trello-board-column-picker-dropdown">
-          <div className="trello-board-column-picker-header">
-            <span className="trello-board-column-picker-title">Visible columns</span>
-            <div className="trello-board-column-picker-header-actions">
+        <div className="tkboard-column-picker-dropdown">
+          <div className="tkboard-column-picker-header">
+            <span className="tkboard-column-picker-title">Visible columns</span>
+            <div className="tkboard-column-picker-header-actions">
               <button type="button" onClick={onShowAll}>
                 Show all
               </button>
@@ -55,31 +55,31 @@ export default function BoardColumnPicker({
             </div>
           </div>
 
-          <ul className="trello-board-column-picker-list">
+          <ul className="tkboard-column-picker-list">
             {BOARD_COLUMNS.map((column) => {
               const checked = visibleColumnIds.has(column.id);
               const count = columnCounts[column.id] ?? 0;
               return (
                 <li key={column.id}>
-                  <label className="trello-board-column-picker-item">
+                  <label className="tkboard-column-picker-item">
                     <input
                       type="checkbox"
                       checked={checked}
                       onChange={() => onToggleColumn(column.id)}
                     />
                     <span
-                      className="trello-board-column-dot"
+                      className="tkboard-column-dot"
                       style={{ backgroundColor: column.color }}
                     />
-                    <span className="trello-board-column-picker-label">{column.label}</span>
-                    <span className="trello-board-column-picker-count">{count}</span>
+                    <span className="tkboard-column-picker-label">{column.label}</span>
+                    <span className="tkboard-column-picker-count">{count}</span>
                   </label>
                 </li>
               );
             })}
           </ul>
 
-          <p className="trello-board-column-picker-footer">
+          <p className="tkboard-column-picker-footer">
             {visibleCount} of {BOARD_COLUMNS.length} columns shown
           </p>
         </div>

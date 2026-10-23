@@ -114,7 +114,6 @@ const AidFamilyHeadPersonalFields = ({
   const age = calcAgeFromDob(value?.date_of_birth);
   const selectedVulns = parseVulnerabilityList(value?.vulnerability);
   const photoInputRef = useRef(null);
-  const disabilityCertInputRef = useRef(null);
   const lookupTimer = useRef(null);
   const previewUrl = value?._photo_preview || value?.photo_url || '';
   const isRented = value?.resident_type === 'rented';
@@ -123,8 +122,6 @@ const AidFamilyHeadPersonalFields = ({
   const [registryMatch, setRegistryMatch] = useState(null);
   const [registryLookingUp, setRegistryLookingUp] = useState(false);
   const [matchPayload, setMatchPayload] = useState(null);
-  const [disabilityCertUploading, setDisabilityCertUploading] = useState(false);
-  const [disabilityCertError, setDisabilityCertError] = useState('');
 
   useEffect(
     () => () => {
@@ -212,47 +209,7 @@ const AidFamilyHeadPersonalFields = ({
       vulnerability: person.vulnerability || value?.vulnerability || '',
       has_disability: !!person.has_disability,
       disability_type: person.disability_type || '',
-      disability_certificate_url: person.disability_certificate_url || '',
-      disability_certificate_name: person.disability_certificate_name || '',
-      current_address: person.current_address || value?.current_address || '',
     });
-  };
-
-  const uploadDisabilityCertificate = async (file) => {
-    if (!file) return;
-    const mime = String(file.type || '').toLowerCase();
-    const name = String(file.name || '').toLowerCase();
-    const ok =
-      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf'].includes(
-        mime,
-      ) || /\.(jpe?g|png|webp|pdf)$/i.test(name);
-    if (!ok) {
-      setDisabilityCertError('Only JPG, PNG, WEBP, or PDF files are allowed');
-      return;
-    }
-    setDisabilityCertUploading(true);
-    setDisabilityCertError('');
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('context', 'disability');
-      const res = await axiosInstance.post(
-        '/aid/applications/documents/upload',
-        fd,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
-      );
-      const data = res.data?.data || {};
-      patch({
-        disability_certificate_url: data.url || '',
-        disability_certificate_name: data.file_name || file.name,
-      });
-    } catch (err) {
-      setDisabilityCertError(
-        err.response?.data?.message || err.message || 'Upload failed',
-      );
-    } finally {
-      setDisabilityCertUploading(false);
-    }
   };
 
   const lookupRegistry = async (formattedCnic) => {
@@ -861,11 +818,7 @@ const AidFamilyHeadPersonalFields = ({
         </div>
       </div>
 
-      <div
-        className={`aid-fh-personal__disability${
-          value?.has_disability ? ' is-open' : ''
-        }`}
-      >
+      <div className="aid-fh-personal__disability">
         <label className="aid-fh-personal__disability-check">
           <input
             type="checkbox"
@@ -876,12 +829,6 @@ const AidFamilyHeadPersonalFields = ({
                 disability_type: e.target.checked
                   ? value?.disability_type || ''
                   : '',
-                ...(e.target.checked
-                  ? {}
-                  : {
-                      disability_certificate_url: '',
-                      disability_certificate_name: '',
-                    }),
               })
             }
           />

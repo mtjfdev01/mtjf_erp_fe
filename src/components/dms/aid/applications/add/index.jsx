@@ -26,7 +26,6 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
-import AidCleanWaterApplicationFields from '../../shared/AidCleanWaterApplicationFields';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
@@ -64,7 +63,6 @@ import {
   emptyRationDetails,
   emptyMarriageGiftDetails,
   emptyFinancialAssistanceDetails,
-  emptyCleanWaterDetails,
   emptyZakatPermission,
   emptyConsentForm,
   emptyFamilyHeadRow,
@@ -97,7 +95,6 @@ const emptyPerson = {
   photo_name: '',
   city: '',
   address: '',
-  current_address: '',
   province: '',
   district: '',
   tehsil: '',
@@ -115,8 +112,6 @@ const emptyPerson = {
   is_alive: true,
   has_disability: false,
   disability_type: '',
-  disability_certificate_url: '',
-  disability_certificate_name: '',
   existing_person_id: null,
   ...emptyLiteracyFields(),
   ...emptyPropertyOwnershipFields(),
@@ -272,14 +267,7 @@ const cleanVehicleEntries = (p) => {
     .map((row) => {
       const vehicle_type = String(row?.vehicle_type || '').trim();
       if (!vehicle_type) return null;
-      const qty = Number(row?.quantity);
-      const details = String(row?.details || '').trim();
-      const entry = { vehicle_type };
-      if (Number.isFinite(qty) && qty > 0) {
-        entry.quantity = Math.floor(qty);
-      }
-      if (details) entry.details = details;
-      return entry;
+      return { vehicle_type };
     })
     .filter(Boolean);
   const first = rows[0] || null;
@@ -337,7 +325,6 @@ const mapPersonToForm = (p, extras = {}) => {
     photo_name: p.photo_name || '',
     city: p.city || '',
     address: p.address || '',
-    current_address: p.current_address || '',
     province: p.province || '',
     district: p.district || '',
     tehsil: p.tehsil || '',
@@ -359,8 +346,6 @@ const mapPersonToForm = (p, extras = {}) => {
     is_alive: p.is_alive !== false,
     has_disability: !!p.has_disability,
     disability_type: p.disability_type || '',
-    disability_certificate_url: p.disability_certificate_url || '',
-    disability_certificate_name: p.disability_certificate_name || '',
     has_land: !!p.has_land,
     property_type: p.property_type || '',
     property_area: p.property_area || '',
@@ -516,12 +501,6 @@ const cleanPersonPayload = (p) => {
     student_class_name: p.student_class_name || undefined,
     has_disability: !!p.has_disability,
     disability_type: p.has_disability ? p.disability_type || undefined : undefined,
-    disability_certificate_url: p.has_disability
-      ? p.disability_certificate_url || undefined
-      : undefined,
-    disability_certificate_name: p.has_disability
-      ? p.disability_certificate_name || undefined
-      : undefined,
     ...cleanPropertyEntries(p),
     ...cleanResidentEntries(p),
     ...cleanLivestockEntries(p),
@@ -532,7 +511,6 @@ const cleanPersonPayload = (p) => {
     bisp_status: p.bisp_status || undefined,
     is_alive: p.is_alive !== false,
     address: p.address || undefined,
-    current_address: p.current_address || undefined,
     city: p.city || p.district || undefined,
     province: p.province || undefined,
     district: p.district || undefined,
@@ -577,9 +555,6 @@ const AidApplicationAddInner = () => {
   );
   const [financialAssistanceDetails, setFinancialAssistanceDetails] = useState(
     emptyFinancialAssistanceDetails(),
-  );
-  const [cleanWaterDetails, setCleanWaterDetails] = useState(
-    emptyCleanWaterDetails(),
   );
   const [zakatPermission, setZakatPermission] = useState(emptyZakatPermission());
   const [consentForm, setConsentForm] = useState(emptyConsentForm());
@@ -773,11 +748,6 @@ const AidApplicationAddInner = () => {
               ...app.financial_assistance_details,
             }
           : emptyFinancialAssistanceDetails(),
-      );
-      setCleanWaterDetails(
-        app.clean_water_details
-          ? { ...emptyCleanWaterDetails(), ...app.clean_water_details }
-          : emptyCleanWaterDetails(),
       );
       setZakatPermission(
         app.zakat_permission
@@ -1377,9 +1347,6 @@ const AidApplicationAddInner = () => {
         ...(form.requested_aid_type === 'financial_assistance'
           ? { financial_assistance_details: financialAssistanceDetails }
           : {}),
-        ...(form.requested_aid_type === 'clean_water'
-          ? { clean_water_details: cleanWaterDetails }
-          : {}),
         zakat_permission: zakatPermission,
         consent_form: consentForm,
         writer_relation: 'self',
@@ -1521,7 +1488,7 @@ const AidApplicationAddInner = () => {
       } else {
         const res = await axiosInstance.post('/aid/applications', payload);
         savedId = res.data?.data?.id;
-        toast.success('Saved as draft — open Data Entry to consider for verification');
+        toast.success('Saved as draft — open Drafts to approve for verification');
       }
       try {
         await clearAidFormDraft(offlineFormKey);
@@ -1784,13 +1751,6 @@ const AidApplicationAddInner = () => {
                         : emptyFinancialAssistanceDetails(),
                     );
                   }
-                  if (next === 'clean_water') {
-                    setCleanWaterDetails((prev) =>
-                      prev?.existing_source_of_water != null
-                        ? prev
-                        : emptyCleanWaterDetails(),
-                    );
-                  }
                 }}
                 options={AID_REQUEST_TYPES}
               />
@@ -1895,12 +1855,6 @@ const AidApplicationAddInner = () => {
               <AidFinancialAssistanceFields
                 value={financialAssistanceDetails}
                 onChange={setFinancialAssistanceDetails}
-              />
-            )}
-            {form.requested_aid_type === 'clean_water' && (
-              <AidCleanWaterApplicationFields
-                value={cleanWaterDetails}
-                onChange={setCleanWaterDetails}
               />
             )}
             </div>
@@ -2134,6 +2088,15 @@ const AidApplicationAddInner = () => {
 
             {!headAsBeneficiary && beneficiaryMode !== 'existing' && (
               <>
+                <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                  <h4 className="aid-family-panel__title">
+                    Literacy (beneficiary / family head)
+                  </h4>
+                  <AidLiteracyFields
+                    value={beneficiary}
+                    onChange={setBeneficiary}
+                  />
+                </div>
                 <div className="aid-family-panel" style={{ marginTop: 12 }}>
                   <AidPropertyOwnership
                     value={beneficiary}
@@ -2431,6 +2394,30 @@ const AidApplicationAddInner = () => {
                         )
                       }
                     />
+                    <div className="aid-family-panel" style={{ marginTop: 12 }}>
+                      <h4 className="aid-family-panel__title">
+                        Family Head — literacy detail
+                      </h4>
+                      <AidLiteracyFields
+                        value={head}
+                        onChange={(next) =>
+                          setFamilyHeads((list) =>
+                            list.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    ...next,
+                                    _relation_type: row._relation_type,
+                                    _family_members: row._family_members,
+                                    is_applicant: row.is_applicant,
+                                    is_beneficiary: row.is_beneficiary,
+                                  }
+                                : row,
+                            ),
+                          )
+                        }
+                      />
+                    </div>
                     <div className="aid-family-panel" style={{ marginTop: 12 }}>
                       <AidPropertyOwnership
                         value={head}
