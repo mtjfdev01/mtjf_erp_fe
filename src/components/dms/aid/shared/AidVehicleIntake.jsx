@@ -16,7 +16,7 @@ const selectValueOf = (vehicleType) => {
 
 /**
  * Vehicle — one line when Yes:
- * Vehicle? | Type | Quantity | Details | (Specify if other) | +
+ * Vehicle? | Type | (Specify if other) | +
  */
 const AidVehicleIntake = ({ value, onChange, title }) => {
   const { t, lang } = useAidLang();
@@ -217,11 +217,13 @@ const AidVehicleIntake = ({ value, onChange, title }) => {
                       onChange={(e) =>
                         updateRow(idx, { vehicle_type: e.target.value })
                       }
-                      placeholder="e.g. Chingchi"
+                      placeholder="e.g. Rickshaw"
                       required
                     />
                   </label>
-                ) : null}
+                ) : (
+                  <span className="aid-property-inline__field aid-property-inline__field--details" />
+                )}
 
                 <div className="aid-property-inline__actions">
                   {rows.length > 1 ? (

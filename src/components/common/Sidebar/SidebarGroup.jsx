@@ -37,8 +37,6 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
     onNavigate?.();
   };
 
-  const tooltipLabel = group.label;
-
   // Single leaf item → main menu header is the link (no nested submenu)
   if (singleLink) {
     const Icon = singleLink.icon || group.icon;
@@ -48,8 +46,6 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
           to={singleLink.path}
           className={`sidebar-group-header ${isActiveGroup ? 'sidebar-group-header--active' : ''}`}
           onClick={handleNavigate}
-          data-tooltip={collapsed ? tooltipLabel : undefined}
-          title={collapsed ? tooltipLabel : undefined}
         >
           {Icon && <span className="sidebar-group-icon"><Icon /></span>}
           <span className="sidebar-group-label">{group.label}</span>
@@ -64,8 +60,6 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
         className={`sidebar-group-header ${isActiveGroup ? 'sidebar-group-header--active' : ''}`}
         onClick={handleGroupClick}
         style={{ cursor: 'pointer' }}
-        data-tooltip={collapsed ? tooltipLabel : undefined}
-        title={collapsed ? tooltipLabel : undefined}
       >
         {group.icon && <span className="sidebar-group-icon"><group.icon /></span>}
         <span className="sidebar-group-label">{group.label}</span>
@@ -81,7 +75,6 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
               item={item}
               activeItem={activeItem}
               onNavigate={onNavigate}
-              collapsed={collapsed}
             />
           ))}
         </div>

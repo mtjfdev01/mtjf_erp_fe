@@ -5,7 +5,6 @@ import { toast } from 'react-toastify';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Loader from '../../../common/loader/Loader';
-import FormInput from '../../../common/FormInput';
 import MentionCommentInput from './MentionCommentInput';
 import TaskDueRemindersPanel from './TaskDueRemindersPanel';
 import { useAuth } from '../../../../context/AuthContext';
@@ -29,14 +28,12 @@ import './index.css';
 import './TaskViewModal.css';
 import { FaExclamationTriangle } from 'react-icons/fa';
 import {
+  FiArrowLeft,
   FiCalendar,
-  FiChevronDown,
-  FiChevronRight,
-  FiClock,
   FiFileText,
   FiFlag,
+  FiPaperclip,
   FiRepeat,
-  FiUser,
   FiUserPlus,
   FiX,
 } from 'react-icons/fi';
@@ -50,6 +47,44 @@ const QUICK_ACTION_ICON_MAP = {
   MOVE_PROJECT: FiRepeat,
   GENERATE_REPORT: FiFileText,
 };
+
+// Stepper shown in the header. Only open / in_progress / completed can be set inline.
+const STANDARD_STEP_DEFS = [
+  { key: 'open', label: 'Assigned' },
+  { key: 'in_progress', label: 'In progress' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'closed', label: 'Closed' },
+];
+
+const APPROVAL_STEP_DEFS = [
+  { key: 'open', label: 'Assigned' },
+  { key: 'in_progress', label: 'In progress' },
+  { key: 'completed', label: 'Completed' },
+  { key: 'pending_approval', label: 'Pending Approval' },
+  { key: 'approved', label: 'Approved' },
+  { key: 'closed', label: 'Closed' },
+];
+
+const getStepIndex = (statusLowerVal, isApprovalWorkflow) => {
+  switch (statusLowerVal) {
+    case 'in_progress':
+      return 1;
+    case 'completed':
+      return 2;
+    case 'pending_approval':
+      return isApprovalWorkflow ? 3 : 2;
+    case 'approved':
+      return isApprovalWorkflow ? 4 : 2;
+    case 'rejected':
+      return isApprovalWorkflow ? 3 : 2;
+    case 'closed':
+      return isApprovalWorkflow ? 5 : 3;
+    default:
+      return 0;
+  }
+};
+
+const DESCRIPTION_LIMIT = 150;
 
 const ViewTask = ({
   taskId: taskIdProp,
@@ -84,6 +119,9 @@ const ViewTask = ({
   const [showMovCompletionPrompt, setShowMovCompletionPrompt] = useState(false);
   const [commentsTab, setCommentsTab] = useState('comments');
   const [totalTimeSeconds, setTotalTimeSeconds] = useState(null);
+  // New view state (UI only)
+  const [activeTab, setActiveTab] = useState('overview');
+  const [dropActive, setDropActive] = useState(false);
 
   const getAttachmentHref = (urlStr) => {
     if (!urlStr) return '#';
@@ -120,7 +158,7 @@ const ViewTask = ({
         if (!cancelled) {
           setError(e.response?.data?.message || 'Failed to load task.');
           setApprovalLoading(false);
-        } 
+        }
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -218,9 +256,12 @@ const ViewTask = ({
         });
       }
 
-      // NOTE: created_by_id and reported_to_id are NOT included here because
-      // the backend already returns task.created_by and task.reported_to as full user objects
-      // via leftJoinAndSelect in the findOne method
+      // Extract all reporting manager IDs (supports multiple managers from reported_to_ids / reported_to arrays)
+      const reportedIds = Array.isArray(task.reported_to_ids)
+        ? task.reported_to_ids.map((idVal) => Number(idVal)).filter((n) => Number.isInteger(n) && n > 0)
+        : Array.isArray(task.reported_to)
+          ? task.reported_to.map((idVal) => Number(idVal)).filter((n) => Number.isInteger(n) && n > 0)
+          : (task.reported_to_id ? [Number(task.reported_to_id)] : []);
 
       const allNeededIds = Array.from(
         new Set([
@@ -229,6 +270,7 @@ const ViewTask = ({
           ...idsFromApprovers,
           ...approvalMetaIds,
           ...reassignmentIds,
+          ...reportedIds,
         ]),
       ).filter((n) => n != null && Number.isInteger(n) && n > 0);
 
@@ -310,6 +352,24 @@ const ViewTask = ({
       month: 'short',
       year: 'numeric'
     });
+  };
+
+  // "5 Oct, 1:00 AM"
+  const formatDayTime = (date) => {
+    if (!date) return '—';
+    const d = new Date(date);
+    if (Number.isNaN(d.getTime())) return '—';
+    const day = d.getDate();
+    const month = d.toLocaleString('en-GB', { month: 'short' });
+    const time = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    return `${day} ${month}, ${time}`;
+  };
+
+  const getInitials = (nameLabel) => {
+    const parts = String(nameLabel || '').split(' ').filter(Boolean);
+    if (parts.length === 0) return '?';
+    if (parts.length === 1) return parts[0][0].toUpperCase();
+    return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
   };
 
   const formatTaskId = (t) => {
@@ -433,12 +493,12 @@ const ViewTask = ({
   const inferredTaskTypeValue = getTaskTypeValue(task);
   const taskTypeValueFinal = taskTypeValueFromBackend || inferredTaskTypeValue;
   const isRecurringTask = taskTypeValueFinal === 'recurring';
-  const taskTypeLabel =
+  const taskTypeShortLabel =
     taskTypeValueFinal === 'recurring'
-      ? 'Recurring Task'
+      ? 'Recurring'
       : taskTypeValueFinal === 'project_linked'
-        ? 'Project-linked Task'
-        : 'One-time Task';
+        ? 'Project-linked'
+        : 'One-time';
 
   const isApprovalWorkflow =
     String(task?.workflow_type || '').toLowerCase() === 'approval_required';
@@ -515,10 +575,6 @@ const ViewTask = ({
 
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [statusModalAction, setStatusModalAction] = useState(null);
-  useEffect(() => {
-    console.log('statusModalOpen changed:', statusModalOpen);
-    console.log('statusModalAction changed:', statusModalAction);
-  }, [statusModalOpen, statusModalAction]);
   const [statusActionLoading, setStatusActionLoading] = useState(false);
 
   const [statusDropdownOpen, setStatusDropdownOpen] = useState(false);
@@ -589,24 +645,30 @@ const ViewTask = ({
     );
   };
 
-  const renderReminderBanner = (title, message, isWarning = false, isCompact = false) => (
-    <div className={`overdue-reminder${isWarning ? ' overdue-reminder--warning' : ''}${isCompact ? ' overdue-reminder--compact' : ''}`}>
-      <FaExclamationTriangle className="overdue-reminder-icon" />
+  const getOverdueDays = () => {
+    if (!task?.due_date) return 0;
+    const dueVal = parseAsLocal(task.due_date);
+    if (Number.isNaN(dueVal.getTime())) return 0;
+    const startOfDueDay = new Date(dueVal);
+    startOfDueDay.setHours(0, 0, 0, 0);
+    const startOfNowDay = new Date();
+    startOfNowDay.setHours(0, 0, 0, 0);
+    return Math.max(0, Math.round((startOfNowDay.getTime() - startOfDueDay.getTime()) / 86400000));
+  };
 
-      {!isCompact && (
-        <div className="overdue-reminder-content">
-          <div className="overdue-reminder-title">{title}</div>
-          <div className="overdue-reminder-text">{message}</div>
-        </div>
-      )}
-      {isCompact && (
-        <div className="overdue-reminder-content--compact">
-          <span className="overdue-reminder-title--compact">{title}</span>
-          <span className="overdue-reminder-text--compact">{message}</span>
-        </div>
-      )}
-    </div>
-  );
+  // Escalation activity (if the backend logged one) — used for the header card and the feed.
+  const escalationActivity = useMemo(() => {
+    if (!task || !Array.isArray(task.activities)) return null;
+    const matches = task.activities.filter((a) => {
+      const action = String(a?.action || '').toLowerCase();
+      return action.includes('escalat') || action.includes('overdue');
+    });
+    if (matches.length === 0) return null;
+    return matches.sort(
+      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(),
+    )[0];
+  }, [task?.activities]);
+
   const canApprove = taskPerms.canApprove === true;
 
   const renderRecurrenceInfo = () => {
@@ -747,6 +809,43 @@ const ViewTask = ({
 
   const assignmentUsersForDisplay = assignedUsers || [];
 
+  /**
+   * Resolves reporting managers for UI display.
+   * Checks runtime-hydrated `task.reported_to_users` first, then maps manager IDs
+   * from `task.reported_to_ids` / `task.reported_to` using loaded `usersById`.
+   * Note: `reported_to_users_meta` has been removed; display relies solely on manager IDs.
+   */
+  const reportingManagersForDisplay = useMemo(() => {
+    if (!task) return [];
+    if (Array.isArray(task.reported_to_users) && task.reported_to_users.length > 0) {
+      return task.reported_to_users;
+    }
+    const reporterIds = Array.isArray(task.reported_to_ids) && task.reported_to_ids.length > 0
+      ? task.reported_to_ids
+      : Array.isArray(task.reported_to) && task.reported_to.length > 0
+        ? task.reported_to
+        : task.reported_to_id
+          ? [task.reported_to_id]
+          : [];
+
+    if (reporterIds.length > 0) {
+      return reporterIds.map((idVal) => {
+        const id = Number(idVal);
+        return (
+          usersById[id] || {
+            id,
+            first_name: `User #${id}`,
+            department: '',
+          }
+        );
+      });
+    }
+    if (task.reported_to && typeof task.reported_to === 'object') {
+      return [task.reported_to];
+    }
+    return [];
+  }, [task, usersById]);
+
   const canEditMovChecklist = useMemo(() => {
     if (!task || !user) return false;
 
@@ -811,7 +910,21 @@ const ViewTask = ({
 
   const handleAttachmentChange = (e) => {
     const file = e.target.files && e.target.files[0];
-    setAttachment((prev) => ({ ...prev, file: file || null }));
+    // Pre-fill the required name with the file name so uploading is one click.
+    setAttachment((prev) => ({
+      ...prev,
+      file: file || null,
+      name: prev.name || (file ? file.name : ''),
+    }));
+  };
+
+  const handleAttachmentDrop = (e) => {
+    e.preventDefault();
+    setDropActive(false);
+    if (!canInteractWithNotes || savingAttachment) return;
+    const file = e.dataTransfer?.files && e.dataTransfer.files[0];
+    if (!file) return;
+    setAttachment((prev) => ({ ...prev, file, name: prev.name || file.name }));
   };
 
   const handleAttachmentNameChange = (e) => {
@@ -891,11 +1004,8 @@ const ViewTask = ({
   };
 
   const handleStatusActionClick = (action) => {
-    console.log('handleStatusActionClick called with action:', action);
-    console.log('Previous statusModalOpen:', statusModalOpen);
     setStatusModalAction(action);
     setStatusModalOpen(true);
-    console.log('After setStatusModalOpen:', statusModalOpen);
   };
 
   const handleStatusUpdated = async (updated) => {
@@ -941,12 +1051,9 @@ const ViewTask = ({
   };
 
   const handleQuickAction = (key) => {
-    console.log('index.jsx handleQuickAction called with key:', key);
-    console.log('quickActionOpen before:', quickActionOpen);
     setQuickActionsDropdownOpen(false);
     setQuickActionKey(key);
     setQuickActionOpen(true);
-    console.log('quickActionOpen after:', quickActionOpen);
   };
 
   const handleRemoveAttachment = async (attachmentId) => {
@@ -1058,6 +1165,8 @@ const ViewTask = ({
       currentUserId: user?.id,
       createdByUserId: task?.created_by_id,
       reportedById: task?.reported_to_id,
+      // Array of all reporting manager IDs for multi-manager action authorization
+      reportedByIds: task?.reported_to_ids || task?.reported_to,
       approvalRequiredUserIds: task?.approval_required_user_ids,
       approvalsMeta: approvalState?.approvals_meta,
       currentUserHasActedOnApproval,
@@ -1220,6 +1329,53 @@ const ViewTask = ({
     };
   }, [assignedUsers, assignedUsersMeta]);
 
+  // Merged feed for the Activity section: comments + "created" + "overdue escalated"
+  const feedItems = useMemo(() => {
+    if (!task) return [];
+    const items = [];
+
+    (task.comments || []).forEach((c) => {
+      const hasAuthor = !!c.author;
+      items.push({
+        key: `comment-${c.id}`,
+        kind: hasAuthor ? 'comment' : 'system',
+        date: c.created_at,
+        author: hasAuthor ? getUserDisplayName(c.author) : 'System',
+        text: c.content,
+      });
+    });
+
+    if (isTaskOverdueAfterToday()) {
+      const detailsObj =
+        escalationActivity?.details && typeof escalationActivity.details === 'object'
+          ? escalationActivity.details
+          : {};
+      const sub =
+        (typeof detailsObj.notes === 'string' && detailsObj.notes) ||
+        (typeof detailsObj.message === 'string' && detailsObj.message) ||
+        '';
+      items.push({
+        key: 'overdue',
+        kind: 'overdue',
+        date: escalationActivity?.created_at || task.due_date,
+        title: escalationActivity ? 'Overdue escalated' : 'Marked overdue',
+        sub,
+      });
+    }
+
+    items.push({
+      key: 'created',
+      kind: 'created',
+      date: task.created_at,
+      author: getUserDisplayName(task.created_by),
+      assignees: (assignedUsers || []).map((u) => getUserDisplayName(u)).join(', '),
+    });
+
+    return items.sort(
+      (a, b) => new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime(),
+    );
+  }, [task, assignedUsers, escalationActivity]);
+
   const backDeptForLoading = user?.department || (task && task.department);
 
   if (!task && !loading) {
@@ -1285,1041 +1441,805 @@ const ViewTask = ({
     };
   });
   const hasMovItems = movLines.length > 0 || Number(task?.mov_item_count) > 0;
-  const shouldTruncateDescription = rawDescription.length > 200;
-  const descriptionMidpoint = shouldTruncateDescription
-    ? Math.floor(rawDescription.length / 2)
-    : rawDescription.length;
-  const descriptionFirstHalf = rawDescription.slice(0, descriptionMidpoint);
-  const descriptionSecondHalf = rawDescription.slice(descriptionMidpoint);
+  const shouldTruncateDescription = rawDescription.length > DESCRIPTION_LIMIT;
+
+  // ---- Derived values for the new layout ----
+  const stepDefinitions = isApprovalWorkflow ? APPROVAL_STEP_DEFS : STANDARD_STEP_DEFS;
+  const stepIdx = getStepIndex(statusLower, isApprovalWorkflow);
+  const showExtraStatusChip = ['pending_approval', 'approved', 'rejected', 'cancelled'].includes(statusLower);
+  const showStartWork = canChangeStatusInline && stepIdx === 0;
+  const canRequestNewDate = availableQuickActions.includes('CHANGE_DUE_DATE');
+  const moreQuickActions = availableQuickActions.filter((k) => k !== 'CHANGE_DUE_DATE');
+
+  const overdueAfterToday = isTaskOverdueAfterToday();
+  const overdueToday = isTaskOverdueToday();
+  const dueTodayBeforeNoon = isTaskDueTodayBeforeNoon();
+  const overdueDays = getOverdueDays();
+  const reminderHint = isCurrentUserAssignee
+    ? 'Please review and complete it as soon as possible.'
+    : 'Please follow up with the assignee.';
+
+  const movTotal = movChecklistLines.length;
+  const movDone = Math.min(
+    movTotal,
+    Math.round(((Number(task.progress) || 0) / 100) * movTotal),
+  );
+
+  const attachmentCount = allAttachments.length;
+  const activityCount = (task.activities || []).length + (task.comments || []).length;
+  const myDisplayName = getUserDisplayName(user);
+
+  const showChecklist = activeTab === 'overview' || activeTab === 'checklist';
+  const showFiles = activeTab === 'overview' || activeTab === 'files';
+  const showActivity = activeTab === 'overview' || activeTab === 'activity';
+  const showExtras = activeTab === 'overview';
+
+  const tabs = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'checklist', label: `Checklist ${movDone}/${movTotal}` },
+    { key: 'files', label: `Files ${attachmentCount}` },
+    { key: 'activity', label: `Activity ${activityCount}` },
+  ];
+
+  const renderFileRow = (a, isInitial) => {
+    const rawType = a.file_type || '';
+    const shortType = rawType.includes('/') ? rawType.split('/')[1] : rawType;
+    const shortUpper = shortType ? shortType.toUpperCase().slice(0, 4) : 'FILE';
+    const displayName = a.description || a.file_name;
+    return (
+      <li key={a.id} className="tv2-file">
+        <div className="tv2-file-main">
+          <div className="tv2-file-icon">{shortUpper}</div>
+          <div className="tv2-file-text">
+            <div className="tv2-file-name">{displayName}</div>
+            <div className="tv2-file-meta">
+              {isInitial ? 'Initial attachment' : 'Activity attachment'}
+              {a.description && a.file_name && a.description !== a.file_name
+                ? ` · ${a.file_name}`
+                : ''}
+            </div>
+          </div>
+        </div>
+        <div className="tv2-file-actions">
+          <a
+            href={getAttachmentHref(a.file_url)}
+            target="_blank"
+            rel="noreferrer"
+            className="tv2-file-view"
+          >
+            View
+          </a>
+          {canDeleteAttachment(a) && (
+            <button
+              type="button"
+              className="tv2-file-remove"
+              onClick={() => handleRemoveAttachment(a.id)}
+              aria-label="Remove attachment"
+            >
+              ×
+            </button>
+          )}
+        </div>
+      </li>
+    );
+  };
+
+  const formatDept = (dept) => {
+    if (!dept) return '';
+    return String(dept)
+      .split('_')
+      .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
+      .join(' ');
+  };
 
   return (
     <>
       {!isModal && <Navbar />}
       <Loader loading={loading} />
       <div className={isModal ? 'task-view-wrapper' : 'view-wrapper task-view-wrapper'}>
-        {!isModal && (
-          <PageHeader
-            title="Task Details"
-            showBackButton={true}
-            onBackClick={handleBack}
-            showEdit={!loading && task && canEditTaskByCurrentUser}
-            editPath={!loading && task ? `${taskRouteBase}/update/${task.id}` : ''}
-          />
-        )}
         {!loading && task && (
           <div className="view-content2">
             {error && <div className="status-message status-message--error">{error}</div>}
 
-            <div className="task-receipt-page task-view-v2">
-              <div className="task-view-receipt-container">
-                <header className="tv-header">
-                  <div className="tv-header-top">
-                    <div className="tv-header-title-block">
-                      <h1 className="tv-title">{task.title || 'Task Title'}</h1>
-                      <div className="tv-badges">
-                        {canChangeStatusInline ? (
-                          <div className="tv-status-dropdown status-dropdown">
-                            <button
-                              type="button"
-                              className="tv-status-toggle"
-                              onClick={() => setStatusDropdownOpen((prev) => !prev)}
-                              disabled={statusActionLoading}
-                            >
-                              {capitalize(task.status)}
-                              <span className="status-dropdown-arrow">▾</span>
-                            </button>
-                            {statusDropdownOpen && (
-                              <div className="status-dropdown-menu">
-                                {inlineStatusOptions.map((opt) => {
-                                  const isActive =
-                                    String(task.status || '').toLowerCase() === opt.value;
-                                  return (
-                                    <button
-                                      key={opt.value}
-                                      type="button"
-                                      className={`status-dropdown-item${isActive ? ' status-dropdown-item--active' : ''}`}
-                                      onClick={() => handleInlineStatusChange(opt.value)}
-                                      disabled={statusActionLoading}
-                                    >
-                                      <span
-                                        className={`status-dropdown-check${isActive ? ' status-dropdown-check--checked' : ''}`}
-                                      />
-                                      <span className="status-dropdown-item-label">{opt.label}</span>
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <span className={`tv-badge tv-badge--status-${String(task.status || 'open').toLowerCase()}`}>
-                            {capitalize(task.status)}
-                          </span>
-                        )}
-                        <span className={`tv-badge tv-badge--priority-${String(task.priority || 'medium').toLowerCase()}`}>
-                          {capitalize(task.priority || 'medium')}
-                        </span>
-                        <span className="tv-badge tv-badge--id">{formatTaskId(task)}</span>
-                        {availableQuickActions.length > 0 && (
-                          <div className="tv-quick-actions-dropdown">
-                            <button
-                              type="button"
-                              className="tv-quick-actions-toggle"
-                              onClick={() =>
-                                setQuickActionsDropdownOpen((prev) => !prev)
-                              }
-                              aria-expanded={quickActionsDropdownOpen}
-                              aria-haspopup="menu"
-                            >
-                              Quick Actions
-                              <FiChevronDown
-                                className={`tv-quick-actions-toggle__chevron${
-                                  quickActionsDropdownOpen
-                                    ? ' tv-quick-actions-toggle__chevron--open'
-                                    : ''
-                                }`}
-                                aria-hidden="true"
-                              />
-                            </button>
-                            {quickActionsDropdownOpen && (
-                              <div
-                                className="tv-quick-actions-menu"
-                                role="menu"
-                              >
-                                {availableQuickActions.map((key) => {
-                                  const ActionIcon =
-                                    QUICK_ACTION_ICON_MAP[key] || FiCalendar;
-                                  return (
-                                    <button
-                                      key={key}
-                                      type="button"
-                                      role="menuitem"
-                                      className={`tv-quick-action-chip tv-quick-action-chip--${key.toLowerCase()}`}
-                                      onClick={() => handleQuickAction(key)}
-                                      title={QUICK_ACTION_LABEL_MAP[key]}
-                                    >
-                                      <span
-                                        className="tv-quick-action-chip__icon"
-                                        aria-hidden="true"
-                                      >
-                                        <ActionIcon />
-                                      </span>
-                                      <span className="tv-quick-action-chip__label">
-                                        {QUICK_ACTION_LABEL_MAP[key]}
-                                      </span>
-                                      <FiChevronRight
-                                        className="tv-quick-action-chip__chevron"
-                                        aria-hidden="true"
-                                      />
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="tv-header-actions">
-{(() => {
-                        console.log('TaskActionBar props in index.jsx:', {
-                          taskId: task.id,
-                          currentStatus: task.status,
-                          permissions: taskPerms,
-                          userDepartment: user?.department,
-                          taskDepartment: task.department,
-                          workflowType: task.workflow_type,
-                          userRole: user?.role,
-                          isAssignee: isCurrentUserAssignee,
-                          currentUserId: user?.id,
-                          createdByUserId: task.created_by_id,
-                          reportedById: task.reported_to_id,
-                          approvalRequiredUserIds: task.approval_required_user_ids,
-                          approvalsMeta: approvalState?.approvals_meta,
-                          currentUserHasActedOnApproval,
-                          approvalLoading
-                        });
-                        return (
-                          <TaskActionBar
-                            taskId={task.id}
-                            currentStatus={task.status}
-                            permissions={taskPerms}
-                            userDepartment={user?.department}
-                            taskDepartment={task.department}
-                            workflowType={task.workflow_type}
-                            userRole={user?.role}
-                            isAssignee={isCurrentUserAssignee}
-                            currentUserId={user?.id}
-                            createdByUserId={task.created_by_id}
-                            reportedById={task.reported_to_id}
-                            approvalRequiredUserIds={task.approval_required_user_ids}
-                            approvalsMeta={approvalState?.approvals_meta}
-                            currentUserHasActedOnApproval={currentUserHasActedOnApproval}
-                            approvalLoading={approvalLoading}
-                            onStatusAction={handleStatusActionClick}
-                            onQuickAction={handleQuickAction}
-                            disabled={statusActionLoading}
-                            align="top"
-                          />
-                        );
-                      })()}
-                      {isModal && (
-                        <button type="button" className="tv-icon-btn" onClick={handleBack} aria-label="Close">
-                          <FiX />
-                        </button>
-                      )}
-                    </div>
-                  </div>
+            <div className="tv2">
+              {/* ============================== HEADER ============================== */}
+              <header className="tv2-header">
+                <div className="tv2-crumb">
+                  <button type="button" onClick={handleBack}>
+                    <FiArrowLeft aria-hidden="true" /> Back
+                  </button>
+                  <strong>{formatTaskId(task).replace(/^#/, '')}</strong>
+                </div>
 
-                  {isTaskOverdueAfterToday() ? (
-                    renderReminderBanner(
-                      'Task is overdue',
-                      isCurrentUserAssignee
-                        ? 'This task is overdue. Please review and complete it as soon as possible.'
-                        : 'This task is overdue. Please review and follow up with the assignee.',
-                      false,
-                      true,
-                    )
-                  ) : isTaskOverdueToday() ? (
-                    renderReminderBanner(
-                      'Overdue Today',
-                      isCurrentUserAssignee
-                        ? 'This task will become overdue today at 12:00 PM. Please review and complete it as soon as possible.'
-                        : 'This task will become overdue today at 12:00 PM. Please review and follow up with the assignee.',
-                      true,
-                      true,
-                    )
-                  ) : isTaskDueTodayBeforeNoon() ? (
-                    renderReminderBanner(
-                      'Due Today',
-                      isCurrentUserAssignee
-                        ? 'This task is due today. Please review and complete it as soon as possible.'
-                        : 'This task is due today. Please check in with the assignee if needed.',
-                      true,
-                      true,
-                    )
-                  ) : null}
-
-                  {/* <div className="tv-meta-strip">
-                    <div className="tv-meta-item">
-                      <div className="tv-meta-label">
-                        <FiUser size={12} />
-                        Assignee
-                      </div>
-                      {primaryAssigneeChip ? (
-                        <div className="tv-meta-assignee">
-                          <span className="tv-meta-avatar">{primaryAssigneeChip.initials}</span>
-                          <span className="tv-meta-value">{primaryAssigneeChip.label}</span>
-                        </div>
-                      ) : (
-                        <span className="tv-meta-value">—</span>
+                <div className="tv2-header-main">
+                  <div className="tv2-header-title">
+                    <h1 className="tv2-title">{task.title || 'Task Title'}</h1>
+                    <div className="tv2-chips">
+                      <span className={`tv2-chip tv2-chip--priority-${String(task.priority || 'medium').toLowerCase()}`}>
+                        {capitalize(task.priority || 'medium')} priority
+                      </span>
+                      {task.department && (
+                        <span className="tv2-chip">{capitalize(task.department)} Department</span>
                       )}
-                    </div>
-                    <div className="tv-meta-item">
-                      <div className="tv-meta-label">
-                        <FiCalendar size={12} />
-                        Due date
-                      </div>
-                      <span className="tv-meta-value">{formatDateOnly(task.due_date)}</span>
-                    </div>
-                    <div className="tv-meta-item">
-                      <div className="tv-meta-label">Project / Program</div>
-                      <span className="tv-meta-value">{task.project_name || capitalize(task.department) || '—'}</span>
-                    </div>
-                    <div className="tv-meta-item">
-                      <div className="tv-meta-label">Created by</div>
-                      <span className="tv-meta-value">{getUserDisplayName(task.created_by)}</span>
-                    </div>
-                    <div className="tv-meta-item">
-                      <div className="tv-meta-label">
-                        <FiClock size={12} />
-                        Time logged
-                      </div>
-                      <span className="tv-meta-value">
-                        {totalTimeSeconds == null ? '—' : formatTimeShort(totalTimeSeconds)}
+                      <span className="tv2-chip">{taskTypeShortLabel}</span>
+                      <span className="tv2-chip">
+                        {capitalize(task.workflow_type || 'standard')} workflow
                       </span>
                     </div>
-                  </div> */}
-                </header>
+                  </div>
 
-                {renderRecurrenceInfo()}
-                <div className="receipt-body">
-                  <div className="tv-body">
-                    <div className="tv-column tv-column--main">
-                  <div className="task-view-section">
-                    <h3 className="task-task-view-section-title">Description</h3>
-                    <div className="task-view-grid">
-                      <div className="task-view-item task-description-item">
+                  {overdueAfterToday ? (
+                    <div className="tv2-alert" role="status">
+                      <div className="tv2-alert-big">{overdueDays}</div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label">
+                          {overdueDays === 1 ? 'day overdue' : 'days overdue'}
+                        </span>
+                        <span className="tv2-alert-sub">
+                          Due {formatDateOnly(task.due_date)}
+                          {escalationActivity?.created_at
+                            ? ` · escalated ${new Date(escalationActivity.created_at).getDate()} ${new Date(escalationActivity.created_at).toLocaleString('en-GB', { month: 'short' })}`
+                            : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ) : overdueToday ? (
+                    <div className="tv2-alert tv2-alert--warning" role="status">
+                      <div className="tv2-alert-big"><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label">Overdue today</span>
+                        <span className="tv2-alert-sub">
+                          This task became overdue at 12:00 PM. {reminderHint}
+                        </span>
+                      </div>
+                    </div>
+                  ) : dueTodayBeforeNoon ? (
+                    <div className="tv2-alert tv2-alert--warning" role="status">
+                      <div className="tv2-alert-big"><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label">Due today</span>
+                        <span className="tv2-alert-sub">{reminderHint}</span>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className="tv2-header-bar">
+                  <ol className="tv2-stepper" aria-label="Task status">
+                    {stepDefinitions.map((step, idx) => {
+                      const isActive = idx === stepIdx;
+                      const isDone = idx < stepIdx;
+                      const clickable =
+                        canChangeStatusInline &&
+                        !isActive &&
+                        inlineStatusOptions.some((o) => o.value === step.key);
+                      return (
+                        <li
+                          key={step.key}
+                          className={`tv2-step${isActive ? ' tv2-step--active' : ''}${isDone ? ' tv2-step--done' : ''}`}
+                        >
+                          <button
+                            type="button"
+                            className="tv2-step-btn"
+                            data-clickable={clickable ? 'true' : 'false'}
+                            disabled={!clickable || statusActionLoading}
+                            aria-current={isActive ? 'step' : undefined}
+                            onClick={() => clickable && handleInlineStatusChange(step.key)}
+                          >
+                            <span className="tv2-step-num">{idx + 1}</span>
+                            {step.label}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ol>
+
+                  <div className="tv2-actions">
+                    {/* {canRequestNewDate && (
+                      <button
+                        type="button"
+                        className="tv2-btn tv2-btn--ghost"
+                        onClick={() => handleQuickAction('CHANGE_DUE_DATE')}
+                      >
+                        Request new date
+                      </button>
+                    )} */}
+                    {showStartWork && (
+                      <button
+                        type="button"
+                        className="tv2-btn tv2-btn--light"
+                        disabled={statusActionLoading}
+                        onClick={() => handleInlineStatusChange('in_progress')}
+                      >
+                        <span aria-hidden="true">▸</span> Start work
+                      </button>
+                    )}
+
+                    <TaskActionBar
+                      taskId={task.id}
+                      currentStatus={task.status}
+                      permissions={taskPerms}
+                      userDepartment={user?.department}
+                      taskDepartment={task.department}
+                      workflowType={task.workflow_type}
+                      userRole={user?.role}
+                      isAssignee={isCurrentUserAssignee}
+                      currentUserId={user?.id}
+                      createdByUserId={task.created_by_id}
+                      reportedById={task.reported_to_id}
+                      reportedByIds={
+                        // Pass array of all reporting manager IDs for multi-manager action controls
+                        task.reported_to_ids || task.reported_to
+                      }
+                      approvalRequiredUserIds={task.approval_required_user_ids}
+                      approvalsMeta={approvalState?.approvals_meta}
+                      currentUserHasActedOnApproval={currentUserHasActedOnApproval}
+                      approvalLoading={approvalLoading}
+                      onStatusAction={handleStatusActionClick}
+                      onQuickAction={handleQuickAction}
+                      disabled={statusActionLoading}
+                      align="top"
+                    />
+                    {isModal && (
+                      <button type="button" className="tv2-icon-btn" onClick={handleBack} aria-label="Close">
+                        <FiX />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </header>
+
+              {/* ================================ TABS ================================ */}
+              <nav className="tv2-tabs" role="tablist" aria-label="Task sections">
+                {tabs.map((t) => (
+                  <button
+                    key={t.key}
+                    type="button"
+                    role="tab"
+                    aria-selected={activeTab === t.key}
+                    className={`tv2-tab${activeTab === t.key ? ' tv2-tab--active' : ''}`}
+                    onClick={() => setActiveTab(t.key)}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </nav>
+
+              {/* ================================ BODY ================================ */}
+              <div className="tv2-body">
+                <div className="tv2-main">
+                  {/* ---- Brief ---- */}
+                  {activeTab === 'overview' && (
+                    <section>
+                      <span className="tv2-label">Brief</span>
+                      <p className="tv2-brief">
                         {rawDescription ? (
-                          <span className="task-view-item-value task-description-text">
-                            {shouldTruncateDescription ? (
-                              showFullDescription ? (
+                          shouldTruncateDescription && !showFullDescription ? (
+                            <>
+                              {rawDescription.slice(0, DESCRIPTION_LIMIT).trimEnd()}…{' '}
+                              <button
+                                type="button"
+                                className="tv2-link-btn"
+                                onClick={() => setShowFullDescription(true)}
+                              >
+                                Show more
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              {rawDescription}
+                              {shouldTruncateDescription && (
                                 <>
-                                  {rawDescription}{' '}
+                                  {' '}
                                   <button
                                     type="button"
-                                    className="task-description-read-more"
+                                    className="tv2-link-btn"
                                     onClick={() => setShowFullDescription(false)}
                                   >
-                                    View Less
+                                    Show less
                                   </button>
                                 </>
-                              ) : (
-                                <>
-                                  {descriptionFirstHalf}
-                                  {descriptionSecondHalf && '... '}
-                                  {descriptionSecondHalf && (
-                                    <button
-                                      type="button"
-                                      className="task-description-read-more"
-                                      onClick={() => setShowFullDescription(true)}
-                                    >
-                                      Read More
-                                    </button>
-                                  )}
-                                </>
-                              )
-                            ) : (
-                              rawDescription
-                            )}
-                          </span>
+                              )}
+                            </>
+                          )
                         ) : (
-                          <span className="task-view-item-value task-description-text">—</span>
+                          '—'
                         )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="task-view-section tv-checklist-card">
-                    <h3 className="task-task-view-section-title">
-                      {isApproverView ? 'Progress & Means of Verification' : 'Checklist / Progress'}
-                    </h3>
-                    <div className="task-view-grid task-progress-layout">
-                      <div className="task-view-item task-progress-item">
-                        {movChecklistLines.length > 0 ? (
-                          <ProgressUpdate
-                            taskId={task.id}
-                            currentProgress={task.progress || 0}
-                            lastProgressNotes={task.last_progress_notes}
-                            movLines={movChecklistLines}
-                            assignedUsers={assignedUsers}
-                            isTaskCreator={isCurrentUserCreator}
-                            canEdit={canEditMovChecklist}
-                            currentUser={user}
-                            progressActivities={task.activities || []}
-                            taskStatus={task.status}
-                            onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
-                            onUpdate={(progress, notes, updatedTask) => {
-                              if (updatedTask) {
-                                setTask(updatedTask);
-                              } else {
-                                setTask((prev) => ({
-                                  ...prev,
-                                  progress,
-                                  last_progress_notes: notes,
-                                }));
-                              }
-                              setShowProgressHistory(true);
-                            }}
-                          />
-                        ) : (
-                          <div className="task-progress-empty">
-                            {hasMovItems
-                              ? 'No MOV items are assigned to your user.'
-                              : 'No Means of Verification (MOV) checklist items have been defined for this task.'}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {initialAttachments.length > 0 && (
-                    <div className="task-view-section">
-                      <h3 className="task-task-view-section-title">
-                        <span>📎</span> Task Attachments (Initial)
-                      </h3>
-                      <div className="task-view-grid">
-                        <div className="task-view-item task-attachments-item">
-                          <ul className="attachments-list">
-                            {initialAttachments.map((a) => {
-                              const rawType = a.file_type || '';
-                              const shortType = rawType.includes('/')
-                                ? rawType.split('/')[1]
-                                : rawType;
-                              const shortUpper = shortType
-                                ? shortType.toUpperCase()
-                                : 'FILE';
-                              const displayName = a.description || a.file_name;
-                              return (
-                                <li key={a.id} className="attachments-item">
-                                  <div className="attachment-main">
-                                    <div className="attachment-header">
-                                      <div className="attachment-icon">
-                                        {shortUpper}
-                                      </div>
-                                      <div className="attachment-text">
-                                        <div className="attachment-name">
-                                          {displayName}
-                                        </div>
-                                        {a.description && a.file_name && a.description !== a.file_name && (
-                                          <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                                            {a.file_name}
-                                          </div>
-                                        )}
-                                        <div className="attachment-type">
-                                          {rawType}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div className="attachment-actions">
-                                      <a
-                                        href={getAttachmentHref(a.file_url)}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="attachment-open-button"
-                                      >
-                                        View
-                                      </a>
-                                      {canDeleteAttachment(a) && (
-                                        <button
-                                          type="button"
-                                          className="attachment-remove-button"
-                                          onClick={() => handleRemoveAttachment(a.id)}
-                                        >
-                                          ×
-                                        </button>
-                                      )}
-                                    </div>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
+                      </p>
+                    </section>
                   )}
 
-                  <div
-                    className={`task-view-section${isApproverView ? ' task-view-section--approver-secondary' : ''}`}
-                  >
-                    <h3 className="task-task-view-section-title">Task Information</h3>
-                    <div className="task-view-grid task-view-grid--info">
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Created Date</span>
-                        <span className="task-view-item-value">{formatDateOnly(task.created_at)}</span>
-                      </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Start Date</span>
-                        <span className="task-view-item-value">{formatDateOnly(task.start_date)}</span>
-                      </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Due Date</span>
-                        <span className="task-view-item-value">
-                          {formatDateOnly(task.due_date)}
-                          {dueInfo && (
-                            <span className={`task-due-badge task-due-badge--${dueInfo.variant}`}>
-                              {dueInfo.label}
-                            </span>
-                          )}
+                  {/* ---- Done when (existing ProgressUpdate / MOV checklist) ---- */}
+                  {showChecklist && (
+                    <section className="tv2-done">
+                      <div className="tv2-done-head">
+                        <h3 className="tv2-done-title">
+                          {isApproverView ? 'Progress & verification' : 'Done when…'}
+                        </h3>
+                        <span className="tv2-done-count">
+                          {movDone} / {movTotal}
                         </span>
                       </div>
-                      {showCompletedDate && (
-                        <div className="task-view-item">
-                          <span className="task-view-item-label">Completed Date</span>
-                          <span className="task-view-item-value">{formatDateOnly(task.completed_date)}</span>
+                      {movChecklistLines.length > 0 ? (
+                        <ProgressUpdate
+                          taskId={task.id}
+                          currentProgress={task.progress || 0}
+                          lastProgressNotes={task.last_progress_notes}
+                          movLines={movChecklistLines}
+                          assignedUsers={assignedUsers}
+                          isTaskCreator={isCurrentUserCreator}
+                          canEdit={canEditMovChecklist}
+                          currentUser={user}
+                          progressActivities={task.activities || []}
+                          taskStatus={task.status}
+                          onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
+                          onUpdate={(progress, notes, updatedTask) => {
+                            if (updatedTask) {
+                              setTask(updatedTask);
+                            } else {
+                              setTask((prev) => ({
+                                ...prev,
+                                progress,
+                                last_progress_notes: notes,
+                              }));
+                            }
+                            setShowProgressHistory(true);
+                          }}
+                        />
+                      ) : (
+                        <div className="tv2-done-empty">
+                          {hasMovItems
+                            ? 'No MOV items are assigned to your user.'
+                            : 'No Means of Verification (MOV) checklist items have been defined for this task.'}
                         </div>
                       )}
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Task Type</span>
-                        <span className="task-view-item-value">{taskTypeLabel}</span>
+                      {movChecklistLines.length > 0 && (
+                        <p className="tv2-done-note">
+                          “Mark complete” unlocks when every condition is ticked.
+                        </p>
+                      )}
+                    </section>
+                  )}
+
+                  {/* ---- Files ---- */}
+                  {showFiles && (
+                    <section>
+                      {attachmentCount > 0 && (
+                        <ul className="tv2-file-list">
+                          {initialAttachments.map((a) => renderFileRow(a, true))}
+                          {activityAttachments.map((a) => renderFileRow(a, false))}
+                        </ul>
+                      )}
+
+                      {!isApproverView && (
+                        <form
+                          onSubmit={addAttachment}
+                          className={`tv2-dropzone${dropActive ? ' tv2-dropzone--active' : ''}`}
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setDropActive(true);
+                          }}
+                          onDragLeave={() => setDropActive(false)}
+                          onDrop={handleAttachmentDrop}
+                        >
+                          <FiPaperclip aria-hidden="true" />
+                          <input
+                            key={attachment.file ? 'has-file' : 'no-file'}
+                            id="tv2-file-input"
+                            type="file"
+                            className="tv2-sr-only"
+                            onChange={handleAttachmentChange}
+                            disabled={!canInteractWithNotes || savingAttachment}
+                          />
+                          {attachment.file ? (
+                            <div className="tv2-upload-row">
+                              <input
+                                type="text"
+                                className="tv2-input"
+                                value={attachment.name}
+                                onChange={handleAttachmentNameChange}
+                                placeholder="Attachment name (e.g. Progress photo)"
+                                disabled={!canInteractWithNotes || savingAttachment}
+                                required
+                                aria-label="Attachment name"
+                              />
+                              <button
+                                type="submit"
+                                className="tv2-btn tv2-btn--primary"
+                                disabled={savingAttachment || !canInteractWithNotes}
+                              >
+                                {savingAttachment ? 'Adding...' : 'Upload'}
+                              </button>
+                              <button
+                                type="button"
+                                className="tv2-btn tv2-btn--plain"
+                                disabled={savingAttachment}
+                                onClick={() => setAttachment({ file: null, name: '' })}
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ) : (
+                            <span>
+                              {attachmentCount === 0 ? 'No files yet. ' : ''}
+                              Drop progress photos or signed forms, or{' '}
+                              <label htmlFor="tv2-file-input" className="tv2-browse">
+                                browse
+                              </label>
+                            </span>
+                          )}
+                        </form>
+                      )}
+                    </section>
+                  )}
+
+                  {/* ---- Activity ---- */}
+                  {showActivity && (
+                    <section>
+                      <span className="tv2-label">Activity</span>
+
+                      {!isApproverView && (
+                        <form onSubmit={addComment} className="tv2-composer">
+                          <span className="tv2-avatar">{getInitials(myDisplayName)}</span>
+                          <div className="tv2-composer-box">
+                            <MentionCommentInput
+                              key={commentFormKey}
+                              name="content"
+                              value={comment.content}
+                              mentionedUserIds={comment.mentioned_user_ids}
+                              onChange={handleCommentChange}
+                              onMentionedUsersChange={handleMentionedUsersChange}
+                              disabled={!canInteractWithNotes}
+                              placeholder="Post an update… @ to notify"
+                            />
+                            <button
+                              type="submit"
+                              className="tv2-post-btn"
+                              disabled={savingComment || !canInteractWithNotes}
+                            >
+                              {savingComment ? 'Posting…' : 'Post'}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+
+                      {feedItems.length === 0 ? (
+                        <div className="tv2-empty">No activity yet</div>
+                      ) : (
+                        <ul className="tv2-feed">
+                          {feedItems.map((item) => (
+                            <li key={item.key} className="tv2-feed-item">
+                              <span
+                                className={`tv2-feed-dot${
+                                  item.kind === 'overdue'
+                                    ? ' tv2-feed-dot--danger'
+                                    : item.kind === 'system'
+                                      ? ' tv2-feed-dot--muted'
+                                      : ''
+                                }`}
+                              />
+                              {item.kind === 'overdue' && (
+                                <>
+                                  <div>
+                                    <strong>{item.title}</strong> · System · {formatDateOnly(item.date)}
+                                  </div>
+                                  {item.sub && <div className="tv2-feed-sub">{item.sub}</div>}
+                                </>
+                              )}
+                              {item.kind === 'created' && (
+                                <div>
+                                  <strong>{item.author}</strong> created this task
+                                  {item.assignees ? ` for ${item.assignees}` : ''} · {formatDateOnly(item.date)}
+                                </div>
+                              )}
+                              {(item.kind === 'comment' || item.kind === 'system') && (
+                                <>
+                                  <div>
+                                    <strong>{item.author}</strong> · {formatDateOnly(item.date)}
+                                  </div>
+                                  <div className="tv2-feed-text">{item.text}</div>
+                                </>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+
+                      {/* Full audit timeline — still gated by the same permission as before. */}
+                      {activeTab === 'activity' && taskPerms.canViewProgressHistory && (
+                        <div style={{ marginTop: 20 }}>
+                          <TaskActivityTimeline activities={task.activities || []} />
+                        </div>
+                      )}
+                    </section>
+                  )}
+
+                  {/* ---- Extras (overview only) ---- */}
+                  {showExtras && renderRecurrenceInfo()}
+
+                  {showExtras && hasApprovalPanel && (
+                    <section className="tv2-card">
+                      <span className="tv2-label">Approval</span>
+                      <ul className="tv2-approvers">
+                        {approvalRows.map((row) => (
+                          <li key={row.id} className="tv2-row">
+                            <span>{row.name}</span>
+                            <span className={`tv2-pill tv2-pill--${row.decision}`}>
+                              {row.decisionLabel}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+
+                  {showExtras && !isApproverView && dependencies.length > 0 && (
+                    <section className="tv2-card">
+                      <span className="tv2-label">Dependencies</span>
+                      <ul className="tv2-deps">
+                        {dependencies.map((dep) => {
+                          const key = dep.id || dep.task_id || dep;
+                          const title = dep.title || dep.name || `Task #${key}`;
+                          const depStatusLabel = dep.status ? capitalize(dep.status) : '';
+                          return (
+                            <li key={key} className="tv2-row">
+                              <span>{title}</span>
+                              {depStatusLabel && <span className="tv2-pill">{depStatusLabel}</span>}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </section>
+                  )}
+
+                  {showExtras && !isApproverView && reassignmentActivities.length > 0 && (
+                    <section className="tv2-card">
+                      <span className="tv2-label">Reassignment history</span>
+                      <div className="reassignment-list">
+                        {reassignmentActivities.map((act, index) => {
+                          const rawDetails = act.details;
+                          let fromItems = [];
+                          let toItems = [];
+
+                          if (Array.isArray(rawDetails)) {
+                            fromItems = rawDetails.filter((d) => d && d.type === 'from');
+                            toItems = rawDetails.filter((d) => d && d.type === 'to');
+                          } else if (rawDetails && typeof rawDetails === 'object') {
+                            const fromIds = Array.isArray(rawDetails.from_assigned_user_ids)
+                              ? rawDetails.from_assigned_user_ids
+                              : [];
+                            const fromMeta = Array.isArray(rawDetails.from_assigned_users_meta)
+                              ? rawDetails.from_assigned_users_meta
+                              : [];
+                            const toIds = Array.isArray(rawDetails.to_assigned_user_ids)
+                              ? rawDetails.to_assigned_user_ids
+                              : [];
+                            const toMeta = Array.isArray(rawDetails.to_assigned_users_meta)
+                              ? rawDetails.to_assigned_users_meta
+                              : [];
+
+                            fromItems = fromIds.map((fromId) => {
+                              const meta = fromMeta.find((m) => m && Number(m.user_id) === Number(fromId));
+                              return {
+                                type: 'from',
+                                user_id: fromId,
+                                department: meta?.department || null,
+                              };
+                            });
+
+                            toItems = toIds.map((toId) => {
+                              const meta = toMeta.find((m) => m && Number(m.user_id) === Number(toId));
+                              return {
+                                type: 'to',
+                                user_id: toId,
+                                department: meta?.department || null,
+                              };
+                            });
+                          }
+
+                          const fromLabel =
+                            fromItems.length > 0
+                              ? fromItems
+                                .map((i) => {
+                                  const deptLabel = formatDept(i.department);
+                                  const nameLabel = getUserNameFromId(i.user_id);
+                                  return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
+                                })
+                                .join(', ')
+                              : '-';
+
+                          const toLabel =
+                            toItems.length > 0
+                              ? toItems
+                                .map((i) => {
+                                  const deptLabel = formatDept(i.department);
+                                  const nameLabel = getUserNameFromId(i.user_id);
+                                  return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
+                                })
+                                .join(', ')
+                              : '-';
+
+                          const performer = act && act.performed_by ? act.performed_by : null;
+                          const byLabel =
+                            (performer &&
+                              (performer.name ||
+                                performer.full_name ||
+                                performer.username ||
+                                performer.email)) ||
+                            '-';
+
+                          const when = act.created_at ? formatDateOnly(act.created_at) : '-';
+
+                          return (
+                            <div key={act.id || index} className="reassignment-row">
+                              <div className="reassignment-timestamp">{when}</div>
+                              <div className="reassignment-details">
+                                <div className="reassignment-line">
+                                  <span className="reassignment-label">From:</span>
+                                  <span className="reassignment-value">{fromLabel}</span>
+                                </div>
+                                <div className="reassignment-line">
+                                  <span className="reassignment-label">To:</span>
+                                  <span className="reassignment-value">{toLabel}</span>
+                                </div>
+                                <div className="reassignment-line">
+                                  <span className="reassignment-label">By:</span>
+                                  <span className="reassignment-value">{byLabel}</span>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Workflow</span>
-                        <span className="task-view-item-value">{capitalize(task.workflow_type)}</span>
-                      </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Status</span>
-                        <span className="task-view-item-value">{getStatusBadge(task.status)}</span>
-                      </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Priority</span>
-                        <span className="task-view-item-value">
-                          <span className={`task-view-priority-badge--${String(task.priority || '').toLowerCase() || 'low'}`}>
-                            {capitalize(task.priority)}
+                    </section>
+                  )}
+
+                  {showExtras && !isApproverView && (relatedLoading || relatedTasks.length > 0) && (
+                    <section className="tv2-card">
+                      <span className="tv2-label">Related tasks</span>
+                      {relatedLoading && <div className="tv2-empty">Loading related tasks...</div>}
+                      {!relatedLoading && relatedTasks.length > 0 && (
+                        <ul className="tv2-related">
+                          {relatedTasks.map((t) => (
+                            <li
+                              key={t.id}
+                              className="tv2-row tv2-row--click"
+                              onClick={() => {
+                                if (isModal && onOpenRelatedTask) {
+                                  onOpenRelatedTask(t.id);
+                                  return;
+                                }
+                                navigate(`${taskRouteBase}/view/${t.id}`);
+                              }}
+                            >
+                              <span>{t.title}</span>
+                              <span className="tv2-pill">{capitalize(t.status)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  )}
+                </div>
+
+                {/* ============================ SIDE RAIL ============================ */}
+                <aside className="tv2-side">
+                  <div className="tv2-card">
+                    <div className="tv2-people">
+                      {assignmentUsersForDisplay.length > 0 ? (
+                        assignmentUsersForDisplay.map((u) => (
+                          <div key={u.id} className="tv2-person">
+                            <span className="tv2-avatar tv2-avatar--lg">
+                              {getInitials(getUserDisplayName(u))}
+                            </span>
+                            <span className="tv2-person-text">
+                              <span className="tv2-person-role">Assignee</span>
+                              <span className="tv2-person-name">{getUserDisplayName(u)}</span>
+                            </span>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="tv2-person">
+                          <span className="tv2-avatar tv2-avatar--lg">?</span>
+                          <span className="tv2-person-text">
+                            <span className="tv2-person-role">Assignee</span>
+                            <span className="tv2-person-name">—</span>
                           </span>
+                        </div>
+                      )}
+                      <div className="tv2-person">
+                        <span className="tv2-avatar tv2-avatar--lg tv2-avatar--mint">
+                          {getInitials(getUserDisplayName(task.created_by))}
+                        </span>
+                        <span className="tv2-person-text">
+                          <span className="tv2-person-role">Created by</span>
+                          <span className="tv2-person-name">{getUserDisplayName(task.created_by)}</span>
                         </span>
                       </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Project / Program</span>
-                        <span className="task-view-item-value">{task.project_name || '—'}</span>
-                      </div>
-                      <div className="task-view-item">
-                        <span className="task-view-item-label">Created by</span>
-                        <span className="task-view-item-value">{getUserDisplayName(task.created_by)}</span>
-                      </div>
-                      {/* <div className="task-view-item">
-                        <span className="task-view-item-label">Reporting Manager</span>
-                        <span className="task-view-item-value">{getUserDisplayName(task.reported_to)}</span>
-                      </div> */}
+                      {/* {reportingManagersForDisplay.map((m) => (
+                        <div key={m.id || m.user_id} className="tv2-person">
+                          <span className="tv2-avatar tv2-avatar--lg">
+                            {getInitials(getUserDisplayName(m))}
+                          </span>
+                          <span className="tv2-person-text">
+                            <span className="tv2-person-role">Reporting Manager</span>
+                            <span className="tv2-person-name">{getUserDisplayName(m)}</span>
+                          </span>
+                        </div>
+                      ))} */}
+                    </div>
+
+                    <dl className="tv2-meta">
+                      <dt>Project</dt>
+                      <dd className={task.project_name ? '' : 'is-muted'}>{task.project_name || '—'}</dd>
+                      <dt>Start Date</dt>
+                      <dd className={task.start_date ? '' : 'is-muted'}>
+                        {task.start_date ? formatDateOnly(task.start_date) : 'Not set'}
+                      </dd>
+                      <dt>Due Date</dt>
+                      <dd className={overdueAfterToday ? 'is-danger' : ''}>{formatDateOnly(task.due_date)}</dd>
+                      <dt>Created Date</dt>
+                      <dd>{formatDateOnly(task.created_at)}</dd>
+                      <dt>Updated Date</dt>
+                      <dd>{formatDayTime(task.updated_at || task.created_at)}</dd>
+                      {showCompletedDate && (
+                        <>
+                          <dt>Completed Date</dt>
+                          <dd>{formatDateOnly(task.completed_date)}</dd>
+                        </>
+                      )}
                       {isApprovalWorkflow &&
-                        ['approved', 'rejected'].includes(String(task?.status || '').toLowerCase()) &&
+                        ['approved', 'rejected'].includes(statusLower) &&
                         task?.approved_by && (
-                          <div className="task-view-item">
-                            <span className="task-view-item-label">
-                              {String(task?.status || '').toLowerCase() === 'rejected' ? 'Rejected By' : 'Approved By'}
-                            </span>
-                            <span className="task-view-item-value">{getUserDisplayName(task.approved_by)}</span>
-                          </div>
+                          <>
+                            <dt>{statusLower === 'rejected' ? 'Rejected by' : 'Approved by'}</dt>
+                            <dd>{getUserDisplayName(task.approved_by)}</dd>
+                          </>
                         )}
                       {isRecurringTask && (
                         <>
-                          <div className="task-view-item">
-                            <span className="task-view-item-label">Recurrence</span>
-                            <span className="task-view-item-value">
-                              {task.recurrence_rule
-                                ? task.recurrence_rule.includes(' days')
-                                  ? `Every ${task.recurrence_rule}`
-                                  : task.recurrence_rule[0].toUpperCase() + task.recurrence_rule.slice(1)
-                                : '—'}
-                            </span>
-                          </div>
-                          <div className="task-view-item">
-                            <span className="task-view-item-label">Next Recurrence</span>
-                            <span className="task-view-item-value">{formatDateOnly(task.recurrence_next_date)}</span>
-                          </div>
+                          <dt>Repeats</dt>
+                          <dd>
+                            {task.recurrence_rule
+                              ? task.recurrence_rule.includes(' days')
+                                ? `Every ${task.recurrence_rule}`
+                                : task.recurrence_rule[0].toUpperCase() + task.recurrence_rule.slice(1)
+                              : '—'}
+                          </dd>
+                          <dt>Next</dt>
+                          <dd>{formatDateOnly(task.recurrence_next_date)}</dd>
                         </>
                       )}
-                    </div>
+                    </dl>
                   </div>
 
-                      {!isApproverView && dependencies.length > 0 && (
-                        <div className="task-view-section">
-                          <h3 className="task-task-view-section-title">
-                            <span>🔗</span> Dependencies
-                          </h3>
-                          <div className="task-view-grid">
-                            <div className="task-view-item">
-                              <ul className="dependencies-list">
-                                {dependencies.map((dep) => {
-                                  const key = dep.id || dep.task_id || dep;
-                                  const title = dep.title || dep.name || `Task #${key}`;
-                                  const depStatusLabel = dep.status ? capitalize(dep.status) : '';
-                                  return (
-                                    <li key={key} className="dependencies-item">
-                                      <span className="dependencies-title">{title}</span>
-                                      {depStatusLabel && (
-                                        <span className="dependencies-status">
-                                          {depStatusLabel}
-                                        </span>
-                                      )}
-                                    </li>
-                                  );
-                                })}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      <div className="task-view-section">
-                        <h3 className="task-task-view-section-title">Assignment</h3>
-                        <div className="team-assignment">
-                          <div className="team-assignment-main">
-                            <span className="team-assignment-label">Assignee:</span>
-                            {assignmentUsersForDisplay.length > 0 ? (
-                              <div className="team-assignment-pill-list">
-                                {assignmentUsersForDisplay.map((u) => {
-                                  const deptLabel = u.department
-                                    ? u.department
-                                      .split('_')
-                                      .map((w) =>
-                                        w ? w[0].toUpperCase() + w.slice(1) : '',
-                                      )
-                                      .join(' ')
-                                    : '';
-                                  const nameLabel = getUserDisplayName(u);
-                                  const fullLabel = deptLabel
-                                    ? `${nameLabel} - ${deptLabel}`
-                                    : nameLabel;
-                                  const initials = (() => {
-                                    const full = nameLabel || '';
-                                    const parts = full.split(' ').filter(Boolean);
-                                    if (parts.length === 0) return '';
-                                    if (parts.length === 1) {
-                                      return parts[0][0].toUpperCase();
-                                    }
-                                    return `${parts[0][0]}${parts[parts.length - 1][0]
-                                      }`.toUpperCase();
-                                  })();
-                                  return (
-                                    <div
-                                      key={u.id}
-                                      className="team-assignment-pill-row"
-                                    >
-                                      <div className="team-assignment-avatar">
-                                        <span className="team-assignment-avatar-initial">
-                                          {initials}
-                                        </span>
-                                      </div>
-                                      <span className="team-assignment-pill">
-                                        {fullLabel}
-                                      </span>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            ) : (
-                              <span className="person-badge">-</span>
-                            )}
-                          </div>
-                          <div className="team-assignment-meta">
-                            <div className="collaboration-summary">
-                              <span className="collaboration-count">
-                                {assignmentUsersForDisplay.length}
-                              </span>
-                              <span className="collaboration-label">
-                                {assignmentUsersForDisplay.length === 1
-                                  ? 'Person assigned'
-                                  : 'People assigned'}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      {hasApprovalPanel && (
-                        <div
-                          className={`task-view-section${isApproverView ? ' task-view-section--approver-primary' : ''
-                            }`}
-                        >
-                          <h3 className="task-task-view-section-title">
-                            <span>🛡️</span> Approval
-                          </h3>
-                          <div className="task-view-grid">
-                            <div className="task-view-item">
-                              <span className="task-view-item-label">Approvers</span>
-                              <span className="task-view-item-value">
-                                <ul className="approval-list">
-                                  {approvalRows.map((row) => (
-                                    <li key={row.id} className="approval-list-item">
-                                      <span className="approval-list-name">
-                                        {row.name}
-                                      </span>
-                                      <span
-                                        className={`approval-status-badge approval-status-badge--${row.decision}`}
-                                      >
-                                        {row.decisionLabel}
-                                      </span>
-                                    </li>
-                                  ))}
-                                </ul>
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-                      {!isApproverView && reassignmentActivities.length > 0 && (
-                        <div className="task-view-section">
-                          <h3 className="task-task-view-section-title">
-                            <span>🔄</span> Reassignment History
-                          </h3>
-                          <div className="reassignment-list">
-                            {reassignmentActivities.map((act, index) => {
-                              const rawDetails = act.details;
-                              let fromItems = [];
-                              let toItems = [];
-
-                              if (Array.isArray(rawDetails)) {
-                                fromItems = rawDetails.filter((d) => d && d.type === 'from');
-                                toItems = rawDetails.filter((d) => d && d.type === 'to');
-                              } else if (rawDetails && typeof rawDetails === 'object') {
-                                const fromIds = Array.isArray(rawDetails.from_assigned_user_ids)
-                                  ? rawDetails.from_assigned_user_ids
-                                  : [];
-                                const fromMeta = Array.isArray(rawDetails.from_assigned_users_meta)
-                                  ? rawDetails.from_assigned_users_meta
-                                  : [];
-                                const toIds = Array.isArray(rawDetails.to_assigned_user_ids)
-                                  ? rawDetails.to_assigned_user_ids
-                                  : [];
-                                const toMeta = Array.isArray(rawDetails.to_assigned_users_meta)
-                                  ? rawDetails.to_assigned_users_meta
-                                  : [];
-
-                                fromItems = fromIds.map((fromId) => {
-                                  const meta = fromMeta.find((m) => m && Number(m.user_id) === Number(fromId));
-                                  return {
-                                    type: 'from',
-                                    user_id: fromId,
-                                    department: meta?.department || null,
-                                  };
-                                });
-
-                                toItems = toIds.map((toId) => {
-                                  const meta = toMeta.find((m) => m && Number(m.user_id) === Number(toId));
-                                  return {
-                                    type: 'to',
-                                    user_id: toId,
-                                    department: meta?.department || null,
-                                  };
-                                });
-                              }
-
-                              const formatDept = (dept) => {
-                                if (!dept) return '';
-                                return String(dept)
-                                  .split('_')
-                                  .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : ''))
-                                  .join(' ');
-                              };
-
-                              const fromLabel =
-                                fromItems.length > 0
-                                  ? fromItems
-                                    .map((i) => {
-                                      const deptLabel = formatDept(i.department);
-                                      const nameLabel = getUserNameFromId(i.user_id);
-                                      return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
-                                    })
-                                    .join(', ')
-                                  : '-';
-
-                              const toLabel =
-                                toItems.length > 0
-                                  ? toItems
-                                    .map((i) => {
-                                      const deptLabel = formatDept(i.department);
-                                      const nameLabel = getUserNameFromId(i.user_id);
-                                      return `${nameLabel}${deptLabel ? ` • ${deptLabel}` : ''}`;
-                                    })
-                                    .join(', ')
-                                  : '-';
-
-                              const performer = act && act.performed_by ? act.performed_by : null;
-                              const byLabel =
-                                (performer &&
-                                  (performer.name ||
-                                    performer.full_name ||
-                                    performer.username ||
-                                    performer.email)) ||
-                                '-';
-
-                              const when = act.created_at ? formatDateOnly(act.created_at) : '-';
-
-                              return (
-                                <div key={act.id || index} className="reassignment-row">
-                                  <div className="reassignment-timestamp">
-                                    {when}
-                                  </div>
-                                  <div className="reassignment-details">
-                                    <div className="reassignment-line">
-                                      <span className="reassignment-label">From:</span>
-                                      <span className="reassignment-value">{fromLabel}</span>
-                                    </div>
-                                    <div className="reassignment-line">
-                                      <span className="reassignment-label">To:</span>
-                                      <span className="reassignment-value">{toLabel}</span>
-                                    </div>
-                                    <div className="reassignment-line">
-                                      <span className="reassignment-label">By:</span>
-                                      <span className="reassignment-value">{byLabel}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="tv-column tv-column--side">
-                      {/* Hide the full history panel unless the dedicated permission is granted. */}
-                      {taskPerms.canViewProgressHistory && (
-                        <TaskActivityTimeline activities={task.activities || []} />
-                      )}
-
-                      {/* {!isApproverView && (
-                        <div className="task-view-section tv-time-card">
-                          <h3 className="task-task-view-section-title">Time Tracking</h3>
-                          <TimeTracker taskId={task.id} taskStatus={task.status} />
-                        </div>
-                      )} */}
-
-                      <div className="task-notes-panel">
-                        <div
-                        className={`task-view-section${
-                          isApproverView ? ' task-view-section--approver-primary' : ''
-                        }`}
-                      >
-                         <div className="activity-attachments-section">
-                          <h3 className="task-task-view-section-title">
-                            <span>📂</span> Activity Attachments
-                          </h3>
-                          <div className="task-view-grid">
-                            <div className="task-view-item task-attachments-item">
-                              <ul className="attachments-list">
-                                {activityAttachments.map((a) => {
-                                  const rawType = a.file_type || '';
-                                  const shortType = rawType.includes('/')
-                                    ? rawType.split('/')[1]
-                                    : rawType;
-                                  const shortUpper = shortType
-                                    ? shortType.toUpperCase()
-                                    : 'FILE';
-                                  const displayName = a.description || a.file_name;
-                                  return (
-                                    <li key={a.id} className="attachments-item">
-                                      <div className="attachment-main">
-                                        <div className="attachment-header">
-                                          <div className="attachment-icon">
-                                            {shortUpper}
-                                          </div>
-                                          <div className="attachment-text">
-                                            <div className="attachment-name">
-                                              {displayName}
-                                            </div>
-                                            {a.description && a.file_name && a.description !== a.file_name && (
-                                              <div className="attachment-description" style={{ fontSize: '11px', color: '#666', marginTop: '2px' }}>
-                                                {a.file_name}
-                                              </div>
-                                            )}
-                                            <div className="attachment-type">
-                                              {rawType}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div className="attachment-actions">
-                                          <a
-                                            href={getAttachmentHref(a.file_url)}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="attachment-open-button"
-                                          >
-                                            View
-                                          </a>
-                                          {canDeleteAttachment(a) && (
-                                            <button
-                                              type="button"
-                                              className="attachment-remove-button"
-                                              onClick={() => handleRemoveAttachment(a.id)}
-                                            >
-                                              ×
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </li>
-                                  );
-                                })}
-                                {activityAttachments.length === 0 && <li>No activity attachments</li>}
-                              </ul>
-                            </div>
-                          </div>
-                        </div>
-                        {!isApproverView && (
-                          <form onSubmit={addAttachment} className="task-attachments-form">
-                            <div className="task-attachments-input-container">
-                              <FormInput
-                                name="attachment_name"
-                                label="Attachment name"
-                                value={attachment.name}
-                                onChange={handleAttachmentNameChange}
-                                placeholder="e.g. Progress photo, Signed form"
-                                disabled={!canInteractWithNotes || savingAttachment}
-                                required
-                              />
-                              <div className="form-group">
-                                 <label className="form-label">File</label>
-                                <input
-                                  type="file"
-                                  className="form-input task-file-input"
-                                  onChange={handleAttachmentChange}
-                                  disabled={!canInteractWithNotes || savingAttachment}
-                                />
-                              </div>
-                            </div>
-                            <div className="form-actions task-attachments-actions">
-                              <PrimaryButton
-                                type="submit"
-                                disabled={savingAttachment || !canInteractWithNotes}
-                                loading={savingAttachment}
-                                loadingText="Adding..."
-                                className="task-attachment-upload-btn"
-                              >
-                                Upload Attachment
-                              </PrimaryButton>
-                            </div>
-                          </form>
+                  {!isApproverView && (
+                    <div className="tv2-time">
+                      <div className="tv2-time-head">
+                        <span className="tv2-label">Time logged</span>
+                        {totalTimeSeconds > 0 && (
+                          <span className="tv2-time-total">Total {formatTimeShort(totalTimeSeconds)}</span>
                         )}
                       </div>
-
-                        <TaskDueRemindersPanel
-                          taskId={task.id}
-                          dueDate={task.due_date}
-                          isAssignee={isCurrentUserAssignee}
-                          disabled={!canInteractWithNotes}
-                        />
-
-                        <div
-                          className={`task-view-section task-comments-panel${isApproverView ? ' task-view-section--approver-secondary' : ''}`}
-                        >
-                          <h3 className="task-task-view-section-title">Comments & Activity</h3>
-                          <div className="tv-comments-tabs">
-                            <button
-                              type="button"
-                              className={`tv-comments-tab${commentsTab === 'comments' ? ' tv-comments-tab--active' : ''}`}
-                              onClick={() => setCommentsTab('comments')}
-                            >
-                              Comments
-                            </button>
-                            {/* Activity uses the same permission as the Progress History panel. */}
-                            {taskPerms.canViewProgressHistory && (
-                              <button
-                                type="button"
-                                className={`tv-comments-tab${commentsTab === 'activity' ? ' tv-comments-tab--active' : ''}`}
-                                onClick={() => setCommentsTab('activity')}
-                              >
-                                Activity
-                              </button>
-                            )}
-                          </div>
-                          {/* If access is removed while Activity is selected, fall back to Comments. */}
-                          {commentsTab === 'comments' || !taskPerms.canViewProgressHistory ? (
-                            <>
-                              <div className="task-view-grid">
-                                <div className="task-view-item task-comments-item">
-                                  {(!task.comments || task.comments.length === 0) ? (
-                                    <div className="tv-comments-empty">No comments yet</div>
-                                  ) : (
-                                    <ul className="comments-list">
-                                      {(task.comments || []).map((c) => {
-                                        const hasAuthor = !!c.author;
-                                        const authorName = hasAuthor ? getUserDisplayName(c.author) : 'System';
-                                        const initial = authorName && authorName !== 'System' ? authorName.charAt(0).toUpperCase() : 'S';
-                                        const commentTypeClass = hasAuthor ? 'comment-item--user' : 'comment-item--system';
-                                        return (
-                                          <li key={c.id} className={`comment-item ${commentTypeClass}`}>
-                                            <div className="comment-avatar">
-                                              <span className="comment-avatar-initial">{initial}</span>
-                                            </div>
-                                            <div className="comment-body">
-                                              <div className="comment-header">
-                                                <span className="comment-author">{authorName}</span>
-                                                <span className="comment-date">{formatDateOnly(c.created_at)}</span>
-                                              </div>
-                                              <div className="comment-content">{c.content}</div>
-                                            </div>
-                                          </li>
-                                        );
-                                      })}
-                                    </ul>
-                                  )}
-                                </div>
-                              </div>
-                              {!isApproverView && (
-                                <form onSubmit={addComment} className="task-comments-form">
-                                  <MentionCommentInput
-                                    key={commentFormKey}
-                                    name="content"
-                                    value={comment.content}
-                                    mentionedUserIds={comment.mentioned_user_ids}
-                                    onChange={handleCommentChange}
-                                    onMentionedUsersChange={handleMentionedUsersChange}
-                                    disabled={!canInteractWithNotes}
-                                    placeholder="Add a comment. Type @ to mention..."
-                                  />
-                                  <div className="form-actions">
-                                    <PrimaryButton
-                                      style={{ color: '#ffffff' }}
-                                      type="submit"
-                                      disabled={savingComment || !canInteractWithNotes}
-                                      loading={savingComment}
-                                      loadingText="Posting...."
-                                    >
-                                      Post Comment
-                                    </PrimaryButton>
-                                  </div>
-                                </form>
-                              )}
-                            </>
-                          ) : (
-                            taskPerms.canViewProgressHistory && (
-                              <TaskActivityTimeline activities={task.activities || []} compact />
-                            )
-                          )}
-                        </div>
-
-                        {!isApproverView && (relatedLoading || relatedTasks.length > 0) && (
-                          <div className="task-view-section">
-                            <h3 className="task-task-view-section-title">
-                              <span>🔗</span> Related tasks
-                            </h3>
-                            <div className="task-view-grid">
-                              <div className="task-view-item">
-                                {relatedLoading && (
-                                  <div className="status-message">
-                                    Loading related tasks...
-                                  </div>
-                                )}
-                                {!relatedLoading && relatedTasks.length > 0 && (
-                                  <ul className="related-tasks-list">
-                                    {relatedTasks.map((t) => (
-                                      <li
-                                        key={t.id}
-                                        className="related-task-item"
-                                        onClick={() => {
-                                          if (isModal && onOpenRelatedTask) {
-                                            onOpenRelatedTask(t.id);
-                                            return;
-                                          }
-                                          navigate(`${taskRouteBase}/view/${t.id}`);
-                                        }}
-                                      >
-                                        <div className="related-task-main">
-                                          <div className="related-task-title">
-                                            {t.title}
-                                          </div>
-                                          <div className="related-task-meta">
-                                            <span className="related-task-status">
-                                              {getStatusBadge(t.status)}
-                                            </span>
-                                            <span className="related-task-dept">
-                                              {capitalize(t.department)}
-                                            </span>
-                                          </div>
-                                        </div>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                )}
-                                {!relatedLoading && relatedTasks.length === 0 && (
-                                  <div className="status-message">
-                                    No related tasks
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <TimeTracker taskId={task.id} taskStatus={task.status} />
                     </div>
-                  </div>
+                  )}
 
-                  <div className="receipt-footer">
-                    <div>MTJ Foundation • Task Management System</div>
-                    <div className="metadata">
-                      <span>Task ID: {formatTaskId(task)}</span>
-                      <span>
-                        Department: {capitalize(task.department)}
-                      </span>
-                      <span>
-                        Last updated:{' '}
-                        {formatDate(task.updated_at || task.created_at)}
-                      </span>
-                    </div>
+                  <div className="tv2-card tv2-reminder">
+                    <TaskDueRemindersPanel
+                      taskId={task.id}
+                      dueDate={task.due_date}
+                      isAssignee={isCurrentUserAssignee}
+                      disabled={!canInteractWithNotes}
+                    />
                   </div>
-                </div>
+                </aside>
+              </div>
+
+              <div className="tv2-footer">
+                <span>MTJ Foundation • Task Management System</span>
+                <span>Department: {capitalize(task.department)}</span>
+                <span>Last updated: {formatDate(task.updated_at || task.created_at)}</span>
               </div>
             </div>
 

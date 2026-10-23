@@ -387,7 +387,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           actions: ['view'],
         },
         aid_applications: {
-          label: 'Applications / Approvals',
+          label: 'Beneficiary Registration / Approvals',
           actions: [
             'create',
             'list_view',
@@ -399,7 +399,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           ],
         },
         aid_drafts: {
-          label: 'Data Entry',
+          label: 'Drafts',
           actions: ['list_view', 'view', 'create', 'update', 'approve_draft'],
         },
         aid_verification: {

@@ -352,7 +352,7 @@
   gap: clamp(0.5rem, 1.5vw, 0.75rem);
 }
 
-.team-perf-view-details-btn {
+/* .team-perf-view-details-btn {
   background: #30AEE3;
   color: #ffffff;
   border: none;
@@ -371,7 +371,7 @@
 .team-perf-view-details-btn:hover {
   background: #30AEE3;
   box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-}
+} */
 
 .team-perf-message-btn {
   background: #ffffff;

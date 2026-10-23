@@ -145,7 +145,7 @@ const AidEntryApplicationsList = () => {
       <Navbar />
       <div className="list-wrapper aid-list aid-entry-list">
         <PageHeader
-          title="Applications"
+          title="Beneficiary Registration"
           backPath="/dms"
           showAdd={false}
         />
