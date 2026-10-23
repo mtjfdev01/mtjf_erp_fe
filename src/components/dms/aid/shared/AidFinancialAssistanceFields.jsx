@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import { AID_YES_NO } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Financial Assistance aid type — Financial Condition on Application tab
@@ -12,6 +14,12 @@ const AidFinancialAssistanceFields = ({
   onChange,
   readOnly = false,
 }) => {
+  const { t, lang } = useAidLang();
+  const dash = t('dash');
+  const yesNoOptions = useMemo(
+    () => aidOptionsForLang(AID_YES_NO, lang),
+    [lang],
+  );
   const details = value || {};
   const hasLoans = details.has_loans === 'yes';
 
@@ -37,7 +45,7 @@ const AidFinancialAssistanceFields = ({
     return (
       <div className="aid-financial-assistance" style={{ marginTop: 12 }}>
         <div className="aid-family-panel">
-          <h4 className="aid-family-panel__title">Financial Condition</h4>
+          <h4 className="aid-family-panel__title">{t('financialCondition')}</h4>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
             {[
               details.monthly_household_income
@@ -49,31 +57,31 @@ const AidFinancialAssistanceFields = ({
                 : null,
             ]
               .filter(Boolean)
-              .join(' · ') || '—'}
+              .join(' · ') || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            Earning members: {details.earning_members || '—'} · Dependents:{' '}
-            {details.dependent_members || '—'}
+            {t('earningMembers')}: {details.earning_members || dash} ·{' '}
+            {t('dependentMembers')}: {details.dependent_members || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            Loans:{' '}
+            {t('loansLabel')}{' '}
             {details.has_loans === 'yes'
-              ? `Yes${
+              ? `${t('yes')}${
                   details.loan_amount ? ` · PKR ${details.loan_amount}` : ''
                 }${details.loan_details ? ` · ${details.loan_details}` : ''}`
               : details.has_loans === 'no'
-                ? 'No'
-                : '—'}
+                ? t('no')
+                : dash}
           </p>
           {(details.amount_requested || details.support_months) && (
             <p style={{ fontSize: 13, margin: '8px 0 0' }}>
-              <strong>Requested:</strong>{' '}
+              <strong>{t('requestedLabel')}</strong>{' '}
               {[
                 details.amount_requested
                   ? `PKR ${details.amount_requested}`
                   : null,
                 details.support_months
-                  ? `${details.support_months} month(s)`
+                  ? `${details.support_months} ${t('months')}`
                   : null,
               ]
                 .filter(Boolean)
@@ -82,17 +90,18 @@ const AidFinancialAssistanceFields = ({
           )}
           {details.purpose && (
             <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>Purpose:</strong> {details.purpose}
+              <strong>{t('purposeLabel')}</strong> {details.purpose}
             </p>
           )}
           {details.how_managed_so_far && (
             <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>How managed so far:</strong> {details.how_managed_so_far}
+              <strong>{t('howManagedLabel')}</strong>{' '}
+              {details.how_managed_so_far}
             </p>
           )}
           {details.alternative_if_not_approved && (
             <p style={{ fontSize: 13, margin: '4px 0 0' }}>
-              <strong>If not approved:</strong>{' '}
+              <strong>{t('ifNotApprovedLabel')}</strong>{' '}
               {details.alternative_if_not_approved}
             </p>
           )}
@@ -104,10 +113,10 @@ const AidFinancialAssistanceFields = ({
   return (
     <div className="aid-financial-assistance">
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
-        <h4 className="aid-family-panel__title">Financial Condition</h4>
+        <h4 className="aid-family-panel__title">{t('financialCondition')}</h4>
         <div className="form-grid-2">
           <FormInput
-            label="Monthly household income (PKR)"
+            label={t('monthlyHouseholdIncome')}
             type="number"
             min="0"
             value={details.monthly_household_income ?? ''}
@@ -116,34 +125,34 @@ const AidFinancialAssistanceFields = ({
             }
           />
           <FormInput
-            label="Source of income"
+            label={t('sourceOfIncome')}
             value={details.income_source || ''}
             onChange={(e) => patch({ income_source: e.target.value })}
-            placeholder="Job, daily wage, pension…"
+            placeholder={t('incomeSourcePlaceholder')}
           />
           <FormInput
-            label="Monthly expenses (PKR)"
+            label={t('monthlyExpenses')}
             type="number"
             min="0"
             value={details.monthly_expenses ?? ''}
             onChange={(e) => patch({ monthly_expenses: e.target.value })}
           />
           <FormInput
-            label="Earning members"
+            label={t('earningMembers')}
             type="number"
             min="0"
             value={details.earning_members ?? ''}
             onChange={(e) => patch({ earning_members: e.target.value })}
           />
           <FormInput
-            label="Dependent members"
+            label={t('dependentMembers')}
             type="number"
             min="0"
             value={details.dependent_members ?? ''}
             onChange={(e) => patch({ dependent_members: e.target.value })}
           />
           <FormSelect
-            label="Do you have outstanding loans / debts?"
+            label={t('hasOutstandingLoans')}
             value={details.has_loans || ''}
             onChange={(e) => {
               const next = e.target.value;
@@ -154,34 +163,34 @@ const AidFinancialAssistanceFields = ({
                   : {}),
               });
             }}
-            options={[{ value: '', label: '—' }, ...AID_YES_NO]}
+            options={[{ value: '', label: dash }, ...yesNoOptions]}
           />
           {hasLoans && (
             <>
               <FormInput
-                label="Loan / debt amount (PKR)"
+                label={t('loanDebtAmount')}
                 type="number"
                 min="0"
                 value={details.loan_amount ?? ''}
                 onChange={(e) => patch({ loan_amount: e.target.value })}
               />
               <FormInput
-                label="Loan details"
+                label={t('loanDetails')}
                 value={details.loan_details || ''}
                 onChange={(e) => patch({ loan_details: e.target.value })}
-                placeholder="Bank, shop, relative…"
+                placeholder={t('loanDetailsPlaceholder')}
               />
             </>
           )}
           <FormInput
-            label="Amount of assistance requested (PKR)"
+            label={t('amountAssistanceRequested')}
             type="number"
             min="0"
             value={details.amount_requested ?? ''}
             onChange={(e) => patch({ amount_requested: e.target.value })}
           />
           <FormInput
-            label="For how many months?"
+            label={t('forHowManyMonths')}
             type="number"
             min="0"
             value={details.support_months ?? ''}
@@ -189,19 +198,19 @@ const AidFinancialAssistanceFields = ({
           />
         </div>
         <FormTextarea
-          label="Purpose of financial assistance"
+          label={t('purposeFinancialAssistance')}
           value={details.purpose || ''}
           onChange={(e) => patch({ purpose: e.target.value })}
           rows={2}
         />
         <FormTextarea
-          label="How have you managed so far?"
+          label={t('howManagedSoFar')}
           value={details.how_managed_so_far || ''}
           onChange={(e) => patch({ how_managed_so_far: e.target.value })}
           rows={2}
         />
         <FormTextarea
-          label="If your application is not approved, what alternative plans do you have?"
+          label={t('alternativeIfNotApproved')}
           value={details.alternative_if_not_approved || ''}
           onChange={(e) =>
             patch({ alternative_if_not_approved: e.target.value })

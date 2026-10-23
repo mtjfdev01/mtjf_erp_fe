@@ -18,6 +18,8 @@ import {
   formatEducation,
   formatMaritalStatus,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionLabel, aidOptionsForLang } from '../lang/aidUiCopy';
 
 const SPOUSE_RELATIONS = new Set(['spouse', 'husband', 'wife']);
 const CHILD_RELATIONS = new Set([
@@ -35,19 +37,6 @@ const SIBLING_RELATIONS = new Set([
   'half_brother',
   'half_sister',
 ]);
-
-const ID_TYPE_OPTIONS = [
-  { value: 'cnic', label: 'CNIC' },
-  { value: 'b_form', label: 'B-Form' },
-];
-
-const HEALTH_OPTIONS = [
-  { value: '', label: 'None' },
-  { value: 'asthma', label: 'Asthma' },
-  { value: 'disability', label: 'Disability' },
-  { value: 'chronic', label: 'Chronic illness' },
-  { value: 'other', label: 'Other' },
-];
 
 /** Same personal field shape as Family Head / Beneficiary (+ member extras). */
 export const emptyFamilyMemberRow = () => ({
@@ -80,10 +69,13 @@ const categoryOf = (row) => {
   return 'other';
 };
 
-const relationLabelOf = (row, options) =>
-  options.find((o) => o.value === relationOf(row))?.label ||
+const relationLabelOf = (row, options, lang, dash) =>
+  aidOptionLabel(
+    options.find((o) => o.value === relationOf(row)),
+    lang,
+  ) ||
   relationOf(row) ||
-  '—';
+  dash;
 
 const formatIncome = (raw) => {
   if (raw === '' || raw == null) return '—';
@@ -109,20 +101,6 @@ const educationWorkLabel = (row) => {
   return bits.length ? bits.join(' · ') : '—';
 };
 
-const healthLabel = (row) => {
-  if (row?.has_disability || row?.health_status === 'disability') {
-    return row?.disability_type?.trim() || 'Disability';
-  }
-  if (row?.health_status && row.health_status !== 'none') {
-    return (
-      HEALTH_OPTIONS.find((h) => h.value === row.health_status)?.label ||
-      row.health_status
-    );
-  }
-  if (row?.disability_type?.trim()) return row.disability_type.trim();
-  return 'None';
-};
-
 /**
  * Family members — table + filter chips + Add/Edit side panel.
  * Same data contract as before (rows / onChange / onMarkApplicant / onMarkBeneficiary).
@@ -130,14 +108,71 @@ const healthLabel = (row) => {
 const AidFamilyMembersIntake = ({
   rows = [],
   onChange,
-  title = 'Family members',
+  title,
   hint = '',
-  addLabel = 'Add member',
-  relationLabel = 'Relation to head',
+  addLabel,
+  relationLabel,
   relationOptions = AID_RELATED_PERSON_TYPES,
   onMarkApplicant,
   onMarkBeneficiary,
 }) => {
+  const { t, lang } = useAidLang();
+  const panelTitle = title ?? t('familyMembers');
+  const resolvedAddLabel = addLabel ?? t('addMember');
+  const resolvedRelationLabel = relationLabel ?? t('relationToHead');
+  const dash = t('dash');
+
+  const idTypeOptions = useMemo(
+    () => [
+      { value: 'cnic', label: t('idTypeCnic') },
+      { value: 'b_form', label: t('idTypeBForm') },
+    ],
+    [t],
+  );
+
+  const healthOptions = useMemo(
+    () => [
+      { value: '', label: t('healthNone') },
+      { value: 'asthma', label: t('healthAsthma') },
+      { value: 'disability', label: t('healthDisability') },
+      { value: 'chronic', label: t('healthChronic') },
+      { value: 'other', label: t('healthOther') },
+    ],
+    [t],
+  );
+
+  const localizedRelationOptions = useMemo(
+    () => aidOptionsForLang(relationOptions, lang),
+    [relationOptions, lang],
+  );
+
+  const genderOptions = useMemo(
+    () => [{ value: '', label: dash }, ...aidOptionsForLang(AID_GENDERS, lang)],
+    [dash, lang],
+  );
+
+  const maritalOptions = useMemo(
+    () => [
+      { value: '', label: dash },
+      ...aidOptionsForLang(AID_MARITAL_STATUS, lang),
+    ],
+    [dash, lang],
+  );
+
+  const healthLabel = (row) => {
+    if (row?.has_disability || row?.health_status === 'disability') {
+      return row?.disability_type?.trim() || t('healthDisability');
+    }
+    if (row?.health_status && row.health_status !== 'none') {
+      return (
+        healthOptions.find((h) => h.value === row.health_status)?.label ||
+        row.health_status
+      );
+    }
+    if (row?.disability_type?.trim()) return row.disability_type.trim();
+    return t('healthNone');
+  };
+
   const list = Array.isArray(rows) ? rows : [];
   const [filter, setFilter] = useState('all');
   const [panelOpen, setPanelOpen] = useState(false);
@@ -249,9 +284,9 @@ const AidFamilyMembersIntake = ({
       has_disability: health === 'disability' || !!draft.has_disability,
       disability_type:
         health === 'disability'
-          ? draft.disability_type || 'Disability'
+          ? draft.disability_type || t('healthDisability')
           : health && health !== 'none'
-            ? HEALTH_OPTIONS.find((h) => h.value === health)?.label || health
+            ? healthOptions.find((h) => h.value === health)?.label || health
             : '',
       health_status: health,
     };
@@ -284,11 +319,11 @@ const AidFamilyMembersIntake = ({
   };
 
   const filters = [
-    { key: 'all', label: `All ${counts.all}` },
-    { key: 'spouse', label: `Spouse ${counts.spouse}` },
-    { key: 'children', label: `Children ${counts.children}` },
-    { key: 'siblings', label: `Siblings ${counts.siblings}` },
-    { key: 'other', label: `Other dependents ${counts.other}` },
+    { key: 'all', label: `${t('filterAll')} ${counts.all}` },
+    { key: 'spouse', label: `${t('filterSpouse')} ${counts.spouse}` },
+    { key: 'children', label: `${t('filterChildren')} ${counts.children}` },
+    { key: 'siblings', label: `${t('filterSiblings')} ${counts.siblings}` },
+    { key: 'other', label: `${t('filterOther')} ${counts.other}` },
   ];
 
   return (
@@ -300,7 +335,7 @@ const AidFamilyMembersIntake = ({
         <div className="aid-fm-main__head">
           <div>
             <h4 className="aid-family-panel__title" style={{ margin: 0 }}>
-              {title}
+              {panelTitle}
             </h4>
             {hint ? (
               <p className="aid-section-hint" style={{ margin: '0.35rem 0 0' }}>
@@ -314,7 +349,7 @@ const AidFamilyMembersIntake = ({
             onClick={openAdd}
           >
             <FiPlus aria-hidden />
-            {addLabel.replace(/^\+\s*/, '')}
+            {resolvedAddLabel.replace(/^\+\s*/, '')}
           </button>
         </div>
 
@@ -337,22 +372,22 @@ const AidFamilyMembersIntake = ({
           <table className="aid-fm-table">
             <thead>
               <tr>
-                <th>Relation to head</th>
-                <th>Name</th>
-                <th>CNIC / B-Form</th>
-                <th>Age</th>
-                <th>Status</th>
-                <th>Education / work</th>
-                <th>Income</th>
-                <th>Health</th>
-                <th aria-label="Actions" />
+                <th>{t('colRelation')}</th>
+                <th>{t('colName')}</th>
+                <th>{t('colId')}</th>
+                <th>{t('colAge')}</th>
+                <th>{t('colStatus')}</th>
+                <th>{t('colEducationWork')}</th>
+                <th>{t('colIncome')}</th>
+                <th>{t('colHealth')}</th>
+                <th aria-label={t('colActions')} />
               </tr>
             </thead>
             <tbody>
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="aid-fm-table__empty">
-                    No family members in this filter. Use Add member to create one.
+                    {t('membersEmpty')}
                   </td>
                 </tr>
               ) : (
@@ -360,35 +395,42 @@ const AidFamilyMembersIntake = ({
                   const age = calcAgeFromDob(row.date_of_birth);
                   const health = healthLabel(row);
                   const healthTone =
-                    health === 'None' ? 'muted' : 'alert';
+                    health === t('healthNone') ? 'muted' : 'alert';
                   return (
                     <tr key={`fm-row-${idx}`}>
                       <td>
                         <div className="aid-fm-rel">
-                          <span>{relationLabelOf(row, relationOptions)}</span>
+                          <span>
+                            {relationLabelOf(
+                              row,
+                              relationOptions,
+                              lang,
+                              dash,
+                            )}
+                          </span>
                           {row.is_beneficiary ? (
                             <span className="aid-fm-beneficiary-tag">
-                              Beneficiary
+                              {t('beneficiary')}
                             </span>
                           ) : null}
                           {row.is_applicant ? (
                             <span className="aid-fm-applicant-tag">
-                              Applicant
+                              {t('applicant')}
                             </span>
                           ) : null}
                         </div>
                       </td>
-                      <td>{row.full_name?.trim() || '—'}</td>
+                      <td>{row.full_name?.trim() || dash}</td>
                       <td>
                         {row.cnic
                           ? formatCnicInput(row.cnic)
-                          : '—'}
+                          : dash}
                       </td>
-                      <td>{age != null ? age : '—'}</td>
+                      <td>{age != null ? age : dash}</td>
                       <td>
                         {row.marital_status
                           ? formatMaritalStatus(row.marital_status)
-                          : '—'}
+                          : dash}
                       </td>
                       <td>{educationWorkLabel(row)}</td>
                       <td>{formatIncome(row.monthly_income)}</td>
@@ -403,8 +445,8 @@ const AidFamilyMembersIntake = ({
                         <button
                           type="button"
                           className="aid-fm-icon-btn"
-                          title="Edit"
-                          aria-label="Edit member"
+                          title={t('edit')}
+                          aria-label={t('editMember')}
                           onClick={() => openEdit(idx)}
                         >
                           <FiEdit2 />
@@ -421,15 +463,15 @@ const AidFamilyMembersIntake = ({
       </div>
 
       {panelOpen ? (
-        <aside className="aid-fm-panel" aria-label="Add member">
+        <aside className="aid-fm-panel" aria-label={t('addMember')}>
           <div className="aid-fm-panel__head">
             <h5 className="aid-fm-panel__title">
-              {editIdx == null ? 'Add member' : 'Edit member'}
+              {editIdx == null ? t('addMember') : t('editMember')}
             </h5>
             <button
               type="button"
               className="aid-fm-icon-btn"
-              aria-label="Close"
+              aria-label={t('close')}
               onClick={closePanel}
             >
               <FiX />
@@ -441,7 +483,7 @@ const AidFamilyMembersIntake = ({
               <AidApplicantCheckbox
                 checked={!!draft.is_applicant}
                 variant="applicant"
-                label="Applicant"
+                label={t('applicant')}
                 onChange={(yes) => {
                   patchDraft({ is_applicant: yes });
                   if (!onMarkApplicant || editIdx == null) return;
@@ -459,7 +501,7 @@ const AidFamilyMembersIntake = ({
               <AidApplicantCheckbox
                 checked={!!draft.is_beneficiary}
                 variant="beneficiary"
-                label="Beneficiary"
+                label={t('beneficiary')}
                 onChange={(yes) => {
                   patchDraft({ is_beneficiary: yes });
                   if (!onMarkBeneficiary || editIdx == null) return;
@@ -477,31 +519,31 @@ const AidFamilyMembersIntake = ({
             </div>
 
             <FormSelect
-              label={relationLabel}
+              label={resolvedRelationLabel}
               value={draft.relation_type || ''}
               onChange={(e) => setRelation(e.target.value)}
               options={[
-                { value: '', label: 'Select…' },
-                ...relationOptions,
+                { value: '', label: t('selectEllipsis') },
+                ...localizedRelationOptions,
               ]}
             />
 
             <FormInput
-              label="Full name"
+              label={t('fullName')}
               value={draft.full_name || ''}
               onChange={(e) => patchDraft({ full_name: e.target.value })}
-              placeholder="Full name"
+              placeholder={t('fullName')}
             />
 
             <div className="aid-fm-panel__grid2">
               <FormSelect
-                label="ID type"
+                label={t('idType')}
                 value={draft.id_type || 'cnic'}
                 onChange={(e) => patchDraft({ id_type: e.target.value })}
-                options={ID_TYPE_OPTIONS}
+                options={idTypeOptions}
               />
               <FormInput
-                label="ID number"
+                label={t('idNumber')}
                 value={formatCnicInput(draft.cnic || '')}
                 onChange={(e) =>
                   patchDraft({ cnic: formatCnicInput(e.target.value) })
@@ -513,33 +555,33 @@ const AidFamilyMembersIntake = ({
 
             <div className="aid-fm-panel__grid2">
               <FormInput
-                label="Date of birth"
+                label={t('dateOfBirth')}
                 type="date"
                 value={draft.date_of_birth || ''}
                 onChange={(e) => patchDraft({ date_of_birth: e.target.value })}
               />
               <FormSelect
-                label="Gender"
+                label={t('gender')}
                 value={draft.gender || ''}
                 onChange={(e) => patchDraft({ gender: e.target.value })}
-                options={[{ value: '', label: '—' }, ...AID_GENDERS]}
+                options={genderOptions}
               />
             </div>
 
             <div className="aid-fm-panel__grid2">
               <FormSelect
-                label="Education"
+                label={t('education')}
                 value={draft.education_level || ''}
                 onChange={(e) =>
                   patchDraft({ education_level: e.target.value })
                 }
                 options={[
-                  { value: '', label: '—' },
-                  ...AID_EDUCATION_LEVELS,
+                  { value: '', label: dash },
+                  ...aidOptionsForLang(AID_EDUCATION_LEVELS, lang),
                 ]}
               />
               <FormInput
-                label="Class / level"
+                label={t('classLevel')}
                 value={draft.student_class || ''}
                 onChange={(e) => patchDraft({ student_class: e.target.value })}
                 placeholder="e.g. 8"
@@ -547,23 +589,23 @@ const AidFamilyMembersIntake = ({
             </div>
 
             <FormInput
-              label="School / institution"
+              label={t('schoolInstitution')}
               value={draft.student_class_name || ''}
               onChange={(e) =>
                 patchDraft({ student_class_name: e.target.value })
               }
-              placeholder="School / institution"
+              placeholder={t('schoolInstitution')}
             />
 
             <div className="aid-fm-panel__grid2">
               <FormInput
-                label="Occupation"
+                label={t('occupation')}
                 value={draft.occupation || ''}
                 onChange={(e) => patchDraft({ occupation: e.target.value })}
-                placeholder="Occupation"
+                placeholder={t('occupation')}
               />
               <FormInput
-                label="Monthly income"
+                label={t('monthlyIncomeShort')}
                 type="number"
                 min="0"
                 value={draft.monthly_income ?? ''}
@@ -576,18 +618,15 @@ const AidFamilyMembersIntake = ({
 
             <div className="aid-fm-panel__grid2">
               <FormSelect
-                label="Marital status"
+                label={t('maritalStatus')}
                 value={draft.marital_status || ''}
                 onChange={(e) =>
                   patchDraft({ marital_status: e.target.value })
                 }
-                options={[
-                  { value: '', label: '—' },
-                  ...AID_MARITAL_STATUS,
-                ]}
+                options={maritalOptions}
               />
               <FormSelect
-                label="Health / disability"
+                label={t('healthDisability')}
                 value={draft.health_status || ''}
                 onChange={(e) => {
                   const health_status = e.target.value;
@@ -596,11 +635,11 @@ const AidFamilyMembersIntake = ({
                     has_disability: health_status === 'disability',
                     disability_type:
                       health_status === 'disability'
-                        ? draft.disability_type || 'Disability'
+                        ? draft.disability_type || t('healthDisability')
                         : '',
                   });
                 }}
-                options={HEALTH_OPTIONS}
+                options={healthOptions}
               />
             </div>
           </div>
@@ -612,7 +651,7 @@ const AidFamilyMembersIntake = ({
                 className="aid-fm-panel__btn aid-fm-panel__btn--danger"
                 onClick={() => removeRow(editIdx)}
               >
-                Remove
+                {t('remove')}
               </button>
             ) : (
               <span />
@@ -623,14 +662,14 @@ const AidFamilyMembersIntake = ({
                 className="aid-fm-panel__btn aid-fm-panel__btn--ghost"
                 onClick={closePanel}
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 type="button"
                 className="aid-fm-panel__btn aid-fm-panel__btn--primary"
                 onClick={saveDraft}
               >
-                {editIdx == null ? 'Add member' : 'Save'}
+                {editIdx == null ? t('addMember') : t('save')}
               </button>
             </div>
           </div>

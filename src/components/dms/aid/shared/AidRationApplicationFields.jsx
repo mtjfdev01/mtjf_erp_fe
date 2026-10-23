@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import { AID_YES_NO } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Ration aid type — Application tab special structure
@@ -13,6 +15,12 @@ const AidRationApplicationFields = ({
   onChange,
   readOnly = false,
 }) => {
+  const { t, lang } = useAidLang();
+  const dash = t('dash');
+  const yesNoOptions = useMemo(
+    () => aidOptionsForLang(AID_YES_NO, lang),
+    [lang],
+  );
   const details = value || {};
   const patch = (partial) => {
     if (readOnly || !onChange) return;
@@ -39,8 +47,12 @@ const AidRationApplicationFields = ({
     if (!hasAny) return null;
 
     const duration = [
-      details.support_years ? `${details.support_years} yr` : null,
-      details.support_months ? `${details.support_months} mo` : null,
+      details.support_years
+        ? `${details.support_years} ${t('yrShort')}`
+        : null,
+      details.support_months
+        ? `${details.support_months} ${t('moShort')}`
+        : null,
     ]
       .filter(Boolean)
       .join(' ');
@@ -48,11 +60,11 @@ const AidRationApplicationFields = ({
     const wheatLabel =
       details.family_had_wheat === 'yes'
         ? details.wheat_quantity_kg
-          ? `Yes · ${details.wheat_quantity_kg} KG`
-          : 'Yes'
+          ? `${t('yes')} · ${details.wheat_quantity_kg} KG`
+          : t('yes')
         : details.family_had_wheat === 'no'
-          ? 'No'
-          : '—';
+          ? t('no')
+          : dash;
     const wheatTone =
       details.family_had_wheat === 'yes'
         ? 'success'
@@ -65,12 +77,12 @@ const AidRationApplicationFields = ({
         <div className="aid-ration-card__banner" aria-hidden />
         <div className="aid-ration-card__head">
           <div>
-            <p className="aid-ration-card__eyebrow">Program detail</p>
-            <h4 className="aid-ration-card__title">Monthly Ration Program</h4>
+            <p className="aid-ration-card__eyebrow">{t('programDetail')}</p>
+            <h4 className="aid-ration-card__title">{t('monthlyRationProgram')}</h4>
           </div>
           {duration ? (
             <div className="aid-ration-card__duration">
-              <span>Requested duration</span>
+              <span>{t('requestedDuration')}</span>
               <strong>{duration}</strong>
             </div>
           ) : null}
@@ -78,23 +90,23 @@ const AidRationApplicationFields = ({
 
         <div className="aid-ration-card__stats">
           <div className="aid-ration-stat">
-            <em>Male</em>
+            <em>{t('male')}</em>
             <strong>{details.persons_male || '0'}</strong>
           </div>
           <div className="aid-ration-stat">
-            <em>Female</em>
+            <em>{t('female')}</em>
             <strong>{details.persons_female || '0'}</strong>
           </div>
           <div className="aid-ration-stat">
-            <em>Kids</em>
+            <em>{t('kids')}</em>
             <strong>{details.persons_kids || '0'}</strong>
           </div>
           <div className="aid-ration-stat aid-ration-stat--total">
-            <em>Total persons</em>
+            <em>{t('totalPersonsLabel')}</em>
             <strong>{totalPersons || '0'}</strong>
           </div>
           <div className={`aid-ration-stat aid-ration-stat--${wheatTone}`}>
-            <em>Family had wheat</em>
+            <em>{t('familyHadWheat')}</em>
             <strong>{wheatLabel}</strong>
           </div>
         </div>
@@ -102,19 +114,19 @@ const AidRationApplicationFields = ({
         <div className="aid-ration-card__notes">
           {details.how_know_mtjf ? (
             <div className="aid-ration-note">
-              <span>How they know about MTJF</span>
+              <span>{t('howKnowMtjfRo')}</span>
               <p>{details.how_know_mtjf}</p>
             </div>
           ) : null}
           {details.ration_arrangements_before ? (
             <div className="aid-ration-note">
-              <span>Ration arrangements before MTJF</span>
+              <span>{t('rationArrangementsBeforeRo')}</span>
               <p>{details.ration_arrangements_before}</p>
             </div>
           ) : null}
           {details.alternative_if_not_approved ? (
             <div className="aid-ration-note aid-ration-note--warn">
-              <span>If not approved — alternative plan</span>
+              <span>{t('ifNotApprovedAlternative')}</span>
               <p>{details.alternative_if_not_approved}</p>
             </div>
           ) : null}
@@ -126,26 +138,24 @@ const AidRationApplicationFields = ({
   return (
     <div className="aid-ration-application">
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
-        <h4 className="aid-family-panel__title">
-          No. of persons benefitted from Ration
-        </h4>
+        <h4 className="aid-family-panel__title">{t('rationPersons')}</h4>
         <div className="form-grid-2">
           <FormInput
-            label="Male"
+            label={t('male')}
             type="number"
             min="0"
             value={details.persons_male ?? ''}
             onChange={(e) => patch({ persons_male: e.target.value })}
           />
           <FormInput
-            label="Female"
+            label={t('female')}
             type="number"
             min="0"
             value={details.persons_female ?? ''}
             onChange={(e) => patch({ persons_female: e.target.value })}
           />
           <FormInput
-            label="Kids"
+            label={t('kids')}
             type="number"
             min="0"
             value={details.persons_kids ?? ''}
@@ -154,7 +164,7 @@ const AidRationApplicationFields = ({
         </div>
         {totalPersons > 0 && (
           <p className="aid-section-hint" style={{ marginTop: 6 }}>
-            Total: {totalPersons}
+            {t('total', { n: totalPersons })}
           </p>
         )}
       </div>
@@ -162,7 +172,7 @@ const AidRationApplicationFields = ({
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <div className="form-grid-2">
           <FormSelect
-            label="Did your family have wheat?"
+            label={t('hadWheat')}
             value={details.family_had_wheat || ''}
             onChange={(e) => {
               const next = e.target.value;
@@ -171,11 +181,11 @@ const AidRationApplicationFields = ({
                 ...(next !== 'yes' ? { wheat_quantity_kg: '' } : {}),
               });
             }}
-            options={[{ value: '', label: '—' }, ...AID_YES_NO]}
+            options={[{ value: '', label: dash }, ...yesNoOptions]}
           />
           {hadWheat && (
             <FormInput
-              label="If yes, how much (KG)"
+              label={t('wheatKg')}
               type="number"
               min="0"
               step="0.1"
@@ -188,13 +198,13 @@ const AidRationApplicationFields = ({
 
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <FormTextarea
-          label="How did you know about MTJF?"
+          label={t('howKnowMtjf')}
           value={details.how_know_mtjf || ''}
           onChange={(e) => patch({ how_know_mtjf: e.target.value })}
           rows={2}
         />
         <FormTextarea
-          label="What were the arrangements of Ration before applying to MTJF?"
+          label={t('rationArrangementsBefore')}
           value={details.ration_arrangements_before || ''}
           onChange={(e) =>
             patch({ ration_arrangements_before: e.target.value })
@@ -204,19 +214,17 @@ const AidRationApplicationFields = ({
       </div>
 
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
-        <h4 className="aid-family-panel__title">
-          For how long do you want Ration support?
-        </h4>
+        <h4 className="aid-family-panel__title">{t('rationDuration')}</h4>
         <div className="form-grid-2">
           <FormInput
-            label="Years"
+            label={t('years')}
             type="number"
             min="0"
             value={details.support_years ?? ''}
             onChange={(e) => patch({ support_years: e.target.value })}
           />
           <FormInput
-            label="Months"
+            label={t('months')}
             type="number"
             min="0"
             max="11"
@@ -228,7 +236,7 @@ const AidRationApplicationFields = ({
 
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <FormTextarea
-          label="If your application is not approved, what alternative plans do you have for securing the ration?"
+          label={t('alternativeIfNotRation')}
           value={details.alternative_if_not_approved || ''}
           onChange={(e) =>
             patch({ alternative_if_not_approved: e.target.value })

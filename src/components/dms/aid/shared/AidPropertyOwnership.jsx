@@ -1,20 +1,29 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { FiPlus, FiX } from 'react-icons/fi';
 import {
   AID_PROPERTY_TYPES,
   AID_YES_NO,
   emptyPropertyRow,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Property ownership — single horizontal line when Yes:
  * Do you have land? | Type | Area | Details | +
  */
-const AidPropertyOwnership = ({
-  value,
-  onChange,
-  title = 'Property ownership',
-}) => {
+const AidPropertyOwnership = ({ value, onChange, title }) => {
+  const { t, lang } = useAidLang();
+  const panelTitle = title ?? t('propertyOwnership');
+  const yesNoOptions = useMemo(
+    () => aidOptionsForLang(AID_YES_NO, lang),
+    [lang],
+  );
+  const propertyTypes = useMemo(
+    () => aidOptionsForLang(AID_PROPERTY_TYPES, lang),
+    [lang],
+  );
+
   const hasLand = !!value?.has_land;
   const rows =
     Array.isArray(value?.property_entries) && value.property_entries.length
@@ -60,18 +69,20 @@ const AidPropertyOwnership = ({
 
   return (
     <div className="aid-property-ownership">
-      {title ? <h4 className="aid-family-panel__title">{title}</h4> : null}
+      {panelTitle ? (
+        <h4 className="aid-family-panel__title">{panelTitle}</h4>
+      ) : null}
 
       {!hasLand ? (
         <div className="aid-property-inline aid-property-inline--land-only">
           <label className="aid-property-inline__field">
-            <span className="aid-property-inline__label">Do you have land?</span>
+            <span className="aid-property-inline__label">{t('haveLand')}</span>
             <select
               className="aid-property-inline__control"
               value="no"
               onChange={onHasLandChange}
             >
-              {AID_YES_NO.map((o) => (
+              {yesNoOptions.map((o) => (
                 <option key={o.value} value={o.value}>
                   {o.label}
                 </option>
@@ -86,14 +97,14 @@ const AidPropertyOwnership = ({
               {idx === 0 ? (
                 <label className="aid-property-inline__field aid-property-inline__field--land">
                   <span className="aid-property-inline__label">
-                    Do you have land?
+                    {t('haveLand')}
                   </span>
                   <select
                     className="aid-property-inline__control"
                     value="yes"
                     onChange={onHasLandChange}
                   >
-                    {AID_YES_NO.map((o) => (
+                    {yesNoOptions.map((o) => (
                       <option key={o.value} value={o.value}>
                         {o.label}
                       </option>
@@ -110,7 +121,7 @@ const AidPropertyOwnership = ({
               <label className="aid-property-inline__field aid-property-inline__field--type">
                 {idx === 0 ? (
                   <span className="aid-property-inline__label">
-                    Type <span className="required-mark">*</span>
+                    {t('type')} <span className="required-mark">*</span>
                   </span>
                 ) : (
                   <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -125,8 +136,8 @@ const AidPropertyOwnership = ({
                   }
                   required
                 >
-                  <option value="">—</option>
-                  {AID_PROPERTY_TYPES.map((o) => (
+                  <option value="">{t('dash')}</option>
+                  {propertyTypes.map((o) => (
                     <option key={o.value} value={o.value}>
                       {o.label}
                     </option>
@@ -136,7 +147,7 @@ const AidPropertyOwnership = ({
 
               <label className="aid-property-inline__field aid-property-inline__field--area">
                 {idx === 0 ? (
-                  <span className="aid-property-inline__label">Area</span>
+                  <span className="aid-property-inline__label">{t('area')}</span>
                 ) : (
                   <span className="aid-property-inline__label aid-property-inline__label--ghost">
                     &nbsp;
@@ -149,14 +160,14 @@ const AidPropertyOwnership = ({
                   onChange={(e) =>
                     updateRow(idx, { property_area: e.target.value })
                   }
-                  placeholder="e.g. 5 marla"
+                  placeholder={t('propertyAreaExample')}
                 />
               </label>
 
               <label className="aid-property-inline__field aid-property-inline__field--details">
                 {idx === 0 ? (
                   <span className="aid-property-inline__label">
-                    Property details
+                    {t('propertyDetails')}
                   </span>
                 ) : (
                   <span className="aid-property-inline__label aid-property-inline__label--ghost">
@@ -170,7 +181,7 @@ const AidPropertyOwnership = ({
                   onChange={(e) =>
                     updateRow(idx, { property_details: e.target.value })
                   }
-                  placeholder="Location / notes"
+                  placeholder={t('propertyLocationNotes')}
                 />
               </label>
 
@@ -179,8 +190,8 @@ const AidPropertyOwnership = ({
                   <button
                     type="button"
                     className="aid-property-row__icon-btn aid-property-row__icon-btn--remove"
-                    aria-label="Remove property"
-                    title="Remove"
+                    aria-label={t('removeProperty')}
+                    title={t('remove')}
                     onClick={() => setRows(rows.filter((_, i) => i !== idx))}
                   >
                     <FiX />
@@ -190,8 +201,8 @@ const AidPropertyOwnership = ({
                   <button
                     type="button"
                     className="aid-property-row__icon-btn aid-property-row__icon-btn--add"
-                    aria-label="Add property"
-                    title="Add property"
+                    aria-label={t('addProperty')}
+                    title={t('addProperty')}
                     onClick={() => setRows([...rows, emptyPropertyRow()])}
                   >
                     <FiPlus />

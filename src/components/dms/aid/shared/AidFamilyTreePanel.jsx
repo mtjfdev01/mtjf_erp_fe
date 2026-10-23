@@ -5,6 +5,7 @@ import {
   calcAgeFromDob,
   formatMaritalStatus,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
 
 const relLabel = (type) =>
   AID_RELATED_PERSON_TYPES.find((t) => t.value === type)?.label ||
@@ -96,24 +97,25 @@ const fromApiRows = (rows = [], prefix = 'api') =>
     })
     .filter(Boolean);
 
-const nodeMeta = (person, roleHint) => {
+const nodeMeta = (person, roleHint, copy) => {
   if (!person) return null;
   const age = calcAgeFromDob(person.date_of_birth);
   const role = roleHint || shortRel(relationOf(person));
+  const lateLabel = copy?.late ?? 'late';
   const lines = [];
   if (person.is_family_head) {
-    lines.push('FAMILY HEAD');
+    lines.push(copy?.familyHeadBadge ?? 'FAMILY HEAD');
   } else if (person.is_beneficiary) {
-    lines.push('BENEFICIARY');
+    lines.push(copy?.beneficiaryBadge ?? 'BENEFICIARY');
     const bits = [role];
-    if (isLate(person)) bits.push('late');
+    if (isLate(person)) bits.push(lateLabel);
     else if (age != null) bits.push(String(age));
     if (bits.filter(Boolean).length) {
       lines.push(bits.filter(Boolean).join(' - '));
     }
   } else {
     const bits = [role];
-    if (isLate(person)) bits.push('late');
+    if (isLate(person)) bits.push(lateLabel);
     else if (age != null) bits.push(String(age));
     lines.push(bits.filter(Boolean).join(' - '));
   }
@@ -152,7 +154,7 @@ const nodeMeta = (person, roleHint) => {
   }
   return {
     id: person._tree_id,
-    name: person.full_name?.trim() || 'Unnamed',
+    name: person.full_name?.trim() || (copy?.unnamed ?? 'Unnamed'),
     lines,
     variant: person.is_family_head
       ? 'head'
@@ -236,11 +238,23 @@ const AidFamilyTreePanel = ({
   /** Applicant / writer when they are the registered Family Head (not self) */
   familyHeadHint = null,
   familyHeadRelation = '',
-  emptyHint = 'No family members to show yet. Complete Family Registration first, then return here to see the household tree.',
+  emptyHint,
   showHeader = true,
   selectedId = null,
   onSelectNode,
 }) => {
+  const { t } = useAidLang();
+  const treeCopy = useMemo(
+    () => ({
+      familyHeadBadge: t('familyHeadBadge'),
+      beneficiaryBadge: t('beneficiaryBadge'),
+      unnamed: t('unnamed'),
+      late: t('late'),
+    }),
+    [t],
+  );
+  const resolvedEmptyHint = emptyHint ?? t('familyTreeEmpty');
+
   const model = useMemo(() => {
     const mark = (p, role) =>
       p
@@ -250,6 +264,7 @@ const AidFamilyTreePanel = ({
               _highlight: selectedId === p._tree_id || !!p._highlight,
             },
             role,
+            treeCopy,
           )
         : null;
 
@@ -561,12 +576,13 @@ const AidFamilyTreePanel = ({
     familyHeadHint,
     familyHeadRelation,
     selectedId,
+    treeCopy,
   ]);
 
   if (!model.hasAny) {
     return (
       <div className="aid-ft aid-ft--empty">
-        <p>{emptyHint}</p>
+        <p>{resolvedEmptyHint}</p>
       </div>
     );
   }
@@ -584,11 +600,10 @@ const AidFamilyTreePanel = ({
       {showHeader ? (
         <header className="aid-ft__header">
           <h3 className="form-section-heading" style={{ margin: 0 }}>
-            Family Tree
+            {t('familyTree')}
           </h3>
           <p className="aid-section-hint" style={{ margin: '0.35rem 0 0' }}>
-            Visual map of the household from Family Registration. Styles mark
-            the family head, late members, and those under guardianship.
+            {t('familyTreeHintLong')}
           </p>
         </header>
       ) : null}

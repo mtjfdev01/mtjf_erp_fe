@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import FormInput from '../../../common/FormInput';
 import mtjfLogo from '../../../../assets/mtjf_logo.png';
 import { emptyConsentForm } from '../aidConstants';
@@ -134,6 +134,7 @@ const AidConsentForm = ({
   onChange,
   readOnly = false,
   applicationNo,
+  uiLang,
 }) => {
   const details = { ...emptyConsentForm(), ...(value || {}) };
   const lang = details.lang === 'en' ? 'en' : 'ur';
@@ -146,6 +147,16 @@ const AidConsentForm = ({
     if (readOnly || !onChange) return;
     onChange({ ...details, ...partial });
   };
+
+  useEffect(() => {
+    if (!uiLang || !onChange || readOnly) return;
+    if ((value?.lang || 'ur') === uiLang) return;
+    onChange({
+      ...emptyConsentForm(),
+      ...(value || {}),
+      lang: uiLang,
+    });
+  }, [uiLang]);
 
   const runCapture = async (field, kind, source) => {
     setBusyKey(field);

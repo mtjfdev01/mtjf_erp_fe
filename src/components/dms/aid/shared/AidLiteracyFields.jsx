@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import {
@@ -7,6 +7,8 @@ import {
   AID_STUDENT_CLASS_TYPES,
   literacyCategoriesFor,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionsForLang } from '../lang/aidUiCopy';
 
 /**
  * Literacy tree (Educated / UnEducated):
@@ -17,9 +19,28 @@ import {
  *            → Laborer | Self Employed | Others
  */
 const AidLiteracyFields = ({ value, onChange, showIncomeAlways = false }) => {
+  const { t, lang } = useAidLang();
+  const dashOption = useMemo(() => [{ value: '', label: t('dash') }], [t]);
+  const literacyStatusOptions = useMemo(
+    () => [...dashOption, ...aidOptionsForLang(AID_LITERACY_STATUS, lang)],
+    [dashOption, lang],
+  );
+  const studentClassOptions = useMemo(
+    () => [...dashOption, ...aidOptionsForLang(AID_STUDENT_CLASSES, lang)],
+    [dashOption, lang],
+  );
+  const studentClassTypeOptions = useMemo(
+    () => [...dashOption, ...aidOptionsForLang(AID_STUDENT_CLASS_TYPES, lang)],
+    [dashOption, lang],
+  );
+
   const status = value?.literacy_status || '';
   const category = value?.literacy_category || '';
   const categories = literacyCategoriesFor(status);
+  const categoryOptions = useMemo(
+    () => [...dashOption, ...aidOptionsForLang(categories, lang)],
+    [categories, dashOption, lang],
+  );
   const categoryAllowed = categories.some((c) => c.value === category);
   const effectiveCategory = categoryAllowed ? category : '';
 
@@ -60,26 +81,27 @@ const AidLiteracyFields = ({ value, onChange, showIncomeAlways = false }) => {
     });
   };
 
+  const categoryLabel =
+    status === 'educated'
+      ? t('educatedStatus')
+      : status === 'uneducated'
+        ? t('uneducatedStatus')
+        : t('statusSelectLiteracy');
+
   return (
     <div className="aid-literacy-fields">
       <div className="form-grid-2">
         <FormSelect
-          label="Literacy"
+          label={t('literacy')}
           value={status}
           onChange={(e) => onStatusChange(e.target.value)}
-          options={[{ value: '', label: '—' }, ...AID_LITERACY_STATUS]}
+          options={literacyStatusOptions}
         />
         <FormSelect
-          label={
-            status === 'educated'
-              ? 'Educated — status'
-              : status === 'uneducated'
-                ? 'UnEducated — status'
-                : 'Status (select Literacy first)'
-          }
+          label={categoryLabel}
           value={effectiveCategory}
           onChange={(e) => onCategoryChange(e.target.value)}
-          options={[{ value: '', label: '—' }, ...categories]}
+          options={categoryOptions}
           disabled={!status}
         />
       </div>
@@ -87,23 +109,23 @@ const AidLiteracyFields = ({ value, onChange, showIncomeAlways = false }) => {
       {needsStudent && (
         <div className="form-grid-2 aid-literacy-student">
           <FormSelect
-            label="Class"
+            label={t('classLabel')}
             value={value.student_class || ''}
             onChange={(e) => patch({ student_class: e.target.value })}
-            options={[{ value: '', label: '—' }, ...AID_STUDENT_CLASSES]}
+            options={studentClassOptions}
           />
           <FormSelect
-            label="Type of class"
+            label={t('typeOfClass')}
             value={value.student_class_type || ''}
             onChange={(e) => patch({ student_class_type: e.target.value })}
-            options={[{ value: '', label: '—' }, ...AID_STUDENT_CLASS_TYPES]}
+            options={studentClassTypeOptions}
           />
           <div className="aid-span-2">
             <FormInput
-              label="Class Name (editable)"
+              label={t('classNameEditable')}
               value={value.student_class_name || ''}
               onChange={(e) => patch({ student_class_name: e.target.value })}
-              placeholder="School / institute / class name"
+              placeholder={t('schoolInstitutePlaceholder')}
             />
           </div>
         </div>
@@ -112,7 +134,7 @@ const AidLiteracyFields = ({ value, onChange, showIncomeAlways = false }) => {
       {needsIncome && (
         <div className="form-grid-2">
           <FormInput
-            label="Monthly Income"
+            label={t('monthlyIncomeLabel')}
             value={value.monthly_income || ''}
             onChange={(e) => patch({ monthly_income: e.target.value })}
             placeholder="PKR"

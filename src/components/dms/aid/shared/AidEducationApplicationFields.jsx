@@ -11,9 +11,10 @@ import {
   emptyEducationHistoryRow,
   emptyScholarshipRow,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
 
-const labelOf = (options, value) =>
-  options.find((o) => o.value === value)?.label || value || '—';
+const labelOf = (options, value, fallbackDash = '—') =>
+  options.find((o) => o.value === value)?.label || value || fallbackDash;
 
 /**
  * Education aid type — Application tab special structure:
@@ -24,6 +25,8 @@ const AidEducationApplicationFields = ({
   onChange,
   readOnly = false,
 }) => {
+  const { t } = useAidLang();
+  const dash = t('dash');
   const details = value || {};
   const history = details.education_history?.length
     ? details.education_history
@@ -76,7 +79,7 @@ const AidEducationApplicationFields = ({
         String(file.type || '').toLowerCase(),
       ) || /\.(jpe?g|png|webp)$/i.test(file.name || '');
     if (!ok) {
-      setUploadError('Only JPG, JPEG, PNG, or WEBP images are allowed');
+      setUploadError(t('imageTypesError'));
       return;
     }
     setUploadingIdx(idx);
@@ -97,7 +100,7 @@ const AidEducationApplicationFields = ({
       });
     } catch (err) {
       setUploadError(
-        err.response?.data?.message || err.message || 'Upload failed',
+        err.response?.data?.message || err.message || t('uploadFailed'),
       );
     } finally {
       setUploadingIdx(null);
@@ -128,14 +131,16 @@ const AidEducationApplicationFields = ({
       <div className="aid-education-application" style={{ marginTop: 12 }}>
         {hasHistory && (
           <div className="aid-family-panel">
-            <h4 className="aid-family-panel__title">Education History</h4>
+            <h4 className="aid-family-panel__title">{t('educationHistory')}</h4>
             <div className="aid-children-list">
               {history.map((row, idx) => (
                 <div key={`edu-hist-ro-${idx}`} className="aid-child-card">
-                  <div className="aid-child-card__title">Record {idx + 1}</div>
+                  <div className="aid-child-card__title">
+                    {t('recordN', { n: idx + 1 })}
+                  </div>
                   <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
                     {[
-                      labelOf(AID_EDUCATION_HISTORY_CLASSES, row.class_level),
+                      labelOf(AID_EDUCATION_HISTORY_CLASSES, row.class_level, dash),
                       row.board_institute,
                       row.year,
                       row.marks_obtained != null && row.total_marks
@@ -144,7 +149,7 @@ const AidEducationApplicationFields = ({
                       row.percentage ? `${row.percentage}%` : null,
                     ]
                       .filter(Boolean)
-                      .join(' · ') || '—'}
+                      .join(' · ') || dash}
                   </p>
                   {row.attachment_url && (
                     <p style={{ fontSize: 13, marginTop: 4 }}>
@@ -153,7 +158,7 @@ const AidEducationApplicationFields = ({
                         target="_blank"
                         rel="noreferrer"
                       >
-                        {row.attachment_name || 'View degree'}
+                        {row.attachment_name || t('viewDegree')}
                       </a>
                     </p>
                   )}
@@ -164,29 +169,31 @@ const AidEducationApplicationFields = ({
         )}
         {hasScholarships && (
           <div className="aid-family-panel" style={{ marginTop: 12 }}>
-            <h4 className="aid-family-panel__title">Scholarship applied for</h4>
+            <h4 className="aid-family-panel__title">{t('scholarshipApplied')}</h4>
             <div className="aid-children-list">
               {scholarships.map((row, idx) => (
                 <div key={`sch-ro-${idx}`} className="aid-child-card">
                   <div className="aid-child-card__title">
-                    Scholarship {idx + 1}
+                    {t('scholarshipN', { n: idx + 1 })}
                   </div>
                   <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
                     {[
-                      labelOf(AID_SCHOLARSHIP_DEGREES, row.current_degree),
+                      labelOf(AID_SCHOLARSHIP_DEGREES, row.current_degree, dash),
                       row.institute_name,
                       row.city,
                       row.annual_fee != null && row.annual_fee !== ''
-                        ? `Fee: ${row.annual_fee}`
+                        ? t('feeLabel', { n: row.annual_fee })
                         : null,
                       row.start_date || row.end_date
-                        ? `${row.start_date || '—'} → ${row.end_date || '—'}`
+                        ? `${row.start_date || dash} → ${row.end_date || dash}`
                         : null,
-                      row.total_years ? `${row.total_years} yr` : null,
-                      labelOf(AID_SCHOLARSHIP_CLASS_MODES, row.class_mode),
+                      row.total_years
+                        ? `${row.total_years} ${t('yrShort')}`
+                        : null,
+                      labelOf(AID_SCHOLARSHIP_CLASS_MODES, row.class_mode, dash),
                     ]
-                      .filter((x) => x && x !== '—')
-                      .join(' · ') || '—'}
+                      .filter((x) => x && x !== dash)
+                      .join(' · ') || dash}
                   </p>
                 </div>
               ))}
@@ -198,13 +205,13 @@ const AidEducationApplicationFields = ({
           <div className="aid-family-panel" style={{ marginTop: 12 }}>
             {details.income_source_before && (
               <p style={{ fontSize: 13, margin: '0 0 8px' }}>
-                <strong>Source of income before this:</strong>{' '}
+                <strong>{t('incomeSourceBeforeRo')}</strong>{' '}
                 {details.income_source_before}
               </p>
             )}
             {details.continue_education_if_not_approved && (
               <p style={{ fontSize: 13, margin: 0 }}>
-                <strong>If not approved, how continue education:</strong>{' '}
+                <strong>{t('continueEducationIfNotRo')}</strong>{' '}
                 {details.continue_education_if_not_approved}
               </p>
             )}
@@ -218,7 +225,7 @@ const AidEducationApplicationFields = ({
     <div className="aid-education-application">
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <div className="aid-family-panel__head">
-          <h4 className="aid-family-panel__title">Education History</h4>
+          <h4 className="aid-family-panel__title">{t('educationHistory')}</h4>
           <button
             type="button"
             className="aid-mini-btn aid-mini-btn--add"
@@ -228,7 +235,7 @@ const AidEducationApplicationFields = ({
               })
             }
           >
-            + Add row
+            {t('addRow')}
           </button>
         </div>
         {uploadError && (
@@ -238,7 +245,9 @@ const AidEducationApplicationFields = ({
           {history.map((row, idx) => (
             <div key={`edu-hist-${idx}`} className="aid-child-card">
               <div className="aid-repeat-item__head">
-                <div className="aid-child-card__title">Record {idx + 1}</div>
+                <div className="aid-child-card__title">
+                  {t('recordN', { n: idx + 1 })}
+                </div>
                 {history.length > 1 && (
                   <button
                     type="button"
@@ -249,37 +258,37 @@ const AidEducationApplicationFields = ({
                       })
                     }
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 )}
               </div>
               <div className="form-grid-2">
                 <FormSelect
-                  label="Class"
+                  label={t('classLabel')}
                   value={row.class_level || ''}
                   onChange={(e) =>
                     updateHistory(idx, { class_level: e.target.value })
                   }
                   options={[
-                    { value: '', label: '—' },
+                    { value: '', label: dash },
                     ...AID_EDUCATION_HISTORY_CLASSES,
                   ]}
                 />
                 <FormInput
-                  label="Board / Institute"
+                  label={t('boardInstitute')}
                   value={row.board_institute || ''}
                   onChange={(e) =>
                     updateHistory(idx, { board_institute: e.target.value })
                   }
                 />
                 <FormInput
-                  label="Year"
+                  label={t('year')}
                   value={row.year || ''}
                   onChange={(e) => updateHistory(idx, { year: e.target.value })}
-                  placeholder="e.g. 2022"
+                  placeholder={t('yearPlaceholder')}
                 />
                 <FormInput
-                  label="Mark obtained"
+                  label={t('markObtained')}
                   type="number"
                   min="0"
                   value={row.marks_obtained ?? ''}
@@ -288,7 +297,7 @@ const AidEducationApplicationFields = ({
                   }
                 />
                 <FormInput
-                  label="Total mark"
+                  label={t('totalMark')}
                   type="number"
                   min="0"
                   value={row.total_marks ?? ''}
@@ -297,14 +306,14 @@ const AidEducationApplicationFields = ({
                   }
                 />
                 <FormInput
-                  label="%age"
+                  label={t('percentage')}
                   value={row.percentage ?? ''}
                   readOnly
-                  placeholder="Auto"
+                  placeholder={t('auto')}
                 />
               </div>
               <label className="aid-file-label" style={{ marginTop: 8 }}>
-                Attachments (degree)
+                {t('attachmentsDegree')}
                 <input
                   type="file"
                   accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
@@ -317,12 +326,12 @@ const AidEducationApplicationFields = ({
                 />
               </label>
               {uploadingIdx === idx && (
-                <p className="aid-section-hint">Uploading…</p>
+                <p className="aid-section-hint">{t('uploading')}</p>
               )}
               {row.attachment_url && (
                 <p style={{ fontSize: 13, marginTop: 6 }}>
                   <a href={row.attachment_url} target="_blank" rel="noreferrer">
-                    {row.attachment_name || 'View degree'}
+                    {row.attachment_name || t('viewDegree')}
                   </a>
                   <button
                     type="button"
@@ -335,7 +344,7 @@ const AidEducationApplicationFields = ({
                       })
                     }
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 </p>
               )}
@@ -346,7 +355,7 @@ const AidEducationApplicationFields = ({
 
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <div className="aid-family-panel__head">
-          <h4 className="aid-family-panel__title">Scholarship applied for</h4>
+          <h4 className="aid-family-panel__title">{t('scholarshipApplied')}</h4>
           <button
             type="button"
             className="aid-mini-btn aid-mini-btn--add"
@@ -356,14 +365,16 @@ const AidEducationApplicationFields = ({
               })
             }
           >
-            + Add row
+            {t('addRow')}
           </button>
         </div>
         <div className="aid-children-list">
           {scholarships.map((row, idx) => (
             <div key={`sch-${idx}`} className="aid-child-card">
               <div className="aid-repeat-item__head">
-                <div className="aid-child-card__title">Scholarship {idx + 1}</div>
+                <div className="aid-child-card__title">
+                  {t('scholarshipN', { n: idx + 1 })}
+                </div>
                 {scholarships.length > 1 && (
                   <button
                     type="button"
@@ -374,38 +385,38 @@ const AidEducationApplicationFields = ({
                       })
                     }
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 )}
               </div>
               <div className="form-grid-2">
                 <FormSelect
-                  label="Current degree"
+                  label={t('currentDegree')}
                   value={row.current_degree || ''}
                   onChange={(e) =>
                     updateScholarship(idx, { current_degree: e.target.value })
                   }
                   options={[
-                    { value: '', label: '—' },
+                    { value: '', label: dash },
                     ...AID_SCHOLARSHIP_DEGREES,
                   ]}
                 />
                 <FormInput
-                  label="Institute name"
+                  label={t('instituteName')}
                   value={row.institute_name || ''}
                   onChange={(e) =>
                     updateScholarship(idx, { institute_name: e.target.value })
                   }
                 />
                 <FormInput
-                  label="City"
+                  label={t('city')}
                   value={row.city || ''}
                   onChange={(e) =>
                     updateScholarship(idx, { city: e.target.value })
                   }
                 />
                 <FormInput
-                  label="Annual fee"
+                  label={t('annualFee')}
                   type="number"
                   min="0"
                   value={row.annual_fee ?? ''}
@@ -414,7 +425,7 @@ const AidEducationApplicationFields = ({
                   }
                 />
                 <FormInput
-                  label="Starting date"
+                  label={t('startingDate')}
                   type="date"
                   value={row.start_date || ''}
                   onChange={(e) =>
@@ -422,7 +433,7 @@ const AidEducationApplicationFields = ({
                   }
                 />
                 <FormInput
-                  label="End date"
+                  label={t('endDate')}
                   type="date"
                   value={row.end_date || ''}
                   onChange={(e) =>
@@ -430,7 +441,7 @@ const AidEducationApplicationFields = ({
                   }
                 />
                 <FormInput
-                  label="Total years"
+                  label={t('totalYears')}
                   type="number"
                   min="0"
                   step="0.5"
@@ -440,13 +451,13 @@ const AidEducationApplicationFields = ({
                   }
                 />
                 <FormSelect
-                  label="Class"
+                  label={t('classLabel')}
                   value={row.class_mode || ''}
                   onChange={(e) =>
                     updateScholarship(idx, { class_mode: e.target.value })
                   }
                   options={[
-                    { value: '', label: '—' },
+                    { value: '', label: dash },
                     ...AID_SCHOLARSHIP_CLASS_MODES,
                   ]}
                 />
@@ -458,13 +469,13 @@ const AidEducationApplicationFields = ({
 
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
         <FormTextarea
-          label="What was the source of income before this?"
+          label={t('incomeSourceBefore')}
           value={details.income_source_before || ''}
           onChange={(e) => patch({ income_source_before: e.target.value })}
           rows={2}
         />
         <FormTextarea
-          label="If your application has not been approved, how can you continue your education?"
+          label={t('continueEducationIfNot')}
           value={details.continue_education_if_not_approved || ''}
           onChange={(e) =>
             patch({ continue_education_if_not_approved: e.target.value })

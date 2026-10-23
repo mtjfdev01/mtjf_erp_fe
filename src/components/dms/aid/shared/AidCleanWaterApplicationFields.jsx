@@ -1,6 +1,7 @@
 import React from 'react';
 import FormInput from '../../../common/FormInput';
 import FormTextarea from '../../../common/FormTextarea';
+import { useAidLang } from '../lang/AidLangContext';
 
 /**
  * Clean Water aid type — Application tab special structure
@@ -10,6 +11,8 @@ const AidCleanWaterApplicationFields = ({
   onChange,
   readOnly = false,
 }) => {
+  const { t } = useAidLang();
+  const dash = t('dash');
   const details = value || {};
 
   const patch = (partial) => {
@@ -29,28 +32,28 @@ const AidCleanWaterApplicationFields = ({
     return (
       <div className="aid-clean-water" style={{ marginTop: 12 }}>
         <div className="aid-family-panel">
-          <h4 className="aid-family-panel__title">Clean Water Program</h4>
+          <h4 className="aid-family-panel__title">{t('cleanWaterProgram')}</h4>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            <strong>Existing source of water:</strong>{' '}
-            {details.existing_source_of_water || '—'}
+            <strong>{t('existingWaterSource')}:</strong>{' '}
+            {details.existing_source_of_water || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            <strong>Distance from home:</strong>{' '}
-            {details.distance_from_home || '—'}
+            <strong>{t('distanceFromHome')}:</strong>{' '}
+            {details.distance_from_home || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            <strong>Duration without clean water:</strong>{' '}
-            {details.duration_without_clean_water || '—'}
+            <strong>{t('durationWithoutWater')}:</strong>{' '}
+            {details.duration_without_clean_water || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            <strong>Location of project:</strong>{' '}
-            {details.location_of_project || '—'}
+            <strong>{t('projectLocation')}:</strong>{' '}
+            {details.location_of_project || dash}
           </p>
           <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>
-            <strong>Community contribution:</strong>{' '}
+            <strong>{t('communityContribution')}:</strong>{' '}
             {details.community_contribution_amount
               ? `PKR ${details.community_contribution_amount}`
-              : '—'}
+              : dash}
           </p>
         </div>
       </div>
@@ -60,32 +63,32 @@ const AidCleanWaterApplicationFields = ({
   return (
     <div className="aid-clean-water-application">
       <div className="aid-family-panel" style={{ marginTop: 12 }}>
-        <h4 className="aid-family-panel__title">Clean Water Program</h4>
+        <h4 className="aid-family-panel__title">{t('cleanWaterProgram')}</h4>
         <div className="form-grid-2">
           <FormInput
-            label="Existing source of water"
+            label={t('existingWaterSource')}
             value={details.existing_source_of_water || ''}
             onChange={(e) =>
               patch({ existing_source_of_water: e.target.value })
             }
-            placeholder="e.g., well, tanker, canal…"
+            placeholder={t('waterSourcePlaceholder')}
           />
           <FormInput
-            label="Distance from home"
+            label={t('distanceFromHome')}
             value={details.distance_from_home || ''}
             onChange={(e) => patch({ distance_from_home: e.target.value })}
-            placeholder="e.g., 2 km"
+            placeholder={t('distancePlaceholder')}
           />
           <FormInput
-            label="Duration without clean water"
+            label={t('durationWithoutWater')}
             value={details.duration_without_clean_water || ''}
             onChange={(e) =>
               patch({ duration_without_clean_water: e.target.value })
             }
-            placeholder="e.g., 6 months"
+            placeholder={t('durationPlaceholder')}
           />
           <FormInput
-            label="Community contribution (Amount)"
+            label={t('communityContribution')}
             type="number"
             min="0"
             step="1"
@@ -98,11 +101,11 @@ const AidCleanWaterApplicationFields = ({
         </div>
         <div style={{ marginTop: 12 }}>
           <FormTextarea
-            label="Location of project"
+            label={t('projectLocation')}
             value={details.location_of_project || ''}
             onChange={(e) => patch({ location_of_project: e.target.value })}
             rows={2}
-            placeholder="Village / area / landmark…"
+            placeholder={t('projectLocationPlaceholder')}
           />
         </div>
       </div>

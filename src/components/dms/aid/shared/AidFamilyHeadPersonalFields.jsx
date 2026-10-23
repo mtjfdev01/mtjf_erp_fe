@@ -20,6 +20,8 @@ import {
   joinVulnerabilityList,
   parseVulnerabilityList,
 } from '../aidConstants';
+import { useAidLang } from '../lang/AidLangContext';
+import { aidOptionLabel, aidOptionsForLang } from '../lang/aidUiCopy';
 import AidRegistrationAside from './AidRegistrationAside';
 import {
   PAKISTAN_PROVINCES,
@@ -74,10 +76,10 @@ const roleLabel = (role) => {
 const AidFamilyHeadPersonalFields = ({
   value,
   onChange,
-  title = 'Identity of family head',
-  subtitle = 'CNIC is checked against the family registry as you type, to catch repeat or duplicate applications.',
-  contactTitle = 'Contact & address',
-  contactSubtitle = 'The investigator visits this address; add a landmark.',
+  title,
+  subtitle,
+  contactTitle,
+  contactSubtitle,
   showTitle = true,
   showContact = true,
   /** Residence type + monthly rent (hidden when collected elsewhere, e.g. AidResidentHousing). */
@@ -85,7 +87,7 @@ const AidFamilyHeadPersonalFields = ({
   showExtended = true,
   showPhoto = true,
   showSidebar,
-  cnicLabel = 'CNIC number',
+  cnicLabel,
   cnicPlaceholder = '36103-4459110-2',
   onCnicChange,
   cnicHint = '',
@@ -96,6 +98,16 @@ const AidFamilyHeadPersonalFields = ({
   /** When false, personal fields are optional (spouse / sons / other relatives). */
   fieldsRequired = true,
 }) => {
+  const { t, lang } = useAidLang();
+  const resolvedTitle = title ?? t('identityFamilyHead');
+  const resolvedSubtitle =
+    subtitle ?? t('identityBeneficiarySubtitle');
+  const resolvedContactTitle = contactTitle ?? t('contactAddress');
+  const resolvedContactSubtitle =
+    contactSubtitle ?? t('contactAddressSubtitle');
+  const resolvedCnicLabel = cnicLabel ?? t('cnicNumber');
+  const dash = t('dash');
+
   const Req = () =>
     fieldsRequired ? <span className="required-mark">*</span> : null;
   const patch = (partial) => onChange({ ...value, ...partial });
@@ -362,9 +374,39 @@ const AidFamilyHeadPersonalFields = ({
     });
   };
 
-  const genderOptions = ['female', 'male']
-    .map((v) => AID_GENDERS.find((g) => g.value === v))
-    .filter(Boolean);
+  const genderOptions = useMemo(
+    () =>
+      aidOptionsForLang(
+        ['female', 'male']
+          .map((v) => AID_GENDERS.find((g) => g.value === v))
+          .filter(Boolean),
+        lang,
+      ),
+    [lang],
+  );
+
+  const maritalOptions = useMemo(
+    () => [{ value: '', label: dash }, ...aidOptionsForLang(AID_MARITAL_STATUS, lang)],
+    [dash, lang],
+  );
+
+  const residentOptions = useMemo(
+    () => [
+      { value: '', label: dash },
+      ...aidOptionsForLang(AID_RESIDENT_TYPES, lang),
+    ],
+    [dash, lang],
+  );
+
+  const nectaOptions = useMemo(
+    () => [{ value: '', label: dash }, ...aidOptionsForLang(AID_NECTA_STATUS, lang)],
+    [dash, lang],
+  );
+
+  const bispOptions = useMemo(
+    () => [{ value: '', label: dash }, ...aidOptionsForLang(AID_BISP_STATUS, lang)],
+    [dash, lang],
+  );
 
   const provinceOptions = useMemo(() => {
     const opts = [...provinceSelectOptions];
@@ -398,9 +440,9 @@ const AidFamilyHeadPersonalFields = ({
       <section className="aid-fh-card aid-fh-card--identity">
         {showTitle ? (
           <header className="aid-fh-personal__header">
-            <h4 className="aid-fh-personal__title">{title}</h4>
-            {subtitle ? (
-              <p className="aid-fh-personal__subtitle">{subtitle}</p>
+            <h4 className="aid-fh-personal__title">{resolvedTitle}</h4>
+            {resolvedSubtitle ? (
+              <p className="aid-fh-personal__subtitle">{resolvedSubtitle}</p>
             ) : null}
           </header>
         ) : null}
@@ -414,7 +456,7 @@ const AidFamilyHeadPersonalFields = ({
                 className={`aid-fh-photo__frame${previewUrl ? ' has-image' : ''}`}
               >
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Photo of head" />
+                  <img src={previewUrl} alt={t('photoOfHead')} />
                 ) : (
                   <>
                     <svg
@@ -431,7 +473,7 @@ const AidFamilyHeadPersonalFields = ({
                         d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.5-1.632z"
                       />
                     </svg>
-                    <span>Photo of head</span>
+                    <span>{t('photoOfHead')}</span>
                   </>
                 )}
               </div>
@@ -448,7 +490,7 @@ const AidFamilyHeadPersonalFields = ({
                 className="aid-fh-photo__btn"
                 onClick={() => photoInputRef.current?.click()}
               >
-                Capture / upload
+                {t('captureUpload')}
               </button>
             </div>
           ) : null}
@@ -459,7 +501,7 @@ const AidFamilyHeadPersonalFields = ({
                 <FormInput
                   label={
                     <>
-                      {cnicLabel} <Req />
+                      {resolvedCnicLabel} <Req />
                     </>
                   }
                   value={formatCnicInput(value?.cnic || '')}
@@ -469,7 +511,7 @@ const AidFamilyHeadPersonalFields = ({
                   autoComplete="off"
                 />
                 {cnicLookingUp || (sidebarEnabled && registryLookingUp) ? (
-                  <p className="aid-fh-personal__cnic-hint">Searching…</p>
+                  <p className="aid-fh-personal__cnic-hint">{t('searching')}</p>
                 ) : cnicHint ? (
                   <p
                     className={`aid-fh-personal__cnic-hint${
@@ -482,7 +524,7 @@ const AidFamilyHeadPersonalFields = ({
               </div>
 
               <FormInput
-                label="CNIC expiry"
+                label={t('cnicExpiry')}
                 type="date"
                 value={value?.cnic_expiry || ''}
                 onChange={(e) => patch({ cnic_expiry: e.target.value })}
@@ -491,7 +533,7 @@ const AidFamilyHeadPersonalFields = ({
               <FormInput
                 label={
                   <>
-                    Full name (CNIC) <Req />
+                    {t('fullNameCnic')} <Req />
                   </>
                 }
                 required={fieldsRequired}
@@ -501,7 +543,7 @@ const AidFamilyHeadPersonalFields = ({
               />
 
               <FormInput
-                label="Name in Urdu"
+                label={t('nameInUrdu')}
                 value={value?.name_urdu || ''}
                 onChange={(e) => patch({ name_urdu: e.target.value })}
                 placeholder="نام"
@@ -512,7 +554,8 @@ const AidFamilyHeadPersonalFields = ({
               <FormInput
                 label={
                   <>
-                    Father / husband<Req />
+                    {t('fatherOrHusband')}
+                    <Req />
                   </>
                 }
                 required={fieldsRequired}
@@ -524,21 +567,21 @@ const AidFamilyHeadPersonalFields = ({
               />
 
               <FormSelect
-                label="Marital status"
+                label={t('maritalStatus')}
                 required={fieldsRequired}
                 value={value?.marital_status || ''}
                 onChange={(e) => patch({ marital_status: e.target.value })}
-                options={[{ value: '', label: '—' }, ...AID_MARITAL_STATUS]}
+                options={maritalOptions}
               />
 
               <div className="aid-fh-personal__dob">
                 <div className="aid-fh-personal__dob-label-row">
                   <span className="aid-fh-personal__dob-label">
-                    Date of birth <Req />
+                    {t('dateOfBirth')} <Req />
                   </span>
                   {age != null ? (
                     <span className="aid-fh-personal__age">
-                      Age: {age} yrs
+                      {t('ageYrs', { n: age })}
                     </span>
                   ) : null}
                 </div>
@@ -553,7 +596,7 @@ const AidFamilyHeadPersonalFields = ({
 
               <div className="aid-fh-gender">
                 <span className="aid-fh-gender__label">
-                  Gender <Req />
+                  {t('gender')} <Req />
                 </span>
                 <div className="aid-fh-gender__options" role="radiogroup">
                   {genderOptions.map((opt) => {
@@ -567,12 +610,12 @@ const AidFamilyHeadPersonalFields = ({
                       >
                         <input
                           type="radio"
-                          name={`aid-gender-${title}`}
+                          name={`aid-gender-${resolvedTitle}`}
                           value={opt.value}
                           checked={active}
                           onChange={() => patch({ gender: opt.value })}
                         />
-                        <span>{opt.label}</span>
+                        <span>{aidOptionLabel(opt, lang)}</span>
                       </label>
                     );
                   })}
@@ -580,7 +623,7 @@ const AidFamilyHeadPersonalFields = ({
               </div>
 
               <FormInput
-                label="Caste"
+                label={t('caste')}
                 value={value?.caste || ''}
                 onChange={(e) => patch({ caste: e.target.value })}
                 placeholder="e.g. Rajput, Jat"
@@ -596,9 +639,11 @@ const AidFamilyHeadPersonalFields = ({
       {showContact ? (
         <section className="aid-fh-card aid-fh-card--contact">
           <header className="aid-fh-personal__header">
-            <h4 className="aid-fh-personal__title">{contactTitle}</h4>
-            {contactSubtitle ? (
-              <p className="aid-fh-personal__subtitle">{contactSubtitle}</p>
+            <h4 className="aid-fh-personal__title">{resolvedContactTitle}</h4>
+            {resolvedContactSubtitle ? (
+              <p className="aid-fh-personal__subtitle">
+                {resolvedContactSubtitle}
+              </p>
             ) : null}
           </header>
 
@@ -606,7 +651,7 @@ const AidFamilyHeadPersonalFields = ({
             <FormInput
               label={
                 <>
-                  Mobile <Req />
+                  {t('mobile')} <Req />
                 </>
               }
               required={fieldsRequired}
@@ -619,13 +664,13 @@ const AidFamilyHeadPersonalFields = ({
               autoComplete="tel"
             />
             <FormInput
-              label="Alternate contact"
+              label={t('alternateContact')}
               value={value?.phone_alternate || ''}
               onChange={(e) => patch({ phone_alternate: e.target.value })}
               placeholder="0301... (son / neighbour)"
             />
             <FormSelect
-              label="Province"
+              label={t('province')}
               value={value?.province || ''}
               onChange={(e) =>
                 patch({
@@ -640,7 +685,7 @@ const AidFamilyHeadPersonalFields = ({
             <FormSelect
               label={
                 <>
-                  District <Req />
+                  {t('district')} <Req />
                 </>
               }
               required={fieldsRequired}
@@ -657,7 +702,7 @@ const AidFamilyHeadPersonalFields = ({
             <FormSelect
               label={
                 <>
-                  Tehsil <Req />
+                  {t('tehsil')} <Req />
                 </>
               }
               required={fieldsRequired}
@@ -670,20 +715,20 @@ const AidFamilyHeadPersonalFields = ({
 
           <div className="aid-fh-contact__grid aid-fh-contact__grid--mid">
             <FormSelect
-              label="City"
+              label={t('city')}
               value={value?.city || ''}
               onChange={(e) => patch({ city: e.target.value })}
               options={cityOptions}
               disabled={!value?.province}
             />
             <FormInput
-              label="Union council / village"
+              label={t('unionCouncil')}
               value={value?.union_council || ''}
               onChange={(e) => patch({ union_council: e.target.value })}
               placeholder="UC / Chak no."
             />
             <FormInput
-              label="Land Mark"
+              label={t('landmark')}
               value={value?.landmark || ''}
               onChange={(e) => patch({ landmark: e.target.value })}
               placeholder="Near main mosque / chowk"
@@ -697,7 +742,7 @@ const AidFamilyHeadPersonalFields = ({
           >
             <div className="aid-fh-contact__address">
               <FormTextarea
-                label="Full address as per CNIC"
+                label={t('addressAsPerCnic')}
                 required={fieldsRequired}
                 value={value?.address || ''}
                 onChange={(e) => patch({ address: e.target.value })}
@@ -707,7 +752,7 @@ const AidFamilyHeadPersonalFields = ({
             </div>
             <div className="aid-fh-contact__address">
               <FormTextarea
-                label="Current address"
+                label={t('currentAddress')}
                 required={fieldsRequired}
                 value={value?.current_address || ''}
                 onChange={(e) => patch({ current_address: e.target.value })}
@@ -718,7 +763,7 @@ const AidFamilyHeadPersonalFields = ({
             {showResidenceFields ? (
               <>
                 <FormSelect
-                  label="Residence"
+                  label={t('residence')}
                   value={value?.resident_type || ''}
                   onChange={(e) => {
                     const nextType = e.target.value;
@@ -727,10 +772,10 @@ const AidFamilyHeadPersonalFields = ({
                       ...(nextType !== 'rented' ? { rented_amount: '' } : {}),
                     });
                   }}
-                  options={[{ value: '', label: '—' }, ...AID_RESIDENT_TYPES]}
+                  options={residentOptions}
                 />
                 <FormInput
-                  label="Monthly rent (PKR)"
+                  label={t('monthlyRent')}
                   type="number"
                   min="0"
                   disabled={!isRented}
@@ -749,21 +794,21 @@ const AidFamilyHeadPersonalFields = ({
   const extended = showExtended ? (
     <section className="aid-fh-card aid-fh-card--extended">
       <header className="aid-fh-personal__header">
-        <h4 className="aid-fh-personal__title">Circumstances</h4>
+        <h4 className="aid-fh-personal__title">{t('circumstances')}</h4>
         <p className="aid-fh-personal__subtitle">
-          Occupation, literacy, vulnerability, and disability details.
+          {t('circumstancesSubtitle')}
         </p>
       </header>
 
       <div className="aid-fh-personal__grid aid-fh-personal__grid--circumstances">
         <FormSelect
-          label="Profession"
+          label={t('profession')}
           value={value?.occupation || ''}
           onChange={(e) => patch({ occupation: e.target.value })}
           options={[{ value: '', label: '—' }, ...AID_PROFESSIONS]}
         />
         <FormInput
-          label="Monthly Income (PKR)"
+          label={t('monthlyIncome')}
           type="number"
           min="0"
           value={value?.monthly_income ?? ''}
@@ -771,31 +816,31 @@ const AidFamilyHeadPersonalFields = ({
           placeholder="e.g. 20000"
         />
         <FormSelect
-          label="Literacy"
+          label={t('literacy')}
           value={value?.education_level || ''}
           onChange={(e) => patch({ education_level: e.target.value })}
           options={[
-            { value: '', label: '—' },
-            ...AID_LITERACY_EDUCATION_OPTIONS,
+            { value: '', label: dash },
+            ...aidOptionsForLang(AID_LITERACY_EDUCATION_OPTIONS, lang),
           ]}
         />
         <FormSelect
-          label="NACTA Clearance Status"
+          label={t('nactaStatus')}
           value={value?.necta_status || ''}
           onChange={(e) => patch({ necta_status: e.target.value })}
-          options={[{ value: '', label: '—' }, ...AID_NECTA_STATUS]}
+          options={nectaOptions}
         />
         <FormSelect
-          label="BISP eligible"
+          label={t('bispEligible')}
           value={value?.bisp_status || ''}
           onChange={(e) => patch({ bisp_status: e.target.value })}
-          options={[{ value: '', label: '—' }, ...AID_BISP_STATUS]}
+          options={bispOptions}
         />
       </div>
 
       <div className="aid-fh-personal__vuln">
         <p className="aid-fh-personal__vuln-label">
-          Vulnerability Categories (Select all that apply)
+          {t('vulnerabilityCategoriesFull')}
         </p>
         <div className="aid-fh-personal__chips" role="group">
           {AID_VULNERABILITY_CHIPS.map((chip) => {
@@ -841,14 +886,14 @@ const AidFamilyHeadPersonalFields = ({
             }
           />
           <span className="aid-fh-personal__disability-copy">
-            <strong>Has Physical Disability</strong>
+            <strong>{t('hasPhysicalDisability')}</strong>
           </span>
         </label>
         {value?.has_disability ? (
           <>
             <div className="aid-fh-personal__disability-type">
               <FormInput
-                label="Disability Type / Medical Detail"
+                label={t('disabilityType')}
                 value={value?.disability_type || ''}
                 onChange={(e) => patch({ disability_type: e.target.value })}
                 placeholder="e.g. Leg impairment, Visual, Hearing, Spinal"
@@ -856,7 +901,7 @@ const AidFamilyHeadPersonalFields = ({
             </div>
             <div className="aid-fh-personal__disability-cert">
               <span className="aid-fh-personal__disability-cert-label">
-                Disability certificate
+                {t('disabilityCert')}
               </span>
               {value?.disability_certificate_url ? (
                 <div className="aid-fh-personal__disability-cert-file">
@@ -865,7 +910,7 @@ const AidFamilyHeadPersonalFields = ({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    {value.disability_certificate_name || 'View certificate'}
+                    {value.disability_certificate_name || t('viewCertificate')}
                   </a>
                   <button
                     type="button"
@@ -877,15 +922,15 @@ const AidFamilyHeadPersonalFields = ({
                       })
                     }
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 </div>
               ) : (
                 <label className="aid-app-docs__upload">
                   <span>
                     {disabilityCertUploading
-                      ? 'Uploading…'
-                      : 'Attach certificate (JPG / PNG / PDF)'}
+                      ? t('uploading')
+                      : t('attachCertificate')}
                   </span>
                   <input
                     ref={disabilityCertInputRef}
