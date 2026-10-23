@@ -14,6 +14,7 @@ import SearchableDropdown from '../../../common/SearchableDropdown';
 import { projectCards } from '../../../../utils/program';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission, isSuperAdmin, canReconcileRecurring } from '../../../../utils/permissions';
+import { dispatchListDataChanged } from '../../../../hooks/useListAutoRefresh';
 
 const INTERVAL_OPTIONS = [
   { value: 'day', label: 'Daily' },
@@ -267,6 +268,7 @@ const RecurringDonationForm = ({ mode = 'add' }) => {
       if (!res.data?.success) {
         throw new Error(res.data?.message || 'Save failed');
       }
+      dispatchListDataChanged('donations');
       const savedId = isEdit ? id : res.data?.data?.id;
       const toUpload =
         attachmentsRef.current?.collectForSubmit?.() || pendingAttachments;

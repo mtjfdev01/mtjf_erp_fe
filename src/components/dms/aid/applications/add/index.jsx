@@ -37,6 +37,13 @@ import AidApplicationDocsIntake from '../../shared/AidApplicationDocsIntake';
 import { downloadAsPng } from '../../shared/downloadAsPng';
 import { AidLangProvider, useAidLang } from '../../lang/AidLangContext';
 import AidLangToggle from '../../lang/AidLangToggle';
+import { getOfflineMode } from '../../../../../offline/mode';
+import {
+  saveAidFormDraft,
+  loadAidFormDraft,
+  clearAidFormDraft,
+} from '../../../../../offline/aidOffline';
+import { dispatchListDataChanged } from '../../../../../hooks/useListAutoRefresh';
 import {
   AID_REQUEST_TYPES,
   AID_CASE_SOURCES,
@@ -596,8 +603,95 @@ const AidApplicationAddInner = () => {
   const zakatCaptureRef = useRef(null);
   const consentCaptureRef = useRef(null);
   const [pngDownloading, setPngDownloading] = useState(false);
+  const [offlineDraftReady, setOfflineDraftReady] = useState(false);
   const isDraftEdit = isEdit && editStatus === 'draft';
   const draftsListPath = '/dms/aid/applications/drafts/list';
+  const offlineFormKey = `aid_form_${isEdit ? editId : 'new'}`;
+
+  // Restore offline form snapshot (survives tab switches / reload in offline mode)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      if (!getOfflineMode()) {
+        setOfflineDraftReady(true);
+        return;
+      }
+      try {
+        const snap = await loadAidFormDraft(offlineFormKey);
+        if (cancelled || !snap) {
+          setOfflineDraftReady(true);
+          return;
+        }
+        if (snap.form) setForm(snap.form);
+        if (snap.beneficiary) setBeneficiary(snap.beneficiary);
+        if (snap.familyHeads) setFamilyHeads(snap.familyHeads);
+        if (snap.spouse) setSpouse(snap.spouse);
+        if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
+        if (snap.formTab) setFormTab(snap.formTab);
+        if (snap.educationDetails) setEducationDetails(snap.educationDetails);
+        if (snap.rationDetails) setRationDetails(snap.rationDetails);
+        if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
+        if (snap.financialAssistanceDetails) {
+          setFinancialAssistanceDetails(snap.financialAssistanceDetails);
+        }
+        if (snap.cleanWaterDetails) setCleanWaterDetails(snap.cleanWaterDetails);
+        if (snap.zakatPermission) setZakatPermission(snap.zakatPermission);
+        if (snap.consentForm) setConsentForm(snap.consentForm);
+        if (snap.applicationDocs) setApplicationDocs(snap.applicationDocs);
+        if (snap.beneficiaryMode) setBeneficiaryMode(snap.beneficiaryMode);
+      } finally {
+        if (!cancelled) setOfflineDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [offlineFormKey]);
+
+  // Autosave full intake state while offline (including tab changes)
+  useEffect(() => {
+    if (!offlineDraftReady || !getOfflineMode()) return undefined;
+    const t = setTimeout(() => {
+      saveAidFormDraft(offlineFormKey, {
+        form,
+        formTab,
+        beneficiary,
+        familyHeads,
+        spouse,
+        beneficiaryMembers,
+        educationDetails,
+        rationDetails,
+        marriageGiftDetails,
+        financialAssistanceDetails,
+        cleanWaterDetails,
+        zakatPermission,
+        consentForm,
+        applicationDocs,
+        beneficiaryMode,
+        beneficiaryId,
+      }).catch(() => {});
+    }, 400);
+    return () => clearTimeout(t);
+  }, [
+    offlineDraftReady,
+    offlineFormKey,
+    form,
+    formTab,
+    beneficiary,
+    familyHeads,
+    spouse,
+    beneficiaryMembers,
+    educationDetails,
+    rationDetails,
+    marriageGiftDetails,
+    financialAssistanceDetails,
+    cleanWaterDetails,
+    zakatPermission,
+    consentForm,
+    applicationDocs,
+    beneficiaryMode,
+    beneficiaryId,
+  ]);
 
   const hydrateFromApplication = useCallback(async (appId) => {
     setLoadingEdit(true);
@@ -1429,6 +1523,13 @@ const AidApplicationAddInner = () => {
         savedId = res.data?.data?.id;
         toast.success('Saved as draft — open Data Entry to consider for verification');
       }
+      try {
+        await clearAidFormDraft(offlineFormKey);
+      } catch {
+        /* ignore */
+      }
+
+      dispatchListDataChanged('aid');
 
       if (savedId) {
         const uploads = [];

@@ -17,11 +17,13 @@ const OfflineModeControls = ({ compact = false }) => {
     localCacheCount,
     isSyncing,
     isClearing,
+    isLockingAid,
     toggleOfflineMode,
     syncNow,
     clearOfflineCache,
   } = useOffline();
   const [showClearModal, setShowClearModal] = useState(false);
+  const busy = isSyncing || isClearing || isLockingAid;
 
   const handleClearConfirm = async () => {
     setShowClearModal(false);
@@ -48,6 +50,7 @@ const OfflineModeControls = ({ compact = false }) => {
           <input
             type="checkbox"
             checked={offlineMode}
+            disabled={busy}
             onChange={() => toggleOfflineMode()}
           />
           <span className="offline-controls__track">
@@ -55,14 +58,20 @@ const OfflineModeControls = ({ compact = false }) => {
           </span>
           <span className="offline-controls__label">
             {offlineMode ? <FiCloudOff /> : <FiCloud />}
-            <span>{offlineMode ? 'Offline' : 'Online'}</span>
+            <span>
+              {isLockingAid
+                ? 'Locking…'
+                : offlineMode
+                  ? 'Offline'
+                  : 'Online'}
+            </span>
           </span>
         </label>
         <button
           type="button"
           className="offline-controls__sync"
           onClick={() => syncNow()}
-          disabled={isSyncing || isClearing || pendingCount === 0 || !networkOnline}
+          disabled={busy || pendingCount === 0 || !networkOnline}
           title={
             !networkOnline
               ? 'Connect to internet to sync'
@@ -79,7 +88,7 @@ const OfflineModeControls = ({ compact = false }) => {
             type="button"
             className="offline-controls__clear"
             onClick={() => setShowClearModal(true)}
-            disabled={isClearing || isSyncing || localCacheCount === 0}
+            disabled={busy || localCacheCount === 0}
             title={
               localCacheCount === 0
                 ? 'No offline data stored'

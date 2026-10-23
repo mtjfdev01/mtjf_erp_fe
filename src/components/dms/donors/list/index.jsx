@@ -453,13 +453,11 @@ const DonorsList = () => {
     fetchDonors();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
-  useOfflineDataRefresh(() => fetchDonors(), [
-    currentPage,
-    pageSize,
-    sortField,
-    sortOrder,
-    appliedFilters,
-  ]);
+  useOfflineDataRefresh(
+    () => fetchDonors(),
+    [currentPage, pageSize, sortField, sortOrder, appliedFilters],
+    ['donations'],
+  );
 
   const fetchDonors = async () => {
     try {

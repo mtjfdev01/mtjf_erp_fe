@@ -409,13 +409,11 @@ const OnlineDonationsList = ({
     fetchDonations();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
-  useOfflineDataRefresh(() => fetchDonations(), [
-    currentPage,
-    pageSize,
-    sortField,
-    sortOrder,
-    appliedFilters,
-  ]);
+  useOfflineDataRefresh(
+    () => fetchDonations(),
+    [currentPage, pageSize, sortField, sortOrder, appliedFilters],
+    ['donations'],
+  );
 
   // Live donation attempt notification → refresh list while this page is open
   useNotificationListRefresh(() => fetchDonations(), {

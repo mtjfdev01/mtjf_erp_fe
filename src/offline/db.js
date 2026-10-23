@@ -1,10 +1,13 @@
 const DB_NAME = 'mtjf_dms_offline';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 const STORES = {
   donors: 'donors',
   donations: 'donations',
   boxDonations: 'box_donations',
+  aidApplications: 'aid_applications',
+  aidFormDrafts: 'aid_form_drafts',
+  aidMeta: 'aid_meta',
   syncQueue: 'sync_queue',
 };
 
@@ -26,6 +29,15 @@ function openDb() {
       }
       if (!db.objectStoreNames.contains(STORES.boxDonations)) {
         db.createObjectStore(STORES.boxDonations, { keyPath: 'localId' });
+      }
+      if (!db.objectStoreNames.contains(STORES.aidApplications)) {
+        db.createObjectStore(STORES.aidApplications, { keyPath: 'localId' });
+      }
+      if (!db.objectStoreNames.contains(STORES.aidFormDrafts)) {
+        db.createObjectStore(STORES.aidFormDrafts, { keyPath: 'localId' });
+      }
+      if (!db.objectStoreNames.contains(STORES.aidMeta)) {
+        db.createObjectStore(STORES.aidMeta, { keyPath: 'localId' });
       }
       if (!db.objectStoreNames.contains(STORES.syncQueue)) {
         const q = db.createObjectStore(STORES.syncQueue, { keyPath: 'queueId' });
@@ -134,12 +146,15 @@ export async function clearStore(store) {
   });
 }
 
-/** Remove all locally stored DMS data (donors, donations, box collections, sync queue). */
+/** Remove all locally stored DMS + Aid offline data. */
 export async function clearAllOfflineData() {
   await Promise.all([
     clearStore(STORES.donors),
     clearStore(STORES.donations),
     clearStore(STORES.boxDonations),
+    clearStore(STORES.aidApplications),
+    clearStore(STORES.aidFormDrafts),
+    clearStore(STORES.aidMeta),
     clearStore(STORES.syncQueue),
   ]);
   if (typeof window !== 'undefined') {
@@ -149,14 +164,22 @@ export async function clearAllOfflineData() {
 }
 
 export async function countAllOfflineRecords() {
-  const [donors, donations, boxDonations, queue] = await Promise.all([
-    getAllRecords(STORES.donors),
-    getAllRecords(STORES.donations),
-    getAllRecords(STORES.boxDonations),
-    getAllRecords(STORES.syncQueue),
-  ]);
+  const [donors, donations, boxDonations, aidApps, aidDrafts, queue] =
+    await Promise.all([
+      getAllRecords(STORES.donors),
+      getAllRecords(STORES.donations),
+      getAllRecords(STORES.boxDonations),
+      getAllRecords(STORES.aidApplications),
+      getAllRecords(STORES.aidFormDrafts),
+      getAllRecords(STORES.syncQueue),
+    ]);
   return (
-    donors.length + donations.length + boxDonations.length + queue.length
+    donors.length +
+    donations.length +
+    boxDonations.length +
+    aidApps.length +
+    aidDrafts.length +
+    queue.length
   );
 }
 

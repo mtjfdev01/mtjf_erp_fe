@@ -21,6 +21,7 @@ import {
   aidEntryStageTone,
 } from '../../../aidConstants';
 import '../../../aid.css';
+import useOfflineDataRefresh from '../../../../../../hooks/useOfflineDataRefresh';
 
 const emptyFilters = {
   search: '',
@@ -127,6 +128,8 @@ const AidEntryApplicationsList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
+  useOfflineDataRefresh(() => fetchRows(), [appliedFilters, currentPage], ['aid']);
+
   const districtOptions = useMemo(
     () => [
       { value: '', label: 'All districts' },
@@ -148,6 +151,7 @@ const AidEntryApplicationsList = () => {
           title="Applications"
           backPath="/dms"
           showAdd={false}
+          onRefresh={fetchRows}
         />
         <div className="list-content">
           {error && <div className="error-message">{error}</div>}

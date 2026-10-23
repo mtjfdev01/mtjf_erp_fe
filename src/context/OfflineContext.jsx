@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { getOfflineMode, setOfflineMode } from '../offline/mode';
 import { countPendingQueue, countAllOfflineRecords, clearAllOfflineData } from '../offline/db';
 import { syncOfflineQueue } from '../offline/syncService';
+import { pullAndLockAidOfflineData } from '../offline/aidOffline';
 
 const OfflineContext = createContext(null);
 
@@ -21,6 +22,7 @@ export const OfflineProvider = ({ children }) => {
   const [localCacheCount, setLocalCacheCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isClearing, setIsClearing] = useState(false);
+  const [isLockingAid, setIsLockingAid] = useState(false);
 
   const refreshPendingCount = useCallback(async () => {
     try {
@@ -62,16 +64,48 @@ export const OfflineProvider = ({ children }) => {
     };
   }, [refreshPendingCount]);
 
-  const toggleOfflineMode = useCallback((enabled) => {
-    const next = typeof enabled === 'boolean' ? enabled : !getOfflineMode();
-    setOfflineMode(next);
-    setOfflineModeState(next);
-    if (next) {
-      toast.info('Offline mode enabled — changes save locally until you sync.');
-    } else {
+  const toggleOfflineMode = useCallback(
+    async (enabled) => {
+      const next = typeof enabled === 'boolean' ? enabled : !getOfflineMode();
+
+      if (next) {
+        // Pull + lock Aid Data Entry / Verification while still online
+        if (!networkOnline) {
+          toast.warn(
+            'No network — enabling offline with existing local Aid cache (if any).',
+          );
+          setOfflineMode(true);
+          setOfflineModeState(true);
+          return;
+        }
+        setIsLockingAid(true);
+        try {
+          const result = await pullAndLockAidOfflineData();
+          setOfflineMode(true);
+          setOfflineModeState(true);
+          await refreshPendingCount();
+          toast.success(
+            `Offline ready — locked ${result.count} Aid application(s) for Data Entry & Verification.`,
+          );
+        } catch (err) {
+          const msg =
+            err.response?.data?.message ||
+            err.message ||
+            'Failed to download Aid data for offline';
+          toast.error(msg);
+          // Do not enable offline if lock failed
+        } finally {
+          setIsLockingAid(false);
+        }
+        return;
+      }
+
+      setOfflineMode(false);
+      setOfflineModeState(false);
       toast.info('Online mode — requests go to the server.');
-    }
-  }, []);
+    },
+    [networkOnline, refreshPendingCount],
+  );
 
   const syncNow = useCallback(async () => {
     if (!networkOnline) {
@@ -133,6 +167,7 @@ export const OfflineProvider = ({ children }) => {
         localCacheCount,
         isSyncing,
         isClearing,
+        isLockingAid,
         toggleOfflineMode,
         syncNow,
         clearOfflineCache,

@@ -31,6 +31,7 @@ import {
 } from '../../aidConstants';
 import '../../aid.css';
 import '../../overview/overview.css';
+import useListAutoRefresh from '../../../../../hooks/useListAutoRefresh';
 
 const CEO_PENDING = 'ceo_approval_required';
 
@@ -223,6 +224,15 @@ const AidApprovalsList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters, program]);
 
+  useListAutoRefresh(
+    () => {
+      fetchRows();
+      fetchOverview();
+    },
+    [currentPage, pageSize, sortField, sortOrder, appliedFilters, program, dateFilters],
+    ['aid'],
+  );
+
   const openView = (id) => {
     navigate(`/dms/aid/applications/view/${id}?from=approvals`);
   };
@@ -259,6 +269,10 @@ const AidApprovalsList = () => {
           showFilterToggle
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
+          onRefresh={() => {
+            fetchRows();
+            fetchOverview();
+          }}
         />
 
         <div className="aid-wo-top">

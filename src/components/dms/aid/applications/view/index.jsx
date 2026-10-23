@@ -1327,6 +1327,18 @@ const AidApplicationView = () => {
                 >
                   Update delivery
                 </button>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  disabled={busy}
+                  onClick={() =>
+                    navigate(
+                      `/dms/aid/disbursements/list?application_id=${id}`,
+                    )
+                  }
+                >
+                  Open disbursements
+                </button>
               </>
             )}
           </div>

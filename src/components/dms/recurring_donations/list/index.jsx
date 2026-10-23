@@ -17,6 +17,7 @@ import {
   ReferredByFilter,
 } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
+import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
 import { FiEye, FiRepeat, FiSend, FiEdit2, FiTrash2 } from 'react-icons/fi';
@@ -185,6 +186,12 @@ const RecurringDonationsList = () => {
   useEffect(() => {
     fetchRows();
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
+
+  useListAutoRefresh(
+    () => fetchRows(),
+    [currentPage, pageSize, sortField, sortOrder, appliedFilters],
+    ['donations'],
+  );
 
   const handleSortChange = (field, order) => {
     setSortField(field);

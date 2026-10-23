@@ -21,6 +21,10 @@ import {
   createBoxDonationOffline,
   deleteBoxDonationOffline,
 } from './boxDonationsHandlers';
+import {
+  canHandleAidOffline,
+  handleAidOfflineRequest,
+} from './aidHandlers';
 
 function nowIso() {
   return new Date().toISOString();
@@ -88,6 +92,8 @@ export function canHandleOffline(config) {
   if (method === 'get' && (url === '/donation-box-donation' || BOX_BY_ID.test(url))) return true;
   if (method === 'get' && LOCAL_BOX.test(url)) return true;
   if (method === 'delete' && LOCAL_BOX.test(url)) return true;
+
+  if (canHandleAidOffline(config)) return true;
 
   return false;
 }
@@ -262,6 +268,11 @@ export async function handleOfflineRequest(config) {
 
   if (method === 'delete' && LOCAL_BOX.test(url)) {
     return deleteBoxDonationOffline(url.match(LOCAL_BOX)[1]);
+  }
+
+  // ── Aid (Data Entry + Verification) ─────────────────────────────────
+  if (canHandleAidOffline(config)) {
+    return handleAidOfflineRequest(config);
   }
 
   throw new Error(`Offline handler not implemented for ${method.toUpperCase()} ${url}`);

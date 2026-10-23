@@ -130,6 +130,10 @@ const mergeAidPermissions = (rawPermissions) => {
       key: 'aid_verification',
       actions: ['list_view', 'view', 'update', 'bulk_verify'],
     },
+    {
+      key: 'aid_disbursements',
+      actions: ['list_view', 'view', 'create', 'update', 'deliver'],
+    },
   ];
 
   modules.forEach(({ key, actions }) => {
@@ -196,6 +200,29 @@ const mergeAidPermissions = (rawPermissions) => {
       next.program = {
         ...(next.program || {}),
         aid_drafts: mirrored,
+      };
+    }
+  }
+
+  // Soft-migrate: older roles only had aid_applications.deliver
+  const hasDisbursements =
+    next.program?.aid_disbursements &&
+    typeof next.program.aid_disbursements === 'object' &&
+    ['list_view', 'view', 'create', 'update', 'deliver'].some(
+      (a) => next.program.aid_disbursements[a] === true,
+    );
+  if (!hasDisbursements && apps && typeof apps === 'object') {
+    const mirrored = {
+      list_view: apps.deliver === true || apps.list_view === true,
+      view: apps.deliver === true || apps.view === true || apps.list_view === true,
+      create: apps.deliver === true,
+      update: apps.deliver === true,
+      deliver: apps.deliver === true,
+    };
+    if (Object.values(mirrored).some(Boolean)) {
+      next.program = {
+        ...(next.program || {}),
+        aid_disbursements: mirrored,
       };
     }
   }
@@ -405,6 +432,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         aid_verification: {
           label: 'Verification Process',
           actions: ['list_view', 'view', 'update', 'bulk_verify'],
+        },
+        aid_disbursements: {
+          label: 'Disbursements',
+          actions: ['list_view', 'view', 'create', 'update', 'deliver'],
         },
         aid_people: {
           label: 'Beneficiaries',

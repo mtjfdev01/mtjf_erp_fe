@@ -26,6 +26,7 @@ import {
   formatAidProgramLabel,
 } from '../../aidConstants';
 import '../../aid.css';
+import useListAutoRefresh from '../../../../../hooks/useListAutoRefresh';
 
 const CEO_PENDING_STATUS = 'ceo_approval_required';
 const DELIVERY_PENDING_STATUSES = new Set(['successful']);
@@ -128,6 +129,8 @@ const AidApplicationsList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
+  useListAutoRefresh(() => fetchRows(), [appliedFilters, currentPage], ['aid']);
+
   const ceoFilterActive = appliedFilters.status === CEO_PENDING_STATUS;
   const pendingCeoCount = rows.filter((r) => r.status === CEO_PENDING_STATUS).length;
 
@@ -144,6 +147,7 @@ const AidApplicationsList = () => {
           showFilterToggle
           filtersOpen={filtersOpen}
           onFilterToggle={toggleFilters}
+          onRefresh={fetchRows}
         />
         <div className="list-content">
           {error && <div className="error-message">{error}</div>}

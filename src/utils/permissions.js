@@ -44,12 +44,13 @@ export const hasPermission = (permissions, department, module, action) => {
     return permissions.fund_raising?.dms_todos?.[action] === true;
   }
 
-  // Aid Overview / Applications / Drafts / Verification / Beneficiaries
+  // Aid Overview / Applications / Drafts / Verification / Disbursements / Beneficiaries
   if (
     (module === 'aid_people' ||
       module === 'aid_applications' ||
       module === 'aid_drafts' ||
       module === 'aid_verification' ||
+      module === 'aid_disbursements' ||
       module === 'aid_overview') &&
     (department === 'program' || department === 'fund_raising')
   ) {
@@ -93,6 +94,19 @@ export const hasPermission = (permissions, department, module, action) => {
         return apps?.create === true || apps?.update === true;
       }
       if (action === 'approve_draft') return apps?.approve_draft === true;
+    }
+
+    // Soft-migrate: disbursements used to use aid_applications.deliver
+    if (module === 'aid_disbursements') {
+      const apps =
+        permissions.program?.aid_applications ||
+        permissions.fund_raising?.aid_applications;
+      if (action === 'list_view' || action === 'view') {
+        return apps?.deliver === true || apps?.list_view === true || apps?.view === true;
+      }
+      if (action === 'deliver' || action === 'create' || action === 'update') {
+        return apps?.deliver === true;
+      }
     }
   }
 
@@ -194,13 +208,14 @@ export const canViewModule = (permissions, department, module) => {
     return legacy?.view === true || legacy?.list_view === true;
   }
 
-  // Aid Overview / Applications / Drafts / Verification / Beneficiaries under Program
+  // Aid Overview / Applications / Drafts / Verification / Disbursements / Beneficiaries
   if (
     (department === 'program' || department === 'fund_raising') &&
     (module === 'aid_people' ||
       module === 'aid_applications' ||
       module === 'aid_drafts' ||
       module === 'aid_verification' ||
+      module === 'aid_disbursements' ||
       module === 'aid_overview')
   ) {
     if (
@@ -271,6 +286,26 @@ export const canViewModule = (permissions, department, module) => {
       ) {
         return true;
       }
+    }
+    if (module === 'aid_disbursements') {
+      if (
+        next?.deliver === true ||
+        next?.create === true ||
+        next?.update === true
+      ) {
+        return true;
+      }
+      if (
+        legacy?.deliver === true ||
+        legacy?.create === true ||
+        legacy?.update === true
+      ) {
+        return true;
+      }
+      const apps =
+        permissions.program?.aid_applications ||
+        permissions.fund_raising?.aid_applications;
+      if (apps?.deliver === true) return true;
     }
     return false;
   }
@@ -453,12 +488,32 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
         (pathParts[0] === 'program' || pathParts[0] === 'fund_raising') &&
         (pathParts[1] === 'aid_people' ||
           pathParts[1] === 'aid_applications' ||
+          pathParts[1] === 'aid_drafts' ||
+          pathParts[1] === 'aid_verification' ||
+          pathParts[1] === 'aid_disbursements' ||
           pathParts[1] === 'aid_overview') &&
         pathParts[2]
       ) {
         const other =
           pathParts[0] === 'program' ? 'fund_raising' : 'program';
-        return permissions[other]?.[pathParts[1]]?.[pathParts[2]] === true;
+        if (permissions[other]?.[pathParts[1]]?.[pathParts[2]] === true) {
+          return true;
+        }
+        // Soft-migrate disbursements ← applications.deliver
+        if (
+          pathParts[1] === 'aid_disbursements' &&
+          (pathParts[2] === 'deliver' ||
+            pathParts[2] === 'list_view' ||
+            pathParts[2] === 'view' ||
+            pathParts[2] === 'create' ||
+            pathParts[2] === 'update')
+        ) {
+          return (
+            permissions.program?.aid_applications?.deliver === true ||
+            permissions.fund_raising?.aid_applications?.deliver === true
+          );
+        }
+        return false;
       }
       return false;
     }
@@ -479,12 +534,31 @@ export const hasPermissionByPath = (permissions, permissionPath) => {
     (pathParts[0] === 'program' || pathParts[0] === 'fund_raising') &&
     (pathParts[1] === 'aid_people' ||
       pathParts[1] === 'aid_applications' ||
+      pathParts[1] === 'aid_drafts' ||
+      pathParts[1] === 'aid_verification' ||
+      pathParts[1] === 'aid_disbursements' ||
       pathParts[1] === 'aid_overview') &&
     pathParts[2]
   ) {
     const other =
       pathParts[0] === 'program' ? 'fund_raising' : 'program';
-    return permissions[other]?.[pathParts[1]]?.[pathParts[2]] === true;
+    if (permissions[other]?.[pathParts[1]]?.[pathParts[2]] === true) {
+      return true;
+    }
+    if (
+      pathParts[1] === 'aid_disbursements' &&
+      (pathParts[2] === 'deliver' ||
+        pathParts[2] === 'list_view' ||
+        pathParts[2] === 'view' ||
+        pathParts[2] === 'create' ||
+        pathParts[2] === 'update')
+    ) {
+      return (
+        permissions.program?.aid_applications?.deliver === true ||
+        permissions.fund_raising?.aid_applications?.deliver === true
+      );
+    }
+    return false;
   }
 
   return false;

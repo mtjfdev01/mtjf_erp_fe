@@ -13,6 +13,7 @@ import {
   validateCollectionRadiusMeters,
 } from '../../../../utils/geolocation';
 import { useAuth } from '../../../../context/AuthContext';
+import { dispatchListDataChanged } from '../../../../hooks/useListAutoRefresh';
 
 const AddDonationBox = () => {
   const navigate = useNavigate();
@@ -215,6 +216,7 @@ const AddDonationBox = () => {
       console.log('Assigned user IDs:', form.assigned_user_ids);
 
       await axiosInstance.post('donation-box', donationBoxData);
+      dispatchListDataChanged('donations');
 
       // Redirect to donation boxes list after successful creation
       navigate('/dms/donation_box/list'); 

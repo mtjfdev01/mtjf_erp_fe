@@ -25,7 +25,8 @@ const axiosInstance = axios.create({
 // Add a request interceptor to handle CORS preflight
 axiosInstance.interceptors.request.use(
   (config) => {
-    if (getOfflineMode()) {
+    // Sync / pull helpers set _offlineSync to hit the real API while mode is on.
+    if (getOfflineMode() && !config._offlineSync) {
       if (canHandleOffline(config)) {
         config.adapter = async (cfg) => {
           const prepared = prepareOfflineConfig(cfg);

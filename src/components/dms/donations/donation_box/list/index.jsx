@@ -233,14 +233,11 @@ const DonationBoxDonationsList = () => {
 
   const handleRefresh = () => setListRefreshNonce((n) => n + 1);
 
-  useOfflineDataRefresh(() => setListRefreshNonce((n) => n + 1), [
-    currentPage,
-    pageSize,
-    sortField,
-    sortOrder,
-    appliedFilters,
-    donationBoxId,
-  ]);
+  useOfflineDataRefresh(
+    () => setListRefreshNonce((n) => n + 1),
+    [currentPage, pageSize, sortField, sortOrder, appliedFilters, donationBoxId],
+    ['donations'],
+  );
 
   const fetchDonationBoxInfo = async () => {
     try {

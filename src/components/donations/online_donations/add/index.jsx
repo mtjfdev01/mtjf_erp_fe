@@ -26,6 +26,7 @@ import {
   canReconcileDonations,
   donationStatusOptionsForUser,
 } from '../../../../utils/permissions';
+import { dispatchListDataChanged } from '../../../../hooks/useListAutoRefresh';
 
 const AddDonation = ({
   embedded = false,
@@ -513,6 +514,8 @@ const AddDonation = ({
               ? Number(payload.id)
               : null
           : null;
+
+      dispatchListDataChanged('donations');
 
       if (
         newDonationId &&

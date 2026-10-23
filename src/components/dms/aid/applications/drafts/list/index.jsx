@@ -21,6 +21,8 @@ import {
   aidStatusTone,
 } from '../../../aidConstants';
 import '../../../aid.css';
+import useOfflineDataRefresh from '../../../../../../hooks/useOfflineDataRefresh';
+import { dispatchListDataChanged } from '../../../../../../hooks/useListAutoRefresh';
 
 const emptyFilters = {
   search: '',
@@ -149,6 +151,7 @@ const AidDraftsList = () => {
       );
       setApproveRowId(null);
       setAssignUser(null);
+      dispatchListDataChanged('aid');
       await fetchRows();
     } catch (err) {
       setError(
@@ -163,6 +166,8 @@ const AidDraftsList = () => {
     fetchRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
+
+  useOfflineDataRefresh(() => fetchRows(), [appliedFilters, currentPage], ['aid']);
 
   const programOptions = [
     { value: '', label: 'All programs' },
@@ -185,6 +190,7 @@ const AidDraftsList = () => {
           showAdd={!!canCreate}
           addPath="/dms/aid/applications/add"
           addTitle="New application"
+          onRefresh={fetchRows}
         />
         <div className="list-content">
           {error && <div className="error-message">{error}</div>}

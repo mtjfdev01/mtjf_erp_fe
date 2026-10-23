@@ -307,6 +307,14 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiCheckCircle
   },
   {
+    label: 'Disbursements',
+    path: '/dms/aid/disbursements/list',
+    type: 'list',
+    module: 'aid_disbursements',
+    permissionDepartment: 'program',
+    icon: FiPackage
+  },
+  {
     label: 'Beneficiaries',
     path: '/dms/aid/people/list',
     type: 'list',

@@ -23,6 +23,9 @@ import {
   personAge,
 } from '../../aidConstants';
 import '../../aid.css';
+import useListAutoRefresh, {
+  dispatchListDataChanged,
+} from '../../../../../hooks/useListAutoRefresh';
 
 const emptyCreatePerson = () => ({
   full_name: '',
@@ -197,6 +200,12 @@ const AidPeopleList = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, pageSize, sortField, sortOrder, appliedSearch]);
 
+  useListAutoRefresh(
+    () => fetchRows(),
+    [currentPage, pageSize, sortField, sortOrder, appliedSearch],
+    ['aid'],
+  );
+
   const applySearch = () => {
     setCurrentPage(1);
     setAppliedSearch(searchInput.trim());
@@ -261,6 +270,7 @@ const AidPeopleList = () => {
       });
       setShowCreate(false);
       setPerson(emptyCreatePerson());
+      dispatchListDataChanged('aid');
       navigate(`/dms/aid/people/view/${res.data?.data?.id}`);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create person');
@@ -280,6 +290,7 @@ const AidPeopleList = () => {
           title="Beneficiaries List"
           backPath="/dms/aid/applications/list"
           showAdd={false}
+          onRefresh={fetchRows}
           rightElement={
             canCreate ? (
               <button

@@ -1,20 +1,9 @@
-import { useEffect } from 'react';
+import useListAutoRefresh from './useListAutoRefresh';
 
 /**
- * Re-run fetch when offline mode toggles or local queue changes.
- * Same API call as online — only the data source switches via axios.
+ * Re-run fetch when offline mode toggles, local queue changes, or a
+ * create/update dispatches LIST_DATA_CHANGED_EVENT.
  */
-export default function useOfflineDataRefresh(onRefresh, deps = []) {
-  useEffect(() => {
-    const refresh = () => onRefresh();
-    window.addEventListener('dms-offline-queue-changed', refresh);
-    window.addEventListener('dms-offline-mode-changed', refresh);
-    window.addEventListener('dms-offline-data-cleared', refresh);
-    return () => {
-      window.removeEventListener('dms-offline-queue-changed', refresh);
-      window.removeEventListener('dms-offline-mode-changed', refresh);
-      window.removeEventListener('dms-offline-data-cleared', refresh);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+export default function useOfflineDataRefresh(onRefresh, deps = [], scopes = null) {
+  useListAutoRefresh(onRefresh, deps, scopes);
 }

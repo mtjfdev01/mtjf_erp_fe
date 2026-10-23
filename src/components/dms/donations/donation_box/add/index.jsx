@@ -10,6 +10,7 @@ import PageHeader from '../../../../common/PageHeader';
 import { useAuth } from '../../../../../context/AuthContext';
 import { hasPermission } from '../../../../../utils/permissions';
 import { DEFAULT_COLLECTION_RADIUS_METERS, getCurrentDeviceLocationWithName } from '../../../../../utils/geolocation';
+import { dispatchListDataChanged } from '../../../../../hooks/useListAutoRefresh';
 
 const AddDonationBoxDonation = () => {
   const { id } = useParams();
@@ -145,7 +146,8 @@ const AddDonationBoxDonation = () => {
         donationData.collector_location_details = location.location_details || null;
       }
 
-      await axiosInstance.post('/donation-box-donation', donationData); 
+      await axiosInstance.post('/donation-box-donation', donationData);
+      dispatchListDataChanged('donations');
 
       // Redirect to donations list after successful creation 
       navigate(`/dms/donation-box-donations/list/${form?.donation_box_id}`);

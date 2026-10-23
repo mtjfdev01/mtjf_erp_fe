@@ -23,6 +23,7 @@ import { ClearButton, SearchButton } from '../../../common/filters/index';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import usePersistedFilters from '../../../../hooks/usePersistedFilters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
+import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
 
 import { FiEye, FiEdit2, FiTrash2, FiPlusCircle } from 'react-icons/fi';
 
@@ -220,6 +221,12 @@ const DonationBoxList = () => {
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters, listRefreshNonce]);
 
   const handleRefresh = () => setListRefreshNonce((n) => n + 1);
+
+  useListAutoRefresh(
+    handleRefresh,
+    [currentPage, pageSize, sortField, sortOrder, appliedFilters],
+    ['donations'],
+  );
 
   const buildListParams = () => {
     const params = {
