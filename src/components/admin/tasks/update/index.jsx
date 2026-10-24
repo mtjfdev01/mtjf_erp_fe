@@ -38,7 +38,7 @@ const DEPARTMENT_LABELS = {
   procurements: 'Procurements',
   accounts_and_finance: 'Accounts & Finance',
   fund_raising: 'Fund Raising',
-  it: 'IT',
+  it: 'I.T',
   hr: 'HR',
   marketing: 'Marketing',
   audio_video: 'Audio Video',

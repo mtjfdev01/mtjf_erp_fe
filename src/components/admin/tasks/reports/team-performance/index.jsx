@@ -173,13 +173,13 @@ const TeamPerformance = ({
     if (previous === undefined || previous === null) return null;
     const delta = Math.round((Number(current) - Number(previous)) * 10) / 10;
     if (delta === 0) {
-      return <div className="team-perf-trend team-perf-trend-flat">No change</div>;
+      return <div className="tkteamperf-trend tkteamperf-trend-flat">No change</div>;
     }
     const up = delta > 0;
     let tone = 'neutral';
     if (!neutral) tone = up === goodWhenUp ? 'good' : 'bad';
     return (
-      <div className={`team-perf-trend team-perf-trend-${tone}`}>
+      <div className={`tkteamperf-trend tkteamperf-trend-${tone}`}>
         <span aria-hidden="true">{up ? '▲' : '▼'}</span> {Math.abs(delta)}
         {suffix} {comparisonLabel}
       </div>
@@ -198,11 +198,11 @@ const TeamPerformance = ({
     const rate = Math.min(100, Math.max(0, Number(member.rate) || 0));
     const offset = RING_CIRCUMFERENCE * (1 - rate / 100);
     return (
-      <div className="team-perf-ring" aria-label={`${Math.round(rate)}% complete`}>
-        <svg viewBox="0 0 64 64" width="64" height="64">
-          <circle className="team-perf-ring-track" cx="32" cy="32" r={RING_RADIUS} />
+      <div className="tkteamperf-ring" aria-label={`${Math.round(rate)}% complete`}>
+        <svg viewBox="0 0 64 64" width="50" height="50">
+          <circle className="tkteamperf-ring-track" cx="32" cy="32" r={RING_RADIUS} />
           <circle
-            className={`team-perf-ring-value team-perf-ring-${health.key}`}
+            className={`tkteamperf-ring-value tkteamperf-ring-${health.key}`}
             cx="32"
             cy="32"
             r={RING_RADIUS}
@@ -211,7 +211,7 @@ const TeamPerformance = ({
             transform="rotate(-90 32 32)"
           />
         </svg>
-        <span className="team-perf-ring-label">{Math.round(rate)}%</span>
+        <span className="tkteamperf-ring-label">{Math.round(rate)}%</span>
       </div>
     );
   };
@@ -223,10 +223,10 @@ const TeamPerformance = ({
     const overdue = Number(member.overdue_count) || 0;
     const pct = (n) => (total > 0 ? (n / total) * 100 : 0);
     return (
-      <div className="team-perf-splitbar" role="img" aria-label={`${done} completed, ${onTrack} in progress, ${overdue} overdue`}>
-        <span className="team-perf-split team-perf-split-done" style={{ width: `${pct(done)}%` }} />
-        <span className="team-perf-split team-perf-split-track" style={{ width: `${pct(onTrack)}%` }} />
-        <span className="team-perf-split team-perf-split-overdue" style={{ width: `${pct(overdue)}%` }} />
+      <div className="tkteamperf-splitbar" role="img" aria-label={`${done} completed, ${onTrack} in progress, ${overdue} overdue`}>
+        <span className="tkteamperf-split tkteamperf-split-done" style={{ width: `${pct(done)}%` }} />
+        <span className="tkteamperf-split tkteamperf-split-track" style={{ width: `${pct(onTrack)}%` }} />
+        <span className="tkteamperf-split tkteamperf-split-overdue" style={{ width: `${pct(overdue)}%` }} />
       </div>
     );
   };
@@ -236,37 +236,37 @@ const TeamPerformance = ({
     const overdueDays = getOverdueDays(task.due_date);
 
     return (
-      <div key={task.id} className={`team-perf-modal-task-item status-${statusConfig.class}`}>
-        <div className="team-perf-modal-task-main">
-          <div className="team-perf-modal-task-title">{task.title}</div>
-          <div className={`team-perf-modal-task-status team-perf-modal-task-status-${statusConfig.class}`}>
+      <div key={task.id} className={`tkteamperf-modal-task-item status-${statusConfig.class}`}>
+        <div className="tkteamperf-modal-task-main">
+          <div className="tkteamperf-modal-task-title">{task.title}</div>
+          <div className={`tkteamperf-modal-task-status tkteamperf-modal-task-status-${statusConfig.class}`}>
             {statusConfig.icon} {statusConfig.label}
           </div>
         </div>
-        <div className="team-perf-modal-task-details">
-          <div className="team-perf-modal-task-detail-item">
+        <div className="tkteamperf-modal-task-details">
+          <div className="tkteamperf-modal-task-detail-item">
             Priority:{' '}
-            <span className={`priority-${(task.priority || 'medium').toLowerCase()}`}>
+            <span className={`tkteamperf-priority-${(task.priority || 'medium').toLowerCase()}`}>
               {(task.priority || 'MEDIUM').toUpperCase()}
             </span>
           </div>
-          <div className="team-perf-modal-task-detail-item">Department: {task.department || 'N/A'}</div>
-          <div className="team-perf-modal-task-detail-item">
+          <div className="tkteamperf-modal-task-detail-item">Department: {task.department || 'N/A'}</div>
+          <div className="tkteamperf-modal-task-detail-item">
             Due Date: {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'N/A'}
           </div>
 
           {statusConfig.class === 'completed' && (task.completed_date || task.completed_at) && (
-            <div className="team-perf-modal-task-detail-item">
+            <div className="tkteamperf-modal-task-detail-item">
               Completed: {new Date(task.completed_date || task.completed_at).toLocaleDateString()}
             </div>
           )}
 
           {statusConfig.class === 'in-progress' && task.progress !== undefined && (
-            <div className="team-perf-modal-task-detail-item">Progress: {task.progress}%</div>
+            <div className="tkteamperf-modal-task-detail-item">Progress: {task.progress}%</div>
           )}
 
           {statusConfig.class === 'overdue' && overdueDays > 0 && (
-            <div className="team-perf-modal-task-detail-item">Days Overdue: {overdueDays}</div>
+            <div className="tkteamperf-modal-task-detail-item">Days Overdue: {overdueDays}</div>
           )}
         </div>
       </div>
@@ -277,21 +277,21 @@ const TeamPerformance = ({
 
   return (
     <>
-      <div className="team-perf-card">
+      <div className="tkteamperf-card">
         {/* Header */}
         <div className="team-perfo-header">
-          <div className="team-perf-title-group">
-            <h2 className="team-perf-title">Team performance</h2>
-            <p className="team-perf-subtitle">Task progress across your team</p>
+          <div className="tkteamperf-title-group">
+            {/* <h2 className="tkteamperf-title">Team performance</h2> */}
+            <p className="tkteamperf-subtitle">Task progress across your team</p>
           </div>
           <div className="team-perfo-header-actions">
-            <div className={`team-perf-search-wrapper ${mobileSearchOpen ? 'team-perf-search-wrapper-open' : ''}`}>
-              <span className="team-perf-search-icon" onClick={() => setMobileSearchOpen(!mobileSearchOpen)}>
+            <div className={`tkteamperf-search-wrapper ${mobileSearchOpen ? 'tkteamperf-search-wrapper-open' : ''}`}>
+              <span className="tkteamperf-search-icon" onClick={() => setMobileSearchOpen(!mobileSearchOpen)}>
                 🔍
               </span>
               <input
                 type="text"
-                className="team-perf-search-input"
+                className="tkteamperf-search-input"
                 placeholder="Search team members"
                 value={teamSearchQuery}
                 onChange={(e) => setTeamSearchQuery(e.target.value)}
@@ -299,7 +299,7 @@ const TeamPerformance = ({
             </div>
             {typeof onDurationChange === 'function' && (
               <select
-                className="team-perf-duration-select"
+                className="tkteamperf-duration-select"
                 value={duration}
                 onChange={(e) => onDurationChange(e.target.value)}
                 aria-label="Duration"
@@ -311,7 +311,7 @@ const TeamPerformance = ({
                 ))}
               </select>
             )}
-            <span className="team-perf-active-badge">{filteredTeamMembers.length} active members</span>
+            <span className="tkteamperf-active-badge">{filteredTeamMembers.length} active members</span>
           </div>
         </div>
 
@@ -353,8 +353,8 @@ const TeamPerformance = ({
 
         {/* Attention alert */}
         {/* {topAttention && (
-          <div className="team-perf-alert" role="alert">
-            <span className="team-perf-alert-dot" aria-hidden="true" />
+          <div className="tkteamperf-alert" role="alert">
+            <span className="tkteamperf-alert-dot" aria-hidden="true" />
             <span>
               <strong>{topAttention.label}</strong> needs attention: {formatRate(topAttention.rate)}% complete with{' '}
               {Number(topAttention.overdue_count) || 0} overdue of {Number(topAttention.count) || 0} tasks.
@@ -364,41 +364,41 @@ const TeamPerformance = ({
         )} */}
 
         {/* Member cards */}
-        <div className="team-perf-grid">
+        <div className="tkteamperf-grid">
           {filteredTeamMembers.length > 0 ? (
             filteredTeamMembers.map((member, index) => {
               const health = getHealth(member);
               return (
-                <div key={member.id || member.user_id || member.userId || index} className="team-perf-member-card">
-                  <div className="team-perf-member-header">
-                    <div className="team-perf-member-avatar">{(member.label || 'U').charAt(0).toUpperCase()}</div>
-                    <div className="team-perf-member-info">
-                      <div className="team-perf-member-name">{member.label}</div>
-                      <div className="team-perf-member-role">{formatRole(member.role)}</div>
+                <div key={member.id || member.user_id || member.userId || index} className="tkteamperf-member-card">
+                  <div className="tkteamperf-member-header">
+                    <div className="tkteamperf-member-avatar">{(member.label || 'U').charAt(0).toUpperCase()}</div>
+                    <div className="tkteamperf-member-info">
+                      <div className="tkteamperf-member-name">{member.label}</div>
+                      <div className="tkteamperf-member-role">{formatRole(member.role)}</div>
                     </div>
                     {renderRing(member, health)}
                   </div>
 
                   {renderSplitBar(member)}
 
-                  <div className="team-perf-legend">
-                    <span className="team-perf-legend-item">
-                      <i className="team-perf-dot team-perf-dot-done" />
+                  <div className="tkteamperf-legend">
+                    <span className="tkteamperf-legend-item">
+                      <i className="tkteamperf-dot tkteamperf-dot-done" />
                       <b>{member.completed_count || 0}</b> completed
                     </span>
-                    <span className="team-perf-legend-item">
-                      <i className="team-perf-dot team-perf-dot-track" />
+                    <span className="tkteamperf-legend-item">
+                      <i className="tkteamperf-dot tkteamperf-dot-track" />
                       <b>{member.in_progress_count || 0}</b> in progress
                     </span>
-                    <span className="team-perf-legend-item">
-                      <i className="team-perf-dot team-perf-dot-overdue" />
+                    <span className="tkteamperf-legend-item">
+                      <i className="tkteamperf-dot tkteamperf-dot-overdue" />
                       <b>{member.overdue_count || 0}</b> overdue
                     </span>
                   </div>
 
-                  <div className="team-perf-member-footer-actions">
-                    <span className={`team-perf-pill team-perf-pill-${health.key}`}>{health.label}</span>
-                    <button className="team-perf-view-details-btn" onClick={() => handleShowMemberTasks(member)}>
+                  <div className="tkteamperf-member-footer-actions">
+                    <span className={`tkteamperf-pill tkteamperf-pill-${health.key}`}>{health.label}</span>
+                    <button className="tkteamperf-view-details-btn" onClick={() => handleShowMemberTasks(member)}>
                       View {member.count || 0} tasks
                     </button>
                   </div>
@@ -406,7 +406,7 @@ const TeamPerformance = ({
               );
             })
           ) : (
-            <div className="team-perf-empty-search">
+            <div className="tkteamperf-empty-search">
               {teamSearchQuery.trim()
                 ? `No team members found matching "${teamSearchQuery}"`
                 : 'No direct reports found.'}
@@ -417,69 +417,69 @@ const TeamPerformance = ({
 
       {/* Task Details Modal (unchanged) */}
       {showMemberTasksModal && selectedMemberTasks && (
-        <div className="team-perf-modal-overlay" onClick={() => setShowMemberTasksModal(false)}>
-          <div className="team-perf-modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="team-perf-modal-header">
-              <div className="team-perf-modal-header-left">
-                <div className="team-perf-modal-avatar">
+        <div className="tkteamperf-modal-overlay" onClick={() => setShowMemberTasksModal(false)}>
+          <div className="tkteamperf-modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="tkteamperf-modal-header">
+              <div className="tkteamperf-modal-header-left">
+                <div className="tkteamperf-modal-avatar">
                   {getInitials(selectedMemberTasks.member.label || selectedMemberTasks.member.name)}
                 </div>
-                <div className="team-perf-modal-user-info">
-                  <h3 className="team-perf-modal-user-name">
+                <div className="tkteamperf-modal-user-info">
+                  <h3 className="tkteamperf-modal-user-name">
                     {selectedMemberTasks.member.label || selectedMemberTasks.member.name || 'User'}
                   </h3>
-                  <span className="team-perf-modal-user-role">{selectedMemberTasks.member.role || 'User'}</span>
+                  <span className="tkteamperf-modal-user-role">{selectedMemberTasks.member.role || 'User'}</span>
                 </div>
               </div>
-              <div className="team-perf-modal-header-right">
-                <button className="team-perf-modal-close" onClick={() => setShowMemberTasksModal(false)}>
+              <div className="tkteamperf-modal-header-right">
+                <button className="tkteamperf-modal-close" onClick={() => setShowMemberTasksModal(false)}>
                   ×
                 </button>
               </div>
             </div>
 
-            <div className="team-perf-modal-body">
-              <div className="team-perf-modal-stats">
-                <div className="team-perf-modal-stat-item">
-                  <div className="team-perf-modal-stat-value">{selectedMemberTasks.member.count}</div>
-                  <div className="team-perf-modal-stat-label">Total Tasks</div>
+            <div className="tkteamperf-modal-body">
+              <div className="tkteamperf-modal-stats">
+                <div className="tkteamperf-modal-stat-item">
+                  <div className="tkteamperf-modal-stat-value">{selectedMemberTasks.member.count}</div>
+                  <div className="tkteamperf-modal-stat-label">Total Tasks</div>
                 </div>
-                <div className="team-perf-modal-stat-item">
-                  <div className="team-perf-modal-stat-value team-perf-modal-stat-value-in-progress">
+                <div className="tkteamperf-modal-stat-item">
+                  <div className="tkteamperf-modal-stat-value tkteamperf-modal-stat-value-in-progress">
                     {selectedMemberTasks.member.in_progress_count || 0}
                   </div>
-                  <div className="team-perf-modal-stat-label">In Progress</div>
+                  <div className="tkteamperf-modal-stat-label">In Progress</div>
                 </div>
-                <div className="team-perf-modal-stat-item">
-                  <div className="team-perf-modal-stat-value team-perf-modal-stat-value-completed">
+                <div className="tkteamperf-modal-stat-item">
+                  <div className="tkteamperf-modal-stat-value tkteamperf-modal-stat-value-completed">
                     {selectedMemberTasks.member.completed_count || 0}
                   </div>
-                  <div className="team-perf-modal-stat-label">Completed</div>
+                  <div className="tkteamperf-modal-stat-label">Completed</div>
                 </div>
-                <div className="team-perf-modal-stat-item">
-                  <div className="team-perf-modal-stat-value team-perf-modal-stat-value-overdue">
+                <div className="tkteamperf-modal-stat-item">
+                  <div className="tkteamperf-modal-stat-value tkteamperf-modal-stat-value-overdue">
                     {selectedMemberTasks.member.overdue_count || 0}
                   </div>
-                  <div className="team-perf-modal-stat-label">Pending/Overdue</div>
+                  <div className="tkteamperf-modal-stat-label">Pending/Overdue</div>
                 </div>
-                <div className="team-perf-modal-stat-item">
-                  <div className="team-perf-modal-stat-value">{selectedMemberTasks.member.rate || 0}%</div>
-                  <div className="team-perf-modal-stat-label">Completion Rate</div>
+                <div className="tkteamperf-modal-stat-item">
+                  <div className="tkteamperf-modal-stat-value">{selectedMemberTasks.member.rate || 0}%</div>
+                  <div className="tkteamperf-modal-stat-label">Completion Rate</div>
                 </div>
               </div>
 
-              <div className="team-perf-modal-task-list-section">
-                <h4 className="team-perf-modal-section-title">📋 Task List ({selectedMemberTasks.tasks.length} Tasks)</h4>
-                <div className="team-perf-modal-task-list">
+              <div className="tkteamperf-modal-task-list-section">
+                <h4 className="tkteamperf-modal-section-title">📋 Task List ({selectedMemberTasks.tasks.length} Tasks)</h4>
+                <div className="tkteamperf-modal-task-list">
                   {memberTasksLoading ? (
-                    <div className="team-perf-modal-loading">
-                      <div className="team-perf-loading-spinner"></div>
+                    <div className="tkteamperf-modal-loading">
+                      <div className="tkteamperf-loading-spinner"></div>
                       <p>Loading member tasks...</p>
                     </div>
                   ) : selectedMemberTasks.tasks.length > 0 ? (
                     selectedMemberTasks.tasks.map(renderTaskCard)
                   ) : (
-                    <div className="team-perf-modal-empty">No tasks found for this member.</div>
+                    <div className="tkteamperf-modal-empty">No tasks found for this member.</div>
                   )}
                 </div>
               </div>

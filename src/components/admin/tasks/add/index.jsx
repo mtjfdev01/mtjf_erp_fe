@@ -424,7 +424,7 @@ const AddTask = ({
     { value: 'procurements', label: 'Procurements' },
     { value: 'accounts_and_finance', label: 'Accounts & Finance' },
     { value: 'fund_raising', label: 'Fund Raising' },
-    { value: 'it', label: 'IT' },
+    { value: 'it', label: 'I.T' },
     { value: 'hr', label: 'HR' },
     { value: 'marketing', label: 'Marketing' },
     { value: 'audio_video', label: 'Audio Video' },
