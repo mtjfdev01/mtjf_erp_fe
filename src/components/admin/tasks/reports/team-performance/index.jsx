@@ -199,7 +199,7 @@ const TeamPerformance = ({
     const offset = RING_CIRCUMFERENCE * (1 - rate / 100);
     return (
       <div className="tkteamperf-ring" aria-label={`${Math.round(rate)}% complete`}>
-        <svg viewBox="0 0 64 64" width="64" height="64">
+        <svg viewBox="0 0 64 64" width="50" height="50">
           <circle className="tkteamperf-ring-track" cx="32" cy="32" r={RING_RADIUS} />
           <circle
             className={`tkteamperf-ring-value tkteamperf-ring-${health.key}`}
@@ -281,7 +281,7 @@ const TeamPerformance = ({
         {/* Header */}
         <div className="team-perfo-header">
           <div className="tkteamperf-title-group">
-            <h2 className="tkteamperf-title">Team performance</h2>
+            {/* <h2 className="tkteamperf-title">Team performance</h2> */}
             <p className="tkteamperf-subtitle">Task progress across your team</p>
           </div>
           <div className="team-perfo-header-actions">

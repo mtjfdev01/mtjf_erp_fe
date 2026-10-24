@@ -1388,17 +1388,13 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
             </div>
 
             <div className="tlx-toolbar">
-              <div className="tlx-toolbar__search">
-                <FiSearch aria-hidden />
-                <input
-                  type="search"
-                  value={tempFilters.search || ''}
-                  onChange={(event) => handleFilterChange('search', event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === 'Enter') handleApplyFilters();
-                  }}
-                  placeholder="Filter..."
-                  aria-label="Filter tasks"
+
+              <div className="tlx-filter-assignee">
+                <TaskAssigneeFilter
+                  value={assignedUser}
+                  onSelect={setAssignedUser}
+                  onClear={() => setAssignedUser(null)}
+                  placeholder="Filter by assignee..."
                 />
               </div>
 
@@ -1426,12 +1422,17 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
 
             <CollapsibleFilters open={filtersOpen}>
               <div className="filters-section tlx-filters">
-                <div className="tlx-filter-assignee">
-                  <TaskAssigneeFilter
-                    value={assignedUser}
-                    onSelect={setAssignedUser}
-                    onClear={() => setAssignedUser(null)}
-                    placeholder="Filter by assignee..."
+                <div className="tlx-toolbar__search">
+                  <FiSearch aria-hidden />
+                  <input
+                    type="search"
+                    value={tempFilters.search || ''}
+                    onChange={(event) => handleFilterChange('search', event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') handleApplyFilters();
+                    }}
+                    placeholder="Filter..."
+                    aria-label="Filter tasks"
                   />
                 </div>
                 <DropdownFilter
