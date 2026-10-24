@@ -22,6 +22,7 @@ const TaskActionBar = ({
   currentUserId,
   createdByUserId,
   reportedById,
+  reportedByIds,
   approvalRequiredUserIds,
   approvalsMeta,
   currentUserHasActedOnApproval,
@@ -29,6 +30,17 @@ const TaskActionBar = ({
 }) => {
   const [isQuickOpen, setIsQuickOpen] = useState(false);
   const [isFabMenuOpen, setIsFabMenuOpen] = useState(false);
+
+  // Multi-manager support: resolve all reporting manager IDs from reportedByIds array or legacy reportedById
+  const effectiveReporterIds = useMemo(() => {
+    if (Array.isArray(reportedByIds) && reportedByIds.length > 0) {
+      return reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0);
+    }
+    if (reportedById != null && Number(reportedById) > 0) {
+      return [Number(reportedById)];
+    }
+    return [];
+  }, [reportedById, reportedByIds]);
 
   const canApprove = permissions?.canApprove;
   const normalizedStatus = useMemo(
@@ -53,6 +65,7 @@ const TaskActionBar = ({
       currentUserId,
       createdByUserId,
       reportedById,
+      reportedByIds: effectiveReporterIds,
       approvalRequiredUserIds,
       approvalsMeta,
       currentUserHasActedOnApproval,
@@ -68,6 +81,7 @@ const TaskActionBar = ({
       currentUserId,
       createdByUserId,
       reportedById,
+      effectiveReporterIds,
       approvalRequiredUserIds,
       approvalsMeta,
       currentUserHasActedOnApproval,
@@ -103,9 +117,11 @@ const TaskActionBar = ({
           baseButtons = [];
         }
       } else {
-        // For standard workflow, creator/reporter can close a completed task
+        // For standard workflow, creator or any configured reporting manager can close a completed task
         const isCreator = Number(currentUserId) === Number(createdByUserId);
-        const isReporter = Number(currentUserId) === Number(reportedById);
+        const isReporter =
+          currentUserId != null &&
+          effectiveReporterIds.includes(Number(currentUserId));
         if (isCreator || isReporter) {
           baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
         } else {
@@ -114,7 +130,10 @@ const TaskActionBar = ({
       }
     } else if (normalizedStatus === 'APPROVED') {
       const isCreator = Number(currentUserId) === Number(createdByUserId);
-      const isReporter = Number(currentUserId) === Number(reportedById);
+      // For approval workflow, creator or any configured reporting manager can close an approved task
+      const isReporter =
+        currentUserId != null &&
+        effectiveReporterIds.includes(Number(currentUserId));
       if (isCreator || isReporter) {
         baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
       } else {
@@ -241,10 +260,10 @@ const TaskActionBar = ({
             </button>
           ))}
         </div>
-        <div className="task-action-bar-secondary">
+        <div className="tv2-more">
           <button
             type="button"
-            className="task-action-quick-toggle"
+            className="tv2-btn tv2-btn--ghost"
             onClick={() => setIsQuickOpen((prev) => !prev)}
             disabled={disabled}
             aria-haspopup="true"
@@ -258,7 +277,7 @@ const TaskActionBar = ({
                 <button
                   key={item.key}
                   type="button"
-                  className="task-action-quick-item"
+                  className="tv2-more-item"
                   onClick={() => handleQuickClick(item.key)}
                   disabled={disabled}
                 >
@@ -310,7 +329,7 @@ const TaskActionBar = ({
               <button
                 key={item.key}
                 type="button"
-                className="task-action-quick-item"
+                className="tv2-more-item"
                 onClick={() => handleQuickClick(item.key)}
                 disabled={disabled}
               >
@@ -320,7 +339,7 @@ const TaskActionBar = ({
             {disabledReassignTooltip && (
               <button
                 type="button"
-                className="task-action-quick-item"
+                className="tv2-more-item"
                 disabled
                 title={disabledReassignTooltip}
               >
