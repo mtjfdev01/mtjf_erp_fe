@@ -446,7 +446,6 @@ const App = () => {
                                 {/* Jobs Routes */}
                                 <Route path="/hr/careers/jobs/list" element={<JobsList />} />
                                 <Route path="/hr/careers/jobs/add" element={<AddJob />} />
-                                <Route path="/hr/careers/jobs/edit/:id" element={<AddJob />} />
                                 <Route path="/hr/careers/jobs/view/:id" element={<ViewJob />} />
 
                                 <Route path="/hr/resume-collection/list" element={<ResumeCollectionList />} />
