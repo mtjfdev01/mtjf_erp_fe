@@ -2137,12 +2137,20 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
+  overflow: hidden;
   background: linear-gradient(145deg, #0f3d2e 0%, #1a5c40 100%);
   color: #fff;
   font-weight: 750;
   font-size: 1.05rem;
   letter-spacing: 0.02em;
   box-shadow: 0 6px 14px rgba(15, 61, 46, 0.22);
+}
+
+.aid-person-card__avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .aid-person-card__intro {
@@ -4253,6 +4261,14 @@ a.aid-contact-chip:hover {
   display: none;
 }
 
+.aid-family-panel--optional-add {
+  padding: 0.75rem 1rem;
+}
+
+.aid-family-panel--optional-add .aid-mini-btn--add {
+  width: auto;
+}
+
 .aid-fh-photo__actions {
   display: grid;
   gap: 0.4rem;
@@ -4292,6 +4308,14 @@ a.aid-contact-chip:hover {
 .aid-fh-photo__btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
+}
+
+.aid-fh-photo__error {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #b91c1c;
+  line-height: 1.35;
 }
 
 .aid-webcam-modal {

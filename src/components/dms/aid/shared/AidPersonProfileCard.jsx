@@ -118,7 +118,15 @@ const AidPersonProfileCard = ({
       <div className="aid-person-card__banner" aria-hidden />
       <div className="aid-person-card__head">
         <div className="aid-person-card__avatar" aria-hidden>
-          {initials || <FiUser />}
+          {person.photo_url ? (
+            <img
+              src={person.photo_url}
+              alt=""
+              className="aid-person-card__avatar-img"
+            />
+          ) : (
+            initials || <FiUser />
+          )}
         </div>
         <div className="aid-person-card__intro">
           <div className="aid-person-card__title-row">

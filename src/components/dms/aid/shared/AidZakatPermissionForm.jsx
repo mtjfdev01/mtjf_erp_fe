@@ -10,6 +10,11 @@ import {
   formatCnicInput,
   formatPkPhoneInput,
 } from '../aidConstants';
+import {
+  captureSignature,
+  captureThumb,
+} from './mtjfDeviceCapture';
+import AidBiometricCaptureSlot from './AidBiometricCaptureSlot';
 
 const COPY = {
   ur: {
@@ -43,14 +48,15 @@ const COPY = {
     decl2:
       'میں مولانا طارق جمیل فاؤنڈیشن کے انتظامیہ اور نمائندگان کو یہ اختیار دیتا / دیتی ہوں کہ جب تک میں مستحق زکوٰۃ ہوں، ادارہ میری طرف سے زکوٰۃ و صدقات کی رقم یا اشیاء وصول کرے، اپنی ملکیت میں لے اور میری یا دیگر مستحقین کی ضروریات پر خرچ کرے۔',
     accept: 'میں مذکورہ بالا اقرارات سے اتفاق کرتا / کرتی ہوں',
-    applicantThumb: 'انگوٹھا درخواست گزار (SecuGen)',
-    applicantSign: 'دستخط درخواست گزار (ePad)',
-    capture: 'کےپچر',
+    applicantThumb: 'انگوٹھا درخواست گزار',
+    applicantSign: 'دستخط درخواست گزار',
+    capture: 'ڈیوائس سے کیپچر',
+    upload: 'اپ لوڈ',
     clear: 'صاف',
-    empty: 'ابھی خالی — آلہ منسلک نہیں',
+    empty: 'انگوٹھا سینسر پر رکھیں، پھر Capture from device',
     capturing: 'کےپچر ہو رہا ہے…',
     deviceHint:
-      'SecuGen انگوٹھا / ePad VP9801 دستخط — فیلڈز اختیاری ہیں اور null رہ سکتی ہیں۔',
+      'SecuGen Demo 1 جیسا: https://localhost:8443/SGIFPCapture',
   },
   en: {
     org: 'Maulana Tariq jamil Foundation',
@@ -83,14 +89,15 @@ const COPY = {
     decl2:
       'I authorize the management and representatives of Maulana Tariq jamil Foundation that, as long as I remain eligible for Zakat, the organization may collect Zakat and Sadaqat funds or items on my behalf, take them into their ownership, and spend them on my needs or the needs of other deserving people.',
     accept: 'I agree to the declarations above',
-    applicantThumb: 'Applicant thumb (SecuGen)',
-    applicantSign: 'Applicant signature (ePad)',
-    capture: 'Capture',
+    applicantThumb: 'Applicant thumb',
+    applicantSign: 'Applicant signature',
+    capture: 'Capture from device',
+    upload: 'Upload',
     clear: 'Clear',
-    empty: 'Empty for now — device not connected',
+    empty: 'Place finger on SecuGen, then Capture from device',
     capturing: 'Capturing…',
     deviceHint:
-      'SecuGen thumb / ePad VP9801 signature — fields are optional and may stay null.',
+      'Same as SecuGen Demo 1: POST https://localhost:8443/SGIFPCapture',
   },
 };
 
@@ -102,28 +109,7 @@ const money = (n) => {
   });
 };
 
-/**
- * Device bridge (optional). Wire local agent later as:
- *   window.mtjfDevices.captureThumb() → { dataUrl | url }
- *   window.mtjfDevices.captureSignature() → { dataUrl | url }
- */
-async function captureFromDevice(kind) {
-  const api = typeof window !== 'undefined' ? window.mtjfDevices : null;
-  if (!api) return null;
-  try {
-    if (kind === 'thumb' && typeof api.captureThumb === 'function') {
-      return await api.captureThumb({ device: 'secugen' });
-    }
-    if (kind === 'signature' && typeof api.captureSignature === 'function') {
-      return await api.captureSignature({ device: 'epad', model: 'VP9801' });
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function normalizeCapture(raw, source) {
+function normalizeCapture(raw, fallbackSource) {
   if (!raw) return null;
   const dataUrl = raw.dataUrl || raw.data_url || raw.image || null;
   const url = raw.url || null;
@@ -131,61 +117,15 @@ function normalizeCapture(raw, source) {
   return {
     data_url: dataUrl,
     url,
-    source,
+    source: raw.source || fallbackSource,
+    meta: raw.meta || null,
     captured_at: new Date().toISOString(),
   };
 }
 
-const CaptureSlot = ({
-  label,
-  value,
-  onCapture,
-  onClear,
-  readOnly,
-  t,
-  busy,
-  kind,
-}) => {
-  const preview = value?.data_url || value?.url || null;
-  return (
-    <div className={`aid-zakat-capture aid-zakat-capture--${kind}`}>
-      <div className="aid-zakat-capture__label">{label}</div>
-      <div className="aid-zakat-capture__pad">
-        {preview ? (
-          <img src={preview} alt={label} className="aid-zakat-capture__img" />
-        ) : (
-          <span className="aid-zakat-capture__empty">{t.empty}</span>
-        )}
-      </div>
-      {!readOnly && (
-        <div className="aid-zakat-capture__actions">
-          <button
-            type="button"
-            className="aid-mini-btn aid-mini-btn--add"
-            disabled={busy}
-            onClick={onCapture}
-          >
-            {busy ? t.capturing : t.capture}
-          </button>
-          {preview && (
-            <button
-              type="button"
-              className="aid-mini-btn aid-mini-btn--remove"
-              disabled={busy}
-              onClick={onClear}
-            >
-              {t.clear}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
-
 /**
  * Zakat Permission Letter — bilingual (Urdu / English) for every application.
- * Thumb = SecuGen, Signature = ePad VP9801; both nullable until device capture.
+ * Thumb / signature: Upload for all users; live device capture optional.
  */
 const AidZakatPermissionForm = ({
   value,
@@ -218,17 +158,32 @@ const AidZakatPermissionForm = ({
     });
   }, [uiLang]);
 
+  const slotLabels = {
+    capture: t.capture,
+    upload: t.upload,
+    clear: t.clear,
+    empty: t.empty,
+    capturing: t.capturing,
+  };
+
   const runCapture = async (field, kind, source) => {
     setBusyKey(field);
     setDeviceMsg('');
     try {
-      const raw = await captureFromDevice(kind);
+      const raw =
+        kind === 'thumb'
+          ? await captureThumb({ device: 'secugen' })
+          : await captureSignature({ device: 'epad', model: 'VP9801' });
       const normalized = normalizeCapture(raw, source);
-      // Optional for now — stay null when device bridge is not installed
-      patch({ [field]: normalized });
       if (!normalized) {
-        setDeviceMsg(t.deviceHint);
+        setDeviceMsg(
+          'Capture returned no image. Check Console / Network for SecuGen response.',
+        );
+        return;
       }
+      patch({ [field]: normalized });
+    } catch (err) {
+      setDeviceMsg(err?.message || String(err) || 'Capture failed');
     } finally {
       setBusyKey(null);
     }
@@ -446,23 +401,25 @@ const AidZakatPermissionForm = ({
       )}
 
       <div className="aid-zakat-form__signs">
-        <CaptureSlot
+        <AidBiometricCaptureSlot
           kind="thumb"
           label={t.applicantThumb}
           value={details.applicant_thumb}
           readOnly={readOnly}
-          t={t}
           busy={busyKey === 'applicant_thumb'}
+          labels={slotLabels}
+          allowUpload={false}
           onCapture={() => runCapture('applicant_thumb', 'thumb', 'secugen')}
           onClear={() => patch({ applicant_thumb: null })}
         />
-        <CaptureSlot
+        <AidBiometricCaptureSlot
           kind="signature"
           label={t.applicantSign}
           value={details.applicant_signature}
           readOnly={readOnly}
-          t={t}
           busy={busyKey === 'applicant_signature'}
+          labels={slotLabels}
+          allowUpload={false}
           onCapture={() =>
             runCapture('applicant_signature', 'signature', 'epad_vp9801')
           }

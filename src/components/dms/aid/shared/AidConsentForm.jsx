@@ -2,6 +2,11 @@ import React, { useEffect, useState } from 'react';
 import FormInput from '../../../common/FormInput';
 import mtjfLogo from '../../../../assets/mtjf_logo.png';
 import { emptyConsentForm } from '../aidConstants';
+import {
+  captureSignature,
+  captureThumb,
+} from './mtjfDeviceCapture';
+import AidBiometricCaptureSlot from './AidBiometricCaptureSlot';
 
 const COPY = {
   ur: {
@@ -16,15 +21,16 @@ const COPY = {
     body:
       'میں مولانا طارق جمیل فاؤنڈیشن کو اس عمل کا مکمل اختیار دیتا/دیتی ہوں کہ وہ میری تصاویر، ویڈیوز، انٹرویوز، بیانات اور درخواست فارم میں تحریر شدہ معلومات کو اپنے اشاعتی مواد مثلاً رپورٹس، ویب سائٹس، سوشل، پرنٹ اور الیکٹرانکس میڈیا، اشتہارات وغیرہ میں استعمال کر سکتے ہیں۔ مزید میری مندرجہ بالا معلومات اپنے ڈونرز سے بھی شئیر کر سکتے ہیں۔ جس پر مجھے کوئی اعتراض نہیں ہو گا۔',
     accept: 'میں مذکورہ بالا رضامندی سے اتفاق کرتا / کرتی ہوں',
-    thumb: 'انگوٹھا درخواست گزار (SecuGen)',
-    sign: 'دستخط درخواست گزار (ePad)',
+    thumb: 'انگوٹھا درخواست گزار',
+    sign: 'دستخط درخواست گزار',
     signLabel: 'دستخط / انگوٹھا',
-    capture: 'کےپچر',
+    capture: 'ڈیوائس سے کیپچر',
+    upload: 'اپ لوڈ',
     clear: 'صاف',
-    empty: 'ابھی خالی — آلہ منسلک نہیں',
+    empty: 'انگوٹھا سینسر پر رکھیں، پھر Capture from device',
     capturing: 'کےپچر ہو رہا ہے…',
     deviceHint:
-      'SecuGen انگوٹھا / ePad VP9801 دستخط — فیلڈز اختیاری ہیں اور null رہ سکتی ہیں۔',
+      'SecuGen Demo 1 جیسا: https://localhost:8443/SGIFPCapture — انگوٹھا رکھیں پھر Capture from device۔',
   },
   en: {
     org: 'Maulana Tariq jamil Foundation',
@@ -38,35 +44,20 @@ const COPY = {
     body:
       'I hereby grant Maulana Tariq jamil Foundation full authority to use my photographs, videos, interviews, statements, and information written in the application form in their publications such as reports, websites, social, print and electronic media, advertisements, etc. Further, they may also share the above information with their donors. I have no objection to this.',
     accept: 'I agree to the consent statement above',
-    thumb: 'Applicant thumb (SecuGen)',
-    sign: 'Applicant signature (ePad)',
+    thumb: 'Applicant thumb',
+    sign: 'Applicant signature',
     signLabel: 'Signature / Thumb',
-    capture: 'Capture',
+    capture: 'Capture from device',
+    upload: 'Upload',
     clear: 'Clear',
-    empty: 'Empty for now — device not connected',
+    empty: 'Place finger on SecuGen, then Capture from device',
     capturing: 'Capturing…',
     deviceHint:
-      'SecuGen thumb / ePad VP9801 signature — fields are optional and may stay null.',
+      'Same as SecuGen Demo 1: POST https://localhost:8443/SGIFPCapture. Place finger, then Capture from device.',
   },
 };
 
-async function captureFromDevice(kind) {
-  const api = typeof window !== 'undefined' ? window.mtjfDevices : null;
-  if (!api) return null;
-  try {
-    if (kind === 'thumb' && typeof api.captureThumb === 'function') {
-      return await api.captureThumb({ device: 'secugen' });
-    }
-    if (kind === 'signature' && typeof api.captureSignature === 'function') {
-      return await api.captureSignature({ device: 'epad', model: 'VP9801' });
-    }
-  } catch {
-    return null;
-  }
-  return null;
-}
-
-function normalizeCapture(raw, source) {
+function normalizeCapture(raw, fallbackSource) {
   if (!raw) return null;
   const dataUrl = raw.dataUrl || raw.data_url || raw.image || null;
   const url = raw.url || null;
@@ -74,57 +65,11 @@ function normalizeCapture(raw, source) {
   return {
     data_url: dataUrl,
     url,
-    source,
+    source: raw.source || fallbackSource,
+    meta: raw.meta || null,
     captured_at: new Date().toISOString(),
   };
 }
-
-const CaptureSlot = ({
-  label,
-  value,
-  onCapture,
-  onClear,
-  readOnly,
-  t,
-  busy,
-  kind,
-}) => {
-  const preview = value?.data_url || value?.url || null;
-  return (
-    <div className={`aid-zakat-capture aid-zakat-capture--${kind}`}>
-      <div className="aid-zakat-capture__label">{label}</div>
-      <div className="aid-zakat-capture__pad">
-        {preview ? (
-          <img src={preview} alt={label} className="aid-zakat-capture__img" />
-        ) : (
-          <span className="aid-zakat-capture__empty">{t.empty}</span>
-        )}
-      </div>
-      {!readOnly && (
-        <div className="aid-zakat-capture__actions">
-          <button
-            type="button"
-            className="aid-mini-btn aid-mini-btn--add"
-            disabled={busy}
-            onClick={onCapture}
-          >
-            {busy ? t.capturing : t.capture}
-          </button>
-          {preview && (
-            <button
-              type="button"
-              className="aid-mini-btn aid-mini-btn--remove"
-              disabled={busy}
-              onClick={onClear}
-            >
-              {t.clear}
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
 
 /**
  * Consent Form (کنسنٹ فارم) — bilingual Urdu / English for every application.
@@ -158,14 +103,31 @@ const AidConsentForm = ({
     });
   }, [uiLang]);
 
+  const slotLabels = {
+    capture: t.capture,
+    upload: t.upload,
+    clear: t.clear,
+    empty: t.empty,
+    capturing: t.capturing,
+  };
+
   const runCapture = async (field, kind, source) => {
     setBusyKey(field);
     setDeviceMsg('');
     try {
-      const raw = await captureFromDevice(kind);
+      const raw =
+        kind === 'thumb'
+          ? await captureThumb({ device: 'secugen' })
+          : await captureSignature({ device: 'epad', model: 'VP9801' });
       const normalized = normalizeCapture(raw, source);
+      if (!normalized) {
+        setDeviceMsg('Capture returned no image. Check Console / Network for SecuGen response.');
+        return;
+      }
       patch({ [field]: normalized });
-      if (!normalized) setDeviceMsg(t.deviceHint);
+    } catch (err) {
+      // Surface the real SecuGen / network / cert error — no silent upload fallback
+      setDeviceMsg(err?.message || String(err) || 'Capture failed');
     } finally {
       setBusyKey(null);
     }
@@ -270,23 +232,25 @@ const AidConsentForm = ({
       )}
 
       <div className="aid-zakat-form__signs">
-        <CaptureSlot
+        <AidBiometricCaptureSlot
           kind="thumb"
           label={t.thumb}
           value={details.applicant_thumb}
           readOnly={readOnly}
-          t={t}
           busy={busyKey === 'applicant_thumb'}
+          labels={slotLabels}
+          allowUpload={false}
           onCapture={() => runCapture('applicant_thumb', 'thumb', 'secugen')}
           onClear={() => patch({ applicant_thumb: null })}
         />
-        <CaptureSlot
+        <AidBiometricCaptureSlot
           kind="signature"
           label={t.sign}
           value={details.applicant_signature}
           readOnly={readOnly}
-          t={t}
           busy={busyKey === 'applicant_signature'}
+          labels={slotLabels}
+          allowUpload={false}
           onCapture={() =>
             runCapture('applicant_signature', 'signature', 'epad_vp9801')
           }

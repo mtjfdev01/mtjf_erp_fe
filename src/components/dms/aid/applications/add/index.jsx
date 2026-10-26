@@ -84,6 +84,26 @@ import {
 } from '../../aidConstants';
 import '../../aid.css';
 
+/** Copy uploaded / pending photo fields between linked roles. */
+const personPhotoFields = (p) => ({
+  photo_url: p?.photo_url || '',
+  photo_name: p?.photo_name || '',
+  _photo_preview: p?._photo_preview || '',
+  _photo_file: p?._photo_file || null,
+});
+
+const personHasPhoto = (p) =>
+  !!(
+    String(p?.photo_url || '').trim() ||
+    String(p?._photo_preview || '').trim() ||
+    p?._photo_file
+  );
+
+const withPhotoFrom = (target, source) => {
+  if (!personHasPhoto(source) || personHasPhoto(target)) return target;
+  return { ...target, ...personPhotoFields(source) };
+};
+
 const emptyPerson = {
   full_name: '',
   father_or_husband_name: '',
@@ -456,6 +476,28 @@ const mapRelationToWriterRelation = (rel) => {
   return 'relative';
 };
 
+/** True when optional relative/spouse has any real data (not just empty shell). */
+const personHasEnteredDetails = (p) => {
+  if (!p || typeof p !== 'object') return false;
+  if (p.existing_person_id) return true;
+  if (p.is_applicant) return true;
+  const keys = [
+    'full_name',
+    'name_urdu',
+    'cnic',
+    'phone',
+    'father_or_husband_name',
+    'photo_url',
+    '_photo_preview',
+    'date_of_birth',
+    'caste',
+    'address',
+    'current_address',
+    'city',
+  ];
+  return keys.some((k) => String(p[k] || '').trim().length > 0);
+};
+
 const RelativeFields = ({ title, value, onChange, compact }) => {
   const { t } = useAidLang();
   return (
@@ -468,6 +510,7 @@ const RelativeFields = ({ title, value, onChange, compact }) => {
         contactTitle={t('contactAddress')}
         contactSubtitle={t('contactOptionalSubtitle')}
         fieldsRequired={false}
+        showSidebar={false}
         value={value}
         onChange={onChange}
         afterGrid={
@@ -592,6 +635,8 @@ const AidApplicationAddInner = () => {
     },
   ]);
   const [spouse, setSpouse] = useState(emptyRelative());
+  /** Empty optional spouse stays collapsed until Add or existing data. */
+  const [spouseFormOpen, setSpouseFormOpen] = useState(false);
   /** Beneficiary tab — any relatives (children, siblings, parents, …). */
   const [beneficiaryMembers, setBeneficiaryMembers] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -847,8 +892,10 @@ const AidApplicationAddInner = () => {
               !isWriterSelf && Number(sp.id) === Number(writerId),
           }),
         );
+        setSpouseFormOpen(true);
       } else {
         setSpouse(emptyRelative());
+        setSpouseFormOpen(false);
       }
 
       const memberKeys = [
@@ -1014,6 +1061,23 @@ const AidApplicationAddInner = () => {
       : beneficiaryGender === 'female'
         ? 'male'
         : '';
+  const spouseHasDetails = personHasEnteredDetails(spouse);
+  const spousePanelVisible =
+    showSpouseSection &&
+    (spouseFormOpen || spouseHasDetails || !!spouse.is_applicant);
+
+  useEffect(() => {
+    if (spouseHasDetails || spouse.is_applicant) {
+      setSpouseFormOpen(true);
+    }
+  }, [spouseHasDetails, spouse.is_applicant]);
+
+  useEffect(() => {
+    // Marital status no longer implies spouse — collapse empty optional form
+    if (!showSpouseSection) {
+      setSpouseFormOpen(false);
+    }
+  }, [showSpouseSection]);
 
   /** Exactly one applicant: beneficiary, spouse, family head, or a family member. */
   const markApplicant = (target) => {
@@ -1036,6 +1100,8 @@ const AidApplicationAddInner = () => {
       );
       return;
     }
+    // When family head / member becomes applicant, carry over photo from beneficiary if needed
+    const photoSource = beneficiary;
     setBeneficiary((b) => ({
       ...b,
       is_applicant: kind === 'beneficiary',
@@ -1045,48 +1111,76 @@ const AidApplicationAddInner = () => {
       is_applicant: kind === 'spouse',
     }));
     setFamilyHeads((heads) =>
-      heads.map((h, i) => ({
-        ...h,
-        is_applicant: kind === 'family_head' && target.idx === i,
-        _family_members: (h._family_members || []).map((m, mi) => ({
-          ...m,
-          is_applicant:
-            kind === 'head_member' &&
-            target.headIdx === i &&
-            target.idx === mi,
-        })),
-      })),
+      heads.map((h, i) => {
+        const isTarget = kind === 'family_head' && target.idx === i;
+        let next = {
+          ...h,
+          is_applicant: isTarget,
+          _family_members: (h._family_members || []).map((m, mi) => {
+            const memberTarget =
+              kind === 'head_member' &&
+              target.headIdx === i &&
+              target.idx === mi;
+            const member = {
+              ...m,
+              is_applicant: memberTarget,
+            };
+            return memberTarget ? withPhotoFrom(member, photoSource) : member;
+          }),
+        };
+        if (isTarget) next = withPhotoFrom(next, photoSource);
+        return next;
+      }),
     );
     setBeneficiaryMembers((list) =>
-      list.map((m, i) => ({
-        ...m,
-        is_applicant: kind === 'beneficiary_member' && target.idx === i,
-      })),
+      list.map((m, i) => {
+        const isTarget = kind === 'beneficiary_member' && target.idx === i;
+        const next = { ...m, is_applicant: isTarget };
+        return isTarget ? withPhotoFrom(next, photoSource) : next;
+      }),
     );
   };
 
   /** Exactly one beneficiary source: Beneficiary form, Family Head, or a family member. */
   const markBeneficiary = (target) => {
     const kind = target?.kind || 'form';
+    const prevHead = familyHeads.find((h) => h.is_beneficiary) || null;
+    const photoSource =
+      kind === 'form' && prevHead ? prevHead : beneficiary;
+
     setFamilyHeads((heads) =>
-      heads.map((h, i) => ({
-        ...h,
-        is_beneficiary: kind === 'family_head' && target.idx === i,
-        _family_members: (h._family_members || []).map((m, mi) => ({
-          ...m,
-          is_beneficiary:
-            kind === 'head_member' &&
-            target.headIdx === i &&
-            target.idx === mi,
-        })),
-      })),
+      heads.map((h, i) => {
+        const isTarget = kind === 'family_head' && target.idx === i;
+        let next = {
+          ...h,
+          is_beneficiary: isTarget,
+          _family_members: (h._family_members || []).map((m, mi) => {
+            const memberTarget =
+              kind === 'head_member' &&
+              target.headIdx === i &&
+              target.idx === mi;
+            const member = {
+              ...m,
+              is_beneficiary: memberTarget,
+            };
+            return memberTarget ? withPhotoFrom(member, photoSource) : member;
+          }),
+        };
+        if (isTarget) next = withPhotoFrom(next, photoSource);
+        return next;
+      }),
     );
     setBeneficiaryMembers((list) =>
-      list.map((m, i) => ({
-        ...m,
-        is_beneficiary: kind === 'beneficiary_member' && target.idx === i,
-      })),
+      list.map((m, i) => {
+        const isTarget = kind === 'beneficiary_member' && target.idx === i;
+        const next = { ...m, is_beneficiary: isTarget };
+        return isTarget ? withPhotoFrom(next, photoSource) : next;
+      }),
     );
+    if (kind === 'form') {
+      // Returning to beneficiary form — keep photo from previous head if form empty
+      setBeneficiary((b) => withPhotoFrom({ ...b }, photoSource));
+    }
     if (
       kind === 'family_head' ||
       kind === 'head_member' ||
@@ -2228,8 +2322,48 @@ const AidApplicationAddInner = () => {
               needed (spouse or family members can also be the applicant).
             </p> */}
 
-            {showSpouseSection && (
+            {showSpouseSection && !spousePanelVisible ? (
+              <div className="aid-family-panel aid-family-panel--optional-add">
+                <button
+                  type="button"
+                  className="aid-mini-btn aid-mini-btn--add"
+                  onClick={() => {
+                    setSpouse((s) => ({
+                      ...s,
+                      gender: s.gender || spouseDefaultGender,
+                      marital_status:
+                        s.marital_status ||
+                        (isMarried ? 'married' : s.marital_status || ''),
+                    }));
+                    setSpouseFormOpen(true);
+                  }}
+                >
+                  + {t('addOptionalRelative', { name: spouseLabel })}
+                </button>
+              </div>
+            ) : null}
+
+            {spousePanelVisible ? (
               <div className="aid-family-panel">
+                <div className="aid-family-panel__head">
+                  <h4 className="aid-family-panel__title">
+                    {t('optionalSection', { name: spouseLabel })}
+                  </h4>
+                  <button
+                    type="button"
+                    className="aid-mini-btn aid-mini-btn--remove"
+                    onClick={() => {
+                      const wasApplicant = !!spouse.is_applicant;
+                      setSpouse(emptyRelative());
+                      setSpouseFormOpen(false);
+                      if (wasApplicant) {
+                        markApplicant({ kind: 'beneficiary' });
+                      }
+                    }}
+                  >
+                    {t('remove')}
+                  </button>
+                </div>
                 <AidApplicantCheckbox
                   checked={!!spouse.is_applicant}
                   onChange={(yes) => {
@@ -2239,7 +2373,7 @@ const AidApplicationAddInner = () => {
                   label={t('isApplicant', { name: spouseLabel })}
                 />
                 <RelativeFields
-                  title={t('optionalSection', { name: spouseLabel })}
+                  title={t('identity')}
                   value={spouse}
                   onChange={(next) =>
                     setSpouse({ ...next, is_applicant: spouse.is_applicant })
@@ -2247,7 +2381,7 @@ const AidApplicationAddInner = () => {
                   compact
                 />
               </div>
-            )}
+            ) : null}
 
             <div className="aid-family-panel">
               <div className="aid-family-panel__head">

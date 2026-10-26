@@ -111,12 +111,15 @@ const AidFamilyHeadPersonalFields = ({
 
   const Req = () =>
     fieldsRequired ? <span className="required-mark">*</span> : null;
-  const patch = (partial) => onChange({ ...value, ...partial });
-  const age = calcAgeFromDob(value?.date_of_birth);
-  const selectedVulns = parseVulnerabilityList(value?.vulnerability);
   const photoInputRef = useRef(null);
   const disabilityCertInputRef = useRef(null);
   const lookupTimer = useRef(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const patch = (partial) =>
+    onChange({ ...(valueRef.current || value || {}), ...partial });
+  const age = calcAgeFromDob(value?.date_of_birth);
+  const selectedVulns = parseVulnerabilityList(value?.vulnerability);
   const previewUrl = value?._photo_preview || value?.photo_url || '';
   const isRented = value?.resident_type === 'rented';
   const sidebarEnabled = showSidebar != null ? !!showSidebar : !embedded;
@@ -127,6 +130,8 @@ const AidFamilyHeadPersonalFields = ({
   const [disabilityCertUploading, setDisabilityCertUploading] = useState(false);
   const [disabilityCertError, setDisabilityCertError] = useState('');
   const [webcamOpen, setWebcamOpen] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
 
   useEffect(
     () => () => {
@@ -362,17 +367,60 @@ const AidFamilyHeadPersonalFields = ({
     patch({ cnic: formatted, existing_person_id: null });
   };
 
-  const applyPhotoFile = (file) => {
-    if (!file) return;
+  const applyPhotoFile = async (file) => {
+    if (!file || photoUploading) return;
+    const mime = String(file.type || '').toLowerCase();
+    const name = String(file.name || '').toLowerCase();
+    const ok =
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(mime) ||
+      /\.(jpe?g|png|webp)$/i.test(name);
+    if (!ok) {
+      setPhotoError('Only JPG, PNG, or WEBP images are allowed');
+      return;
+    }
+
     if (value?._photo_preview?.startsWith?.('blob:')) {
       URL.revokeObjectURL(value._photo_preview);
     }
-    const url = URL.createObjectURL(file);
+    const localPreview = URL.createObjectURL(file);
+    // Instant preview while upload runs
     patch({
       _photo_file: file,
-      _photo_preview: url,
+      _photo_preview: localPreview,
       photo_name: file.name,
     });
+    setPhotoUploading(true);
+    setPhotoError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('context', 'profile');
+      const res = await axiosInstance.post(
+        '/aid/applications/documents/upload',
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      const data = res.data?.data || {};
+      const remoteUrl = String(data.url || '').trim();
+      if (!remoteUrl) {
+        throw new Error('Upload returned no URL');
+      }
+      if (localPreview?.startsWith?.('blob:')) {
+        URL.revokeObjectURL(localPreview);
+      }
+      patch({
+        _photo_file: null,
+        _photo_preview: remoteUrl,
+        photo_url: remoteUrl,
+        photo_name: data.file_name || file.name,
+      });
+    } catch (err) {
+      setPhotoError(
+        err.response?.data?.message || err.message || 'Photo upload failed',
+      );
+    } finally {
+      setPhotoUploading(false);
+    }
   };
 
   const onPhotoPick = (e) => {
@@ -496,18 +544,23 @@ const AidFamilyHeadPersonalFields = ({
                 <button
                   type="button"
                   className="aid-fh-photo__btn aid-fh-photo__btn--primary"
+                  disabled={photoUploading}
                   onClick={() => setWebcamOpen(true)}
                 >
-                  {t('openWebcam')}
+                  {photoUploading ? t('uploadingPhoto') : t('openWebcam')}
                 </button>
                 <button
                   type="button"
                   className="aid-fh-photo__btn"
+                  disabled={photoUploading}
                   onClick={() => photoInputRef.current?.click()}
                 >
                   {t('captureUpload')}
                 </button>
               </div>
+              {photoError ? (
+                <p className="aid-fh-photo__error">{photoError}</p>
+              ) : null}
               <AidWebcamCaptureModal
                 open={webcamOpen}
                 onClose={() => setWebcamOpen(false)}
