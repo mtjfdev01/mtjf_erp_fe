@@ -24,13 +24,16 @@ import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidInvestigationPanel, {
+  AID_RECOMMENDATION_DECISIONS,
+  AID_RECOMMENDATION_PERIODS,
+  AID_RATION_REC_OPTIONS,
   emptyRecommendation,
   enrichInvestigationFromAttachments,
-  getInvestigationIncompleteReasons,
   isInvestigationComplete,
   isRecommendationComplete,
   mergeInvestigationState,
   normalizeInvestigationEntry,
+  normalizeRationOptions,
 } from '../../shared/AidInvestigationPanel';
 import AidPersonProfileCard, {
   AidFamilyMemberLine,
@@ -70,6 +73,11 @@ const AidApplicationView = () => {
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
+  /** Program manager in Program department (or super admin) — can send to CEO / override rec. */
+  const isProgramDeptManager =
+    isSuperAdmin(permissions) ||
+    (!!permissions?.program_manager &&
+      String(user?.department || '').toLowerCase() === 'program');
   const canUpdate =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_verification', 'update') ||
@@ -148,6 +156,7 @@ const AidApplicationView = () => {
             period_months: saved.period_months ?? 6,
             remarks: saved.remarks || '',
             found_monthly_income: saved.found_monthly_income ?? '',
+            ration_options: normalizeRationOptions(saved.ration_options),
           });
         } else {
           setRecommendation(emptyRecommendation());
@@ -366,11 +375,41 @@ const AidApplicationView = () => {
     investigationItems,
     investigation,
   );
-  const checklistGaps = getInvestigationIncompleteReasons(
-    investigationItems,
-    investigation,
-  );
-  const recommendationComplete = isRecommendationComplete(recommendation);
+  const isRationApp =
+    String(app?.requested_aid_type || '').toLowerCase() === 'ration';
+  const rationOverrideEdit =
+    isRationApp &&
+    (status === 'manager_review' || status === 'ceo_approval_required');
+  const recommendationComplete = isRecommendationComplete(recommendation, {
+    rationOverride: rationOverrideEdit,
+  });
+
+  const buildRecommendationBody = () => {
+    const ration_options = normalizeRationOptions(recommendation.ration_options);
+    if (rationOverrideEdit) {
+      return {
+        decision: 'approve_as_requested',
+        amount: null,
+        period_months: null,
+        remarks: recommendation.remarks,
+        found_monthly_income: null,
+        ration_options,
+      };
+    }
+    return {
+      decision: recommendation.decision,
+      amount:
+        recommendation.decision === 'reject'
+          ? null
+          : Number(recommendation.amount),
+      period_months: Number(recommendation.period_months) || null,
+      remarks: recommendation.remarks,
+      found_monthly_income: recommendation.found_monthly_income
+        ? Number(recommendation.found_monthly_income)
+        : null,
+      ration_options,
+    };
+  };
 
   const saveInvestigationProgress = async () => {
     if (!id || investSaving) return;
@@ -413,6 +452,11 @@ const AidApplicationView = () => {
     canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
   const showVerify =
     canInvestigate && ['submitted', 'under_review'].includes(status);
+  const showManagerForward =
+    isProgramDeptManager && status === 'manager_review';
+  const submitLabel = isProgramDeptManager
+    ? 'Submit for Approvals to CEO'
+    : 'Submit for Manager Review';
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
   const verifiedByName = app.verified_by
@@ -1095,13 +1139,47 @@ const AidApplicationView = () => {
                         value={investigation}
                         onChange={setInvestigation}
                         disabled={!showVerify || busy}
+                        recommendationEditable={
+                          showManagerForward && !busy
+                        }
+                        aidType={app.requested_aid_type}
+                        remarksLabel={
+                          showManagerForward
+                            ? 'Manager remarks'
+                            : 'Investigator remarks'
+                        }
                         canBulkVerify={canBulkVerify}
                         onUploadItemFile={uploadInvestigationFile}
                         uploadingKey={uploadingInvestKey}
                         activeTab={activePanelTab}
-                        vulnerability={app.vulnerability}
+                        vulnerability={
+                          app.vulnerability ||
+                          (app.investigation_recommendation
+                            ?.vulnerability_after_visit
+                            ? {
+                                declared:
+                                  app.investigation_recommendation
+                                    .vulnerability_declared,
+                                after_visit:
+                                  app.investigation_recommendation
+                                    .vulnerability_after_visit,
+                                deltas:
+                                  app.investigation_recommendation
+                                    .vulnerability_deltas || [],
+                              }
+                            : null)
+                        }
                         recommendation={recommendation}
                         onRecommendationChange={setRecommendation}
+                        submitLabel={submitLabel}
+                        includeChecklistGaps={showVerify}
+                        extraMissingSteps={
+                          needsLeakageOverride && !leakageOverrideOk
+                            ? [
+                                'Leakage override: enter a reason (min 5 characters) before submit',
+                              ]
+                            : []
+                        }
                         onSaveProgress={
                           showVerify ? saveInvestigationProgress : undefined
                         }
@@ -1110,97 +1188,71 @@ const AidApplicationView = () => {
                         submitDisabled={
                           busy ||
                           investSaving ||
-                          !checklistComplete ||
                           !recommendationComplete ||
-                          !leakageOverrideOk
+                          !leakageOverrideOk ||
+                          (showVerify && !checklistComplete)
                         }
                         onSubmitReport={
-                          showVerify && activePanelTab === 'case'
+                          activePanelTab === 'field_process' &&
+                          (showVerify || showManagerForward)
                             ? () =>
                                 run(() =>
-                                  axiosInstance.post(
-                                    `/aid/applications/${id}/verify`,
-                                    {
-                                      verification_notes:
-                                        verifyNotes ||
-                                        recommendation.remarks ||
-                                        undefined,
-                                      verification_checklist: investigation,
-                                      recommendation: {
-                                        decision: recommendation.decision,
-                                        amount:
-                                          recommendation.decision === 'reject'
-                                            ? null
-                                            : Number(recommendation.amount),
-                                        period_months:
-                                          Number(recommendation.period_months) ||
-                                          null,
-                                        remarks: recommendation.remarks,
-                                        found_monthly_income:
-                                          recommendation.found_monthly_income
-                                            ? Number(
-                                                recommendation.found_monthly_income,
-                                              )
-                                            : null,
-                                      },
-                                      leakage_override_reason:
-                                        needsLeakageOverride
-                                          ? leakageOverride.trim()
-                                          : undefined,
-                                    },
-                                  ),
+                                  showManagerForward
+                                    ? axiosInstance.post(
+                                        `/aid/applications/${id}/manager-forward`,
+                                        {
+                                          recommendation:
+                                            buildRecommendationBody(),
+                                          leakage_override_reason:
+                                            needsLeakageOverride
+                                              ? leakageOverride.trim()
+                                              : undefined,
+                                        },
+                                      )
+                                    : axiosInstance.post(
+                                        `/aid/applications/${id}/verify`,
+                                        {
+                                          verification_notes:
+                                            verifyNotes ||
+                                            recommendation.remarks ||
+                                            undefined,
+                                          verification_checklist: investigation,
+                                          recommendation:
+                                            buildRecommendationBody(),
+                                          leakage_override_reason:
+                                            needsLeakageOverride
+                                              ? leakageOverride.trim()
+                                              : undefined,
+                                        },
+                                      ),
                                 )
                             : undefined
                         }
                       />
-                      {(activePanelTab === 'case' ||
-                        activePanelTab === 'field_process') &&
-                        showVerify &&
-                        !checklistComplete && (
-                          <div
-                            style={{
-                              fontSize: 12,
-                              color: '#b45309',
-                              marginBottom: 0,
-                            }}
-                          >
-                            <p style={{ margin: '0 0 0.35rem' }}>
-                              Submit stays disabled until every required check is
-                              done. Use <strong>Save progress</strong> anytime.
-                            </p>
-                            <ul style={{ margin: 0, paddingLeft: '1.1rem' }}>
-                              {checklistGaps.slice(0, 6).map((r) => (
-                                <li key={r}>{r}</li>
-                              ))}
-                              {checklistGaps.length > 6 ? (
-                                <li>+{checklistGaps.length - 6} more…</li>
-                              ) : null}
-                            </ul>
-                          </div>
-                        )}
-                      {activePanelTab === 'case' &&
-                        showVerify &&
-                        !recommendationComplete && (
+                      {activePanelTab === 'field_process' &&
+                        showManagerForward && (
                           <p
                             style={{
                               fontSize: 12,
-                              color: '#b45309',
+                              color: '#166534',
                               marginBottom: 0,
                             }}
                           >
-                            Complete Recommendation (decision, amount if
-                            approving, and remarks).
+                            You can overwrite the investigator recommendation
+                            before submitting for CEO approval.
                           </p>
                         )}
-                      {activePanelTab === 'case' &&
+                      {activePanelTab === 'field_process' &&
                         !showVerify &&
+                        !showManagerForward &&
                         app.verification_notes && (
                           <p style={{ fontSize: 13, color: '#64748b' }}>
                             Notes: {app.verification_notes}
                           </p>
                         )}
-                      {activePanelTab === 'case' &&
+                      {activePanelTab === 'field_process' &&
                         !showVerify &&
+                        !showManagerForward &&
                         app.investigation_recommendation?.decision && (
                           <p
                             style={{
@@ -1210,9 +1262,23 @@ const AidApplicationView = () => {
                             }}
                           >
                             Recommendation:{' '}
-                            {String(
-                              app.investigation_recommendation.decision,
-                            ).replace(/_/g, ' ')}
+                            {normalizeRationOptions(
+                              app.investigation_recommendation.ration_options,
+                            ).length > 0
+                              ? normalizeRationOptions(
+                                  app.investigation_recommendation
+                                    .ration_options,
+                                )
+                                  .map(
+                                    (v) =>
+                                      AID_RATION_REC_OPTIONS.find(
+                                        (o) => o.value === v,
+                                      )?.label || v,
+                                  )
+                                  .join(', ')
+                              : String(
+                                  app.investigation_recommendation.decision,
+                                ).replace(/_/g, ' ')}
                             {app.investigation_recommendation.amount != null
                               ? ` · PKR ${app.investigation_recommendation.amount}`
                               : ''}
@@ -1275,12 +1341,158 @@ const AidApplicationView = () => {
                     rows={2}
                   />
                 ) : null}
+                <div className="aid-rec-card" style={{ marginTop: 8 }}>
+                  <h4 className="aid-rec-card__title">
+                    Recommendation (editable)
+                  </h4>
+                  {isRationApp ? (
+                    <>
+                      <div className="aid-rec-options aid-rec-options--checks">
+                        {AID_RATION_REC_OPTIONS.map((opt) => {
+                          const selected = normalizeRationOptions(
+                            recommendation.ration_options,
+                          ).includes(opt.value);
+                          return (
+                            <label
+                              key={opt.value}
+                              className={`aid-rec-option${
+                                selected ? ' is-active' : ''
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={selected}
+                                disabled={busy}
+                                onChange={() => {
+                                  const cur = normalizeRationOptions(
+                                    recommendation.ration_options,
+                                  );
+                                  const next = selected
+                                    ? cur.filter((v) => v !== opt.value)
+                                    : [...cur, opt.value];
+                                  setRecommendation((prev) => ({
+                                    ...prev,
+                                    ration_options: next,
+                                    decision: 'approve_as_requested',
+                                  }));
+                                }}
+                              />
+                              <span>{opt.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      <label className="aid-rec-field">
+                        <span>Remarks</span>
+                        <textarea
+                          rows={3}
+                          disabled={busy}
+                          value={recommendation.remarks}
+                          onChange={(e) =>
+                            setRecommendation((prev) => ({
+                              ...prev,
+                              remarks: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </>
+                  ) : (
+                    <>
+                      <div className="aid-rec-options">
+                        {AID_RECOMMENDATION_DECISIONS.map((opt) => (
+                          <label
+                            key={opt.value}
+                            className={`aid-rec-option${
+                              recommendation.decision === opt.value
+                                ? ' is-active'
+                                : ''
+                            }${
+                              opt.value === 'reject'
+                                ? ' aid-rec-option--reject'
+                                : ''
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="aid-ceo-rec-decision"
+                              value={opt.value}
+                              checked={recommendation.decision === opt.value}
+                              disabled={busy}
+                              onChange={() =>
+                                setRecommendation((prev) => ({
+                                  ...prev,
+                                  decision: opt.value,
+                                }))
+                              }
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                      {recommendation.decision !== 'reject' ? (
+                        <div className="aid-rec-grid">
+                          <label className="aid-rec-field">
+                            <span>Amount (PKR)</span>
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              value={recommendation.amount}
+                              disabled={busy}
+                              onChange={(e) =>
+                                setRecommendation((prev) => ({
+                                  ...prev,
+                                  amount: e.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+                          <label className="aid-rec-field">
+                            <span>Period</span>
+                            <select
+                              value={recommendation.period_months}
+                              disabled={busy}
+                              onChange={(e) =>
+                                setRecommendation((prev) => ({
+                                  ...prev,
+                                  period_months: Number(e.target.value),
+                                }))
+                              }
+                            >
+                              {AID_RECOMMENDATION_PERIODS.map((p) => (
+                                <option key={p.value} value={p.value}>
+                                  {p.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                      ) : null}
+                      <label className="aid-rec-field">
+                        <span>Remarks</span>
+                        <textarea
+                          rows={3}
+                          disabled={busy}
+                          value={recommendation.remarks}
+                          onChange={(e) =>
+                            setRecommendation((prev) => ({
+                              ...prev,
+                              remarks: e.target.value,
+                            }))
+                          }
+                        />
+                      </label>
+                    </>
+                  )}
+                </div>
                 <button
                   type="button"
                   className="primary-btn"
                   disabled={
                     busy ||
-                    (ceoDecision === 'approved' && !leakageOverrideOk)
+                    (ceoDecision === 'approved' &&
+                      (!recommendationComplete || !leakageOverrideOk))
                   }
                   onClick={() =>
                     run(() =>
@@ -1294,6 +1506,7 @@ const AidApplicationView = () => {
                           ceoDecision === 'approved' && needsLeakageOverride
                             ? leakageOverride.trim()
                             : undefined,
+                        recommendation: buildRecommendationBody(),
                       }),
                     )
                   }

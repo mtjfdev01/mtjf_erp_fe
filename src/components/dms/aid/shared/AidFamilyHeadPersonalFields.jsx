@@ -23,6 +23,7 @@ import {
 import { useAidLang } from '../lang/AidLangContext';
 import { aidOptionLabel, aidOptionsForLang } from '../lang/aidUiCopy';
 import AidRegistrationAside from './AidRegistrationAside';
+import AidWebcamCaptureModal from './AidWebcamCaptureModal';
 import {
   PAKISTAN_PROVINCES,
   getPakistanCities,
@@ -125,6 +126,7 @@ const AidFamilyHeadPersonalFields = ({
   const [matchPayload, setMatchPayload] = useState(null);
   const [disabilityCertUploading, setDisabilityCertUploading] = useState(false);
   const [disabilityCertError, setDisabilityCertError] = useState('');
+  const [webcamOpen, setWebcamOpen] = useState(false);
 
   useEffect(
     () => () => {
@@ -360,8 +362,7 @@ const AidFamilyHeadPersonalFields = ({
     patch({ cnic: formatted, existing_person_id: null });
   };
 
-  const onPhotoPick = (e) => {
-    const file = e.target.files?.[0];
+  const applyPhotoFile = (file) => {
     if (!file) return;
     if (value?._photo_preview?.startsWith?.('blob:')) {
       URL.revokeObjectURL(value._photo_preview);
@@ -372,6 +373,13 @@ const AidFamilyHeadPersonalFields = ({
       _photo_preview: url,
       photo_name: file.name,
     });
+  };
+
+  const onPhotoPick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    applyPhotoFile(file);
+    e.target.value = '';
   };
 
   const genderOptions = useMemo(
@@ -481,17 +489,34 @@ const AidFamilyHeadPersonalFields = ({
                 ref={photoInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="aid-fh-photo__input"
                 onChange={onPhotoPick}
               />
-              <button
-                type="button"
-                className="aid-fh-photo__btn"
-                onClick={() => photoInputRef.current?.click()}
-              >
-                {t('captureUpload')}
-              </button>
+              <div className="aid-fh-photo__actions">
+                <button
+                  type="button"
+                  className="aid-fh-photo__btn aid-fh-photo__btn--primary"
+                  onClick={() => setWebcamOpen(true)}
+                >
+                  {t('openWebcam')}
+                </button>
+                <button
+                  type="button"
+                  className="aid-fh-photo__btn"
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  {t('captureUpload')}
+                </button>
+              </div>
+              <AidWebcamCaptureModal
+                open={webcamOpen}
+                onClose={() => setWebcamOpen(false)}
+                onCapture={applyPhotoFile}
+                title={t('photoOfHead')}
+                captureLabel={t('takePhoto')}
+                closeLabel={t('closeWebcam')}
+                errorUnavailable={t('webcamUnavailable')}
+              />
             </div>
           ) : null}
 

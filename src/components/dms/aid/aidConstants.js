@@ -2,6 +2,7 @@ export const AID_STATUS_OPTIONS = [
   { value: 'draft', label: 'Draft' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'under_review', label: 'Under review' },
+  { value: 'manager_review', label: 'Manager Review' },
   { value: 'rejected', label: 'Rejected' },
   { value: 'ceo_approval_required', label: 'CEO approval required' },
   { value: 'successful', label: 'Successful' },
@@ -12,6 +13,7 @@ export const AID_STATUS_OPTIONS = [
 export const AID_ENTRY_STAGES = [
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
+  { id: 'manager_review', label: 'Manager Review', hint: 'With Program manager' },
   { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
   { id: 'approved', label: 'Approved', hint: 'This month' },
   { id: 'returned', label: 'Returned', hint: 'Need correction' },
@@ -28,6 +30,8 @@ export function aidEntryStageTone(stage) {
     case 'submitted':
       return 'info';
     case 'investigation':
+      return 'warn';
+    case 'manager_review':
       return 'warn';
     case 'pending_approval':
       return 'purple';
@@ -1641,6 +1645,7 @@ export function aidStatusTone(status) {
     case 'rejected':
       return 'danger';
     case 'ceo_approval_required':
+    case 'manager_review':
       return 'warn';
     case 'under_review':
     case 'submitted':

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
 const STATUSES = [
@@ -20,13 +20,34 @@ export const AID_RECOMMENDATION_PERIODS = [
   { value: 12, label: '12 months' },
 ];
 
+/** Manager/CEO ration package picks */
+export const AID_RATION_REC_OPTIONS = [
+  { value: 'full', label: 'Full' },
+  { value: 'half', label: 'Half' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'alternate', label: 'Alternate' },
+];
+
 export const emptyRecommendation = () => ({
   decision: 'approve_as_requested',
   amount: '',
   period_months: 6,
   remarks: '',
   found_monthly_income: '',
+  ration_options: [],
 });
+
+export const normalizeRationOptions = (raw) => {
+  const allowed = new Set(AID_RATION_REC_OPTIONS.map((o) => o.value));
+  if (!Array.isArray(raw)) return [];
+  return [
+    ...new Set(
+      raw
+        .map((v) => String(v || '').trim().toLowerCase())
+        .filter((v) => allowed.has(v)),
+    ),
+  ];
+};
 
 export const normalizeInvestigationEntry = (value) => {
   if (value === true || value === 'verified') {
@@ -208,9 +229,12 @@ export const getInvestigationIncompleteReasons = (items = [], state = {}) => {
   return reasons;
 };
 
-export const isRecommendationComplete = (rec = {}) => {
+export const isRecommendationComplete = (rec = {}, opts = {}) => {
   const remarks = String(rec.remarks || '').trim();
   if (remarks.length < 3) return false;
+  if (opts.rationOverride) {
+    return normalizeRationOptions(rec.ration_options).length > 0;
+  }
   if (rec.decision === 'reject') return true;
   const amount = Number(rec.amount);
   if (!Number.isFinite(amount) || amount <= 0) return false;
@@ -219,6 +243,42 @@ export const isRecommendationComplete = (rec = {}) => {
     if (!Number.isFinite(months) || months <= 0) return false;
   }
   return true;
+};
+
+/** Human-readable gaps blocking Recommendation / submit. */
+export const getRecommendationIncompleteReasons = (rec = {}, opts = {}) => {
+  const reasons = [];
+  const remarks = String(rec?.remarks || '').trim();
+  if (remarks.length < 3) {
+    reasons.push('Recommendation: add remarks (min 3 characters)');
+  }
+  if (opts.rationOverride) {
+    if (normalizeRationOptions(rec?.ration_options).length === 0) {
+      reasons.push(
+        'Recommendation: select at least one ration option (Full, Half, Monthly, Alternate)',
+      );
+    }
+    return reasons;
+  }
+  const decision = rec?.decision;
+  if (!decision) {
+    reasons.push(
+      'Recommendation: choose Approve as requested, with changes, or Reject',
+    );
+  }
+  if (decision && decision !== 'reject') {
+    const amount = Number(rec?.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      reasons.push('Recommendation: enter amount (PKR)');
+    }
+    if (decision === 'approve_with_changes') {
+      const months = Number(rec?.period_months);
+      if (!Number.isFinite(months) || months <= 0) {
+        reasons.push('Recommendation: select period (months)');
+      }
+    }
+  }
+  return reasons;
 };
 
 /** Fallback section when API items omit `section` (older payloads). */
@@ -319,13 +379,13 @@ const TAB_INVEST_COPY = {
   },
   field_process: {
     title: 'Field Process',
-    hint: 'Site visit and field checks — mark Verified and add a Found note for each item.',
+    hint: 'Site visit and field checks — then set Recommendation and submit for approval.',
   },
 };
 
 /**
  * Dynamic field investigation — Verified / Mismatch / Not checked per declared claim.
- * Optional sidebar: vulnerability after visit + investigator recommendation.
+ * Optional sidebar (Field Process tab): vulnerability after visit + recommendation.
  */
 const AidInvestigationPanel = ({
   items = [],
@@ -343,6 +403,15 @@ const AidInvestigationPanel = ({
   submitDisabled = false,
   submitLabel = 'Submit report for approval',
   showRecommendation,
+  /** Allow editing recommendation even when checklist is locked (manager override). */
+  recommendationEditable = false,
+  remarksLabel = 'Investigator remarks',
+  /** Application aid type — ration uses package checkboxes for manager/CEO edit */
+  aidType = null,
+  /** Extra gaps (e.g. leakage override) shown in missing-steps panel */
+  extraMissingSteps = [],
+  /** When true, include full investigation checklist gaps (not only current tab) */
+  includeChecklistGaps = true,
   /** Save checklist/recommendation draft without submitting for CEO */
   onSaveProgress,
   saveProgressDisabled = false,
@@ -354,6 +423,7 @@ const AidInvestigationPanel = ({
   onUploadItemFile,
   uploadingKey = null,
 }) => {
+  const [missingOpen, setMissingOpen] = useState(false);
   const list = filterInvestigationItemsByTab(items, activeTab);
   const copy = TAB_INVEST_COPY[activeTab] || TAB_INVEST_COPY.case;
   const panelTitle = title ?? copy.title;
@@ -361,7 +431,38 @@ const AidInvestigationPanel = ({
   const showRec =
     showRecommendation !== undefined
       ? showRecommendation
-      : activeTab === 'case';
+      : activeTab === 'field_process';
+  const recLocked = disabled && !recommendationEditable;
+  const rationOverrideMode =
+    recommendationEditable &&
+    String(aidType || '').toLowerCase() === 'ration';
+
+  const missingSteps = useMemo(() => {
+    const steps = [];
+    if (includeChecklistGaps) {
+      steps.push(...getInvestigationIncompleteReasons(items, value));
+    }
+    if (!recLocked) {
+      steps.push(
+        ...getRecommendationIncompleteReasons(recommendation || {}, {
+          rationOverride: rationOverrideMode,
+        }),
+      );
+    }
+    for (const s of extraMissingSteps || []) {
+      const t = String(s || '').trim();
+      if (t && !steps.includes(t)) steps.push(t);
+    }
+    return steps;
+  }, [
+    includeChecklistGaps,
+    items,
+    value,
+    recLocked,
+    recommendation,
+    extraMissingSteps,
+    rationOverrideMode,
+  ]);
 
   const allVisibleVerified =
     list.length > 0 &&
@@ -678,74 +779,153 @@ const AidInvestigationPanel = ({
 
             <div className="aid-rec-card">
               <h4 className="aid-rec-card__title">Recommendation</h4>
-              <div className="aid-rec-options">
-                {AID_RECOMMENDATION_DECISIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`aid-rec-option${
-                      rec.decision === opt.value ? ' is-active' : ''
-                    }${
-                      opt.value === 'reject' ? ' aid-rec-option--reject' : ''
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="aid-rec-decision"
-                      value={opt.value}
-                      checked={rec.decision === opt.value}
-                      disabled={disabled}
-                      onChange={() => setRec({ decision: opt.value })}
+              {rationOverrideMode ? (
+                <>
+                  <div className="aid-rec-options aid-rec-options--checks">
+                    {AID_RATION_REC_OPTIONS.map((opt) => {
+                      const selected = normalizeRationOptions(
+                        rec.ration_options,
+                      ).includes(opt.value);
+                      return (
+                        <label
+                          key={opt.value}
+                          className={`aid-rec-option${
+                            selected ? ' is-active' : ''
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            disabled={recLocked}
+                            onChange={() => {
+                              const cur = normalizeRationOptions(
+                                rec.ration_options,
+                              );
+                              const next = selected
+                                ? cur.filter((v) => v !== opt.value)
+                                : [...cur, opt.value];
+                              setRec({
+                                ration_options: next,
+                                decision: 'approve_as_requested',
+                              });
+                            }}
+                          />
+                          <span>{opt.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <label className="aid-rec-field">
+                    <span>{remarksLabel}</span>
+                    <textarea
+                      rows={3}
+                      disabled={recLocked}
+                      placeholder="Manager remarks…"
+                      value={rec.remarks}
+                      onChange={(e) => setRec({ remarks: e.target.value })}
                     />
-                    <span>{opt.label}</span>
                   </label>
-                ))}
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="aid-rec-options">
+                    {AID_RECOMMENDATION_DECISIONS.map((opt) => (
+                      <label
+                        key={opt.value}
+                        className={`aid-rec-option${
+                          rec.decision === opt.value ? ' is-active' : ''
+                        }${
+                          opt.value === 'reject' ? ' aid-rec-option--reject' : ''
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="aid-rec-decision"
+                          value={opt.value}
+                          checked={rec.decision === opt.value}
+                          disabled={recLocked}
+                          onChange={() => setRec({ decision: opt.value })}
+                        />
+                        <span>{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
 
-              {rec.decision !== 'reject' ? (
-                <div className="aid-rec-grid">
+                  {rec.decision !== 'reject' ? (
+                    <div className="aid-rec-grid">
+                      <label className="aid-rec-field">
+                        <span>Amount (PKR)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="1"
+                          placeholder="Amount"
+                          value={rec.amount}
+                          disabled={recLocked}
+                          onChange={(e) => setRec({ amount: e.target.value })}
+                        />
+                      </label>
+                      <label className="aid-rec-field">
+                        <span>Period</span>
+                        <select
+                          value={rec.period_months}
+                          disabled={recLocked}
+                          onChange={(e) =>
+                            setRec({ period_months: Number(e.target.value) })
+                          }
+                        >
+                          {AID_RECOMMENDATION_PERIODS.map((p) => (
+                            <option key={p.value} value={p.value}>
+                              {p.label}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                  ) : null}
+
                   <label className="aid-rec-field">
-                    <span>Amount (PKR)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Amount"
-                      value={rec.amount}
-                      disabled={disabled}
-                      onChange={(e) => setRec({ amount: e.target.value })}
+                    <span>{remarksLabel}</span>
+                    <textarea
+                      rows={3}
+                      disabled={recLocked}
+                      placeholder="Family situation, who lives with the head, support from relatives…"
+                      value={rec.remarks}
+                      onChange={(e) => setRec({ remarks: e.target.value })}
                     />
                   </label>
-                  <label className="aid-rec-field">
-                    <span>Period</span>
-                    <select
-                      value={rec.period_months}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        setRec({ period_months: Number(e.target.value) })
-                      }
-                    >
-                      {AID_RECOMMENDATION_PERIODS.map((p) => (
-                        <option key={p.value} value={p.value}>
-                          {p.label}
-                        </option>
+                </>
+              )}
+
+              {!recLocked && missingSteps.length > 0 ? (
+                <div className="aid-missing-steps">
+                  <button
+                    type="button"
+                    className="aid-missing-steps__toggle"
+                    aria-expanded={missingOpen}
+                    onClick={() => setMissingOpen((o) => !o)}
+                  >
+                    <span>
+                      See missing steps in this application verification
+                      <span className="aid-missing-steps__count">
+                        {missingSteps.length}
+                      </span>
+                    </span>
+                    <span className="aid-missing-steps__chevron" aria-hidden>
+                      {missingOpen ? '▾' : '▸'}
+                    </span>
+                  </button>
+                  {missingOpen ? (
+                    <ul className="aid-missing-steps__list">
+                      {missingSteps.map((step) => (
+                        <li key={step}>{step}</li>
                       ))}
-                    </select>
-                  </label>
+                    </ul>
+                  ) : null}
                 </div>
               ) : null}
 
-              <label className="aid-rec-field">
-                <span>Investigator remarks</span>
-                <textarea
-                  rows={4}
-                  disabled={disabled}
-                  placeholder="Family situation, who lives with the head, support from relatives…"
-                  value={rec.remarks}
-                  onChange={(e) => setRec({ remarks: e.target.value })}
-                />
-              </label>
-
-              {!disabled && onSaveProgress ? (
+              {!recLocked && onSaveProgress ? (
                 <button
                   type="button"
                   className="aid-rec-save"
@@ -756,7 +936,7 @@ const AidInvestigationPanel = ({
                 </button>
               ) : null}
 
-              {!disabled && onSubmitReport ? (
+              {!recLocked && onSubmitReport ? (
                 <button
                   type="button"
                   className="aid-rec-submit"
