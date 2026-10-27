@@ -249,7 +249,7 @@ export const PAKISTAN_PROVINCES = [
       'Sukheke Mandi',
       'Surkhpur',
       'Talagang',
-      'Talamba',
+      'Tulamba',
       'Tandlianwala',
       'Taunsa',
       'Taxila',

@@ -260,13 +260,19 @@ export const AID_UI_COPY = {
 
     // Docs
     docsHint: 'All document uploads are optional.',
-    docsHintDetail: 'CNICs and certificates accept multiple files.',
+    docsHintDetail:
+      'CNICs use Front / Back per card; use + to add another CNIC. Certificates accept multiple files.',
     chooseFile: 'Choose file',
     fileN: 'File {n}',
     chooseFiles: 'Choose files',
     addMoreFiles: '+ Add more files',
     multiple: 'Multiple',
     optional: 'Optional',
+    frontBack: 'Front / Back',
+    cnicFront: 'Front',
+    cnicBack: 'Back',
+    cnicPair: 'CNIC {n}',
+    addCnicPair: 'Add another CNIC',
 
     // Family tree
     familyTreeEmpty:
@@ -636,13 +642,19 @@ export const AID_UI_COPY = {
     className: 'جماعت کا نام',
 
     docsHint: 'تمام دستاویزی اپ لوڈ اختیاری ہیں۔',
-    docsHintDetail: 'شناختی کارڈ اور سرٹیفکیٹس کے لیے متعدد فائلیں قبول ہیں۔',
+    docsHintDetail:
+      'شناختی کارڈ کے لیے سامنے / پیچھے؛ مزید کارڈ کے لیے + دبائیں۔ سرٹیفکیٹس متعدد فائلیں قبول ہیں۔',
     chooseFile: 'فائل منتخب کریں',
     fileN: 'فائل {n}',
     chooseFiles: 'فائلیں منتخب کریں',
     addMoreFiles: '+ مزید فائلیں',
     multiple: 'متعدد',
     optional: 'اختیاری',
+    frontBack: 'سامنے / پیچھے',
+    cnicFront: 'سامنے',
+    cnicBack: 'پیچھے',
+    cnicPair: 'شناختی کارڈ {n}',
+    addCnicPair: 'ایک اور شناختی کارڈ شامل کریں',
 
     familyTreeEmpty:
       'ابھی خاندان دکھانے کے لیے کوئی رکن نہیں۔ پہلے خاندانی رجسٹریشن مکمل کریں۔',

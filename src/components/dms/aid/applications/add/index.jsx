@@ -1642,11 +1642,23 @@ const AidApplicationAddInner = () => {
                 : [];
           list.forEach((item, i) => {
             if (item?.file) {
+              const side = String(item.side || '').toLowerCase();
+              const pair =
+                item.pair != null && Number.isFinite(Number(item.pair))
+                  ? Number(item.pair) + 1
+                  : null;
+              let description = context;
+              if (side === 'front' || side === 'back') {
+                description = pair
+                  ? `${context} #${pair} (${side})`
+                  : `${context} (${side})`;
+              } else if (list.length > 1) {
+                description = `${context} (${i + 1})`;
+              }
               uploads.push({
                 context,
                 file: item.file,
-                description:
-                  list.length > 1 ? `${context} (${i + 1})` : context,
+                description,
               });
             }
           });

@@ -1594,7 +1594,13 @@ export const AID_ATTACHMENT_CONTEXTS = [
 /** Optional application-intake document slots (create form Attachments tab). */
 export const AID_APPLICATION_DOC_TYPES = [
   { value: 'mepco_bill', label: 'Mepco Bill', multiple: false },
-  { value: 'cnic', label: 'CNICs', multiple: true },
+  {
+    value: 'cnic',
+    label: 'CNICs',
+    labelUr: 'شناختی کارڈ',
+    multiple: true,
+    frontBack: true,
+  },
   { value: 'bay_form', label: 'Bay Forms', multiple: true },
   { value: 'death_certificate', label: 'Death Certificates', multiple: true },
   { value: 'marriage_certificate', label: 'Marriage Certificates', multiple: true },
@@ -1602,13 +1608,68 @@ export const AID_APPLICATION_DOC_TYPES = [
   { value: 'e_stamp_paper', label: 'E-Stamp Paper', multiple: false },
 ];
 
-/** Normalize a docs slot to a list of { file?, name?, url? }. */
+/** Normalize a docs slot to a list of { file?, name?, url?, side?, pair? }. */
 export function normalizeApplicationDocSlot(slot) {
   if (!slot) return [];
   if (Array.isArray(slot)) return slot.filter(Boolean);
   if (slot.files && Array.isArray(slot.files)) return slot.files.filter(Boolean);
   if (slot.file || slot.name || slot.url) return [slot];
   return [];
+}
+
+/**
+ * Group CNIC files into front/back pairs for the intake UI.
+ * Returns at least one empty pair when there are no files.
+ */
+export function cnicFilesToPairs(files) {
+  const list = Array.isArray(files) ? files.filter(Boolean) : [];
+  if (!list.length) return [{ front: null, back: null }];
+
+  const hasMeta = list.some(
+    (f) => f?.side === 'front' || f?.side === 'back' || f?.pair != null,
+  );
+
+  if (hasMeta) {
+    const byPair = new Map();
+    list.forEach((f, i) => {
+      const pairIdx =
+        f.pair != null && Number.isFinite(Number(f.pair))
+          ? Number(f.pair)
+          : i;
+      if (!byPair.has(pairIdx)) byPair.set(pairIdx, { front: null, back: null });
+      const row = byPair.get(pairIdx);
+      const side = String(f.side || '').toLowerCase();
+      if (side === 'back') row.back = f;
+      else row.front = f;
+    });
+    return Array.from(byPair.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, row]) => row);
+  }
+
+  // Legacy flat list: treat consecutive files as front, back, front, back…
+  const pairs = [];
+  for (let i = 0; i < list.length; i += 2) {
+    pairs.push({
+      front: list[i] || null,
+      back: list[i + 1] || null,
+    });
+  }
+  return pairs.length ? pairs : [{ front: null, back: null }];
+}
+
+/** Flatten front/back pairs back into a files array with side/pair metadata. */
+export function cnicPairsToFiles(pairs) {
+  const out = [];
+  (pairs || []).forEach((pair, pairIdx) => {
+    if (pair?.front) {
+      out.push({ ...pair.front, side: 'front', pair: pairIdx });
+    }
+    if (pair?.back) {
+      out.push({ ...pair.back, side: 'back', pair: pairIdx });
+    }
+  });
+  return out;
 }
 
 export const AID_VERIFICATION_CHECKLIST = [
