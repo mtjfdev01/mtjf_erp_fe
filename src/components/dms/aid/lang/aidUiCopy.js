@@ -30,6 +30,8 @@ export const AID_UI_COPY = {
     tabRequestHint: 'Need & program',
     tabAttachments: 'Attachments',
     tabAttachmentsHint: 'Docs & forms',
+    tabSurvey: 'Survey',
+    tabSurveyHint: 'Water program survey',
 
     // Request
     application: 'Application',
@@ -44,6 +46,7 @@ export const AID_UI_COPY = {
     needDescription: 'Application summary',
     needPlaceholder: 'Describe the need…',
     downloadPng: 'Download as PNG',
+    printForm: 'Print',
 
     // Attachments
     attachments: 'Attachments',
@@ -413,6 +416,8 @@ export const AID_UI_COPY = {
     tabRequestHint: 'ضرورت و پروگرام',
     tabAttachments: 'منسلکات',
     tabAttachmentsHint: 'دستاویزات و فارم',
+    tabSurvey: 'سروی',
+    tabSurveyHint: 'واٹر پروگرام سروی',
 
     application: 'درخواست',
     title: 'عنوان',
@@ -426,6 +431,7 @@ export const AID_UI_COPY = {
     needDescription: 'درخواست کا خلاصہ',
     needPlaceholder: 'ضرورت بیان کریں…',
     downloadPng: 'PNG ڈاؤن لوڈ',
+    printForm: 'پرنٹ',
 
     attachments: 'منسلکات',
     zakatLetter: 'اجازت نامہ برائے زکوٰۃ',

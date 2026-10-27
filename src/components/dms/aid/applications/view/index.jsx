@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { FiPrinter } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
@@ -19,10 +20,11 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
-import AidCleanWaterApplicationFields from '../../shared/AidCleanWaterApplicationFields';
+import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
+import { printAidElement } from '../../shared/printAidElement';
 import AidInvestigationPanel, {
   AID_RECOMMENDATION_DECISIONS,
   AID_RECOMMENDATION_PERIODS,
@@ -82,6 +84,11 @@ const AidApplicationView = () => {
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_verification', 'update') ||
     hasAidPermission(permissions, 'aid_applications', 'update');
+  /** Reassign case owner — same capability as Consider & assign (not for investigators). */
+  const canAssign =
+    isStaffElevated ||
+    hasAidPermission(permissions, 'aid_drafts', 'approve_draft') ||
+    hasAidPermission(permissions, 'aid_applications', 'approve_draft');
   const canCeo =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
@@ -98,12 +105,16 @@ const AidApplicationView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionError, setActionError] = useState('');
+  const zakatPrintRef = useRef(null);
+  const consentPrintRef = useRef(null);
   const [panelTab, setPanelTab] = useState('case');
   // Applicant tab removed — keep legacy 'writer' links on Family
   const activePanelTab = panelTab === 'writer' ? 'family' : panelTab;
   const [attachContext, setAttachContext] = useState('verification');
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
+  const [incompleteOpen, setIncompleteOpen] = useState(false);
+  const [incompleteReason, setIncompleteReason] = useState('');
   const [verifyNotes, setVerifyNotes] = useState('');
   const [investigation, setInvestigation] = useState({});
   const [recommendation, setRecommendation] = useState(emptyRecommendation);
@@ -377,16 +388,25 @@ const AidApplicationView = () => {
   );
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
+  const showManagerForward =
+    isProgramDeptManager && status === 'manager_review';
+  const showVerify =
+    canInvestigate && ['submitted', 'under_review'].includes(status);
+  /** Manager / CEO (and Program manager → CEO) ration edit: checkboxes + remarks only */
   const rationOverrideEdit =
     isRationApp &&
-    (status === 'manager_review' || status === 'ceo_approval_required');
+    (showManagerForward ||
+      showCeo ||
+      (showVerify && isProgramDeptManager) ||
+      status === 'manager_review' ||
+      status === 'ceo_approval_required');
   const recommendationComplete = isRecommendationComplete(recommendation, {
-    rationOverride: rationOverrideEdit,
+    rationOverride: !!rationOverrideEdit,
   });
 
   const buildRecommendationBody = () => {
     const ration_options = normalizeRationOptions(recommendation.ration_options);
-    if (rationOverrideEdit) {
+    if (isRationApp && rationOverrideEdit) {
       return {
         decision: 'approve_as_requested',
         amount: null,
@@ -449,11 +469,17 @@ const AidApplicationView = () => {
     }
   };
   const showReject =
-    canUpdate && !['successful', 'delivered', 'rejected'].includes(status);
-  const showVerify =
-    canInvestigate && ['submitted', 'under_review'].includes(status);
-  const showManagerForward =
-    isProgramDeptManager && status === 'manager_review';
+    canUpdate && !['successful', 'delivered', 'rejected', 'incomplete', 'draft'].includes(status);
+  const showMarkIncomplete =
+    canUpdate &&
+    ![
+      'draft',
+      'incomplete',
+      'successful',
+      'delivered',
+      'rejected',
+    ].includes(status);
+  const showResumeIncomplete = canUpdate && status === 'incomplete';
   const submitLabel = isProgramDeptManager
     ? 'Submit for Approvals to CEO'
     : 'Submit for Manager Review';
@@ -516,6 +542,35 @@ const AidApplicationView = () => {
                 }
               >
                 Edit
+              </button>
+            ) : null}
+            {showMarkIncomplete ? (
+              <button
+                type="button"
+                className="secondary-btn"
+                disabled={busy}
+                onClick={() => {
+                  setIncompleteOpen(true);
+                  setRejectOpen(false);
+                }}
+              >
+                Mark Incomplete
+              </button>
+            ) : null}
+            {showResumeIncomplete ? (
+              <button
+                type="button"
+                className="primary-btn"
+                disabled={busy}
+                onClick={() =>
+                  run(() =>
+                    axiosInstance.post(
+                      `/aid/applications/${id}/resume-incomplete`,
+                    ),
+                  )
+                }
+              >
+                Resume to verification
               </button>
             ) : null}
           </div>
@@ -785,7 +840,7 @@ const AidApplicationView = () => {
                   </Fact>
                 </div>
 
-                {canUpdate &&
+                {canAssign &&
                   status !== 'rejected' &&
                   status !== 'delivered' && (
                   <div className="aid-assign-block">
@@ -870,8 +925,9 @@ const AidApplicationView = () => {
                 {app.requested_aid_type === 'clean_water' &&
                   app.clean_water_details && (
                     <div className="aid-detail-block">
-                      <AidCleanWaterApplicationFields
+                      <AidCleanWaterSurveyForm
                         value={app.clean_water_details}
+                        applicationNo={app.application_no}
                         readOnly
                       />
                     </div>
@@ -881,12 +937,25 @@ const AidApplicationView = () => {
                     className="aid-detail-block"
                     title="Zakat Permission Letter"
                     hint="Click to view"
+                    actions={
+                      <button
+                        type="button"
+                        className="aid-png-download-btn"
+                        title="Print"
+                        aria-label="Print"
+                        onClick={() => printAidElement(zakatPrintRef.current)}
+                      >
+                        <FiPrinter size={18} />
+                      </button>
+                    }
                   >
-                    <AidZakatPermissionForm
-                      value={app.zakat_permission}
-                      applicationNo={app.application_no}
-                      readOnly
-                    />
+                    <div ref={zakatPrintRef}>
+                      <AidZakatPermissionForm
+                        value={app.zakat_permission}
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    </div>
                   </AidCollapsibleSection>
                 )}
                 {app.consent_form && (
@@ -894,12 +963,25 @@ const AidApplicationView = () => {
                     className="aid-detail-block"
                     title="Consent Form"
                     hint="Click to view"
+                    actions={
+                      <button
+                        type="button"
+                        className="aid-png-download-btn"
+                        title="Print"
+                        aria-label="Print"
+                        onClick={() => printAidElement(consentPrintRef.current)}
+                      >
+                        <FiPrinter size={18} />
+                      </button>
+                    }
                   >
-                    <AidConsentForm
-                      value={app.consent_form}
-                      applicationNo={app.application_no}
-                      readOnly
-                    />
+                    <div ref={consentPrintRef}>
+                      <AidConsentForm
+                        value={app.consent_form}
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    </div>
                   </AidCollapsibleSection>
                 )}
               </section>
@@ -910,6 +992,7 @@ const AidApplicationView = () => {
                 <AidPersonProfileCard
                   person={app.beneficiary}
                   title="Beneficiary"
+                  attachments={attachments}
                   roles={{
                     beneficiary: true,
                     applicant:
@@ -933,6 +1016,7 @@ const AidApplicationView = () => {
                       person={app.writer}
                       title="Applicant"
                       relation={app.writer_relation}
+                      attachments={attachments}
                       roles={{ applicant: true }}
                     />
                   </div>
@@ -1140,13 +1224,17 @@ const AidApplicationView = () => {
                         onChange={setInvestigation}
                         disabled={!showVerify || busy}
                         recommendationEditable={
-                          showManagerForward && !busy
+                          (showManagerForward || showCeo) && !busy
                         }
                         aidType={app.requested_aid_type}
+                        rationPackageMode={!!rationOverrideEdit}
                         remarksLabel={
-                          showManagerForward
-                            ? 'Manager remarks'
-                            : 'Investigator remarks'
+                          showCeo
+                            ? 'CEO remarks'
+                            : showManagerForward ||
+                                (showVerify && isProgramDeptManager)
+                              ? 'Manager remarks'
+                              : 'Investigator remarks'
                         }
                         canBulkVerify={canBulkVerify}
                         onUploadItemFile={uploadInvestigationFile}
@@ -1343,10 +1431,15 @@ const AidApplicationView = () => {
                 ) : null}
                 <div className="aid-rec-card" style={{ marginTop: 8 }}>
                   <h4 className="aid-rec-card__title">
-                    Recommendation (editable)
+                    {isRationApp
+                      ? 'Ration recommendation (editable)'
+                      : 'Recommendation (editable)'}
                   </h4>
                   {isRationApp ? (
                     <>
+                      <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                        Select package options and add remarks only.
+                      </p>
                       <div className="aid-rec-options aid-rec-options--checks">
                         {AID_RATION_REC_OPTIONS.map((opt) => {
                           const selected = normalizeRationOptions(
@@ -1374,6 +1467,9 @@ const AidApplicationView = () => {
                                     ...prev,
                                     ration_options: next,
                                     decision: 'approve_as_requested',
+                                    amount: '',
+                                    period_months: null,
+                                    found_monthly_income: '',
                                   }));
                                 }}
                               />
@@ -1387,6 +1483,7 @@ const AidApplicationView = () => {
                         <textarea
                           rows={3}
                           disabled={busy}
+                          placeholder="Remarks…"
                           value={recommendation.remarks}
                           onChange={(e) =>
                             setRecommendation((prev) => ({
@@ -1605,6 +1702,46 @@ const AidApplicationView = () => {
                 onClick={() => {
                   setRejectOpen(false);
                   setRejectReason('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {incompleteOpen && (
+          <div className="aid-card" style={{ marginBottom: 16 }}>
+            <FormTextarea
+              label="Incomplete reason (optional)"
+              value={incompleteReason}
+              onChange={(e) => setIncompleteReason(e.target.value)}
+              rows={3}
+              placeholder="What details are missing?"
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button
+                type="button"
+                className="primary-btn"
+                disabled={busy}
+                onClick={() => {
+                  const reason = incompleteReason.trim();
+                  setIncompleteOpen(false);
+                  run(() =>
+                    axiosInstance.post(
+                      `/aid/applications/${id}/mark-incomplete`,
+                      reason ? { reason } : {},
+                    ),
+                  );
+                }}
+              >
+                Confirm Incomplete
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  setIncompleteOpen(false);
+                  setIncompleteReason('');
                 }}
               >
                 Cancel

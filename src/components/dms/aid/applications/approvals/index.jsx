@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FiCheckCircle, FiDownload, FiEye } from 'react-icons/fi';
+import { MdZoomIn } from 'react-icons/md';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
@@ -29,9 +30,30 @@ import {
   formatAidProgramLabel,
   formatExpectedAmount,
 } from '../../aidConstants';
+import {
+  AID_RATION_REC_OPTIONS,
+  normalizeRationOptions,
+} from '../../shared/AidInvestigationPanel';
+import AidRationRecommendationModal from '../../shared/AidRationRecommendationModal';
 import '../../aid.css';
 import '../../overview/overview.css';
 import useListAutoRefresh from '../../../../../hooks/useListAutoRefresh';
+
+const isRationApp = (row) =>
+  String(row?.requested_aid_type || '').toLowerCase() === 'ration';
+
+const formatRationRecLabel = (rec) => {
+  const opts = normalizeRationOptions(rec?.ration_options);
+  if (opts.length) {
+    return opts
+      .map(
+        (v) =>
+          AID_RATION_REC_OPTIONS.find((o) => o.value === v)?.label || v,
+      )
+      .join(', ');
+  }
+  return rec?.decision ? String(rec.decision).replace(/_/g, ' ') : '—';
+};
 
 const CEO_PENDING = 'ceo_approval_required';
 
@@ -98,6 +120,9 @@ const AidApprovalsList = () => {
   });
   const [overview, setOverview] = useState(null);
   const [overviewLoading, setOverviewLoading] = useState(true);
+  const [rationModalRow, setRationModalRow] = useState(null);
+  const [rationBusy, setRationBusy] = useState(false);
+  const [rationError, setRationError] = useState('');
 
   const programOptions = useMemo(
     () => [
@@ -237,8 +262,69 @@ const AidApprovalsList = () => {
     navigate(`/dms/aid/applications/view/${id}?from=approvals`);
   };
 
-  const openApprove = (id) => {
-    navigate(`/dms/aid/applications/view/${id}?from=approvals&action=approve`);
+  const openApprove = (row) => {
+    if (isRationApp(row)) {
+      setRationError('');
+      setRationModalRow(row);
+      return;
+    }
+    navigate(
+      `/dms/aid/applications/view/${row.id}?from=approvals&action=approve`,
+    );
+  };
+
+  const closeRationModal = () => {
+    if (rationBusy) return;
+    setRationModalRow(null);
+    setRationError('');
+  };
+
+  const saveRationRecommendation = async (recommendation) => {
+    if (!rationModalRow?.id) return;
+    setRationBusy(true);
+    setRationError('');
+    try {
+      await axiosInstance.patch(`/aid/applications/${rationModalRow.id}`, {
+        investigation_recommendation: recommendation,
+      });
+      setRationModalRow(null);
+      await fetchRows();
+      await fetchOverview();
+    } catch (err) {
+      setRationError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to save recommendation',
+      );
+    } finally {
+      setRationBusy(false);
+    }
+  };
+
+  const approveRationRecommendation = async (recommendation) => {
+    if (!rationModalRow?.id) return;
+    setRationBusy(true);
+    setRationError('');
+    try {
+      await axiosInstance.post(
+        `/aid/applications/${rationModalRow.id}/ceo-decide`,
+        {
+          decision: 'approved',
+          recommendation,
+        },
+      );
+      setRationModalRow(null);
+      await fetchRows();
+      await fetchOverview();
+    } catch (err) {
+      setRationError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to approve application',
+      );
+    } finally {
+      setRationBusy(false);
+    }
   };
 
   const handleExport = () => window.print();
@@ -492,10 +578,13 @@ const AidApprovalsList = () => {
                 ) : (
                   rows.map((row) => {
                     const needsCeo = canCeo && row.status === CEO_PENDING;
+                    const ration = isRationApp(row);
                     const rec = row.investigation_recommendation;
-                    const recLabel = rec?.decision
-                      ? String(rec.decision).replace(/_/g, ' ')
-                      : '—';
+                    const recLabel = ration
+                      ? formatRationRecLabel(rec)
+                      : rec?.decision
+                        ? String(rec.decision).replace(/_/g, ' ')
+                        : '—';
                     return (
                       <tr
                         key={row.id}
@@ -519,12 +608,18 @@ const AidApprovalsList = () => {
                           <div style={{ textTransform: 'capitalize' }}>
                             {recLabel}
                           </div>
-                          {rec?.amount != null ? (
+                          {!ration && rec?.amount != null ? (
                             <div style={{ fontSize: 12, color: '#64748b' }}>
                               PKR {rec.amount}
                               {rec.period_months
                                 ? ` · ${rec.period_months} mo`
                                 : ''}
+                            </div>
+                          ) : null}
+                          {ration && rec?.remarks ? (
+                            <div style={{ fontSize: 12, color: '#64748b' }}>
+                              {String(rec.remarks).slice(0, 60)}
+                              {String(rec.remarks).length > 60 ? '…' : ''}
                             </div>
                           ) : null}
                         </td>
@@ -546,18 +641,31 @@ const AidApprovalsList = () => {
                           <div className="aid-icon-actions">
                             <button
                               type="button"
-                              className="aid-icon-btn"
+                              className="aid-icon-btn aid-icon-btn--view"
                               title="View application"
+                              aria-label="View application"
                               onClick={() => openView(row.id)}
                             >
                               <FiEye />
                             </button>
-                            {needsCeo ? (
+                            {needsCeo && ration ? (
+                              <button
+                                type="button"
+                                className="aid-icon-btn aid-icon-btn--approve"
+                                title="Ration recommendation / approve"
+                                aria-label="Ration recommendation / approve"
+                                onClick={() => openApprove(row)}
+                              >
+                                <MdZoomIn />
+                              </button>
+                            ) : null}
+                            {needsCeo && !ration ? (
                               <button
                                 type="button"
                                 className="aid-icon-btn aid-icon-btn--approve"
                                 title="Approve / decide as CEO"
-                                onClick={() => openApprove(row.id)}
+                                aria-label="Approve / decide as CEO"
+                                onClick={() => openApprove(row)}
                               >
                                 <FiCheckCircle />
                               </button>
@@ -571,6 +679,17 @@ const AidApprovalsList = () => {
               </tbody>
             </table>
           </div>
+
+          <AidRationRecommendationModal
+            open={!!rationModalRow}
+            application={rationModalRow}
+            mode="ceo"
+            busy={rationBusy}
+            error={rationError}
+            onClose={closeRationModal}
+            onSave={saveRationRecommendation}
+            onApprove={approveRationRecommendation}
+          />
 
           {totalItems > 0 && (
             <Pagination

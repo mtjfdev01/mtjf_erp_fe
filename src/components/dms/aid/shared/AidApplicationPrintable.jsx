@@ -7,6 +7,9 @@ import {
   formatLivestockSummary,
   formatVulnerability,
 } from '../aidConstants';
+import AidZakatPermissionForm from './AidZakatPermissionForm';
+import AidConsentForm from './AidConsentForm';
+import { printAidElement } from './printAidElement';
 
 const dash = (v) => {
   if (v == null || v === '') return '—';
@@ -115,6 +118,7 @@ const PersonBlock = ({ person, familyCounts = {} }) => {
 
 /**
  * Printable application form — paper-style layout for Aid entry / case print.
+ * Also exposes Zakat Permission Letter and Consent Form when present.
  */
 const AidApplicationPrintable = ({
   app,
@@ -123,6 +127,8 @@ const AidApplicationPrintable = ({
   preparedBy,
 }) => {
   const printRef = useRef(null);
+  const zakatPrintRef = useRef(null);
+  const consentPrintRef = useRef(null);
   if (!app) return null;
 
   const beneficiary = app.beneficiary || {};
@@ -155,22 +161,21 @@ const AidApplicationPrintable = ({
     parents.find((r) => String(r.relation_type).toLowerCase() === 'mother')
       ?.person || null;
 
-  const handlePrint = () => {
-    document.body.classList.add('aid-printing');
-    window.print();
-    window.setTimeout(() => {
-      document.body.classList.remove('aid-printing');
-    }, 300);
-  };
+  const hasZakat = !!app.zakat_permission;
+  const hasConsent = !!app.consent_form;
 
   return (
     <section className="aid-section aid-section--flush aid-printable-section">
       <div className="aid-printable__toolbar no-print">
         <p className="aid-printable__toolbar-hint">
-          Paper-style application form for printing or filing.
+          Paper-style forms for printing or filing.
         </p>
-        <button type="button" className="primary-btn" onClick={handlePrint}>
-          Print
+        <button
+          type="button"
+          className="primary-btn"
+          onClick={() => printAidElement(printRef.current)}
+        >
+          Print application
         </button>
       </div>
 
@@ -496,6 +501,60 @@ const AidApplicationPrintable = ({
           </div>
         </div>
       </div>
+
+      {hasZakat ? (
+        <div className="aid-printable-doc">
+          <div className="aid-printable__toolbar no-print">
+            <p className="aid-printable__toolbar-hint">
+              Zakat Permission Letter
+            </p>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => printAidElement(zakatPrintRef.current)}
+            >
+              Print zakat
+            </button>
+          </div>
+          <div
+            ref={zakatPrintRef}
+            id="aid-zakat-printable"
+            className="aid-printable aid-printable--form"
+          >
+            <AidZakatPermissionForm
+              value={app.zakat_permission}
+              applicationNo={app.application_no}
+              readOnly
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {hasConsent ? (
+        <div className="aid-printable-doc">
+          <div className="aid-printable__toolbar no-print">
+            <p className="aid-printable__toolbar-hint">Consent Form</p>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={() => printAidElement(consentPrintRef.current)}
+            >
+              Print consent
+            </button>
+          </div>
+          <div
+            ref={consentPrintRef}
+            id="aid-consent-printable"
+            className="aid-printable aid-printable--form"
+          >
+            <AidConsentForm
+              value={app.consent_form}
+              applicationNo={app.application_no}
+              readOnly
+            />
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };

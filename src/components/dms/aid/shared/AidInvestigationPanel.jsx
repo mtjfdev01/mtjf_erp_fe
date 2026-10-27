@@ -408,6 +408,11 @@ const AidInvestigationPanel = ({
   remarksLabel = 'Investigator remarks',
   /** Application aid type — ration uses package checkboxes for manager/CEO edit */
   aidType = null,
+  /**
+   * When true, Recommendation shows only Full/Half/Monthly/Alternate checkboxes + remarks
+   * (manager / CEO ration override — no amount, period, or decision radios).
+   */
+  rationPackageMode = false,
   /** Extra gaps (e.g. leakage override) shown in missing-steps panel */
   extraMissingSteps = [],
   /** When true, include full investigation checklist gaps (not only current tab) */
@@ -433,9 +438,9 @@ const AidInvestigationPanel = ({
       ? showRecommendation
       : activeTab === 'field_process';
   const recLocked = disabled && !recommendationEditable;
+  const isRationAid = String(aidType || '').toLowerCase() === 'ration';
   const rationOverrideMode =
-    recommendationEditable &&
-    String(aidType || '').toLowerCase() === 'ration';
+    Boolean(rationPackageMode) || (recommendationEditable && isRationAid);
 
   const missingSteps = useMemo(() => {
     const steps = [];
@@ -778,9 +783,14 @@ const AidInvestigationPanel = ({
             </div>
 
             <div className="aid-rec-card">
-              <h4 className="aid-rec-card__title">Recommendation</h4>
+              <h4 className="aid-rec-card__title">
+                {rationOverrideMode ? 'Ration recommendation' : 'Recommendation'}
+              </h4>
               {rationOverrideMode ? (
                 <>
+                  <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                    Select package options and add remarks only.
+                  </p>
                   <div className="aid-rec-options aid-rec-options--checks">
                     {AID_RATION_REC_OPTIONS.map((opt) => {
                       const selected = normalizeRationOptions(
@@ -807,6 +817,9 @@ const AidInvestigationPanel = ({
                               setRec({
                                 ration_options: next,
                                 decision: 'approve_as_requested',
+                                amount: '',
+                                period_months: null,
+                                found_monthly_income: '',
                               });
                             }}
                           />
@@ -820,7 +833,7 @@ const AidInvestigationPanel = ({
                     <textarea
                       rows={3}
                       disabled={recLocked}
-                      placeholder="Manager remarks…"
+                      placeholder="Remarks…"
                       value={rec.remarks}
                       onChange={(e) => setRec({ remarks: e.target.value })}
                     />

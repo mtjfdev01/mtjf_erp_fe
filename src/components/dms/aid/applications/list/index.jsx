@@ -1,11 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye, FiEdit2, FiCheckCircle, FiTruck } from 'react-icons/fi';
+import {
+  FiEye,
+  FiEdit2,
+  FiCheckCircle,
+  FiTruck,
+} from 'react-icons/fi';
+import { MdZoomIn } from 'react-icons/md';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
   canViewModule,
   hasAidPermission,
+  isSuperAdmin,
 } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -25,24 +32,41 @@ import {
   formatAidRequestType,
   formatAidProgramLabel,
 } from '../../aidConstants';
+import AidRationRecommendationModal from '../../shared/AidRationRecommendationModal';
 import '../../aid.css';
 import useListAutoRefresh from '../../../../../hooks/useListAutoRefresh';
 
 const CEO_PENDING_STATUS = 'ceo_approval_required';
+const MANAGER_REVIEW_STATUS = 'manager_review';
 const DELIVERY_PENDING_STATUSES = new Set(['successful']);
 const VERIFICATION_STATUS_OPTIONS = AID_STATUS_OPTIONS.filter(
   (o) => o.value !== 'draft',
 );
 
+const isRationApp = (row) =>
+  String(row?.requested_aid_type || '').toLowerCase() === 'ration';
+
 const AidApplicationsList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const { filtersOpen, toggleFilters } = useFiltersPanel();
 
   const isStaffElevated =
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
+
+  const isProgramDeptManager =
+    isSuperAdmin(permissions) ||
+    (!!permissions?.program_manager &&
+      String(user?.department || '').toLowerCase() === 'program');
+
+  const canEditRationRec =
+    isSuperAdmin(permissions) ||
+    !!permissions?.program_manager ||
+    isStaffElevated ||
+    hasAidPermission(permissions, 'aid_drafts', 'approve_draft') ||
+    hasAidPermission(permissions, 'aid_applications', 'approve_draft');
 
   const canCeo =
     isStaffElevated ||
@@ -74,6 +98,10 @@ const AidApplicationsList = () => {
   const [sortOrder, setSortOrder] = useState('DESC');
   const [tempFilters, setTempFilters] = useState({ search: '', status: '' });
   const [appliedFilters, setAppliedFilters] = useState({ search: '', status: '' });
+  const [rationModalRow, setRationModalRow] = useState(null);
+  const [rationMode, setRationMode] = useState('ceo');
+  const [rationBusy, setRationBusy] = useState(false);
+  const [rationError, setRationError] = useState('');
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -130,6 +158,68 @@ const AidApplicationsList = () => {
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
   useListAutoRefresh(() => fetchRows(), [appliedFilters, currentPage], ['aid']);
+
+  const openRationModal = (row, mode) => {
+    setRationError('');
+    setRationMode(mode);
+    setRationModalRow(row);
+  };
+
+  const closeRationModal = () => {
+    if (rationBusy) return;
+    setRationModalRow(null);
+    setRationError('');
+  };
+
+  const saveRationRecommendation = async (recommendation) => {
+    if (!rationModalRow?.id) return;
+    setRationBusy(true);
+    setRationError('');
+    try {
+      await axiosInstance.patch(`/aid/applications/${rationModalRow.id}`, {
+        investigation_recommendation: recommendation,
+      });
+      setRationModalRow(null);
+      await fetchRows();
+    } catch (err) {
+      setRationError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to save recommendation',
+      );
+    } finally {
+      setRationBusy(false);
+    }
+  };
+
+  const submitRationRecommendation = async (recommendation) => {
+    if (!rationModalRow?.id) return;
+    setRationBusy(true);
+    setRationError('');
+    try {
+      if (rationMode === 'manager') {
+        await axiosInstance.post(
+          `/aid/applications/${rationModalRow.id}/manager-forward`,
+          { recommendation },
+        );
+      } else {
+        await axiosInstance.post(
+          `/aid/applications/${rationModalRow.id}/ceo-decide`,
+          { decision: 'approved', recommendation },
+        );
+      }
+      setRationModalRow(null);
+      await fetchRows();
+    } catch (err) {
+      setRationError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to submit recommendation',
+      );
+    } finally {
+      setRationBusy(false);
+    }
+  };
 
   const ceoFilterActive = appliedFilters.status === CEO_PENDING_STATUS;
   const pendingCeoCount = rows.filter((r) => r.status === CEO_PENDING_STATUS).length;
@@ -248,8 +338,13 @@ const AidApplicationsList = () => {
                   </tr>
                 ) : (
                   rows.map((row) => {
+                    const ration = isRationApp(row);
                     const needsCeo =
                       canCeo && row.status === CEO_PENDING_STATUS;
+                    const needsManagerRation =
+                      canEditRationRec &&
+                      ration &&
+                      row.status === MANAGER_REVIEW_STATUS;
                     const needsDelivery =
                       canDeliver && DELIVERY_PENDING_STATUSES.has(row.status);
                     return (
@@ -289,52 +384,82 @@ const AidApplicationsList = () => {
                             : '—'}
                         </td>
                         <td>
-                          <div className="aid-list-actions">
+                          <div className="aid-icon-actions">
                             <button
                               type="button"
-                              className="secondary-btn"
+                              className="aid-icon-btn aid-icon-btn--view"
+                              title="View"
+                              aria-label="View"
                               onClick={() =>
                                 navigate(`/dms/aid/applications/view/${row.id}`)
                               }
                             >
-                              <FiEye /> View
+                              <FiEye />
                             </button>
                             {row.status !== 'rejected' &&
                             row.status !== 'delivered' ? (
                               <button
                                 type="button"
-                                className="secondary-btn"
+                                className="aid-icon-btn aid-icon-btn--edit"
+                                title="Edit"
+                                aria-label="Edit"
                                 onClick={() =>
                                   navigate(
                                     `/dms/aid/applications/edit/${row.id}`,
                                   )
                                 }
                               >
-                                <FiEdit2 /> Edit
+                                <FiEdit2 />
                               </button>
                             ) : null}
-                            {needsCeo && (
+                            {needsManagerRation ? (
                               <button
                                 type="button"
-                                className="primary-btn"
+                                className="aid-icon-btn aid-icon-btn--approve"
+                                title="Ration recommendation"
+                                aria-label="Ration recommendation"
+                                onClick={() => openRationModal(row, 'manager')}
+                              >
+                                <MdZoomIn />
+                              </button>
+                            ) : null}
+                            {needsCeo && ration ? (
+                              <button
+                                type="button"
+                                className="aid-icon-btn aid-icon-btn--approve"
+                                title="Ration recommendation / approve"
+                                aria-label="Ration recommendation / approve"
+                                onClick={() => openRationModal(row, 'ceo')}
+                              >
+                                <MdZoomIn />
+                              </button>
+                            ) : null}
+                            {needsCeo && !ration ? (
+                              <button
+                                type="button"
+                                className="aid-icon-btn aid-icon-btn--approve"
+                                title="CEO Review"
+                                aria-label="CEO Review"
                                 onClick={() =>
                                   navigate(`/dms/aid/applications/view/${row.id}`)
                                 }
                               >
-                                <FiCheckCircle /> CEO Review
+                                <FiCheckCircle />
                               </button>
-                            )}
-                            {needsDelivery && (
+                            ) : null}
+                            {needsDelivery ? (
                               <button
                                 type="button"
-                                className="primary-btn"
+                                className="aid-icon-btn aid-icon-btn--warn"
+                                title="Delivery"
+                                aria-label="Delivery"
                                 onClick={() =>
                                   navigate(`/dms/aid/applications/view/${row.id}`)
                                 }
                               >
-                                <FiTruck /> Delivery
+                                <FiTruck />
                               </button>
-                            )}
+                            ) : null}
                           </div>
                         </td>
                       </tr>
@@ -344,6 +469,17 @@ const AidApplicationsList = () => {
               </tbody>
             </table>
           </div>
+
+          <AidRationRecommendationModal
+            open={!!rationModalRow}
+            application={rationModalRow}
+            mode={rationMode}
+            busy={rationBusy}
+            error={rationError}
+            onClose={closeRationModal}
+            onSave={saveRationRecommendation}
+            onApprove={submitRationRecommendation}
+          />
 
           {totalItems > 0 && (
             <Pagination

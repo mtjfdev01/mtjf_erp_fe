@@ -1,10 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiEdit2, FiEye } from 'react-icons/fi';
+import { MdZoomIn } from 'react-icons/md';
 import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
 import {
   canViewModule,
   hasAidPermission,
+  isSuperAdmin,
 } from '../../../../../../utils/permissions';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
@@ -20,6 +23,7 @@ import {
   formatRelativeAidTime,
   aidEntryStageTone,
 } from '../../../aidConstants';
+import AidRationRecommendationModal from '../../../shared/AidRationRecommendationModal';
 import '../../../aid.css';
 import useOfflineDataRefresh from '../../../../../../hooks/useOfflineDataRefresh';
 
@@ -30,17 +34,40 @@ const emptyFilters = {
   stage: '',
 };
 
+const CEO_PENDING_STATUS = 'ceo_approval_required';
+const MANAGER_REVIEW_STATUS = 'manager_review';
+
+const isRationApp = (row) =>
+  String(row?.requested_aid_type || '').toLowerCase() === 'ration';
+
 /**
  * Data-entry listing — pipeline cards, filters, and case table.
  */
 const AidEntryApplicationsList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
 
   const isStaffElevated =
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
+
+  const isProgramDeptManager =
+    isSuperAdmin(permissions) ||
+    (!!permissions?.program_manager &&
+      String(user?.department || '').toLowerCase() === 'program');
+
+  /** Who may open ration recommendation from Applications list */
+  const canEditRationRec =
+    isSuperAdmin(permissions) ||
+    !!permissions?.program_manager ||
+    isStaffElevated ||
+    hasAidPermission(permissions, 'aid_drafts', 'approve_draft') ||
+    hasAidPermission(permissions, 'aid_applications', 'approve_draft');
+
+  const canCeo =
+    isStaffElevated ||
+    hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
 
   const canList =
     canViewModule(permissions, 'program', 'aid_applications') ||
@@ -60,6 +87,10 @@ const AidEntryApplicationsList = () => {
   const [appliedFilters, setAppliedFilters] = useState({ ...emptyFilters });
   const [stageCounts, setStageCounts] = useState({});
   const [districts, setDistricts] = useState([]);
+  const [rationModalRow, setRationModalRow] = useState(null);
+  const [rationMode, setRationMode] = useState('ceo');
+  const [rationBusy, setRationBusy] = useState(false);
+  const [rationError, setRationError] = useState('');
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -129,6 +160,68 @@ const AidEntryApplicationsList = () => {
   }, [currentPage, pageSize, sortField, sortOrder, appliedFilters]);
 
   useOfflineDataRefresh(() => fetchRows(), [appliedFilters, currentPage], ['aid']);
+
+  const openRationModal = (row, mode) => {
+    setRationError('');
+    setRationMode(mode);
+    setRationModalRow(row);
+  };
+
+  const closeRationModal = () => {
+    if (rationBusy) return;
+    setRationModalRow(null);
+    setRationError('');
+  };
+
+  const saveRationRecommendation = async (recommendation) => {
+    if (!rationModalRow?.id) return;
+    setRationBusy(true);
+    setRationError('');
+    try {
+      await axiosInstance.patch(`/aid/applications/${rationModalRow.id}`, {
+        investigation_recommendation: recommendation,
+      });
+      setRationModalRow(null);
+      await fetchRows();
+    } catch (err) {
+      setRationError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to save recommendation',
+      );
+    } finally {
+      setRationBusy(false);
+    }
+  };
+
+  const submitRationRecommendation = async (recommendation) => {
+    if (!rationModalRow?.id) return;
+    setRationBusy(true);
+    setRationError('');
+    try {
+      if (rationMode === 'manager') {
+        await axiosInstance.post(
+          `/aid/applications/${rationModalRow.id}/manager-forward`,
+          { recommendation },
+        );
+      } else {
+        await axiosInstance.post(
+          `/aid/applications/${rationModalRow.id}/ceo-decide`,
+          { decision: 'approved', recommendation },
+        );
+      }
+      setRationModalRow(null);
+      await fetchRows();
+    } catch (err) {
+      setRationError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to submit recommendation',
+      );
+    } finally {
+      setRationBusy(false);
+    }
+  };
 
   const districtOptions = useMemo(
     () => [
@@ -263,6 +356,18 @@ const AidEntryApplicationsList = () => {
                   rows.map((row) => {
                     const stage = row.stage || 'submitted';
                     const pct = Number(row.vulnerability_pct) || 0;
+                    const ration = isRationApp(row);
+                    const status = String(row.status || '').toLowerCase();
+                    const needsManagerRation =
+                      canEditRationRec &&
+                      ration &&
+                      (status === MANAGER_REVIEW_STATUS ||
+                        stage === MANAGER_REVIEW_STATUS);
+                    const needsCeoRation =
+                      canCeo &&
+                      ration &&
+                      (status === CEO_PENDING_STATUS ||
+                        stage === 'pending_approval');
                     return (
                       <tr key={row.id}>
                         <td>
@@ -323,30 +428,56 @@ const AidEntryApplicationsList = () => {
                         </td>
                         <td>{formatRelativeAidTime(row.updated_at)}</td>
                         <td>
-                          <div className="aid-list-actions">
+                          <div className="aid-icon-actions">
                             <button
                               type="button"
-                              className="aid-text-link aid-entry-open"
+                              className="aid-icon-btn aid-icon-btn--view"
+                              title="Open"
+                              aria-label="Open"
                               onClick={() =>
                                 navigate(
                                   `/dms/aid/applications/entry/view/${row.id}`,
                                 )
                               }
                             >
-                              Open
+                              <FiEye />
                             </button>
                             {row.status !== 'rejected' &&
                             row.status !== 'delivered' ? (
                               <button
                                 type="button"
-                                className="aid-text-link"
+                                className="aid-icon-btn aid-icon-btn--edit"
+                                title="Edit"
+                                aria-label="Edit"
                                 onClick={() =>
                                   navigate(
                                     `/dms/aid/applications/edit/${row.id}`,
                                   )
                                 }
                               >
-                                Edit
+                                <FiEdit2 />
+                              </button>
+                            ) : null}
+                            {needsManagerRation ? (
+                              <button
+                                type="button"
+                                className="aid-icon-btn aid-icon-btn--approve"
+                                title="Ration recommendation"
+                                aria-label="Ration recommendation"
+                                onClick={() => openRationModal(row, 'manager')}
+                              >
+                                <MdZoomIn />
+                              </button>
+                            ) : null}
+                            {needsCeoRation ? (
+                              <button
+                                type="button"
+                                className="aid-icon-btn aid-icon-btn--approve"
+                                title="Ration recommendation / approve"
+                                aria-label="Ration recommendation / approve"
+                                onClick={() => openRationModal(row, 'ceo')}
+                              >
+                                <MdZoomIn />
                               </button>
                             ) : null}
                           </div>
@@ -358,6 +489,17 @@ const AidEntryApplicationsList = () => {
               </tbody>
             </table>
           </div>
+
+          <AidRationRecommendationModal
+            open={!!rationModalRow}
+            application={rationModalRow}
+            mode={rationMode}
+            busy={rationBusy}
+            error={rationError}
+            onClose={closeRationModal}
+            onSave={saveRationRecommendation}
+            onApprove={submitRationRecommendation}
+          />
 
           {totalItems > 0 && (
             <Pagination

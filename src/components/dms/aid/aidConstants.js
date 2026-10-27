@@ -1,5 +1,6 @@
 export const AID_STATUS_OPTIONS = [
   { value: 'draft', label: 'Draft' },
+  { value: 'incomplete', label: 'Incomplete' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'under_review', label: 'Under review' },
   { value: 'manager_review', label: 'Manager Review' },
@@ -11,6 +12,7 @@ export const AID_STATUS_OPTIONS = [
 
 /** Data-entry list pipeline cards (maps to API `stage` filter). Drafts use the Drafts board. */
 export const AID_ENTRY_STAGES = [
+  { id: 'incomplete', label: 'Incomplete', hint: 'Missing details' },
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
   { id: 'manager_review', label: 'Manager Review', hint: 'With Program manager' },
@@ -27,6 +29,8 @@ export function aidEntryStageTone(stage) {
   switch (stage) {
     case 'draft':
       return 'muted';
+    case 'incomplete':
+      return 'warn';
     case 'submitted':
       return 'info';
     case 'investigation':
@@ -437,8 +441,44 @@ export const emptyFinancialAssistanceDetails = () => ({
   alternative_if_not_approved: '',
 });
 
-/** Clean Water — Application tab special structure */
+/** Clean Water survey beneficiary row */
+export const emptyCleanWaterSurveyBeneficiary = () => ({
+  name: '',
+  phone: '',
+  cnic: '',
+  family_members: '',
+});
+
+/**
+ * Clean Water / Water Program survey (EN/UR).
+ * No signature capture — paper form fields only.
+ */
 export const emptyCleanWaterDetails = () => ({
+  lang: 'ur',
+  application_no: '',
+  applicant_name: '',
+  village: '',
+  union_council: '',
+  tehsil_district: '',
+  province: '',
+  gps_coordinates: '',
+  area_type: '',
+  tds_ppm: '',
+  beneficiary_population: '',
+  beneficiary_households: '',
+  water_problems: '',
+  drainage_plan: '',
+  project_name: '',
+  water_level_ft: '',
+  boring_depth_ft: '',
+  machine_pipe_length_ft: '',
+  construction_by: '',
+  survey_beneficiaries: [
+    emptyCleanWaterSurveyBeneficiary(),
+    emptyCleanWaterSurveyBeneficiary(),
+    emptyCleanWaterSurveyBeneficiary(),
+  ],
+  /** Legacy Application-tab fields (kept for older rows) */
   existing_source_of_water: '',
   distance_from_home: '',
   duration_without_clean_water: '',
@@ -1644,6 +1684,7 @@ export function aidStatusTone(status) {
       return 'success';
     case 'rejected':
       return 'danger';
+    case 'incomplete':
     case 'ceo_approval_required':
     case 'manager_review':
       return 'warn';

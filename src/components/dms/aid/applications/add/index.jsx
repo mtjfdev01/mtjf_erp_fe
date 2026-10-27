@@ -5,6 +5,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiDownload,
+  FiPrinter,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
@@ -26,7 +27,7 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
-import AidCleanWaterApplicationFields from '../../shared/AidCleanWaterApplicationFields';
+import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
@@ -35,6 +36,7 @@ import AidFamilyTreePanel from '../../shared/AidFamilyTreePanel';
 import AidApplicantCheckbox from '../../shared/AidApplicantCheckbox';
 import AidApplicationDocsIntake from '../../shared/AidApplicationDocsIntake';
 import { downloadAsPng } from '../../shared/downloadAsPng';
+import { printAidElement } from '../../shared/printAidElement';
 import { AidLangProvider, useAidLang } from '../../lang/AidLangContext';
 import AidLangToggle from '../../lang/AidLangToggle';
 import { getOfflineMode } from '../../../../../offline/mode';
@@ -956,6 +958,9 @@ const AidApplicationAddInner = () => {
     { id: 'beneficiary', label: t('tabBeneficiary'), hint: t('tabBeneficiaryHint') },
     { id: 'family_tree', label: t('tabFamilyTree'), hint: t('tabFamilyTreeHint') },
     { id: 'request', label: t('tabRequest'), hint: t('tabRequestHint') },
+    ...(form.requested_aid_type === 'clean_water'
+      ? [{ id: 'survey', label: t('tabSurvey'), hint: t('tabSurveyHint') }]
+      : []),
     { id: 'attachments', label: t('tabAttachments'), hint: t('tabAttachmentsHint') },
   ];
   const stepIndex = FORM_TABS.findIndex((t) => t.id === formTab);
@@ -1509,9 +1514,11 @@ const AidApplicationAddInner = () => {
           payload.beneficiary_person_id = Number(
             beneficiaryHead.existing_person_id,
           );
-          if (isEdit) {
+          // Always send person fields (incl. photo_url) so create+existing updates the profile
+          const headPayload = cleanPersonPayload(beneficiaryHead);
+          if (headPayload) {
             payload.beneficiary = {
-              ...cleanPersonPayload(beneficiaryHead),
+              ...headPayload,
               full_name: beneficiaryHead.full_name.trim(),
             };
           }
@@ -1578,10 +1585,8 @@ const AidApplicationAddInner = () => {
         payload.writer_relation = applicant.relation || 'relative';
         if (person.existing_person_id) {
           payload.writer_person_id = Number(person.existing_person_id);
-          if (isEdit) {
-            const writerPayload = cleanPersonPayload(person);
-            if (writerPayload) payload.writer = writerPayload;
-          }
+          const writerPayload = cleanPersonPayload(person);
+          if (writerPayload) payload.writer = writerPayload;
         } else if (isEdit) {
           const writerPayload = cleanPersonPayload(person);
           if (!writerPayload) {
@@ -1880,10 +1885,14 @@ const AidApplicationAddInner = () => {
                   }
                   if (next === 'clean_water') {
                     setCleanWaterDetails((prev) =>
-                      prev?.existing_source_of_water != null
+                      prev?.applicant_name != null ||
+                      prev?.village != null ||
+                      prev?.existing_source_of_water
                         ? prev
                         : emptyCleanWaterDetails(),
                     );
+                  } else if (formTab === 'survey') {
+                    setFormTab('request');
                   }
                 }}
                 options={AID_REQUEST_TYPES}
@@ -1991,15 +2000,24 @@ const AidApplicationAddInner = () => {
                 onChange={setFinancialAssistanceDetails}
               />
             )}
-            {form.requested_aid_type === 'clean_water' && (
-              <AidCleanWaterApplicationFields
-                value={cleanWaterDetails}
-                onChange={setCleanWaterDetails}
-              />
-            )}
             </div>
           </div>
           )}
+
+          {formTab === 'survey' &&
+            form.requested_aid_type === 'clean_water' && (
+              <div className="form-section">
+                <h3 className="form-section-heading">{t('tabSurvey')}</h3>
+                <AidCleanWaterSurveyForm
+                  value={cleanWaterDetails}
+                  onChange={setCleanWaterDetails}
+                  uiLang={lang}
+                  applicationNo={
+                    isEdit ? editId : undefined
+                  }
+                />
+              </div>
+            )}
 
           {formTab === 'attachments' && (
           <div className="form-section">
@@ -2015,18 +2033,32 @@ const AidApplicationAddInner = () => {
               title={t('zakatLetter')}
               hint={t('optionalExpand')}
               actions={
-                <button
-                  type="button"
-                  className="aid-png-download-btn"
-                  title={t('downloadPng')}
-                  aria-label={t('downloadPng')}
-                  disabled={pngDownloading}
-                  onClick={() =>
-                    handleDownloadPng(zakatCaptureRef, 'zakat-permission-letter')
-                  }
-                >
-                  <FiDownload size={18} />
-                </button>
+                <span className="aid-form-export-actions">
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('printForm')}
+                    aria-label={t('printForm')}
+                    onClick={() => printAidElement(zakatCaptureRef.current)}
+                  >
+                    <FiPrinter size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('downloadPng')}
+                    aria-label={t('downloadPng')}
+                    disabled={pngDownloading}
+                    onClick={() =>
+                      handleDownloadPng(
+                        zakatCaptureRef,
+                        'zakat-permission-letter',
+                      )
+                    }
+                  >
+                    <FiDownload size={18} />
+                  </button>
+                </span>
               }
             >
               <div ref={zakatCaptureRef} className="aid-png-capture">
@@ -2043,18 +2075,29 @@ const AidApplicationAddInner = () => {
               title={t('consentForm')}
               hint={t('optionalExpand')}
               actions={
-                <button
-                  type="button"
-                  className="aid-png-download-btn"
-                  title={t('downloadPng')}
-                  aria-label={t('downloadPng')}
-                  disabled={pngDownloading}
-                  onClick={() =>
-                    handleDownloadPng(consentCaptureRef, 'consent-form')
-                  }
-                >
-                  <FiDownload size={18} />
-                </button>
+                <span className="aid-form-export-actions">
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('printForm')}
+                    aria-label={t('printForm')}
+                    onClick={() => printAidElement(consentCaptureRef.current)}
+                  >
+                    <FiPrinter size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('downloadPng')}
+                    aria-label={t('downloadPng')}
+                    disabled={pngDownloading}
+                    onClick={() =>
+                      handleDownloadPng(consentCaptureRef, 'consent-form')
+                    }
+                  >
+                    <FiDownload size={18} />
+                  </button>
+                </span>
               }
             >
               <div ref={consentCaptureRef} className="aid-png-capture">

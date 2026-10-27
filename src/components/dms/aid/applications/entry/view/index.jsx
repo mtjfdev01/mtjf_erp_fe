@@ -1,5 +1,6 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { FiPrinter } from 'react-icons/fi';
 import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
 import { hasAidPermission } from '../../../../../../utils/permissions';
@@ -9,7 +10,7 @@ import AidEducationApplicationFields from '../../../shared/AidEducationApplicati
 import AidRationApplicationFields from '../../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../../shared/AidFinancialAssistanceFields';
-import AidCleanWaterApplicationFields from '../../../shared/AidCleanWaterApplicationFields';
+import AidCleanWaterSurveyForm from '../../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
 import AidCollapsibleSection from '../../../shared/AidCollapsibleSection';
@@ -20,6 +21,14 @@ import AidPersonProfileCard, {
 import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
 import AidApplicationPrintable from '../../../shared/AidApplicationPrintable';
+import AidInvestigationPanel, {
+  AID_RATION_REC_OPTIONS,
+  emptyRecommendation,
+  enrichInvestigationFromAttachments,
+  mergeInvestigationState,
+  normalizeRationOptions,
+} from '../../../shared/AidInvestigationPanel';
+import { printAidElement } from '../../../shared/printAidElement';
 import {
   aidStatusTone,
   formatAidStatus,
@@ -36,13 +45,14 @@ const isSponsorshipDependent = (notes) =>
     String(notes || ''),
   );
 
-const ENTRY_TABS = [
+const ENTRY_TABS_BASE = [
   { id: 'application', label: 'Application' },
   { id: 'beneficiary', label: 'Beneficiary' },
   { id: 'family', label: 'Family' },
   { id: 'family_tree', label: 'Family Tree' },
   { id: 'attachments', label: 'Attachments' },
   { id: 'printable', label: 'Printable' },
+  { id: 'verification', label: 'Verification' },
 ];
 
 const FAMILY_GROUPS = [
@@ -85,6 +95,54 @@ const AidEntryApplicationView = () => {
   const [approving, setApproving] = useState(false);
   const [assignUser, setAssignUser] = useState(null);
   const [showApprovePanel, setShowApprovePanel] = useState(false);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationError, setVerificationError] = useState('');
+  const [investigationItems, setInvestigationItems] = useState([]);
+  const [investigation, setInvestigation] = useState({});
+  const [recommendation, setRecommendation] = useState(emptyRecommendation);
+  const [vulnerability, setVulnerability] = useState(null);
+  const zakatPrintRef = useRef(null);
+  const consentPrintRef = useRef(null);
+
+  const applyVerificationPayload = useCallback((payload) => {
+    if (!payload) return;
+    const items =
+      payload.investigation_items ||
+      payload.verification_checklist_items ||
+      [];
+    setInvestigationItems(items);
+    const merged = mergeInvestigationState(
+      items,
+      payload.verification_checklist || {},
+    );
+    setInvestigation(
+      enrichInvestigationFromAttachments(
+        items,
+        merged,
+        payload.attachments || [],
+      ),
+    );
+    const saved = payload.investigation_recommendation || {};
+    setRecommendation({
+      ...emptyRecommendation(),
+      decision: saved.decision || 'approve_as_requested',
+      amount: saved.amount ?? '',
+      period_months: saved.period_months ?? 6,
+      remarks: saved.remarks || '',
+      found_monthly_income: saved.found_monthly_income ?? '',
+      ration_options: normalizeRationOptions(saved.ration_options),
+    });
+    setVulnerability(
+      payload.vulnerability ||
+        (saved.vulnerability_after_visit
+          ? {
+              declared: saved.vulnerability_declared,
+              after_visit: saved.vulnerability_after_visit,
+              deltas: saved.vulnerability_deltas || [],
+            }
+          : null),
+    );
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -93,6 +151,7 @@ const AidEntryApplicationView = () => {
       const appRes = await axiosInstance.get(`/aid/applications/${id}`);
       const payload = appRes.data?.data || null;
       setApp(payload);
+      applyVerificationPayload(payload);
 
       const beneficiaryId =
         payload?.beneficiary?.id || payload?.beneficiary_person_id;
@@ -117,11 +176,36 @@ const AidEntryApplicationView = () => {
     } finally {
       setLoading(false);
     }
-  }, [id]);
+  }, [id, applyVerificationPayload]);
+
+  const loadVerification = useCallback(async () => {
+    if (!id) return;
+    try {
+      setVerificationLoading(true);
+      setVerificationError('');
+      const appRes = await axiosInstance.get(`/aid/applications/${id}`);
+      const payload = appRes.data?.data || null;
+      if (payload) {
+        setApp(payload);
+        applyVerificationPayload(payload);
+      }
+    } catch (err) {
+      setVerificationError(
+        err.response?.data?.message || 'Failed to load verification data',
+      );
+    } finally {
+      setVerificationLoading(false);
+    }
+  }, [id, applyVerificationPayload]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (panelTab !== 'verification') return;
+    loadVerification();
+  }, [panelTab, loadVerification]);
 
   const approveDraft = async () => {
     if (!canApproveDraft || !app?.id) return;
@@ -178,6 +262,14 @@ const AidEntryApplicationView = () => {
   }
 
   const status = app.status;
+  const ENTRY_TABS =
+    String(app.requested_aid_type || '').toLowerCase() === 'clean_water'
+      ? [
+          ...ENTRY_TABS_BASE.slice(0, 5),
+          { id: 'survey', label: 'Survey' },
+          ...ENTRY_TABS_BASE.slice(5),
+        ]
+      : ENTRY_TABS_BASE;
   const tree = familyTree || {};
   const fromTree = FAMILY_GROUPS.flatMap((g) =>
     (tree[g.key] || []).map((row) => ({ ...row, group: g.label })),
@@ -221,7 +313,9 @@ const AidEntryApplicationView = () => {
             <p className="aid-entry-view__eyebrow">
               {status === 'draft'
                 ? 'Draft — consider to enter verification'
-                : 'Application record'}
+                : status === 'incomplete'
+                  ? 'Incomplete — complete details, then consider for verification'
+                  : 'Application record'}
             </p>
             <h2 style={{ margin: '0 0 6px' }}>
               {app.title || 'Aid application'}
@@ -249,7 +343,8 @@ const AidEntryApplicationView = () => {
                 Edit
               </button>
             ) : null}
-            {canApproveDraft && status === 'draft' ? (
+            {canApproveDraft &&
+            (status === 'draft' || status === 'incomplete') ? (
               <button
                 type="button"
                 className="primary-btn"
@@ -262,23 +357,16 @@ const AidEntryApplicationView = () => {
                 Consider for verification
               </button>
             ) : null}
-            {status !== 'draft' ? (
-              <button
-                type="button"
-                className="secondary-btn"
-                onClick={() =>
-                  navigate(`/dms/aid/applications/view/${app.id}`)
-                }
-              >
-                Open verification process
-              </button>
-            ) : null}
           </div>
         </div>
 
-        {canApproveDraft && status === 'draft' && showApprovePanel ? (
+        {canApproveDraft &&
+        (status === 'draft' || status === 'incomplete') &&
+        showApprovePanel ? (
           <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
-            <h3 style={{ marginTop: 0 }}>Consider draft</h3>
+            <h3 style={{ marginTop: 0 }}>
+              {status === 'incomplete' ? 'Consider incomplete' : 'Consider draft'}
+            </h3>
             <AidUserAssignField
               label="Assign to program user"
               value={assignUser}
@@ -392,13 +480,6 @@ const AidEntryApplicationView = () => {
                           readOnly
                         />
                       )}
-                    {app.requested_aid_type === 'clean_water' &&
-                      app.clean_water_details && (
-                        <AidCleanWaterApplicationFields
-                          value={app.clean_water_details}
-                          readOnly
-                        />
-                      )}
                   </div>
                 ) : null}
 
@@ -407,12 +488,25 @@ const AidEntryApplicationView = () => {
                     className="aid-detail-block"
                     title="Zakat Permission Letter"
                     hint="Click to view"
+                    actions={
+                      <button
+                        type="button"
+                        className="aid-png-download-btn"
+                        title="Print"
+                        aria-label="Print"
+                        onClick={() => printAidElement(zakatPrintRef.current)}
+                      >
+                        <FiPrinter size={18} />
+                      </button>
+                    }
                   >
-                    <AidZakatPermissionForm
-                      value={app.zakat_permission}
-                      applicationNo={app.application_no}
-                      readOnly
-                    />
+                    <div ref={zakatPrintRef}>
+                      <AidZakatPermissionForm
+                        value={app.zakat_permission}
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    </div>
                   </AidCollapsibleSection>
                 )}
                 {app.consent_form && (
@@ -420,12 +514,25 @@ const AidEntryApplicationView = () => {
                     className="aid-detail-block"
                     title="Consent Form"
                     hint="Click to view"
+                    actions={
+                      <button
+                        type="button"
+                        className="aid-png-download-btn"
+                        title="Print"
+                        aria-label="Print"
+                        onClick={() => printAidElement(consentPrintRef.current)}
+                      >
+                        <FiPrinter size={18} />
+                      </button>
+                    }
                   >
-                    <AidConsentForm
-                      value={app.consent_form}
-                      applicationNo={app.application_no}
-                      readOnly
-                    />
+                    <div ref={consentPrintRef}>
+                      <AidConsentForm
+                        value={app.consent_form}
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    </div>
                   </AidCollapsibleSection>
                 )}
               </section>
@@ -548,6 +655,24 @@ const AidEntryApplicationView = () => {
               </section>
             )}
 
+            {panelTab === 'survey' &&
+              String(app.requested_aid_type || '').toLowerCase() ===
+                'clean_water' && (
+                <section className="aid-section aid-section--flush">
+                  {app.clean_water_details ? (
+                    <AidCleanWaterSurveyForm
+                      value={app.clean_water_details}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  ) : (
+                    <p className="aid-empty-note">
+                      No water program survey filled yet.
+                    </p>
+                  )}
+                </section>
+              )}
+
             {panelTab === 'attachments' && (
               <section className="aid-section aid-section--flush">
                 {attachments.length === 0 ? (
@@ -587,6 +712,90 @@ const AidEntryApplicationView = () => {
                     : undefined
                 }
               />
+            )}
+
+            {panelTab === 'verification' && (
+              <section className="aid-section aid-section--flush">
+                {verificationError ? (
+                  <div className="error-message">{verificationError}</div>
+                ) : null}
+                {verificationLoading ? (
+                  <p className="aid-empty-note">Loading verification…</p>
+                ) : status === 'draft' || status === 'incomplete' ? (
+                  <p className="aid-empty-note">
+                    Verification starts after this application is considered for
+                    verification.
+                  </p>
+                ) : (
+                  <>
+                    <div className="aid-fact-grid aid-fact-grid--case" style={{ marginBottom: 12 }}>
+                      <Fact label="Status">{formatAidStatus(status)}</Fact>
+                      <Fact label="Assigned to">
+                        {app.assigned_to
+                          ? [
+                              app.assigned_to.first_name,
+                              app.assigned_to.last_name,
+                            ]
+                              .filter(Boolean)
+                              .join(' ') ||
+                            app.assigned_to.email ||
+                            '—'
+                          : '—'}
+                      </Fact>
+                      <Fact label="Verified at">
+                        {app.verified_at
+                          ? new Date(app.verified_at).toLocaleString()
+                          : '—'}
+                      </Fact>
+                      <Fact label="Recommendation">
+                        {normalizeRationOptions(
+                          recommendation.ration_options,
+                        ).length > 0
+                          ? normalizeRationOptions(
+                              recommendation.ration_options,
+                            )
+                              .map(
+                                (v) =>
+                                  AID_RATION_REC_OPTIONS.find(
+                                    (o) => o.value === v,
+                                  )?.label || v,
+                              )
+                              .join(', ')
+                          : recommendation.decision
+                            ? String(recommendation.decision).replace(
+                                /_/g,
+                                ' ',
+                              )
+                            : '—'}
+                      </Fact>
+                    </div>
+                    {app.verification_notes ? (
+                      <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                        Notes: {app.verification_notes}
+                      </p>
+                    ) : null}
+                    <AidInvestigationPanel
+                      items={investigationItems}
+                      value={investigation}
+                      onChange={setInvestigation}
+                      disabled
+                      showRecommendation
+                      aidType={app.requested_aid_type}
+                      rationPackageMode={
+                        String(app.requested_aid_type || '').toLowerCase() ===
+                          'ration' &&
+                        normalizeRationOptions(recommendation.ration_options)
+                          .length > 0
+                      }
+                      remarksLabel="Investigator remarks"
+                      activeTab="field_process"
+                      vulnerability={vulnerability}
+                      recommendation={recommendation}
+                      includeChecklistGaps={false}
+                    />
+                  </>
+                )}
+              </section>
             )}
           </div>
         </div>
