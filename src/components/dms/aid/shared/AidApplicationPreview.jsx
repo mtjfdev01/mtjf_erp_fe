@@ -10,6 +10,13 @@ import {
   calcAgeFromDob,
   formatEducation,
 } from '../aidConstants';
+import {
+  normalizeInvestigationEntry,
+  AID_RECOMMENDATION_DECISIONS,
+  AID_RECOMMENDATION_PERIODS,
+  AID_RATION_REC_OPTIONS,
+  normalizeRationOptions,
+} from './AidInvestigationPanel';
 import { printAidElement } from './printAidElement';
 
 const dash = (v) => {
@@ -59,12 +66,16 @@ const yn = (v) => {
   return '—';
 };
 
-const Cell = ({ label, children, span }) => (
+const Cell = ({ label, children, span, valueClassName }) => (
   <div
     className={`aid-preview__cell${span ? ` aid-preview__cell--span-${span}` : ''}`}
   >
     <span className="aid-preview__label">{label}</span>
-    <span className="aid-preview__value">{children}</span>
+    <span
+      className={`aid-preview__value${valueClassName ? ` ${valueClassName}` : ''}`}
+    >
+      {children}
+    </span>
   </div>
 );
 
@@ -82,27 +93,6 @@ const Check = ({ label, checked }) => (
   </span>
 );
 
-const CheckRow = ({ label, options, value }) => {
-  const normalized = String(value || '').toLowerCase();
-  return (
-    <div className="aid-preview__check-row">
-      <span className="aid-preview__check-label">{label}</span>
-      <span className="aid-preview__checks">
-        {options.map((opt) => {
-          const key = String(opt.value).toLowerCase();
-          return (
-            <Check
-              key={opt.value}
-              label={opt.label}
-              checked={normalized === key || normalized === String(opt.label).toLowerCase()}
-            />
-          );
-        })}
-      </span>
-    </div>
-  );
-};
-
 const Lines = ({ lines = 4, text }) => (
   <div className="aid-preview__lines">
     {text ? <p className="aid-preview__lines-text">{text}</p> : null}
@@ -112,17 +102,20 @@ const Lines = ({ lines = 4, text }) => (
   </div>
 );
 
-const investigationFlag = (investigation, keys) => {
-  if (!investigation || typeof investigation !== 'object') return '';
-  for (const key of keys) {
-    const entry = investigation[key];
-    if (!entry) continue;
-    const status = String(entry.status || entry || '').toLowerCase();
-    if (status === 'verified' || status === true || status === 'yes') return 'yes';
-    if (status === 'mismatch' || status === 'no') return 'no';
-  }
-  return '';
+const statusLabel = (status) => {
+  const s = String(status || '').toLowerCase();
+  if (s === 'verified') return 'Verified';
+  if (s === 'mismatch') return 'Mismatch';
+  return 'Not checked';
 };
+
+const decisionLabel = (decision) =>
+  AID_RECOMMENDATION_DECISIONS.find((d) => d.value === decision)?.label ||
+  dash(decision);
+
+const periodLabel = (months) =>
+  AID_RECOMMENDATION_PERIODS.find((p) => Number(p.value) === Number(months))
+    ?.label || (months ? `${months} months` : '—');
 
 /**
  * Formal Beneficiary Registration + Investigation & Approval preview (2 pages).
@@ -132,7 +125,9 @@ const AidApplicationPreview = ({
   familyTree,
   kinship = [],
   investigation = null,
+  investigationItems = [],
   recommendation = null,
+  vulnerability = null,
   preparedBy,
   printedBy,
 }) => {
@@ -253,7 +248,27 @@ const AidApplicationPreview = ({
       approvalDecision = 'approved';
     }
 
-    const inv = investigation || app.investigation_checklist || {};
+    const inv = investigation || app.verification_checklist || {};
+    const items = Array.isArray(investigationItems)
+      ? investigationItems
+      : app.investigation_items ||
+        app.verification_checklist_items ||
+        [];
+    const claimItems = items.filter((i) => i && i.kind !== 'process');
+    const processItems = items.filter((i) => i && i.kind === 'process');
+    const vuln =
+      vulnerability ||
+      app.vulnerability ||
+      (rec.vulnerability_after_visit
+        ? {
+            declared: rec.vulnerability_declared,
+            after_visit: rec.vulnerability_after_visit,
+            deltas: rec.vulnerability_deltas || [],
+          }
+        : null);
+
+    const entryFor = (key) =>
+      normalizeInvestigationEntry(inv?.[key] ?? null);
 
     return {
       beneficiary,
@@ -268,7 +283,10 @@ const AidApplicationPreview = ({
       childrenCount: children.length,
       rec,
       approvalDecision,
-      inv,
+      claimItems,
+      processItems,
+      entryFor,
+      vuln,
       programLabel:
         formatAidProgramLabel(app.aid_program) ||
         formatAidRequestType(app.requested_aid_type),
@@ -279,17 +297,15 @@ const AidApplicationPreview = ({
             app.created_by.name ||
             app.created_by.email
           : ''),
-      preparedDesignation:
-        app.created_by?.designation ||
-        app.created_by?.role ||
-        'Welfare Officer',
     };
   }, [
     app,
     familyTree,
     kinship,
     investigation,
+    investigationItems,
     recommendation,
+    vulnerability,
     preparedBy,
   ]);
 
@@ -307,11 +323,17 @@ const AidApplicationPreview = ({
     childrenCount,
     rec,
     approvalDecision,
-    inv,
+    claimItems,
+    processItems,
+    entryFor,
+    vuln,
     programLabel,
     preparedName,
-    preparedDesignation,
   } = data;
+
+  const rationOpts = normalizeRationOptions(rec.ration_options);
+  const vulnAfter = vuln?.after_visit?.total;
+  const vulnDeclared = vuln?.declared?.total;
 
   const printMeta = `Printed ${formatDateTime(new Date())}${
     printedBy ? ` by ${printedBy}` : preparedName ? ` by ${preparedName}` : ''
@@ -515,76 +537,46 @@ const AidApplicationPreview = ({
 
           <SectionBar title="4. Requirement" />
           <div className="aid-preview__req">
-            <div className="aid-preview__req-main">
+            <div className="aid-preview__req-top">
               <Cell label="Requirement requested">
                 {formatAidRequestType(app.requested_aid_type)}
-              </Cell>
-              <Cell label="Details of need">
-                {dash(app.request_summary || app.title)}
               </Cell>
               <Cell label="Amount requested by applicant (PKR)">
                 {money(app.requested_amount || app.expected_amount)}
               </Cell>
             </div>
-            <div className="aid-preview__score">
-              <div className="aid-preview__score-value">
-                {app.poverty_score != null ? app.poverty_score : '—'}
-                <span> / 100</span>
-              </div>
-              <div className="aid-preview__score-hint">
-                Poverty score (auto-calculated). Higher score = greater need.
-              </div>
-            </div>
+            <Cell
+              label="Details of need"
+              valueClassName="aid-preview__value--need"
+            >
+              {dash(app.request_summary || app.title)}
+            </Cell>
           </div>
 
           <div className="aid-preview__signs-grid">
             <div className="aid-preview__sign-box">
-              <p className="aid-preview__sign-text">
-                I confirm that the information above is true to the best of my
-                knowledge. I understand that false information may lead to
-                rejection of this application.
-              </p>
+              <div className="aid-preview__sign-main">
+                <p className="aid-preview__sign-text">
+                  I confirm that the information above is true to the best of
+                  my knowledge. I understand that false information may lead to
+                  rejection of this application.
+                </p>
+                <div className="aid-preview__sign-fields">
+                  <div>
+                    <span className="aid-preview__label">Name</span>
+                    <span className="aid-preview__dotted">
+                      {dash(applicant.full_name)}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="aid-preview__label">Date</span>
+                    <span className="aid-preview__dotted">
+                      {formatDate(app.submitted_at || app.created_at)}
+                    </span>
+                  </div>
+                </div>
+              </div>
               <div className="aid-preview__thumb">Thumb impression</div>
-              <div className="aid-preview__sign-fields">
-                <div>
-                  <span className="aid-preview__label">Name</span>
-                  <span className="aid-preview__dotted">
-                    {dash(applicant.full_name)}
-                  </span>
-                </div>
-                <div>
-                  <span className="aid-preview__label">Date</span>
-                  <span className="aid-preview__dotted">
-                    {formatDate(app.submitted_at || app.created_at)}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="aid-preview__sign-box">
-              <p className="aid-preview__sign-text">
-                Application prepared / registered from the applicant&apos;s
-                statement by the undersigned officer.
-              </p>
-              <div className="aid-preview__sign-fields">
-                <div>
-                  <span className="aid-preview__label">Name</span>
-                  <span className="aid-preview__dotted">
-                    {dash(preparedName)}
-                  </span>
-                </div>
-                <div>
-                  <span className="aid-preview__label">Designation</span>
-                  <span className="aid-preview__dotted">
-                    {dash(preparedDesignation)}
-                  </span>
-                </div>
-                <div>
-                  <span className="aid-preview__label">Date</span>
-                  <span className="aid-preview__dotted">
-                    {formatDate(app.submitted_at || app.created_at)}
-                  </span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -625,119 +617,161 @@ const AidApplicationPreview = ({
           </header>
 
           <SectionBar
-            title="Investigation report"
-            right="To be filled by investigator after home visit"
+            title="Verification checklist"
+            right="Declared claims and investigator status"
           />
-          <div className="aid-preview__grid aid-preview__grid--3">
-            <Cell label="Visit date">
-              {formatDate(
-                app.verified_at ||
-                  inv.site_visit?.note ||
-                  inv.visit_date,
-              )}
-            </Cell>
-            <Cell label="Visit address">
-              {dash(
-                inv.visit_address ||
-                  beneficiary.address ||
-                  applicant.address,
-              )}
-            </Cell>
-            <Cell label="Person met during visit">
-              {dash(inv.person_met || '')}
-            </Cell>
-          </div>
+          {claimItems.length ? (
+            <div className="aid-preview__invest-table-wrap">
+              <table className="aid-preview__invest-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '22%' }}>Item</th>
+                    <th>Declared</th>
+                    <th style={{ width: '12%' }}>Status</th>
+                    <th style={{ width: '22%' }}>Found / note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {claimItems.map((item) => {
+                    const entry = entryFor(item.key);
+                    return (
+                      <tr key={item.key}>
+                        <td>
+                          {item.label || item.key}
+                          {item.required ? ' *' : ''}
+                        </td>
+                        <td>{dash(item.declared)}</td>
+                        <td>
+                          <span
+                            className={`aid-preview__status aid-preview__status--${entry.status || 'not_checked'}`}
+                          >
+                            {statusLabel(entry.status)}
+                          </span>
+                        </td>
+                        <td>{dash(entry.note)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="aid-preview__empty-note">
+              No investigation checklist data saved for this application yet.
+            </p>
+          )}
 
-          <div className="aid-preview__verify-grid">
-            <CheckRow
-              label="Identity (CNIC) verified"
-              options={[
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' },
-              ]}
-              value={investigationFlag(inv, [
-                'identity_confirmed',
-                'cnic_verified',
-              ])}
-            />
-            <CheckRow
-              label="Address verified"
-              options={[
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' },
-              ]}
-              value={investigationFlag(inv, ['address_confirmed'])}
-            />
-            <CheckRow
-              label="Income verified"
-              options={[
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' },
-              ]}
-              value={investigationFlag(inv, [
-                'income_confirmed',
-                'income_verified',
-              ])}
-            />
-            <CheckRow
-              label="Family members as declared"
-              options={[
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' },
-              ]}
-              value={investigationFlag(inv, [
-                'family_confirmed',
-                'family_members',
-              ])}
-            />
-            <CheckRow
-              label="Living condition"
-              options={[
-                { value: 'poor', label: 'Poor' },
-                { value: 'average', label: 'Average' },
-                { value: 'good', label: 'Good' },
-              ]}
-              value={
-                typeof inv.living_condition === 'object'
-                  ? inv.living_condition?.note ||
-                    inv.living_condition?.status ||
-                    ''
-                  : inv.living_condition || ''
-              }
-            />
-            <CheckRow
-              label="Received help from MTJF before"
-              options={[
-                { value: 'yes', label: 'Yes' },
-                { value: 'no', label: 'No' },
-              ]}
-              value={investigationFlag(inv, [
-                'prior_aid',
-                'received_help_before',
-              ])}
-            />
-          </div>
+          <SectionBar
+            title="Field process"
+            right="Site visit, process checks, vulnerability & recommendation"
+          />
+          {processItems.length ? (
+            <div className="aid-preview__invest-table-wrap">
+              <table className="aid-preview__invest-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '28%' }}>Process check</th>
+                    <th style={{ width: '14%' }}>Status</th>
+                    <th>Found / note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {processItems.map((item) => {
+                    const entry = entryFor(item.key);
+                    return (
+                      <tr key={item.key}>
+                        <td>
+                          {item.label || item.key}
+                          {item.required ? ' *' : ''}
+                        </td>
+                        <td>
+                          <span
+                            className={`aid-preview__status aid-preview__status--${entry.status || 'not_checked'}`}
+                          >
+                            {statusLabel(entry.status)}
+                          </span>
+                        </td>
+                        <td>{dash(entry.note)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <p className="aid-preview__empty-note">
+              No field process checks recorded yet.
+            </p>
+          )}
 
-          <div className="aid-preview__block">
-            <span className="aid-preview__label">
-              Main remarks of investigator
-            </span>
-            <Lines
-              lines={4}
-              text={
-                app.verification_notes ||
-                rec.remarks ||
-                inv.site_visit?.note ||
-                ''
-              }
-            />
+          <div className="aid-preview__field-process-summary">
+            <div className="aid-preview__vuln-box">
+              <span className="aid-preview__label">
+                Vulnerability after visit
+              </span>
+              <div className="aid-preview__vuln-score">
+                {vulnAfter != null ? `${vulnAfter}%` : '—'}
+                {vulnDeclared != null &&
+                vulnAfter != null &&
+                Number(vulnDeclared) !== Number(vulnAfter) ? (
+                  <span className="aid-preview__vuln-old">
+                    was {vulnDeclared}%
+                  </span>
+                ) : null}
+              </div>
+              <div className="aid-preview__vuln-band">
+                {dash(vuln?.after_visit?.band_label)}
+              </div>
+              {vuln?.after_visit?.program_min_score != null ? (
+                <div className="aid-preview__vuln-threshold">
+                  Program min {vuln.after_visit.program_code || ''}:{' '}
+                  {vuln.after_visit.program_min_score} pts
+                  {vuln.after_visit.meets_program_threshold === false
+                    ? ' — below threshold'
+                    : vuln.after_visit.meets_program_threshold
+                      ? ' — meets threshold'
+                      : ''}
+                </div>
+              ) : (
+                <div className="aid-preview__vuln-threshold">
+                  Score from intake factors (income, housing, assets, BISP…).
+                </div>
+              )}
+            </div>
+            <div className="aid-preview__rec-box">
+              <span className="aid-preview__label">Recommendation</span>
+              <div className="aid-preview__grid aid-preview__grid--2" style={{ border: 'none' }}>
+                <Cell label="Decision">{decisionLabel(rec.decision)}</Cell>
+                <Cell label="Amount (PKR)">
+                  {money(rec.amount || app.expected_amount)}
+                </Cell>
+                <Cell label="Period">{periodLabel(rec.period_months)}</Cell>
+                <Cell label="Ration options">
+                  {rationOpts.length
+                    ? rationOpts
+                        .map(
+                          (v) =>
+                            AID_RATION_REC_OPTIONS.find((o) => o.value === v)
+                              ?.label || v,
+                        )
+                        .join(', ')
+                    : '—'}
+                </Cell>
+              </div>
+              <div className="aid-preview__block" style={{ border: 'none', paddingLeft: 0, paddingRight: 0 }}>
+                <span className="aid-preview__label">Remarks</span>
+                <p className="aid-preview__lines-text">
+                  {dash(rec.remarks || app.verification_notes)}
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="aid-preview__grid aid-preview__grid--3 aid-preview__rec-row">
             <Cell label="Recommended support">
               {dash(
-                Array.isArray(rec.ration_options) && rec.ration_options.length
-                  ? rec.ration_options.join(', ')
+                rationOpts.length
+                  ? rationOpts.join(', ')
                   : formatAidRequestType(app.requested_aid_type),
               )}
             </Cell>
@@ -853,16 +887,6 @@ const AidApplicationPreview = ({
                   CEO / approver signature
                 </span>
                 <span className="aid-preview__dotted">&nbsp;</span>
-              </div>
-              <div>
-                <span className="aid-preview__label">Name</span>
-                <span className="aid-preview__dotted">
-                  {dash(
-                    app.approved_by?.full_name ||
-                      app.ceo_approved_by?.full_name ||
-                      '',
-                  )}
-                </span>
               </div>
               <div>
                 <span className="aid-preview__label">Date</span>

@@ -743,7 +743,9 @@ const AidEntryApplicationView = () => {
                 familyTree={familyTree}
                 kinship={kinship}
                 investigation={investigation}
+                investigationItems={investigationItems}
                 recommendation={recommendation}
+                vulnerability={vulnerability}
                 preparedBy={
                   app.created_by
                     ? formatAuditActor(app.created_by)

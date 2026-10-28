@@ -1231,7 +1231,25 @@ const AidApplicationView = () => {
                 familyTree={familyTree}
                 kinship={kinship}
                 investigation={investigation}
+                investigationItems={investigationItems}
                 recommendation={recommendation}
+                vulnerability={
+                  app.vulnerability ||
+                  (app.investigation_recommendation
+                    ?.vulnerability_after_visit
+                    ? {
+                        declared:
+                          app.investigation_recommendation
+                            .vulnerability_declared,
+                        after_visit:
+                          app.investigation_recommendation
+                            .vulnerability_after_visit,
+                        deltas:
+                          app.investigation_recommendation
+                            .vulnerability_deltas || [],
+                      }
+                    : null)
+                }
                 preparedBy={
                   app.created_by
                     ? formatAuditActor(app.created_by)
