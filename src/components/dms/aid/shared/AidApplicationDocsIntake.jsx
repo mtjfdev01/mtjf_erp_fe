@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FiPlus, FiX } from 'react-icons/fi';
+import { FiAlertTriangle, FiPlus, FiX } from 'react-icons/fi';
 import {
   AID_APPLICATION_DOC_TYPES,
   normalizeApplicationDocSlot,
@@ -14,13 +14,21 @@ import { useAidLang } from '../lang/AidLangContext';
  *   [context]: { file, name, url? }           // single-file slots
  *            | { files: [{ file, name, url?, side?, pair? }] } // multi-file slots
  * }
+ * missingKeys: string[] of context keys flagged missing → Incomplete Docs
  */
 const AidApplicationDocsIntake = ({
   value = {},
   onChange,
+  missingKeys = [],
+  onToggleMissing,
   disabled = false,
 }) => {
   const { t, lang } = useAidLang();
+  const missingSet = new Set(
+    (Array.isArray(missingKeys) ? missingKeys : []).map((k) =>
+      String(k || '').toLowerCase(),
+    ),
+  );
   const filledCnicPairs = cnicFilesToPairs(
     normalizeApplicationDocSlot(value.cnic),
   );
@@ -102,6 +110,33 @@ const AidApplicationDocsIntake = ({
   const docTitle = (doc) =>
     lang === 'ur' && doc.labelUr ? doc.labelUr : doc.label;
 
+  const renderMissingToggle = (docKey) => {
+    if (!onToggleMissing) return null;
+    const isMissing = missingSet.has(String(docKey).toLowerCase());
+    return (
+      <button
+        type="button"
+        className={`aid-app-docs__missing-btn${isMissing ? ' is-on' : ''}`}
+        title={
+          isMissing
+            ? 'Clear missing flag'
+            : 'Mark as missing (Incomplete Docs)'
+        }
+        aria-label={
+          isMissing
+            ? `Clear missing for ${docKey}`
+            : `Mark ${docKey} as missing`
+        }
+        aria-pressed={isMissing}
+        disabled={disabled}
+        onClick={() => onToggleMissing(docKey)}
+      >
+        <FiAlertTriangle aria-hidden size={15} />
+        <span>{isMissing ? 'Missing' : 'Mark missing'}</span>
+      </button>
+    );
+  };
+
   const renderSideSlot = (pairIdx, side, slot) => {
     const label = side === 'front' ? t('cnicFront') : t('cnicBack');
     const fileLabel = slot?.name || slot?.file?.name || '';
@@ -152,15 +187,19 @@ const AidApplicationDocsIntake = ({
     const pairs = getCnicPairs();
     const canRemovePair =
       pairs.length > 1 || pairs.some((p) => p.front || p.back);
+    const isMissing = missingSet.has(String(doc.value).toLowerCase());
 
     return (
       <div
         key={doc.value}
-        className="aid-app-docs__slot aid-app-docs__slot--cnic"
+        className={`aid-app-docs__slot aid-app-docs__slot--cnic${isMissing ? ' is-missing' : ''}`}
       >
         <div className="aid-app-docs__slot-head">
           <strong>{docTitle(doc)}</strong>
-          <span>{t('frontBack')}</span>
+          <div className="aid-app-docs__slot-head-right">
+            {renderMissingToggle(doc.value)}
+            <span>{t('frontBack')}</span>
+          </div>
         </div>
 
         <div className="aid-app-docs__pairs">
@@ -209,7 +248,8 @@ const AidApplicationDocsIntake = ({
   return (
     <div className="aid-app-docs">
       <p className="aid-section-hint">
-        {t('docsHint')} {t('docsHintDetail')}
+        {t('docsHint')} {t('docsHintDetail')} Use the warning icon on a slot to
+        mark that document as missing (status → Incomplete Docs).
       </p>
       <div className="aid-app-docs__grid">
         {AID_APPLICATION_DOC_TYPES.map((doc) => {
@@ -218,13 +258,45 @@ const AidApplicationDocsIntake = ({
           }
 
           const files = normalizeApplicationDocSlot(value[doc.value]);
+          const isMissing = missingSet.has(String(doc.value).toLowerCase());
+          const showUpload =
+            !disabled && (doc.multiple || files.length === 0);
           return (
-            <div key={doc.value} className="aid-app-docs__slot">
-              <div className="aid-app-docs__slot-head">
-                <strong>{docTitle(doc)}</strong>
-                <span>
-                  {doc.multiple ? t('multiple') : t('optional')}
-                </span>
+            <div
+              key={doc.value}
+              className={`aid-app-docs__slot${isMissing ? ' is-missing' : ''}`}
+            >
+              <div className="aid-app-docs__slot-row">
+                <strong className="aid-app-docs__slot-title">
+                  {docTitle(doc)}
+                </strong>
+                {showUpload ? (
+                  <label className="aid-app-docs__upload aid-app-docs__upload--inline">
+                    <span>
+                      {doc.multiple
+                        ? files.length
+                          ? t('addMoreFiles')
+                          : t('chooseFiles')
+                        : t('chooseFile')}
+                    </span>
+                    <input
+                      type="file"
+                      disabled={disabled}
+                      multiple={!!doc.multiple}
+                      accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
+                      onChange={(e) => {
+                        addFiles(doc, e.target.files);
+                        e.target.value = '';
+                      }}
+                    />
+                  </label>
+                ) : null}
+                <div className="aid-app-docs__slot-head-right">
+                  {renderMissingToggle(doc.value)}
+                  <span>
+                    {doc.multiple ? t('multiple') : t('optional')}
+                  </span>
+                </div>
               </div>
 
               {files.length ? (
@@ -259,28 +331,6 @@ const AidApplicationDocsIntake = ({
                     );
                   })}
                 </ul>
-              ) : null}
-
-              {!disabled && (doc.multiple || files.length === 0) ? (
-                <label className="aid-app-docs__upload">
-                  <span>
-                    {doc.multiple
-                      ? files.length
-                        ? t('addMoreFiles')
-                        : t('chooseFiles')
-                      : t('chooseFile')}
-                  </span>
-                  <input
-                    type="file"
-                    disabled={disabled}
-                    multiple={!!doc.multiple}
-                    accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
-                    onChange={(e) => {
-                      addFiles(doc, e.target.files);
-                      e.target.value = '';
-                    }}
-                  />
-                </label>
               ) : null}
             </div>
           );

@@ -637,6 +637,7 @@ const AidApplicationAddInner = () => {
   const [zakatPermission, setZakatPermission] = useState(emptyZakatPermission());
   const [consentForm, setConsentForm] = useState(emptyConsentForm());
   const [applicationDocs, setApplicationDocs] = useState({});
+  const [missingDocuments, setMissingDocuments] = useState([]);
   const [familyHeads, setFamilyHeads] = useState([
     {
       ...emptyFamilyHeadRow('father'),
@@ -693,6 +694,9 @@ const AidApplicationAddInner = () => {
         if (snap.zakatPermission) setZakatPermission(snap.zakatPermission);
         if (snap.consentForm) setConsentForm(snap.consentForm);
         if (snap.applicationDocs) setApplicationDocs(snap.applicationDocs);
+        if (Array.isArray(snap.missingDocuments)) {
+          setMissingDocuments(snap.missingDocuments);
+        }
         if (snap.beneficiaryMode) setBeneficiaryMode(snap.beneficiaryMode);
       } finally {
         if (!cancelled) setOfflineDraftReady(true);
@@ -722,6 +726,7 @@ const AidApplicationAddInner = () => {
         zakatPermission,
         consentForm,
         applicationDocs,
+        missingDocuments,
         beneficiaryMode,
         beneficiaryId,
       }).catch(() => {});
@@ -744,6 +749,7 @@ const AidApplicationAddInner = () => {
     zakatPermission,
     consentForm,
     applicationDocs,
+    missingDocuments,
     beneficiaryMode,
     beneficiaryId,
   ]);
@@ -856,6 +862,16 @@ const AidApplicationAddInner = () => {
         }
         return emptyConsentForVariant(variant);
       });
+
+      const fromAppMissing = Array.isArray(app.missing_documents)
+        ? app.missing_documents.map((k) => String(k).toLowerCase())
+        : [];
+      const fromAttachMissing = (app.attachments || [])
+        .filter((a) => a?.is_missing && a?.context)
+        .map((a) => String(a.context).toLowerCase());
+      setMissingDocuments([
+        ...new Set([...fromAppMissing, ...fromAttachMissing]),
+      ]);
 
       const tree = personDetail?.family_tree || {};
       const parents = tree.parents || [];
@@ -1613,6 +1629,7 @@ const AidApplicationAddInner = () => {
           : {}),
         zakat_permission: zakatPermission,
         consent_form: consentForm,
+        missing_documents: missingDocuments,
         writer_relation: 'self',
         family_members: buildFamilyMembers(),
       };
@@ -2192,6 +2209,35 @@ const AidApplicationAddInner = () => {
             <AidApplicationDocsIntake
               value={applicationDocs}
               onChange={setApplicationDocs}
+              missingKeys={missingDocuments}
+              onToggleMissing={async (key) => {
+                const k = String(key || '').toLowerCase();
+                if (!k) return;
+                const next = missingDocuments.includes(k)
+                  ? missingDocuments.filter((x) => x !== k)
+                  : [...missingDocuments, k];
+                setMissingDocuments(next);
+                if (isEdit && editId) {
+                  try {
+                    await axiosInstance.patch(
+                      `/aid/applications/${editId}/missing-documents`,
+                      { missing_documents: next },
+                    );
+                    setEditStatus(
+                      next.length ? 'incomplete_docs' : editStatus,
+                    );
+                    if (next.length) {
+                      toast.info('Status set to Incomplete Docs');
+                    }
+                  } catch (err) {
+                    toast.error(
+                      err.response?.data?.message ||
+                        err.message ||
+                        'Failed to update missing documents',
+                    );
+                  }
+                }
+              }}
               disabled={saving}
             />
 

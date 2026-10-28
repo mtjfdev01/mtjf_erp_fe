@@ -321,8 +321,8 @@ const AidEntryApplicationView = () => {
             <p className="aid-entry-view__eyebrow">
               {status === 'draft'
                 ? 'Draft — consider to enter verification'
-                : status === 'incomplete'
-                  ? 'Incomplete — complete details, then consider for verification'
+                : status === 'incomplete' || status === 'incomplete_docs'
+                  ? 'Incomplete — complete details/docs, then consider for verification'
                   : 'Application record'}
             </p>
             <h2 style={{ margin: '0 0 6px' }}>
@@ -352,7 +352,9 @@ const AidEntryApplicationView = () => {
               </button>
             ) : null}
             {canApproveDraft &&
-            (status === 'draft' || status === 'incomplete') ? (
+            (status === 'draft' ||
+              status === 'incomplete' ||
+              status === 'incomplete_docs') ? (
               <button
                 type="button"
                 className="primary-btn"
@@ -369,11 +371,15 @@ const AidEntryApplicationView = () => {
         </div>
 
         {canApproveDraft &&
-        (status === 'draft' || status === 'incomplete') &&
+        (status === 'draft' ||
+          status === 'incomplete' ||
+          status === 'incomplete_docs') &&
         showApprovePanel ? (
           <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
             <h3 style={{ marginTop: 0 }}>
-              {status === 'incomplete' ? 'Consider incomplete' : 'Consider draft'}
+              {status === 'incomplete' || status === 'incomplete_docs'
+                ? 'Consider incomplete'
+                : 'Consider draft'}
             </h3>
             <AidUserAssignField
               label="Assign to program user"
@@ -774,7 +780,9 @@ const AidEntryApplicationView = () => {
                 ) : null}
                 {verificationLoading ? (
                   <p className="aid-empty-note">Loading verification…</p>
-                ) : status === 'draft' || status === 'incomplete' ? (
+                ) : status === 'draft' ||
+                  status === 'incomplete' ||
+                  status === 'incomplete_docs' ? (
                   <p className="aid-empty-note">
                     Verification starts after this application is considered for
                     verification.

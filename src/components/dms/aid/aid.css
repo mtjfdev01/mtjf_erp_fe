@@ -1142,13 +1142,78 @@
 .aid-attach-list li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
   gap: 0.75rem;
   padding: 0.5rem 0;
   border-bottom: 1px solid #f1f5f9;
   font-size: 0.85rem;
 }
 
+.aid-attach-list li.is-missing {
+  background: #fff7ed;
+  margin: 0 -0.35rem;
+  padding-inline: 0.35rem;
+  border-radius: 6px;
+}
+
+.aid-attach-list__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  flex: 1;
+}
+
 .aid-attach-list a { color: #2563eb; word-break: break-all; }
+
+.aid-attach-missing-badge {
+  display: inline-block;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #ffedd5;
+  color: #c2410c;
+  border: 1px solid #fdba74;
+}
+
+.aid-attach-list__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.aid-attach-missing-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: 1px solid #fdba74;
+  border-radius: 6px;
+  background: #fff;
+  color: #ea580c;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.aid-attach-missing-btn:hover:not(:disabled) {
+  background: #fff7ed;
+}
+
+.aid-attach-missing-btn.is-on {
+  background: #ea580c;
+  border-color: #c2410c;
+  color: #fff;
+}
+
+.aid-attach-missing-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 
 .aid-inline-form {
   display: grid;
@@ -3588,20 +3653,45 @@ a.aid-contact-chip:hover {
   background: #f8fafc;
 }
 
-.aid-app-docs__slot-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 0.5rem;
-  margin-bottom: 0.55rem;
+.aid-app-docs__slot.is-missing {
+  border-color: #fdba74;
+  background: #fff7ed;
 }
 
-.aid-app-docs__slot-head strong {
+.aid-app-docs__slot-head,
+.aid-app-docs__slot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  margin-bottom: 0;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.aid-app-docs__slot-row {
+  width: 100%;
+}
+
+.aid-app-docs__slot-head strong,
+.aid-app-docs__slot-title {
   font-size: 0.88rem;
   color: #0f172a;
+  flex-shrink: 0;
 }
 
-.aid-app-docs__slot-head span {
+.aid-app-docs__slot-head-right {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.aid-app-docs__slot-head span,
+.aid-app-docs__slot-head-right > span {
   font-size: 0.7rem;
   font-weight: 650;
   color: #94a3b8;
@@ -3609,9 +3699,49 @@ a.aid-contact-chip:hover {
   letter-spacing: 0.04em;
 }
 
+.aid-app-docs__upload--inline {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0.28rem 0.65rem;
+  min-height: 0;
+  flex: 1 1 auto;
+  max-width: 14rem;
+}
+
+.aid-app-docs__missing-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.45rem;
+  border: 1px solid #fdba74;
+  border-radius: 6px;
+  background: #fff;
+  color: #ea580c;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1.2;
+}
+
+.aid-app-docs__missing-btn:hover:not(:disabled) {
+  background: #ffedd5;
+}
+
+.aid-app-docs__missing-btn.is-on {
+  background: #ea580c;
+  border-color: #c2410c;
+  color: #fff;
+}
+
+.aid-app-docs__missing-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .aid-app-docs__file-list {
   list-style: none;
-  margin: 0 0 0.55rem;
+  margin: 0.55rem 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;

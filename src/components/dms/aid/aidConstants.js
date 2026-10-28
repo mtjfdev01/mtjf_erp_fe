@@ -1,6 +1,7 @@
 export const AID_STATUS_OPTIONS = [
   { value: 'draft', label: 'Draft' },
   { value: 'incomplete', label: 'Incomplete' },
+  { value: 'incomplete_docs', label: 'Incomplete Docs' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'under_review', label: 'Under review' },
   { value: 'manager_review', label: 'Manager Review' },
@@ -12,7 +13,7 @@ export const AID_STATUS_OPTIONS = [
 
 /** Data-entry list pipeline cards (maps to API `stage` filter). Drafts use the Drafts board. */
 export const AID_ENTRY_STAGES = [
-  { id: 'incomplete', label: 'Incomplete', hint: 'Missing details' },
+  { id: 'incomplete', label: 'Incomplete', hint: 'Missing details / docs' },
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
   { id: 'manager_review', label: 'Manager Review', hint: 'With Program manager' },
@@ -1860,6 +1861,7 @@ export function aidStatusTone(status) {
     case 'rejected':
       return 'danger';
     case 'incomplete':
+    case 'incomplete_docs':
     case 'ceo_approval_required':
     case 'manager_review':
       return 'warn';

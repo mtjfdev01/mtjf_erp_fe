@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { FiPrinter } from 'react-icons/fi';
+import { FiAlertTriangle, FiPrinter } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
@@ -476,17 +476,22 @@ const AidApplicationView = () => {
     }
   };
   const showReject =
-    canUpdate && !['successful', 'delivered', 'rejected', 'incomplete', 'draft'].includes(status);
+    canUpdate &&
+    !['successful', 'delivered', 'rejected', 'incomplete', 'incomplete_docs', 'draft'].includes(
+      status,
+    );
   const showMarkIncomplete =
     canUpdate &&
     ![
       'draft',
       'incomplete',
+      'incomplete_docs',
       'successful',
       'delivered',
       'rejected',
     ].includes(status);
-  const showResumeIncomplete = canUpdate && status === 'incomplete';
+  const showResumeIncomplete =
+    canUpdate && (status === 'incomplete' || status === 'incomplete_docs');
   const submitLabel = isProgramDeptManager
     ? 'Submit for Approvals to CEO'
     : 'Submit for Manager Review';
@@ -1198,25 +1203,67 @@ const AidApplicationView = () => {
                 ) : (
                   <ul className="aid-attach-list">
                     {tabAtt.map((a) => (
-                      <li key={a.id}>
-                        <a href={a.file_url} target="_blank" rel="noreferrer">
-                          {a.file_name}
-                        </a>
+                      <li
+                        key={a.id}
+                        className={a.is_missing ? 'is-missing' : undefined}
+                      >
+                        <div className="aid-attach-list__meta">
+                          <a href={a.file_url} target="_blank" rel="noreferrer">
+                            {a.file_name}
+                          </a>
+                          {a.is_missing ? (
+                            <span className="aid-attach-missing-badge">
+                              Missing
+                            </span>
+                          ) : null}
+                        </div>
                         {canUpdate && (
-                          <button
-                            type="button"
-                            className="secondary-btn"
-                            style={{ padding: '2px 8px', fontSize: 12 }}
-                            onClick={() =>
-                              run(() =>
-                                axiosInstance.delete(
-                                  `/aid/applications/attachments/${a.id}`,
-                                ),
-                              )
-                            }
-                          >
-                            Delete
-                          </button>
+                          <div className="aid-attach-list__actions">
+                            <button
+                              type="button"
+                              className={`aid-attach-missing-btn${a.is_missing ? ' is-on' : ''}`}
+                              title={
+                                a.is_missing
+                                  ? 'Clear missing flag'
+                                  : 'Mark as missing (sets Incomplete Docs)'
+                              }
+                              aria-label={
+                                a.is_missing
+                                  ? 'Clear missing flag'
+                                  : 'Mark attachment as missing'
+                              }
+                              disabled={busy}
+                              onClick={() =>
+                                run(async () => {
+                                  await axiosInstance.patch(
+                                    `/aid/applications/attachments/${a.id}/missing`,
+                                    { is_missing: !a.is_missing },
+                                  );
+                                  if (!a.is_missing) {
+                                    toast.info(
+                                      'Marked missing — status set to Incomplete Docs',
+                                    );
+                                  }
+                                })
+                              }
+                            >
+                              <FiAlertTriangle aria-hidden />
+                            </button>
+                            <button
+                              type="button"
+                              className="secondary-btn"
+                              style={{ padding: '2px 8px', fontSize: 12 }}
+                              onClick={() =>
+                                run(() =>
+                                  axiosInstance.delete(
+                                    `/aid/applications/attachments/${a.id}`,
+                                  ),
+                                )
+                              }
+                            >
+                              Delete
+                            </button>
+                          </div>
                         )}
                       </li>
                     ))}
