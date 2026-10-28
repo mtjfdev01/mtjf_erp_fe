@@ -660,7 +660,9 @@ const AidApplicationAddInner = () => {
   const consentCaptureRef = useRef(null);
   const [pngDownloading, setPngDownloading] = useState(false);
   const [offlineDraftReady, setOfflineDraftReady] = useState(false);
-  const isDraftEdit = isEdit && editStatus === 'draft';
+  const isDraftEdit =
+    isEdit &&
+    (editStatus === 'draft' || editStatus === 'incomplete_docs');
   const draftsListPath = '/dms/aid/applications/drafts/list';
   const offlineFormKey = `aid_form_${isEdit ? editId : 'new'}`;
 
