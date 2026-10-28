@@ -536,8 +536,9 @@ export function calcZakatNetAfterLoan(details) {
   return Math.max(0, total - loanAmt);
 }
 
-/** Media / donor Consent Form (کنسنٹ فارم) — all applications */
+/** Media / donor Consent Form (کنسنٹ فارم) — default for most applications */
 export const emptyConsentForm = () => ({
+  variant: 'media',
   form_date: '',
   application_no: '',
   full_name: '',
@@ -549,6 +550,119 @@ export const emptyConsentForm = () => ({
   applicant_signature: null,
   lang: 'ur',
 });
+
+/**
+ * Wheelchair affidavit / consent (حلف نامہ برائے وہیل چیئر).
+ * Used when SubProgram is Rehabilitation of PWDs (`health_pwd_rehab`).
+ */
+export const emptyWheelchairConsentForm = () => ({
+  variant: 'wheelchair',
+  form_date: '',
+  application_no: '',
+  applicant_name: '',
+  applicant_cnic: '',
+  beneficiary_name: '',
+  beneficiary_cnic: '',
+  mobile: '',
+  age: '',
+  consent_accepted: false,
+  applicant_thumb: null,
+  applicant_signature: null,
+  mtjf_rep_signature: null,
+  lang: 'ur',
+});
+
+/** Default Marriage Gift handover checklist (paper form). */
+export const AID_MARRIAGE_GIFT_CONSENT_ITEMS = [
+  { key: 'iron', name_en: 'Iron', name_ur: 'استری', qty: 1 },
+  { key: 'steel_set', name_en: 'Steel set', name_ur: 'اسٹیل سیٹ', qty: 1 },
+  { key: 'bed_set', name_en: 'Bed set', name_ur: 'بیڈ سیٹ', qty: 1 },
+  { key: 'mattress', name_en: 'Mattress', name_ur: 'میٹرس', qty: 1 },
+  { key: 'dinner_set', name_en: 'Dinner set', name_ur: 'ڈنر سیٹ', qty: 1 },
+  {
+    key: 'trunk_with_stand',
+    name_en: 'Trunk with stand',
+    name_ur: 'پیٹی بمعہ اسٹینڈ',
+    qty: 1,
+  },
+  {
+    key: 'ladies_suit',
+    name_en: "Women's suit",
+    name_ur: 'زنانہ سوٹ',
+    qty: 2,
+  },
+  {
+    key: 'mens_suit',
+    name_en: "Men's suit",
+    name_ur: 'مردانہ سوٹ',
+    qty: 2,
+  },
+  {
+    key: 'water_cooler',
+    name_en: 'Water cooler',
+    name_ur: 'واٹر کولر',
+    qty: 1,
+  },
+];
+
+/**
+ * Marriage Gift receipt / consent (شادی تحفہ منصوبہ).
+ * Used when Program is Marriage Gift.
+ */
+export const emptyMarriageGiftConsentForm = () => ({
+  variant: 'marriage_gift',
+  form_date: '',
+  application_no: '',
+  bride_name: '',
+  bride_cnic: '',
+  applicant_name: '',
+  parentage_or_spouse: '',
+  applicant_cnic: '',
+  relation_to_bride: 'daughter',
+  items: AID_MARRIAGE_GIFT_CONSENT_ITEMS.map((row) => ({
+    key: row.key,
+    name_en: row.name_en,
+    name_ur: row.name_ur,
+    qty: row.qty,
+  })),
+  consent_accepted: false,
+  receiver_thumb: null,
+  receiver_signature: null,
+  mtjf_rep_signature: null,
+  lang: 'ur',
+});
+
+/** Wheelchair affidavit is used for PWD rehab (wheelchairs / mobility aids). */
+export function isWheelchairConsentProgram(aidProgram) {
+  return String(aidProgram || '').toLowerCase() === 'health_pwd_rehab';
+}
+
+export function isMarriageGiftConsentProgram(aidType, aidProgram) {
+  const type = String(aidType || '').toLowerCase();
+  const program = String(aidProgram || '').toLowerCase();
+  return type === 'marriage_gift' || program.startsWith('marriage_gift');
+}
+
+export function isWheelchairConsentForm(value) {
+  return !!value && value.variant === 'wheelchair';
+}
+
+export function isMarriageGiftConsentForm(value) {
+  return !!value && value.variant === 'marriage_gift';
+}
+
+/** Resolve which consent form variant to show for an application. */
+export function resolveConsentVariant(aidType, aidProgram) {
+  if (isWheelchairConsentProgram(aidProgram)) return 'wheelchair';
+  if (isMarriageGiftConsentProgram(aidType, aidProgram)) return 'marriage_gift';
+  return 'media';
+}
+
+export function emptyConsentForVariant(variant) {
+  if (variant === 'wheelchair') return emptyWheelchairConsentForm();
+  if (variant === 'marriage_gift') return emptyMarriageGiftConsentForm();
+  return emptyConsentForm();
+}
 
 export const AID_WRITER_RELATIONS = [
   { value: 'self', label: 'Self (beneficiary)' },

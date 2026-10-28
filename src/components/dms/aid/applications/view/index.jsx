@@ -23,6 +23,9 @@ import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFie
 import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
+import AidWheelchairConsentForm from '../../shared/AidWheelchairConsentForm';
+import AidMarriageGiftConsentForm from '../../shared/AidMarriageGiftConsentForm';
+import AidApplicationPreview from '../../shared/AidApplicationPreview';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import { printAidElement } from '../../shared/printAidElement';
 import AidInvestigationPanel, {
@@ -50,6 +53,10 @@ import {
   formatAidCaseSource,
   formatAidProgramLabel,
   formatExpectedAmount,
+  isWheelchairConsentProgram,
+  isWheelchairConsentForm,
+  isMarriageGiftConsentProgram,
+  isMarriageGiftConsentForm,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -749,6 +756,7 @@ const AidApplicationView = () => {
               { id: 'beneficiary', label: 'Beneficiary' },
               { id: 'family', label: 'Family' },
               { id: 'attachments', label: 'Attachments' },
+              { id: 'preview', label: 'Preview' },
               { id: 'field_process', label: 'Field process' },
             ].map((t) => (
               <button
@@ -961,7 +969,17 @@ const AidApplicationView = () => {
                 {app.consent_form && (
                   <AidCollapsibleSection
                     className="aid-detail-block"
-                    title="Consent Form"
+                    title={
+                      isWheelchairConsentProgram(app.aid_program) ||
+                      isWheelchairConsentForm(app.consent_form)
+                        ? 'Wheelchair Affidavit / Consent'
+                        : isMarriageGiftConsentProgram(
+                              app.requested_aid_type,
+                              app.aid_program,
+                            ) || isMarriageGiftConsentForm(app.consent_form)
+                          ? 'Marriage Gift Receipt / Consent'
+                          : 'Consent Form'
+                    }
                     hint="Click to view"
                     actions={
                       <button
@@ -976,11 +994,29 @@ const AidApplicationView = () => {
                     }
                   >
                     <div ref={consentPrintRef}>
-                      <AidConsentForm
-                        value={app.consent_form}
-                        applicationNo={app.application_no}
-                        readOnly
-                      />
+                      {isWheelchairConsentProgram(app.aid_program) ||
+                      isWheelchairConsentForm(app.consent_form) ? (
+                        <AidWheelchairConsentForm
+                          value={app.consent_form}
+                          applicationNo={app.application_no}
+                          readOnly
+                        />
+                      ) : isMarriageGiftConsentProgram(
+                          app.requested_aid_type,
+                          app.aid_program,
+                        ) || isMarriageGiftConsentForm(app.consent_form) ? (
+                        <AidMarriageGiftConsentForm
+                          value={app.consent_form}
+                          applicationNo={app.application_no}
+                          readOnly
+                        />
+                      ) : (
+                        <AidConsentForm
+                          value={app.consent_form}
+                          applicationNo={app.application_no}
+                          readOnly
+                        />
+                      )}
                     </div>
                   </AidCollapsibleSection>
                 )}
@@ -1189,10 +1225,26 @@ const AidApplicationView = () => {
               </section>
             )}
 
+            {activePanelTab === 'preview' && (
+              <AidApplicationPreview
+                app={app}
+                familyTree={familyTree}
+                kinship={kinship}
+                investigation={investigation}
+                recommendation={recommendation}
+                preparedBy={
+                  app.created_by
+                    ? formatAuditActor(app.created_by)
+                    : undefined
+                }
+              />
+            )}
+
             {(showVerify ||
               app.verification_checklist ||
               investigationItems.length > 0) &&
-              activePanelTab !== 'attachments' && (
+              activePanelTab !== 'attachments' &&
+              activePanelTab !== 'preview' && (
               <section className="aid-section aid-section--flush aid-section--investigation">
                 {(() => {
                   const investigationBlock = (

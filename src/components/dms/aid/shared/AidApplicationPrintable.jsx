@@ -6,9 +6,15 @@ import {
   formatResidentHousingSummary,
   formatLivestockSummary,
   formatVulnerability,
+  isWheelchairConsentProgram,
+  isWheelchairConsentForm,
+  isMarriageGiftConsentProgram,
+  isMarriageGiftConsentForm,
 } from '../aidConstants';
 import AidZakatPermissionForm from './AidZakatPermissionForm';
 import AidConsentForm from './AidConsentForm';
+import AidWheelchairConsentForm from './AidWheelchairConsentForm';
+import AidMarriageGiftConsentForm from './AidMarriageGiftConsentForm';
 import { printAidElement } from './printAidElement';
 
 const dash = (v) => {
@@ -533,7 +539,17 @@ const AidApplicationPrintable = ({
       {hasConsent ? (
         <div className="aid-printable-doc">
           <div className="aid-printable__toolbar no-print">
-            <p className="aid-printable__toolbar-hint">Consent Form</p>
+            <p className="aid-printable__toolbar-hint">
+              {isWheelchairConsentProgram(app.aid_program) ||
+              isWheelchairConsentForm(app.consent_form)
+                ? 'Wheelchair Affidavit / Consent'
+                : isMarriageGiftConsentProgram(
+                      app.requested_aid_type,
+                      app.aid_program,
+                    ) || isMarriageGiftConsentForm(app.consent_form)
+                  ? 'Marriage Gift Receipt / Consent'
+                  : 'Consent Form'}
+            </p>
             <button
               type="button"
               className="primary-btn"
@@ -547,11 +563,29 @@ const AidApplicationPrintable = ({
             id="aid-consent-printable"
             className="aid-printable aid-printable--form"
           >
-            <AidConsentForm
-              value={app.consent_form}
-              applicationNo={app.application_no}
-              readOnly
-            />
+            {isWheelchairConsentProgram(app.aid_program) ||
+            isWheelchairConsentForm(app.consent_form) ? (
+              <AidWheelchairConsentForm
+                value={app.consent_form}
+                applicationNo={app.application_no}
+                readOnly
+              />
+            ) : isMarriageGiftConsentProgram(
+                app.requested_aid_type,
+                app.aid_program,
+              ) || isMarriageGiftConsentForm(app.consent_form) ? (
+              <AidMarriageGiftConsentForm
+                value={app.consent_form}
+                applicationNo={app.application_no}
+                readOnly
+              />
+            ) : (
+              <AidConsentForm
+                value={app.consent_form}
+                applicationNo={app.application_no}
+                readOnly
+              />
+            )}
           </div>
         </div>
       ) : null}

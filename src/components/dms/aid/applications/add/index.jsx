@@ -30,6 +30,8 @@ import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFie
 import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
+import AidWheelchairConsentForm from '../../shared/AidWheelchairConsentForm';
+import AidMarriageGiftConsentForm from '../../shared/AidMarriageGiftConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidFamilyMembersIntake from '../../shared/AidFamilyMembersIntake';
 import AidFamilyTreePanel from '../../shared/AidFamilyTreePanel';
@@ -69,6 +71,12 @@ import {
   emptyCleanWaterDetails,
   emptyZakatPermission,
   emptyConsentForm,
+  emptyWheelchairConsentForm,
+  emptyMarriageGiftConsentForm,
+  isWheelchairConsentProgram,
+  isMarriageGiftConsentProgram,
+  resolveConsentVariant,
+  emptyConsentForVariant,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
   AID_FAMILY_HEAD_TYPE_OPTIONS,
@@ -831,11 +839,23 @@ const AidApplicationAddInner = () => {
           ? { ...emptyZakatPermission(), ...app.zakat_permission }
           : emptyZakatPermission(),
       );
-      setConsentForm(
-        app.consent_form
-          ? { ...emptyConsentForm(), ...app.consent_form }
-          : emptyConsentForm(),
-      );
+      setConsentForm(() => {
+        const variant = resolveConsentVariant(
+          app.requested_aid_type,
+          app.aid_program,
+        );
+        if (app.consent_form) {
+          const fromStored =
+            app.consent_form.variant ||
+            (variant !== 'media' ? variant : 'media');
+          return {
+            ...emptyConsentForVariant(fromStored),
+            ...app.consent_form,
+            variant: app.consent_form.variant || fromStored,
+          };
+        }
+        return emptyConsentForVariant(variant);
+      });
 
       const tree = personDetail?.family_tree || {};
       const parents = tree.parents || [];
@@ -1029,6 +1049,118 @@ const AidApplicationAddInner = () => {
       return next;
     });
   }, [zakatApplicantPerson]);
+
+  /** Prefill wheelchair affidavit from applicant + beneficiary. */
+  useEffect(() => {
+    if (!isWheelchairConsentProgram(form.aid_program)) return;
+    const applicant = zakatApplicantPerson;
+    const bene =
+      headAsBeneficiary ||
+      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary);
+    if (!applicant && !bene) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const ageSrc = bene || applicant;
+    const age = calcAgeFromDob(ageSrc?.date_of_birth);
+    setConsentForm((prev) => {
+      if (prev?.variant && prev.variant !== 'wheelchair') return prev;
+      const next = {
+        ...emptyWheelchairConsentForm(),
+        ...prev,
+        variant: 'wheelchair',
+        form_date: prev.form_date || today,
+        applicant_name: applicant?.full_name || prev.applicant_name || '',
+        applicant_cnic: formatCnicInput(
+          applicant?.cnic || prev.applicant_cnic || '',
+        ),
+        beneficiary_name: bene?.full_name || prev.beneficiary_name || '',
+        beneficiary_cnic: formatCnicInput(
+          bene?.cnic || prev.beneficiary_cnic || '',
+        ),
+        mobile: formatPkPhoneInput(
+          bene?.phone || applicant?.phone || prev.mobile || '',
+        ),
+        age:
+          age != null
+            ? String(age)
+            : prev.age || '',
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.applicant_name === prev.applicant_name &&
+        next.applicant_cnic === prev.applicant_cnic &&
+        next.beneficiary_name === prev.beneficiary_name &&
+        next.beneficiary_cnic === prev.beneficiary_cnic &&
+        next.mobile === prev.mobile &&
+        next.age === prev.age
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    form.aid_program,
+    zakatApplicantPerson,
+    headAsBeneficiary,
+    beneficiaryMode,
+    existingBeneficiary,
+    beneficiary,
+  ]);
+
+  /** Prefill marriage gift receipt from applicant + beneficiary (bride). */
+  useEffect(() => {
+    if (
+      !isMarriageGiftConsentProgram(
+        form.requested_aid_type,
+        form.aid_program,
+      )
+    ) {
+      return;
+    }
+    const applicant = zakatApplicantPerson;
+    const bride =
+      headAsBeneficiary ||
+      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary);
+    if (!applicant && !bride) return;
+    const today = new Date().toISOString().slice(0, 10);
+    setConsentForm((prev) => {
+      if (prev?.variant && prev.variant !== 'marriage_gift') return prev;
+      const next = {
+        ...emptyMarriageGiftConsentForm(),
+        ...prev,
+        variant: 'marriage_gift',
+        form_date: prev.form_date || today,
+        bride_name: bride?.full_name || prev.bride_name || '',
+        bride_cnic: formatCnicInput(bride?.cnic || prev.bride_cnic || ''),
+        applicant_name: applicant?.full_name || prev.applicant_name || '',
+        parentage_or_spouse:
+          applicant?.father_or_husband_name ||
+          prev.parentage_or_spouse ||
+          '',
+        applicant_cnic: formatCnicInput(
+          applicant?.cnic || prev.applicant_cnic || '',
+        ),
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.bride_name === prev.bride_name &&
+        next.bride_cnic === prev.bride_cnic &&
+        next.applicant_name === prev.applicant_name &&
+        next.parentage_or_spouse === prev.parentage_or_spouse &&
+        next.applicant_cnic === prev.applicant_cnic
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    form.requested_aid_type,
+    form.aid_program,
+    zakatApplicantPerson,
+    headAsBeneficiary,
+    beneficiaryMode,
+    existingBeneficiary,
+    beneficiary,
+  ]);
 
   const beneficiaryGender = headAsBeneficiary
     ? headAsBeneficiary.gender || ''
@@ -1906,6 +2038,17 @@ const AidApplicationAddInner = () => {
                   } else if (formTab === 'survey') {
                     setFormTab('request');
                   }
+                  setConsentForm((prev) => {
+                    const nextVariant = resolveConsentVariant(
+                      next,
+                      amt.aid_program,
+                    );
+                    if ((prev?.variant || 'media') === nextVariant) return prev;
+                    return {
+                      ...emptyConsentForVariant(nextVariant),
+                      lang: prev?.lang || lang,
+                    };
+                  });
                 }}
                 options={AID_REQUEST_TYPES}
               />
@@ -1920,12 +2063,24 @@ const AidApplicationAddInner = () => {
                       form.requested_aid_type,
                       e.target.value,
                     );
+                    const nextProgram = amt.aid_program;
                     setForm((p) => ({
                       ...p,
-                      aid_program: amt.aid_program,
+                      aid_program: nextProgram,
                       expected_amount: amt.expected_amount,
                       expected_amount_max: amt.expected_amount_max,
                     }));
+                    setConsentForm((prev) => {
+                      const nextVariant = resolveConsentVariant(
+                        form.requested_aid_type,
+                        nextProgram,
+                      );
+                      if ((prev?.variant || 'media') === nextVariant) return prev;
+                      return {
+                        ...emptyConsentForVariant(nextVariant),
+                        lang: prev?.lang || lang,
+                      };
+                    });
                   }}
                   options={[
                     { value: '', label: t('selectSubProgram') },
@@ -2084,7 +2239,19 @@ const AidApplicationAddInner = () => {
 
             <AidCollapsibleSection
               className="aid-family-panel"
-              title={t('consentForm')}
+              title={
+                resolveConsentVariant(
+                  form.requested_aid_type,
+                  form.aid_program,
+                ) === 'wheelchair'
+                  ? t('wheelchairConsentForm')
+                  : resolveConsentVariant(
+                        form.requested_aid_type,
+                        form.aid_program,
+                      ) === 'marriage_gift'
+                    ? t('marriageGiftConsentForm')
+                    : t('consentForm')
+              }
               hint={t('optionalExpand')}
               actions={
                 <span className="aid-form-export-actions">
@@ -2103,9 +2270,20 @@ const AidApplicationAddInner = () => {
                     title={t('downloadPng')}
                     aria-label={t('downloadPng')}
                     disabled={pngDownloading}
-                    onClick={() =>
-                      handleDownloadPng(consentCaptureRef, 'consent-form')
-                    }
+                    onClick={() => {
+                      const v = resolveConsentVariant(
+                        form.requested_aid_type,
+                        form.aid_program,
+                      );
+                      handleDownloadPng(
+                        consentCaptureRef,
+                        v === 'wheelchair'
+                          ? 'wheelchair-consent-form'
+                          : v === 'marriage_gift'
+                            ? 'marriage-gift-consent-form'
+                            : 'consent-form',
+                      );
+                    }}
                   >
                     <FiDownload size={18} />
                   </button>
@@ -2113,11 +2291,31 @@ const AidApplicationAddInner = () => {
               }
             >
               <div ref={consentCaptureRef} className="aid-png-capture">
-                <AidConsentForm
-                  value={consentForm}
-                  onChange={setConsentForm}
-                  uiLang={lang}
-                />
+                {resolveConsentVariant(
+                  form.requested_aid_type,
+                  form.aid_program,
+                ) === 'wheelchair' ? (
+                  <AidWheelchairConsentForm
+                    value={consentForm}
+                    onChange={setConsentForm}
+                    uiLang={lang}
+                  />
+                ) : resolveConsentVariant(
+                    form.requested_aid_type,
+                    form.aid_program,
+                  ) === 'marriage_gift' ? (
+                  <AidMarriageGiftConsentForm
+                    value={consentForm}
+                    onChange={setConsentForm}
+                    uiLang={lang}
+                  />
+                ) : (
+                  <AidConsentForm
+                    value={consentForm}
+                    onChange={setConsentForm}
+                    uiLang={lang}
+                  />
+                )}
               </div>
             </AidCollapsibleSection>
           </div>

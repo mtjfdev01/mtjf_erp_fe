@@ -13,6 +13,8 @@ import AidFinancialAssistanceFields from '../../../shared/AidFinancialAssistance
 import AidCleanWaterSurveyForm from '../../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
+import AidWheelchairConsentForm from '../../../shared/AidWheelchairConsentForm';
+import AidMarriageGiftConsentForm from '../../../shared/AidMarriageGiftConsentForm';
 import AidCollapsibleSection from '../../../shared/AidCollapsibleSection';
 import AidPersonProfileCard, {
   AidFamilyMemberLine,
@@ -21,6 +23,7 @@ import AidPersonProfileCard, {
 import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
 import AidApplicationPrintable from '../../../shared/AidApplicationPrintable';
+import AidApplicationPreview from '../../../shared/AidApplicationPreview';
 import AidInvestigationPanel, {
   AID_RATION_REC_OPTIONS,
   emptyRecommendation,
@@ -36,6 +39,10 @@ import {
   formatAidCaseSource,
   formatAidProgramLabel,
   formatExpectedAmount,
+  isWheelchairConsentProgram,
+  isWheelchairConsentForm,
+  isMarriageGiftConsentProgram,
+  isMarriageGiftConsentForm,
 } from '../../../aidConstants';
 import { formatAuditActor } from '../../../../../common/audit/auditHistoryLabels';
 import '../../../aid.css';
@@ -51,6 +58,7 @@ const ENTRY_TABS_BASE = [
   { id: 'family', label: 'Family' },
   { id: 'family_tree', label: 'Family Tree' },
   { id: 'attachments', label: 'Attachments' },
+  { id: 'preview', label: 'Preview' },
   { id: 'printable', label: 'Printable' },
   { id: 'verification', label: 'Verification' },
 ];
@@ -203,7 +211,7 @@ const AidEntryApplicationView = () => {
   }, [load]);
 
   useEffect(() => {
-    if (panelTab !== 'verification') return;
+    if (panelTab !== 'verification' && panelTab !== 'preview') return;
     loadVerification();
   }, [panelTab, loadVerification]);
 
@@ -512,7 +520,17 @@ const AidEntryApplicationView = () => {
                 {app.consent_form && (
                   <AidCollapsibleSection
                     className="aid-detail-block"
-                    title="Consent Form"
+                    title={
+                      isWheelchairConsentProgram(app.aid_program) ||
+                      isWheelchairConsentForm(app.consent_form)
+                        ? 'Wheelchair Affidavit / Consent'
+                        : isMarriageGiftConsentProgram(
+                              app.requested_aid_type,
+                              app.aid_program,
+                            ) || isMarriageGiftConsentForm(app.consent_form)
+                          ? 'Marriage Gift Receipt / Consent'
+                          : 'Consent Form'
+                    }
                     hint="Click to view"
                     actions={
                       <button
@@ -527,11 +545,29 @@ const AidEntryApplicationView = () => {
                     }
                   >
                     <div ref={consentPrintRef}>
-                      <AidConsentForm
-                        value={app.consent_form}
-                        applicationNo={app.application_no}
-                        readOnly
-                      />
+                      {isWheelchairConsentProgram(app.aid_program) ||
+                      isWheelchairConsentForm(app.consent_form) ? (
+                        <AidWheelchairConsentForm
+                          value={app.consent_form}
+                          applicationNo={app.application_no}
+                          readOnly
+                        />
+                      ) : isMarriageGiftConsentProgram(
+                          app.requested_aid_type,
+                          app.aid_program,
+                        ) || isMarriageGiftConsentForm(app.consent_form) ? (
+                        <AidMarriageGiftConsentForm
+                          value={app.consent_form}
+                          applicationNo={app.application_no}
+                          readOnly
+                        />
+                      ) : (
+                        <AidConsentForm
+                          value={app.consent_form}
+                          applicationNo={app.application_no}
+                          readOnly
+                        />
+                      )}
                     </div>
                   </AidCollapsibleSection>
                 )}
@@ -699,6 +735,21 @@ const AidEntryApplicationView = () => {
                   </ul>
                 )}
               </section>
+            )}
+
+            {panelTab === 'preview' && (
+              <AidApplicationPreview
+                app={app}
+                familyTree={familyTree}
+                kinship={kinship}
+                investigation={investigation}
+                recommendation={recommendation}
+                preparedBy={
+                  app.created_by
+                    ? formatAuditActor(app.created_by)
+                    : undefined
+                }
+              />
             )}
 
             {panelTab === 'printable' && (

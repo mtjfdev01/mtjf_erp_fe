@@ -52,6 +52,8 @@ export const AID_UI_COPY = {
     attachments: 'Attachments',
     zakatLetter: 'Zakat Permission Letter',
     consentForm: 'Consent Form',
+    wheelchairConsentForm: 'Wheelchair Affidavit / Consent',
+    marriageGiftConsentForm: 'Marriage Gift Receipt / Consent',
     optionalExpand: 'Optional — click to fill or review',
 
     // Beneficiary
@@ -442,6 +444,8 @@ export const AID_UI_COPY = {
     attachments: 'منسلکات',
     zakatLetter: 'اجازت نامہ برائے زکوٰۃ',
     consentForm: 'کنسنٹ فارم',
+    wheelchairConsentForm: 'حلف نامہ برائے وہیل چیئر',
+    marriageGiftConsentForm: 'شادی تحفہ رسید / رضامندی',
     optionalExpand: 'اختیاری — کھولیں یا دیکھیں',
 
     beneficiary: 'مستفید',
