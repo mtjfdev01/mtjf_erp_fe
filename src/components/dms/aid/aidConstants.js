@@ -665,6 +665,34 @@ export function emptyConsentForVariant(variant) {
   return emptyConsentForm();
 }
 
+/** True when a biometric capture object has a usable image. */
+export function hasAidBiometric(capture) {
+  if (!capture || typeof capture !== 'object') return false;
+  return !!(capture.data_url || capture.url);
+}
+
+/** Shallow-clone a biometric capture for form / person storage. */
+export function cloneAidBiometric(capture) {
+  if (!hasAidBiometric(capture)) return null;
+  return { ...capture };
+}
+
+/**
+ * Person whose demographics + thumb/signature fill Zakat / Consent.
+ * Marriage Gift → applicant; all other programs → beneficiary.
+ */
+export function resolveAidFormSubjectPerson({
+  aidType,
+  aidProgram,
+  beneficiary,
+  applicant,
+}) {
+  if (isMarriageGiftConsentProgram(aidType, aidProgram)) {
+    return applicant || beneficiary || null;
+  }
+  return beneficiary || applicant || null;
+}
+
 export const AID_WRITER_RELATIONS = [
   { value: 'self', label: 'Self (beneficiary)' },
   { value: 'father', label: 'Father' },

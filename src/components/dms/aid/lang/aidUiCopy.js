@@ -55,6 +55,8 @@ export const AID_UI_COPY = {
     wheelchairConsentForm: 'Wheelchair Affidavit / Consent',
     marriageGiftConsentForm: 'Marriage Gift Receipt / Consent',
     optionalExpand: 'Optional — click to fill or review',
+    formsAutoAttached:
+      'Attached to every application — beneficiary data (applicant for Marriage Gift); thumb & signature reuse from that person',
 
     // Beneficiary
     beneficiary: 'Beneficiary',
@@ -144,6 +146,7 @@ export const AID_UI_COPY = {
       'Vulnerability Categories (Select all that apply)',
     viewCertificate: 'View certificate',
     photoOfHead: 'Photo of head',
+    removePhoto: 'Remove photo',
     captureUpload: 'Upload photo',
     openWebcam: 'Open webcam',
     takePhoto: 'Take photo',
@@ -447,6 +450,8 @@ export const AID_UI_COPY = {
     wheelchairConsentForm: 'حلف نامہ برائے وہیل چیئر',
     marriageGiftConsentForm: 'شادی تحفہ رسید / رضامندی',
     optionalExpand: 'اختیاری — کھولیں یا دیکھیں',
+    formsAutoAttached:
+      'ہر درخواست کے ساتھ — مستفید کا ڈیٹا (شادی تحفہ میں درخواست گزار)؛ انگوٹھا/دستخط اسی شخص سے',
 
     beneficiary: 'مستفید',
     beneficiaryIsApplicant: 'مستفید ہی درخواست گزار ہے',
@@ -532,6 +537,7 @@ export const AID_UI_COPY = {
       'حساس زمروں (تمام لاگو منتخب کریں)',
     viewCertificate: 'سرٹیفکیٹ دیکھیں',
     photoOfHead: 'سربراہ کی تصویر',
+    removePhoto: 'تصویر ہٹائیں',
     captureUpload: 'کیپچر / اپ لوڈ',
     openWebcam: 'ویب کیم کھولیں',
     takePhoto: 'تصویر لیں',

@@ -49,11 +49,71 @@ export const normalizeRationOptions = (raw) => {
   ];
 };
 
+/** Normalize one file row on an investigation entry. */
+const normalizeInvestigationFile = (file) => {
+  if (!file || typeof file !== 'object') return null;
+  const url = String(file.url || file.attachment_url || file.file_url || '').trim();
+  if (!url) return null;
+  return {
+    id: file.id ?? file.attachment_id ?? null,
+    url,
+    name: String(
+      file.name || file.attachment_name || file.file_name || 'Attached file',
+    ),
+  };
+};
+
+/** Build attachments[] from legacy single fields + optional array. */
+const normalizeInvestigationAttachments = (value) => {
+  const fromList = Array.isArray(value?.attachments)
+    ? value.attachments.map(normalizeInvestigationFile).filter(Boolean)
+    : [];
+  const legacyUrl = String(value?.attachment_url || '').trim();
+  if (legacyUrl) {
+    const legacy = normalizeInvestigationFile({
+      id: value.attachment_id,
+      url: legacyUrl,
+      name: value.attachment_name,
+    });
+    if (
+      legacy &&
+      !fromList.some((f) => f.url === legacy.url || (f.id && f.id === legacy.id))
+    ) {
+      fromList.unshift(legacy);
+    }
+  }
+  const seen = new Set();
+  return fromList.filter((f) => {
+    const key = f.id != null ? `id:${f.id}` : `url:${f.url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const primaryAttachmentFields = (attachments) => {
+  const first = attachments[0] || null;
+  return {
+    attachment_url: first?.url || '',
+    attachment_name: first?.name || '',
+    attachment_id: first?.id ?? null,
+  };
+};
+
+export const hasInvestigationAttachment = (entry) => {
+  const e = normalizeInvestigationEntry(entry);
+  return (
+    (Array.isArray(e.attachments) && e.attachments.length > 0) ||
+    String(e.attachment_url || '').trim().length > 0
+  );
+};
+
 export const normalizeInvestigationEntry = (value) => {
   if (value === true || value === 'verified') {
     return {
       status: 'verified',
       note: '',
+      attachments: [],
       attachment_url: '',
       attachment_name: '',
       attachment_id: null,
@@ -63,6 +123,7 @@ export const normalizeInvestigationEntry = (value) => {
     return {
       status: 'mismatch',
       note: '',
+      attachments: [],
       attachment_url: '',
       attachment_name: '',
       attachment_id: null,
@@ -76,17 +137,18 @@ export const normalizeInvestigationEntry = (value) => {
         : value.checked === true
           ? 'verified'
           : 'not_checked';
+    const attachments = normalizeInvestigationAttachments(value);
     return {
       status,
       note: String(value.note || value.notes || value.found || ''),
-      attachment_url: String(value.attachment_url || ''),
-      attachment_name: String(value.attachment_name || ''),
-      attachment_id: value.attachment_id ?? null,
+      attachments,
+      ...primaryAttachmentFields(attachments),
     };
   }
   return {
     status: 'not_checked',
     note: '',
+    attachments: [],
     attachment_url: '',
     attachment_name: '',
     attachment_id: null,
@@ -121,6 +183,7 @@ export const mergeInvestigationState = (items = [], saved = {}) => {
 /**
  * Re-attach file URLs for process items (e.g. Site Visit) from application
  * attachments when the saved checklist lost attachment_url after a reload.
+ * Collects every matching file into attachments[].
  */
 export const enrichInvestigationFromAttachments = (
   items = [],
@@ -133,25 +196,47 @@ export const enrichInvestigationFromAttachments = (
   for (const item of items || []) {
     if (!item?.accepts_file) continue;
     const prev = normalizeInvestigationEntry(next[item.key]);
-    if (String(prev.attachment_url || '').trim()) continue;
-    const match = list.find((a) => {
+    const key = String(item.key || '').toLowerCase();
+    const matches = list.filter((a) => {
       const ctx = String(a?.context || '').toLowerCase();
       const desc = String(a?.description || '').toLowerCase();
-      const key = String(item.key || '').toLowerCase();
       return (
         ctx === key ||
         desc === key ||
         (key === 'site_visit' &&
-          (ctx === 'site_visit' || desc === 'site_visit' || desc === 'home_visited'))
+          (ctx === 'site_visit' ||
+            desc === 'site_visit' ||
+            desc === 'home_visited'))
       );
     });
-    if (!match?.file_url) continue;
+    if (!matches.length) continue;
+    const fromApp = matches
+      .map((a) =>
+        normalizeInvestigationFile({
+          id: a.id,
+          url: a.file_url,
+          name: a.file_name,
+        }),
+      )
+      .filter(Boolean);
+    const merged = [...prev.attachments];
+    for (const f of fromApp) {
+      if (
+        !merged.some(
+          (x) => x.url === f.url || (x.id != null && x.id === f.id),
+        )
+      ) {
+        merged.push(f);
+      }
+    }
+    if (merged.length === prev.attachments.length && hasInvestigationAttachment(prev)) {
+      continue;
+    }
     next[item.key] = {
       ...prev,
       status: prev.status === 'not_checked' ? 'verified' : prev.status,
-      attachment_url: match.file_url || '',
-      attachment_name: match.file_name || '',
-      attachment_id: match.id ?? null,
+      attachments: merged,
+      ...primaryAttachmentFields(merged),
     };
   }
   return next;
@@ -171,7 +256,7 @@ export const isInvestigationItemComplete = (item, state = {}) => {
   if (item.accepts_file) {
     return (
       entry.status === 'verified' &&
-      String(entry.attachment_url || '').trim().length > 0 &&
+      hasInvestigationAttachment(entry) &&
       (!processItem || hasFoundNote(entry))
     );
   }
@@ -205,8 +290,8 @@ export const getInvestigationIncompleteReasons = (items = [], state = {}) => {
     if (item.accepts_file) {
       if (entry.status !== 'verified') {
         reasons.push(`${item.label}: mark Verified and attach a file`);
-      } else if (!String(entry.attachment_url || '').trim()) {
-        reasons.push(`${item.label}: attach a site-visit photo/file`);
+      } else if (!hasInvestigationAttachment(entry)) {
+        reasons.push(`${item.label}: attach at least one site-visit photo/file`);
       } else if (item.kind === 'process' && !hasFoundNote(entry)) {
         reasons.push(`${item.label}: add a Found note (min 3 characters)`);
       }
@@ -493,7 +578,7 @@ const AidInvestigationPanel = ({
       if (
         status === 'verified' &&
         item.accepts_file &&
-        !String(prev.attachment_url || '').trim()
+        !hasInvestigationAttachment(prev)
       ) {
         skippedFileItems += 1;
         continue;
@@ -588,52 +673,57 @@ const AidInvestigationPanel = ({
           ) : null}
           {item.accepts_file ? (
             <div className="aid-invest-row__file">
-              {entry.attachment_url ? (
-                <div className="aid-invest-row__file-current">
-                  <a
-                    href={entry.attachment_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {entry.attachment_name || 'Attached file'}
-                  </a>
-                  {!disabled ? (
-                    <button
-                      type="button"
-                      className="aid-mini-btn aid-mini-btn--remove"
-                      onClick={() =>
-                        setEntry(item.key, {
-                          attachment_url: '',
-                          attachment_name: '',
-                          attachment_id: null,
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              ) : (
+              {(entry.attachments || []).length > 0 ? (
+                <ul className="aid-invest-row__file-list">
+                  {entry.attachments.map((f, idx) => (
+                    <li key={f.id ?? f.url ?? idx} className="aid-invest-row__file-current">
+                      <a href={f.url} target="_blank" rel="noreferrer">
+                        {f.name || `File ${idx + 1}`}
+                      </a>
+                      {!disabled ? (
+                        <button
+                          type="button"
+                          className="aid-mini-btn aid-mini-btn--remove"
+                          onClick={() => {
+                            const nextFiles = (entry.attachments || []).filter(
+                              (_, i) => i !== idx,
+                            );
+                            setEntry(item.key, {
+                              attachments: nextFiles,
+                              ...primaryAttachmentFields(nextFiles),
+                            });
+                          }}
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {!disabled ? (
                 <label className="aid-invest-row__file-upload">
                   <span>
                     {uploadingKey === item.key
                       ? 'Uploading…'
-                      : 'Attach site visit file *'}
+                      : (entry.attachments || []).length > 0
+                        ? 'Add more files'
+                        : 'Attach site visit files *'}
                   </span>
                   <input
                     type="file"
+                    multiple
                     disabled={disabled || uploadingKey === item.key}
                     accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file && onUploadItemFile) {
-                        onUploadItemFile(item.key, file);
-                      }
+                      const files = Array.from(e.target.files || []);
                       e.target.value = '';
+                      if (!files.length || !onUploadItemFile) return;
+                      onUploadItemFile(item.key, files);
                     }}
                   />
                 </label>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>

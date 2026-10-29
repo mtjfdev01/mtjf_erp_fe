@@ -388,6 +388,7 @@ const AidFamilyHeadPersonalFields = ({
       _photo_file: file,
       _photo_preview: localPreview,
       photo_name: file.name,
+      _photo_cleared: false,
     });
     setPhotoUploading(true);
     setPhotoError('');
@@ -413,6 +414,7 @@ const AidFamilyHeadPersonalFields = ({
         _photo_preview: remoteUrl,
         photo_url: remoteUrl,
         photo_name: data.file_name || file.name,
+        _photo_cleared: false,
       });
     } catch (err) {
       setPhotoError(
@@ -428,6 +430,21 @@ const AidFamilyHeadPersonalFields = ({
     if (!file) return;
     applyPhotoFile(file);
     e.target.value = '';
+  };
+
+  const clearPhoto = () => {
+    if (photoUploading) return;
+    if (value?._photo_preview?.startsWith?.('blob:')) {
+      URL.revokeObjectURL(value._photo_preview);
+    }
+    setPhotoError('');
+    patch({
+      _photo_file: null,
+      _photo_preview: '',
+      photo_url: '',
+      photo_name: '',
+      _photo_cleared: true,
+    });
   };
 
   const genderOptions = useMemo(
@@ -512,7 +529,31 @@ const AidFamilyHeadPersonalFields = ({
                 className={`aid-fh-photo__frame${previewUrl ? ' has-image' : ''}`}
               >
                 {previewUrl ? (
-                  <img src={previewUrl} alt={t('photoOfHead')} />
+                  <>
+                    <img src={previewUrl} alt={t('photoOfHead')} />
+                    <button
+                      type="button"
+                      className="aid-fh-photo__remove"
+                      disabled={photoUploading}
+                      onClick={clearPhoto}
+                      title={t('removePhoto')}
+                      aria-label={t('removePhoto')}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.25"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 6l12 12M18 6L6 18"
+                        />
+                      </svg>
+                    </button>
+                  </>
                 ) : (
                   <>
                     <svg

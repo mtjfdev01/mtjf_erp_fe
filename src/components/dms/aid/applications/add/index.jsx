@@ -77,7 +77,10 @@ import {
   isMarriageGiftConsentProgram,
   resolveConsentVariant,
   emptyConsentForVariant,
-  emptyFamilyHeadRow,
+  hasAidBiometric,
+  cloneAidBiometric,
+  resolveAidFormSubjectPerson,
+  emptyFamilyHeadProp,
   AID_FAMILY_HEAD_TYPES,
   AID_FAMILY_HEAD_TYPE_OPTIONS,
   AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
@@ -368,6 +371,8 @@ const mapPersonToForm = (p, extras = {}) => {
     city: p.city || '',
     address: p.address || '',
     current_address: p.current_address || '',
+    thumb_impression: p.thumb_impression || null,
+    signature: p.signature || null,
     province: p.province || '',
     district: p.district || '',
     tehsil: p.tehsil || '',
@@ -552,8 +557,12 @@ const cleanPersonPayload = (p) => {
     cnic_expiry: p.cnic_expiry || undefined,
     phone: p.phone || undefined,
     phone_alternate: p.phone_alternate?.trim() || undefined,
-    photo_url: p.photo_url || undefined,
-    photo_name: p.photo_name || undefined,
+    photo_url: p._photo_cleared
+      ? null
+      : p.photo_url || undefined,
+    photo_name: p._photo_cleared
+      ? null
+      : p.photo_name || undefined,
     gender: p.gender || undefined,
     date_of_birth: p.date_of_birth || undefined,
     marital_status: p.marital_status || undefined,
@@ -586,6 +595,10 @@ const cleanPersonPayload = (p) => {
     is_alive: p.is_alive !== false,
     address: p.address || undefined,
     current_address: p.current_address || undefined,
+    thumb_impression: hasAidBiometric(p.thumb_impression)
+      ? p.thumb_impression
+      : undefined,
+    signature: hasAidBiometric(p.signature) ? p.signature : undefined,
     city: p.city || p.district || undefined,
     province: p.province || undefined,
     district: p.district || undefined,
@@ -1032,7 +1045,7 @@ const AidApplicationAddInner = () => {
   const headAsBeneficiary =
     familyHeads.find((h) => h.is_beneficiary) || null;
 
-  /** Person marked Applicant — used to auto-fill Zakat form header fields. */
+  /** Person marked Applicant (writer). */
   const zakatApplicantPerson = useMemo(() => {
     if (beneficiary.is_applicant) return beneficiary;
     if (spouse.is_applicant) return spouse;
@@ -1055,8 +1068,105 @@ const AidApplicationAddInner = () => {
     headAsBeneficiary,
   ]);
 
+  const beneficiaryPersonForForms = useMemo(
+    () =>
+      headAsBeneficiary ||
+      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary),
+    [
+      headAsBeneficiary,
+      beneficiaryMode,
+      existingBeneficiary,
+      beneficiary,
+    ],
+  );
+
+  /**
+   * Zakat / Consent form subject: beneficiary for all programs,
+   * applicant for Marriage Gift. Thumb + signature come from this person.
+   */
+  const formSubjectPerson = useMemo(
+    () =>
+      resolveAidFormSubjectPerson({
+        aidType: form.requested_aid_type,
+        aidProgram: form.aid_program,
+        beneficiary: beneficiaryPersonForForms,
+        applicant: zakatApplicantPerson,
+      }),
+    [
+      form.requested_aid_type,
+      form.aid_program,
+      beneficiaryPersonForForms,
+      zakatApplicantPerson,
+    ],
+  );
+
+  const formSubjectPersonId = useMemo(() => {
+    const p = formSubjectPerson;
+    const id = Number(p?.existing_person_id || p?.id || 0);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }, [formSubjectPerson]);
+
+  const persistFormSubjectBiometrics = useCallback(
+    async (partial) => {
+      if (!formSubjectPersonId || !partial) return;
+      const payload = {};
+      if (partial.thumb_impression !== undefined) {
+        payload.thumb_impression = partial.thumb_impression;
+      }
+      if (partial.signature !== undefined) {
+        payload.signature = partial.signature;
+      }
+      if (!Object.keys(payload).length) return;
+      try {
+        await axiosInstance.patch(
+          `/aid/people/${formSubjectPersonId}`,
+          payload,
+        );
+      } catch {
+        /* non-blocking — form still keeps local capture */
+      }
+    },
+    [formSubjectPersonId],
+  );
+
+  const handleZakatBiometricSaved = useCallback(
+    (field, capture) => {
+      if (field === 'applicant_thumb') {
+        persistFormSubjectBiometrics({
+          thumb_impression: cloneAidBiometric(capture),
+        });
+      } else if (field === 'applicant_signature') {
+        persistFormSubjectBiometrics({
+          signature: cloneAidBiometric(capture),
+        });
+      }
+    },
+    [persistFormSubjectBiometrics],
+  );
+
+  const handleConsentBiometricSaved = useCallback(
+    (field, capture) => {
+      if (
+        field === 'applicant_thumb' ||
+        field === 'receiver_thumb'
+      ) {
+        persistFormSubjectBiometrics({
+          thumb_impression: cloneAidBiometric(capture),
+        });
+      } else if (
+        field === 'applicant_signature' ||
+        field === 'receiver_signature'
+      ) {
+        persistFormSubjectBiometrics({
+          signature: cloneAidBiometric(capture),
+        });
+      }
+    },
+    [persistFormSubjectBiometrics],
+  );
+
   useEffect(() => {
-    const person = zakatApplicantPerson;
+    const person = formSubjectPerson;
     if (!person) return;
     const age = calcAgeFromDob(person.date_of_birth);
     const eduLabel = formatEducation(person.education_level);
@@ -1068,6 +1178,9 @@ const AidApplicationAddInner = () => {
           person.literacy_category ||
           '';
     const today = new Date().toISOString().slice(0, 10);
+    const thumb =
+      cloneAidBiometric(person.thumb_impression) || null;
+    const signature = cloneAidBiometric(person.signature) || null;
     setZakatPermission((prev) => {
       const next = {
         ...prev,
@@ -1077,6 +1190,12 @@ const AidApplicationAddInner = () => {
         education: education || '',
         cnic: formatCnicInput(person.cnic || ''),
         phone: formatPkPhoneInput(person.phone || ''),
+        applicant_thumb: hasAidBiometric(prev.applicant_thumb)
+          ? prev.applicant_thumb
+          : thumb,
+        applicant_signature: hasAidBiometric(prev.applicant_signature)
+          ? prev.applicant_signature
+          : signature,
       };
       if (
         next.form_date === prev.form_date &&
@@ -1084,25 +1203,79 @@ const AidApplicationAddInner = () => {
         next.age === prev.age &&
         next.education === prev.education &&
         next.cnic === prev.cnic &&
-        next.phone === prev.phone
+        next.phone === prev.phone &&
+        next.applicant_thumb === prev.applicant_thumb &&
+        next.applicant_signature === prev.applicant_signature
       ) {
         return prev;
       }
       return next;
     });
-  }, [zakatApplicantPerson]);
+  }, [formSubjectPerson]);
 
-  /** Prefill wheelchair affidavit from applicant + beneficiary. */
+  /** Prefill media consent from form subject (beneficiary, or applicant for MG). */
+  useEffect(() => {
+    if (
+      isWheelchairConsentProgram(form.aid_program) ||
+      isMarriageGiftConsentProgram(
+        form.requested_aid_type,
+        form.aid_program,
+      )
+    ) {
+      return;
+    }
+    const person = formSubjectPerson;
+    if (!person) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const thumb = cloneAidBiometric(person.thumb_impression);
+    const signature = cloneAidBiometric(person.signature);
+    setConsentForm((prev) => {
+      if (prev?.variant && prev.variant !== 'media') return prev;
+      const next = {
+        ...emptyConsentForm(),
+        ...prev,
+        variant: 'media',
+        form_date: prev.form_date || today,
+        full_name: person.full_name || '',
+        parentage_or_spouse: person.father_or_husband_name || '',
+        cnic: formatCnicInput(person.cnic || ''),
+        applicant_thumb: hasAidBiometric(prev.applicant_thumb)
+          ? prev.applicant_thumb
+          : thumb,
+        applicant_signature: hasAidBiometric(prev.applicant_signature)
+          ? prev.applicant_signature
+          : signature,
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.full_name === prev.full_name &&
+        next.parentage_or_spouse === prev.parentage_or_spouse &&
+        next.cnic === prev.cnic &&
+        next.applicant_thumb === prev.applicant_thumb &&
+        next.applicant_signature === prev.applicant_signature
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    form.aid_program,
+    form.requested_aid_type,
+    formSubjectPerson,
+  ]);
+
+  /** Prefill wheelchair affidavit from applicant + beneficiary; biometrics from subject. */
   useEffect(() => {
     if (!isWheelchairConsentProgram(form.aid_program)) return;
     const applicant = zakatApplicantPerson;
-    const bene =
-      headAsBeneficiary ||
-      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary);
+    const bene = beneficiaryPersonForForms;
     if (!applicant && !bene) return;
     const today = new Date().toISOString().slice(0, 10);
     const ageSrc = bene || applicant;
     const age = calcAgeFromDob(ageSrc?.date_of_birth);
+    const subject = formSubjectPerson || bene || applicant;
+    const thumb = cloneAidBiometric(subject?.thumb_impression);
+    const signature = cloneAidBiometric(subject?.signature);
     setConsentForm((prev) => {
       if (prev?.variant && prev.variant !== 'wheelchair') return prev;
       const next = {
@@ -1121,10 +1294,13 @@ const AidApplicationAddInner = () => {
         mobile: formatPkPhoneInput(
           bene?.phone || applicant?.phone || prev.mobile || '',
         ),
-        age:
-          age != null
-            ? String(age)
-            : prev.age || '',
+        age: age != null ? String(age) : prev.age || '',
+        applicant_thumb: hasAidBiometric(prev.applicant_thumb)
+          ? prev.applicant_thumb
+          : thumb,
+        applicant_signature: hasAidBiometric(prev.applicant_signature)
+          ? prev.applicant_signature
+          : signature,
       };
       if (
         next.form_date === prev.form_date &&
@@ -1133,7 +1309,9 @@ const AidApplicationAddInner = () => {
         next.beneficiary_name === prev.beneficiary_name &&
         next.beneficiary_cnic === prev.beneficiary_cnic &&
         next.mobile === prev.mobile &&
-        next.age === prev.age
+        next.age === prev.age &&
+        next.applicant_thumb === prev.applicant_thumb &&
+        next.applicant_signature === prev.applicant_signature
       ) {
         return prev;
       }
@@ -1142,13 +1320,11 @@ const AidApplicationAddInner = () => {
   }, [
     form.aid_program,
     zakatApplicantPerson,
-    headAsBeneficiary,
-    beneficiaryMode,
-    existingBeneficiary,
-    beneficiary,
+    beneficiaryPersonForForms,
+    formSubjectPerson,
   ]);
 
-  /** Prefill marriage gift receipt from applicant + beneficiary (bride). */
+  /** Prefill marriage gift receipt — applicant data + biometrics on applicant. */
   useEffect(() => {
     if (
       !isMarriageGiftConsentProgram(
@@ -1159,11 +1335,11 @@ const AidApplicationAddInner = () => {
       return;
     }
     const applicant = zakatApplicantPerson;
-    const bride =
-      headAsBeneficiary ||
-      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary);
+    const bride = beneficiaryPersonForForms;
     if (!applicant && !bride) return;
     const today = new Date().toISOString().slice(0, 10);
+    const thumb = cloneAidBiometric(applicant?.thumb_impression);
+    const signature = cloneAidBiometric(applicant?.signature);
     setConsentForm((prev) => {
       if (prev?.variant && prev.variant !== 'marriage_gift') return prev;
       const next = {
@@ -1181,6 +1357,12 @@ const AidApplicationAddInner = () => {
         applicant_cnic: formatCnicInput(
           applicant?.cnic || prev.applicant_cnic || '',
         ),
+        receiver_thumb: hasAidBiometric(prev.receiver_thumb)
+          ? prev.receiver_thumb
+          : thumb,
+        receiver_signature: hasAidBiometric(prev.receiver_signature)
+          ? prev.receiver_signature
+          : signature,
       };
       if (
         next.form_date === prev.form_date &&
@@ -1188,7 +1370,9 @@ const AidApplicationAddInner = () => {
         next.bride_cnic === prev.bride_cnic &&
         next.applicant_name === prev.applicant_name &&
         next.parentage_or_spouse === prev.parentage_or_spouse &&
-        next.applicant_cnic === prev.applicant_cnic
+        next.applicant_cnic === prev.applicant_cnic &&
+        next.receiver_thumb === prev.receiver_thumb &&
+        next.receiver_signature === prev.receiver_signature
       ) {
         return prev;
       }
@@ -1198,10 +1382,7 @@ const AidApplicationAddInner = () => {
     form.requested_aid_type,
     form.aid_program,
     zakatApplicantPerson,
-    headAsBeneficiary,
-    beneficiaryMode,
-    existingBeneficiary,
-    beneficiary,
+    beneficiaryPersonForForms,
   ]);
 
   const beneficiaryGender = headAsBeneficiary
@@ -1849,6 +2030,48 @@ const AidApplicationAddInner = () => {
             { headers: { 'Content-Type': 'multipart/form-data' } },
           );
         }
+
+        // Persist thumb/signature onto the form-subject person for reuse
+        try {
+          const appRes = await axiosInstance.get(
+            `/aid/applications/${savedId}`,
+          );
+          const savedApp = appRes.data?.data || appRes.data;
+          const isMg = isMarriageGiftConsentProgram(
+            savedApp?.requested_aid_type || form.requested_aid_type,
+            savedApp?.aid_program || form.aid_program,
+          );
+          const subjectId = Number(
+            isMg
+              ? savedApp?.writer_person_id ||
+                  savedApp?.writer?.id ||
+                  formSubjectPersonId
+              : savedApp?.beneficiary_person_id ||
+                  savedApp?.beneficiary?.id ||
+                  formSubjectPersonId,
+          );
+          if (Number.isFinite(subjectId) && subjectId > 0) {
+            const thumb =
+              cloneAidBiometric(zakatPermission?.applicant_thumb) ||
+              cloneAidBiometric(consentForm?.applicant_thumb) ||
+              cloneAidBiometric(consentForm?.receiver_thumb);
+            const signature =
+              cloneAidBiometric(zakatPermission?.applicant_signature) ||
+              cloneAidBiometric(consentForm?.applicant_signature) ||
+              cloneAidBiometric(consentForm?.receiver_signature);
+            const bioPayload = {};
+            if (thumb) bioPayload.thumb_impression = thumb;
+            if (signature) bioPayload.signature = signature;
+            if (Object.keys(bioPayload).length) {
+              await axiosInstance.patch(
+                `/aid/people/${subjectId}`,
+                bioPayload,
+              );
+            }
+          }
+        } catch {
+          /* non-blocking */
+        }
       }
       const goDrafts = !isEdit || isDraftEdit;
       navigate(
@@ -2270,7 +2493,7 @@ const AidApplicationAddInner = () => {
             <AidCollapsibleSection
               className="aid-family-panel"
               title={t('zakatLetter')}
-              hint={t('optionalExpand')}
+              hint={t('formsAutoAttached')}
               actions={
                 <span className="aid-form-export-actions">
                   <button
@@ -2304,6 +2527,7 @@ const AidApplicationAddInner = () => {
                 <AidZakatPermissionForm
                   value={zakatPermission}
                   onChange={setZakatPermission}
+                  onBiometricSaved={handleZakatBiometricSaved}
                   uiLang={lang}
                 />
               </div>
@@ -2324,7 +2548,7 @@ const AidApplicationAddInner = () => {
                     ? t('marriageGiftConsentForm')
                     : t('consentForm')
               }
-              hint={t('optionalExpand')}
+              hint={t('formsAutoAttached')}
               actions={
                 <span className="aid-form-export-actions">
                   <button
@@ -2370,6 +2594,7 @@ const AidApplicationAddInner = () => {
                   <AidWheelchairConsentForm
                     value={consentForm}
                     onChange={setConsentForm}
+                    onBiometricSaved={handleConsentBiometricSaved}
                     uiLang={lang}
                   />
                 ) : resolveConsentVariant(
@@ -2379,12 +2604,14 @@ const AidApplicationAddInner = () => {
                   <AidMarriageGiftConsentForm
                     value={consentForm}
                     onChange={setConsentForm}
+                    onBiometricSaved={handleConsentBiometricSaved}
                     uiLang={lang}
                   />
                 ) : (
                   <AidConsentForm
                     value={consentForm}
                     onChange={setConsentForm}
+                    onBiometricSaved={handleConsentBiometricSaved}
                     uiLang={lang}
                   />
                 )}

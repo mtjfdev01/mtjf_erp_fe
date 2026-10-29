@@ -130,6 +130,7 @@ function normalizeCapture(raw, fallbackSource) {
 const AidZakatPermissionForm = ({
   value,
   onChange,
+  onBiometricSaved,
   readOnly = false,
   applicationNo,
   uiLang,
@@ -182,6 +183,9 @@ const AidZakatPermissionForm = ({
         return;
       }
       patch({ [field]: normalized });
+      if (typeof onBiometricSaved === 'function') {
+        onBiometricSaved(field, normalized);
+      }
     } catch (err) {
       setDeviceMsg(err?.message || String(err) || 'Capture failed');
     } finally {

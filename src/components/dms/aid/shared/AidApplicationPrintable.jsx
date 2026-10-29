@@ -167,8 +167,8 @@ const AidApplicationPrintable = ({
     parents.find((r) => String(r.relation_type).toLowerCase() === 'mother')
       ?.person || null;
 
-  const hasZakat = !!app.zakat_permission;
-  const hasConsent = !!app.consent_form;
+  const hasZakat = true;
+  const hasConsent = true;
 
   return (
     <section className="aid-section aid-section--flush aid-printable-section">
@@ -528,7 +528,7 @@ const AidApplicationPrintable = ({
             className="aid-printable aid-printable--form"
           >
             <AidZakatPermissionForm
-              value={app.zakat_permission}
+              value={app.zakat_permission || {}}
               applicationNo={app.application_no}
               readOnly
             />
@@ -566,7 +566,7 @@ const AidApplicationPrintable = ({
             {isWheelchairConsentProgram(app.aid_program) ||
             isWheelchairConsentForm(app.consent_form) ? (
               <AidWheelchairConsentForm
-                value={app.consent_form}
+                value={app.consent_form || {}}
                 applicationNo={app.application_no}
                 readOnly
               />
@@ -575,13 +575,13 @@ const AidApplicationPrintable = ({
                 app.aid_program,
               ) || isMarriageGiftConsentForm(app.consent_form) ? (
               <AidMarriageGiftConsentForm
-                value={app.consent_form}
+                value={app.consent_form || {}}
                 applicationNo={app.application_no}
                 readOnly
               />
             ) : (
               <AidConsentForm
-                value={app.consent_form}
+                value={app.consent_form || { variant: 'media' }}
                 applicationNo={app.application_no}
                 readOnly
               />

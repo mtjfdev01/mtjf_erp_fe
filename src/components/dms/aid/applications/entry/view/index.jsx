@@ -497,86 +497,86 @@ const AidEntryApplicationView = () => {
                   </div>
                 ) : null}
 
-                {app.zakat_permission && (
-                  <AidCollapsibleSection
-                    className="aid-detail-block"
-                    title="Zakat Permission Letter"
-                    hint="Click to view"
-                    actions={
-                      <button
-                        type="button"
-                        className="aid-png-download-btn"
-                        title="Print"
-                        aria-label="Print"
-                        onClick={() => printAidElement(zakatPrintRef.current)}
-                      >
-                        <FiPrinter size={18} />
-                      </button>
-                    }
-                  >
-                    <div ref={zakatPrintRef}>
-                      <AidZakatPermissionForm
-                        value={app.zakat_permission}
+                <AidCollapsibleSection
+                  className="aid-detail-block"
+                  title="Zakat Permission Letter"
+                  hint="Attached to every application"
+                  actions={
+                    <button
+                      type="button"
+                      className="aid-png-download-btn"
+                      title="Print"
+                      aria-label="Print"
+                      onClick={() => printAidElement(zakatPrintRef.current)}
+                    >
+                      <FiPrinter size={18} />
+                    </button>
+                  }
+                >
+                  <div ref={zakatPrintRef}>
+                    <AidZakatPermissionForm
+                      value={app.zakat_permission || {}}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </div>
+                </AidCollapsibleSection>
+                <AidCollapsibleSection
+                  className="aid-detail-block"
+                  title={
+                    isWheelchairConsentProgram(app.aid_program) ||
+                    isWheelchairConsentForm(app.consent_form)
+                      ? 'Wheelchair Affidavit / Consent'
+                      : isMarriageGiftConsentProgram(
+                            app.requested_aid_type,
+                            app.aid_program,
+                          ) || isMarriageGiftConsentForm(app.consent_form)
+                        ? 'Marriage Gift Receipt / Consent'
+                        : 'Consent Form'
+                  }
+                  hint="Attached to every application"
+                  actions={
+                    <button
+                      type="button"
+                      className="aid-png-download-btn"
+                      title="Print"
+                      aria-label="Print"
+                      onClick={() => printAidElement(consentPrintRef.current)}
+                    >
+                      <FiPrinter size={18} />
+                    </button>
+                  }
+                >
+                  <div ref={consentPrintRef}>
+                    {isWheelchairConsentProgram(app.aid_program) ||
+                    isWheelchairConsentForm(app.consent_form) ? (
+                      <AidWheelchairConsentForm
+                        value={app.consent_form || {}}
                         applicationNo={app.application_no}
                         readOnly
                       />
-                    </div>
-                  </AidCollapsibleSection>
-                )}
-                {app.consent_form && (
-                  <AidCollapsibleSection
-                    className="aid-detail-block"
-                    title={
-                      isWheelchairConsentProgram(app.aid_program) ||
-                      isWheelchairConsentForm(app.consent_form)
-                        ? 'Wheelchair Affidavit / Consent'
-                        : isMarriageGiftConsentProgram(
-                              app.requested_aid_type,
-                              app.aid_program,
-                            ) || isMarriageGiftConsentForm(app.consent_form)
-                          ? 'Marriage Gift Receipt / Consent'
-                          : 'Consent Form'
-                    }
-                    hint="Click to view"
-                    actions={
-                      <button
-                        type="button"
-                        className="aid-png-download-btn"
-                        title="Print"
-                        aria-label="Print"
-                        onClick={() => printAidElement(consentPrintRef.current)}
-                      >
-                        <FiPrinter size={18} />
-                      </button>
-                    }
-                  >
-                    <div ref={consentPrintRef}>
-                      {isWheelchairConsentProgram(app.aid_program) ||
-                      isWheelchairConsentForm(app.consent_form) ? (
-                        <AidWheelchairConsentForm
-                          value={app.consent_form}
-                          applicationNo={app.application_no}
-                          readOnly
-                        />
-                      ) : isMarriageGiftConsentProgram(
-                          app.requested_aid_type,
-                          app.aid_program,
-                        ) || isMarriageGiftConsentForm(app.consent_form) ? (
-                        <AidMarriageGiftConsentForm
-                          value={app.consent_form}
-                          applicationNo={app.application_no}
-                          readOnly
-                        />
-                      ) : (
-                        <AidConsentForm
-                          value={app.consent_form}
-                          applicationNo={app.application_no}
-                          readOnly
-                        />
-                      )}
-                    </div>
-                  </AidCollapsibleSection>
-                )}
+                    ) : isMarriageGiftConsentProgram(
+                        app.requested_aid_type,
+                        app.aid_program,
+                      ) || isMarriageGiftConsentForm(app.consent_form) ? (
+                      <AidMarriageGiftConsentForm
+                        value={app.consent_form || {}}
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    ) : (
+                      <AidConsentForm
+                        value={
+                          app.consent_form || {
+                            variant: 'media',
+                          }
+                        }
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    )}
+                  </div>
+                </AidCollapsibleSection>
               </section>
             )}
 

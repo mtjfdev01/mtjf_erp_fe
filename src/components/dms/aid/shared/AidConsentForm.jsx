@@ -77,6 +77,7 @@ function normalizeCapture(raw, fallbackSource) {
 const AidConsentForm = ({
   value,
   onChange,
+  onBiometricSaved,
   readOnly = false,
   applicationNo,
   uiLang,
@@ -125,6 +126,9 @@ const AidConsentForm = ({
         return;
       }
       patch({ [field]: normalized });
+      if (typeof onBiometricSaved === 'function') {
+        onBiometricSaved(field, normalized);
+      }
     } catch (err) {
       // Surface the real SecuGen / network / cert error — no silent upload fallback
       setDeviceMsg(err?.message || String(err) || 'Capture failed');

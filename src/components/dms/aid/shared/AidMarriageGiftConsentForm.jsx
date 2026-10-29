@@ -145,6 +145,7 @@ function ensureItems(details) {
 const AidMarriageGiftConsentForm = ({
   value,
   onChange,
+  onBiometricSaved,
   readOnly = false,
   applicationNo,
   uiLang,
@@ -202,6 +203,9 @@ const AidMarriageGiftConsentForm = ({
         return;
       }
       patch({ [field]: normalized });
+      if (typeof onBiometricSaved === 'function') {
+        onBiometricSaved(field, normalized);
+      }
     } catch (err) {
       setDeviceMsg(err?.message || String(err) || 'Capture failed');
     } finally {

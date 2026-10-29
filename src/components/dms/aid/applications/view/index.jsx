@@ -124,6 +124,8 @@ const AidApplicationView = () => {
   const [incompleteReason, setIncompleteReason] = useState('');
   const [verifyNotes, setVerifyNotes] = useState('');
   const [investigation, setInvestigation] = useState({});
+  const investigationRef = useRef({});
+  investigationRef.current = investigation;
   const [recommendation, setRecommendation] = useState(emptyRecommendation);
   const [leakageOverride, setLeakageOverride] = useState('');
   const [ceoDecision, setCeoDecision] = useState('approved');
@@ -262,51 +264,87 @@ const AidApplicationView = () => {
     }
   };
 
-  const uploadInvestigationFile = async (itemKey, file) => {
-    if (!file || !itemKey) return;
+  const uploadInvestigationFile = async (itemKey, fileOrFiles) => {
+    const files = (Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles]).filter(
+      Boolean,
+    );
+    if (!files.length || !itemKey) return;
     setUploadingInvestKey(itemKey);
     setActionError('');
+    const uploadedRows = [];
     try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append(
-        'context',
-        itemKey === 'site_visit' ? 'site_visit' : 'verification',
+      for (const file of files) {
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append(
+          'context',
+          itemKey === 'site_visit' ? 'site_visit' : 'verification',
+        );
+        fd.append('description', itemKey);
+        // eslint-disable-next-line no-await-in-loop
+        const res = await axiosInstance.post(
+          `/aid/applications/${id}/attachments/upload`,
+          fd,
+        );
+        const row = res.data?.data;
+        if (!row?.file_url) {
+          throw new Error('Upload succeeded but no file URL returned');
+        }
+        uploadedRows.push({ row, fallbackName: file.name });
+      }
+      const prev = normalizeInvestigationEntry(
+        investigationRef.current[itemKey],
       );
-      fd.append('description', itemKey);
-      const res = await axiosInstance.post(
-        `/aid/applications/${id}/attachments/upload`,
-        fd,
-      );
-      const row = res.data?.data;
+      const attachments = [...(prev.attachments || [])];
+      for (const { row, fallbackName } of uploadedRows) {
+        const added = {
+          id: row?.id ?? null,
+          url: row.file_url,
+          name: row.file_name || fallbackName,
+        };
+        if (
+          !attachments.some(
+            (f) => f.url === added.url || (f.id != null && f.id === added.id),
+          )
+        ) {
+          attachments.push(added);
+        }
+      }
       const nextEntry = {
-        ...normalizeInvestigationEntry(investigation[itemKey]),
+        ...prev,
         status: 'verified',
-        attachment_url: row?.file_url || '',
-        attachment_name: row?.file_name || file.name,
-        attachment_id: row?.id ?? null,
+        attachments,
+        attachment_url: attachments[0]?.url || '',
+        attachment_name: attachments[0]?.name || '',
+        attachment_id: attachments[0]?.id ?? null,
       };
       const nextInvestigation = {
-        ...investigation,
+        ...investigationRef.current,
         [itemKey]: nextEntry,
       };
+      investigationRef.current = nextInvestigation;
       setInvestigation(nextInvestigation);
       // Persist on checklist so a reload cannot wipe the attachment link.
       await axiosInstance.patch(`/aid/applications/${id}`, {
         verification_checklist: nextInvestigation,
       });
-      setApp((prev) =>
-        prev
+      setApp((prevApp) =>
+        prevApp
           ? {
-              ...prev,
-              attachments: row?.id
-                ? [row, ...(prev.attachments || [])]
-                : prev.attachments || [],
+              ...prevApp,
+              attachments: [
+                ...uploadedRows.map(({ row }) => row).filter((r) => r?.id),
+                ...(prevApp.attachments || []),
+              ],
               verification_checklist: nextInvestigation,
             }
-          : prev,
+          : prevApp,
       );
-      toast.success('File attached');
+      toast.success(
+        uploadedRows.length > 1
+          ? `${uploadedRows.length} files attached`
+          : 'File attached',
+      );
     } catch (err) {
       const msg =
         err.response?.data?.message || err.message || 'Failed to upload file';
@@ -945,86 +983,86 @@ const AidApplicationView = () => {
                       />
                     </div>
                   )}
-                {app.zakat_permission && (
-                  <AidCollapsibleSection
-                    className="aid-detail-block"
-                    title="Zakat Permission Letter"
-                    hint="Click to view"
-                    actions={
-                      <button
-                        type="button"
-                        className="aid-png-download-btn"
-                        title="Print"
-                        aria-label="Print"
-                        onClick={() => printAidElement(zakatPrintRef.current)}
-                      >
-                        <FiPrinter size={18} />
-                      </button>
-                    }
-                  >
-                    <div ref={zakatPrintRef}>
-                      <AidZakatPermissionForm
-                        value={app.zakat_permission}
+                <AidCollapsibleSection
+                  className="aid-detail-block"
+                  title="Zakat Permission Letter"
+                  hint="Attached to every application"
+                  actions={
+                    <button
+                      type="button"
+                      className="aid-png-download-btn"
+                      title="Print"
+                      aria-label="Print"
+                      onClick={() => printAidElement(zakatPrintRef.current)}
+                    >
+                      <FiPrinter size={18} />
+                    </button>
+                  }
+                >
+                  <div ref={zakatPrintRef}>
+                    <AidZakatPermissionForm
+                      value={app.zakat_permission || {}}
+                      applicationNo={app.application_no}
+                      readOnly
+                    />
+                  </div>
+                </AidCollapsibleSection>
+                <AidCollapsibleSection
+                  className="aid-detail-block"
+                  title={
+                    isWheelchairConsentProgram(app.aid_program) ||
+                    isWheelchairConsentForm(app.consent_form)
+                      ? 'Wheelchair Affidavit / Consent'
+                      : isMarriageGiftConsentProgram(
+                            app.requested_aid_type,
+                            app.aid_program,
+                          ) || isMarriageGiftConsentForm(app.consent_form)
+                        ? 'Marriage Gift Receipt / Consent'
+                        : 'Consent Form'
+                  }
+                  hint="Attached to every application"
+                  actions={
+                    <button
+                      type="button"
+                      className="aid-png-download-btn"
+                      title="Print"
+                      aria-label="Print"
+                      onClick={() => printAidElement(consentPrintRef.current)}
+                    >
+                      <FiPrinter size={18} />
+                    </button>
+                  }
+                >
+                  <div ref={consentPrintRef}>
+                    {isWheelchairConsentProgram(app.aid_program) ||
+                    isWheelchairConsentForm(app.consent_form) ? (
+                      <AidWheelchairConsentForm
+                        value={app.consent_form || {}}
                         applicationNo={app.application_no}
                         readOnly
                       />
-                    </div>
-                  </AidCollapsibleSection>
-                )}
-                {app.consent_form && (
-                  <AidCollapsibleSection
-                    className="aid-detail-block"
-                    title={
-                      isWheelchairConsentProgram(app.aid_program) ||
-                      isWheelchairConsentForm(app.consent_form)
-                        ? 'Wheelchair Affidavit / Consent'
-                        : isMarriageGiftConsentProgram(
-                              app.requested_aid_type,
-                              app.aid_program,
-                            ) || isMarriageGiftConsentForm(app.consent_form)
-                          ? 'Marriage Gift Receipt / Consent'
-                          : 'Consent Form'
-                    }
-                    hint="Click to view"
-                    actions={
-                      <button
-                        type="button"
-                        className="aid-png-download-btn"
-                        title="Print"
-                        aria-label="Print"
-                        onClick={() => printAidElement(consentPrintRef.current)}
-                      >
-                        <FiPrinter size={18} />
-                      </button>
-                    }
-                  >
-                    <div ref={consentPrintRef}>
-                      {isWheelchairConsentProgram(app.aid_program) ||
-                      isWheelchairConsentForm(app.consent_form) ? (
-                        <AidWheelchairConsentForm
-                          value={app.consent_form}
-                          applicationNo={app.application_no}
-                          readOnly
-                        />
-                      ) : isMarriageGiftConsentProgram(
-                          app.requested_aid_type,
-                          app.aid_program,
-                        ) || isMarriageGiftConsentForm(app.consent_form) ? (
-                        <AidMarriageGiftConsentForm
-                          value={app.consent_form}
-                          applicationNo={app.application_no}
-                          readOnly
-                        />
-                      ) : (
-                        <AidConsentForm
-                          value={app.consent_form}
-                          applicationNo={app.application_no}
-                          readOnly
-                        />
-                      )}
-                    </div>
-                  </AidCollapsibleSection>
-                )}
+                    ) : isMarriageGiftConsentProgram(
+                        app.requested_aid_type,
+                        app.aid_program,
+                      ) || isMarriageGiftConsentForm(app.consent_form) ? (
+                      <AidMarriageGiftConsentForm
+                        value={app.consent_form || {}}
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    ) : (
+                      <AidConsentForm
+                        value={
+                          app.consent_form || {
+                            variant: 'media',
+                          }
+                        }
+                        applicationNo={app.application_no}
+                        readOnly
+                      />
+                    )}
+                  </div>
+                </AidCollapsibleSection>
               </section>
             )}
 
