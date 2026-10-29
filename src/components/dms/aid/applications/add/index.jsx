@@ -878,10 +878,27 @@ const AidApplicationAddInner = () => {
       const tree = personDetail?.family_tree || {};
       const parents = tree.parents || [];
       const spouseRows = tree.spouse || [];
+      const rowRelation = (row) =>
+        String(row?.relation_type || row?.relation || '').toLowerCase();
+      const isFamilyHeadRow = (row) => {
+        const notes = String(row?.notes || '').toLowerCase();
+        if (notes.includes('family head')) return true;
+        return ['father', 'mother'].includes(rowRelation(row));
+      };
+      const headSourceRows = [
+        ...parents,
+        ...(tree.extended || []).filter(isFamilyHeadRow),
+      ].filter((row, idx, arr) => {
+        const pid = row?.person?.id;
+        if (!pid) return false;
+        return (
+          arr.findIndex((r) => Number(r?.person?.id) === Number(pid)) === idx
+        );
+      });
 
-      if (parents.length > 0) {
-        const heads = parents.map((row) => {
-          const rel = toFamilyHeadType(row.relation);
+      if (headSourceRows.length > 0) {
+        const heads = headSourceRows.map((row) => {
+          const rel = toFamilyHeadType(rowRelation(row));
           const pid = row.person?.id;
           return mapPersonToForm(row.person, {
             _relation_type: rel,
@@ -938,6 +955,11 @@ const AidApplicationAddInner = () => {
         setSpouseFormOpen(false);
       }
 
+      const headPersonIds = new Set(
+        headSourceRows
+          .map((r) => Number(r?.person?.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      );
       const memberKeys = [
         'children',
         'brothers',
@@ -951,7 +973,9 @@ const AidApplicationAddInner = () => {
       for (const key of memberKeys) {
         for (const row of tree[key] || []) {
           if (!row?.person) continue;
-          const rel = String(row.relation || 'other').toLowerCase();
+          if (headPersonIds.has(Number(row.person.id))) continue;
+          if (isFamilyHeadRow(row)) continue;
+          const rel = rowRelation(row) || 'other';
           members.push(
             mapPersonToForm(row.person, {
               relation_type: HEAD_TYPE_VALUES.has(rel) ? rel : 'other',
