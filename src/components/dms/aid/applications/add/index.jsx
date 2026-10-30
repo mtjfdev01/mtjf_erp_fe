@@ -378,19 +378,23 @@ const parseFamilyHeadTypeFromNotes = (notes) => {
 };
 
 /**
- * Members saved under a head use notes like
- * "Relative of father (son)" / "Applicant / relative of Father (daughter)".
+ * Members saved under a head use notes like:
+ * - New: "Relative of Father (father) (son)"
+ * - Old: "Relative of father (son)"  ← first paren is MEMBER type, not head
  */
 const parseRelativeOfHeadKey = (notes) => {
-  // "Relative of Father (father) (son)" → prefer parenthetical head value, else label text
-  const withValue = String(notes || '').match(
-    /relative of\s+[^(/]*\(([^)]+)\)/i,
+  const raw = String(notes || '');
+  const dual = raw.match(
+    /relative of\s+([^(]+)\(([^)]+)\)\s*\(([^)]+)\)/i,
   );
-  if (withValue) return withValue[1].trim().toLowerCase();
-  const m = String(notes || '').match(/relative of\s+([^(,/]+)/i);
-  if (!m) return null;
-  return m[1].trim().toLowerCase();
+  if (dual) return dual[2].trim().toLowerCase(); // head value
+  const legacy = raw.match(/relative of\s+([^(,/]+)/i);
+  if (legacy) return legacy[1].trim().toLowerCase(); // head label/value text
+  return null;
 };
+
+const notesSayBeneficiaryMember = (notes) =>
+  /beneficiary\s+family\s+member/i.test(String(notes || ''));
 
 const familyHeadMatchKey = (relationType) => {
   const value = String(relationType || '').toLowerCase();
@@ -1104,7 +1108,9 @@ const AidApplicationAddInner = () => {
         setSpouseFormOpen(false);
       }
 
-      // Nest relatives under the Family Head they were saved with; else beneficiary list
+      // Nest relatives under Family Head (matches "Family Head — family members" UI).
+      // Family Tree also reads beneficiaryMembers — without nesting, kids show in the tree
+      // but the head members table stays empty.
       const membersForBeneficiary = [];
       const findHeadIndexForNotes = (notes) => {
         const key = parseRelativeOfHeadKey(notes);
@@ -1113,6 +1119,17 @@ const AidApplicationAddInner = () => {
           const { value, label } = familyHeadMatchKey(h._relation_type);
           return key === value || key === label;
         });
+      };
+      const primaryHeadIdx = heads.findIndex((h) =>
+        String(h?.full_name || '').trim(),
+      );
+      const attachToHead = (idx, member) => {
+        if (idx < 0 || !heads[idx]) return false;
+        heads[idx] = {
+          ...heads[idx],
+          _family_members: [...(heads[idx]._family_members || []), member],
+        };
+        return true;
       };
 
       for (const row of uniqueRows) {
@@ -1127,8 +1144,13 @@ const AidApplicationAddInner = () => {
           continue;
         }
 
+        // Prefer relation from notes "(son)" when API invert made ego-centric type odd
+        const notesMemberRel = String(row.notes || '').match(
+          /\(([^)]+)\)\s*$/,
+        );
         const rel = resolveRelatedPersonKinship({
-          relation_type: rowRelation(row) || 'other',
+          relation_type:
+            notesMemberRel?.[1] || rowRelation(row) || 'other',
         });
         const member = mapPersonToForm(row.person, {
           relation_type: rel,
@@ -1136,18 +1158,16 @@ const AidApplicationAddInner = () => {
             !isWriterSelf && Number(pid) === Number(writerId),
         });
 
-        const headIdx = findHeadIndexForNotes(row.notes);
-        if (headIdx >= 0) {
-          heads[headIdx] = {
-            ...heads[headIdx],
-            _family_members: [
-              ...(heads[headIdx]._family_members || []),
-              member,
-            ],
-          };
-        } else {
+        if (notesSayBeneficiaryMember(row.notes)) {
           membersForBeneficiary.push(member);
+          continue;
         }
+
+        const headIdx = findHeadIndexForNotes(row.notes);
+        if (attachToHead(headIdx, member)) continue;
+        // Default: under primary Family Head so edit UI matches the tree
+        if (attachToHead(primaryHeadIdx, member)) continue;
+        membersForBeneficiary.push(member);
       }
       setFamilyHeads(heads.map((h) => ({ ...h })));
       setBeneficiaryMembers(membersForBeneficiary);
