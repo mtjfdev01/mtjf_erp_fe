@@ -47,6 +47,7 @@ const METHOD_OPTIONS = [
   { value: 'cash', label: 'Cash' },
   { value: 'bank_transfer', label: 'Bank transfer' },
   { value: 'cheque', label: 'Cheque' },
+  { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'online', label: 'Online (non-Stripe)' },
 ];
 

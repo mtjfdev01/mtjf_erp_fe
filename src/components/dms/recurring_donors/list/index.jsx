@@ -45,11 +45,23 @@ const SOURCE_OPTIONS = [
   { value: 'offline', label: 'Offline' },
 ];
 
+const METHOD_OPTIONS = [
+  { value: 'manual', label: 'Manual / remind' },
+  { value: 'cash', label: 'Cash' },
+  { value: 'bank_transfer', label: 'Bank transfer' },
+  { value: 'cheque', label: 'Cheque' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'online', label: 'Online' },
+  { value: 'stripe', label: 'Stripe' },
+  { value: 'stripe_embed', label: 'Stripe (embed)' },
+];
+
 const EMPTY_FILTERS = {
   search: '',
   status: '',
   billing_interval: '',
   installment_status: '',
+  donation_method: '',
   source: '',
   date: '',
   start_date: '',
@@ -412,6 +424,14 @@ const RecurringDonorsList = () => {
               filters={tempFilters}
               onFilterChange={handleFilterChange}
               placeholder="All payments"
+            />
+            <DropdownFilter
+              filterKey="donation_method"
+              label="Method"
+              data={METHOD_OPTIONS}
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+              placeholder="All methods"
             />
             <DropdownFilter
               filterKey="source"
