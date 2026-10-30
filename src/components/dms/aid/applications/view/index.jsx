@@ -182,7 +182,7 @@ const AidApplicationView = () => {
           setRecommendation(emptyRecommendation());
         }
       }
-      if (payload?.verification_notes) setVerifyNotes(payload.verification_notes);
+      setVerifyNotes(payload?.verification_notes || '');
       if (payload?.leakage_override_reason) {
         setLeakageOverride(payload.leakage_override_reason);
       } else {
@@ -498,6 +498,7 @@ const AidApplicationView = () => {
           found_monthly_income: recommendation.found_monthly_income
             ? Number(recommendation.found_monthly_income)
             : null,
+          ration_options: normalizeRationOptions(recommendation.ration_options),
         },
       });
       await load({ silent: true });

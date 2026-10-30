@@ -734,6 +734,8 @@ const AidApplicationAddInner = () => {
   const consentCaptureRef = useRef(null);
   const [pngDownloading, setPngDownloading] = useState(false);
   const [offlineDraftReady, setOfflineDraftReady] = useState(false);
+  /** Server `updated_at` at last hydrate — gates local draft restore on edit. */
+  const baseUpdatedAtRef = useRef('');
   const isDraftEdit =
     isEdit &&
     (editStatus === 'draft' || editStatus === 'incomplete_docs');
@@ -836,6 +838,7 @@ const AidApplicationAddInner = () => {
         editStatus,
         // Marks edit snapshots safe to re-apply after server hydrate (tab switch)
         capturedAfterHydrate: isEdit ? true : undefined,
+        baseUpdatedAt: isEdit ? baseUpdatedAtRef.current || undefined : undefined,
       }).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
@@ -875,6 +878,7 @@ const AidApplicationAddInner = () => {
       if (!app?.id) throw new Error('Application not found');
 
       setEditStatus(app.status || null);
+      baseUpdatedAtRef.current = app.updated_at ? String(app.updated_at) : '';
 
       const closed =
         app.status === 'rejected' || app.status === 'delivered';
@@ -884,14 +888,31 @@ const AidApplicationAddInner = () => {
 
       const benId =
         app.beneficiary?.id || app.beneficiary_person_id || null;
-      let personDetail = null;
-      if (benId) {
+      // Prefer family_tree embedded on application findOne; fall back to people detail
+      let personDetail =
+        app.family_tree != null
+          ? {
+              person: app.beneficiary || null,
+              family_tree: app.family_tree || {},
+              family_counts: app.family_counts || {},
+              kinship: app.kinship || [],
+            }
+          : null;
+      if (benId && app.family_tree == null) {
         try {
           const peopleRes = await axiosInstance.get(`/aid/people/${benId}`);
           personDetail = peopleRes.data?.data || null;
-        } catch {
-          personDetail = null;
+        } catch (err) {
+          throw new Error(
+            err?.response?.data?.message ||
+              'Failed to load beneficiary family tree — cannot safely edit without family data',
+          );
         }
+      }
+      if (benId && (!personDetail || personDetail.family_tree == null)) {
+        throw new Error(
+          'Beneficiary family tree missing — cannot safely edit without family data',
+        );
       }
 
       const beneficiaryPerson =
@@ -1141,7 +1162,7 @@ const AidApplicationAddInner = () => {
     }
   }, []);
 
-  // Bootstrap: new → local draft; edit → always server hydrate, then optional in-progress local draft
+  // Bootstrap: new → local draft; edit → server hydrate, then only same-revision local in-progress draft
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -1151,8 +1172,17 @@ const AidApplicationAddInner = () => {
         if (isEdit) {
           await hydrateFromApplication(editId);
           if (cancelled) return;
-          if (snap?.capturedAfterHydrate) {
+          const serverUpdatedAt = baseUpdatedAtRef.current || '';
+          // Restore tab-switch work only when it was based on the same server revision
+          if (
+            snap?.capturedAfterHydrate &&
+            serverUpdatedAt &&
+            String(snap.baseUpdatedAt || '') === serverUpdatedAt
+          ) {
             applyLocalDraftSnapshot(snap);
+          } else if (snap?.capturedAfterHydrate) {
+            // Stale local draft would wipe newer server data — drop it
+            await clearAidFormDraft(offlineFormKey).catch(() => {});
           }
         } else if (snap) {
           applyLocalDraftSnapshot(snap);
@@ -1355,14 +1385,15 @@ const AidApplicationAddInner = () => {
       cloneAidBiometric(person.thumb_impression) || null;
     const signature = cloneAidBiometric(person.signature) || null;
     setZakatPermission((prev) => {
+      // Prefill empty slots only — never wipe hydrated / user-entered letter fields
       const next = {
         ...prev,
         form_date: prev.form_date || today,
-        applicant_name: person.full_name || '',
-        age: age != null ? String(age) : '',
-        education: education || '',
-        cnic: formatCnicInput(person.cnic || ''),
-        phone: formatPkPhoneInput(person.phone || ''),
+        applicant_name: prev.applicant_name || person.full_name || '',
+        age: prev.age || (age != null ? String(age) : ''),
+        education: prev.education || education || '',
+        cnic: prev.cnic || formatCnicInput(person.cnic || ''),
+        phone: prev.phone || formatPkPhoneInput(person.phone || ''),
         applicant_thumb: hasAidBiometric(prev.applicant_thumb)
           ? prev.applicant_thumb
           : thumb,
@@ -1409,9 +1440,10 @@ const AidApplicationAddInner = () => {
         ...prev,
         variant: 'media',
         form_date: prev.form_date || today,
-        full_name: person.full_name || '',
-        parentage_or_spouse: person.father_or_husband_name || '',
-        cnic: formatCnicInput(person.cnic || ''),
+        full_name: prev.full_name || person.full_name || '',
+        parentage_or_spouse:
+          prev.parentage_or_spouse || person.father_or_husband_name || '',
+        cnic: prev.cnic || formatCnicInput(person.cnic || ''),
         applicant_thumb: hasAidBiometric(prev.applicant_thumb)
           ? prev.applicant_thumb
           : thumb,
@@ -2491,8 +2523,11 @@ const AidApplicationAddInner = () => {
                       amt.aid_program,
                     );
                     if ((prev?.variant || 'media') === nextVariant) return prev;
+                    // Keep thumbs/signatures/declarations when switching consent variant
                     return {
                       ...emptyConsentForVariant(nextVariant),
+                      ...prev,
+                      variant: nextVariant,
                       lang: prev?.lang || lang,
                     };
                   });
@@ -2525,6 +2560,8 @@ const AidApplicationAddInner = () => {
                       if ((prev?.variant || 'media') === nextVariant) return prev;
                       return {
                         ...emptyConsentForVariant(nextVariant),
+                        ...prev,
+                        variant: nextVariant,
                         lang: prev?.lang || lang,
                       };
                     });

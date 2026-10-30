@@ -1364,32 +1364,45 @@ export function resolveRelatedPersonKinship(row) {
     row?.relation_with_family_head ||
     '';
   const r = String(raw || '').toLowerCase();
-  if (r.includes('sister')) return 'sister';
-  if (r.includes('brother')) return 'brother';
-  if (r === 'nephew' || r === 'niece') return 'cousin';
-  if (r === 'son' || r === 'daughter' || r === 'child') return r;
-  if (
-    [
-      'father',
-      'mother',
-      'spouse',
-      'sibling',
-      'uncle',
-      'aunt',
-      'cousin',
-      'grandfather',
-      'grandmother',
-      'maternal_grandfather',
-      'maternal_grandmother',
-      'grandchild',
-      'guardian',
-      'custody_holder',
-      'in_law',
-      'other',
-    ].includes(r)
-  ) {
+  // Exact matches first so step_/half_ siblings are not collapsed to brother/sister
+  const exact = [
+    'father',
+    'mother',
+    'spouse',
+    'son',
+    'daughter',
+    'child',
+    'brother',
+    'sister',
+    'sibling',
+    'step_brother',
+    'step_sister',
+    'half_brother',
+    'half_sister',
+    'uncle',
+    'aunt',
+    'cousin',
+    'nephew',
+    'niece',
+    'grandfather',
+    'grandmother',
+    'maternal_grandfather',
+    'maternal_grandmother',
+    'grandchild',
+    'guardian',
+    'custody_holder',
+    'in_law',
+    'other',
+  ];
+  if (exact.includes(r)) {
+    // UI subtypes → closest kinship enum accepted by API
+    if (r === 'step_brother' || r === 'half_brother') return 'brother';
+    if (r === 'step_sister' || r === 'half_sister') return 'sister';
+    if (r === 'nephew' || r === 'niece') return 'cousin';
     return r;
   }
+  if (r.includes('sister')) return 'sister';
+  if (r.includes('brother')) return 'brother';
   return 'other';
 }
 
