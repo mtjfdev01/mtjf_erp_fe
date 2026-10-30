@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FiCheckCircle, FiEdit2, FiEye } from 'react-icons/fi';
 import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
 import {
@@ -359,35 +360,41 @@ const AidDraftsList = () => {
                       </td>
                       <td>{formatRelativeAidTime(row.updated_at)}</td>
                       <td>
-                        <div className="aid-list-actions">
+                        <div className="aid-icon-actions">
                           <button
                             type="button"
-                            className="aid-text-link aid-entry-open"
+                            className="aid-icon-btn aid-icon-btn--view"
+                            title="Open"
+                            aria-label="Open"
                             onClick={() =>
                               navigate(
                                 `/dms/aid/applications/drafts/view/${row.id}`,
                               )
                             }
                           >
-                            Open
+                            <FiEye />
                           </button>
                           <button
                             type="button"
-                            className="aid-text-link"
+                            className="aid-icon-btn aid-icon-btn--edit"
+                            title="Edit"
+                            aria-label="Edit"
                             onClick={() =>
                               navigate(`/dms/aid/applications/edit/${row.id}`)
                             }
                           >
-                            Edit
+                            <FiEdit2 />
                           </button>
                           {canApprove ? (
                             <button
                               type="button"
-                              className="aid-text-link"
+                              className="aid-icon-btn aid-icon-btn--approve"
+                              title="Consider"
+                              aria-label="Consider"
                               disabled={!!approvingId}
                               onClick={() => openApprove(row.id)}
                             >
-                              Consider
+                              <FiCheckCircle />
                             </button>
                           ) : null}
                         </div>

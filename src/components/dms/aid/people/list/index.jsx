@@ -518,16 +518,19 @@ const AidPeopleList = () => {
                         —
                       </div>
                       <div className="aid-people-collapse__cell aid-people-collapse__cell--actions">
-                        <button
-                          type="button"
-                          className="aid-people-view-btn"
-                          onClick={() =>
-                            navigate(`/dms/aid/people/view/${row.id}`)
-                          }
-                        >
-                          <FiEye size={15} />
-                          View
-                        </button>
+                        <div className="aid-icon-actions">
+                          <button
+                            type="button"
+                            className="aid-icon-btn aid-icon-btn--view"
+                            title="View"
+                            aria-label="View"
+                            onClick={() =>
+                              navigate(`/dms/aid/people/view/${row.id}`)
+                            }
+                          >
+                            <FiEye />
+                          </button>
+                        </div>
                       </div>
                     </div>
 

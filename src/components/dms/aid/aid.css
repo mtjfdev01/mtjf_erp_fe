@@ -798,6 +798,11 @@
   background: transparent;
 }
 
+.aid-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .aid-icon-btn--view {
   color: #16a34a;
 }
@@ -3025,6 +3030,14 @@ a.aid-contact-chip:hover {
 .aid-form-actions {
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.aid-form-actions__submit {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
@@ -7375,6 +7388,11 @@ a.aid-contact-chip:hover {
 .aid-application-form[dir='rtl'] .aid-fm-panel__foot,
 .aid-application-form--rtl .aid-form-actions,
 .aid-application-form[dir='rtl'] .aid-form-actions {
+  flex-direction: row-reverse;
+}
+
+.aid-application-form--rtl .aid-form-actions__submit,
+.aid-application-form[dir='rtl'] .aid-form-actions__submit {
   flex-direction: row-reverse;
 }
 

@@ -17,7 +17,10 @@ export const AID_UI_COPY = {
     pctComplete: '{n}% complete',
     applicationSteps: 'Application steps',
     draftHint:
-      'This form saves a draft. Assignment is done when an approver uses Data Entry → Consider (program user) to send it to Verification Process.',
+      'Your work is autosaved on this device only (no server call until Save). Use Clear form to discard it. Assignment is done when an approver uses Data Entry → Consider (program user) to send it to Verification Process.',
+    clearForm: 'Clear form',
+    clearFormConfirm:
+      'Discard all unsaved work on this form? This cannot be undone.',
 
     // Tabs
     tabFamily: 'Family Registration',
@@ -415,7 +418,10 @@ export const AID_UI_COPY = {
     pctComplete: '{n}% مکمل',
     applicationSteps: 'درخواست کے مراحل',
     draftHint:
-      'یہ فارم ڈرافٹ محفوظ کرتا ہے۔ تفویض تب ہوتی ہے جب منظور کنندہ ڈیٹا انٹری → غور کریں استعمال کر کے تصدیقی عمل میں بھیجے۔',
+      'آپ کا کام صرف اس ڈیوائس پر خود بخود محفوظ ہوتا ہے (محفوظ کریں تک کوئی سرور کال نہیں)۔ صاف فارم سے رد کریں۔ تفویض تب ہوتی ہے جب منظور کنندہ ڈیٹا انٹری → غور کریں استعمال کر کے تصدیقی عمل میں بھیجے۔',
+    clearForm: 'فارم صاف کریں',
+    clearFormConfirm:
+      'اس فارم کا تمام غیر محفوظ کام رد کریں؟ یہ واپس نہیں ہو سکتا۔',
 
     tabFamily: 'خاندانی رجسٹریشن',
     tabFamilyHint: 'گھرانا',

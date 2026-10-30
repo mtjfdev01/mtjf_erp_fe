@@ -15,6 +15,7 @@ import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
+import { ClearButton } from '../../../../common/filters';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import AidFamilyHeadPersonalFields from '../../shared/AidFamilyHeadPersonalFields';
@@ -41,7 +42,6 @@ import { downloadAsPng } from '../../shared/downloadAsPng';
 import { printAidElement } from '../../shared/printAidElement';
 import { AidLangProvider, useAidLang } from '../../lang/AidLangContext';
 import AidLangToggle from '../../lang/AidLangToggle';
-import { getOfflineMode } from '../../../../../offline/mode';
 import {
   saveAidFormDraft,
   loadAidFormDraft,
@@ -331,11 +331,71 @@ const familyHeadTypeLabel = (type) =>
 
 const HEAD_TYPE_VALUES = new Set(AID_FAMILY_HEAD_TYPES.map((t) => t.value));
 
+const FAMILY_TREE_BUCKETS = [
+  'parents',
+  'spouse',
+  'children',
+  'brothers',
+  'sisters',
+  'siblings',
+  'grandparents',
+  'grandchildren',
+  'extended',
+];
+
 const toFamilyHeadType = (relation) => {
   const r = String(relation || '').toLowerCase();
   if (HEAD_TYPE_VALUES.has(r)) return r;
   if (r === 'husband') return 'spouse';
   return 'other';
+};
+
+/** Flatten ego family_tree buckets into kinship rows (with person). */
+const flattenFamilyTreeRows = (tree) => {
+  const rows = [];
+  for (const key of FAMILY_TREE_BUCKETS) {
+    for (const row of tree?.[key] || []) {
+      if (row?.person?.id) rows.push(row);
+    }
+  }
+  return rows;
+};
+
+/** Prefer type from intake notes: "Family head (Son)" / "Applicant / Family head (Father)". */
+const parseFamilyHeadTypeFromNotes = (notes) => {
+  const m = String(notes || '').match(/family\s*head\s*\(([^)]+)\)/i);
+  if (!m) return null;
+  const raw = m[1].trim().toLowerCase();
+  const byValue = AID_FAMILY_HEAD_TYPES.find(
+    (t) => String(t.value).toLowerCase() === raw,
+  );
+  if (byValue) return byValue.value;
+  const byLabel = AID_FAMILY_HEAD_TYPES.find(
+    (t) => String(t.label).toLowerCase() === raw,
+  );
+  if (byLabel) return byLabel.value;
+  return toFamilyHeadType(raw);
+};
+
+/**
+ * Members saved under a head use notes like
+ * "Relative of father (son)" / "Applicant / relative of Father (daughter)".
+ */
+const parseRelativeOfHeadKey = (notes) => {
+  // "Relative of Father (father) (son)" → prefer parenthetical head value, else label text
+  const withValue = String(notes || '').match(
+    /relative of\s+[^(/]*\(([^)]+)\)/i,
+  );
+  if (withValue) return withValue[1].trim().toLowerCase();
+  const m = String(notes || '').match(/relative of\s+([^(,/]+)/i);
+  if (!m) return null;
+  return m[1].trim().toLowerCase();
+};
+
+const familyHeadMatchKey = (relationType) => {
+  const value = String(relationType || '').toLowerCase();
+  const label = String(familyHeadTypeLabel(relationType) || '').toLowerCase();
+  return { value, label };
 };
 
 /** Primary Type DD value: self, blood relation, or "guardian" when subtype / guardian. */
@@ -680,52 +740,78 @@ const AidApplicationAddInner = () => {
   const draftsListPath = '/dms/aid/applications/drafts/list';
   const offlineFormKey = `aid_form_${isEdit ? editId : 'new'}`;
 
-  // Restore offline form snapshot (survives tab switches / reload in offline mode)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!getOfflineMode()) {
-        setOfflineDraftReady(true);
-        return;
-      }
-      try {
-        const snap = await loadAidFormDraft(offlineFormKey);
-        if (cancelled || !snap) {
-          setOfflineDraftReady(true);
-          return;
-        }
-        if (snap.form) setForm(snap.form);
-        if (snap.beneficiary) setBeneficiary(snap.beneficiary);
-        if (snap.familyHeads) setFamilyHeads(snap.familyHeads);
-        if (snap.spouse) setSpouse(snap.spouse);
-        if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
-        if (snap.formTab) setFormTab(snap.formTab);
-        if (snap.educationDetails) setEducationDetails(snap.educationDetails);
-        if (snap.rationDetails) setRationDetails(snap.rationDetails);
-        if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
-        if (snap.financialAssistanceDetails) {
-          setFinancialAssistanceDetails(snap.financialAssistanceDetails);
-        }
-        if (snap.cleanWaterDetails) setCleanWaterDetails(snap.cleanWaterDetails);
-        if (snap.zakatPermission) setZakatPermission(snap.zakatPermission);
-        if (snap.consentForm) setConsentForm(snap.consentForm);
-        if (snap.applicationDocs) setApplicationDocs(snap.applicationDocs);
-        if (Array.isArray(snap.missingDocuments)) {
-          setMissingDocuments(snap.missingDocuments);
-        }
-        if (snap.beneficiaryMode) setBeneficiaryMode(snap.beneficiaryMode);
-      } finally {
-        if (!cancelled) setOfflineDraftReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [offlineFormKey]);
+  const applyLocalDraftSnapshot = useCallback((snap) => {
+    if (!snap || typeof snap !== 'object') return;
+    if (snap.form) setForm(snap.form);
+    if (snap.beneficiary) setBeneficiary(snap.beneficiary);
+    if (snap.familyHeads) setFamilyHeads(snap.familyHeads);
+    if (snap.spouse) setSpouse(snap.spouse);
+    if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
+    if (snap.formTab) setFormTab(snap.formTab);
+    if (snap.educationDetails) setEducationDetails(snap.educationDetails);
+    if (snap.rationDetails) setRationDetails(snap.rationDetails);
+    if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
+    if (snap.financialAssistanceDetails) {
+      setFinancialAssistanceDetails(snap.financialAssistanceDetails);
+    }
+    if (snap.cleanWaterDetails) setCleanWaterDetails(snap.cleanWaterDetails);
+    if (snap.zakatPermission) setZakatPermission(snap.zakatPermission);
+    if (snap.consentForm) setConsentForm(snap.consentForm);
+    if (snap.applicationDocs) setApplicationDocs(snap.applicationDocs);
+    if (Array.isArray(snap.missingDocuments)) {
+      setMissingDocuments(snap.missingDocuments);
+    }
+    if (snap.beneficiaryMode) setBeneficiaryMode(snap.beneficiaryMode);
+    if (snap.beneficiaryId != null) setBeneficiaryId(snap.beneficiaryId);
+    if (snap.existingBeneficiary !== undefined) {
+      setExistingBeneficiary(snap.existingBeneficiary);
+    }
+    if (snap.spouseFormOpen != null) setSpouseFormOpen(!!snap.spouseFormOpen);
+    if (snap.editStatus) setEditStatus(snap.editStatus);
+  }, []);
 
-  // Autosave full intake state while offline (including tab changes)
+  const resetFormToBlank = useCallback(() => {
+    const amt = resolveExpectedAmountFields('health', '');
+    setBeneficiaryMode('new');
+    setBeneficiaryId(null);
+    setExistingBeneficiary(null);
+    setBeneficiary({ ...emptyPerson, is_applicant: true });
+    setForm({
+      title: '',
+      request_summary: '',
+      requested_aid_type: 'health',
+      case_source: 'walk_in',
+      aid_program: amt.aid_program,
+      expected_amount: amt.expected_amount,
+      expected_amount_max: amt.expected_amount_max,
+    });
+    setEducationDetails(emptyEducationDetails());
+    setRationDetails(emptyRationDetails());
+    setMarriageGiftDetails(emptyMarriageGiftDetails());
+    setFinancialAssistanceDetails(emptyFinancialAssistanceDetails());
+    setCleanWaterDetails(emptyCleanWaterDetails());
+    setZakatPermission(emptyZakatPermission());
+    setConsentForm(emptyConsentForm());
+    setApplicationDocs({});
+    setMissingDocuments([]);
+    setFamilyHeads([
+      {
+        ...emptyFamilyHeadRow('father'),
+        is_applicant: false,
+        is_beneficiary: false,
+      },
+    ]);
+    setSpouse(emptyRelative());
+    setSpouseFormOpen(false);
+    setBeneficiaryMembers([]);
+    setFormTab('family');
+    setError('');
+  }, []);
+
+  // Autosave full intake state locally only (no API) — same idea as persisted filters
   useEffect(() => {
-    if (!offlineDraftReady || !getOfflineMode()) return undefined;
+    if (!offlineDraftReady) return undefined;
+    if (isEdit && loadingEdit) return undefined;
     const t = setTimeout(() => {
       saveAidFormDraft(offlineFormKey, {
         form,
@@ -745,12 +831,19 @@ const AidApplicationAddInner = () => {
         missingDocuments,
         beneficiaryMode,
         beneficiaryId,
+        existingBeneficiary,
+        spouseFormOpen,
+        editStatus,
+        // Marks edit snapshots safe to re-apply after server hydrate (tab switch)
+        capturedAfterHydrate: isEdit ? true : undefined,
       }).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
   }, [
     offlineDraftReady,
     offlineFormKey,
+    isEdit,
+    loadingEdit,
     form,
     formTab,
     beneficiary,
@@ -768,6 +861,9 @@ const AidApplicationAddInner = () => {
     missingDocuments,
     beneficiaryMode,
     beneficiaryId,
+    existingBeneficiary,
+    spouseFormOpen,
+    editStatus,
   ]);
 
   const hydrateFromApplication = useCallback(async (appId) => {
@@ -891,29 +987,45 @@ const AidApplicationAddInner = () => {
       setApplicationDocs(applicationDocsFromAttachments(app.attachments || []));
 
       const tree = personDetail?.family_tree || {};
-      const parents = tree.parents || [];
       const spouseRows = tree.spouse || [];
       const rowRelation = (row) =>
         String(row?.relation_type || row?.relation || '').toLowerCase();
       const isFamilyHeadRow = (row) => {
         const notes = String(row?.notes || '').toLowerCase();
         if (notes.includes('family head')) return true;
+        // Legacy father/mother edges without notes still count as heads
         return ['father', 'mother'].includes(rowRelation(row));
       };
-      const headSourceRows = [
-        ...parents,
-        ...(tree.extended || []).filter(isFamilyHeadRow),
-      ].filter((row, idx, arr) => {
-        const pid = row?.person?.id;
-        if (!pid) return false;
-        return (
-          arr.findIndex((r) => Number(r?.person?.id) === Number(pid)) === idx
-        );
-      });
 
+      // Deduplicate all kinship rows by person id (prefer family-head-marked rows)
+      const byPersonId = new Map();
+      for (const row of flattenFamilyTreeRows(tree)) {
+        const pid = Number(row?.person?.id);
+        if (!Number.isFinite(pid) || pid <= 0) continue;
+        const prev = byPersonId.get(pid);
+        if (!prev || (isFamilyHeadRow(row) && !isFamilyHeadRow(prev))) {
+          byPersonId.set(pid, row);
+        }
+      }
+      const uniqueRows = Array.from(byPersonId.values());
+      const headSourceRows = uniqueRows.filter(isFamilyHeadRow);
+      const headPersonIds = new Set(
+        headSourceRows
+          .map((r) => Number(r?.person?.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      );
+      const spousePersonIds = new Set(
+        (spouseRows || [])
+          .map((r) => Number(r?.person?.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      );
+
+      let heads = [];
       if (headSourceRows.length > 0) {
-        const heads = headSourceRows.map((row) => {
-          const rel = toFamilyHeadType(rowRelation(row));
+        heads = headSourceRows.map((row) => {
+          const fromNotes = parseFamilyHeadTypeFromNotes(row.notes);
+          const rel =
+            fromNotes || toFamilyHeadType(rowRelation(row)) || 'other';
           const pid = row.person?.id;
           return mapPersonToForm(row.person, {
             _relation_type: rel,
@@ -941,14 +1053,15 @@ const AidApplicationAddInner = () => {
           setExistingBeneficiary(beneficiaryPerson);
         }
       } else {
-        setFamilyHeads([
+        heads = [
           mapPersonToForm(beneficiaryPerson, {
             _relation_type: 'father',
             is_beneficiary: true,
             is_applicant: isWriterSelf,
             _family_members: [],
           }),
-        ]);
+        ];
+        setFamilyHeads(heads);
         setBeneficiary({ ...emptyPerson, is_applicant: false });
         setBeneficiaryMode('new');
         setBeneficiaryId(beneficiaryPersonId);
@@ -970,37 +1083,53 @@ const AidApplicationAddInner = () => {
         setSpouseFormOpen(false);
       }
 
-      const headPersonIds = new Set(
-        headSourceRows
-          .map((r) => Number(r?.person?.id))
-          .filter((id) => Number.isFinite(id) && id > 0),
-      );
-      const memberKeys = [
-        'children',
-        'brothers',
-        'sisters',
-        'siblings',
-        'extended',
-        'grandparents',
-        'grandchildren',
-      ];
-      const members = [];
-      for (const key of memberKeys) {
-        for (const row of tree[key] || []) {
-          if (!row?.person) continue;
-          if (headPersonIds.has(Number(row.person.id))) continue;
-          if (isFamilyHeadRow(row)) continue;
-          const rel = rowRelation(row) || 'other';
-          members.push(
-            mapPersonToForm(row.person, {
-              relation_type: HEAD_TYPE_VALUES.has(rel) ? rel : 'other',
-              is_applicant:
-                !isWriterSelf && Number(row.person.id) === Number(writerId),
-            }),
-          );
+      // Nest relatives under the Family Head they were saved with; else beneficiary list
+      const membersForBeneficiary = [];
+      const findHeadIndexForNotes = (notes) => {
+        const key = parseRelativeOfHeadKey(notes);
+        if (!key) return -1;
+        return heads.findIndex((h) => {
+          const { value, label } = familyHeadMatchKey(h._relation_type);
+          return key === value || key === label;
+        });
+      };
+
+      for (const row of uniqueRows) {
+        const pid = Number(row?.person?.id);
+        if (!Number.isFinite(pid) || pid <= 0) continue;
+        if (headPersonIds.has(pid)) continue;
+        if (spousePersonIds.has(pid)) continue;
+        if (
+          Number(pid) === Number(beneficiaryPersonId) &&
+          !isFamilyHeadRow(row)
+        ) {
+          continue;
+        }
+
+        const rel = resolveRelatedPersonKinship({
+          relation_type: rowRelation(row) || 'other',
+        });
+        const member = mapPersonToForm(row.person, {
+          relation_type: rel,
+          is_applicant:
+            !isWriterSelf && Number(pid) === Number(writerId),
+        });
+
+        const headIdx = findHeadIndexForNotes(row.notes);
+        if (headIdx >= 0) {
+          heads[headIdx] = {
+            ...heads[headIdx],
+            _family_members: [
+              ...(heads[headIdx]._family_members || []),
+              member,
+            ],
+          };
+        } else {
+          membersForBeneficiary.push(member);
         }
       }
-      setBeneficiaryMembers(members);
+      setFamilyHeads(heads.map((h) => ({ ...h })));
+      setBeneficiaryMembers(membersForBeneficiary);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -1012,11 +1141,53 @@ const AidApplicationAddInner = () => {
     }
   }, []);
 
+  // Bootstrap: new → local draft; edit → always server hydrate, then optional in-progress local draft
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await loadAidFormDraft(offlineFormKey);
+        if (cancelled) return;
+        if (isEdit) {
+          await hydrateFromApplication(editId);
+          if (cancelled) return;
+          if (snap?.capturedAfterHydrate) {
+            applyLocalDraftSnapshot(snap);
+          }
+        } else if (snap) {
+          applyLocalDraftSnapshot(snap);
+        }
+      } finally {
+        if (!cancelled) setOfflineDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per form key / edit id
+  }, [offlineFormKey, isEdit, editId]);
+
+  const handleClearForm = useCallback(async () => {
+    if (!window.confirm(t('clearFormConfirm'))) return;
+    await clearAidFormDraft(offlineFormKey).catch(() => {});
     if (isEdit) {
-      hydrateFromApplication(editId);
+      resetFormToBlank();
+      setLoadingEdit(true);
+      setOfflineDraftReady(false);
+      await hydrateFromApplication(editId);
+      setOfflineDraftReady(true);
+    } else {
+      resetFormToBlank();
     }
-  }, [isEdit, editId, hydrateFromApplication]);
+    toast.info(t('clearForm'));
+  }, [
+    t,
+    offlineFormKey,
+    isEdit,
+    editId,
+    resetFormToBlank,
+    hydrateFromApplication,
+  ]);
 
   const handleDownloadPng = async (ref, fileName) => {
     if (!ref?.current || pngDownloading) return;
@@ -1646,10 +1817,12 @@ const AidApplicationAddInner = () => {
         }
       }
       for (const rel of head._family_members || []) {
+        // Include both label + value so edit hydrate can nest members under the same head
+        const headKey = `${familyHeadTypeLabel(uiType)} (${uiType})`;
         pushRelatedMember(members, rel, {
           notes: rel.is_applicant
-            ? `Applicant / relative of ${familyHeadTypeLabel(uiType).toLowerCase()} (${rel.relation_type || 'other'})`
-            : `Relative of ${familyHeadTypeLabel(uiType).toLowerCase()} (${rel.relation_type || 'other'})`,
+            ? `Applicant / relative of ${headKey} (${rel.relation_type || 'other'})`
+            : `Relative of ${headKey} (${rel.relation_type || 'other'})`,
         });
       }
     }
@@ -3300,9 +3473,16 @@ const AidApplicationAddInner = () => {
                 </button>
               )}
             </div>
-            <PrimaryButton type="submit" loading={saving} loadingText={t('saving')}>
-              {submitLabel}
-            </PrimaryButton>
+            <div className="aid-form-actions__submit">
+              <ClearButton
+                onClick={handleClearForm}
+                text={t('clearForm')}
+                disabled={saving || loadingEdit}
+              />
+              <PrimaryButton type="submit" loading={saving} loadingText={t('saving')}>
+                {submitLabel}
+              </PrimaryButton>
+            </div>
           </div>
         </form>
       </div>
