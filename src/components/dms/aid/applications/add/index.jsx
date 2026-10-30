@@ -594,8 +594,8 @@ const cleanPersonPayload = (p) => {
     necta_document_name: p.necta_document_name || undefined,
     bisp_status: p.bisp_status || undefined,
     is_alive: p.is_alive !== false,
-    address: p.address || undefined,
-    current_address: p.current_address || undefined,
+    address: p.address?.trim() || undefined,
+    current_address: p.current_address?.trim() || undefined,
     thumb_impression: hasAidBiometric(p.thumb_impression)
       ? p.thumb_impression
       : undefined,
@@ -1853,6 +1853,12 @@ const AidApplicationAddInner = () => {
         }
         if (!person.date_of_birth) {
           throw new Error(`${label} date of birth is required`);
+        }
+        if (!String(person.address || '').trim()) {
+          throw new Error(`${label} address as per CNIC is required`);
+        }
+        if (!String(person.current_address || '').trim()) {
+          throw new Error(`${label} current address is required`);
         }
         if (person.cnic && !isValidCnic(person.cnic)) {
           throw new Error(
