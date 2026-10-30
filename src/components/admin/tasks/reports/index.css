@@ -742,6 +742,58 @@
   font-weight: 700 !important;
 }
 
+/* Animate only dates with active tasks scheduled by their due date or recurrence schedule. */
+.tkreport-nested-dashboard .tkreport-day-cell--upcoming:not(.tkreport-day-cell--selected) {
+  border-color: #BAE6FD;
+  animation: tkreportCalendarUpcoming 3.6s ease-in-out infinite;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--upcoming:not(.tkreport-day-cell--selected):hover {
+  border-color: #7DD3FC;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--due-today:not(.tkreport-day-cell--selected) {
+  border-color: #38BDF8;
+  background: #F0F9FF;
+  animation: tkreportCalendarDueToday 2.8s ease-in-out infinite;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--due-today:not(.tkreport-day-cell--selected) .tkreport-day-number {
+  color: #0284C7;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--overdue:not(.tkreport-day-cell--selected) {
+  border-color: #FECACA;
+  background: #FEF2F2;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--overdue:not(.tkreport-day-cell--selected) .tkreport-day-number {
+  color: #e4002b;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--overdue:not(.tkreport-day-cell--selected):hover {
+  border-color: #F87171;
+  background: #FEE2E2;
+}
+
+@keyframes tkreportCalendarUpcoming {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.04);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.14);
+  }
+}
+
+@keyframes tkreportCalendarDueToday {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(14, 165, 233, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 7px 2px rgba(14, 165, 233, 0.2);
+  }
+}
+
 .tkreport-nested-dashboard .tkreport-day-cell--empty,
 .tkreport-nested-dashboard .tkreport-day-cell--empty:hover {
   background: transparent;
@@ -795,6 +847,25 @@
   background: rgba(40, 196, 217, 0.12);
   border-color: rgba(40, 217, 211, 0.3);
   color: #00a3e0;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--due-today:not(.tkreport-day-cell--selected) .tkreport-day-count {
+  background: #E0F2FE;
+  border-color: #7DD3FC;
+  color: #0369A1;
+}
+
+.tkreport-nested-dashboard .tkreport-day-cell--overdue:not(.tkreport-day-cell--selected) .tkreport-day-count {
+  background: #FEE2E2;
+  border-color: #FCA5A5;
+  color: #e4002b;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tkreport-nested-dashboard .tkreport-day-cell--upcoming,
+  .tkreport-nested-dashboard .tkreport-day-cell--due-today {
+    animation: none;
+  }
 }
 
 /* Compact indicator legend at the base of the calendar card */
@@ -966,13 +1037,12 @@
 .tkreport-scheduled-card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 24px;
+  gap: 12px;
+  padding: 18px;
   border-radius: var(--t-radius-xl);
   background: var(--t-dark-card);
   border: 1px solid var(--t-dark-border);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
-  margin-top: 4px;
 }
 
 .tkreport-scheduled-header {
@@ -1032,7 +1102,7 @@
 }
 
 .tkreport-scheduled-table th {
-  padding: 12px 16px;
+  padding: 10px 12px;
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1044,7 +1114,7 @@
 }
 
 .tkreport-scheduled-table td {
-  padding: 12px 16px;
+  padding: 10px 12px;
   border-bottom: 1px solid #F1F5F9;
   vertical-align: middle;
 }
@@ -1219,47 +1289,67 @@
   color: var(--t-dark-muted);
 }
 
-/* Scheduled tasks table 'See More' / 'Collapse' pagination toggle container */
-.tkreport-scheduled-more-wrap {
+/* Keep server-side page controls grouped below the scheduled task results. */
+.tkreport-scheduled-pagination {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
+  gap: 14px;
   padding-top: 14px;
 }
 
-/* Rounded pill toggle button with subtle purple border and hover glow */
-.tkreport-scheduled-more-btn {
+.tkreport-scheduled-pagination-summary,
+.tkreport-scheduled-page-number {
+  color: var(--t-dark-muted);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tkreport-scheduled-pagination-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tkreport-scheduled-page-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 8px 22px;
-  border-radius: 999px;
+  gap: 7px;
+  padding: 7px 12px;
+  border-radius: 8px;
   border: 1px solid #d6f8fe;
   background: #f3fbff;
   color: var(--t-primary);
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
-  /* box-shadow: 0 1px 3px rgba(40, 185, 217, 0.08); */
 }
 
-.tkreport-scheduled-more-btn:hover {
+.tkreport-scheduled-page-btn:hover:not(:disabled) {
   background: var(--t-primary);
   border-color: var(--t-primary);
   color: #ffffff;
-  /* box-shadow: 0 4px 12px rgba(40, 185, 217, 0.25); */
-  transform: translateY(-1px);
 }
 
-.tkreport-scheduled-more-btn:active {
-  transform: translateY(0);
+.tkreport-scheduled-page-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
-.tkreport-scheduled-more-icon {
-  font-size: 11px;
-  transition: transform 0.2s ease;
+@media (max-width: 640px) {
+  .tkreport-scheduled-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tkreport-scheduled-pagination-controls {
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
 }
 
 /* ---------- Header filters (rendered inside PageHeader) ---------- */
@@ -1322,15 +1412,15 @@
 
 .tkreport-report-container .tkreport-filter-select,
 .tkreport-report-container .tkreport-filter-toggle-btn {
-  height: 38px;
+  height: 30px;
   box-sizing: border-box;
-  padding: 0 32px 0 12px;
+  padding: 0 16px 0 12px;
   border: 1px solid rgba(203, 213, 225, 0.9);
   border-radius: 10px;
   background-color: #FFFFFF;
   color: #1E293B;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
@@ -2413,6 +2503,69 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+/* Server-side page controls for the task records displayed in KPI detail modals. */
+.tkreport-kpi-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  padding-top: 12px;
+}
+
+.tkreport-kpi-pagination-summary,
+.tkreport-kpi-page-number {
+  color: #64748B;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tkreport-kpi-pagination-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tkreport-kpi-page-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 7px 12px;
+  border: 1px solid #D6F8FE;
+  border-radius: 8px;
+  background: #F3FBFF;
+  color: var(--t-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tkreport-kpi-page-btn:hover:not(:disabled) {
+  border-color: var(--t-primary);
+  background: var(--t-primary);
+  color: #FFFFFF;
+}
+
+.tkreport-kpi-page-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+@media (max-width: 640px) {
+  .tkreport-kpi-pagination {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .tkreport-kpi-pagination-controls {
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+  }
 }
 
 /* ==========================================================================

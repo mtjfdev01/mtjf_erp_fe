@@ -191,6 +191,7 @@ const PRIORITY_ITEMS = [
 ];
 
 const CALENDAR_DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const SCHEDULED_TASKS_PAGE_SIZE = 10;
 
 /** Local (timezone-safe) YYYY-MM-DD formatter used by the calendar. */
 const toLocalYMD = (date) => {
@@ -198,6 +199,20 @@ const toLocalYMD = (date) => {
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+};
+
+// Calendar entries are grouped by the backend using each task's due date or recurrence schedule.
+// Only active tasks should make a past scheduled date appear overdue.
+const getCalendarDateState = (dayData, dateStr, todayStr) => {
+  const hasActiveScheduledTasks = Array.isArray(dayData?.tasks) && dayData.tasks.some((task) => {
+    const status = String(task.status || '').toLowerCase();
+    return !['completed', 'closed', 'approved', 'cancelled'].includes(status);
+  });
+
+  if (!hasActiveScheduledTasks) return null;
+  if (dateStr < todayStr) return 'overdue';
+  if (dateStr === todayStr) return 'due-today';
+  return 'upcoming';
 };
 
 // Custom hook for click outside detection
@@ -817,50 +832,6 @@ const ProjectProgramWiseReport = React.memo(({ projects }) => {
 
   return (
     <div className="tkreport-report-card tkreport-report-card--project-report">
-      <div className="tkreport-report-card-header tkreport-report-card-header--with-filter" ref={headerRef}>
-        <div className="tkreport-report-header-left">
-          <FaProjectDiagram className="tkreport-status-overview-icon" />
-          <h2 className="tkreport-report-card-title">Project/Program-wise Task Report</h2>
-        </div>
-        <div className={`tkreport-report-header-right ${showHeaderFilters ? 'tkreport-report-header-right--visible' : ''}`}>
-          <div className="tkreport-report-filter-inline">
-            <select
-              className="tkreport-report-category-filter"
-              value={projectCategory}
-              onChange={(e) => setProjectCategory(e.target.value)}
-            >
-              <option value="all">All Types</option>
-              <option value="project">Project</option>
-              <option value="program">Program</option>
-            </select>
-            {projectCategory !== 'all' && (
-              <button
-                className="tkreport-report-filter-clear-inline"
-                onClick={() => setProjectCategory('all')}
-                title="Clear Filter"
-              >
-                ✕
-              </button>
-            )}
-          </div>
-          <button
-            className="tkreport-report-export-button"
-            onClick={handleExportProjectReport}
-            title="Export report"
-            type="button"
-          >
-            <FaDownload /> Export
-          </button>
-        </div>
-        <button
-          className="tkreport-report-header-menu-button"
-          onClick={() => setShowHeaderFilters(!showHeaderFilters)}
-          title={showHeaderFilters ? "Hide filters" : "Show filters"}
-          type="button"
-        >
-          <FaEllipsisH />
-        </button>
-      </div>
       <div className="tkreport-report-card-chart tkreport-report-card-chart--wide" style={{ minHeight: '380px', height: 'auto', position: 'relative' }}>
         <div className="tkreport-report-slider-wrapper tkreport-report-slider-wrapper--vertical">
           {canScrollUp && (
@@ -912,11 +883,17 @@ const TaskReports = () => {
 
   const role = user?.role || 'user';
   const [duration, setDuration] = useState('this_year');
-  const [viewType, setViewType] = useState("all"); // Initial view: all tasks
+  const [viewType, setViewType] = useState("assigned"); // Initial view: assigned tasks
   const [selectedDepartment, setSelectedDepartment] = useState('');
   const [taskStats, setTaskStats] = useState(null);
   const [taskStatsLoading, setTaskStatsLoading] = useState(false);
   const [taskStatsError, setTaskStatsError] = useState(null);
+  const [scheduledTasks, setScheduledTasks] = useState([]);
+  const [scheduledTasksPage, setScheduledTasksPage] = useState(1);
+  const [scheduledTasksTotal, setScheduledTasksTotal] = useState(0);
+  const [scheduledTasksLoading, setScheduledTasksLoading] = useState(false);
+  const [scheduledTasksError, setScheduledTasksError] = useState(null);
+  const scheduledTasksRequestId = useRef(0);
   const [taskAggregates, setTaskAggregates] = useState({ users: [], projects: [], avgCompletionDays: null });
   const [currentTime, setCurrentTime] = useState(new Date());
   const [showTeamPerformance, setShowTeamPerformance] = useState(false);
@@ -955,14 +932,7 @@ const TaskReports = () => {
   const handleCloseKpiModal = useCallback(() => {
     setActiveKpiModal(null);
   }, []);
-  // Controls expand / collapse state for scheduled tasks table (limits to 5 items when collapsed)
-  const [isScheduledTasksExpanded, setIsScheduledTasksExpanded] = useState(false);
   const dashboardRef = useRef(null);
-
-  // Reset table expand/collapse state whenever the user selects a different calendar date
-  useEffect(() => {
-    setIsScheduledTasksExpanded(false);
-  }, [selectedDay]);
 
   const checkUserScrollability = () => {
     if (userReportSliderRef.current) {
@@ -1842,6 +1812,101 @@ const TaskReports = () => {
   useEffect(() => {
     fetchTaskReports();
   }, [fetchTaskReports, dashboardRefreshNonce]);
+
+  // Changing any dashboard filter starts the scheduled-task table at its first server page.
+  useEffect(() => {
+    setScheduledTasksPage(1);
+  }, [duration, selectedDay, selectedDepartment, viewType, showTeamPerformance]);
+
+  const fetchScheduledTasks = useCallback(async () => {
+    if (!user) return;
+
+    const requestId = ++scheduledTasksRequestId.current;
+    setScheduledTasksLoading(true);
+    setScheduledTasksError(null);
+    try {
+      // Keep this query aligned with the dashboard filters, but let the API fetch only
+      // the requested page from the database instead of slicing the stats response.
+      const range = selectedDay && !showTeamPerformance
+        ? { from: selectedDay, to: selectedDay }
+        : getDateRangeForDuration(duration);
+
+      let statsDepartment;
+      if (isGeneralAdminDashboard || showTeamPerformance) {
+        statsDepartment = selectedDepartment || undefined;
+      }
+
+      let effectiveViewType;
+      if (showTeamPerformance && !taskScopeCaps.isSelfOnly) {
+        effectiveViewType = undefined;
+      } else if (!rolePerms.isAdmin && viewType !== 'all') {
+        effectiveViewType = viewType;
+      } else if (!rolePerms.isAdmin && viewType === 'all') {
+        effectiveViewType = 'all';
+      } else if (rolePerms.isAdmin && viewType !== 'all') {
+        effectiveViewType = viewType;
+      } else {
+        effectiveViewType = undefined;
+      }
+
+      const response = await axiosInstance.get('/tasks/list', {
+        params: {
+          page: scheduledTasksPage,
+          pageSize: SCHEDULED_TASKS_PAGE_SIZE,
+          sortField: 'due_date',
+          sortOrder: 'ASC',
+          start_date: range.from,
+          end_date: range.to,
+          date_field: selectedDay ? 'due_date' : undefined,
+          department: statsDepartment,
+          view_type: effectiveViewType,
+          team_performance: showTeamPerformance ? true : undefined,
+        },
+      });
+
+      if (requestId !== scheduledTasksRequestId.current) return;
+      const total = Number(response.data?.pagination?.total) || 0;
+      const lastPage = Math.max(1, Math.ceil(total / SCHEDULED_TASKS_PAGE_SIZE));
+      setScheduledTasksTotal(total);
+      if (scheduledTasksPage > lastPage) {
+        // A refresh or deletion can shrink the result set while the user is on its last page.
+        setScheduledTasks([]);
+        setScheduledTasksPage(lastPage);
+        return;
+      }
+      setScheduledTasks(Array.isArray(response.data?.data) ? response.data.data : []);
+    } catch (error) {
+      if (requestId === scheduledTasksRequestId.current) {
+        console.error('Scheduled tasks fetch error:', error);
+        setScheduledTasksError(
+          error.response?.data?.message || error.message || 'Failed to load scheduled tasks',
+        );
+      }
+    } finally {
+      if (requestId === scheduledTasksRequestId.current) {
+        setScheduledTasksLoading(false);
+      }
+    }
+  }, [
+    duration,
+    selectedDay,
+    selectedDepartment,
+    showTeamPerformance,
+    user,
+    isGeneralAdminDashboard,
+    rolePerms.isAdmin,
+    viewType,
+    taskScopeCaps.isSelfOnly,
+    getDateRangeForDuration,
+    scheduledTasksPage,
+  ]);
+
+  useEffect(() => {
+    fetchScheduledTasks();
+    return () => {
+      scheduledTasksRequestId.current += 1;
+    };
+  }, [fetchScheduledTasks, dashboardRefreshNonce]);
 
   useEffect(() => {
     const palette = (n) => {
@@ -2948,7 +3013,7 @@ const TaskReports = () => {
                       >
                         <div className="tkreport-kpi-title">
                           <FaLayerGroup /> Total Tasks
-                          <span className="tkreport-kpi-action-hint">View list →</span>
+                          {/* <span className="tkreport-kpi-action-hint">View list →</span> */}
                         </div>
                         <div className="tkreport-kpi-value tkreport-text-cyan">{statsSummary.total}</div>
                       </div>
@@ -2963,7 +3028,7 @@ const TaskReports = () => {
                       >
                         <div className="tkreport-kpi-title">
                           <FaHourglassHalf /> Total Pending
-                          <span className="tkreport-kpi-action-hint">View list →</span>
+                          {/* <span className="tkreport-kpi-action-hint">View list →</span> */}
                         </div>
                         <div className="tkreport-kpi-value tkreport-text-yellow">{statsSummary.pending}</div>
                       </div>
@@ -2978,7 +3043,7 @@ const TaskReports = () => {
                       >
                         <div className="tkreport-kpi-title">
                           <FaCheck /> Total Completed
-                          <span className="tkreport-kpi-action-hint">View list →</span>
+                          {/* <span className="tkreport-kpi-action-hint">View list →</span> */}
                         </div>
                         <div className="tkreport-kpi-value tkreport-text-green">{statsSummary.completedTasks}</div>
                       </div>
@@ -2993,7 +3058,7 @@ const TaskReports = () => {
                       >
                         <div className="tkreport-kpi-title">
                           <FaExclamationTriangle /> Overdue Tasks
-                          <span className="tkreport-kpi-action-hint">View list →</span>
+                          {/* <span className="tkreport-kpi-action-hint">View list →</span> */}
                         </div>
                         <div className="tkreport-kpi-value tkreport-text-red">{statsSummary.overdue}</div>
                       </div>
@@ -3008,7 +3073,7 @@ const TaskReports = () => {
                       >
                         <div className="tkreport-kpi-title">
                           <FaChartLine /> Completion Rate
-                          <span className="tkreport-kpi-action-hint">View progress →</span>
+                          {/* <span className="tkreport-kpi-action-hint">View progress →</span> */}
                         </div>
                         <div className="tkreport-kpi-value tkreport-text-purple">{`${completionPercent}%`}</div>
                       </div>
@@ -3058,6 +3123,7 @@ const TaskReports = () => {
                             const isToday = todayStr === cell.dateStr;
                             const dayData = calendarDaysMap[cell.dateStr];
                             const totalTasks = dayData?.total_tasks || 0;
+                            const dateState = getCalendarDateState(dayData, cell.dateStr, todayStr);
 
                             return (
                               <button
@@ -3067,15 +3133,17 @@ const TaskReports = () => {
                                   'tkreport-day-cell',
                                   isToday ? 'tkreport-day-cell--today' : '',
                                   isSelected ? 'tkreport-day-cell--selected' : '',
-                                  totalTasks > 0 ? 'tkreport-day-cell--has-tasks' : ''
+                                  totalTasks > 0 ? 'tkreport-day-cell--has-tasks' : '',
+                                  dateState ? `tkreport-day-cell--${dateState}` : ''
                                 ].filter(Boolean).join(' ')}
                                 onClick={() => handleCalendarDayClick(cell.dateStr)}
                                 aria-pressed={isSelected}
                                 title={
                                   totalTasks > 0
-                                    ? `${cell.dateStr}: ${totalTasks} task${totalTasks > 1 ? 's' : ''}`
+                                    ? `${cell.dateStr}: ${totalTasks} task${totalTasks > 1 ? 's' : ''}${dateState ? ` · ${dateState === 'due-today' ? 'Due today' : dateState}` : ''}`
                                     : `${cell.dateStr}: No tasks`
                                 }
+                                aria-label={`${cell.dateStr}${dateState ? `, ${dateState === 'due-today' ? 'due today' : dateState}` : ''}, ${totalTasks} task${totalTasks === 1 ? '' : 's'}`}
                               >
                                 <span className="tkreport-day-number">{cell.dayNumber}</span>
                                 {totalTasks > 0 && (
@@ -3178,16 +3246,19 @@ const TaskReports = () => {
                             <FaTasks /> {selectedDay ? `Tasks Scheduled for ${selectedDayLabel}` : `Tasks Overview · ${durationLabel}`}
                           </h3>
                           <span className="tkreport-scheduled-badge">
-                            {displayTasks.length} {displayTasks.length === 1 ? 'Task' : 'Tasks'}
+                            {scheduledTasksTotal} {scheduledTasksTotal === 1 ? 'Task' : 'Tasks'}
                           </span>
                         </div>
                       </div>
-
-                      {taskStatsLoading ? (
+                      {taskStatsLoading || scheduledTasksLoading ? (
                         <div className="tkreport-scheduled-loading">
                           <FaSpinner className="tkreport-spin" /> {selectedDay ? `Loading tasks scheduled for ${selectedDayLabel}...` : 'Loading tasks...'}
                         </div>
-                      ) : displayTasks.length === 0 ? (
+                      ) : scheduledTasksError ? (
+                        <div className="tkreport-scheduled-empty tkreport-state-message--error">
+                          <p>{scheduledTasksError}</p>
+                        </div>
+                      ) : scheduledTasksTotal === 0 ? (
                         <div className="tkreport-scheduled-empty">
                           <FaRegFolderOpen className="tkreport-empty-icon" />
                           <h4>{selectedDay ? 'No tasks scheduled for this date' : 'No tasks found'}</h4>
@@ -3209,8 +3280,7 @@ const TaskReports = () => {
                                 </tr>
                               </thead>
                               <tbody>
-                                {/* Clamped to initial 5 rows when collapsed; shows full list when isScheduledTasksExpanded is true */}
-                                {(isScheduledTasksExpanded ? displayTasks : displayTasks.slice(0, 5)).map((task) => (
+                                {scheduledTasks.map((task) => (
                                   <tr
                                     key={task.id}
                                     className="tkreport-scheduled-row"
@@ -3277,26 +3347,35 @@ const TaskReports = () => {
                               </tbody>
                             </table>
                           </div>
-                          {/* Expand / Collapse toggle for lists exceeding 5 records */}
-                          {displayTasks.length > 5 && (
-                            <div className="tkreport-scheduled-more-wrap">
-                              <button
-                                type="button"
-                                className="tkreport-scheduled-more-btn"
-                                onClick={() => setIsScheduledTasksExpanded((prev) => !prev)}
-                                aria-expanded={isScheduledTasksExpanded}
-                              >
-                                <span>
-                                  {isScheduledTasksExpanded
-                                    ? 'Collapse'
-                                    : `See More (${displayTasks.length - 5} more ${displayTasks.length - 5 === 1 ? 'record' : 'records'})`}
+                          {scheduledTasksTotal > SCHEDULED_TASKS_PAGE_SIZE && (
+                            <div className="tkreport-scheduled-pagination">
+                              <span className="tkreport-scheduled-pagination-summary">
+                                Showing {(scheduledTasksPage - 1) * SCHEDULED_TASKS_PAGE_SIZE + 1}–
+                                {Math.min(scheduledTasksPage * SCHEDULED_TASKS_PAGE_SIZE, scheduledTasksTotal)} of {scheduledTasksTotal}
+                              </span>
+                              <div className="tkreport-scheduled-pagination-controls">
+                                <button
+                                  type="button"
+                                  className="tkreport-scheduled-page-btn"
+                                  onClick={() => setScheduledTasksPage((page) => page - 1)}
+                                  disabled={scheduledTasksLoading || scheduledTasksPage <= 1}
+                                  aria-label="Previous page"
+                                >
+                                  <FaChevronLeft /> Previous
+                                </button>
+                                <span className="tkreport-scheduled-page-number">
+                                  Page {scheduledTasksPage} of {Math.ceil(scheduledTasksTotal / SCHEDULED_TASKS_PAGE_SIZE)}
                                 </span>
-                                {isScheduledTasksExpanded ? (
-                                  <FaChevronUp className="tkreport-scheduled-more-icon" />
-                                ) : (
-                                  <FaChevronDown className="tkreport-scheduled-more-icon" />
-                                )}
-                              </button>
+                                <button
+                                  type="button"
+                                  className="tkreport-scheduled-page-btn"
+                                  onClick={() => setScheduledTasksPage((page) => page + 1)}
+                                  disabled={scheduledTasksLoading || scheduledTasksPage >= Math.ceil(scheduledTasksTotal / SCHEDULED_TASKS_PAGE_SIZE)}
+                                  aria-label="Next page"
+                                >
+                                  Next <FaChevronRight />
+                                </button>
+                              </div>
                             </div>
                           )}
                         </>

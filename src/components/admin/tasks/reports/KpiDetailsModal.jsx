@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import PropTypes from 'prop-types';
 import {
   FaTimes,
@@ -14,9 +14,13 @@ import {
   FaCalendarAlt,
   FaTasks,
   FaArrowRight,
-  FaInfoCircle
+  FaInfoCircle,
+  FaChevronLeft,
+  FaChevronRight
 } from 'react-icons/fa';
 import axiosInstance from '../../../../utils/axios';
+
+const KPI_TASKS_PAGE_SIZE = 10;
 
 /** Status display configuration mapping */
 const STATUS_CONFIG = {
@@ -79,6 +83,14 @@ const KpiDetailsModal = ({
   const [error, setError] = useState(null);
   const [statsData, setStatsData] = useState(initialStats || null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [taskRecords, setTaskRecords] = useState([]);
+  const [taskRecordsTotal, setTaskRecordsTotal] = useState(0);
+  const [taskRecordsPage, setTaskRecordsPage] = useState(1);
+  const [taskRecordsLoading, setTaskRecordsLoading] = useState(false);
+  const [taskRecordsError, setTaskRecordsError] = useState(null);
+  // Ignore stale responses when a newer page, search, or filter request has already started.
+  const taskRecordsRequestId = useRef(0);
   const [activeTab, setActiveTab] = useState(kpiKey === 'completion_rate' ? 'progress' : 'list');
 
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
@@ -90,6 +102,7 @@ const KpiDetailsModal = ({
         setStatsData(initialStats);
       }
       setSearchQuery('');
+      setTaskRecordsPage(1);
       setActiveTab(kpiKey === 'completion_rate' ? 'progress' : 'list');
     }
   }, [isOpen, initialStats, kpiKey]);
@@ -118,6 +131,86 @@ const KpiDetailsModal = ({
     }
   }, [isOpen, fetchTaskData]);
 
+  // Debounce server-side search so typing does not issue a request for every keystroke.
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+    return () => window.clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  // A new KPI, filter set, or search term must start from the first result page.
+  useEffect(() => {
+    setTaskRecordsPage(1);
+  }, [kpiKey, filterParams, debouncedSearchQuery, isOpen]);
+
+  const fetchTaskRecords = useCallback(async () => {
+    if (!isOpen) return;
+
+    const requestId = ++taskRecordsRequestId.current;
+    // Completion Rate opens its task list as a completed-task view; overdue uses the KPI's date context.
+    const reportCategory = kpiKey === 'completion_rate' ? 'completed' : kpiKey;
+    const overdueDate = selectedDay && selectedDay < todayIso ? selectedDay : todayIso;
+    const overdueInclusive = Boolean(selectedDay && selectedDay < todayIso);
+    setTaskRecordsLoading(true);
+    setTaskRecordsError(null);
+
+    try {
+      // Send category, report filters, and search together so the API filters before applying LIMIT/OFFSET.
+      const response = await axiosInstance.get('/tasks/list', {
+        params: {
+          ...filterParams,
+          page: taskRecordsPage,
+          pageSize: KPI_TASKS_PAGE_SIZE,
+          sortField: 'due_date',
+          sortOrder: 'ASC',
+          report_category: reportCategory,
+          overdue_date: reportCategory === 'overdue' ? overdueDate : undefined,
+          overdue_inclusive: reportCategory === 'overdue' ? overdueInclusive : undefined,
+          search: debouncedSearchQuery || undefined,
+        },
+      });
+
+      if (requestId !== taskRecordsRequestId.current) return;
+      const total = Number(response.data?.pagination?.total) || 0;
+      const lastPage = Math.max(1, Math.ceil(total / KPI_TASKS_PAGE_SIZE));
+      setTaskRecordsTotal(total);
+      if (taskRecordsPage > lastPage) {
+        // If records were removed while the modal was open, return to the last valid page.
+        setTaskRecords([]);
+        setTaskRecordsPage(lastPage);
+        return;
+      }
+      setTaskRecords(Array.isArray(response.data?.data) ? response.data.data : []);
+    } catch (err) {
+      if (requestId === taskRecordsRequestId.current) {
+        console.error('Failed to fetch paginated KPI tasks:', err);
+        setTaskRecordsError(
+          err.response?.data?.message || err.message || 'Failed to fetch task records from database',
+        );
+      }
+    } finally {
+      if (requestId === taskRecordsRequestId.current) {
+        setTaskRecordsLoading(false);
+      }
+    }
+  }, [
+    isOpen,
+    filterParams,
+    kpiKey,
+    selectedDay,
+    todayIso,
+    taskRecordsPage,
+    debouncedSearchQuery,
+  ]);
+
+  useEffect(() => {
+    fetchTaskRecords();
+    return () => {
+      taskRecordsRequestId.current += 1;
+    };
+  }, [fetchTaskRecords]);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -134,44 +227,8 @@ const KpiDetailsModal = ({
     return Array.isArray(statsData?.tasks) ? statsData.tasks : [];
   }, [statsData?.tasks]);
 
-  // Filter tasks based on selected KPI card
-  const categoryTasks = useMemo(() => {
-    switch (kpiKey) {
-      case 'total':
-        return allTasks;
-      case 'pending':
-        // Non-completed tasks
-        return allTasks.filter((t) => !isCompletedStatus(t.status));
-      case 'completed':
-        // Completed, closed, or approved tasks
-        return allTasks.filter((t) => isCompletedStatus(t.status));
-      case 'overdue':
-        // Past due and not completed/cancelled
-        return allTasks.filter((t) => isTaskOverdue(t, todayIso, selectedDay));
-      case 'completion_rate':
-        // For completion rate modal list view (shows completed tasks)
-        return allTasks.filter((t) => isCompletedStatus(t.status));
-      default:
-        return allTasks;
-    }
-  }, [allTasks, kpiKey, todayIso, selectedDay]);
-
-  // Apply search query filter
-  const displayedTasks = useMemo(() => {
-    if (!searchQuery.trim()) return categoryTasks;
-    const q = searchQuery.toLowerCase().trim();
-    return categoryTasks.filter((t) => {
-      const titleMatch = t.title?.toLowerCase().includes(q);
-      const idMatch = String(t.id).includes(q);
-      const deptMatch = t.department?.toLowerCase().includes(q);
-      const projectMatch = t.project_name?.toLowerCase().includes(q);
-      const statusMatch = t.status?.toLowerCase().includes(q);
-      const priorityMatch = t.priority?.toLowerCase().includes(q);
-      const assigneeMatch = Array.isArray(t.assigned_users_meta) &&
-        t.assigned_users_meta.some((u) => u.name?.toLowerCase().includes(q) || String(u.user_id).includes(q));
-      return titleMatch || idMatch || deptMatch || projectMatch || statusMatch || priorityMatch || assigneeMatch;
-    });
-  }, [categoryTasks, searchQuery]);
+  // The API response is already filtered and paginated; do not filter this page again in the browser.
+  const displayedTasks = taskRecords;
 
   // Compute Completion Rate analytics metrics
   const completionMetrics = useMemo(() => {
@@ -261,7 +318,10 @@ const KpiDetailsModal = ({
             <button
               type="button"
               className="tkreport-kpi-modal-refresh-btn"
-              onClick={fetchTaskData}
+              onClick={() => {
+                fetchTaskData();
+                fetchTaskRecords();
+              }}
               title="Refresh task data"
               disabled={loading}
               aria-label="Refresh"
@@ -296,7 +356,7 @@ const KpiDetailsModal = ({
                 className={`tkreport-kpi-modal-tab ${activeTab === 'list' ? 'is-active' : ''}`}
                 onClick={() => setActiveTab('list')}
               >
-                <FaCheck /> Completed Tasks ({completionMetrics.completed})
+                <FaCheck /> Completed Tasks ({taskRecordsTotal})
               </button>
             </div>
           ) : (
@@ -325,11 +385,14 @@ const KpiDetailsModal = ({
 
           <div className="tkreport-kpi-modal-count-badge">
             {kpiKey === 'completion_rate' ? (
-              <span>Rate: <strong>{completionMetrics.rate}%</strong></span>
+              <span>
+                Rate: <strong>{completionMetrics.rate}%</strong>
+                {activeTab === 'list' && ` · ${taskRecordsTotal} completed tasks`}
+              </span>
             ) : (
               <span>
-                {displayedTasks.length} {displayedTasks.length === 1 ? 'Task' : 'Tasks'}
-                {categoryTasks.length !== displayedTasks.length && ` (of ${categoryTasks.length})`}
+                {taskRecordsTotal} {taskRecordsTotal === 1 ? 'Task' : 'Tasks'}
+                {debouncedSearchQuery && ' matching search'}
               </span>
             )}
           </div>
@@ -527,16 +590,35 @@ const KpiDetailsModal = ({
             /* =================================================================
                TASK LIST VIEW (for Total, Pending, Completed, and Overdue cards)
                ================================================================= */
-            displayedTasks.length === 0 ? (
+            taskRecordsLoading ? (
+              <div className="tkreport-kpi-modal-loading">
+                <FaSpinner className="tkreport-spin tkreport-kpi-modal-spinner" />
+                <h4>Loading task records...</h4>
+                <p>Fetching this page of matching tasks.</p>
+              </div>
+            ) : taskRecordsError ? (
+              <div className="tkreport-kpi-modal-error">
+                <FaExclamationTriangle className="tkreport-kpi-modal-error-icon" />
+                <h4>Failed to load task records</h4>
+                <p>{taskRecordsError}</p>
+                <button
+                  type="button"
+                  className="tkreport-kpi-modal-retry-btn"
+                  onClick={fetchTaskRecords}
+                >
+                  <FaSyncAlt /> Try Again
+                </button>
+              </div>
+            ) : taskRecordsTotal === 0 ? (
               <div className="tkreport-kpi-modal-empty">
                 <FaRegFolderOpen className="tkreport-kpi-modal-empty-icon" />
                 <h4>No tasks found</h4>
                 <p>
-                  {searchQuery
-                    ? `No tasks match your search "${searchQuery}". Try a different keyword.`
+                  {debouncedSearchQuery
+                    ? `No tasks match your search "${debouncedSearchQuery}". Try a different keyword.`
                     : `There are no ${kpiTitle.toLowerCase()} matching the current dashboard filters.`}
                 </p>
-                {searchQuery && (
+                {debouncedSearchQuery && (
                   <button
                     type="button"
                     className="tkreport-kpi-modal-empty-clear-btn"
@@ -547,95 +629,129 @@ const KpiDetailsModal = ({
                 )}
               </div>
             ) : (
-              <div className="tkreport-scheduled-table-wrap tkreport-kpi-table-wrap">
-                <table className="tkreport-scheduled-table">
-                  <thead>
-                    <tr>
-                      <th>Task</th>
-                      <th>Status</th>
-                      <th>Priority</th>
-                      <th>Type</th>
-                      <th>Project/Program</th>
-                      <th>Due Date</th>
-                      <th>Assignees</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {displayedTasks.map((task) => (
-                      <tr
-                        key={task.id}
-                        className="tkreport-scheduled-row"
-                        onClick={() => onSelectTask && onSelectTask(task.id)}
-                      >
-                        <td className="tkreport-scheduled-name">
-                          <span className="tkreport-scheduled-title" title={task.title}>
-                            {task.title}
-                          </span>
-                          <span className="tkreport-scheduled-id">#{task.id}</span>
-                        </td>
-                        <td>
-                          <span className={`tkreport-badge-status tkreport-badge-status--${task.status || 'open'}`}>
-                            {STATUS_CONFIG[task.status]?.label || task.status}
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`tkreport-badge-priority tkreport-badge-priority--${task.priority || 'medium'}`}>
-                            {task.priority || 'medium'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="tkreport-type-tag">
-                            {task.task_type === 'recurring' ? 'Recurring' : 'One Time'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="tkreport-project-text" title={task.project_name || task.department || ''}>
-                            {task.project_name || task.department || '—'}
-                          </span>
-                        </td>
-                        <td>
-                          <span className="tkreport-kpi-due-text">
-                            {task.due_date || task.recurrence_next_date || '—'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="tkreport-assignees-preview">
-                            {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0 ? (
-                              task.assigned_users_meta.slice(0, 3).map((assignee, idx) => (
-                                <span
-                                  key={idx}
-                                  className="tkreport-assignee-avatar"
-                                  title={assignee.name || `User ${assignee.user_id}`}
-                                >
-                                  {(assignee.name ? assignee.name[0] : 'U').toUpperCase()}
-                                </span>
-                              ))
-                            ) : (
-                              <span className="tkreport-unassigned">Unassigned</span>
-                            )}
-                            {task.assigned_users_meta?.length > 3 && (
-                              <span className="tkreport-assignee-more">+{task.assigned_users_meta.length - 3}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="tkreport-view-action-btn"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onSelectTask) onSelectTask(task.id);
-                            }}
-                          >
-                            View Details
-                          </button>
-                        </td>
+              <>
+                <div className="tkreport-scheduled-table-wrap tkreport-kpi-table-wrap">
+                  <table className="tkreport-scheduled-table">
+                    <thead>
+                      <tr>
+                        <th>Task</th>
+                        <th>Status</th>
+                        <th>Priority</th>
+                        <th>Type</th>
+                        <th>Project/Program</th>
+                        <th>Due Date</th>
+                        <th>Assignees</th>
+                        <th>Action</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {displayedTasks.map((task) => (
+                        <tr
+                          key={task.id}
+                          className="tkreport-scheduled-row"
+                          onClick={() => onSelectTask && onSelectTask(task.id)}
+                        >
+                          <td className="tkreport-scheduled-name">
+                            <span className="tkreport-scheduled-title" title={task.title}>
+                              {task.title}
+                            </span>
+                            <span className="tkreport-scheduled-id">#{task.id}</span>
+                          </td>
+                          <td>
+                            <span className={`tkreport-badge-status tkreport-badge-status--${task.status || 'open'}`}>
+                              {STATUS_CONFIG[task.status]?.label || task.status}
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`tkreport-badge-priority tkreport-badge-priority--${task.priority || 'medium'}`}>
+                              {task.priority || 'medium'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="tkreport-type-tag">
+                              {task.task_type === 'recurring' ? 'Recurring' : 'One Time'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="tkreport-project-text" title={task.project_name || task.department || ''}>
+                              {task.project_name || task.department || '—'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="tkreport-kpi-due-text">
+                              {task.due_date || task.recurrence_next_date || '—'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="tkreport-assignees-preview">
+                              {Array.isArray(task.assigned_users_meta) && task.assigned_users_meta.length > 0 ? (
+                                task.assigned_users_meta.slice(0, 3).map((assignee, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="tkreport-assignee-avatar"
+                                    title={assignee.name || `User ${assignee.user_id}`}
+                                  >
+                                    {(assignee.name ? assignee.name[0] : 'U').toUpperCase()}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="tkreport-unassigned">Unassigned</span>
+                              )}
+                              {task.assigned_users_meta?.length > 3 && (
+                                <span className="tkreport-assignee-more">+{task.assigned_users_meta.length - 3}</span>
+                              )}
+                            </div>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="tkreport-view-action-btn"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onSelectTask) onSelectTask(task.id);
+                              }}
+                            >
+                              View Details
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {taskRecordsTotal > KPI_TASKS_PAGE_SIZE && (
+                  /* Show navigation only when another page can contain records. */
+                  <div className="tkreport-kpi-pagination">
+                    <span className="tkreport-kpi-pagination-summary">
+                      Showing {(taskRecordsPage - 1) * KPI_TASKS_PAGE_SIZE + 1}–
+                      {Math.min(taskRecordsPage * KPI_TASKS_PAGE_SIZE, taskRecordsTotal)} of {taskRecordsTotal}
+                    </span>
+                    <div className="tkreport-kpi-pagination-controls">
+                      <button
+                        type="button"
+                        className="tkreport-kpi-page-btn"
+                        onClick={() => setTaskRecordsPage((page) => page - 1)}
+                        disabled={taskRecordsLoading || taskRecordsPage <= 1}
+                        aria-label="Previous page"
+                      >
+                        <FaChevronLeft /> Previous
+                      </button>
+                      <span className="tkreport-kpi-page-number">
+                        Page {taskRecordsPage} of {Math.ceil(taskRecordsTotal / KPI_TASKS_PAGE_SIZE)}
+                      </span>
+                      <button
+                        type="button"
+                        className="tkreport-kpi-page-btn"
+                        onClick={() => setTaskRecordsPage((page) => page + 1)}
+                        disabled={taskRecordsLoading || taskRecordsPage >= Math.ceil(taskRecordsTotal / KPI_TASKS_PAGE_SIZE)}
+                        aria-label="Next page"
+                      >
+                        Next <FaChevronRight />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )
           )}
         </div>
