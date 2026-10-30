@@ -1815,6 +1815,56 @@ export function cnicPairsToFiles(pairs) {
   return out;
 }
 
+/**
+ * Map saved application attachments into AidApplicationDocsIntake value shape
+ * so edit screens show existing files (with id/url for remove).
+ */
+export function applicationDocsFromAttachments(attachments = []) {
+  const docKeys = new Set(AID_APPLICATION_DOC_TYPES.map((d) => d.value));
+  const byContext = {};
+
+  for (const a of Array.isArray(attachments) ? attachments : []) {
+    const url = String(a?.file_url || a?.url || '').trim();
+    if (!url) continue;
+    const ctx = String(a?.context || '').toLowerCase();
+    if (!docKeys.has(ctx)) continue;
+
+    const desc = String(a?.description || '');
+    let side = null;
+    let pair = null;
+    const mPair = desc.match(/#(\d+)\s*\((front|back)\)/i);
+    const mSide = desc.match(/\((front|back)\)/i);
+    if (mPair) {
+      pair = Math.max(0, Number(mPair[1]) - 1);
+      side = mPair[2].toLowerCase();
+    } else if (mSide) {
+      side = mSide[1].toLowerCase();
+    }
+
+    const entry = {
+      id: a.id ?? null,
+      url,
+      name: a.file_name || a.name || 'File',
+      ...(side ? { side } : {}),
+      ...(pair != null && Number.isFinite(pair) ? { pair } : {}),
+    };
+    if (!byContext[ctx]) byContext[ctx] = [];
+    byContext[ctx].push(entry);
+  }
+
+  const result = {};
+  for (const doc of AID_APPLICATION_DOC_TYPES) {
+    const files = byContext[doc.value] || [];
+    if (!files.length) continue;
+    if (doc.multiple || doc.frontBack) {
+      result[doc.value] = { files };
+    } else {
+      result[doc.value] = files[0];
+    }
+  }
+  return result;
+}
+
 export const AID_VERIFICATION_CHECKLIST = [
   { key: 'site_visit', label: 'Site Visit', required: true },
   {

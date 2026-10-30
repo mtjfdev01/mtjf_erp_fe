@@ -80,7 +80,8 @@ import {
   hasAidBiometric,
   cloneAidBiometric,
   resolveAidFormSubjectPerson,
-  emptyFamilyHeadProp,
+  applicationDocsFromAttachments,
+  emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
   AID_FAMILY_HEAD_TYPE_OPTIONS,
   AID_FAMILY_HEAD_GUARDIAN_SUBTYPES,
@@ -887,6 +888,7 @@ const AidApplicationAddInner = () => {
       setMissingDocuments([
         ...new Set([...fromAppMissing, ...fromAttachMissing]),
       ]);
+      setApplicationDocs(applicationDocsFromAttachments(app.attachments || []));
 
       const tree = personDetail?.family_tree || {};
       const parents = tree.parents || [];
@@ -2459,6 +2461,15 @@ const AidApplicationAddInner = () => {
               value={applicationDocs}
               onChange={setApplicationDocs}
               missingKeys={missingDocuments}
+              onRemoveSaved={
+                isEdit
+                  ? async (attachmentId) => {
+                      await axiosInstance.delete(
+                        `/aid/applications/attachments/${attachmentId}`,
+                      );
+                    }
+                  : undefined
+              }
               onToggleMissing={async (key) => {
                 const k = String(key || '').toLowerCase();
                 if (!k) return;

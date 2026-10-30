@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { FiAlertTriangle, FiPlus, FiX } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import {
   AID_APPLICATION_DOC_TYPES,
   normalizeApplicationDocSlot,
@@ -11,19 +12,22 @@ import { useAidLang } from '../lang/AidLangContext';
 /**
  * Optional application document uploads (create / edit intake).
  * value: {
- *   [context]: { file, name, url? }           // single-file slots
- *            | { files: [{ file, name, url?, side?, pair? }] } // multi-file slots
+ *   [context]: { file, name, url?, id? }           // single-file slots
+ *            | { files: [{ file, name, url?, id?, side?, pair? }] } // multi-file slots
  * }
  * missingKeys: string[] of context keys flagged missing → Incomplete Docs
+ * onRemoveSaved: optional async (attachmentId) => {} for server delete on edit
  */
 const AidApplicationDocsIntake = ({
   value = {},
   onChange,
   missingKeys = [],
   onToggleMissing,
+  onRemoveSaved,
   disabled = false,
 }) => {
   const { t, lang } = useAidLang();
+  const [removingId, setRemovingId] = useState(null);
   const missingSet = new Set(
     (Array.isArray(missingKeys) ? missingKeys : []).map((k) =>
       String(k || '').toLowerCase(),
@@ -46,6 +50,30 @@ const AidApplicationDocsIntake = ({
     onChange({ ...value, [key]: next });
   };
 
+  const deleteSavedSlots = async (slots) => {
+    const list = (Array.isArray(slots) ? slots : [slots]).filter(
+      (s) => s?.id != null,
+    );
+    if (!list.length || !onRemoveSaved) return true;
+    try {
+      for (const slot of list) {
+        setRemovingId(slot.id);
+        // eslint-disable-next-line no-await-in-loop
+        await onRemoveSaved(slot.id);
+      }
+      return true;
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to remove attachment',
+      );
+      return false;
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
   const addFiles = (doc, fileList) => {
     const incoming = Array.from(fileList || []).filter(Boolean);
     if (!incoming.length) return;
@@ -58,11 +86,12 @@ const AidApplicationDocsIntake = ({
     }
   };
 
-  const removeAt = (doc, idx) => {
+  const removeAt = async (doc, idx) => {
+    const prev = normalizeApplicationDocSlot(value[doc.value]);
+    const target = prev[idx];
+    if (!(await deleteSavedSlots(target))) return;
     if (doc.multiple) {
-      const next = normalizeApplicationDocSlot(value[doc.value]).filter(
-        (_, i) => i !== idx,
-      );
+      const next = prev.filter((_, i) => i !== idx);
       setSlot(doc.value, next.length ? { files: next } : null);
     } else {
       setSlot(doc.value, null);
@@ -83,10 +112,13 @@ const AidApplicationDocsIntake = ({
     setSlot('cnic', files.length ? { files } : null);
   };
 
-  const setCnicSide = (pairIdx, side, file) => {
+  const setCnicSide = async (pairIdx, side, file) => {
     const pairs = getCnicPairs().map((p) => ({ ...p }));
     while (pairs.length <= pairIdx) {
       pairs.push({ front: null, back: null });
+    }
+    if (!file && pairs[pairIdx]?.[side]) {
+      if (!(await deleteSavedSlots(pairs[pairIdx][side]))) return;
     }
     pairs[pairIdx] = {
       ...pairs[pairIdx],
@@ -100,15 +132,31 @@ const AidApplicationDocsIntake = ({
     setCnicPairCount((n) => n + 1);
   };
 
-  const removeCnicPair = (pairIdx) => {
-    const pairs = getCnicPairs().filter((_, i) => i !== pairIdx);
-    const next = pairs.length ? pairs : [{ front: null, back: null }];
+  const removeCnicPair = async (pairIdx) => {
+    const pairs = getCnicPairs();
+    const target = pairs[pairIdx];
+    if (!(await deleteSavedSlots([target?.front, target?.back]))) return;
+    const nextPairs = pairs.filter((_, i) => i !== pairIdx);
+    const next = nextPairs.length ? nextPairs : [{ front: null, back: null }];
     setCnicPairCount(Math.max(1, next.length));
     setCnicPairs(next);
   };
 
   const docTitle = (doc) =>
     lang === 'ur' && doc.labelUr ? doc.labelUr : doc.label;
+
+  const renderRemoveBtn = ({ onClick, busy = false, label }) => (
+    <button
+      type="button"
+      className="aid-app-docs__file-remove"
+      disabled={disabled || busy}
+      onClick={onClick}
+      title={label || t('remove')}
+      aria-label={label || t('remove')}
+    >
+      <FiX size={14} aria-hidden />
+    </button>
+  );
 
   const renderMissingToggle = (docKey) => {
     if (!onToggleMissing) return null;
@@ -140,6 +188,7 @@ const AidApplicationDocsIntake = ({
   const renderSideSlot = (pairIdx, side, slot) => {
     const label = side === 'front' ? t('cnicFront') : t('cnicBack');
     const fileLabel = slot?.name || slot?.file?.name || '';
+    const busy = slot?.id != null && removingId === slot.id;
     return (
       <div className="aid-app-docs__side">
         <span className="aid-app-docs__side-label">{label}</span>
@@ -152,15 +201,12 @@ const AidApplicationDocsIntake = ({
             ) : (
               <span>{fileLabel || label}</span>
             )}
-            {!disabled ? (
-              <button
-                type="button"
-                className="aid-mini-btn aid-mini-btn--remove"
-                onClick={() => setCnicSide(pairIdx, side, null)}
-              >
-                {t('remove')}
-              </button>
-            ) : null}
+            {!disabled
+              ? renderRemoveBtn({
+                  busy,
+                  onClick: () => setCnicSide(pairIdx, side, null),
+                })
+              : null}
           </div>
         ) : !disabled ? (
           <label className="aid-app-docs__upload">
@@ -306,9 +352,10 @@ const AidApplicationDocsIntake = ({
                       slot?.name ||
                       slot?.file?.name ||
                       t('fileN', { n: idx + 1 });
+                    const busy = slot?.id != null && removingId === slot.id;
                     return (
                       <li
-                        key={`${doc.value}-${idx}-${label}`}
+                        key={`${doc.value}-${slot?.id ?? idx}-${label}`}
                         className="aid-app-docs__file"
                       >
                         {slot?.url ? (
@@ -318,15 +365,12 @@ const AidApplicationDocsIntake = ({
                         ) : (
                           <span>{label}</span>
                         )}
-                        {!disabled ? (
-                          <button
-                            type="button"
-                            className="aid-mini-btn aid-mini-btn--remove"
-                            onClick={() => removeAt(doc, idx)}
-                          >
-                            {t('remove')}
-                          </button>
-                        ) : null}
+                        {!disabled
+                          ? renderRemoveBtn({
+                              busy,
+                              onClick: () => removeAt(doc, idx),
+                            })
+                          : null}
                       </li>
                     );
                   })}
