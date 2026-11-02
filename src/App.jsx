@@ -15,6 +15,7 @@ import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
 import PermissionRolesList from './components/admin/permission_roles/list';
 import PermissionRoleForm from './components/admin/permission_roles/form';
+import ApiKeysList from './components/admin/api_keys/list';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -301,6 +302,10 @@ const App = () => {
                                 <Route
                                   path="/admin/permission-roles/edit/:id"
                                   element={<PermissionRoleForm />}
+                                />
+                                <Route
+                                  path="/admin/api-keys"
+                                  element={<ApiKeysList />}
                                 />
                                 <Route path="/profile" element={<ProfileRedirect />} />
                                 <Route path="/users/:id" element={<UserView />} />

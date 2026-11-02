@@ -195,6 +195,18 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
+  // Integration API keys (Ask Clinic, etc.) — staff managers + super admin
+  if (department === 'admin' && module === 'api_keys') {
+    if (
+      permissions.program_manager === true ||
+      permissions.fund_raising_manager === true ||
+      permissions.fund_raising?.manager === true
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   // My To-Dos: independent `todos` section; accept new + legacy fund_raising.dms_todos
   if (department === 'todos' && module === 'dms_todos') {
     if (

@@ -19,6 +19,7 @@ import {
   FiGift,
   FiDollarSign,
   FiSettings,
+  FiKey,
   FiLifeBuoy,
   FiDroplet,
   FiBriefcase,
@@ -555,6 +556,13 @@ const adminDepartmentItems = () => [
     type: 'list',
     module: 'permission_roles',
     icon: FiSettings,
+  },
+  {
+    label: 'API Keys',
+    path: '/admin/api-keys',
+    type: 'list',
+    module: 'api_keys',
+    icon: FiKey,
   },
   {
     label: 'Dashboard',
