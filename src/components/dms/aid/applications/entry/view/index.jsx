@@ -1,9 +1,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { FiPrinter } from 'react-icons/fi';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
-import { hasAidPermission } from '../../../../../../utils/permissions';
+import {
+  hasAidPermission,
+  isSuperAdmin,
+} from '../../../../../../utils/permissions';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
 import AidEducationApplicationFields from '../../../shared/AidEducationApplicationFields';
@@ -28,6 +32,7 @@ import AidInvestigationPanel, {
   AID_RATION_REC_OPTIONS,
   emptyRecommendation,
   enrichInvestigationFromAttachments,
+  isRecommendationComplete,
   mergeInvestigationState,
   normalizeRationOptions,
 } from '../../../shared/AidInvestigationPanel';
@@ -84,11 +89,15 @@ const AidEntryApplicationView = () => {
   const listPath = fromDrafts
     ? '/dms/aid/applications/drafts/list'
     : '/dms/aid/applications/entry/list';
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const isStaffElevated =
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
+  const isProgramDeptManager =
+    isSuperAdmin(permissions) ||
+    (!!permissions?.program_manager &&
+      String(user?.department || '').toLowerCase() === 'program');
   const canApproveDraft =
     hasAidPermission(permissions, 'aid_drafts', 'approve_draft') ||
     hasAidPermission(permissions, 'aid_applications', 'approve_draft') ||
@@ -109,6 +118,8 @@ const AidEntryApplicationView = () => {
   const [investigation, setInvestigation] = useState({});
   const [recommendation, setRecommendation] = useState(emptyRecommendation);
   const [vulnerability, setVulnerability] = useState(null);
+  const [recBusy, setRecBusy] = useState(false);
+  const [recSaving, setRecSaving] = useState(false);
   const zakatPrintRef = useRef(null);
   const consentPrintRef = useRef(null);
 
@@ -270,6 +281,100 @@ const AidEntryApplicationView = () => {
   }
 
   const status = app.status;
+  const isRationApp =
+    String(app?.requested_aid_type || '').toLowerCase() === 'ration';
+  const managerCanEditRecommendation =
+    isProgramDeptManager &&
+    !recBusy &&
+    ['verification_completed', 'manager_review', 'rejected'].includes(
+      String(status || '').toLowerCase(),
+    );
+  const rationOverrideEdit = isRationApp && managerCanEditRecommendation;
+  const recommendationComplete = isRecommendationComplete(recommendation, {
+    rationOverride: !!rationOverrideEdit,
+  });
+
+  const buildRecommendationBody = () => {
+    const ration_options = normalizeRationOptions(recommendation.ration_options);
+    if (isRationApp && rationOverrideEdit) {
+      return {
+        decision: 'approve_as_requested',
+        amount: null,
+        period_months: null,
+        remarks: recommendation.remarks,
+        found_monthly_income: null,
+        ration_options,
+      };
+    }
+    return {
+      decision: recommendation.decision,
+      amount:
+        recommendation.decision === 'reject'
+          ? null
+          : Number(recommendation.amount),
+      period_months: Number(recommendation.period_months) || null,
+      remarks: recommendation.remarks,
+      found_monthly_income: recommendation.found_monthly_income
+        ? Number(recommendation.found_monthly_income)
+        : null,
+      ration_options,
+    };
+  };
+
+  const saveManagerRecommendation = async () => {
+    if (!id || !managerCanEditRecommendation || recSaving) return;
+    setRecSaving(true);
+    try {
+      await axiosInstance.patch(`/aid/applications/${id}`, {
+        investigation_recommendation: {
+          decision: recommendation.decision,
+          amount:
+            recommendation.decision === 'reject'
+              ? null
+              : recommendation.amount !== '' && recommendation.amount != null
+                ? Number(recommendation.amount)
+                : null,
+          period_months: Number(recommendation.period_months) || null,
+          remarks: recommendation.remarks || '',
+          found_monthly_income: recommendation.found_monthly_income
+            ? Number(recommendation.found_monthly_income)
+            : null,
+          ration_options: normalizeRationOptions(recommendation.ration_options),
+        },
+      });
+      await load();
+      toast.success('Recommendation saved');
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to save recommendation',
+      );
+    } finally {
+      setRecSaving(false);
+    }
+  };
+
+  const forwardToCeo = async () => {
+    if (!id || !managerCanEditRecommendation || recBusy) return;
+    setRecBusy(true);
+    try {
+      await axiosInstance.post(`/aid/applications/${id}/manager-forward`, {
+        recommendation: buildRecommendationBody(),
+      });
+      toast.success('Forwarded for CEO approval');
+      await load();
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to forward for CEO approval',
+      );
+    } finally {
+      setRecBusy(false);
+    }
+  };
+
   const ENTRY_TABS =
     String(app.requested_aid_type || '').toLowerCase() === 'clean_water'
       ? [
@@ -835,30 +940,73 @@ const AidEntryApplicationView = () => {
                         Notes: {app.verification_notes}
                       </p>
                     ) : null}
+                    {managerCanEditRecommendation ? (
+                      <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                        Program manager: you can edit the Recommendation and
+                        submit for CEO approval.
+                        {' '}
+                        <Link
+                          to={`/dms/aid/applications/view/${id}`}
+                          style={{ fontWeight: 600 }}
+                        >
+                          Open full Field Process view
+                        </Link>
+                      </p>
+                    ) : null}
                     <AidInvestigationPanel
                       items={investigationItems}
                       value={investigation}
                       onChange={setInvestigation}
                       disabled
                       showRecommendation={
+                        managerCanEditRecommendation ||
                         !!recommendation?.decision ||
                         !!String(recommendation?.remarks || '').trim() ||
                         normalizeRationOptions(recommendation?.ration_options)
                           .length > 0
                       }
                       showVulnerability
+                      recommendationEditable={managerCanEditRecommendation}
                       aidType={app.requested_aid_type}
                       rationPackageMode={
-                        String(app.requested_aid_type || '').toLowerCase() ===
+                        rationOverrideEdit ||
+                        (String(app.requested_aid_type || '').toLowerCase() ===
                           'ration' &&
-                        normalizeRationOptions(recommendation.ration_options)
-                          .length > 0
+                          normalizeRationOptions(recommendation.ration_options)
+                            .length > 0)
                       }
-                      remarksLabel="Investigator remarks"
+                      remarksLabel={
+                        managerCanEditRecommendation
+                          ? 'Manager remarks'
+                          : 'Investigator remarks'
+                      }
                       activeTab="field_process"
                       vulnerability={vulnerability}
                       recommendation={recommendation}
+                      onRecommendationChange={
+                        managerCanEditRecommendation
+                          ? setRecommendation
+                          : undefined
+                      }
                       includeChecklistGaps={false}
+                      onSaveProgress={
+                        managerCanEditRecommendation
+                          ? saveManagerRecommendation
+                          : undefined
+                      }
+                      saveProgressBusy={recSaving}
+                      saveProgressDisabled={recBusy || recSaving}
+                      submitLabel="Submit for Approvals to CEO"
+                      submitDisabled={
+                        recBusy ||
+                        recSaving ||
+                        !recommendationComplete
+                      }
+                      onSubmitReport={
+                        managerCanEditRecommendation
+                          ? forwardToCeo
+                          : undefined
+                      }
                     />
                   </>
                 )}
