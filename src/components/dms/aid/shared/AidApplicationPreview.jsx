@@ -151,6 +151,9 @@ const AidApplicationPreview = ({
     const brothers = tree.brothers || [];
     const sisters = tree.sisters || [];
     const siblings = tree.siblings || [];
+    const grandparents = tree.grandparents || [];
+    const grandchildren = tree.grandchildren || [];
+    const extended = tree.extended || [];
     const dependents = Array.isArray(kinship)
       ? kinship.filter((e) =>
           /dependent under (family head|guardian) sponsorship/i.test(
@@ -159,11 +162,44 @@ const AidApplicationPreview = ({
         )
       : [];
 
+    const notesSayFamilyHead = (notes) =>
+      /family\s*head/i.test(String(notes || ''));
+    const samePerson = (a, b) => {
+      if (!a || !b) return false;
+      if (a.id != null && b.id != null && Number(a.id) === Number(b.id)) {
+        return true;
+      }
+      const cnicA = String(a.cnic || '').replace(/\D/g, '');
+      const cnicB = String(b.cnic || '').replace(/\D/g, '');
+      if (cnicA && cnicB && cnicA === cnicB) return true;
+      const nameA = String(a.full_name || '').trim().toLowerCase();
+      const nameB = String(b.full_name || '').trim().toLowerCase();
+      return !!(nameA && nameB && nameA === nameB);
+    };
+
+    // Match Family Tree: Head is the kinship row marked "family head", not always beneficiary
+    const allTreeRows = [
+      ...parents,
+      ...spouse,
+      ...children,
+      ...brothers,
+      ...sisters,
+      ...siblings,
+      ...grandparents,
+      ...grandchildren,
+      ...extended,
+    ];
+    const headRow =
+      allTreeRows.find((r) => notesSayFamilyHead(r?.notes)) || null;
+    const familyHeadPerson = headRow?.person || null;
+    const beneficiaryIsHead =
+      !familyHeadPerson || samePerson(familyHeadPerson, beneficiary);
+
     const familyRows = [];
     const pushRow = (person, relation, badge) => {
       if (!person) return;
       const id = person.id || `${person.cnic || ''}-${person.full_name || ''}`;
-      if (familyRows.some((r) => r._id === id && r.relation === relation)) return;
+      if (familyRows.some((r) => String(r._id) === String(id))) return;
       familyRows.push({
         _id: id,
         name: person.full_name || '—',
@@ -189,31 +225,44 @@ const AidApplicationPreview = ({
       });
     };
 
-    pushRow(beneficiary, isSelf ? 'Self' : 'Beneficiary', 'Head');
-    if (!isSelf && writer) {
+    if (beneficiaryIsHead) {
+      pushRow(beneficiary, isSelf ? 'Self' : 'Beneficiary', 'Head');
+    } else {
+      pushRow(
+        familyHeadPerson,
+        headRow?.relation_type || headRow?.relation || 'Family head',
+        'Head',
+      );
+      pushRow(beneficiary, isSelf ? 'Self' : 'Beneficiary', null);
+    }
+    if (!isSelf && writer && !samePerson(writer, familyHeadPerson)) {
       pushRow(writer, app.writer_relation || 'Applicant', null);
     }
-    parents.forEach((r) =>
-      pushRow(r.person, r.relation_type || r.relation || 'Parent', null),
-    );
-    spouse.forEach((r) =>
-      pushRow(r.person, r.relation_type || 'Spouse', null),
-    );
-    children.forEach((r) =>
-      pushRow(r.person, r.relation_type || 'Child', null),
-    );
-    brothers.forEach((r) =>
-      pushRow(r.person, r.relation_type || 'Brother', null),
-    );
-    sisters.forEach((r) =>
-      pushRow(r.person, r.relation_type || 'Sister', null),
-    );
-    siblings.forEach((r) =>
-      pushRow(r.person, r.relation_type || 'Sibling', null),
-    );
+    const pushTreeRows = (rows, fallbackRel) => {
+      (rows || []).forEach((r) => {
+        if (samePerson(r?.person, familyHeadPerson) && !beneficiaryIsHead) {
+          return; // already listed as Head
+        }
+        pushRow(
+          r.person,
+          r.relation_type || r.relation || fallbackRel,
+          null,
+        );
+      });
+    };
+    pushTreeRows(parents, 'Parent');
+    pushTreeRows(spouse, 'Spouse');
+    pushTreeRows(children, 'Child');
+    pushTreeRows(brothers, 'Brother');
+    pushTreeRows(sisters, 'Sister');
+    pushTreeRows(siblings, 'Sibling');
+    pushTreeRows(grandparents, 'Grandparent');
+    pushTreeRows(grandchildren, 'Grandchild');
+    pushTreeRows(extended, 'Relative');
     dependents.forEach((edge) => {
       const person =
         edge.to_person || edge.from_person || edge.person || null;
+      if (samePerson(person, familyHeadPerson) && !beneficiaryIsHead) return;
       pushRow(person, edge.relation_type || 'Dependent', null);
     });
 
