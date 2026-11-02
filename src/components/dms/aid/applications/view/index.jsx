@@ -439,11 +439,25 @@ const AidApplicationView = () => {
   );
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
+  /**
+   * Program manager may override investigator Recommendation (including old-flow
+   * investigator Reject → status rejected) and forward to CEO.
+   */
   const showManagerForward =
     isProgramDeptManager &&
-    ['manager_review', 'verification_completed'].includes(status);
+    ['manager_review', 'verification_completed', 'rejected'].includes(status);
   const showVerify =
     canInvestigate && ['submitted', 'under_review'].includes(status);
+  const managerCanEditRecommendation =
+    isProgramDeptManager &&
+    !busy &&
+    ![
+      'draft',
+      'successful',
+      'delivered',
+      'incomplete',
+      'incomplete_docs',
+    ].includes(status);
   /** Manager / CEO (and Program manager → CEO) ration edit: checkboxes + remarks only */
   const rationOverrideEdit =
     isRationApp &&
@@ -1504,22 +1518,15 @@ const AidApplicationView = () => {
                           activePanelTab === 'field_process'
                         }
                         showVulnerability={activePanelTab === 'field_process'}
-                        recommendationEditable={
-                          isProgramDeptManager &&
-                          (showManagerForward ||
-                            showCeo ||
-                            showVerify ||
-                            status === 'manager_review' ||
-                            status === 'verification_completed' ||
-                            status === 'ceo_approval_required') &&
-                          !busy
-                        }
+                        recommendationEditable={managerCanEditRecommendation}
                         aidType={app.requested_aid_type}
                         rationPackageMode={!!rationOverrideEdit}
                         remarksLabel={
                           showCeo
                             ? 'CEO remarks'
-                            : 'Manager remarks'
+                            : managerCanEditRecommendation
+                              ? 'Manager remarks'
+                              : 'Investigator remarks'
                         }
                         canBulkVerify={canBulkVerify}
                         onUploadItemFile={uploadInvestigationFile}
@@ -1635,8 +1642,9 @@ const AidApplicationView = () => {
                               marginBottom: 0,
                             }}
                           >
-                            You can overwrite the investigator recommendation
-                            before submitting for CEO approval.
+                            {status === 'rejected'
+                              ? 'Investigator rejected this case — you can change the recommendation and reopen / submit for CEO approval.'
+                              : 'You can overwrite the investigator recommendation before submitting for CEO approval.'}
                           </p>
                         )}
                       {activePanelTab === 'field_process' &&
