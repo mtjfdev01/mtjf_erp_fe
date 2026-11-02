@@ -4,6 +4,7 @@ export const AID_STATUS_OPTIONS = [
   { value: 'incomplete_docs', label: 'Incomplete Docs' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'under_review', label: 'Under review' },
+  { value: 'verification_completed', label: 'Verification completed' },
   { value: 'manager_review', label: 'Manager Review' },
   { value: 'rejected', label: 'Rejected' },
   { value: 'ceo_approval_required', label: 'CEO approval required' },
@@ -1956,6 +1957,8 @@ export function aidStatusTone(status) {
     case 'ceo_approval_required':
     case 'manager_review':
       return 'warn';
+    case 'verification_completed':
+      return 'success';
     case 'under_review':
     case 'submitted':
       return 'info';

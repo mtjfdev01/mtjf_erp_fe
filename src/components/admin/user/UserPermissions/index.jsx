@@ -135,6 +135,10 @@ const mergeAidPermissions = (rawPermissions) => {
       key: 'aid_disbursements',
       actions: ['list_view', 'view', 'create', 'update', 'deliver'],
     },
+    {
+      key: 'aid_audit',
+      actions: ['list_view', 'view'],
+    },
   ];
 
   modules.forEach(({ key, actions }) => {
@@ -438,6 +442,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         aid_disbursements: {
           label: 'Disbursements',
           actions: ['list_view', 'view', 'create', 'update', 'deliver'],
+        },
+        aid_audit: {
+          label: 'Aid Audit Logs',
+          actions: ['list_view', 'view'],
         },
         aid_people: {
           label: 'Beneficiaries',

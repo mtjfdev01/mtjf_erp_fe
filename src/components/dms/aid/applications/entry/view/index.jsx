@@ -840,7 +840,13 @@ const AidEntryApplicationView = () => {
                       value={investigation}
                       onChange={setInvestigation}
                       disabled
-                      showRecommendation
+                      showRecommendation={
+                        !!recommendation?.decision ||
+                        !!String(recommendation?.remarks || '').trim() ||
+                        normalizeRationOptions(recommendation?.ration_options)
+                          .length > 0
+                      }
+                      showVulnerability
                       aidType={app.requested_aid_type}
                       rationPackageMode={
                         String(app.requested_aid_type || '').toLowerCase() ===

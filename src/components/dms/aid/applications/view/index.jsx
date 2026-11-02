@@ -440,7 +440,8 @@ const AidApplicationView = () => {
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
   const showManagerForward =
-    isProgramDeptManager && status === 'manager_review';
+    isProgramDeptManager &&
+    ['manager_review', 'verification_completed'].includes(status);
   const showVerify =
     canInvestigate && ['submitted', 'under_review'].includes(status);
   /** Manager / CEO (and Program manager → CEO) ration edit: checkboxes + remarks only */
@@ -586,24 +587,33 @@ const AidApplicationView = () => {
     setActionError('');
     try {
       await axiosInstance.patch(`/aid/applications/${id}`, {
-        verification_notes: verifyNotes || recommendation.remarks || undefined,
+        verification_notes:
+          verifyNotes ||
+          (isProgramDeptManager ? recommendation.remarks : undefined) ||
+          undefined,
         verification_checklist: investigation,
-        investigation_recommendation: {
-          decision: recommendation.decision,
-          amount:
-            recommendation.decision === 'reject'
-              ? null
-              : recommendation.amount !== '' &&
-                  recommendation.amount != null
-                ? Number(recommendation.amount)
-                : null,
-          period_months: Number(recommendation.period_months) || null,
-          remarks: recommendation.remarks || '',
-          found_monthly_income: recommendation.found_monthly_income
-            ? Number(recommendation.found_monthly_income)
-            : null,
-          ration_options: normalizeRationOptions(recommendation.ration_options),
-        },
+        ...(isProgramDeptManager
+          ? {
+              investigation_recommendation: {
+                decision: recommendation.decision,
+                amount:
+                  recommendation.decision === 'reject'
+                    ? null
+                    : recommendation.amount !== '' &&
+                        recommendation.amount != null
+                      ? Number(recommendation.amount)
+                      : null,
+                period_months: Number(recommendation.period_months) || null,
+                remarks: recommendation.remarks || '',
+                found_monthly_income: recommendation.found_monthly_income
+                  ? Number(recommendation.found_monthly_income)
+                  : null,
+                ration_options: normalizeRationOptions(
+                  recommendation.ration_options,
+                ),
+              },
+            }
+          : {}),
       });
       await load({ silent: true });
       toast.success('Investigation progress saved');
@@ -637,7 +647,7 @@ const AidApplicationView = () => {
     canUpdate && (status === 'incomplete' || status === 'incomplete_docs');
   const submitLabel = isProgramDeptManager
     ? 'Submit for Approvals to CEO'
-    : 'Submit for Manager Review';
+    : 'Verification completed';
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
   const verifiedByName = app.verified_by
@@ -1489,18 +1499,27 @@ const AidApplicationView = () => {
                         value={investigation}
                         onChange={setInvestigation}
                         disabled={!showVerify || busy}
+                        showRecommendation={
+                          isProgramDeptManager &&
+                          activePanelTab === 'field_process'
+                        }
+                        showVulnerability={activePanelTab === 'field_process'}
                         recommendationEditable={
-                          (showManagerForward || showCeo) && !busy
+                          isProgramDeptManager &&
+                          (showManagerForward ||
+                            showCeo ||
+                            showVerify ||
+                            status === 'manager_review' ||
+                            status === 'verification_completed' ||
+                            status === 'ceo_approval_required') &&
+                          !busy
                         }
                         aidType={app.requested_aid_type}
                         rationPackageMode={!!rationOverrideEdit}
                         remarksLabel={
                           showCeo
                             ? 'CEO remarks'
-                            : showManagerForward ||
-                                (showVerify && isProgramDeptManager)
-                              ? 'Manager remarks'
-                              : 'Investigator remarks'
+                            : 'Manager remarks'
                         }
                         canBulkVerify={canBulkVerify}
                         onUploadItemFile={uploadInvestigationFile}
@@ -1535,51 +1554,75 @@ const AidApplicationView = () => {
                             : []
                         }
                         onSaveProgress={
-                          showVerify ? saveInvestigationProgress : undefined
+                          showVerify || showManagerForward
+                            ? saveInvestigationProgress
+                            : undefined
                         }
                         saveProgressBusy={investSaving}
                         saveProgressDisabled={busy || investSaving}
                         submitDisabled={
                           busy ||
                           investSaving ||
-                          !recommendationComplete ||
                           !leakageOverrideOk ||
-                          (showVerify && !checklistComplete)
+                          (showVerify && !checklistComplete) ||
+                          (isProgramDeptManager && !recommendationComplete)
                         }
                         onSubmitReport={
                           activePanelTab === 'field_process' &&
                           (showVerify || showManagerForward)
                             ? () =>
-                                run(() =>
-                                  showManagerForward
-                                    ? axiosInstance.post(
-                                        `/aid/applications/${id}/manager-forward`,
-                                        {
-                                          recommendation:
-                                            buildRecommendationBody(),
-                                          leakage_override_reason:
-                                            needsLeakageOverride
-                                              ? leakageOverride.trim()
-                                              : undefined,
-                                        },
-                                      )
-                                    : axiosInstance.post(
-                                        `/aid/applications/${id}/verify`,
-                                        {
-                                          verification_notes:
-                                            verifyNotes ||
-                                            recommendation.remarks ||
-                                            undefined,
-                                          verification_checklist: investigation,
-                                          recommendation:
-                                            buildRecommendationBody(),
-                                          leakage_override_reason:
-                                            needsLeakageOverride
-                                              ? leakageOverride.trim()
-                                              : undefined,
-                                        },
-                                      ),
-                                )
+                                run(async () => {
+                                  if (showManagerForward) {
+                                    await axiosInstance.post(
+                                      `/aid/applications/${id}/manager-forward`,
+                                      {
+                                        recommendation:
+                                          buildRecommendationBody(),
+                                        leakage_override_reason:
+                                          needsLeakageOverride
+                                            ? leakageOverride.trim()
+                                            : undefined,
+                                      },
+                                    );
+                                    toast.success(
+                                      'Forwarded for CEO approval',
+                                    );
+                                    return;
+                                  }
+                                  if (isProgramDeptManager) {
+                                    await axiosInstance.post(
+                                      `/aid/applications/${id}/verify`,
+                                      {
+                                        verification_notes:
+                                          verifyNotes ||
+                                          recommendation.remarks ||
+                                          undefined,
+                                        verification_checklist: investigation,
+                                        recommendation:
+                                          buildRecommendationBody(),
+                                        leakage_override_reason:
+                                          needsLeakageOverride
+                                            ? leakageOverride.trim()
+                                            : undefined,
+                                      },
+                                    );
+                                    toast.success(
+                                      'Submitted for CEO approval',
+                                    );
+                                    return;
+                                  }
+                                  await axiosInstance.post(
+                                    `/aid/applications/${id}/verification-complete`,
+                                    {
+                                      verification_checklist: investigation,
+                                      verification_notes:
+                                        verifyNotes || undefined,
+                                    },
+                                  );
+                                  toast.success(
+                                    'Verification completed — awaiting Program manager',
+                                  );
+                                })
                             : undefined
                         }
                       />

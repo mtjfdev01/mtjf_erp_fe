@@ -51,7 +51,8 @@ export const hasPermission = (permissions, department, module, action) => {
       module === 'aid_drafts' ||
       module === 'aid_verification' ||
       module === 'aid_disbursements' ||
-      module === 'aid_overview') &&
+      module === 'aid_overview' ||
+      module === 'aid_audit') &&
     (department === 'program' || department === 'fund_raising')
   ) {
     const other =
@@ -208,7 +209,7 @@ export const canViewModule = (permissions, department, module) => {
     return legacy?.view === true || legacy?.list_view === true;
   }
 
-  // Aid Overview / Applications / Drafts / Verification / Disbursements / Beneficiaries
+  // Aid Overview / Applications / Drafts / Verification / Disbursements / Beneficiaries / Audit
   if (
     (department === 'program' || department === 'fund_raising') &&
     (module === 'aid_people' ||
@@ -216,8 +217,20 @@ export const canViewModule = (permissions, department, module) => {
       module === 'aid_drafts' ||
       module === 'aid_verification' ||
       module === 'aid_disbursements' ||
-      module === 'aid_overview')
+      module === 'aid_overview' ||
+      module === 'aid_audit')
   ) {
+    // Aid audit is intentionally permission-only (no manager role bypass).
+    if (module === 'aid_audit') {
+      const next = permissions.program?.aid_audit;
+      const legacy = permissions.fund_raising?.aid_audit;
+      return (
+        next?.view === true ||
+        next?.list_view === true ||
+        legacy?.view === true ||
+        legacy?.list_view === true
+      );
+    }
     if (
       permissions.program_manager === true ||
       permissions.fund_raising_manager === true ||

@@ -315,6 +315,14 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiPackage
   },
   {
+    label: 'Aid Audit Logs',
+    path: '/dms/aid/audit/list',
+    type: 'list',
+    module: 'aid_audit',
+    permissionDepartment: 'program',
+    icon: FiClipboard
+  },
+  {
     label: 'Beneficiaries',
     path: '/dms/aid/people/list',
     type: 'list',

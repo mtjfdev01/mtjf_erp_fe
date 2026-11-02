@@ -508,7 +508,14 @@ const AidInvestigationPanel = ({
   onSubmitReport,
   submitDisabled = false,
   submitLabel = 'Submit report for approval',
+  /**
+   * Show Recommendation form (approve / amount / remarks).
+   * When undefined: only on field_process (legacy). Prefer passing explicitly —
+   * Program dept managers only for edit workflows.
+   */
   showRecommendation,
+  /** Show vulnerability card on field process (independent of recommendation form). */
+  showVulnerability,
   /** Allow editing recommendation even when checklist is locked (manager override). */
   recommendationEditable = false,
   remarksLabel = 'Investigator remarks',
@@ -539,10 +546,19 @@ const AidInvestigationPanel = ({
   const copy = TAB_INVEST_COPY[activeTab] || TAB_INVEST_COPY.case;
   const panelTitle = title ?? copy.title;
   const panelHint = hint ?? copy.hint;
-  const showRec =
+  const showRecForm =
     showRecommendation !== undefined
       ? showRecommendation
       : activeTab === 'field_process';
+  const showVuln =
+    showVulnerability !== undefined
+      ? showVulnerability
+      : activeTab === 'field_process';
+  const showAside =
+    showVuln ||
+    showRecForm ||
+    Boolean(onSubmitReport) ||
+    Boolean(onSaveProgress);
   const recLocked = disabled && !recommendationEditable;
   const isRationAid = String(aidType || '').toLowerCase() === 'ration';
   const rationOverrideMode =
@@ -553,7 +569,7 @@ const AidInvestigationPanel = ({
     if (includeChecklistGaps) {
       steps.push(...getInvestigationIncompleteReasons(items, value));
     }
-    if (!recLocked) {
+    if (showRecForm && !recLocked) {
       steps.push(
         ...getRecommendationIncompleteReasons(recommendation || {}, {
           rationOverride: rationOverrideMode,
@@ -570,6 +586,7 @@ const AidInvestigationPanel = ({
     items,
     value,
     recLocked,
+    showRecForm,
     recommendation,
     extraMissingSteps,
     rationOverrideMode,
@@ -798,7 +815,7 @@ const AidInvestigationPanel = ({
   const rec = recommendation || emptyRecommendation();
 
   if (activeTab === 'attachments') return null;
-  if (!list.length && !showRec) {
+  if (!list.length && !showAside) {
     return (
       <section className="aid-investigation aid-investigation--tab">
         <p className="aid-section-hint">
@@ -868,231 +885,247 @@ const AidInvestigationPanel = ({
           )}
         </div>
 
-        {showRec ? (
+        {showAside ? (
           <aside className="aid-invest-side">
-            <div className="aid-vuln-card">
-              <div className="aid-vuln-card__label">Vulnerability after visit</div>
-              <div className="aid-vuln-card__score">
-                <span className="aid-vuln-card__pct">
-                  {afterTotal != null ? `${afterTotal}%` : '—'}
-                </span>
-                {scoreChanged ? (
-                  <span className="aid-vuln-card__old">{declaredTotal}%</span>
+            {showVuln ? (
+              <div className="aid-vuln-card">
+                <div className="aid-vuln-card__label">
+                  Vulnerability after visit
+                </div>
+                <div className="aid-vuln-card__score">
+                  <span className="aid-vuln-card__pct">
+                    {afterTotal != null ? `${afterTotal}%` : '—'}
+                  </span>
+                  {scoreChanged ? (
+                    <span className="aid-vuln-card__old">{declaredTotal}%</span>
+                  ) : null}
+                </div>
+                {vulnerability?.after_visit?.band_label ? (
+                  <div className="aid-vuln-card__band">
+                    {vulnerability.after_visit.band_label}
+                  </div>
+                ) : null}
+                {deltas.length > 0 ? (
+                  <ul className="aid-vuln-card__deltas">
+                    {deltas.map((d, i) => (
+                      <li key={`${d.label}-${i}`}>
+                        <span>{d.label}</span>
+                        <strong>
+                          {d.delta > 0 ? `+${d.delta}` : d.delta}
+                        </strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="aid-vuln-card__empty">
+                    Score from intake factors (income, category, housing, assets,
+                    BISP…).
+                  </p>
+                )}
+                {vulnerability?.after_visit?.program_min_score != null ? (
+                  <p className="aid-vuln-card__threshold">
+                    Program min {vulnerability.after_visit.program_code}:{' '}
+                    {vulnerability.after_visit.program_min_score} pts
+                    {vulnerability.after_visit.meets_program_threshold === false
+                      ? ' — below threshold'
+                      : vulnerability.after_visit.meets_program_threshold
+                        ? ' — meets threshold'
+                        : ''}
+                  </p>
                 ) : null}
               </div>
-              {vulnerability?.after_visit?.band_label ? (
-                <div className="aid-vuln-card__band">
-                  {vulnerability.after_visit.band_label}
-                </div>
-              ) : null}
-              {deltas.length > 0 ? (
-                <ul className="aid-vuln-card__deltas">
-                  {deltas.map((d, i) => (
-                    <li key={`${d.label}-${i}`}>
-                      <span>{d.label}</span>
-                      <strong>
-                        {d.delta > 0 ? `+${d.delta}` : d.delta}
-                      </strong>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="aid-vuln-card__empty">
-                  Score from intake factors (income, category, housing, assets,
-                  BISP…).
-                </p>
-              )}
-              {vulnerability?.after_visit?.program_min_score != null ? (
-                <p className="aid-vuln-card__threshold">
-                  Program min {vulnerability.after_visit.program_code}:{' '}
-                  {vulnerability.after_visit.program_min_score} pts
-                  {vulnerability.after_visit.meets_program_threshold === false
-                    ? ' — below threshold'
-                    : vulnerability.after_visit.meets_program_threshold
-                      ? ' — meets threshold'
-                      : ''}
-                </p>
-              ) : null}
-            </div>
+            ) : null}
 
-            <div className="aid-rec-card">
-              <h4 className="aid-rec-card__title">
-                {rationOverrideMode ? 'Ration recommendation' : 'Recommendation'}
-              </h4>
-              {rationOverrideMode ? (
-                <>
-                  <p className="aid-section-hint" style={{ marginTop: 0 }}>
-                    Select package options and add remarks only.
-                  </p>
-                  <div className="aid-rec-options aid-rec-options--checks">
-                    {AID_RATION_REC_OPTIONS.map((opt) => {
-                      const selected = normalizeRationOptions(
-                        rec.ration_options,
-                      ).includes(opt.value);
-                      return (
+            {showRecForm ? (
+              <div className="aid-rec-card">
+                <h4 className="aid-rec-card__title">
+                  {rationOverrideMode
+                    ? 'Ration recommendation'
+                    : 'Recommendation'}
+                </h4>
+                {rationOverrideMode ? (
+                  <>
+                    <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                      Select package options and add remarks only.
+                    </p>
+                    <div className="aid-rec-options aid-rec-options--checks">
+                      {AID_RATION_REC_OPTIONS.map((opt) => {
+                        const selected = normalizeRationOptions(
+                          rec.ration_options,
+                        ).includes(opt.value);
+                        return (
+                          <label
+                            key={opt.value}
+                            className={`aid-rec-option${
+                              selected ? ' is-active' : ''
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              disabled={recLocked}
+                              onChange={() => {
+                                const cur = normalizeRationOptions(
+                                  rec.ration_options,
+                                );
+                                const next = selected
+                                  ? cur.filter((v) => v !== opt.value)
+                                  : [...cur, opt.value];
+                                setRec({
+                                  ration_options: next,
+                                  decision: 'approve_as_requested',
+                                  amount: '',
+                                  period_months: null,
+                                  found_monthly_income: '',
+                                });
+                              }}
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <label className="aid-rec-field">
+                      <span>{remarksLabel}</span>
+                      <textarea
+                        rows={3}
+                        disabled={recLocked}
+                        placeholder="Remarks…"
+                        value={rec.remarks}
+                        onChange={(e) => setRec({ remarks: e.target.value })}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <div className="aid-rec-options">
+                      {AID_RECOMMENDATION_DECISIONS.map((opt) => (
                         <label
                           key={opt.value}
                           className={`aid-rec-option${
-                            selected ? ' is-active' : ''
+                            rec.decision === opt.value ? ' is-active' : ''
+                          }${
+                            opt.value === 'reject'
+                              ? ' aid-rec-option--reject'
+                              : ''
                           }`}
                         >
                           <input
-                            type="checkbox"
-                            checked={selected}
+                            type="radio"
+                            name="aid-rec-decision"
+                            value={opt.value}
+                            checked={rec.decision === opt.value}
                             disabled={recLocked}
-                            onChange={() => {
-                              const cur = normalizeRationOptions(
-                                rec.ration_options,
-                              );
-                              const next = selected
-                                ? cur.filter((v) => v !== opt.value)
-                                : [...cur, opt.value];
-                              setRec({
-                                ration_options: next,
-                                decision: 'approve_as_requested',
-                                amount: '',
-                                period_months: null,
-                                found_monthly_income: '',
-                              });
-                            }}
+                            onChange={() => setRec({ decision: opt.value })}
                           />
                           <span>{opt.label}</span>
                         </label>
-                      );
-                    })}
-                  </div>
-                  <label className="aid-rec-field">
-                    <span>{remarksLabel}</span>
-                    <textarea
-                      rows={3}
-                      disabled={recLocked}
-                      placeholder="Remarks…"
-                      value={rec.remarks}
-                      onChange={(e) => setRec({ remarks: e.target.value })}
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <div className="aid-rec-options">
-                    {AID_RECOMMENDATION_DECISIONS.map((opt) => (
-                      <label
-                        key={opt.value}
-                        className={`aid-rec-option${
-                          rec.decision === opt.value ? ' is-active' : ''
-                        }${
-                          opt.value === 'reject' ? ' aid-rec-option--reject' : ''
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name="aid-rec-decision"
-                          value={opt.value}
-                          checked={rec.decision === opt.value}
-                          disabled={recLocked}
-                          onChange={() => setRec({ decision: opt.value })}
-                        />
-                        <span>{opt.label}</span>
-                      </label>
-                    ))}
-                  </div>
-
-                  {rec.decision !== 'reject' ? (
-                    <div className="aid-rec-grid">
-                      <label className="aid-rec-field">
-                        <span>Amount (PKR)</span>
-                        <input
-                          type="number"
-                          min="0"
-                          step="1"
-                          placeholder="Amount"
-                          value={rec.amount}
-                          disabled={recLocked}
-                          onChange={(e) => setRec({ amount: e.target.value })}
-                        />
-                      </label>
-                      <label className="aid-rec-field">
-                        <span>Period</span>
-                        <select
-                          value={rec.period_months}
-                          disabled={recLocked}
-                          onChange={(e) =>
-                            setRec({ period_months: Number(e.target.value) })
-                          }
-                        >
-                          {AID_RECOMMENDATION_PERIODS.map((p) => (
-                            <option key={p.value} value={p.value}>
-                              {p.label}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                    </div>
-                  ) : null}
-
-                  <label className="aid-rec-field">
-                    <span>{remarksLabel}</span>
-                    <textarea
-                      rows={3}
-                      disabled={recLocked}
-                      placeholder="Family situation, who lives with the head, support from relatives…"
-                      value={rec.remarks}
-                      onChange={(e) => setRec({ remarks: e.target.value })}
-                    />
-                  </label>
-                </>
-              )}
-
-              {!recLocked && missingSteps.length > 0 ? (
-                <div className="aid-missing-steps">
-                  <button
-                    type="button"
-                    className="aid-missing-steps__toggle"
-                    aria-expanded={missingOpen}
-                    onClick={() => setMissingOpen((o) => !o)}
-                  >
-                    <span>
-                      See missing steps in this application verification
-                      <span className="aid-missing-steps__count">
-                        {missingSteps.length}
-                      </span>
-                    </span>
-                    <span className="aid-missing-steps__chevron" aria-hidden>
-                      {missingOpen ? '▾' : '▸'}
-                    </span>
-                  </button>
-                  {missingOpen ? (
-                    <ul className="aid-missing-steps__list">
-                      {missingSteps.map((step) => (
-                        <li key={step}>{step}</li>
                       ))}
-                    </ul>
-                  ) : null}
-                </div>
-              ) : null}
+                    </div>
 
-              {!recLocked && onSaveProgress ? (
+                    {rec.decision !== 'reject' ? (
+                      <div className="aid-rec-grid">
+                        <label className="aid-rec-field">
+                          <span>Amount (PKR)</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="Amount"
+                            value={rec.amount}
+                            disabled={recLocked}
+                            onChange={(e) =>
+                              setRec({ amount: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label className="aid-rec-field">
+                          <span>Period</span>
+                          <select
+                            value={rec.period_months}
+                            disabled={recLocked}
+                            onChange={(e) =>
+                              setRec({
+                                period_months: Number(e.target.value),
+                              })
+                            }
+                          >
+                            {AID_RECOMMENDATION_PERIODS.map((p) => (
+                              <option key={p.value} value={p.value}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    ) : null}
+
+                    <label className="aid-rec-field">
+                      <span>{remarksLabel}</span>
+                      <textarea
+                        rows={3}
+                        disabled={recLocked}
+                        placeholder="Family situation, who lives with the head, support from relatives…"
+                        value={rec.remarks}
+                        onChange={(e) => setRec({ remarks: e.target.value })}
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            {(showRecForm || onSubmitReport || onSaveProgress) &&
+            !recLocked &&
+            missingSteps.length > 0 ? (
+              <div className="aid-missing-steps">
                 <button
                   type="button"
-                  className="aid-rec-save"
-                  disabled={saveProgressDisabled || saveProgressBusy}
-                  onClick={onSaveProgress}
+                  className="aid-missing-steps__toggle"
+                  aria-expanded={missingOpen}
+                  onClick={() => setMissingOpen((o) => !o)}
                 >
-                  {saveProgressBusy ? 'Saving…' : saveProgressLabel}
+                  <span>
+                    See missing steps in this application verification
+                    <span className="aid-missing-steps__count">
+                      {missingSteps.length}
+                    </span>
+                  </span>
+                  <span className="aid-missing-steps__chevron" aria-hidden>
+                    {missingOpen ? '▾' : '▸'}
+                  </span>
                 </button>
-              ) : null}
+                {missingOpen ? (
+                  <ul className="aid-missing-steps__list">
+                    {missingSteps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
 
-              {!recLocked && onSubmitReport ? (
-                <button
-                  type="button"
-                  className="aid-rec-submit"
-                  disabled={submitDisabled}
-                  onClick={onSubmitReport}
-                >
-                  {submitLabel}
-                </button>
-              ) : null}
-            </div>
+            {!recLocked && onSaveProgress ? (
+              <button
+                type="button"
+                className="aid-rec-save"
+                disabled={saveProgressDisabled || saveProgressBusy}
+                onClick={onSaveProgress}
+              >
+                {saveProgressBusy ? 'Saving…' : saveProgressLabel}
+              </button>
+            ) : null}
+
+            {!recLocked && onSubmitReport ? (
+              <button
+                type="button"
+                className="aid-rec-submit"
+                disabled={submitDisabled}
+                onClick={onSubmitReport}
+              >
+                {submitLabel}
+              </button>
+            ) : null}
           </aside>
         ) : null}
       </div>
