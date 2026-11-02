@@ -50,6 +50,7 @@ const SearchableDropdown = ({
   onClear,
   allowResearch = true,
   staticOptions = [],
+  disabled = false,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
@@ -120,6 +121,7 @@ const SearchableDropdown = ({
 
   // Handle input change
   const handleInputChange = (e) => {
+    if (disabled) return;
     const value = e.target.value;
     setSearchTerm(value);
     setIsOpen(true);
@@ -148,6 +150,7 @@ const SearchableDropdown = ({
 
   // Handle input focus - allow re-searching
   const handleInputFocus = () => {
+    if (disabled) return;
     if (!allowResearch && selectedItem) {
       // If research is not allowed and item is selected, don't open dropdown
       return;
@@ -166,6 +169,7 @@ const SearchableDropdown = ({
 
   // Handle clear selection
   const handleClear = () => {
+    if (disabled) return;
     setSelectedItem(null);
     setSearchTerm('');
     setResults([]);
@@ -279,10 +283,11 @@ const SearchableDropdown = ({
           onKeyDown={handleKeyDown}
           onFocus={handleInputFocus}
           required={required}
+          disabled={disabled}
           autoComplete="off"
         />
         
-        {selectedItem && (
+        {selectedItem && !disabled && (
           <button
             type="button"
             className="searchable-dropdown__clear"

@@ -3,6 +3,7 @@ import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import SearchableDropdown from '../../../common/SearchableDropdown';
 import {
   AID_GENDERS,
   AID_LITERACY_EDUCATION_OPTIONS,
@@ -26,7 +27,7 @@ import AidRegistrationAside from './AidRegistrationAside';
 import AidWebcamCaptureModal from './AidWebcamCaptureModal';
 import {
   PAKISTAN_PROVINCES,
-  getPakistanCities,
+  searchPakistanCities,
 } from '../../../../data/pakistanLocations';
 
 const provinceSelectOptions = [
@@ -34,27 +35,10 @@ const provinceSelectOptions = [
   ...PAKISTAN_PROVINCES.map((p) => ({ value: p.value, label: p.label })),
 ];
 
-/** Cities for a province value or legacy full label. */
-const citiesForProvince = (provinceKey) => {
-  if (!provinceKey) return [];
-  const byValue = getPakistanCities(provinceKey);
-  if (byValue.length) return byValue;
-  const match = PAKISTAN_PROVINCES.find(
-    (p) => p.label === provinceKey || p.value === provinceKey,
-  );
-  return match?.cities || [];
-};
-
-const locationSelectOptions = (cities, current) => {
-  const opts = [
-    { value: '', label: '—' },
-    ...cities.map((c) => ({ value: c, label: c })),
-  ];
-  const cur = String(current || '').trim();
-  if (cur && !opts.some((o) => o.value === cur)) {
-    opts.push({ value: cur, label: cur });
-  }
-  return opts;
+/** SearchableDropdown value shape for a free-text location name. */
+const locationSearchValue = (name) => {
+  const n = String(name || '').trim();
+  return n ? { id: n, name: n } : null;
 };
 
 const formatShortMonth = (raw) => {
@@ -490,23 +474,10 @@ const AidFamilyHeadPersonalFields = ({
     return opts;
   }, [value?.province]);
 
-  const provinceCities = useMemo(
-    () => citiesForProvince(value?.province),
-    [value?.province],
-  );
-
-  const districtOptions = useMemo(
-    () => locationSelectOptions(provinceCities, value?.district),
-    [provinceCities, value?.district],
-  );
-  const tehsilOptions = useMemo(
-    () => locationSelectOptions(provinceCities, value?.tehsil),
-    [provinceCities, value?.tehsil],
-  );
-  const cityOptions = useMemo(
-    () => locationSelectOptions(provinceCities, value?.city),
-    [provinceCities, value?.city],
-  );
+  const searchProvinceLocations = useMemo(() => {
+    const province = value?.province || '';
+    return async (term) => searchPakistanCities(province, term, { limit: 40 });
+  }, [value?.province]);
 
   const identityAndContact = (
     <>
@@ -801,44 +772,77 @@ const AidFamilyHeadPersonalFields = ({
               }
               options={provinceOptions}
             />
-            <FormSelect
+            <SearchableDropdown
               label={
                 <>
                   {t('district')} <Req />
                 </>
               }
               required={fieldsRequired}
-              value={value?.district || ''}
-              onChange={(e) =>
+              name="district"
+              placeholder={
+                value?.province
+                  ? 'Type to search district / city…'
+                  : 'Select province first'
+              }
+              value={locationSearchValue(value?.district)}
+              onSearch={searchProvinceLocations}
+              onSelect={(item) =>
                 patch({
-                  district: e.target.value,
+                  district: item?.name || '',
                   tehsil: '',
                 })
               }
-              options={districtOptions}
+              onClear={() => patch({ district: '', tehsil: '' })}
+              displayKey="name"
+              minSearchLength={1}
+              debounceDelay={200}
               disabled={!value?.province}
+              noResultsText="No matching place found"
             />
-            <FormSelect
+            <SearchableDropdown
               label={
                 <>
                   {t('tehsil')} <Req />
                 </>
               }
               required={fieldsRequired}
-              value={value?.tehsil || ''}
-              onChange={(e) => patch({ tehsil: e.target.value })}
-              options={tehsilOptions}
+              name="tehsil"
+              placeholder={
+                value?.province
+                  ? 'Type to search tehsil / city…'
+                  : 'Select province first'
+              }
+              value={locationSearchValue(value?.tehsil)}
+              onSearch={searchProvinceLocations}
+              onSelect={(item) => patch({ tehsil: item?.name || '' })}
+              onClear={() => patch({ tehsil: '' })}
+              displayKey="name"
+              minSearchLength={1}
+              debounceDelay={200}
               disabled={!value?.province}
+              noResultsText="No matching place found"
             />
           </div>
 
           <div className="aid-fh-contact__grid aid-fh-contact__grid--mid">
-            <FormSelect
+            <SearchableDropdown
               label={t('city')}
-              value={value?.city || ''}
-              onChange={(e) => patch({ city: e.target.value })}
-              options={cityOptions}
+              name="city"
+              placeholder={
+                value?.province
+                  ? 'Type to search city / town / village…'
+                  : 'Select province first'
+              }
+              value={locationSearchValue(value?.city)}
+              onSearch={searchProvinceLocations}
+              onSelect={(item) => patch({ city: item?.name || '' })}
+              onClear={() => patch({ city: '' })}
+              displayKey="name"
+              minSearchLength={1}
+              debounceDelay={200}
               disabled={!value?.province}
+              noResultsText="No matching place found"
             />
             <FormInput
               label={t('unionCouncil')}

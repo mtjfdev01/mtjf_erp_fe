@@ -117625,6 +117625,35 @@ export const PAKISTAN_PROVINCES = [
 ];
 
 export const getPakistanCities = (provinceValue) => {
-  const province = PAKISTAN_PROVINCES.find((item) => item.value === provinceValue)
+  const province = PAKISTAN_PROVINCES.find(
+    (item) =>
+      item.value === provinceValue ||
+      item.label === provinceValue,
+  )
   return province?.cities || []
+}
+
+/**
+ * Type-ahead search within a province city/town/village list.
+ * Prefers prefix matches, then substring; capped for dropdown performance.
+ */
+export const searchPakistanCities = (
+  provinceValue,
+  searchTerm,
+  { limit = 40 } = {},
+) => {
+  const cities = getPakistanCities(provinceValue)
+  const q = String(searchTerm || '').trim().toLowerCase()
+  if (!q || !cities.length) return []
+
+  const prefix = []
+  const contains = []
+  for (const name of cities) {
+    const n = String(name || '')
+    const lower = n.toLowerCase()
+    if (lower.startsWith(q)) prefix.push({ id: n, name: n })
+    else if (lower.includes(q)) contains.push({ id: n, name: n })
+    if (prefix.length >= limit) break
+  }
+  return [...prefix, ...contains].slice(0, limit)
 }
