@@ -6,6 +6,7 @@ import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
   hasAidPermission,
+  isProgramDepartmentManager,
   isSuperAdmin,
 } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
@@ -83,10 +84,7 @@ const AidApplicationView = () => {
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
   /** Program manager in Program department (or super admin) — can send to CEO / override rec. */
-  const isProgramDeptManager =
-    isSuperAdmin(permissions) ||
-    (!!permissions?.program_manager &&
-      String(user?.department || '').toLowerCase() === 'program');
+  const isProgramDeptManager = isProgramDepartmentManager(permissions, user);
   const canUpdate =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_verification', 'update') ||

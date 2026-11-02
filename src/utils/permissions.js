@@ -19,6 +19,26 @@ export const isSuperAdmin = (permissions) => {
 };
 
 /**
+ * Program department manager (Consider / Recommendation / forward to CEO).
+ * True when:
+ * - super_admin, or
+ * - permissions.program_manager flag, or
+ * - user role is manager / assistant_manager / dept_head in department `program`
+ */
+export const isProgramDepartmentManager = (permissions, user) => {
+  if (isSuperAdmin(permissions)) return true;
+  const dept = String(user?.department || '').toLowerCase();
+  if (dept !== 'program') return false;
+  if (permissions?.program_manager === true) return true;
+  const role = String(user?.role || '').toLowerCase();
+  return (
+    role === 'manager' ||
+    role === 'assistant_manager' ||
+    role === 'dept_head'
+  );
+};
+
+/**
  * Check if user has a specific permission
  * @param {Object} permissions - User permissions object
  * @param {string} department - Department name
@@ -660,6 +680,7 @@ export default {
   fundRaisingDonorsHas,
   fundRaisingOrganizationsOrPocsHas,
   isSuperAdmin,
+  isProgramDepartmentManager,
   getAccessibleModules,
   getModulePermissions,
   hasPermissionByPath,

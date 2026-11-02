@@ -6,6 +6,7 @@ import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
 import {
   hasAidPermission,
+  isProgramDepartmentManager,
   isSuperAdmin,
 } from '../../../../../../utils/permissions';
 import Navbar from '../../../../../Navbar';
@@ -94,10 +95,7 @@ const AidEntryApplicationView = () => {
     !!permissions?.super_admin ||
     !!permissions?.program_manager ||
     !!permissions?.fund_raising_manager;
-  const isProgramDeptManager =
-    isSuperAdmin(permissions) ||
-    (!!permissions?.program_manager &&
-      String(user?.department || '').toLowerCase() === 'program');
+  const isProgramDeptManager = isProgramDepartmentManager(permissions, user);
   const canApproveDraft =
     hasAidPermission(permissions, 'aid_drafts', 'approve_draft') ||
     hasAidPermission(permissions, 'aid_applications', 'approve_draft') ||
