@@ -5,17 +5,11 @@ import { useAuth } from '../../../../../context/AuthContext';
 import { hasAidPermission, isSuperAdmin } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
-import AuditHistoryTimeline from '../../../../common/audit/AuditHistoryTimeline';
-import { formatAuditActor, formatAuditValue } from '../../../../common/audit/auditHistoryLabels';
 import {
   formatAidStatus,
   formatAidRequestType,
 } from '../../aidConstants';
-import {
-  AID_AUDIT_ACTION_LABELS,
-  AID_AUDIT_SOURCE_LABELS,
-  aidAuditFieldLabel,
-} from '../aidAuditLabels';
+import AidChangeHistory from '../AidChangeHistory';
 import '../../aid.css';
 
 const AidAuditView = () => {
@@ -103,7 +97,10 @@ const AidAuditView = () => {
 
         {summary ? (
           <section className="aid-section" style={{ marginBottom: '1rem' }}>
-            <div className="aid-preview__grid aid-preview__grid--3" style={{ border: '1px solid #e2e8f0' }}>
+            <div
+              className="aid-preview__grid aid-preview__grid--3"
+              style={{ border: '1px solid #e2e8f0' }}
+            >
               <div className="aid-preview__cell">
                 <span className="aid-preview__label">Status</span>
                 <span className="aid-preview__value">
@@ -130,25 +127,14 @@ const AidAuditView = () => {
         ) : null}
 
         <section className="aid-section">
-          <h3 className="aid-investigation__title">Change history</h3>
-          <p className="aid-investigation__hint">
-            Who verified steps, changed status, saved MEAL/approval, uploaded
-            files, and more — newest first.
-          </p>
-          <AuditHistoryTimeline
+          <AidChangeHistory
             entries={entries}
             loading={loading}
-            error=""
             emptyMessage={
               loading
                 ? 'Loading…'
                 : 'No audit events recorded yet for this application. New changes will appear here going forward.'
             }
-            getActionLabel={(a) => AID_AUDIT_ACTION_LABELS[a] || a}
-            getSourceLabel={(s) => AID_AUDIT_SOURCE_LABELS[s] || s}
-            getFieldLabel={aidAuditFieldLabel}
-            formatActor={formatAuditActor}
-            formatValue={formatAuditValue}
           />
         </section>
       </div>
