@@ -120,6 +120,7 @@ const mergeAidPermissions = (rawPermissions) => {
         'delete',
         'ceo_approve',
         'deliver',
+        'meal_edit',
       ],
     },
     {
@@ -423,6 +424,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
             'delete',
             'ceo_approve',
             'deliver',
+            'meal_edit',
           ],
         },
         aid_drafts: {
@@ -784,6 +786,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     ceo_approve: 'CEO Approve',
     deliver: 'Deliver',
     bulk_verify: 'Bulk verify checklist',
+    meal_edit: 'Edit MEAL (Preview)',
   };
 
   const initializePermissions = () => {

@@ -107,6 +107,10 @@ const AidApplicationView = () => {
     hasAidPermission(permissions, 'aid_verification', 'bulk_verify') ||
     hasAidPermission(permissions, 'aid_applications', 'bulk_verify');
   const canBulkVerify = isSuperAdmin(permissions) || hasMarkAllComplete;
+  const canEditMeal =
+    isStaffElevated ||
+    isSuperAdmin(permissions) ||
+    hasAidPermission(permissions, 'aid_applications', 'meal_edit');
 
   const [app, setApp] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -140,6 +144,8 @@ const AidApplicationView = () => {
   const [uploadingInvestKey, setUploadingInvestKey] = useState(null);
   const [attachUploading, setAttachUploading] = useState(false);
   const [investSaving, setInvestSaving] = useState(false);
+  const [mealSaving, setMealSaving] = useState(false);
+  const [approvalSaving, setApprovalSaving] = useState(false);
 
   const load = useCallback(async ({ silent = false } = {}) => {
     try {
@@ -474,6 +480,104 @@ const AidApplicationView = () => {
         : null,
       ration_options,
     };
+  };
+
+  const saveMealReview = async (meal) => {
+    if (!id || mealSaving || !canEditMeal) return;
+    setMealSaving(true);
+    setActionError('');
+    try {
+      const res = await axiosInstance.patch(`/aid/applications/${id}/meal`, {
+        verification_status: meal?.verification_status || null,
+        recommendation_status: meal?.recommendation_status || null,
+        remarks: meal?.remarks || null,
+        locked: meal?.locked === true,
+      });
+      const updated = res.data?.data;
+      if (updated) {
+        setApp(updated);
+      } else {
+        setApp((prev) =>
+          prev
+            ? {
+                ...prev,
+                meal_review: {
+                  verification_status: meal?.verification_status || null,
+                  recommendation_status: meal?.recommendation_status || null,
+                  remarks: meal?.remarks || null,
+                  locked: meal?.locked === true,
+                },
+              }
+            : prev,
+        );
+      }
+      toast.success(
+        meal?.locked ? 'MEAL saved and locked' : 'MEAL progress saved',
+      );
+    } catch (err) {
+      const msg =
+        err.response?.data?.message || err.message || 'Failed to save MEAL';
+      setActionError(msg);
+      toast.error(msg);
+    } finally {
+      setMealSaving(false);
+    }
+  };
+
+  const savePreviewApproval = async (approval) => {
+    if (!id || approvalSaving || !canCeo) return;
+    setApprovalSaving(true);
+    setActionError('');
+    try {
+      const amountRaw = approval?.approved_amount;
+      const amount =
+        amountRaw === '' || amountRaw == null
+          ? null
+          : Number(amountRaw);
+      const res = await axiosInstance.patch(
+        `/aid/applications/${id}/preview-approval`,
+        {
+          decision: approval?.decision || null,
+          remarks: approval?.remarks || null,
+          approved_support: approval?.approved_support || null,
+          approved_amount: Number.isFinite(amount) ? amount : null,
+          locked: approval?.locked === true,
+        },
+      );
+      const updated = res.data?.data;
+      if (updated) {
+        setApp(updated);
+      } else {
+        setApp((prev) =>
+          prev
+            ? {
+                ...prev,
+                preview_approval: {
+                  decision: approval?.decision || null,
+                  remarks: approval?.remarks || null,
+                  approved_support: approval?.approved_support || null,
+                  approved_amount: Number.isFinite(amount) ? amount : null,
+                  locked: approval?.locked === true,
+                },
+              }
+            : prev,
+        );
+      }
+      toast.success(
+        approval?.locked
+          ? 'Approval saved and locked'
+          : 'Approval progress saved',
+      );
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        err.message ||
+        'Failed to save approval';
+      setActionError(msg);
+      toast.error(msg);
+    } finally {
+      setApprovalSaving(false);
+    }
   };
 
   const saveInvestigationProgress = async () => {
@@ -1341,6 +1445,12 @@ const AidApplicationView = () => {
                     ? formatAuditActor(app.created_by)
                     : undefined
                 }
+                canEditMeal={canEditMeal}
+                onSaveMeal={saveMealReview}
+                mealSaving={mealSaving}
+                canEditApproval={canCeo}
+                onSaveApproval={savePreviewApproval}
+                approvalSaving={approvalSaving}
               />
             )}
 
@@ -1531,6 +1641,34 @@ const AidApplicationView = () => {
                               : ''}
                           </p>
                         )}
+                      {activePanelTab === 'field_process' ? (
+                        <AidCollapsibleSection
+                          title="Verification"
+                          hint="Click to expand declared claims checklist"
+                          defaultOpen={false}
+                          className="aid-detail-block"
+                        >
+                          <AidInvestigationPanel
+                            items={investigationItems}
+                            value={investigation}
+                            onChange={setInvestigation}
+                            disabled={!showVerify || busy}
+                            activeTab="case"
+                            showRecommendation={false}
+                            includeChecklistGaps={false}
+                            canBulkVerify={canBulkVerify}
+                            onUploadItemFile={uploadInvestigationFile}
+                            uploadingKey={uploadingInvestKey}
+                            onSaveProgress={
+                              showVerify
+                                ? saveInvestigationProgress
+                                : undefined
+                            }
+                            saveProgressBusy={investSaving}
+                            saveProgressDisabled={busy || investSaving}
+                          />
+                        </AidCollapsibleSection>
+                      ) : null}
                     </>
                   );
 

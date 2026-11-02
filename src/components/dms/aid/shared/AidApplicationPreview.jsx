@@ -1,4 +1,5 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { FiLock, FiUnlock } from 'react-icons/fi';
 import mtjfLogo from '../../../../assets/mtjf_logo.png';
 import {
   formatAidRequestType,
@@ -18,6 +19,93 @@ import {
   normalizeRationOptions,
 } from './AidInvestigationPanel';
 import { printAidElement } from './printAidElement';
+
+const emptyMealReview = () => ({
+  verification_status: null,
+  recommendation_status: null,
+  remarks: '',
+  locked: false,
+});
+
+const normalizeMealReview = (raw) => {
+  const base = emptyMealReview();
+  if (!raw || typeof raw !== 'object') return base;
+  const v = String(raw.verification_status || '').toLowerCase();
+  const r = String(raw.recommendation_status || '').toLowerCase();
+  return {
+    verification_status: ['verified', 'not_verified', 'skipped'].includes(v)
+      ? v
+      : null,
+    recommendation_status: ['recommended', 'not_recommended'].includes(r)
+      ? r
+      : null,
+    remarks: String(raw.remarks || ''),
+    locked: raw.locked === true,
+  };
+};
+
+const emptyPreviewApproval = () => ({
+  decision: null,
+  remarks: '',
+  approved_support: '',
+  approved_amount: '',
+  locked: false,
+});
+
+const normalizePreviewApproval = (raw, fallback = {}) => {
+  const base = emptyPreviewApproval();
+  const src =
+    raw && typeof raw === 'object' && Object.keys(raw).length
+      ? raw
+      : fallback;
+  if (!src || typeof src !== 'object') return base;
+  const d = String(src.decision || '').toLowerCase();
+  return {
+    decision: [
+      'approved',
+      'approved_with_changes',
+      'rejected',
+      're_investigate',
+    ].includes(d)
+      ? d
+      : null,
+    remarks: String(src.remarks || ''),
+    approved_support: String(src.approved_support || ''),
+    approved_amount:
+      src.approved_amount != null && src.approved_amount !== ''
+        ? String(src.approved_amount)
+        : '',
+    locked: src.locked === true,
+  };
+};
+
+/** Printable / interactive checkbox used in Preview (MEAL + others). */
+const ChoiceCheck = ({
+  label,
+  checked,
+  editable = false,
+  onChange,
+}) => {
+  if (!editable) {
+    return <Check label={label} checked={checked} />;
+  }
+  return (
+    <label
+      className={`aid-preview__check aid-preview__check--editable${
+        checked ? ' is-on' : ''
+      }`}
+    >
+      <input
+        type="checkbox"
+        className="aid-preview__check-input"
+        checked={!!checked}
+        onChange={(e) => onChange?.(e.target.checked)}
+      />
+      <span className="aid-preview__check-box" aria-hidden />
+      {label}
+    </label>
+  );
+};
 
 const dash = (v) => {
   if (v == null || v === '') return '—';
@@ -79,12 +167,48 @@ const Cell = ({ label, children, span, valueClassName }) => (
   </div>
 );
 
-const SectionBar = ({ title, right }) => (
+const SectionBar = ({ title, right, lockControl = null }) => (
   <div className="aid-preview__section-bar">
     <span>{title}</span>
-    {right ? <span className="aid-preview__section-bar-right">{right}</span> : null}
+    <span className="aid-preview__section-bar-right">
+      {right ? <span>{right}</span> : null}
+      {lockControl}
+    </span>
   </div>
 );
+
+const SectionLockButton = ({
+  locked,
+  canEdit,
+  saving,
+  onLock,
+  label = 'section',
+}) => {
+  if (!canEdit && !locked) return null;
+  if (locked) {
+    return (
+      <span
+        className="aid-preview__lock aid-preview__lock--locked no-print"
+        title={`${label} locked — editing disabled`}
+      >
+        <FiLock aria-hidden />
+        <span>Locked</span>
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      className="aid-preview__lock aid-preview__lock--open no-print"
+      disabled={saving || !onLock}
+      title={`Save and lock ${label} (editing will be disabled)`}
+      onClick={() => onLock?.()}
+    >
+      <FiUnlock aria-hidden />
+      <span>{saving ? 'Saving…' : 'Lock'}</span>
+    </button>
+  );
+};
 
 const Check = ({ label, checked }) => (
   <span className={`aid-preview__check${checked ? ' is-on' : ''}`}>
@@ -130,10 +254,91 @@ const AidApplicationPreview = ({
   vulnerability = null,
   preparedBy,
   printedBy,
+  canEditMeal = false,
+  onSaveMeal,
+  mealSaving = false,
+  canEditApproval = false,
+  onSaveApproval,
+  approvalSaving = false,
 }) => {
   const page1Ref = useRef(null);
   const page2Ref = useRef(null);
   const bothRef = useRef(null);
+  const [meal, setMeal] = useState(() =>
+    normalizeMealReview(app?.meal_review),
+  );
+  const [approval, setApproval] = useState(() =>
+    normalizePreviewApproval(app?.preview_approval),
+  );
+
+  useEffect(() => {
+    setMeal(normalizeMealReview(app?.meal_review));
+  }, [app?.id, app?.meal_review]);
+
+  useEffect(() => {
+    // Prefer saved preview_approval; else seed from live CEO/app status.
+    const status = String(app?.status || '').toLowerCase();
+    let fallbackDecision = '';
+    if (status === 'successful' || status === 'delivered') {
+      fallbackDecision = 'approved';
+    } else if (status === 'rejected') {
+      fallbackDecision = 'rejected';
+    } else if (
+      String(app?.ceo_approval_status || '')
+        .toLowerCase()
+        .includes('reject')
+    ) {
+      fallbackDecision = 'rejected';
+    } else if (
+      String(app?.ceo_approval_status || '')
+        .toLowerCase()
+        .includes('approv')
+    ) {
+      fallbackDecision = 'approved';
+    }
+    const liveLocked =
+      ['successful', 'delivered', 'rejected'].includes(status) ||
+      String(app?.ceo_approval_status || '')
+        .toLowerCase()
+        .includes('approv') ||
+      String(app?.ceo_approval_status || '')
+        .toLowerCase()
+        .includes('reject');
+    const rationFallback = Array.isArray(
+      app?.investigation_recommendation?.ration_options,
+    )
+      ? app.investigation_recommendation.ration_options.join(', ')
+      : '';
+    setApproval(
+      normalizePreviewApproval(app?.preview_approval, {
+        decision: fallbackDecision || null,
+        remarks: app?.ceo_remarks || app?.ceo_rejection_reason || '',
+        approved_support:
+          rationFallback ||
+          formatAidProgramLabel(app?.aid_program) ||
+          formatAidRequestType(app?.requested_aid_type) ||
+          '',
+        approved_amount: app?.approved_amount ?? '',
+        locked: liveLocked,
+      }),
+    );
+  }, [
+    app?.id,
+    app?.preview_approval,
+    app?.status,
+    app?.ceo_approval_status,
+    app?.ceo_remarks,
+    app?.ceo_rejection_reason,
+    app?.approved_amount,
+    app?.aid_program,
+    app?.requested_aid_type,
+    app?.investigation_recommendation,
+  ]);
+
+  const mealLocked = meal.locked === true;
+  const mealEditable = canEditMeal && !mealLocked;
+  const approvalLocked = approval.locked === true;
+  const approvalEditable = canEditApproval && !approvalLocked;
 
   const data = useMemo(() => {
     if (!app) return null;
@@ -879,54 +1084,302 @@ const AidApplicationPreview = ({
           </div>
 
           <SectionBar
-            title="Approval"
-            right="CEO / approving authority"
-          />
-          <div className="aid-preview__cell aid-preview__decision">
-            <span className="aid-preview__label">Decision</span>
-            <span className="aid-preview__checks">
-              <Check
-                label="Approved"
-                checked={approvalDecision === 'approved'}
-              />
-              <Check
-                label="Approved with changes"
-                checked={approvalDecision === 'approved_with_changes'}
-              />
-              <Check
-                label="Rejected"
-                checked={approvalDecision === 'rejected'}
-              />
-              <Check
-                label="Re-investigate"
-                checked={
-                  status === 'under_review' &&
-                  String(app.return_reason || '').length > 0
+            title="MEAL"
+            right="Monitoring, evaluation & learning"
+            lockControl={
+              <SectionLockButton
+                locked={mealLocked}
+                canEdit={canEditMeal}
+                saving={mealSaving}
+                label="MEAL"
+                onLock={() =>
+                  onSaveMeal?.({ ...meal, locked: true })
                 }
               />
-            </span>
-          </div>
-          <div className="aid-preview__grid aid-preview__grid--2">
-            <Cell label="Approved support">
-              {dash(
-                Array.isArray(rec.ration_options) && rec.ration_options.length
-                  ? rec.ration_options.join(', ')
-                  : programLabel,
+            }
+          />
+          <div
+            className={`aid-preview__meal${
+              mealLocked ? ' is-locked' : mealEditable ? ' is-editable' : ''
+            }`}
+          >
+            <div className="aid-preview__cell aid-preview__decision">
+              <span className="aid-preview__label">Verification</span>
+              <span className="aid-preview__checks">
+                <ChoiceCheck
+                  label="Verified"
+                  checked={meal.verification_status === 'verified'}
+                  editable={mealEditable}
+                  onChange={(on) =>
+                    setMeal((prev) => ({
+                      ...prev,
+                      verification_status: on ? 'verified' : null,
+                    }))
+                  }
+                />
+                <ChoiceCheck
+                  label="Not Verified"
+                  checked={meal.verification_status === 'not_verified'}
+                  editable={mealEditable}
+                  onChange={(on) =>
+                    setMeal((prev) => ({
+                      ...prev,
+                      verification_status: on ? 'not_verified' : null,
+                    }))
+                  }
+                />
+                <ChoiceCheck
+                  label="Skipped"
+                  checked={meal.verification_status === 'skipped'}
+                  editable={mealEditable}
+                  onChange={(on) =>
+                    setMeal((prev) => ({
+                      ...prev,
+                      verification_status: on ? 'skipped' : null,
+                    }))
+                  }
+                />
+              </span>
+            </div>
+            <div className="aid-preview__cell aid-preview__decision">
+              <span className="aid-preview__label">Recommendation</span>
+              <span className="aid-preview__checks">
+                <ChoiceCheck
+                  label="Recommended"
+                  checked={meal.recommendation_status === 'recommended'}
+                  editable={mealEditable}
+                  onChange={(on) =>
+                    setMeal((prev) => ({
+                      ...prev,
+                      recommendation_status: on ? 'recommended' : null,
+                    }))
+                  }
+                />
+                <ChoiceCheck
+                  label="Not Recommended"
+                  checked={meal.recommendation_status === 'not_recommended'}
+                  editable={mealEditable}
+                  onChange={(on) =>
+                    setMeal((prev) => ({
+                      ...prev,
+                      recommendation_status: on ? 'not_recommended' : null,
+                    }))
+                  }
+                />
+              </span>
+            </div>
+            <div className="aid-preview__block">
+              <span className="aid-preview__label">Remarks</span>
+              {mealEditable ? (
+                <textarea
+                  className="aid-preview__meal-remarks"
+                  rows={3}
+                  value={meal.remarks || ''}
+                  placeholder="MEAL remarks…"
+                  onChange={(e) =>
+                    setMeal((prev) => ({
+                      ...prev,
+                      remarks: e.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                <Lines lines={3} text={meal.remarks || ''} />
               )}
-            </Cell>
-            <Cell label="Approved amount (PKR)">
-              {money(
-                app.approved_amount ||
-                  (rec.decision !== 'reject' ? rec.amount : ''),
-              )}
-            </Cell>
+            </div>
+            {mealEditable ? (
+              <div className="aid-preview__meal-actions no-print">
+                <button
+                  type="button"
+                  className="aid-btn aid-btn--ghost"
+                  disabled={mealSaving || !onSaveMeal}
+                  onClick={() =>
+                    onSaveMeal?.({ ...meal, locked: false })
+                  }
+                >
+                  {mealSaving ? 'Saving…' : 'Save progress'}
+                </button>
+                <button
+                  type="button"
+                  className="aid-btn aid-btn--primary"
+                  disabled={mealSaving || !onSaveMeal}
+                  onClick={() =>
+                    onSaveMeal?.({ ...meal, locked: true })
+                  }
+                >
+                  <FiLock aria-hidden />{' '}
+                  {mealSaving ? 'Saving…' : 'Save & lock'}
+                </button>
+              </div>
+            ) : null}
           </div>
-          <div className="aid-preview__block">
-            <span className="aid-preview__label">Remarks</span>
-            <Lines
-              lines={3}
-              text={app.ceo_remarks || app.manager_remarks || ''}
-            />
+
+          <SectionBar
+            title="Approval"
+            right="CEO / approving authority"
+            lockControl={
+              <SectionLockButton
+                locked={approvalLocked}
+                canEdit={canEditApproval}
+                saving={approvalSaving}
+                label="Approval"
+                onLock={() =>
+                  onSaveApproval?.({ ...approval, locked: true })
+                }
+              />
+            }
+          />
+          <div
+            className={`aid-preview__approval-edit${
+              approvalLocked
+                ? ' is-locked'
+                : approvalEditable
+                  ? ' is-editable'
+                  : ''
+            }`}
+          >
+            <div className="aid-preview__cell aid-preview__decision">
+              <span className="aid-preview__label">Decision</span>
+              <span className="aid-preview__checks">
+                {(
+                  [
+                    ['approved', 'Approved'],
+                    ['approved_with_changes', 'Approved with changes'],
+                    ['rejected', 'Rejected'],
+                    ['re_investigate', 'Re-investigate'],
+                  ]
+                ).map(([value, label]) => (
+                  <ChoiceCheck
+                    key={value}
+                    label={label}
+                    checked={
+                      approval.decision === value ||
+                      (!approval.decision &&
+                        value === 're_investigate' &&
+                        status === 'under_review' &&
+                        String(app.return_reason || '').length > 0) ||
+                      (!approval.decision &&
+                        value === approvalDecision)
+                    }
+                    editable={approvalEditable}
+                    onChange={(on) =>
+                      setApproval((prev) => ({
+                        ...prev,
+                        decision: on ? value : null,
+                      }))
+                    }
+                  />
+                ))}
+              </span>
+            </div>
+            <div className="aid-preview__grid aid-preview__grid--2">
+              {approvalEditable ? (
+                <>
+                  <label className="aid-preview__cell">
+                    <span className="aid-preview__label">Approved support</span>
+                    <input
+                      className="aid-preview__inline-input"
+                      type="text"
+                      value={approval.approved_support || ''}
+                      onChange={(e) =>
+                        setApproval((prev) => ({
+                          ...prev,
+                          approved_support: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                  <label className="aid-preview__cell">
+                    <span className="aid-preview__label">
+                      Approved amount (PKR)
+                    </span>
+                    <input
+                      className="aid-preview__inline-input"
+                      type="number"
+                      value={approval.approved_amount}
+                      placeholder="0"
+                      onChange={(e) =>
+                        setApproval((prev) => ({
+                          ...prev,
+                          approved_amount: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </>
+              ) : (
+                <>
+                  <Cell label="Approved support">
+                    {dash(
+                      approval.approved_support ||
+                        (Array.isArray(rec.ration_options) &&
+                        rec.ration_options.length
+                          ? rec.ration_options.join(', ')
+                          : programLabel),
+                    )}
+                  </Cell>
+                  <Cell label="Approved amount (PKR)">
+                    {money(
+                      approval.approved_amount ||
+                        app.approved_amount ||
+                        (rec.decision !== 'reject' ? rec.amount : ''),
+                    )}
+                  </Cell>
+                </>
+              )}
+            </div>
+            <div className="aid-preview__block">
+              <span className="aid-preview__label">Remarks</span>
+              {approvalEditable ? (
+                <textarea
+                  className="aid-preview__meal-remarks"
+                  rows={3}
+                  value={approval.remarks || ''}
+                  placeholder="Approval remarks…"
+                  onChange={(e) =>
+                    setApproval((prev) => ({
+                      ...prev,
+                      remarks: e.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                <Lines
+                  lines={3}
+                  text={
+                    approval.remarks ||
+                    app.ceo_remarks ||
+                    app.manager_remarks ||
+                    ''
+                  }
+                />
+              )}
+            </div>
+            {approvalEditable ? (
+              <div className="aid-preview__meal-actions no-print">
+                <button
+                  type="button"
+                  className="aid-btn aid-btn--ghost"
+                  disabled={approvalSaving || !onSaveApproval}
+                  onClick={() =>
+                    onSaveApproval?.({ ...approval, locked: false })
+                  }
+                >
+                  {approvalSaving ? 'Saving…' : 'Save progress'}
+                </button>
+                <button
+                  type="button"
+                  className="aid-btn aid-btn--primary"
+                  disabled={approvalSaving || !onSaveApproval}
+                  onClick={() =>
+                    onSaveApproval?.({ ...approval, locked: true })
+                  }
+                >
+                  <FiLock aria-hidden />{' '}
+                  {approvalSaving ? 'Saving…' : 'Save & lock'}
+                </button>
+              </div>
+            ) : null}
           </div>
 
           <div className="aid-preview__approval-foot">

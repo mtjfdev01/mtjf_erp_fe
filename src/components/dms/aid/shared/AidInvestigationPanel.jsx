@@ -54,13 +54,15 @@ const normalizeInvestigationFile = (file) => {
   if (!file || typeof file !== 'object') return null;
   const url = String(file.url || file.attachment_url || file.file_url || '').trim();
   if (!url) return null;
-  return {
+  const row = {
     id: file.id ?? file.attachment_id ?? null,
     url,
     name: String(
       file.name || file.attachment_name || file.file_name || 'Attached file',
     ),
   };
+  if (file._offline_pending) row._offline_pending = true;
+  return row;
 };
 
 /** Build attachments[] from legacy single fields + optional array. */
@@ -108,6 +110,9 @@ export const hasInvestigationAttachment = (entry) => {
   );
 };
 
+export const hasInvestigationGps = (entry) =>
+  String(entry?.gps_coordinates || '').trim().length >= 3;
+
 export const normalizeInvestigationEntry = (value) => {
   if (value === true || value === 'verified') {
     return {
@@ -117,6 +122,7 @@ export const normalizeInvestigationEntry = (value) => {
       attachment_url: '',
       attachment_name: '',
       attachment_id: null,
+      gps_coordinates: '',
     };
   }
   if (value === 'mismatch') {
@@ -127,6 +133,7 @@ export const normalizeInvestigationEntry = (value) => {
       attachment_url: '',
       attachment_name: '',
       attachment_id: null,
+      gps_coordinates: '',
     };
   }
   if (value && typeof value === 'object') {
@@ -138,11 +145,21 @@ export const normalizeInvestigationEntry = (value) => {
           ? 'verified'
           : 'not_checked';
     const attachments = normalizeInvestigationAttachments(value);
+    // Prefer free-text paste; fall back to legacy lat/lng pair if present.
+    let gpsText = String(value.gps_coordinates || '').trim();
+    if (!gpsText) {
+      const lat = value.gps_latitude;
+      const lng = value.gps_longitude;
+      if (lat != null && lat !== '' && lng != null && lng !== '') {
+        gpsText = `${lat}, ${lng}`;
+      }
+    }
     return {
       status,
       note: String(value.note || value.notes || value.found || ''),
       attachments,
       ...primaryAttachmentFields(attachments),
+      gps_coordinates: gpsText,
     };
   }
   return {
@@ -152,6 +169,7 @@ export const normalizeInvestigationEntry = (value) => {
     attachment_url: '',
     attachment_name: '',
     attachment_id: null,
+    gps_coordinates: '',
   };
 };
 
@@ -257,7 +275,8 @@ export const isInvestigationItemComplete = (item, state = {}) => {
     return (
       entry.status === 'verified' &&
       hasInvestigationAttachment(entry) &&
-      (!processItem || hasFoundNote(entry))
+      (!processItem || hasFoundNote(entry)) &&
+      (item.key !== 'site_visit' || hasInvestigationGps(entry))
     );
   }
   const allowMismatch =
@@ -294,6 +313,8 @@ export const getInvestigationIncompleteReasons = (items = [], state = {}) => {
         reasons.push(`${item.label}: attach at least one site-visit photo/file`);
       } else if (item.kind === 'process' && !hasFoundNote(entry)) {
         reasons.push(`${item.label}: add a Found note (min 3 characters)`);
+      } else if (item.key === 'site_visit' && !hasInvestigationGps(entry)) {
+        reasons.push(`${item.label}: enter GPS coordinates`);
       }
       continue;
     }
@@ -574,11 +595,12 @@ const AidInvestigationPanel = ({
     let skippedFileItems = 0;
     for (const item of list) {
       const prev = normalizeInvestigationEntry(value[item.key]);
-      // Site Visit (etc.) cannot be bulk-verified without an attached file.
+      // Site Visit (etc.) cannot be bulk-verified without an attached file (+ GPS).
       if (
         status === 'verified' &&
         item.accepts_file &&
-        !hasInvestigationAttachment(prev)
+        (!hasInvestigationAttachment(prev) ||
+          (item.key === 'site_visit' && !hasInvestigationGps(prev)))
       ) {
         skippedFileItems += 1;
         continue;
@@ -594,7 +616,7 @@ const AidInvestigationPanel = ({
     onChange(next);
     if (skippedFileItems > 0) {
       toast.warning(
-        `${skippedFileItems} item(s) need a file attach (e.g. Site Visit) before they can be Verified.`,
+        `${skippedFileItems} item(s) need a file attach / GPS (e.g. Site Visit) before they can be Verified.`,
       );
     }
     return skippedFileItems;
@@ -671,6 +693,22 @@ const AidInvestigationPanel = ({
               />
             </label>
           ) : null}
+          {item.key === 'site_visit' ? (
+            <label className="aid-invest-row__gps">
+              <span>GPS Coordinates *</span>
+              <input
+                type="text"
+                disabled={disabled}
+                placeholder="Paste from GPS app, e.g. 24.8607, 67.0011"
+                value={entry.gps_coordinates || ''}
+                onChange={(e) =>
+                  setEntry(item.key, {
+                    gps_coordinates: e.target.value,
+                  })
+                }
+              />
+            </label>
+          ) : null}
           {item.accepts_file ? (
             <div className="aid-invest-row__file">
               {(entry.attachments || []).length > 0 ? (
@@ -680,6 +718,11 @@ const AidInvestigationPanel = ({
                       <a href={f.url} target="_blank" rel="noreferrer">
                         {f.name || `File ${idx + 1}`}
                       </a>
+                      {f._offline_pending ? (
+                        <span className="aid-invest-row__file-pending">
+                          Pending sync
+                        </span>
+                      ) : null}
                       {!disabled ? (
                         <button
                           type="button"
@@ -705,7 +748,7 @@ const AidInvestigationPanel = ({
                 <label className="aid-invest-row__file-upload">
                   <span>
                     {uploadingKey === item.key
-                      ? 'Uploading…'
+                      ? 'Saving…'
                       : (entry.attachments || []).length > 0
                         ? 'Add more files'
                         : 'Attach site visit files *'}

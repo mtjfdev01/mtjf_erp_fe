@@ -39,6 +39,24 @@ function resolveLocalKey(id) {
   return s;
 }
 
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    if (!file) {
+      reject(new Error('No file'));
+      return;
+    }
+    // Already a data URL string
+    if (typeof file === 'string' && file.startsWith('data:')) {
+      resolve(file);
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Failed to read file for offline storage'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function canHandleAidOffline(config) {
   const method = (config.method || 'get').toLowerCase();
   const url = (config.url || '').split('?')[0];
@@ -48,6 +66,12 @@ export function canHandleAidOffline(config) {
   if (method === 'post' && url === '/aid/applications') return true;
   if (method === 'patch' && /^\/aid\/applications\/[^/]+$/.test(url)) return true;
   if (method === 'post' && /^\/aid\/applications\/[^/]+\/verify$/.test(url)) {
+    return true;
+  }
+  if (
+    method === 'post' &&
+    /^\/aid\/applications\/[^/]+\/attachments\/upload$/.test(url)
+  ) {
     return true;
   }
   return false;
@@ -128,6 +152,66 @@ export async function handleAidOfflineRequest(config) {
         _pending_sync: true,
       },
       'Updated offline — will sync when online',
+    );
+  }
+
+  const uploadOne = url.match(
+    /^\/aid\/applications\/([^/]+)\/attachments\/upload$/,
+  );
+  if (method === 'post' && uploadOne) {
+    const key = resolveLocalKey(uploadOne[1]);
+    const existing = await getRecord(STORES.aidApplications, key);
+    if (!existing) {
+      throw new Error('Application not available offline');
+    }
+
+    let file = null;
+    let context = 'verification';
+    let description = '';
+    if (typeof FormData !== 'undefined' && body instanceof FormData) {
+      file = body.get('file');
+      context = String(body.get('context') || 'verification');
+      description = String(body.get('description') || '');
+    } else if (body && typeof body === 'object') {
+      file = body.file || null;
+      context = String(body.context || 'verification');
+      description = String(body.description || '');
+    }
+    if (!file) {
+      throw new Error('No file provided for offline attachment');
+    }
+
+    const dataUrl = await fileToDataUrl(file);
+    const localAttId = generateLocalId();
+    const fileName =
+      (file && file.name) ||
+      (typeof body?.file_name === 'string' && body.file_name) ||
+      'attachment';
+    const attRecord = {
+      id: localAttId,
+      file_url: dataUrl,
+      file_name: fileName,
+      mime_type: (file && file.type) || 'application/octet-stream',
+      context,
+      description,
+      _offline_pending: true,
+      created_at: nowIso(),
+    };
+
+    const merged = {
+      ...(existing.record || {}),
+      attachments: [attRecord, ...((existing.record || {}).attachments || [])],
+      updated_at: nowIso(),
+    };
+    await saveAidAppLocal(merged, {
+      synced: false,
+      localId: existing.localId,
+      serverId: existing.serverId,
+    });
+
+    return wrapSuccess(
+      attRecord,
+      'Attachment saved offline — will upload when online',
     );
   }
 
