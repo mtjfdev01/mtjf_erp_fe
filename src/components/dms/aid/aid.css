@@ -5348,6 +5348,41 @@ a.aid-contact-chip:hover {
   color: #1e3a8a;
 }
 
+.aid-audit-list .aid-audit-user-filter {
+  min-width: 240px;
+}
+
+.aid-audit-list .aid-audit-user-filter .searchable-dropdown {
+  margin-bottom: 0;
+  min-width: 0;
+  width: 100%;
+  gap: 0;
+}
+
+.aid-audit-list .aid-audit-user-filter .searchable-dropdown__input {
+  padding: 10px 35px 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.aid-audit-list .aid-audit-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.aid-audit-list .aid-audit-row-actions .secondary-btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.aid-audit-list .aid-audit-report-cta .primary-btn {
+  white-space: nowrap;
+}
+
 .aid-rec-modal__actions .secondary-btn {
   border: 1px solid #dbe3ef;
   background: #fff;

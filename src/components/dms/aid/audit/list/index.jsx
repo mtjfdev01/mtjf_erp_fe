@@ -210,7 +210,7 @@ const AidAuditList = () => {
   return (
     <>
       <Navbar />
-      <div className="page-container">
+      <div className="page-container aid-list aid-audit-list">
         <PageHeader
           title="Aid Audit Logs"
           showBackButton={false}
@@ -274,9 +274,11 @@ const AidAuditList = () => {
                 placeholder="All districts"
               />
 
-              <div className="dropdown-filter-container" style={{ minWidth: 240 }}>
+              <div className="dropdown-filter-container aid-audit-user-filter">
+                <label className="dropdown-filter-label">
+                  Interacted by user
+                </label>
                 <SearchableDropdown
-                  label="Interacted by user"
                   placeholder="Search user…"
                   apiEndpoint="/users/options"
                   value={selectedUser}
@@ -409,23 +411,24 @@ const AidAuditList = () => {
                           : '—'}
                       </td>
                       <td>
-                        <button
-                          type="button"
-                          className="secondary-btn"
-                          title="View audit history"
-                          onClick={() =>
-                            navigate(`/dms/aid/audit/applications/${row.id}`)
-                          }
-                        >
-                          <FiEye aria-hidden /> History
-                        </button>
-                        <Link
-                          to={`/dms/aid/applications/view/${row.id}`}
-                          className="secondary-btn"
-                          style={{ marginLeft: 8 }}
-                        >
-                          Open app
-                        </Link>
+                        <div className="aid-audit-row-actions">
+                          <button
+                            type="button"
+                            className="secondary-btn"
+                            title="View audit history"
+                            onClick={() =>
+                              navigate(`/dms/aid/audit/applications/${row.id}`)
+                            }
+                          >
+                            <FiEye aria-hidden /> History
+                          </button>
+                          <Link
+                            to={`/dms/aid/applications/view/${row.id}`}
+                            className="secondary-btn"
+                          >
+                            Open app
+                          </Link>
+                        </div>
                       </td>
                     </tr>
                   ))
