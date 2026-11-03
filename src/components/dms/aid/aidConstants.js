@@ -1723,7 +1723,7 @@ export const AID_DELIVERY_OPTIONS = [
 
 export const AID_CEO_OPTIONS = [
   { value: 'approved', label: 'Approve' },
-  { value: 'rejected', label: 'Reject' },
+  { value: 'rejected', label: 'Not Approve' },
 ];
 
 export const AID_GENDERS = [

@@ -29,9 +29,11 @@ const CHECKLIST_STATUS_LABELS = {
 };
 
 const DECISION_LABELS = {
-  approve_as_requested: 'Approve as requested',
-  approve_with_changes: 'Approve with changes',
-  reject: 'Reject',
+  recommend: 'Recommend',
+  not_recommend: 'Not Recommend',
+  approve_as_requested: 'Recommend',
+  approve_with_changes: 'Recommend',
+  reject: 'Not Recommend',
 };
 
 const ACTIVITY_FILTERS = [
@@ -155,10 +157,15 @@ function pillTone(field, value) {
     if (['rejected', 'incomplete', 'incomplete_docs'].includes(v)) return 'danger';
     return 'muted';
   }
-  if (v === 'verified' || v === 'approve_as_requested' || v === 'approve_with_changes') {
+  if (
+    v === 'verified' ||
+    v === 'recommend' ||
+    v === 'approve_as_requested' ||
+    v === 'approve_with_changes'
+  ) {
     return 'success';
   }
-  if (v === 'mismatch' || v === 'reject') return 'danger';
+  if (v === 'mismatch' || v === 'reject' || v === 'not_recommend') return 'danger';
   if (v === 'not_checked') return 'muted';
   return 'info';
 }

@@ -7,10 +7,10 @@ const STATUSES = [
   { value: 'not_checked', label: 'Not checked' },
 ];
 
+/** Program manager recommendation type (CEO uses Approve / Not Approve separately). */
 export const AID_RECOMMENDATION_DECISIONS = [
-  { value: 'approve_as_requested', label: 'Approve as requested' },
-  { value: 'approve_with_changes', label: 'Approve with changes' },
-  { value: 'reject', label: 'Reject' },
+  { value: 'recommend', label: 'Recommend' },
+  { value: 'not_recommend', label: 'Not Recommend' },
 ];
 
 export const AID_RECOMMENDATION_PERIODS = [
@@ -28,8 +28,37 @@ export const AID_RATION_REC_OPTIONS = [
   { value: 'alternate', label: 'Alternate' },
 ];
 
+/** Map legacy approve/reject values → recommend / not_recommend. */
+export const normalizeRecommendationDecision = (decision) => {
+  const d = String(decision || '').trim();
+  if (!d) return 'recommend';
+  if (d === 'reject' || d === 'not_recommend') return 'not_recommend';
+  if (
+    d === 'recommend' ||
+    d === 'approve_as_requested' ||
+    d === 'approve_with_changes'
+  ) {
+    return 'recommend';
+  }
+  return d;
+};
+
+export const isNegativeRecommendation = (decision) => {
+  const d = normalizeRecommendationDecision(decision);
+  return d === 'not_recommend';
+};
+
+export const formatRecommendationDecision = (decision) => {
+  if (decision == null || decision === '') return '—';
+  const normalized = normalizeRecommendationDecision(decision);
+  return (
+    AID_RECOMMENDATION_DECISIONS.find((o) => o.value === normalized)?.label ||
+    String(decision).replace(/_/g, ' ')
+  );
+};
+
 export const emptyRecommendation = () => ({
-  decision: 'approve_as_requested',
+  decision: 'recommend',
   amount: '',
   period_months: 6,
   remarks: '',
@@ -341,13 +370,11 @@ export const isRecommendationComplete = (rec = {}, opts = {}) => {
   if (opts.rationOverride) {
     return normalizeRationOptions(rec.ration_options).length > 0;
   }
-  if (rec.decision === 'reject') return true;
+  const decision = normalizeRecommendationDecision(rec.decision);
+  if (isNegativeRecommendation(decision)) return true;
+  if (!decision) return false;
   const amount = Number(rec.amount);
   if (!Number.isFinite(amount) || amount <= 0) return false;
-  if (rec.decision === 'approve_with_changes') {
-    const months = Number(rec.period_months);
-    if (!Number.isFinite(months) || months <= 0) return false;
-  }
   return true;
 };
 
@@ -366,22 +393,14 @@ export const getRecommendationIncompleteReasons = (rec = {}, opts = {}) => {
     }
     return reasons;
   }
-  const decision = rec?.decision;
-  if (!decision) {
-    reasons.push(
-      'Recommendation: choose Approve as requested, with changes, or Reject',
-    );
+  const decision = normalizeRecommendationDecision(rec?.decision);
+  if (!rec?.decision) {
+    reasons.push('Recommendation: choose Recommend or Not Recommend');
   }
-  if (decision && decision !== 'reject') {
+  if (decision && !isNegativeRecommendation(decision)) {
     const amount = Number(rec?.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
       reasons.push('Recommendation: enter amount (PKR)');
-    }
-    if (decision === 'approve_with_changes') {
-      const months = Number(rec?.period_months);
-      if (!Number.isFinite(months) || months <= 0) {
-        reasons.push('Recommendation: select period (months)');
-      }
     }
   }
   return reasons;
@@ -973,7 +992,7 @@ const AidInvestigationPanel = ({
                                   : [...cur, opt.value];
                                 setRec({
                                   ration_options: next,
-                                  decision: 'approve_as_requested',
+                                  decision: 'recommend',
                                   amount: '',
                                   period_months: null,
                                   found_monthly_income: '',
@@ -1003,9 +1022,12 @@ const AidInvestigationPanel = ({
                         <label
                           key={opt.value}
                           className={`aid-rec-option${
-                            rec.decision === opt.value ? ' is-active' : ''
+                            normalizeRecommendationDecision(rec.decision) ===
+                            opt.value
+                              ? ' is-active'
+                              : ''
                           }${
-                            opt.value === 'reject'
+                            opt.value === 'not_recommend'
                               ? ' aid-rec-option--reject'
                               : ''
                           }`}
@@ -1014,7 +1036,10 @@ const AidInvestigationPanel = ({
                             type="radio"
                             name="aid-rec-decision"
                             value={opt.value}
-                            checked={rec.decision === opt.value}
+                            checked={
+                              normalizeRecommendationDecision(rec.decision) ===
+                              opt.value
+                            }
                             disabled={recLocked}
                             onChange={() => setRec({ decision: opt.value })}
                           />
@@ -1023,7 +1048,7 @@ const AidInvestigationPanel = ({
                       ))}
                     </div>
 
-                    {rec.decision !== 'reject' ? (
+                    {!isNegativeRecommendation(rec.decision) ? (
                       <div className="aid-rec-grid">
                         <label className="aid-rec-field">
                           <span>Amount (PKR)</span>

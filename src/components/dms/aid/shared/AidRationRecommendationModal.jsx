@@ -27,7 +27,7 @@ const AidRationRecommendationModal = ({
     const rec = application.investigation_recommendation || {};
     setDraft({
       ...emptyRecommendation(),
-      decision: 'approve_as_requested',
+      decision: 'recommend',
       remarks: rec.remarks || '',
       ration_options: normalizeRationOptions(rec.ration_options),
     });
@@ -43,7 +43,7 @@ const AidRationRecommendationModal = ({
   const beneficiary = application.beneficiary?.full_name || '';
 
   const buildBody = () => ({
-    decision: 'approve_as_requested',
+    decision: 'recommend',
     amount: null,
     period_months: null,
     remarks: String(draft.remarks || '').trim(),
@@ -60,7 +60,7 @@ const AidRationRecommendationModal = ({
       return {
         ...prev,
         ration_options: next,
-        decision: 'approve_as_requested',
+        decision: 'recommend',
         amount: '',
         period_months: null,
         found_monthly_income: '',

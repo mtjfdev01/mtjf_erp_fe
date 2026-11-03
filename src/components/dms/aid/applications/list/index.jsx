@@ -308,7 +308,7 @@ const AidApplicationsList = () => {
           {canCeo && ceoFilterActive && (
             <div className="aid-list-banner">
               Showing applications that need <strong>CEO approval</strong>. Use
-              Review to approve or reject.
+              Review to approve or not approve.
             </div>
           )}
 

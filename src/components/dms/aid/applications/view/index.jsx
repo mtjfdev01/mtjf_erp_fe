@@ -35,10 +35,13 @@ import AidInvestigationPanel, {
   AID_RATION_REC_OPTIONS,
   emptyRecommendation,
   enrichInvestigationFromAttachments,
+  formatRecommendationDecision,
   isInvestigationComplete,
+  isNegativeRecommendation,
   isRecommendationComplete,
   mergeInvestigationState,
   normalizeInvestigationEntry,
+  normalizeRecommendationDecision,
   normalizeRationOptions,
 } from '../../shared/AidInvestigationPanel';
 import AidPersonProfileCard, {
@@ -175,7 +178,7 @@ const AidApplicationView = () => {
         if (saved && typeof saved === 'object') {
           setRecommendation({
             ...emptyRecommendation(),
-            decision: saved.decision || 'approve_as_requested',
+            decision: normalizeRecommendationDecision(saved.decision),
             amount: saved.amount ?? '',
             period_months: saved.period_months ?? 6,
             remarks: saved.remarks || '',
@@ -470,9 +473,10 @@ const AidApplicationView = () => {
 
   const buildRecommendationBody = () => {
     const ration_options = normalizeRationOptions(recommendation.ration_options);
+    const decision = normalizeRecommendationDecision(recommendation.decision);
     if (isRationApp && rationOverrideEdit) {
       return {
-        decision: 'approve_as_requested',
+        decision: 'recommend',
         amount: null,
         period_months: null,
         remarks: recommendation.remarks,
@@ -481,11 +485,10 @@ const AidApplicationView = () => {
       };
     }
     return {
-      decision: recommendation.decision,
-      amount:
-        recommendation.decision === 'reject'
-          ? null
-          : Number(recommendation.amount),
+      decision,
+      amount: isNegativeRecommendation(decision)
+        ? null
+        : Number(recommendation.amount),
       period_months: Number(recommendation.period_months) || null,
       remarks: recommendation.remarks,
       found_monthly_income: recommendation.found_monthly_income
@@ -607,14 +610,15 @@ const AidApplicationView = () => {
         ...(isProgramDeptManager
           ? {
               investigation_recommendation: {
-                decision: recommendation.decision,
-                amount:
-                  recommendation.decision === 'reject'
-                    ? null
-                    : recommendation.amount !== '' &&
-                        recommendation.amount != null
-                      ? Number(recommendation.amount)
-                      : null,
+                decision: normalizeRecommendationDecision(
+                  recommendation.decision,
+                ),
+                amount: isNegativeRecommendation(recommendation.decision)
+                  ? null
+                  : recommendation.amount !== '' &&
+                      recommendation.amount != null
+                    ? Number(recommendation.amount)
+                    : null,
                 period_months: Number(recommendation.period_months) || null,
                 remarks: recommendation.remarks || '',
                 found_monthly_income: recommendation.found_monthly_income
@@ -1062,7 +1066,7 @@ const AidApplicationView = () => {
                 )}
                 {app.ceo_rejection_reason && (
                   <p className="aid-alert aid-alert--danger">
-                    CEO rejection: {app.ceo_rejection_reason}
+                    CEO not approve: {app.ceo_rejection_reason}
                   </p>
                 )}
                 {app.requested_aid_type === 'education' &&
@@ -1679,9 +1683,9 @@ const AidApplicationView = () => {
                                       )?.label || v,
                                   )
                                   .join(', ')
-                              : String(
+                              : formatRecommendationDecision(
                                   app.investigation_recommendation.decision,
-                                ).replace(/_/g, ' ')}
+                                )}
                             {app.investigation_recommendation.amount != null
                               ? ` · PKR ${app.investigation_recommendation.amount}`
                               : ''}
@@ -1766,7 +1770,7 @@ const AidApplicationView = () => {
                 />
                 {ceoDecision === 'rejected' ? (
                   <FormTextarea
-                    label="CEO rejection reason"
+                    label="Not approve reason"
                     value={ceoReason}
                     onChange={(e) => setCeoReason(e.target.value)}
                     rows={2}
@@ -1809,7 +1813,7 @@ const AidApplicationView = () => {
                                   setRecommendation((prev) => ({
                                     ...prev,
                                     ration_options: next,
-                                    decision: 'approve_as_requested',
+                                    decision: 'recommend',
                                     amount: '',
                                     period_months: null,
                                     found_monthly_income: '',
@@ -1844,11 +1848,13 @@ const AidApplicationView = () => {
                           <label
                             key={opt.value}
                             className={`aid-rec-option${
-                              recommendation.decision === opt.value
+                              normalizeRecommendationDecision(
+                                recommendation.decision,
+                              ) === opt.value
                                 ? ' is-active'
                                 : ''
                             }${
-                              opt.value === 'reject'
+                              opt.value === 'not_recommend'
                                 ? ' aid-rec-option--reject'
                                 : ''
                             }`}
@@ -1857,7 +1863,11 @@ const AidApplicationView = () => {
                               type="radio"
                               name="aid-ceo-rec-decision"
                               value={opt.value}
-                              checked={recommendation.decision === opt.value}
+                              checked={
+                                normalizeRecommendationDecision(
+                                  recommendation.decision,
+                                ) === opt.value
+                              }
                               disabled={busy}
                               onChange={() =>
                                 setRecommendation((prev) => ({
@@ -1870,7 +1880,7 @@ const AidApplicationView = () => {
                           </label>
                         ))}
                       </div>
-                      {recommendation.decision !== 'reject' ? (
+                      {!isNegativeRecommendation(recommendation.decision) ? (
                         <div className="aid-rec-grid">
                           <label className="aid-rec-field">
                             <span>Amount (PKR)</span>
@@ -1940,7 +1950,7 @@ const AidApplicationView = () => {
                         decision: ceoDecision,
                         ceo_rejection_reason:
                           ceoDecision === 'rejected'
-                            ? ceoReason || 'Rejected by CEO'
+                            ? ceoReason || 'Not approved by CEO'
                             : undefined,
                         leakage_override_reason:
                           ceoDecision === 'approved' && needsLeakageOverride
@@ -1953,7 +1963,7 @@ const AidApplicationView = () => {
                 >
                   {ceoDecision === 'approved'
                     ? 'Approve application'
-                    : 'Record CEO decision'}
+                    : 'Not approve application'}
                 </button>
               </>
             )}
@@ -1999,7 +2009,7 @@ const AidApplicationView = () => {
 
         {showCeo && ceoDecision === 'rejected' && (
           <FormTextarea
-            label="CEO rejection reason"
+            label="Not approve reason"
             value={ceoReason}
             onChange={(e) => setCeoReason(e.target.value)}
             rows={2}

@@ -13,10 +13,12 @@ import {
 } from '../aidConstants';
 import {
   normalizeInvestigationEntry,
-  AID_RECOMMENDATION_DECISIONS,
   AID_RECOMMENDATION_PERIODS,
   AID_RATION_REC_OPTIONS,
+  formatRecommendationDecision,
+  isNegativeRecommendation,
   normalizeRationOptions,
+  normalizeRecommendationDecision,
 } from './AidInvestigationPanel';
 import { printAidElement } from './printAidElement';
 
@@ -234,8 +236,7 @@ const statusLabel = (status) => {
 };
 
 const decisionLabel = (decision) =>
-  AID_RECOMMENDATION_DECISIONS.find((d) => d.value === decision)?.label ||
-  dash(decision);
+  decision ? formatRecommendationDecision(decision) : dash(decision);
 
 const periodLabel = (months) =>
   AID_RECOMMENDATION_PERIODS.find((p) => Number(p.value) === Number(months))
@@ -494,11 +495,9 @@ const AidApplicationPreview = ({
     else if (status === 'rejected') approvalDecision = 'rejected';
     else if (status === 'under_review' || status === 'submitted') {
       /* leave blank */
-    } else if (String(rec.decision || '').includes('changes')) {
-      approvalDecision = 'approved_with_changes';
-    } else if (rec.decision === 'reject') {
+    } else if (isNegativeRecommendation(rec.decision)) {
       approvalDecision = 'rejected';
-    } else if (rec.decision === 'approve_as_requested') {
+    } else if (normalizeRecommendationDecision(rec.decision) === 'recommend') {
       approvalDecision = 'approved';
     }
 
@@ -1039,17 +1038,12 @@ const AidApplicationPreview = ({
                   label="Recommend"
                   checked={
                     !!rec.decision &&
-                    rec.decision !== 'reject' &&
-                    String(rec.decision).toLowerCase() !== 'not_recommend'
+                    !isNegativeRecommendation(rec.decision)
                   }
                 />
                 <Check
-                  label="Not recommend"
-                  checked={
-                    rec.decision === 'reject' ||
-                    String(rec.decision || '').toLowerCase() ===
-                      'not_recommend'
-                  }
+                  label="Not Recommend"
+                  checked={isNegativeRecommendation(rec.decision)}
                 />
               </span>
             </div>
@@ -1243,10 +1237,8 @@ const AidApplicationPreview = ({
               <span className="aid-preview__checks">
                 {(
                   [
-                    ['approved', 'Approved'],
-                    ['approved_with_changes', 'Approved with changes'],
-                    ['rejected', 'Rejected'],
-                    ['re_investigate', 'Re-investigate'],
+                    ['approved', 'Approve'],
+                    ['rejected', 'Not Approve'],
                   ]
                 ).map(([value, label]) => (
                   <ChoiceCheck
@@ -1254,12 +1246,7 @@ const AidApplicationPreview = ({
                     label={label}
                     checked={
                       approval.decision === value ||
-                      (!approval.decision &&
-                        value === 're_investigate' &&
-                        status === 'under_review' &&
-                        String(app.return_reason || '').length > 0) ||
-                      (!approval.decision &&
-                        value === approvalDecision)
+                      (!approval.decision && value === approvalDecision)
                     }
                     editable={approvalEditable}
                     onChange={(on) =>
@@ -1322,7 +1309,9 @@ const AidApplicationPreview = ({
                     {money(
                       approval.approved_amount ||
                         app.approved_amount ||
-                        (rec.decision !== 'reject' ? rec.amount : ''),
+                        (!isNegativeRecommendation(rec.decision)
+                          ? rec.amount
+                          : ''),
                     )}
                   </Cell>
                 </>

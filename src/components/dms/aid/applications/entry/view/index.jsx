@@ -33,8 +33,11 @@ import AidInvestigationPanel, {
   AID_RATION_REC_OPTIONS,
   emptyRecommendation,
   enrichInvestigationFromAttachments,
+  formatRecommendationDecision,
+  isNegativeRecommendation,
   isRecommendationComplete,
   mergeInvestigationState,
+  normalizeRecommendationDecision,
   normalizeRationOptions,
 } from '../../../shared/AidInvestigationPanel';
 import { printAidElement } from '../../../shared/printAidElement';
@@ -142,7 +145,7 @@ const AidEntryApplicationView = () => {
     const saved = payload.investigation_recommendation || {};
     setRecommendation({
       ...emptyRecommendation(),
-      decision: saved.decision || 'approve_as_requested',
+      decision: normalizeRecommendationDecision(saved.decision),
       amount: saved.amount ?? '',
       period_months: saved.period_months ?? 6,
       remarks: saved.remarks || '',
@@ -294,9 +297,10 @@ const AidEntryApplicationView = () => {
 
   const buildRecommendationBody = () => {
     const ration_options = normalizeRationOptions(recommendation.ration_options);
+    const decision = normalizeRecommendationDecision(recommendation.decision);
     if (isRationApp && rationOverrideEdit) {
       return {
-        decision: 'approve_as_requested',
+        decision: 'recommend',
         amount: null,
         period_months: null,
         remarks: recommendation.remarks,
@@ -305,11 +309,10 @@ const AidEntryApplicationView = () => {
       };
     }
     return {
-      decision: recommendation.decision,
-      amount:
-        recommendation.decision === 'reject'
-          ? null
-          : Number(recommendation.amount),
+      decision,
+      amount: isNegativeRecommendation(decision)
+        ? null
+        : Number(recommendation.amount),
       period_months: Number(recommendation.period_months) || null,
       remarks: recommendation.remarks,
       found_monthly_income: recommendation.found_monthly_income
@@ -325,13 +328,12 @@ const AidEntryApplicationView = () => {
     try {
       await axiosInstance.patch(`/aid/applications/${id}`, {
         investigation_recommendation: {
-          decision: recommendation.decision,
-          amount:
-            recommendation.decision === 'reject'
-              ? null
-              : recommendation.amount !== '' && recommendation.amount != null
-                ? Number(recommendation.amount)
-                : null,
+          decision: normalizeRecommendationDecision(recommendation.decision),
+          amount: isNegativeRecommendation(recommendation.decision)
+            ? null
+            : recommendation.amount !== '' && recommendation.amount != null
+              ? Number(recommendation.amount)
+              : null,
           period_months: Number(recommendation.period_months) || null,
           remarks: recommendation.remarks || '',
           found_monthly_income: recommendation.found_monthly_income
@@ -926,9 +928,8 @@ const AidEntryApplicationView = () => {
                               )
                               .join(', ')
                           : recommendation.decision
-                            ? String(recommendation.decision).replace(
-                                /_/g,
-                                ' ',
+                            ? formatRecommendationDecision(
+                                recommendation.decision,
                               )
                             : '—'}
                       </Fact>
