@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import FormInput from '../../../common/FormInput';
-import FormSelect from '../../../common/FormSelect';
 import mtjfLogo from '../../../../assets/mtjf_logo.png';
 import {
-  AID_ZAKAT_RELIGIONS,
   calcZakatAssetTotal,
   calcZakatNetAfterLoan,
   emptyZakatPermission,
@@ -25,7 +23,6 @@ const COPY = {
     applicantName: 'درخواست دہندہ کا نام',
     age: 'عمر',
     education: 'تعلیم',
-    religion: 'مذہب',
     cnic: 'شناختی کارڈ نمبر',
     phone: 'موبائل نمبر',
     sr: 'نمبر شمار',
@@ -66,7 +63,6 @@ const COPY = {
     applicantName: "Applicant's Name",
     age: 'Age',
     education: 'Education',
-    religion: 'Religion',
     cnic: 'CNIC',
     phone: 'Mobile',
     sr: 'Sr.',
@@ -269,13 +265,6 @@ const AidZakatPermissionForm = ({
           value={details.education || ''}
           onChange={(e) => patch({ education: e.target.value })}
           readOnly={readOnly}
-        />
-        <FormSelect
-          label={t.religion}
-          value={details.religion || 'muslim'}
-          onChange={(e) => patch({ religion: e.target.value })}
-          options={AID_ZAKAT_RELIGIONS}
-          disabled={readOnly}
         />
         <FormInput
           label={t.cnic}

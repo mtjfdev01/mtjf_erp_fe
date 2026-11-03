@@ -186,25 +186,25 @@ const AidDraftsList = () => {
       <Navbar />
       <div className="list-wrapper aid-list aid-entry-list">
         <PageHeader
-          title="Data Entry"
+          title="Drafts"
           backPath="/dms"
           showAdd={!!canCreate}
           addPath="/dms/aid/applications/add"
-          addTitle="New application"
+          addTitle="New draft"
           onRefresh={fetchRows}
         />
         <div className="list-content">
           {error && <div className="error-message">{error}</div>}
 
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
-            New applications are saved as drafts here. Consider assigns a
+            New applications are saved as drafts here. Approve assigns a
             program user and sends the case to Verification Process.
           </p>
 
           {approveRowId && canApprove ? (
             <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
               <h3 style={{ marginTop: 0 }}>
-                Consider draft
+                Approve draft
                 {approveRow?.application_no
                   ? ` — ${approveRow.application_no}`
                   : ''}
@@ -223,8 +223,8 @@ const AidDraftsList = () => {
                   onClick={confirmApprove}
                 >
                   {approvingId === approveRowId
-                    ? 'Considering…'
-                    : 'Consider & assign'}
+                    ? 'Approving…'
+                    : 'Approve & assign'}
                 </button>
                 <button
                   type="button"
@@ -394,7 +394,11 @@ const AidDraftsList = () => {
                               disabled={!!approvingId}
                               onClick={() => openApprove(row.id)}
                             >
+<<<<<<< HEAD
+                              Approve
+=======
                               <FiCheckCircle />
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                             </button>
                           ) : null}
                         </div>

@@ -4,10 +4,10 @@ import './TaskViewModeSwitch.css';
 
 export default function TaskViewModeSwitch({ value = 'kanban', onChange }) {
   return (
-    <div className="task-view-mode-switch" role="group" aria-label="Task view mode">
+    <div className="tkviewmode-switch" role="group" aria-label="Task view mode">
       <button
         type="button"
-        className={`task-view-mode-switch__btn ${value === 'list' ? 'task-view-mode-switch__btn--active' : ''}`}
+        className={`tkviewmode-btn ${value === 'list' ? 'tkviewmode-btn--active' : ''}`}
         onClick={() => onChange?.('list')}
         aria-pressed={value === 'list'}
       >
@@ -16,7 +16,7 @@ export default function TaskViewModeSwitch({ value = 'kanban', onChange }) {
       </button>
       <button
         type="button"
-        className={`task-view-mode-switch__btn ${value === 'kanban' ? 'task-view-mode-switch__btn--active' : ''}`}
+        className={`tkviewmode-btn ${value === 'kanban' ? 'tkviewmode-btn--active' : ''}`}
         onClick={() => onChange?.('kanban')}
         aria-pressed={value === 'kanban'}
       >

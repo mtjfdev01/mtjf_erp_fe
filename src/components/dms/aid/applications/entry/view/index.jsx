@@ -15,7 +15,10 @@ import AidEducationApplicationFields from '../../../shared/AidEducationApplicati
 import AidRationApplicationFields from '../../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../../shared/AidFinancialAssistanceFields';
+<<<<<<< HEAD
+=======
 import AidCleanWaterSurveyForm from '../../../shared/AidCleanWaterSurveyForm';
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
 import AidWheelchairConsentForm from '../../../shared/AidWheelchairConsentForm';
@@ -27,6 +30,8 @@ import AidPersonProfileCard, {
 } from '../../../shared/AidPersonProfileCard';
 import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
+<<<<<<< HEAD
+=======
 import AidApplicationPrintable from '../../../shared/AidApplicationPrintable';
 import AidApplicationPreview from '../../../shared/AidApplicationPreview';
 import AidInvestigationPanel, {
@@ -41,6 +46,7 @@ import AidInvestigationPanel, {
   normalizeRationOptions,
 } from '../../../shared/AidInvestigationPanel';
 import { printAidElement } from '../../../shared/printAidElement';
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 import {
   aidStatusTone,
   formatAidStatus,
@@ -67,9 +73,12 @@ const ENTRY_TABS_BASE = [
   { id: 'family', label: 'Family' },
   { id: 'family_tree', label: 'Family Tree' },
   { id: 'attachments', label: 'Attachments' },
+<<<<<<< HEAD
+=======
   { id: 'preview', label: 'Preview' },
   { id: 'printable', label: 'Printable' },
   { id: 'verification', label: 'Verification' },
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 ];
 
 const FAMILY_GROUPS = [
@@ -270,7 +279,7 @@ const AidEntryApplicationView = () => {
         <Navbar />
         <div className="form-content aid-view">
           <PageHeader
-            title={fromDrafts ? 'Data Entry' : 'Application'}
+            title={fromDrafts ? 'Draft' : 'Application entry'}
             backPath={listPath}
             onBackClick={() => navigate(listPath)}
             showAdd={false}
@@ -407,8 +416,7 @@ const AidEntryApplicationView = () => {
     (app.requested_aid_type === 'marriage_gift' &&
       app.marriage_gift_details) ||
     (app.requested_aid_type === 'financial_assistance' &&
-      app.financial_assistance_details) ||
-    (app.requested_aid_type === 'clean_water' && app.clean_water_details);
+      app.financial_assistance_details);
 
   return (
     <>
@@ -425,10 +433,15 @@ const AidEntryApplicationView = () => {
           <div>
             <p className="aid-entry-view__eyebrow">
               {status === 'draft'
+<<<<<<< HEAD
+                ? 'Draft — approve to enter verification'
+                : 'Beneficiary registration record'}
+=======
                 ? 'Draft — consider to enter verification'
                 : status === 'incomplete' || status === 'incomplete_docs'
                   ? 'Incomplete — complete details/docs, then consider for verification'
                   : 'Application record'}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             </p>
             <h2 style={{ margin: '0 0 6px' }}>
               {app.title || 'Aid application'}
@@ -469,7 +482,7 @@ const AidEntryApplicationView = () => {
                   setError('');
                 }}
               >
-                Consider for verification
+                Approve for verification
               </button>
             ) : null}
           </div>
@@ -481,11 +494,15 @@ const AidEntryApplicationView = () => {
           status === 'incomplete_docs') &&
         showApprovePanel ? (
           <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
+<<<<<<< HEAD
+            <h3 style={{ marginTop: 0 }}>Approve draft</h3>
+=======
             <h3 style={{ marginTop: 0 }}>
               {status === 'incomplete' || status === 'incomplete_docs'
                 ? 'Consider incomplete'
                 : 'Consider draft'}
             </h3>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             <AidUserAssignField
               label="Assign to program user"
               value={assignUser}
@@ -499,7 +516,7 @@ const AidEntryApplicationView = () => {
                 disabled={approving || !assignUser?.id}
                 onClick={approveDraft}
               >
-                {approving ? 'Considering…' : 'Consider & assign'}
+                {approving ? 'Approving…' : 'Approve & assign'}
               </button>
               <button
                 type="button"
@@ -847,6 +864,8 @@ const AidEntryApplicationView = () => {
                 )}
               </section>
             )}
+<<<<<<< HEAD
+=======
 
             {panelTab === 'preview' && (
               <AidApplicationPreview
@@ -1011,6 +1030,7 @@ const AidEntryApplicationView = () => {
                 )}
               </section>
             )}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           </div>
         </div>
       </div>

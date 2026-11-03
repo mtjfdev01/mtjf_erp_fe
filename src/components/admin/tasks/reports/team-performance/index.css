@@ -66,7 +66,11 @@
 .tkteamperf-search-input {
   width: 100%;
   box-sizing: border-box;
+<<<<<<< HEAD
+  padding: 0.5rem 1rem 0.5rem 2.1rem;
+=======
   padding: 0.6rem 1rem 0.6rem 2.1rem;
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-radius: 8px;
   border: 1px solid #e2e8f0;
   background: #ffffff;

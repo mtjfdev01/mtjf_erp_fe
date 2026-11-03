@@ -593,7 +593,11 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
   const renderAssignees = (t) => {
     const meta = Array.isArray(t.assigned_users_meta) ? t.assigned_users_meta : [];
     if (meta.length === 0) {
+<<<<<<< HEAD
+      return <span className="tlx-person-badge">—</span>;
+=======
       return <span className="tl-person-badge">—</span>;
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     }
 
     const maxAvatars = 3;
@@ -609,6 +613,15 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     };
 
     const renderPopover = (info) => (
+<<<<<<< HEAD
+      <div className="tlx-assignee-popover">
+        {info ? (
+          <ul className="tlx-assignee-list">
+            <li className="tlx-assignee-list-item">
+              <div className="tlx-assignee-name">{info.name}</div>
+              {info.department && (
+                <div className="tlx-assignee-department">
+=======
       <div className="tl-tasks-assignee-popover">
         {info ? (
           <ul className="tl-tasks-assignee-list">
@@ -616,13 +629,18 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               <div className="tl-tasks-assignee-name">{info.name}</div>
               {info.department && (
                 <div className="tl-tasks-assignee-department">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   department: {capitalize(info.department)}
                 </div>
               )}
             </li>
           </ul>
         ) : (
+<<<<<<< HEAD
+          <div className="tlx-assignee-empty">No assignee details</div>
+=======
           <div className="tl-tasks-assignee-empty">No assignee details</div>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
         )}
       </div>
     );
@@ -635,9 +653,15 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       const displayName = getDisplayName(u, info);
       const isOpen = openAssigneeTaskId === t.id && openAssigneeUserId === u.user_id;
       return (
+<<<<<<< HEAD
+        <div className="tlx-assignment-cell">
+          <div className="tlx-assignee-trigger" onClick={(e) => handleAssigneeClick(e, t, u.user_id)}>
+            <span className="tlx-assignment-name" title={displayName}>{displayName}</span>
+=======
         <div className="tl-tasks-list-assignment-cell">
           <div className="tl-tasks-assignee-trigger" onClick={(e) => handleAssigneeClick(e, t, u.user_id)}>
             <span className="tl-tasks-list-assignment-name" title={displayName}>{displayName}</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             {isOpen && renderPopover(info)}
           </div>
         </div>
@@ -645,9 +669,15 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     }
 
     return (
+<<<<<<< HEAD
+      <div className="tlx-assignment-cell">
+        <div className="tlx-card-assignees-group">
+          <div className="tlx-avatar-stack">
+=======
       <div className="tl-tasks-list-assignment-cell">
         <div className="tl-task-card-assignees-group">
           <div className="tl-avatar-stack">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             {meta.slice(0, maxAvatars).map((u, idx) => {
               const info = Array.isArray(details) && details.length > 0
                 ? details.find((d) => d.id === u.user_id)
@@ -657,11 +687,19 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               return (
                 <div
                   key={u.user_id || idx}
+<<<<<<< HEAD
+                  className="tlx-assignee-trigger"
+                  onClick={(e) => handleAssigneeClick(e, t, u.user_id)}
+                >
+                  <div
+                    className="tlx-avatar-circle"
+=======
                   className="tl-tasks-assignee-trigger"
                   onClick={(e) => handleAssigneeClick(e, t, u.user_id)}
                 >
                   <div
                     className="tl-avatar-circle"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                     title={displayName || 'User'}
                     style={{ zIndex: meta.length - idx, backgroundColor: getAvatarColor(displayName) }}
                   >
@@ -672,7 +710,11 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               );
             })}
             {extraCount > 0 && (
+<<<<<<< HEAD
+              <div className="tlx-avatar-circle tlx-avatar-extra" style={{ zIndex: 0 }}>+{extraCount}</div>
+=======
               <div className="tl-avatar-circle tl-avatar-extra" style={{ zIndex: 0 }}>+{extraCount}</div>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             )}
           </div>
         </div>
@@ -1379,7 +1421,11 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
                       <span className="tlx-scope__label">{label}</span>
                       <span className="tlx-scope__count">{count ?? 0}</span>
                       {badge > 0 && (
+<<<<<<< HEAD
+                        <span className="tlx-approval-pending-badge" title={`${badge} pending approval`}>{badge}</span>
+=======
                         <span className="tl-approval-pending-badge" title={`${badge} pending approval`}>{badge}</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                       )}
                     </button>
                   ))}
@@ -1482,14 +1528,23 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
               </div>
             </CollapsibleFilters>
 
+<<<<<<< HEAD
+            {error && <div className="tlx-status-message tlx-status-message--error">{error}</div>}
+=======
             {error && <div className="tl-status-message tl-status-message--error">{error}</div>}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 
             <div className="tlx-groups">
               {groups.length > 0 ? (
                 groups.map(renderGroup)
               ) : (
+<<<<<<< HEAD
+                <div className="tlx-empty-tab-state">
+                  <EmptyIcon className="tlx-empty-icon" />
+=======
                 <div className="tl-empty-tab-state">
                   <EmptyIcon className="tl-empty-icon" />
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <p>{emptyText}</p>
                 </div>
               )}

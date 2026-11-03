@@ -1,27 +1,17 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import axiosInstance from '../../../../../../utils/axios';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
 import { FiBriefcase, FiUsers } from 'react-icons/fi';
-import { useAuth } from '../../../../../../context/AuthContext';
-import { hasPermission, isSuperAdmin } from '../../../../../../utils/permissions';
 
 const ViewJob = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { permissions } = useAuth();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [applicationsCount, setApplicationsCount] = useState(null);
-
-  const canUpdate = useMemo(
-    () =>
-      isSuperAdmin(permissions) ||
-      hasPermission(permissions, 'hr', 'jobs', 'update'),
-    [permissions],
-  );
 
   useEffect(() => {
     fetchJob();
@@ -150,8 +140,6 @@ const ViewJob = () => {
           title="View Job"
           showBackButton={true}
           backPath="/hr/careers/jobs/list"
-          showEdit={canUpdate}
-          editPath={`/hr/careers/jobs/edit/${id}`}
         />
         <div className="view-content">
           {/* Basic Information */}

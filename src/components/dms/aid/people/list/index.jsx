@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiEye, FiPlus, FiMinus, FiSearch, FiFilter } from 'react-icons/fi';
+import { FiEye, FiPlus, FiSearch, FiFilter } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
@@ -16,11 +16,9 @@ import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import {
-  AID_FAMILY_SECTIONS,
   AID_GENDERS,
   AID_VULNERABILITIES,
   emptyLiteracyFields,
-  personAge,
 } from '../../aidConstants';
 import '../../aid.css';
 import useListAutoRefresh, {
@@ -58,66 +56,6 @@ const nameInitial = (name) => {
   return t ? t.charAt(0).toUpperCase() : '?';
 };
 
-const formatRelationLabel = (relation) => {
-  const raw = String(relation || '').trim();
-  if (!raw) return '—';
-  return raw
-    .replace(/_/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase());
-};
-
-/** Flatten /aid/people/:id family_tree into nested-table rows. */
-const flattenFamilyMembers = (tree = {}) => {
-  const members = [];
-  AID_FAMILY_SECTIONS.forEach((section) => {
-    (tree[section.key] || []).forEach((row) => {
-      if (!row?.person) return;
-      members.push({
-        key: row.edge_id || `${section.key}-${row.person.id}`,
-        person: row.person,
-        relation: row.relation_type || section.defaultRelation,
-      });
-    });
-  });
-  return members;
-};
-
-/**
- * Family members = beneficiary + family head + linked relatives (unique by person id).
- */
-const buildFamilyMemberRows = (payload) => {
-  const person = payload?.person;
-  const tree = payload?.family_tree || {};
-  const households = Array.isArray(payload?.households) ? payload.households : [];
-  const rows = [];
-  const seen = new Set();
-
-  const push = (key, p, relation) => {
-    if (!p?.id || seen.has(p.id)) return;
-    seen.add(p.id);
-    rows.push({ key, person: p, relation });
-  };
-
-  // Beneficiary / ego always counts as a family member
-  push(person?.id ? `self-${person.id}` : 'self', person, 'beneficiary');
-
-  // Family head (household) always counts when distinct from beneficiary
-  households.forEach((hh) => {
-    const headFromRole = (hh.members || []).find(
-      (m) =>
-        String(m.role_in_household || '').toLowerCase() === 'head' && m.person,
-    )?.person;
-    const head = headFromRole || hh.head_person || null;
-    push(head?.id ? `head-${head.id}` : 'head', head, 'family_head');
-  });
-
-  flattenFamilyMembers(tree).forEach((m) => {
-    push(m.key, m.person, m.relation);
-  });
-
-  return rows;
-};
-
 const AidPeopleList = () => {
   const navigate = useNavigate();
   const { permissions } = useAuth();
@@ -147,10 +85,6 @@ const AidPeopleList = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [person, setPerson] = useState(emptyCreatePerson);
   const [saving, setSaving] = useState(false);
-
-  const [expandedId, setExpandedId] = useState(null);
-  const [familyCache, setFamilyCache] = useState({});
-  const [familyLoadingId, setFamilyLoadingId] = useState(null);
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -187,7 +121,6 @@ const AidPeopleList = () => {
       setRows(res.data?.data || []);
       setTotalItems(res.data?.total || 0);
       setTotalPages(res.data?.totalPages || 1);
-      setExpandedId(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load people');
     } finally {
@@ -209,34 +142,6 @@ const AidPeopleList = () => {
   const applySearch = () => {
     setCurrentPage(1);
     setAppliedSearch(searchInput.trim());
-  };
-
-  const loadFamily = async (personId) => {
-    if (familyCache[personId]) return;
-    setFamilyLoadingId(personId);
-    try {
-      const res = await axiosInstance.get(`/aid/people/${personId}`);
-      setFamilyCache((prev) => ({
-        ...prev,
-        [personId]: buildFamilyMemberRows(res.data?.data || {}),
-      }));
-    } catch {
-      setFamilyCache((prev) => ({
-        ...prev,
-        [personId]: [],
-      }));
-    } finally {
-      setFamilyLoadingId(null);
-    }
-  };
-
-  const toggleExpand = (personId) => {
-    if (expandedId === personId) {
-      setExpandedId(null);
-      return;
-    }
-    setExpandedId(personId);
-    loadFamily(personId);
   };
 
   const createPerson = async (e) => {
@@ -287,7 +192,7 @@ const AidPeopleList = () => {
       <Navbar />
       <div className="list-wrapper aid-list aid-people-list">
         <PageHeader
-          title="Beneficiaries List"
+          title="Beneficiary List"
           backPath="/dms/aid/applications/list"
           showAdd={false}
           onRefresh={fetchRows}
@@ -429,56 +334,33 @@ const AidPeopleList = () => {
             </span>
           </div>
 
-          <div className="aid-people-collapse">
-            <div className="aid-people-collapse__head" aria-hidden="true">
-              <span className="aid-people-collapse__toggle-cell" />
-              <span>Beneficiary Name</span>
-              <span>CNIC Number</span>
-              <span>Phone</span>
-              <span>City</span>
-              <span>Program / Aid</span>
-              <span>Expected Amount</span>
-              <span>Status</span>
-              <span>Actions</span>
-            </div>
-
-            {loading ? (
-              <div className="aid-people-collapse__empty">Loading…</div>
-            ) : rows.length === 0 ? (
-              <div className="aid-people-collapse__empty">
-                No beneficiaries found.
-              </div>
-            ) : (
-              rows.map((row) => {
-                const isOpen = expandedId === row.id;
-                const members = familyCache[row.id];
-                const membersLoading = familyLoadingId === row.id;
-
-                return (
-                  <div
-                    key={row.id}
-                    className={`aid-people-collapse__item${
-                      isOpen ? ' aid-people-collapse__item--open' : ''
-                    }`}
-                  >
-                    <div className="aid-people-collapse__row">
-                      <div className="aid-people-collapse__toggle-cell">
-                        <button
-                          type="button"
-                          className="aid-people-collapse__toggle"
-                          aria-expanded={isOpen}
-                          aria-label={
-                            isOpen
-                              ? `Collapse ${row.full_name}`
-                              : `Expand ${row.full_name}`
-                          }
-                          onClick={() => toggleExpand(row.id)}
-                        >
-                          {isOpen ? <FiMinus size={14} /> : <FiPlus size={14} />}
-                        </button>
-                      </div>
-
-                      <div className="aid-people-collapse__cell aid-people-collapse__cell--name">
+          <div className="table-container aid-people-table-wrap">
+            <table className="data-table aid-people-table">
+              <thead>
+                <tr>
+                  <th>Beneficiary Name</th>
+                  <th>CNIC Number</th>
+                  <th>Phone</th>
+                  <th>City</th>
+                  <th>Program / Aid</th>
+                  <th>Expected Amount</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan={8}>Loading…</td>
+                  </tr>
+                ) : rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={8}>No beneficiaries found.</td>
+                  </tr>
+                ) : (
+                  rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>
                         <div className="aid-people-name-cell">
                           <span
                             className="aid-people-avatar"
@@ -497,6 +379,32 @@ const AidPeopleList = () => {
                             )}
                           </div>
                         </div>
+<<<<<<< HEAD
+                      </td>
+                      <td>{row.cnic || ''}</td>
+                      <td>{row.phone || ''}</td>
+                      <td>{row.city || ''}</td>
+                      <td className="aid-people-empty-col" />
+                      <td className="aid-people-empty-col" />
+                      <td className="aid-people-empty-col" />
+                      <td>
+                        <button
+                          type="button"
+                          className="aid-people-view-btn"
+                          onClick={() =>
+                            navigate(`/dms/aid/people/view/${row.id}`)
+                          }
+                        >
+                          <FiEye size={15} />
+                          View
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+=======
                       </div>
 
                       <div className="aid-people-collapse__cell">
@@ -604,6 +512,7 @@ const AidPeopleList = () => {
                 );
               })
             )}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           </div>
 
           {totalItems > 0 && (

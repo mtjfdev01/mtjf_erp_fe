@@ -28,7 +28,11 @@ import './index.css';
 
 // The "=" icon used on the priority pill
 const EqualsIcon = ({ className = '' }) => (
+<<<<<<< HEAD
+  <span className={`tkadd-pill-equals-icon ${className}`} aria-hidden="true">=</span>
+=======
   <span className={`pill-equals-icon ${className}`} aria-hidden="true">=</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 );
 
 const formatPillDate = (value) => {
@@ -74,7 +78,11 @@ const DatePill = ({ name, value, onChange, icon: Icon, placeholder, title, showD
 
   return (
     <div
+<<<<<<< HEAD
+      className={`tkadd-pill-input-wrapper tkadd-pill-date ${value ? 'is-filled' : 'is-empty'}`}
+=======
       className={`pill-input-wrapper task-pill-date ${value ? 'is-filled' : 'is-empty'}`}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
       onClick={openPicker}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -86,18 +94,30 @@ const DatePill = ({ name, value, onChange, icon: Icon, placeholder, title, showD
       tabIndex={0}
       title={title}
     >
+<<<<<<< HEAD
+      <Icon className="tkadd-pill-icon" />
+      <span className={`tkadd-pill-text ${value ? '' : 'is-placeholder'}`}>
+        {value ? formatPillDate(value) : placeholder}
+      </span>
+      {!value && showDot && <span className="tkadd-pill-dot" />}
+=======
       <Icon className="pill-icon" />
       <span className={`pill-text ${value ? '' : 'is-placeholder'}`}>
         {value ? formatPillDate(value) : placeholder}
       </span>
       {!value && showDot && <span className="pill-dot" />}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
       <input
         ref={inputRef}
         type="date"
         name={name}
         value={value}
         onChange={onChange}
+<<<<<<< HEAD
+        className="tkadd-pill-native-date"
+=======
         className="pill-native-date"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
         tabIndex={-1}
         aria-label={title}
       />
@@ -161,28 +181,32 @@ const TaskFormSelect = ({
           {required && <span className="required-mark">*</span>}
         </label>
       )}
+<<<<<<< HEAD
+      <div className="tkadd-custom-select-container">
+=======
       <div className="task-custom-select-container">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
         <div
-          className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${disabled ? 'is-disabled' : ''}`}
+          className={`tkadd-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${disabled ? 'is-disabled' : ''}`}
           onClick={handleToggle}
         >
-          <span className="task-custom-select-leading">
+          <span className="tkadd-custom-select-leading">
             {Icon && (
-              <Icon className={`task-custom-select-field-icon ${iconClassName}`} />
+              <Icon className={`tkadd-custom-select-field-icon ${iconClassName}`} />
             )}
-            <span className={`task-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
+            <span className={`tkadd-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
               {getDisplayLabel()}
             </span>
           </span>
-          <span className="task-custom-select-arrow">▼</span>
+          <span className="tkadd-custom-select-arrow">▼</span>
         </div>
 
         {isOpen && (
-          <div className="task-custom-select-dropdown">
+          <div className="tkadd-custom-select-dropdown">
             {showDefaultOption && (
               <button
                 type="button"
-                className={`task-custom-select-option ${!value ? 'is-selected' : ''}`}
+                className={`tkadd-custom-select-option ${!value ? 'is-selected' : ''}`}
                 onClick={() => handleSelect('')}
               >
                 {defaultOptionText || `Select ${label}`}
@@ -195,7 +219,7 @@ const TaskFormSelect = ({
                 <button
                   key={optValue}
                   type="button"
-                  className={`task-custom-select-option ${value === optValue ? 'is-selected' : ''}`}
+                  className={`tkadd-custom-select-option ${value === optValue ? 'is-selected' : ''}`}
                   onClick={() => handleSelect(optValue)}
                 >
                   {optLabel}
@@ -296,6 +320,21 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
 
   return (
     <div className="form-group" ref={containerRef}>
+<<<<<<< HEAD
+      <div className="tkadd-custom-select-container">
+        <div
+          className={`tkadd-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${value ? 'is-filled has-clear' : 'is-empty'}`}
+          onClick={handleToggle}
+        >
+          <span className="tkadd-custom-select-leading">
+            <LeadIcon className="tkadd-custom-select-field-icon" />
+            <span className={`tkadd-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
+              {value || 'Project'}
+            </span>
+          </span>
+          {!value && <span className="tkadd-pill-dot" />}
+          <span className="tkadd-custom-select-arrow">▼</span>
+=======
       <div className="task-custom-select-container">
         <div
           className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${value ? 'is-filled has-clear' : 'is-empty'}`}
@@ -309,12 +348,17 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
           </span>
           {!value && <span className="pill-dot" />}
           <span className="task-custom-select-arrow">▼</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
         </div>
 
         {value && (
           <button
             type="button"
+<<<<<<< HEAD
+            className="tkadd-custom-select-clear-btn"
+=======
             className="task-custom-select-clear-btn"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             onClick={handleClear}
             aria-label="Clear project"
           >
@@ -323,21 +367,34 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
         )}
 
         {isOpen && (
-          <div className="task-custom-select-dropdown">
-            <div className="task-custom-select-dropdown-header">
-              <span className="task-custom-select-dropdown-title">
+          <div className="tkadd-custom-select-dropdown">
+            <div className="tkadd-custom-select-dropdown-header">
+              <span className="tkadd-custom-select-dropdown-title">
                 {selectionStep === 'category' ? 'Select Category' : projectCategory}
               </span>
               {selectionStep === 'item' && (
-                <button type="button" className="task-custom-select-back-link" onClick={handleBack}>
+                <button type="button" className="tkadd-custom-select-back-link" onClick={handleBack}>
                   ← Back
                 </button>
               )}
             </div>
 
-            <div className="task-custom-select-options-list">
+            <div className="tkadd-custom-select-options-list">
               {selectionStep === 'category' ? (
                 <>
+<<<<<<< HEAD
+                  <button type="button" className="tkadd-custom-select-option" onClick={() => handleCategorySelect('Projects')}>
+                    <span className="tkadd-custom-select-option-label">
+                      <FiFolder className="tkadd-custom-select-option-icon" /> Projects
+                    </span>
+                    <span className="tkadd-custom-select-option-arrow">›</span>
+                  </button>
+                  <button type="button" className="tkadd-custom-select-option" onClick={() => handleCategorySelect('Programs')}>
+                    <span className="tkadd-custom-select-option-label">
+                      <FiClipboard className="tkadd-custom-select-option-icon" /> Programs
+                    </span>
+                    <span className="tkadd-custom-select-option-arrow">›</span>
+=======
                   <button type="button" className="task-custom-select-option" onClick={() => handleCategorySelect('Projects')}>
                     <span className="task-custom-select-option-label">
                       <FiFolder className="task-custom-select-option-icon" /> Projects
@@ -349,6 +406,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
                       <FiClipboard className="task-custom-select-option-icon" /> Programs
                     </span>
                     <span className="task-custom-select-option-arrow">›</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   </button>
                 </>
               ) : (
@@ -356,7 +414,7 @@ const ProjectProgramSelect = ({ value, onChange, error }) => {
                   <button
                     key={item}
                     type="button"
-                    className={`task-custom-select-option ${value === item ? 'is-selected' : ''}`}
+                    className={`tkadd-custom-select-option ${value === item ? 'is-selected' : ''}`}
                     onClick={() => handleItemSelect(item)}
                   >
                     {item}
@@ -830,6 +888,17 @@ const AddTask = ({
   return (
     <>
       {!isModal && <Navbar />}
+<<<<<<< HEAD
+      <div className={isModal ? 'tkadd-modal-backdrop' : 'tkadd-page'}>
+        <div className="tkadd-card tkadd-card--popup">
+
+          {/* Header: [Department chip] › New task                    ✕ */}
+          <div className="tkadd-modal-header">
+            <div className="tkadd-form-breadcrumb">
+              <span className="tkadd-form-dept-chip">{currentDepartmentLabel} Department</span>
+              <span className="tkadd-form-breadcrumb-sep">›</span>
+              <h2 className="tkadd-modal-title">
+=======
       <div className={isModal ? 'add-task-modal-backdrop' : 'add-task-page'}>
         <div className="add-task-card add-task-card--popup">
 
@@ -839,12 +908,17 @@ const AddTask = ({
               <span className="task-form-dept-chip">{currentDepartmentLabel} Department</span>
               <span className="task-form-breadcrumb-sep">›</span>
               <h2 className="task-form-modal-title">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 {isModal ? 'New task' : 'Add Task'}
               </h2>
             </div>
             <button
               type="button"
+<<<<<<< HEAD
+              className="tkadd-modal-close"
+=======
               className="task-form-modal-close"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
               onClick={handleBack}
               aria-label="Close"
             >
@@ -852,24 +926,40 @@ const AddTask = ({
             </button>
           </div>
 
+<<<<<<< HEAD
+          {error && <div className="tkadd-error">{error}</div>}
+=======
           {error && <div className="add-task-error">{error}</div>}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 
           {submitting && (
-            <div className="add-task-submitting-overlay">
+            <div className="tkadd-submitting-overlay">
               Creating task, please wait...
             </div>
           )}
 
+<<<<<<< HEAD
+          <form ref={formRef} onSubmit={handleSubmit} className="tkadd-form">
+            <div className="tkadd-body">
+
+              {/* Main Title & Description */}
+              <div className="tkadd-title-section">
+=======
           <form ref={formRef} onSubmit={handleSubmit} className="add-task-form">
             <div className="add-task-body">
 
               {/* Main Title & Description */}
               <div className="task-title-section">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 <input
                   ref={titleRef}
                   type="text"
                   name="title"
+<<<<<<< HEAD
+                  className="tkadd-title-legacy tkadd-title-input"
+=======
                   className="task-title-input add-task-title-input"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   placeholder="Enter task title..."
                   value={form.title}
                   onChange={handleChange}
@@ -878,7 +968,11 @@ const AddTask = ({
                 />
                 <textarea
                   name="description"
+<<<<<<< HEAD
+                  className="tkadd-desc-input"
+=======
                   className="task-desc-input"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   placeholder="Enter task description..."
                   value={form.description}
                   onChange={handleChange}
@@ -887,11 +981,19 @@ const AddTask = ({
               </div>
 
               {/* Meta Pills Row */}
+<<<<<<< HEAD
+              <div className="tkadd-meta-pills">
+                <div className={`tkadd-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                  {assignedUsers.length > 0 && (
+                    <span
+                      className="tkadd-assignee-avatar"
+=======
               <div className="task-meta-pills">
                 <div className={`add-task-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
                   {assignedUsers.length > 0 && (
                     <span
                       className="assignee-avatar"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                       aria-hidden="true"
                       title={assignedUsers.map((u) => `${u.first_name || ''} ${u.last_name || ''}`.trim()).join(', ')}
                     >
@@ -923,7 +1025,11 @@ const AddTask = ({
                   onChange={handleProjectChange}
                 />
 
+<<<<<<< HEAD
+                <div className={`tkadd-pill-priority priority-${form.priority || 'medium'}`}>
+=======
                 <div className={`task-pill-priority priority-${form.priority || 'medium'}`}>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <TaskFormSelect
                     name="priority"
                     label=""
@@ -988,10 +1094,17 @@ const AddTask = ({
 
                {/* Approvers */}
                 {form.workflow_type === 'approval_required' && (
+<<<<<<< HEAD
+                  <div className={`tkadd-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                    <FiClipboard className="tkadd-approver-icon" aria-hidden="true" />
+                    <SearchableMultiSelect
+                      className="task-approvers-select tkadd-approvers-select"
+=======
                   <div className={`add-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
                     <FiClipboard className="add-task-approver-icon" aria-hidden="true" />
                     <SearchableMultiSelect
                       className="task-approvers-select add-task-approvers-select"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                       label=""
                       apiEndpoint="/users/options"
                       apiParams={multiSelectParams}
@@ -1017,6 +1130,17 @@ const AddTask = ({
               </div>
 
               {assignedUsers.length > 1 && (
+<<<<<<< HEAD
+                <div className="tkadd-popup-assignee-summary">
+                  <span className="tkadd-popup-assignee-count">
+                    {'\u2713'} {assignedUsers.length} users selected
+                  </span>
+                  {assignedUsers.map((u) => (
+                    <span key={u.id} className="tkadd-popup-assignee-chip">
+                      <span className="tkadd-chip-avatar">{getInitials(u)}</span>
+                      <span className="tkadd-chip-name">{userDisplayName(u)}</span>
+                      <span className="tkadd-chip-dept">
+=======
                 <div className="popup-assignee-summary">
                   <span className="popup-assignee-count">
                     {'\u2713'} {assignedUsers.length} users selected
@@ -1026,6 +1150,7 @@ const AddTask = ({
                       <span className="chip-avatar">{getInitials(u)}</span>
                       <span className="chip-name">{userDisplayName(u)}</span>
                       <span className="chip-dept">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                         {formatDepartment(
                           assignedUserDepartments[u.id] || u.department || form.department || ''
                         )}
@@ -1037,7 +1162,11 @@ const AddTask = ({
 
               {/* Recurring Conditional Block */}
               {form.task_type === 'recurring' && (
+<<<<<<< HEAD
+                <div className="tkadd-recurring-fields">
+=======
                 <div className="add-task-recurring-fields">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <TaskFormSelect
                     name="recurrence_frequency"
                     label="Recurring frequency"
@@ -1090,14 +1219,24 @@ const AddTask = ({
               )}
 
               {/* Done When Section (MOV) */}
+<<<<<<< HEAD
+              <div className="tkadd-done-when-section">
+                <div className="tkadd-done-when-header">
+=======
               <div className="done-when-section">
                 <div className="done-when-header">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   Done when... <span>Means of verification the assignee must tick off</span>
                 </div>
 
                 {movItems.map((item, index) => (
+<<<<<<< HEAD
+                  <div key={index} className="tkadd-done-when-input-wrapper">
+                    {/* <span className="tkadd-done-when-checkbox" aria-hidden="true" /> */}
+=======
                   <div key={index} className="done-when-input-wrapper">
                     {/* <span className="done-when-checkbox" aria-hidden="true" /> */}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                     <input
                       type="text"
                       value={item.text}
@@ -1116,7 +1255,11 @@ const AddTask = ({
                     {movItems.length > 1 && (
                       <button
                         type="button"
+<<<<<<< HEAD
+                        className="tkadd-done-when-remove-btn"
+=======
                         className="done-when-remove-btn"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                         onClick={() => handleMovRemove(index)}
                         title="Remove"
                         aria-label="Remove condition"
@@ -1127,13 +1270,21 @@ const AddTask = ({
                   </div>
                 ))}
 
+<<<<<<< HEAD
+                <button type="button" className="tkadd-done-when-add-btn" onClick={handleMovAdd}>
+=======
                 <button type="button" className="done-when-add-btn" onClick={handleMovAdd}>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <FiPlus /> Add condition
                 </button>
               </div>
 
               {/* Attachments */}
+<<<<<<< HEAD
+              <div className="tkadd-attachment-dropzone">
+=======
               <div className="attachment-dropzone">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 <TaskPendingAttachments
                   ref={attachmentsRef}
                   items={pendingAttachments}
@@ -1144,8 +1295,13 @@ const AddTask = ({
             </div>
 
             {/* Footer */}
+<<<<<<< HEAD
+            <div className="tkadd-footer">
+              <label className="tkadd-footer-checkbox-label">
+=======
             <div className="add-task-footer">
               <label className="footer-checkbox-label">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 <input
                   type="checkbox"
                   checked={createAnother}
@@ -1154,16 +1310,27 @@ const AddTask = ({
                 Create another after this
               </label>
 
+<<<<<<< HEAD
+              <div className="tkadd-footer-actions">
+                <button
+                  type="button"
+                  className="tkadd-cancel-btn"
+=======
               <div className="footer-actions">
                 <button
                   type="button"
                   className="add-task-cancel-btn"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   onClick={handleBack}
                 >
                   Cancel
                 </button>
                 <button
+<<<<<<< HEAD
+                  className="tkadd-submit"
+=======
                   className="add-task-submit"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   type="submit"
                   disabled={submitting || !taskPerms.canCreate}
                   title={createTitle}

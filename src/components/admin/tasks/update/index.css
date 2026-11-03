@@ -3,7 +3,11 @@
    Import AFTER index.css so these rules win.
    ========================================================= */
 
+<<<<<<< HEAD
+.tkupd-card--popup {
+=======
 .add-task-card--popup {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   --atk-accent: #00a3e0;
   --atk-accent-hover: #00a3e0;
   --atk-accent-soft: #def3fa;
@@ -16,8 +20,13 @@
 }
 
 /* ---------- Overlay + card ---------- */
+<<<<<<< HEAD
+.tkupd-modal-backdrop,
+.tkupd-page.tkupd-page--redesigned {
+=======
 .add-task-modal-backdrop,
 .add-task-page.add-task-page--redesigned {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: fixed;
   inset: 0;
   z-index: 1000;
@@ -34,12 +43,21 @@
   scrollbar-width: none;
 }
 
+<<<<<<< HEAD
+.tkupd-modal-backdrop::-webkit-scrollbar,
+.tkupd-page.tkupd-page--redesigned::-webkit-scrollbar {
+  display: none;
+}
+
+.tkupd-card.tkupd-card--popup {
+=======
 .add-task-modal-backdrop::-webkit-scrollbar,
 .add-task-page.add-task-page--redesigned::-webkit-scrollbar {
   display: none;
 }
 
 .add-task-card.add-task-card--popup {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 100%;
   max-width: 720px;
   margin: 0 auto;
@@ -57,12 +75,20 @@
   scrollbar-width: none;
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup::-webkit-scrollbar {
+=======
 .add-task-card.add-task-card--popup::-webkit-scrollbar {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: none;
 }
 
 /* ---------- Header ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-modal-header {
+=======
 .add-task-card--popup .task-form-modal-header {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -72,14 +98,22 @@
   border-bottom: 1px solid #f0f1f3;
 }
 
+<<<<<<< HEAD
+.tkupd-form-breadcrumb {
+=======
 .task-form-breadcrumb {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: center;
   gap: 10px;
   min-width: 0;
 }
 
+<<<<<<< HEAD
+.tkupd-form-dept-chip {
+=======
 .task-form-dept-chip {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #f3f4f6;
   color: #374151;
   font-size: 13px;
@@ -89,20 +123,33 @@
   white-space: nowrap;
 }
 
+<<<<<<< HEAD
+.tkupd-form-breadcrumb-sep {
+=======
 .task-form-breadcrumb-sep {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-placeholder);
   font-size: 16px;
   line-height: 1;
 }
 
 /* Remove the old hard-coded "IT Department" text from index.css */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-modal-title::before,
+.tkupd-card--popup .tkupd-modal-title::after {
+=======
 .add-task-card--popup .task-form-modal-title::before,
 .add-task-card--popup .task-form-modal-title::after {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   content: none;
   display: none;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-modal-title {
+=======
 .add-task-card--popup .task-form-modal-title {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin: 0;
   font-size: 13px;
   font-weight: 600;
@@ -110,7 +157,11 @@
   display: block;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-modal-close {
+=======
 .add-task-card--popup .task-form-modal-close {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 32px;
   height: 32px;
   border: none;
@@ -125,13 +176,21 @@
   transition: background 0.15s, color 0.15s;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-modal-close:hover {
+=======
 .add-task-card--popup .task-form-modal-close:hover {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #f3f4f6;
   color: var(--atk-text);
 }
 
 /* ---------- Error banner ---------- */
+<<<<<<< HEAD
+.tkupd-error {
+=======
 .add-task-error {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin: 14px 28px 0;
   padding: 10px 12px;
   background: #fef2f2;
@@ -142,31 +201,51 @@
 }
 
 /* ---------- Form body ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-form {
+=======
 .add-task-card--popup .add-task-form {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-direction: column;
   gap: 0;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-body {
+=======
 .add-task-card--popup .add-task-body {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-direction: column;
   gap: 14px;
   padding: 20px 20px 18px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .form-group {
+=======
 .add-task-card--popup .form-group {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin: 0;
 }
 
 /* Title + description */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-title-section {
+=======
 .add-task-card--popup .task-title-section {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-title-input {
+=======
 .add-task-card--popup .update-task-title-input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 100%;
   border: none;
   outline: none;
@@ -178,11 +257,19 @@
   color: #4b5563;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-title-input::placeholder {
+  color: var(--atk-placeholder);
+}
+
+.tkupd-card--popup .tkupd-desc-input {
+=======
 .add-task-card--popup .update-task-title-input::placeholder {
   color: var(--atk-placeholder);
 }
 
 .add-task-card--popup .task-desc-input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 100%;
   min-height: 48px;
   border: none;
@@ -196,12 +283,20 @@
   color: #4b5563;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-desc-input::placeholder {
+=======
 .add-task-card--popup .task-desc-input::placeholder {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-field-placeholder);
 }
 
 /* ---------- Pills row ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills {
+=======
 .add-task-card--popup .task-meta-pills {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -209,18 +304,31 @@
   margin: 0;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .form-group {
+=======
 .add-task-card--popup .task-meta-pills .form-group {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin: 0;
   width: auto;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-container {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-container {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: auto;
 }
 
 /* Base pill (selects, project, date) */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-display,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-input-wrapper {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-display,
 .add-task-card--popup .task-meta-pills .pill-input-wrapper {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -240,44 +348,81 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-display:hover,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-input-wrapper:hover {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-display:hover,
 .add-task-card--popup .task-meta-pills .pill-input-wrapper:hover {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #f9fafb;
   border-color: #c4c9d1;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-display.is-open {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-display.is-open {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-color: var(--atk-accent);
   box-shadow: 0 0 20px 2px rgba(0, 163, 224, 0.6);
 }
 
 /* Empty state → dashed */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-display.is-empty,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-input-wrapper.is-empty {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-display.is-empty,
 .add-task-card--popup .task-meta-pills .pill-input-wrapper.is-empty {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-style: dashed;
   border-color: var(--atk-border-dashed);
   background: transparent;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-display.is-empty:hover,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-input-wrapper.is-empty:hover {
+  background: #f9fafb;
+}
+
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-leading {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-display.is-empty:hover,
 .add-task-card--popup .task-meta-pills .pill-input-wrapper.is-empty:hover {
   background: #f9fafb;
 }
 
 .add-task-card--popup .task-meta-pills .task-custom-select-leading {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-flex;
   align-items: center;
   gap: 8px;
   flex: 0 0 auto;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-value,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-text {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-value,
 .add-task-card--popup .task-meta-pills .pill-text {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   font-size: 13px;
   font-weight: 600;
   color: #1f2937;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-value.is-placeholder,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-text.is-placeholder {
+  color: var(--atk-field-placeholder);
+}
+
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-field-icon,
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-icon {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-value.is-placeholder,
 .add-task-card--popup .task-meta-pills .pill-text.is-placeholder {
   color: var(--atk-field-placeholder);
@@ -285,6 +430,7 @@
 
 .add-task-card--popup .task-meta-pills .task-custom-select-field-icon,
 .add-task-card--popup .task-meta-pills .pill-icon {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 15px;
   height: 15px;
   flex-shrink: 0;
@@ -292,16 +438,28 @@
 }
 
 /* Pills have no dropdown arrow in the design */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-arrow {
+  display: none;
+}
+
+.tkupd-card--popup .tkupd-meta-pills .form-label {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-arrow {
   display: none;
 }
 
 .add-task-card--popup .task-meta-pills .form-label {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: none;
 }
 
 /* Required-field dot */
+<<<<<<< HEAD
+.tkupd-pill-dot {
+=======
 .pill-dot {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 6px;
   height: 6px;
   border-radius: 50%;
@@ -310,11 +468,19 @@
 }
 
 /* Project: room for the clear (✕) button when filled */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-display.has-clear {
+  padding-right: 34px;
+}
+
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-clear-btn {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-display.has-clear {
   padding-right: 34px;
 }
 
 .add-task-card--popup .task-meta-pills .task-custom-select-clear-btn {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: absolute;
   right: 8px;
   top: 50%;
@@ -334,13 +500,21 @@
   z-index: 5;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-clear-btn:hover {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-clear-btn:hover {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #f3f4f6;
   color: #ef4444;
 }
 
 /* ---------- Date pills ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-pill-native-date {
+=======
 .add-task-card--popup .pill-native-date {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: absolute;
   inset: 0;
   width: 100%;
@@ -352,7 +526,11 @@
 }
 
 /* ---------- Priority pill (coloured by level) ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-pill-equals-icon {
+=======
 .add-task-card--popup .pill-equals-icon {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-block;
   width: 15px;
   text-align: center;
@@ -362,11 +540,51 @@
   color: currentColor;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-pill-priority .tkupd-custom-select-display {
+=======
 .add-task-card--popup .task-pill-priority .task-custom-select-display {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #fdf3dc;
   border-color: #f3dfae;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-pill-priority .tkupd-custom-select-display:hover {
+  background: #fbeccb;
+}
+
+.tkupd-card--popup .tkupd-pill-priority .tkupd-custom-select-value,
+.tkupd-card--popup .tkupd-pill-priority .tkupd-custom-select-field-icon,
+.tkupd-card--popup .tkupd-pill-priority .tkupd-pill-equals-icon {
+  color: #8a5300;
+}
+
+.tkupd-card--popup .tkupd-pill-priority.priority-low .tkupd-custom-select-display {
+  background: #e8f8ef;
+  border-color: #b6e6c9;
+}
+.tkupd-card--popup .tkupd-pill-priority.priority-low .tkupd-custom-select-value,
+.tkupd-card--popup .tkupd-pill-priority.priority-low .tkupd-pill-equals-icon {
+  color: #166534;
+}
+
+.tkupd-card--popup .tkupd-pill-priority.priority-high .tkupd-custom-select-display {
+  background: #ffedd9;
+  border-color: #fbc896;
+}
+.tkupd-card--popup .tkupd-pill-priority.priority-high .tkupd-custom-select-value,
+.tkupd-card--popup .tkupd-pill-priority.priority-high .tkupd-pill-equals-icon {
+  color: #b34400;
+}
+
+.tkupd-card--popup .tkupd-pill-priority.priority-critical .tkupd-custom-select-display {
+  background: #fee9e9;
+  border-color: #fbbcbc;
+}
+.tkupd-card--popup .tkupd-pill-priority.priority-critical .tkupd-custom-select-value,
+.tkupd-card--popup .tkupd-pill-priority.priority-critical .tkupd-pill-equals-icon {
+=======
 .add-task-card--popup .task-pill-priority .task-custom-select-display:hover {
   background: #fbeccb;
 }
@@ -401,22 +619,36 @@
 }
 .add-task-card--popup .task-pill-priority.priority-critical .task-custom-select-value,
 .add-task-card--popup .task-pill-priority.priority-critical .pill-equals-icon {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: #b42318;
 }
 
 /* ---------- Assignee pill (wraps SearchableMultiSelect) ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-assignee-field {
+=======
 .add-task-card--popup .update-task-assignee-field {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: relative;
   display: inline-block;
   min-width: 150px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-assignee-field .form-group,
+.tkupd-card--popup .tkupd-assignee-field .searchable-multi-select {
+  margin: 0;
+}
+
+.tkupd-card--popup .tkupd-assignee-field .searchable-multi-select__control {
+=======
 .add-task-card--popup .update-task-assignee-field .form-group,
 .add-task-card--popup .update-task-assignee-field .searchable-multi-select {
   margin: 0;
 }
 
 .add-task-card--popup .update-task-assignee-field .searchable-multi-select__control {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-height: 34px;
   height: 34px;
   padding: 0 14px;
@@ -428,17 +660,29 @@
   align-items: center;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-assignee-field.is-empty .searchable-multi-select__control {
+=======
 .add-task-card--popup .update-task-assignee-field.is-empty .searchable-multi-select__control {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-style: dashed;
   border-color: var(--atk-border-dashed);
   background: transparent;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-assignee-field.is-filled .searchable-multi-select__control {
+  padding-left: 40px;
+}
+
+.tkupd-card--popup .tkupd-assignee-field input {
+=======
 .add-task-card--popup .update-task-assignee-field.is-filled .searchable-multi-select__control {
   padding-left: 40px;
 }
 
 .add-task-card--popup .update-task-assignee-field input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border: none;
   outline: none;
   background: transparent;
@@ -449,12 +693,20 @@
   color: #1f2937;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-assignee-field input::placeholder {
+=======
 .add-task-card--popup .update-task-assignee-field input::placeholder {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-field-placeholder);
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-assignee-field .tkupd-assignee-avatar {
+=======
 .add-task-card--popup .update-task-assignee-field .assignee-avatar {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: absolute;
   left: 5px;
   top: 50%;
@@ -474,7 +726,11 @@
 }
 
 /* ---------- Dropdowns inside pills ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-custom-select-dropdown {
+=======
 .add-task-card--popup .task-meta-pills .task-custom-select-dropdown {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: max-content;
   min-width: 210px;
   max-width: 280px;
@@ -485,56 +741,92 @@
   z-index: 200;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-custom-select-dropdown-header {
+=======
 .add-task-card--popup .task-custom-select-dropdown-header {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin: -6px -6px 6px;
   padding: 10px 14px;
   background: #fafafa;
   border-radius: 12px 12px 0 0;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-custom-select-option {
+=======
 .add-task-card--popup .task-custom-select-option {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-radius: 8px;
   padding: 9px 12px;
   font-size: 13px;
   font-weight: 500;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-custom-select-option.is-selected {
+=======
 .add-task-card--popup .task-custom-select-option.is-selected {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: var(--atk-accent-soft);
   color: var(--atk-accent);
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-custom-select-option-label {
+=======
 .add-task-card--popup .task-custom-select-option-label {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-custom-select-option-icon {
+=======
 .add-task-card--popup .task-custom-select-option-icon {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 15px;
   height: 15px;
   margin: 0;
   color: #4b5563;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-custom-select-back-link {
+=======
 .add-task-card--popup .task-custom-select-back-link {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-accent);
 }
 
 /* ---------- Approver pill ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field {
+=======
 .add-task-card--popup .update-task-approver-field {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: relative;
   width: 210px;
   max-width: 100%;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 100%;
   margin: 0;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__control {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__control {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-height: 34px;
   padding: 3px 8px 3px 34px;
   border: 1px solid var(--atk-border);
@@ -546,22 +838,38 @@
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field.is-empty .searchable-multi-select__control {
+=======
 .add-task-card--popup .update-task-approver-field.is-empty .searchable-multi-select__control {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-style: dashed;
   border-color: var(--atk-border-dashed);
   background: transparent;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__control:hover {
+  border-color: #c4c9d1;
+}
+
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__control.open {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__control:hover {
   border-color: #c4c9d1;
 }
 
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__control.open {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-color: var(--atk-accent);
   box-shadow: 0 0 20px 2px rgba(0, 163, 224, 0.6);
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .tkupd-approver-icon {
+=======
 .add-task-card--popup .update-task-approver-field .update-task-approver-icon {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   position: absolute;
   top: 50%;
   left: 12px;
@@ -573,13 +881,21 @@
   transform: translateY(-50%);
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__value {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__value {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-width: 0;
   flex-wrap: wrap;
   gap: 3px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__search-input {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__search-input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-width: 45px;
   padding: 2px 0;
   font-family: inherit;
@@ -587,13 +903,21 @@
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__search-input::placeholder {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__search-input::placeholder {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-field-placeholder);
   font-style: normal;
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__tag {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__tag {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   max-width: 100%;
   margin: 0;
   padding: 2px 5px 2px 8px;
@@ -602,12 +926,20 @@
   color: #374151;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__tag-text {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__tag-text {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__tag-remove {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__tag-remove {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 16px;
   height: 16px;
   min-width: 16px;
@@ -615,6 +947,17 @@
   color: #4b5563;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__actions {
+  gap: 4px;
+}
+
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__arrow {
+  display: none;
+}
+
+.tkupd-card--popup .tkupd-approver-field .searchable-multi-select__dropdown {
+=======
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__actions {
   gap: 4px;
 }
@@ -624,6 +967,7 @@
 }
 
 .add-task-card--popup .update-task-approver-field .searchable-multi-select__dropdown {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   z-index: 200;
   min-width: 260px;
   max-width: min(320px, calc(100vw - 48px));
@@ -633,19 +977,31 @@
 }
 
 /* ---------- Recurring fields ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-recurring-fields {
+=======
 .add-task-card--popup .update-task-recurring-fields {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   padding: 0;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-recurring-fields .form-group {
+=======
 .add-task-card--popup .update-task-recurring-fields .form-group {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-width: min(180px, 100%);
   flex: 1 1 180px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-recurring-fields .form-label {
+=======
 .add-task-card--popup .update-task-recurring-fields .form-label {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: block;
   font-size: 12px;
   font-weight: 600;
@@ -653,6 +1009,15 @@
   margin-bottom: 5px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-recurring-fields .tkupd-custom-select-container,
+.tkupd-card--popup .tkupd-recurring-fields .form-input {
+  width: 100%;
+}
+
+.tkupd-card--popup .tkupd-recurring-fields .tkupd-custom-select-display,
+.tkupd-card--popup .tkupd-recurring-fields .form-input {
+=======
 .add-task-card--popup .update-task-recurring-fields .task-custom-select-container,
 .add-task-card--popup .update-task-recurring-fields .form-input {
   width: 100%;
@@ -660,6 +1025,7 @@
 
 .add-task-card--popup .update-task-recurring-fields .task-custom-select-display,
 .add-task-card--popup .update-task-recurring-fields .form-input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-height: 38px;
   border: 1px solid var(--atk-border);
   border-radius: 8px;
@@ -667,16 +1033,28 @@
   box-shadow: none;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-recurring-fields .tkupd-custom-select-display {
+  width: 100%;
+}
+
+.tkupd-card--popup .tkupd-recurring-fields .form-input::placeholder {
+=======
 .add-task-card--popup .update-task-recurring-fields .task-custom-select-display {
   width: 100%;
 }
 
 .add-task-card--popup .update-task-recurring-fields .form-input::placeholder {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-field-placeholder);
 }
 
 /* ---------- "Done when" box ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-section {
+=======
 .add-task-card--popup .done-when-section {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -685,7 +1063,11 @@
   border-radius: 14px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-header {
+=======
 .add-task-card--popup .done-when-header {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: baseline;
   flex-wrap: wrap;
@@ -695,13 +1077,21 @@
   color: #1e1b4b;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-header span {
+=======
 .add-task-card--popup .done-when-header span {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   font-size: 12.5px;
   font-weight: 400;
   color: var(--atk-muted);
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-input-wrapper {
+=======
 .add-task-card--popup .done-when-input-wrapper {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: center;
   gap: 12px;
@@ -712,12 +1102,20 @@
   border-radius: 10px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-input-wrapper:focus-within {
+=======
 .add-task-card--popup .done-when-input-wrapper:focus-within {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   border-color: var(--atk-accent);
   box-shadow: 0 0 20px 2px rgba(0, 163, 224, 0.6);
 }
 
+<<<<<<< HEAD
+/* .tkupd-card--popup .tkupd-done-when-checkbox {
+=======
 /* .add-task-card--popup .done-when-checkbox {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   flex: 0 0 auto;
   width: 20px;
   height: 20px;
@@ -726,7 +1124,11 @@
   background: #f7f5ff;
 } */
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-input-wrapper input {
+=======
 .add-task-card--popup .done-when-input-wrapper input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   flex: 1;
   min-width: 0;
   border: none;
@@ -737,11 +1139,19 @@
   color: #374151;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-input-wrapper input::placeholder {
+  color: var(--atk-field-placeholder);
+}
+
+.tkupd-card--popup .tkupd-done-when-remove-btn {
+=======
 .add-task-card--popup .done-when-input-wrapper input::placeholder {
   color: var(--atk-field-placeholder);
 }
 
 .add-task-card--popup .done-when-remove-btn {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   flex: 0 0 auto;
   width: 26px;
   height: 26px;
@@ -756,11 +1166,19 @@
   justify-content: center;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-remove-btn:hover {
+  background: #fee2e2;
+}
+
+.tkupd-card--popup .tkupd-done-when-add-btn {
+=======
 .add-task-card--popup .done-when-remove-btn:hover {
   background: #fee2e2;
 }
 
 .add-task-card--popup .done-when-add-btn {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -774,12 +1192,20 @@
   cursor: pointer;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-add-btn:hover {
+=======
 .add-task-card--popup .done-when-add-btn:hover {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-accent-hover);
 }
 
 /* ---------- Attachments ---------- */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-attachment-dropzone {
+=======
 .add-task-card--popup .attachment-dropzone {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: block;
   padding: 14px 16px;
   border: 1px dashed var(--atk-border-dashed);
@@ -791,20 +1217,34 @@
   transition: background 0.15s, border-color 0.15s;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-attachment-dropzone:hover {
+=======
 .add-task-card--popup .attachment-dropzone:hover {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #fafafa;
   border-color: #9ca3af;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-attachment-dropzone .tkupd-browse-link,
+.tkupd-card--popup .tkupd-attachment-dropzone a,
+.tkupd-card--popup .tkupd-attachment-dropzone strong {
+=======
 .add-task-card--popup .attachment-dropzone .browse-link,
 .add-task-card--popup .attachment-dropzone a,
 .add-task-card--popup .attachment-dropzone strong {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: var(--atk-accent);
   font-weight: 600;
 }
 
 /* ---------- Footer ---------- */
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-footer {
+=======
 .add-task-card.add-task-card--popup .add-task-footer {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -816,7 +1256,11 @@
   border-radius: 0 0 20px 20px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-footer-checkbox-label {
+=======
 .add-task-card--popup .footer-checkbox-label {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -826,7 +1270,11 @@
   user-select: none;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-footer-checkbox-label input[type="checkbox"] {
+=======
 .add-task-card--popup .footer-checkbox-label input[type="checkbox"] {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 18px;
   height: 18px;
   margin: 0;
@@ -834,13 +1282,21 @@
   cursor: pointer;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-footer-actions {
+=======
 .add-task-card--popup .footer-actions {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-cancel-btn {
+=======
 .add-task-card.add-task-card--popup .add-task-cancel-btn {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   padding: 10px 18px;
   border: none;
   border-radius: 10px;
@@ -851,12 +1307,20 @@
   cursor: pointer;
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-cancel-btn:hover {
+=======
 .add-task-card.add-task-card--popup .add-task-cancel-btn:hover {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: #eef0f3;
   color: var(--atk-text);
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-submit {
+=======
 .add-task-card.add-task-card--popup .add-task-submit {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -874,19 +1338,31 @@
   transition: background 0.15s;
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-submit:hover:enabled {
+=======
 .add-task-card.add-task-card--popup .add-task-submit:hover:enabled {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   background: var(--atk-accent-hover);
   transform: none;
   box-shadow: 0 0 20px 2px rgba(0, 163, 224, 0.6);
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-submit:disabled {
+=======
 .add-task-card.add-task-card--popup .add-task-submit:disabled {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   opacity: 0.6;
   cursor: not-allowed;
   box-shadow: none;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-submit kbd {
+=======
 .add-task-card--popup .add-task-submit kbd {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   padding: 3px 8px;
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.22);
@@ -897,23 +1373,46 @@
 }
 
 /* ---------- Page mode (not a modal) ---------- */
+<<<<<<< HEAD
+.tkupd-page .tkupd-card.tkupd-card--popup {
+=======
 .add-task-page .add-task-card.add-task-card--popup {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin-top: 8px;
 }
 
 /* ---------- Small screens ---------- */
 @media (max-width: 640px) {
+<<<<<<< HEAD
+  .tkupd-modal-backdrop {
+=======
   .add-task-modal-backdrop {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     padding: 0;
     align-items: stretch;
   }
 
+<<<<<<< HEAD
+  .tkupd-card.tkupd-card--popup {
+=======
   .add-task-card.add-task-card--popup {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     max-width: none;
     min-height: 100%;
     border-radius: 0;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-body {
+    padding: 20px 16px;
+  }
+
+  .tkupd-card--popup .tkupd-title-input {
+    font-size: 22px;
+  }
+
+  .tkupd-card.tkupd-card--popup .tkupd-footer {
+=======
   .add-task-card--popup .add-task-body {
     padding: 20px 16px;
   }
@@ -923,16 +1422,25 @@
   }
 
   .add-task-card.add-task-card--popup .add-task-footer {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     flex-direction: column;
     align-items: stretch;
     border-radius: 0;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-footer-actions {
+    justify-content: flex-end;
+  }
+
+  .tkupd-card.tkupd-card--popup .tkupd-submit {
+=======
   .add-task-card--popup .footer-actions {
     justify-content: flex-end;
   }
 
   .add-task-card.add-task-card--popup .add-task-submit {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     width: auto;
   }
 }
@@ -942,12 +1450,20 @@
    ========================================================= */
 
 /* Submit button: legacy @media rule sets width:100% – keep it natural */
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-submit {
+=======
 .add-task-card.add-task-card--popup .add-task-submit {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: auto;
 }
 
 /* Description character counter (maxLength 500 is kept) */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-desc-count {
+=======
 .add-task-card--popup .task-desc-count {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   align-self: flex-end;
   font-size: 11px;
   color: var(--atk-placeholder);
@@ -955,7 +1471,11 @@
 }
 
 /* Disabled date pill (due date is auto-calculated for recurring tasks) */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-meta-pills .tkupd-pill-input-wrapper.is-disabled {
+=======
 .add-task-card--popup .task-meta-pills .pill-input-wrapper.is-disabled {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   cursor: not-allowed;
   opacity: 0.6;
   background: #f3f4f6;
@@ -963,7 +1483,11 @@
 }
 
 /* Selected assignees summary (shown when 2+ people are assigned) */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-assignee-summary {
+=======
 .add-task-card--popup .popup-assignee-summary {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -973,7 +1497,11 @@
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-assignee-chip {
+=======
 .add-task-card--popup .popup-assignee-chip {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -984,7 +1512,11 @@
   font-weight: 600;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-assignee-chip .tkupd-chip-avatar {
+=======
 .add-task-card--popup .popup-assignee-chip .chip-avatar {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -997,12 +1529,20 @@
   justify-content: center;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-assignee-chip .tkupd-chip-dept {
+=======
 .add-task-card--popup .popup-assignee-chip .chip-dept {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   font-weight: 500;
   color: var(--atk-muted);
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-recurring-fields .form-input {
+=======
 .add-task-card--popup .update-task-recurring-fields .form-input {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 100%;
   min-height: 38px;
   border-radius: 8px;
@@ -1014,17 +1554,29 @@
    ========================================================= */
 
 /* Footer with only action buttons → align right */
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-footer--end {
+=======
 .add-task-card.add-task-card--popup .add-task-footer--end {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   justify-content: flex-end;
 }
 
 /* Status pill icon */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-pill-status .tkupd-custom-select-field-icon {
+=======
 .add-task-card--popup .task-pill-status .task-custom-select-field-icon {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   color: #475569;
 }
 
 /* Loading state inside the popup */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-loading {
+=======
 .add-task-card--popup .popup-loading {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   padding: 48px 28px;
   text-align: center;
   color: var(--atk-muted);
@@ -1032,19 +1584,31 @@
 }
 
 /* Existing attachments (view / remove) */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments {
+=======
 .add-task-card--popup .popup-existing-attachments {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments-title {
+=======
 .add-task-card--popup .popup-existing-attachments-title {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   font-size: 13px;
   font-weight: 700;
   color: #1f2937;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-list {
+=======
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__list {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   list-style: none;
   margin: 0;
   padding: 0;
@@ -1053,7 +1617,11 @@
   gap: 8px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-item {
+=======
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__item {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1064,7 +1632,11 @@
   border-radius: 10px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-item-main {
+=======
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__item-main {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   flex-direction: column;
   min-width: 0;
@@ -1072,29 +1644,49 @@
   color: #111827;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-item-main span {
+=======
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__item-main span {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   font-size: 12px;
   color: var(--atk-muted);
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-attachment-actions {
+=======
 .add-task-card--popup .popup-attachment-actions {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-attachment-link {
+=======
 .add-task-card--popup .popup-attachment-link {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   font-size: 13px;
   font-weight: 600;
   color: var(--atk-accent);
   text-decoration: none;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-attachment-link:hover {
+  text-decoration: underline;
+}
+
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-remove {
+=======
 .add-task-card--popup .popup-attachment-link:hover {
   text-decoration: underline;
 }
 
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__remove {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   width: 28px;
   height: 28px;
   border: none;
@@ -1107,11 +1699,19 @@
   justify-content: center;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-remove:hover:enabled {
+  background: #fee2e2;
+}
+
+.tkupd-card--popup .tkupd-popup-existing-attachments .tkpendatt-remove:disabled {
+=======
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__remove:hover:enabled {
   background: #fee2e2;
 }
 
 .add-task-card--popup .popup-existing-attachments .task-pending-attachments__remove:disabled {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   opacity: 0.5;
   cursor: not-allowed;
 }
@@ -1119,27 +1719,54 @@
 /* =========================================================
    Full-page (non-modal) use of the same design
    ========================================================= */
+<<<<<<< HEAD
+.tkupd-page.tkupd-page--redesigned {
+  align-items: center;
+}
+
+.tkupd-page--redesigned .tkupd-card.tkupd-card--popup {
+=======
 .add-task-page.add-task-page--redesigned {
   align-items: center;
 }
 
 .add-task-page--redesigned .add-task-card.add-task-card--popup {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   max-width: 760px;
   margin: 0;
   box-shadow: 0 0 20px 2px rgba(0, 163, 224, 0.6);
 }
 
 @media (min-width: 641px) and (max-height: 760px) {
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-modal-header {
+=======
   .add-task-card--popup .task-form-modal-header {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     padding-top: 10px;
     padding-bottom: 10px;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-body {
+=======
   .add-task-card--popup .add-task-body {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     gap: 12px;
     padding: 18px 24px 16px;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-title-input {
+    font-size: 24px;
+  }
+
+  .tkupd-card--popup .tkupd-desc-input {
+    min-height: 40px;
+  }
+
+  .tkupd-card--popup .tkupd-done-when-section {
+=======
   .add-task-card--popup .update-task-title-input {
     font-size: 24px;
   }
@@ -1149,52 +1776,100 @@
   }
 
   .add-task-card--popup .done-when-section {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     gap: 8px;
     padding: 12px 14px;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-attachment-dropzone {
+    padding: 10px 12px;
+  }
+
+  .tkupd-card.tkupd-card--popup .tkupd-footer {
+=======
   .add-task-card--popup .attachment-dropzone {
     padding: 10px 12px;
   }
 
   .add-task-card.add-task-card--popup .add-task-footer {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     padding-top: 10px;
     padding-bottom: 10px;
   }
 }
 
 @media (max-width: 640px) {
+<<<<<<< HEAD
+  .tkupd-page.tkupd-page--redesigned {
+=======
   .add-task-page.add-task-page--redesigned {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     padding: 0;
     align-items: stretch;
   }
 
+<<<<<<< HEAD
+  .tkupd-page--redesigned .tkupd-card.tkupd-card--popup {
+=======
   .add-task-page--redesigned .add-task-card.add-task-card--popup {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     min-height: 100%;
     max-height: none;
     border-radius: 16px;
   }
 
+<<<<<<< HEAD
+  .tkupd-page--redesigned .tkupd-card.tkupd-card--popup .tkupd-footer {
+=======
   .add-task-page--redesigned .add-task-card.add-task-card--popup .add-task-footer {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     border-radius: 0 0 16px 16px;
   }
 }
 
 /* Keep popup fields compact after the legacy task-form rules are loaded. */
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-modal-header {
+  padding: 12px 20px;
+}
+
+.tkupd-card--popup .tkupd-error {
+=======
 .add-task-card--popup .task-form-modal-header {
   padding: 12px 20px;
 }
 
 .add-task-card--popup .add-task-error {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   margin: 10px 20px 0;
   padding: 8px 10px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-body {
+=======
 .add-task-card--popup .add-task-body {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   gap: 14px;
   padding: 20px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .form-group {
+  margin: 0;
+}
+
+.tkupd-card--popup .tkupd-title-section {
+  gap: 4px;
+}
+
+.tkupd-card--popup .tkupd-desc-input {
+  min-height: 48px;
+}
+
+.tkupd-card--popup .tkupd-done-when-section {
+=======
 .add-task-card--popup .form-group {
   margin: 0;
 }
@@ -1208,15 +1883,31 @@
 }
 
 .add-task-card--popup .done-when-section {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   gap: 10px;
   padding: 12px 14px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-done-when-input-wrapper {
+=======
 .add-task-card--popup .done-when-input-wrapper {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   gap: 8px;
   padding: 8px 10px;
 }
 
+<<<<<<< HEAD
+.tkupd-card--popup .tkupd-attachment-dropzone {
+  padding: 8px 10px;
+}
+
+.tkupd-card--popup .tkpendatt-form {
+  padding: 0;
+}
+
+.tkupd-card--popup .tkpendatt-dropzone-label {
+=======
 .add-task-card--popup .attachment-dropzone {
   padding: 8px 10px;
 }
@@ -1226,36 +1917,61 @@
 }
 
 .add-task-card--popup .task-pending-attachments__dropzone-label {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   min-height: 46px;
   padding: 8px 12px;
 }
 
+<<<<<<< HEAD
+.tkupd-card.tkupd-card--popup .tkupd-footer {
+=======
 .add-task-card.add-task-card--popup .add-task-footer {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
   padding: 12px 20px;
 }
 
 @media (min-width: 641px) and (max-height: 760px) {
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-body {
+=======
   .add-task-card--popup .add-task-body {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     gap: 10px;
     padding: 14px 16px 12px;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-desc-input {
+    min-height: 36px;
+  }
+
+  .tkupd-card--popup .tkupd-done-when-section {
+=======
   .add-task-card--popup .task-desc-input {
     min-height: 36px;
   }
 
   .add-task-card--popup .done-when-section {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     gap: 6px;
     padding: 8px 10px;
   }
 
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-attachment-dropzone {
+=======
   .add-task-card--popup .attachment-dropzone {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     padding: 6px 8px;
   }
 }
 
 @media (max-width: 640px) {
+<<<<<<< HEAD
+  .tkupd-card--popup .tkupd-body {
+=======
   .add-task-card--popup .add-task-body {
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     gap: 12px;
     padding: 14px 12px;
   }

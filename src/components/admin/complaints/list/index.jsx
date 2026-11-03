@@ -535,7 +535,7 @@ const ComplaintsList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 
             className="tl-tasks-assignee-trigger"
             onClick={(e) => handleAssigneeClick(e, t, user.user_id)}
           >
-            <span className="tl-tasks-list-assignment-name" title={displayName}>
+            <span className="tl-comp-list-assignment-name" title={displayName}>
               {displayName}
             </span>
             {isOpen && (

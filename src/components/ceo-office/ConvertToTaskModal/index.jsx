@@ -1,9 +1,22 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { FaCalendarAlt, FaExclamationTriangle, FaFlag, FaUsers } from 'react-icons/fa';
 import axios from '../../../utils/axios';
 import SearchableMultiSelect from '../../common/SearchableMultiSelect';
 import FormInput from '../../common/FormInput';
 import MovAssignmentPicker from '../../admin/tasks/shared/MovAssignmentPicker';
+import '../../admin/tasks/add/index.css';
 import './index.css';
+
+const formatTaskDate = (value) => {
+  if (!value) return '';
+  const date = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+};
 
 const ConvertToTaskModal = ({ 
   isOpen, 
@@ -175,70 +188,143 @@ const ConvertToTaskModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="convert-modal-overlay">
-      <div className="convert-modal-content">
-        <div className="convert-modal-header">
-          <h2>Convert to Task</h2>
-          <button onClick={onClose} className="convert-close-btn">&times;</button>
+    <div className="tkadd-modal-backdrop convert-modal-overlay">
+      <div className="tkadd-card tkadd-card--popup convert-modal-content">
+        <div className="tkadd-modal-header">
+          <div className="tkadd-form-breadcrumb">
+            <span className="tkadd-form-dept-chip">CEO Office</span>
+            <span className="tkadd-form-breadcrumb-sep">›</span>
+            <h2 className="tkadd-modal-title">Convert to task</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="tkadd-modal-close"
+            aria-label="Close convert to task dialog"
+          >
+            ✕
+          </button>
         </div>
-        <div className="convert-modal-body">
-          {/* Validation Message */}
+
+        <div className="tkadd-body convert-modal-body">
           {!isFormValid && (
-            <div className="convert-validation-message">
-              <span className="convert-validation-message-icon">⚠️</span>
-              <span>Please add the assignee(s) and MOV items.</span>
+            <div className="convert-validation-message" role="status">
+              <FaExclamationTriangle className="convert-validation-message-icon" />
+              <span>Please add at least one assignee and one MOV item.</span>
             </div>
           )}
-          <div className="convert-form-group">
-            <label className="convert-form-label">Task Title</label>
+
+          <div className="tkadd-title-section convert-title-section">
             <input
               type="text"
+              aria-label="Task title"
+              placeholder="Enter task title..."
               value={convertData.task_title}
               onChange={(e) => setConvertData({ ...convertData, task_title: e.target.value })}
-              className="convert-form-control"
+              className="tkadd-title-input"
             />
-          </div>
-          <div className="convert-form-group">
-            <label className="convert-form-label">Description</label>
             <textarea
+              aria-label="Task description"
+              placeholder="Enter task description..."
               value={convertData.task_description}
               onChange={(e) => setConvertData({ ...convertData, task_description: e.target.value })}
-              rows={4}
-              className="convert-form-control"
+              rows={2}
+              className="tkadd-desc-input"
             />
           </div>
-          <div className="convert-form-group">
-            <label className="convert-form-label">Priority</label>
-            <select
-              value={convertData.task_priority}
-              onChange={(e) => setConvertData({ ...convertData, task_priority: e.target.value })}
-              className="convert-form-control"
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="critical">Critical</option>
-            </select>
-          </div>
-          <div className="convert-form-group">
-            <label className="convert-form-label">Due Date</label>
-            <input
-              type="date"
-              value={convertData.task_due_date}
-              onChange={(e) => setConvertData({ ...convertData, task_due_date: e.target.value })}
-              className="convert-form-control"
-            />
-          </div>
-          {/* MOV Section */}
-          <div className="convert-form-group">
-            <label className="convert-form-label">
-              Means of Verification (MOV) <span style={{ color: 'red' }}>*</span>
+
+          <div className="tkadd-meta-pills convert-meta-pills">
+            <div className={`tkadd-assignee-field convert-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+              <FaUsers className="convert-assignee-icon" aria-hidden="true" />
+              <SearchableMultiSelect
+                label=""
+                onSearch={searchAssignees}
+                onSelect={handleSelectUsers}
+                onClear={() => {
+                  setAssignedUsers([]);
+                  setConvertData({ ...convertData, assigned_users: [] });
+                }}
+                value={assignedUsers}
+                displayKey="full_name"
+                valueKey="id"
+                allowResearch={true}
+                debounceDelay={500}
+                minSearchLength={2}
+                renderOption={(user) => (
+                  <div className="assign-user-option">
+                    <div className="assign-user-name">{user.first_name} {user.last_name}</div>
+                    <div className="assign-user-email">{user.email}</div>
+                    {user.department && (
+                      <div className="assign-user-meta">
+                        {user.department} • {user.role || 'User'}
+                      </div>
+                    )}
+                  </div>
+                )}
+                placeholder="Assignee(s)"
+              />
+            </div>
+
+            <label className="convert-priority-pill">
+              <FaFlag aria-hidden="true" />
+              <span className="convert-visually-hidden">Task priority</span>
+              <select
+                value={convertData.task_priority}
+                onChange={(e) => setConvertData({ ...convertData, task_priority: e.target.value })}
+                aria-label="Task priority"
+              >
+                <option value="low">Low priority</option>
+                <option value="medium">Medium priority</option>
+                <option value="high">High priority</option>
+                <option value="critical">Critical priority</option>
+              </select>
             </label>
+
+            <label className={`tkadd-pill-input-wrapper tkadd-pill-date convert-date-pill ${convertData.task_due_date ? 'is-filled' : 'is-empty'}`}>
+              <FaCalendarAlt className="tkadd-pill-icon" aria-hidden="true" />
+              <span>{formatTaskDate(convertData.task_due_date) || 'Due date'}</span>
+              <span className="tkadd-pill-dot" aria-hidden="true" />
+              <span className="convert-visually-hidden">Task due date</span>
+              <input
+                type="date"
+                value={convertData.task_due_date}
+                onChange={(e) => setConvertData({ ...convertData, task_due_date: e.target.value })}
+                aria-label="Task due date"
+              />
+            </label>
+          </div>
+
+          {assignedUsers.length > 0 && (
+            <div className="tkadd-popup-assignee-summary">
+              <span className="tkadd-popup-assignee-count">
+                {assignedUsers.length} {assignedUsers.length === 1 ? 'assignee' : 'assignees'}
+              </span>
+              {assignedUsers.map((user) => (
+                <span className="tkadd-popup-assignee-chip" key={user.id}>
+                  <span className="tkadd-chip-avatar" aria-hidden="true">
+                    {(userDisplayName(user)[0] || 'U').toUpperCase()}
+                  </span>
+                  <span className="tkadd-chip-name">{userDisplayName(user)}</span>
+                  {(assignedUserDepartments[user.id] || user.department) && (
+                    <span className="tkadd-chip-dept">
+                      {formatDepartment(assignedUserDepartments[user.id] || user.department)}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <section className="tkadd-done-when-section convert-mov-section">
+            <div className="tkadd-done-when-header">
+              Done when... <span>Means of verification the assignee must tick off</span>
+            </div>
             <div className="convert-mov-container">
               {movItems.map((item, index) => (
-                <div key={index} className="convert-mov-item-row">
+                <div key={index} className="tkadd-done-when-input-wrapper convert-mov-item-row">
                   <FormInput
                     name={`mov_item_${index}`}
+                    label=""
                     value={item.text}
                     onChange={(e) => handleMovChange(index, e.target.value)}
                     placeholder="Define a clear, specific, and measurable verification point"
@@ -252,112 +338,37 @@ const ConvertToTaskModal = ({
                   {movItems.length > 1 && (
                     <button
                       type="button"
-                      className="convert-mov-item-remove-button"
+                      className="tkadd-done-when-remove-btn"
                       onClick={() => handleMovRemove(index)}
+                      aria-label={`Remove verification item ${index + 1}`}
                     >
-                      Remove
+                      ✕
                     </button>
                   )}
                 </div>
               ))}
-              <div className="convert-mov-actions">
-                <button
-                  type="button"
-                  className="convert-mov-item-add-button"
-                  onClick={handleMovAdd}
-                >
-                  + Add MOV item
-                </button>
-              </div>
+              <button type="button" className="tkadd-done-when-add-btn" onClick={handleMovAdd}>
+                + Add condition
+              </button>
             </div>
-          </div>
-          <div className="convert-form-group">
-            <label className="convert-form-label">Assigned Users</label>
-            <SearchableMultiSelect
-              onSearch={searchAssignees}
-              onSelect={handleSelectUsers}
-              onClear={() => {
-                setAssignedUsers([]);
-                setConvertData({ ...convertData, assigned_users: [] });
-              }}
-              value={assignedUsers}
-              displayKey="full_name"
-              valueKey="id"
-              allowResearch={true}
-              debounceDelay={500}
-              minSearchLength={2}
-              renderOption={(user) => (
-                <div className="assign-user-option">
-                  <div className="assign-user-name">
-                    {user.first_name} {user.last_name}
-                  </div>
-                  <div className="assign-user-email">
-                    {user.email}
-                  </div>
-                  {user.department && (
-                    <div className="assign-user-meta">
-                      {user.department} • {user.role || 'User'}
-                    </div>
-                  )}
-                </div>
-              )}
-              placeholder="Select users to assign"
-            />
-            {assignedUsers.length > 0 && (
-              <div className="assign-users-hint">
-                {'\u2713'} {assignedUsers.length}{' '}
-                {assignedUsers.length === 1 ? 'user selected' : 'users selected'}
-              </div>
-            )}
-          </div>
-          {assignedUsers.length > 0 && (
-            <div className="assign-users-summary">
-              <div className="assign-users-summary-label">
-                Selected Assignees:
-              </div>
-              {assignedUsers.map((u) => (
-                <div
-                  key={u.id}
-                  className="assign-users-row"
-                >
-                  <div className="assign-users-row-col">
-                    <FormInput
-                      name={`user_${u.id}_label`}
-                      label=""
-                      value={userDisplayName(u)}
-                      onChange={() => {}}
-                      disabled
-                    />
-                  </div>
-                  <div className="assign-users-row-col">
-                    <FormInput
-                      name={`dept_${u.id}`}
-                      label=""
-                      value={formatDepartment(
-                        assignedUserDepartments[u.id] ||
-                          u.department ||
-                          ''
-                      )}
-                      onChange={() => {}}
-                      disabled
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          </section>
         </div>
-        <div className="convert-modal-footer">
-          <button onClick={onClose} className="convert-btn convert-btn-secondary">
-            Cancel
-          </button>
-          <button 
-            onClick={handleConvert} 
-            className="convert-btn convert-btn-primary"
-            disabled={!isFormValid}
-          >
-            Convert
-          </button>
+
+        <div className="tkadd-footer convert-modal-footer">
+          <span className="convert-footer-hint">Required: assignee(s) and at least one MOV item</span>
+          <div className="tkadd-footer-actions">
+            <button type="button" onClick={onClose} className="tkadd-cancel-btn">
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleConvert}
+              className="tkadd-submit"
+              disabled={!isFormValid}
+            >
+              Convert to task
+            </button>
+          </div>
         </div>
       </div>
     </div>
