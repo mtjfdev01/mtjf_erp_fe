@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { toast } from 'react-toastify';
 
 const STATUSES = [
@@ -20,31 +20,120 @@ export const AID_RECOMMENDATION_PERIODS = [
   { value: 12, label: '12 months' },
 ];
 
+/** Manager/CEO ration package picks */
+export const AID_RATION_REC_OPTIONS = [
+  { value: 'full', label: 'Full' },
+  { value: 'half', label: 'Half' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'alternate', label: 'Alternate' },
+];
+
 export const emptyRecommendation = () => ({
   decision: 'approve_as_requested',
   amount: '',
   period_months: 6,
   remarks: '',
   found_monthly_income: '',
+  ration_options: [],
 });
+
+export const normalizeRationOptions = (raw) => {
+  const allowed = new Set(AID_RATION_REC_OPTIONS.map((o) => o.value));
+  if (!Array.isArray(raw)) return [];
+  return [
+    ...new Set(
+      raw
+        .map((v) => String(v || '').trim().toLowerCase())
+        .filter((v) => allowed.has(v)),
+    ),
+  ];
+};
+
+/** Normalize one file row on an investigation entry. */
+const normalizeInvestigationFile = (file) => {
+  if (!file || typeof file !== 'object') return null;
+  const url = String(file.url || file.attachment_url || file.file_url || '').trim();
+  if (!url) return null;
+  const row = {
+    id: file.id ?? file.attachment_id ?? null,
+    url,
+    name: String(
+      file.name || file.attachment_name || file.file_name || 'Attached file',
+    ),
+  };
+  if (file._offline_pending) row._offline_pending = true;
+  return row;
+};
+
+/** Build attachments[] from legacy single fields + optional array. */
+const normalizeInvestigationAttachments = (value) => {
+  const fromList = Array.isArray(value?.attachments)
+    ? value.attachments.map(normalizeInvestigationFile).filter(Boolean)
+    : [];
+  const legacyUrl = String(value?.attachment_url || '').trim();
+  if (legacyUrl) {
+    const legacy = normalizeInvestigationFile({
+      id: value.attachment_id,
+      url: legacyUrl,
+      name: value.attachment_name,
+    });
+    if (
+      legacy &&
+      !fromList.some((f) => f.url === legacy.url || (f.id && f.id === legacy.id))
+    ) {
+      fromList.unshift(legacy);
+    }
+  }
+  const seen = new Set();
+  return fromList.filter((f) => {
+    const key = f.id != null ? `id:${f.id}` : `url:${f.url}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+};
+
+const primaryAttachmentFields = (attachments) => {
+  const first = attachments[0] || null;
+  return {
+    attachment_url: first?.url || '',
+    attachment_name: first?.name || '',
+    attachment_id: first?.id ?? null,
+  };
+};
+
+export const hasInvestigationAttachment = (entry) => {
+  const e = normalizeInvestigationEntry(entry);
+  return (
+    (Array.isArray(e.attachments) && e.attachments.length > 0) ||
+    String(e.attachment_url || '').trim().length > 0
+  );
+};
+
+export const hasInvestigationGps = (entry) =>
+  String(entry?.gps_coordinates || '').trim().length >= 3;
 
 export const normalizeInvestigationEntry = (value) => {
   if (value === true || value === 'verified') {
     return {
       status: 'verified',
       note: '',
+      attachments: [],
       attachment_url: '',
       attachment_name: '',
       attachment_id: null,
+      gps_coordinates: '',
     };
   }
   if (value === 'mismatch') {
     return {
       status: 'mismatch',
       note: '',
+      attachments: [],
       attachment_url: '',
       attachment_name: '',
       attachment_id: null,
+      gps_coordinates: '',
     };
   }
   if (value && typeof value === 'object') {
@@ -55,20 +144,32 @@ export const normalizeInvestigationEntry = (value) => {
         : value.checked === true
           ? 'verified'
           : 'not_checked';
+    const attachments = normalizeInvestigationAttachments(value);
+    // Prefer free-text paste; fall back to legacy lat/lng pair if present.
+    let gpsText = String(value.gps_coordinates || '').trim();
+    if (!gpsText) {
+      const lat = value.gps_latitude;
+      const lng = value.gps_longitude;
+      if (lat != null && lat !== '' && lng != null && lng !== '') {
+        gpsText = `${lat}, ${lng}`;
+      }
+    }
     return {
       status,
       note: String(value.note || value.notes || value.found || ''),
-      attachment_url: String(value.attachment_url || ''),
-      attachment_name: String(value.attachment_name || ''),
-      attachment_id: value.attachment_id ?? null,
+      attachments,
+      ...primaryAttachmentFields(attachments),
+      gps_coordinates: gpsText,
     };
   }
   return {
     status: 'not_checked',
     note: '',
+    attachments: [],
     attachment_url: '',
     attachment_name: '',
     attachment_id: null,
+    gps_coordinates: '',
   };
 };
 
@@ -100,6 +201,7 @@ export const mergeInvestigationState = (items = [], saved = {}) => {
 /**
  * Re-attach file URLs for process items (e.g. Site Visit) from application
  * attachments when the saved checklist lost attachment_url after a reload.
+ * Collects every matching file into attachments[].
  */
 export const enrichInvestigationFromAttachments = (
   items = [],
@@ -112,25 +214,47 @@ export const enrichInvestigationFromAttachments = (
   for (const item of items || []) {
     if (!item?.accepts_file) continue;
     const prev = normalizeInvestigationEntry(next[item.key]);
-    if (String(prev.attachment_url || '').trim()) continue;
-    const match = list.find((a) => {
+    const key = String(item.key || '').toLowerCase();
+    const matches = list.filter((a) => {
       const ctx = String(a?.context || '').toLowerCase();
       const desc = String(a?.description || '').toLowerCase();
-      const key = String(item.key || '').toLowerCase();
       return (
         ctx === key ||
         desc === key ||
         (key === 'site_visit' &&
-          (ctx === 'site_visit' || desc === 'site_visit' || desc === 'home_visited'))
+          (ctx === 'site_visit' ||
+            desc === 'site_visit' ||
+            desc === 'home_visited'))
       );
     });
-    if (!match?.file_url) continue;
+    if (!matches.length) continue;
+    const fromApp = matches
+      .map((a) =>
+        normalizeInvestigationFile({
+          id: a.id,
+          url: a.file_url,
+          name: a.file_name,
+        }),
+      )
+      .filter(Boolean);
+    const merged = [...prev.attachments];
+    for (const f of fromApp) {
+      if (
+        !merged.some(
+          (x) => x.url === f.url || (x.id != null && x.id === f.id),
+        )
+      ) {
+        merged.push(f);
+      }
+    }
+    if (merged.length === prev.attachments.length && hasInvestigationAttachment(prev)) {
+      continue;
+    }
     next[item.key] = {
       ...prev,
       status: prev.status === 'not_checked' ? 'verified' : prev.status,
-      attachment_url: match.file_url || '',
-      attachment_name: match.file_name || '',
-      attachment_id: match.id ?? null,
+      attachments: merged,
+      ...primaryAttachmentFields(merged),
     };
   }
   return next;
@@ -150,8 +274,9 @@ export const isInvestigationItemComplete = (item, state = {}) => {
   if (item.accepts_file) {
     return (
       entry.status === 'verified' &&
-      String(entry.attachment_url || '').trim().length > 0 &&
-      (!processItem || hasFoundNote(entry))
+      hasInvestigationAttachment(entry) &&
+      (!processItem || hasFoundNote(entry)) &&
+      (item.key !== 'site_visit' || hasInvestigationGps(entry))
     );
   }
   const allowMismatch =
@@ -184,10 +309,12 @@ export const getInvestigationIncompleteReasons = (items = [], state = {}) => {
     if (item.accepts_file) {
       if (entry.status !== 'verified') {
         reasons.push(`${item.label}: mark Verified and attach a file`);
-      } else if (!String(entry.attachment_url || '').trim()) {
-        reasons.push(`${item.label}: attach a site-visit photo/file`);
+      } else if (!hasInvestigationAttachment(entry)) {
+        reasons.push(`${item.label}: attach at least one site-visit photo/file`);
       } else if (item.kind === 'process' && !hasFoundNote(entry)) {
         reasons.push(`${item.label}: add a Found note (min 3 characters)`);
+      } else if (item.key === 'site_visit' && !hasInvestigationGps(entry)) {
+        reasons.push(`${item.label}: enter GPS coordinates`);
       }
       continue;
     }
@@ -208,9 +335,12 @@ export const getInvestigationIncompleteReasons = (items = [], state = {}) => {
   return reasons;
 };
 
-export const isRecommendationComplete = (rec = {}) => {
+export const isRecommendationComplete = (rec = {}, opts = {}) => {
   const remarks = String(rec.remarks || '').trim();
   if (remarks.length < 3) return false;
+  if (opts.rationOverride) {
+    return normalizeRationOptions(rec.ration_options).length > 0;
+  }
   if (rec.decision === 'reject') return true;
   const amount = Number(rec.amount);
   if (!Number.isFinite(amount) || amount <= 0) return false;
@@ -219,6 +349,42 @@ export const isRecommendationComplete = (rec = {}) => {
     if (!Number.isFinite(months) || months <= 0) return false;
   }
   return true;
+};
+
+/** Human-readable gaps blocking Recommendation / submit. */
+export const getRecommendationIncompleteReasons = (rec = {}, opts = {}) => {
+  const reasons = [];
+  const remarks = String(rec?.remarks || '').trim();
+  if (remarks.length < 3) {
+    reasons.push('Recommendation: add remarks (min 3 characters)');
+  }
+  if (opts.rationOverride) {
+    if (normalizeRationOptions(rec?.ration_options).length === 0) {
+      reasons.push(
+        'Recommendation: select at least one ration option (Full, Half, Monthly, Alternate)',
+      );
+    }
+    return reasons;
+  }
+  const decision = rec?.decision;
+  if (!decision) {
+    reasons.push(
+      'Recommendation: choose Approve as requested, with changes, or Reject',
+    );
+  }
+  if (decision && decision !== 'reject') {
+    const amount = Number(rec?.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      reasons.push('Recommendation: enter amount (PKR)');
+    }
+    if (decision === 'approve_with_changes') {
+      const months = Number(rec?.period_months);
+      if (!Number.isFinite(months) || months <= 0) {
+        reasons.push('Recommendation: select period (months)');
+      }
+    }
+  }
+  return reasons;
 };
 
 /** Fallback section when API items omit `section` (older payloads). */
@@ -320,11 +486,18 @@ const TAB_INVEST_COPY = {
     title: 'Verify family / applicant',
     hint: 'Checks linked to the family head, household, and applicant.',
   },
+<<<<<<< HEAD
+=======
+  field_process: {
+    title: 'Field Process',
+    hint: 'Site visit and field checks — then set Recommendation and submit for approval.',
+  },
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 };
 
 /**
  * Dynamic field investigation — Verified / Mismatch / Not checked per declared claim.
- * Optional sidebar: vulnerability after visit + investigator recommendation.
+ * Optional sidebar (Field Process tab): vulnerability after visit + recommendation.
  */
 const AidInvestigationPanel = ({
   items = [],
@@ -341,7 +514,28 @@ const AidInvestigationPanel = ({
   onSubmitReport,
   submitDisabled = false,
   submitLabel = 'Submit report for approval',
+  /**
+   * Show Recommendation form (approve / amount / remarks).
+   * When undefined: only on field_process (legacy). Prefer passing explicitly —
+   * Program dept managers only for edit workflows.
+   */
   showRecommendation,
+  /** Show vulnerability card on field process (independent of recommendation form). */
+  showVulnerability,
+  /** Allow editing recommendation even when checklist is locked (manager override). */
+  recommendationEditable = false,
+  remarksLabel = 'Investigator remarks',
+  /** Application aid type — ration uses package checkboxes for manager/CEO edit */
+  aidType = null,
+  /**
+   * When true, Recommendation shows only Full/Half/Monthly/Alternate checkboxes + remarks
+   * (manager / CEO ration override — no amount, period, or decision radios).
+   */
+  rationPackageMode = false,
+  /** Extra gaps (e.g. leakage override) shown in missing-steps panel */
+  extraMissingSteps = [],
+  /** When true, include full investigation checklist gaps (not only current tab) */
+  includeChecklistGaps = true,
   /** Save checklist/recommendation draft without submitting for CEO */
   onSaveProgress,
   saveProgressDisabled = false,
@@ -353,14 +547,56 @@ const AidInvestigationPanel = ({
   onUploadItemFile,
   uploadingKey = null,
 }) => {
+  const [missingOpen, setMissingOpen] = useState(false);
   const list = filterInvestigationItemsByTab(items, activeTab);
   const copy = TAB_INVEST_COPY[activeTab] || TAB_INVEST_COPY.case;
   const panelTitle = title ?? copy.title;
   const panelHint = hint ?? copy.hint;
-  const showRec =
+  const showRecForm =
     showRecommendation !== undefined
       ? showRecommendation
-      : activeTab === 'case';
+      : activeTab === 'field_process';
+  const showVuln =
+    showVulnerability !== undefined
+      ? showVulnerability
+      : activeTab === 'field_process';
+  const showAside =
+    showVuln ||
+    showRecForm ||
+    Boolean(onSubmitReport) ||
+    Boolean(onSaveProgress);
+  const recLocked = disabled && !recommendationEditable;
+  const isRationAid = String(aidType || '').toLowerCase() === 'ration';
+  const rationOverrideMode =
+    Boolean(rationPackageMode) || (recommendationEditable && isRationAid);
+
+  const missingSteps = useMemo(() => {
+    const steps = [];
+    if (includeChecklistGaps) {
+      steps.push(...getInvestigationIncompleteReasons(items, value));
+    }
+    if (showRecForm && !recLocked) {
+      steps.push(
+        ...getRecommendationIncompleteReasons(recommendation || {}, {
+          rationOverride: rationOverrideMode,
+        }),
+      );
+    }
+    for (const s of extraMissingSteps || []) {
+      const t = String(s || '').trim();
+      if (t && !steps.includes(t)) steps.push(t);
+    }
+    return steps;
+  }, [
+    includeChecklistGaps,
+    items,
+    value,
+    recLocked,
+    showRecForm,
+    recommendation,
+    extraMissingSteps,
+    rationOverrideMode,
+  ]);
 
   const allVisibleVerified =
     list.length > 0 &&
@@ -382,11 +618,12 @@ const AidInvestigationPanel = ({
     let skippedFileItems = 0;
     for (const item of list) {
       const prev = normalizeInvestigationEntry(value[item.key]);
-      // Site Visit (etc.) cannot be bulk-verified without an attached file.
+      // Site Visit (etc.) cannot be bulk-verified without an attached file (+ GPS).
       if (
         status === 'verified' &&
         item.accepts_file &&
-        !String(prev.attachment_url || '').trim()
+        (!hasInvestigationAttachment(prev) ||
+          (item.key === 'site_visit' && !hasInvestigationGps(prev)))
       ) {
         skippedFileItems += 1;
         continue;
@@ -402,7 +639,7 @@ const AidInvestigationPanel = ({
     onChange(next);
     if (skippedFileItems > 0) {
       toast.warning(
-        `${skippedFileItems} item(s) need a file attach (e.g. Site Visit) before they can be Verified.`,
+        `${skippedFileItems} item(s) need a file attach / GPS (e.g. Site Visit) before they can be Verified.`,
       );
     }
     return skippedFileItems;
@@ -479,54 +716,80 @@ const AidInvestigationPanel = ({
               />
             </label>
           ) : null}
+          {item.key === 'site_visit' ? (
+            <label className="aid-invest-row__gps">
+              <span>GPS Coordinates *</span>
+              <input
+                type="text"
+                disabled={disabled}
+                placeholder="Paste from GPS app, e.g. 24.8607, 67.0011"
+                value={entry.gps_coordinates || ''}
+                onChange={(e) =>
+                  setEntry(item.key, {
+                    gps_coordinates: e.target.value,
+                  })
+                }
+              />
+            </label>
+          ) : null}
           {item.accepts_file ? (
             <div className="aid-invest-row__file">
-              {entry.attachment_url ? (
-                <div className="aid-invest-row__file-current">
-                  <a
-                    href={entry.attachment_url}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    {entry.attachment_name || 'Attached file'}
-                  </a>
-                  {!disabled ? (
-                    <button
-                      type="button"
-                      className="aid-mini-btn aid-mini-btn--remove"
-                      onClick={() =>
-                        setEntry(item.key, {
-                          attachment_url: '',
-                          attachment_name: '',
-                          attachment_id: null,
-                        })
-                      }
-                    >
-                      Remove
-                    </button>
-                  ) : null}
-                </div>
-              ) : (
+              {(entry.attachments || []).length > 0 ? (
+                <ul className="aid-invest-row__file-list">
+                  {entry.attachments.map((f, idx) => (
+                    <li key={f.id ?? f.url ?? idx} className="aid-invest-row__file-current">
+                      <a href={f.url} target="_blank" rel="noreferrer">
+                        {f.name || `File ${idx + 1}`}
+                      </a>
+                      {f._offline_pending ? (
+                        <span className="aid-invest-row__file-pending">
+                          Pending sync
+                        </span>
+                      ) : null}
+                      {!disabled ? (
+                        <button
+                          type="button"
+                          className="aid-mini-btn aid-mini-btn--remove"
+                          onClick={() => {
+                            const nextFiles = (entry.attachments || []).filter(
+                              (_, i) => i !== idx,
+                            );
+                            setEntry(item.key, {
+                              attachments: nextFiles,
+                              ...primaryAttachmentFields(nextFiles),
+                            });
+                          }}
+                        >
+                          Remove
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {!disabled ? (
                 <label className="aid-invest-row__file-upload">
                   <span>
                     {uploadingKey === item.key
-                      ? 'Uploading…'
-                      : 'Attach site visit file *'}
+                      ? 'Saving…'
+                      : (entry.attachments || []).length > 0
+                        ? 'Add more files'
+                        : 'Attach site visit files *'}
                   </span>
                   <input
                     type="file"
+                    multiple
                     disabled={disabled || uploadingKey === item.key}
                     accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
                     onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file && onUploadItemFile) {
-                        onUploadItemFile(item.key, file);
-                      }
+                      const files = Array.from(e.target.files || []);
                       e.target.value = '';
+                      if (!files.length || !onUploadItemFile) return;
+                      onUploadItemFile(item.key, files);
                     }}
                   />
                 </label>
-              )}
+              ) : null}
             </div>
           ) : null}
         </div>
@@ -558,7 +821,7 @@ const AidInvestigationPanel = ({
   const rec = recommendation || emptyRecommendation();
 
   if (activeTab === 'attachments') return null;
-  if (!list.length && !showRec) {
+  if (!list.length && !showAside) {
     return (
       <section className="aid-investigation aid-investigation--tab">
         <p className="aid-section-hint">
@@ -628,144 +891,247 @@ const AidInvestigationPanel = ({
           )}
         </div>
 
-        {showRec ? (
+        {showAside ? (
           <aside className="aid-invest-side">
-            <div className="aid-vuln-card">
-              <div className="aid-vuln-card__label">Vulnerability after visit</div>
-              <div className="aid-vuln-card__score">
-                <span className="aid-vuln-card__pct">
-                  {afterTotal != null ? `${afterTotal}%` : '—'}
-                </span>
-                {scoreChanged ? (
-                  <span className="aid-vuln-card__old">{declaredTotal}%</span>
+            {showVuln ? (
+              <div className="aid-vuln-card">
+                <div className="aid-vuln-card__label">
+                  Vulnerability after visit
+                </div>
+                <div className="aid-vuln-card__score">
+                  <span className="aid-vuln-card__pct">
+                    {afterTotal != null ? `${afterTotal}%` : '—'}
+                  </span>
+                  {scoreChanged ? (
+                    <span className="aid-vuln-card__old">{declaredTotal}%</span>
+                  ) : null}
+                </div>
+                {vulnerability?.after_visit?.band_label ? (
+                  <div className="aid-vuln-card__band">
+                    {vulnerability.after_visit.band_label}
+                  </div>
+                ) : null}
+                {deltas.length > 0 ? (
+                  <ul className="aid-vuln-card__deltas">
+                    {deltas.map((d, i) => (
+                      <li key={`${d.label}-${i}`}>
+                        <span>{d.label}</span>
+                        <strong>
+                          {d.delta > 0 ? `+${d.delta}` : d.delta}
+                        </strong>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="aid-vuln-card__empty">
+                    Score from intake factors (income, category, housing, assets,
+                    BISP…).
+                  </p>
+                )}
+                {vulnerability?.after_visit?.program_min_score != null ? (
+                  <p className="aid-vuln-card__threshold">
+                    Program min {vulnerability.after_visit.program_code}:{' '}
+                    {vulnerability.after_visit.program_min_score} pts
+                    {vulnerability.after_visit.meets_program_threshold === false
+                      ? ' — below threshold'
+                      : vulnerability.after_visit.meets_program_threshold
+                        ? ' — meets threshold'
+                        : ''}
+                  </p>
                 ) : null}
               </div>
-              {vulnerability?.after_visit?.band_label ? (
-                <div className="aid-vuln-card__band">
-                  {vulnerability.after_visit.band_label}
-                </div>
-              ) : null}
-              {deltas.length > 0 ? (
-                <ul className="aid-vuln-card__deltas">
-                  {deltas.map((d, i) => (
-                    <li key={`${d.label}-${i}`}>
-                      <span>{d.label}</span>
-                      <strong>
-                        {d.delta > 0 ? `+${d.delta}` : d.delta}
-                      </strong>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="aid-vuln-card__empty">
-                  Score from intake factors (income, category, housing, assets,
-                  BISP…).
-                </p>
-              )}
-              {vulnerability?.after_visit?.program_min_score != null ? (
-                <p className="aid-vuln-card__threshold">
-                  Program min {vulnerability.after_visit.program_code}:{' '}
-                  {vulnerability.after_visit.program_min_score} pts
-                  {vulnerability.after_visit.meets_program_threshold === false
-                    ? ' — below threshold'
-                    : vulnerability.after_visit.meets_program_threshold
-                      ? ' — meets threshold'
-                      : ''}
-                </p>
-              ) : null}
-            </div>
+            ) : null}
 
-            <div className="aid-rec-card">
-              <h4 className="aid-rec-card__title">Recommendation</h4>
-              <div className="aid-rec-options">
-                {AID_RECOMMENDATION_DECISIONS.map((opt) => (
-                  <label
-                    key={opt.value}
-                    className={`aid-rec-option${
-                      rec.decision === opt.value ? ' is-active' : ''
-                    }${
-                      opt.value === 'reject' ? ' aid-rec-option--reject' : ''
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="aid-rec-decision"
-                      value={opt.value}
-                      checked={rec.decision === opt.value}
-                      disabled={disabled}
-                      onChange={() => setRec({ decision: opt.value })}
-                    />
-                    <span>{opt.label}</span>
-                  </label>
-                ))}
-              </div>
-
-              {rec.decision !== 'reject' ? (
-                <div className="aid-rec-grid">
-                  <label className="aid-rec-field">
-                    <span>Amount (PKR)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="1"
-                      placeholder="Amount"
-                      value={rec.amount}
-                      disabled={disabled}
-                      onChange={(e) => setRec({ amount: e.target.value })}
-                    />
-                  </label>
-                  <label className="aid-rec-field">
-                    <span>Period</span>
-                    <select
-                      value={rec.period_months}
-                      disabled={disabled}
-                      onChange={(e) =>
-                        setRec({ period_months: Number(e.target.value) })
-                      }
-                    >
-                      {AID_RECOMMENDATION_PERIODS.map((p) => (
-                        <option key={p.value} value={p.value}>
-                          {p.label}
-                        </option>
+            {showRecForm ? (
+              <div className="aid-rec-card">
+                <h4 className="aid-rec-card__title">
+                  {rationOverrideMode
+                    ? 'Ration recommendation'
+                    : 'Recommendation'}
+                </h4>
+                {rationOverrideMode ? (
+                  <>
+                    <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                      Select package options and add remarks only.
+                    </p>
+                    <div className="aid-rec-options aid-rec-options--checks">
+                      {AID_RATION_REC_OPTIONS.map((opt) => {
+                        const selected = normalizeRationOptions(
+                          rec.ration_options,
+                        ).includes(opt.value);
+                        return (
+                          <label
+                            key={opt.value}
+                            className={`aid-rec-option${
+                              selected ? ' is-active' : ''
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              disabled={recLocked}
+                              onChange={() => {
+                                const cur = normalizeRationOptions(
+                                  rec.ration_options,
+                                );
+                                const next = selected
+                                  ? cur.filter((v) => v !== opt.value)
+                                  : [...cur, opt.value];
+                                setRec({
+                                  ration_options: next,
+                                  decision: 'approve_as_requested',
+                                  amount: '',
+                                  period_months: null,
+                                  found_monthly_income: '',
+                                });
+                              }}
+                            />
+                            <span>{opt.label}</span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <label className="aid-rec-field">
+                      <span>{remarksLabel}</span>
+                      <textarea
+                        rows={3}
+                        disabled={recLocked}
+                        placeholder="Remarks…"
+                        value={rec.remarks}
+                        onChange={(e) => setRec({ remarks: e.target.value })}
+                      />
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <div className="aid-rec-options">
+                      {AID_RECOMMENDATION_DECISIONS.map((opt) => (
+                        <label
+                          key={opt.value}
+                          className={`aid-rec-option${
+                            rec.decision === opt.value ? ' is-active' : ''
+                          }${
+                            opt.value === 'reject'
+                              ? ' aid-rec-option--reject'
+                              : ''
+                          }`}
+                        >
+                          <input
+                            type="radio"
+                            name="aid-rec-decision"
+                            value={opt.value}
+                            checked={rec.decision === opt.value}
+                            disabled={recLocked}
+                            onChange={() => setRec({ decision: opt.value })}
+                          />
+                          <span>{opt.label}</span>
+                        </label>
                       ))}
-                    </select>
-                  </label>
-                </div>
-              ) : null}
+                    </div>
 
-              <label className="aid-rec-field">
-                <span>Investigator remarks</span>
-                <textarea
-                  rows={4}
-                  disabled={disabled}
-                  placeholder="Family situation, who lives with the head, support from relatives…"
-                  value={rec.remarks}
-                  onChange={(e) => setRec({ remarks: e.target.value })}
-                />
-              </label>
+                    {rec.decision !== 'reject' ? (
+                      <div className="aid-rec-grid">
+                        <label className="aid-rec-field">
+                          <span>Amount (PKR)</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="1"
+                            placeholder="Amount"
+                            value={rec.amount}
+                            disabled={recLocked}
+                            onChange={(e) =>
+                              setRec({ amount: e.target.value })
+                            }
+                          />
+                        </label>
+                        <label className="aid-rec-field">
+                          <span>Period</span>
+                          <select
+                            value={rec.period_months}
+                            disabled={recLocked}
+                            onChange={(e) =>
+                              setRec({
+                                period_months: Number(e.target.value),
+                              })
+                            }
+                          >
+                            {AID_RECOMMENDATION_PERIODS.map((p) => (
+                              <option key={p.value} value={p.value}>
+                                {p.label}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    ) : null}
 
-              {!disabled && onSaveProgress ? (
+                    <label className="aid-rec-field">
+                      <span>{remarksLabel}</span>
+                      <textarea
+                        rows={3}
+                        disabled={recLocked}
+                        placeholder="Family situation, who lives with the head, support from relatives…"
+                        value={rec.remarks}
+                        onChange={(e) => setRec({ remarks: e.target.value })}
+                      />
+                    </label>
+                  </>
+                )}
+              </div>
+            ) : null}
+
+            {(showRecForm || onSubmitReport || onSaveProgress) &&
+            !recLocked &&
+            missingSteps.length > 0 ? (
+              <div className="aid-missing-steps">
                 <button
                   type="button"
-                  className="aid-rec-save"
-                  disabled={saveProgressDisabled || saveProgressBusy}
-                  onClick={onSaveProgress}
+                  className="aid-missing-steps__toggle"
+                  aria-expanded={missingOpen}
+                  onClick={() => setMissingOpen((o) => !o)}
                 >
-                  {saveProgressBusy ? 'Saving…' : saveProgressLabel}
+                  <span>
+                    See missing steps in this application verification
+                    <span className="aid-missing-steps__count">
+                      {missingSteps.length}
+                    </span>
+                  </span>
+                  <span className="aid-missing-steps__chevron" aria-hidden>
+                    {missingOpen ? '▾' : '▸'}
+                  </span>
                 </button>
-              ) : null}
+                {missingOpen ? (
+                  <ul className="aid-missing-steps__list">
+                    {missingSteps.map((step) => (
+                      <li key={step}>{step}</li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
 
-              {!disabled && onSubmitReport ? (
-                <button
-                  type="button"
-                  className="aid-rec-submit"
-                  disabled={submitDisabled}
-                  onClick={onSubmitReport}
-                >
-                  {submitLabel}
-                </button>
-              ) : null}
-            </div>
+            {!recLocked && onSaveProgress ? (
+              <button
+                type="button"
+                className="aid-rec-save"
+                disabled={saveProgressDisabled || saveProgressBusy}
+                onClick={onSaveProgress}
+              >
+                {saveProgressBusy ? 'Saving…' : saveProgressLabel}
+              </button>
+            ) : null}
+
+            {!recLocked && onSubmitReport ? (
+              <button
+                type="button"
+                className="aid-rec-submit"
+                disabled={submitDisabled}
+                onClick={onSubmitReport}
+              >
+                {submitLabel}
+              </button>
+            ) : null}
           </aside>
         ) : null}
       </div>

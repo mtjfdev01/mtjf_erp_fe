@@ -1,7 +1,11 @@
 export const AID_STATUS_OPTIONS = [
   { value: 'draft', label: 'Draft' },
+  { value: 'incomplete', label: 'Incomplete' },
+  { value: 'incomplete_docs', label: 'Incomplete Docs' },
   { value: 'submitted', label: 'Submitted' },
   { value: 'under_review', label: 'Under review' },
+  { value: 'verification_completed', label: 'Verification completed' },
+  { value: 'manager_review', label: 'Manager Review' },
   { value: 'rejected', label: 'Rejected' },
   { value: 'ceo_approval_required', label: 'CEO approval required' },
   { value: 'successful', label: 'Successful' },
@@ -10,8 +14,10 @@ export const AID_STATUS_OPTIONS = [
 
 /** Data-entry list pipeline cards (maps to API `stage` filter). Drafts use the Drafts board. */
 export const AID_ENTRY_STAGES = [
+  { id: 'incomplete', label: 'Incomplete', hint: 'Missing details / docs' },
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
+  { id: 'manager_review', label: 'Manager Review', hint: 'With Program manager' },
   { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
   { id: 'approved', label: 'Approved', hint: 'This month' },
   { id: 'returned', label: 'Returned', hint: 'Need correction' },
@@ -25,9 +31,13 @@ export function aidEntryStageTone(stage) {
   switch (stage) {
     case 'draft':
       return 'muted';
+    case 'incomplete':
+      return 'warn';
     case 'submitted':
       return 'info';
     case 'investigation':
+      return 'warn';
+    case 'manager_review':
       return 'warn';
     case 'pending_approval':
       return 'purple';
@@ -433,6 +443,63 @@ export const emptyFinancialAssistanceDetails = () => ({
   alternative_if_not_approved: '',
 });
 
+<<<<<<< HEAD
+=======
+/** Clean Water survey beneficiary row */
+export const emptyCleanWaterSurveyBeneficiary = () => ({
+  name: '',
+  phone: '',
+  cnic: '',
+  family_members: '',
+});
+
+/**
+ * Clean Water / Water Program survey (EN/UR).
+ * No signature capture — paper form fields only.
+ */
+export const emptyCleanWaterDetails = () => ({
+  lang: 'ur',
+  application_no: '',
+  applicant_name: '',
+  village: '',
+  union_council: '',
+  tehsil_district: '',
+  province: '',
+  gps_coordinates: '',
+  area_type: '',
+  tds_ppm: '',
+  beneficiary_population: '',
+  beneficiary_households: '',
+  water_problems: '',
+  drainage_plan: '',
+  project_name: '',
+  water_level_ft: '',
+  boring_depth_ft: '',
+  machine_pipe_length_ft: '',
+  construction_by: '',
+  survey_beneficiaries: [
+    emptyCleanWaterSurveyBeneficiary(),
+    emptyCleanWaterSurveyBeneficiary(),
+    emptyCleanWaterSurveyBeneficiary(),
+  ],
+  /** Legacy Application-tab fields (kept for older rows) */
+  existing_source_of_water: '',
+  distance_from_home: '',
+  duration_without_clean_water: '',
+  location_of_project: '',
+  community_contribution_amount: '',
+});
+
+/** Zakat Permission Letter — religion options */
+export const AID_ZAKAT_RELIGIONS = [
+  { value: 'muslim', label: 'Muslim' },
+  { value: 'christian', label: 'Christian' },
+  { value: 'hindu', label: 'Hindu' },
+  { value: 'sikh', label: 'Sikh' },
+  { value: 'other', label: 'Other' },
+];
+
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 /** Zakat Permission Letter — assets / eligibility (all applications) */
 export const emptyZakatPermission = () => ({
   form_date: '',
@@ -473,8 +540,9 @@ export function calcZakatNetAfterLoan(details) {
   return Math.max(0, total - loanAmt);
 }
 
-/** Media / donor Consent Form (کنسنٹ فارم) — all applications */
+/** Media / donor Consent Form (کنسنٹ فارم) — default for most applications */
 export const emptyConsentForm = () => ({
+  variant: 'media',
   form_date: '',
   application_no: '',
   full_name: '',
@@ -486,6 +554,147 @@ export const emptyConsentForm = () => ({
   applicant_signature: null,
   lang: 'ur',
 });
+
+/**
+ * Wheelchair affidavit / consent (حلف نامہ برائے وہیل چیئر).
+ * Used when SubProgram is Rehabilitation of PWDs (`health_pwd_rehab`).
+ */
+export const emptyWheelchairConsentForm = () => ({
+  variant: 'wheelchair',
+  form_date: '',
+  application_no: '',
+  applicant_name: '',
+  applicant_cnic: '',
+  beneficiary_name: '',
+  beneficiary_cnic: '',
+  mobile: '',
+  age: '',
+  consent_accepted: false,
+  applicant_thumb: null,
+  applicant_signature: null,
+  mtjf_rep_signature: null,
+  lang: 'ur',
+});
+
+/** Default Marriage Gift handover checklist (paper form). */
+export const AID_MARRIAGE_GIFT_CONSENT_ITEMS = [
+  { key: 'iron', name_en: 'Iron', name_ur: 'استری', qty: 1 },
+  { key: 'steel_set', name_en: 'Steel set', name_ur: 'اسٹیل سیٹ', qty: 1 },
+  { key: 'bed_set', name_en: 'Bed set', name_ur: 'بیڈ سیٹ', qty: 1 },
+  { key: 'mattress', name_en: 'Mattress', name_ur: 'میٹرس', qty: 1 },
+  { key: 'dinner_set', name_en: 'Dinner set', name_ur: 'ڈنر سیٹ', qty: 1 },
+  {
+    key: 'trunk_with_stand',
+    name_en: 'Trunk with stand',
+    name_ur: 'پیٹی بمعہ اسٹینڈ',
+    qty: 1,
+  },
+  {
+    key: 'ladies_suit',
+    name_en: "Women's suit",
+    name_ur: 'زنانہ سوٹ',
+    qty: 2,
+  },
+  {
+    key: 'mens_suit',
+    name_en: "Men's suit",
+    name_ur: 'مردانہ سوٹ',
+    qty: 2,
+  },
+  {
+    key: 'water_cooler',
+    name_en: 'Water cooler',
+    name_ur: 'واٹر کولر',
+    qty: 1,
+  },
+];
+
+/**
+ * Marriage Gift receipt / consent (شادی تحفہ منصوبہ).
+ * Used when Program is Marriage Gift.
+ */
+export const emptyMarriageGiftConsentForm = () => ({
+  variant: 'marriage_gift',
+  form_date: '',
+  application_no: '',
+  bride_name: '',
+  bride_cnic: '',
+  applicant_name: '',
+  parentage_or_spouse: '',
+  applicant_cnic: '',
+  relation_to_bride: 'daughter',
+  items: AID_MARRIAGE_GIFT_CONSENT_ITEMS.map((row) => ({
+    key: row.key,
+    name_en: row.name_en,
+    name_ur: row.name_ur,
+    qty: row.qty,
+  })),
+  consent_accepted: false,
+  receiver_thumb: null,
+  receiver_signature: null,
+  mtjf_rep_signature: null,
+  lang: 'ur',
+});
+
+/** Wheelchair affidavit is used for PWD rehab (wheelchairs / mobility aids). */
+export function isWheelchairConsentProgram(aidProgram) {
+  return String(aidProgram || '').toLowerCase() === 'health_pwd_rehab';
+}
+
+export function isMarriageGiftConsentProgram(aidType, aidProgram) {
+  const type = String(aidType || '').toLowerCase();
+  const program = String(aidProgram || '').toLowerCase();
+  return type === 'marriage_gift' || program.startsWith('marriage_gift');
+}
+
+export function isWheelchairConsentForm(value) {
+  return !!value && value.variant === 'wheelchair';
+}
+
+export function isMarriageGiftConsentForm(value) {
+  return !!value && value.variant === 'marriage_gift';
+}
+
+/** Resolve which consent form variant to show for an application. */
+export function resolveConsentVariant(aidType, aidProgram) {
+  if (isWheelchairConsentProgram(aidProgram)) return 'wheelchair';
+  if (isMarriageGiftConsentProgram(aidType, aidProgram)) return 'marriage_gift';
+  return 'media';
+}
+
+export function emptyConsentForVariant(variant) {
+  if (variant === 'wheelchair') return emptyWheelchairConsentForm();
+  if (variant === 'marriage_gift') return emptyMarriageGiftConsentForm();
+  return emptyConsentForm();
+}
+
+/** True when a biometric capture object has a usable image. */
+export function hasAidBiometric(capture) {
+  if (!capture || typeof capture !== 'object') return false;
+  return !!(capture.data_url || capture.url);
+}
+
+/** Shallow-clone a biometric capture for form / person storage. */
+export function cloneAidBiometric(capture) {
+  if (!hasAidBiometric(capture)) return null;
+  return { ...capture };
+}
+
+/**
+ * Person whose demographics + thumb/signature fill Zakat / Consent.
+ * Marriage Gift → applicant; all other programs → beneficiary.
+ */
+export function resolveAidFormSubjectPerson({
+  aidType,
+  aidProgram,
+  beneficiary,
+  applicant,
+}) {
+  if (isMarriageGiftConsentProgram(aidType, aidProgram)) {
+    return applicant || beneficiary || null;
+  }
+  return beneficiary || applicant || null;
+}
 
 export const AID_WRITER_RELATIONS = [
   { value: 'self', label: 'Self (beneficiary)' },
@@ -1148,32 +1357,45 @@ export function resolveRelatedPersonKinship(row) {
     row?.relation_with_family_head ||
     '';
   const r = String(raw || '').toLowerCase();
-  if (r.includes('sister')) return 'sister';
-  if (r.includes('brother')) return 'brother';
-  if (r === 'nephew' || r === 'niece') return 'cousin';
-  if (r === 'son' || r === 'daughter' || r === 'child') return r;
-  if (
-    [
-      'father',
-      'mother',
-      'spouse',
-      'sibling',
-      'uncle',
-      'aunt',
-      'cousin',
-      'grandfather',
-      'grandmother',
-      'maternal_grandfather',
-      'maternal_grandmother',
-      'grandchild',
-      'guardian',
-      'custody_holder',
-      'in_law',
-      'other',
-    ].includes(r)
-  ) {
+  // Exact matches first so step_/half_ siblings are not collapsed to brother/sister
+  const exact = [
+    'father',
+    'mother',
+    'spouse',
+    'son',
+    'daughter',
+    'child',
+    'brother',
+    'sister',
+    'sibling',
+    'step_brother',
+    'step_sister',
+    'half_brother',
+    'half_sister',
+    'uncle',
+    'aunt',
+    'cousin',
+    'nephew',
+    'niece',
+    'grandfather',
+    'grandmother',
+    'maternal_grandfather',
+    'maternal_grandmother',
+    'grandchild',
+    'guardian',
+    'custody_holder',
+    'in_law',
+    'other',
+  ];
+  if (exact.includes(r)) {
+    // UI subtypes → closest kinship enum accepted by API
+    if (r === 'step_brother' || r === 'half_brother') return 'brother';
+    if (r === 'step_sister' || r === 'half_sister') return 'sister';
+    if (r === 'nephew' || r === 'niece') return 'cousin';
     return r;
   }
+  if (r.includes('sister')) return 'sister';
+  if (r.includes('brother')) return 'brother';
   return 'other';
 }
 
@@ -1518,7 +1740,13 @@ export const AID_ATTACHMENT_CONTEXTS = [
 /** Optional application-intake document slots (create form Attachments tab). */
 export const AID_APPLICATION_DOC_TYPES = [
   { value: 'mepco_bill', label: 'Mepco Bill', multiple: false },
-  { value: 'cnic', label: 'CNICs', multiple: true },
+  {
+    value: 'cnic',
+    label: 'CNICs',
+    labelUr: 'شناختی کارڈ',
+    multiple: true,
+    frontBack: true,
+  },
   { value: 'bay_form', label: 'Bay Forms', multiple: true },
   { value: 'death_certificate', label: 'Death Certificates', multiple: true },
   { value: 'marriage_certificate', label: 'Marriage Certificates', multiple: true },
@@ -1526,13 +1754,118 @@ export const AID_APPLICATION_DOC_TYPES = [
   { value: 'e_stamp_paper', label: 'E-Stamp Paper', multiple: false },
 ];
 
-/** Normalize a docs slot to a list of { file?, name?, url? }. */
+/** Normalize a docs slot to a list of { file?, name?, url?, side?, pair? }. */
 export function normalizeApplicationDocSlot(slot) {
   if (!slot) return [];
   if (Array.isArray(slot)) return slot.filter(Boolean);
   if (slot.files && Array.isArray(slot.files)) return slot.files.filter(Boolean);
   if (slot.file || slot.name || slot.url) return [slot];
   return [];
+}
+
+/**
+ * Group CNIC files into front/back pairs for the intake UI.
+ * Returns at least one empty pair when there are no files.
+ */
+export function cnicFilesToPairs(files) {
+  const list = Array.isArray(files) ? files.filter(Boolean) : [];
+  if (!list.length) return [{ front: null, back: null }];
+
+  const hasMeta = list.some(
+    (f) => f?.side === 'front' || f?.side === 'back' || f?.pair != null,
+  );
+
+  if (hasMeta) {
+    const byPair = new Map();
+    list.forEach((f, i) => {
+      const pairIdx =
+        f.pair != null && Number.isFinite(Number(f.pair))
+          ? Number(f.pair)
+          : i;
+      if (!byPair.has(pairIdx)) byPair.set(pairIdx, { front: null, back: null });
+      const row = byPair.get(pairIdx);
+      const side = String(f.side || '').toLowerCase();
+      if (side === 'back') row.back = f;
+      else row.front = f;
+    });
+    return Array.from(byPair.entries())
+      .sort((a, b) => a[0] - b[0])
+      .map(([, row]) => row);
+  }
+
+  // Legacy flat list: treat consecutive files as front, back, front, back…
+  const pairs = [];
+  for (let i = 0; i < list.length; i += 2) {
+    pairs.push({
+      front: list[i] || null,
+      back: list[i + 1] || null,
+    });
+  }
+  return pairs.length ? pairs : [{ front: null, back: null }];
+}
+
+/** Flatten front/back pairs back into a files array with side/pair metadata. */
+export function cnicPairsToFiles(pairs) {
+  const out = [];
+  (pairs || []).forEach((pair, pairIdx) => {
+    if (pair?.front) {
+      out.push({ ...pair.front, side: 'front', pair: pairIdx });
+    }
+    if (pair?.back) {
+      out.push({ ...pair.back, side: 'back', pair: pairIdx });
+    }
+  });
+  return out;
+}
+
+/**
+ * Map saved application attachments into AidApplicationDocsIntake value shape
+ * so edit screens show existing files (with id/url for remove).
+ */
+export function applicationDocsFromAttachments(attachments = []) {
+  const docKeys = new Set(AID_APPLICATION_DOC_TYPES.map((d) => d.value));
+  const byContext = {};
+
+  for (const a of Array.isArray(attachments) ? attachments : []) {
+    const url = String(a?.file_url || a?.url || '').trim();
+    if (!url) continue;
+    const ctx = String(a?.context || '').toLowerCase();
+    if (!docKeys.has(ctx)) continue;
+
+    const desc = String(a?.description || '');
+    let side = null;
+    let pair = null;
+    const mPair = desc.match(/#(\d+)\s*\((front|back)\)/i);
+    const mSide = desc.match(/\((front|back)\)/i);
+    if (mPair) {
+      pair = Math.max(0, Number(mPair[1]) - 1);
+      side = mPair[2].toLowerCase();
+    } else if (mSide) {
+      side = mSide[1].toLowerCase();
+    }
+
+    const entry = {
+      id: a.id ?? null,
+      url,
+      name: a.file_name || a.name || 'File',
+      ...(side ? { side } : {}),
+      ...(pair != null && Number.isFinite(pair) ? { pair } : {}),
+    };
+    if (!byContext[ctx]) byContext[ctx] = [];
+    byContext[ctx].push(entry);
+  }
+
+  const result = {};
+  for (const doc of AID_APPLICATION_DOC_TYPES) {
+    const files = byContext[doc.value] || [];
+    if (!files.length) continue;
+    if (doc.multiple || doc.frontBack) {
+      result[doc.value] = { files };
+    } else {
+      result[doc.value] = files[0];
+    }
+  }
+  return result;
 }
 
 export const AID_VERIFICATION_CHECKLIST = [
@@ -1608,8 +1941,13 @@ export function aidStatusTone(status) {
       return 'success';
     case 'rejected':
       return 'danger';
+    case 'incomplete':
+    case 'incomplete_docs':
     case 'ceo_approval_required':
+    case 'manager_review':
       return 'warn';
+    case 'verification_completed':
+      return 'success';
     case 'under_review':
     case 'submitted':
       return 'info';

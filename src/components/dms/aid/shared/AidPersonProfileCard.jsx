@@ -68,6 +68,9 @@ const AidPersonProfileCard = ({
   badges,
   relation,
   roles = {},
+  /** Optional override / attachments list to resolve profile image */
+  photoUrl,
+  attachments,
 }) => {
   if (!person) {
     return (
@@ -90,6 +93,17 @@ const AidPersonProfileCard = ({
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join('');
+
+  const profileFromAttachments = Array.isArray(attachments)
+    ? attachments.find(
+        (a) =>
+          String(a?.context || '').toLowerCase() === 'profile' &&
+          a?.file_url &&
+          (!a.person_id || Number(a.person_id) === Number(person.id)),
+      )?.file_url
+    : '';
+  const avatarSrc =
+    String(photoUrl || person.photo_url || profileFromAttachments || '').trim();
 
   const roleBadges = [
     ...(Array.isArray(badges) ? badges : badge ? [badge] : []),
@@ -118,7 +132,15 @@ const AidPersonProfileCard = ({
       <div className="aid-person-card__banner" aria-hidden />
       <div className="aid-person-card__head">
         <div className="aid-person-card__avatar" aria-hidden>
-          {initials || <FiUser />}
+          {avatarSrc ? (
+            <img
+              src={avatarSrc}
+              alt=""
+              className="aid-person-card__avatar-img"
+            />
+          ) : (
+            initials || <FiUser />
+          )}
         </div>
         <div className="aid-person-card__intro">
           <div className="aid-person-card__title-row">

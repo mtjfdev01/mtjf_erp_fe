@@ -4,6 +4,8 @@ import {
   FiAlertTriangle,
   FiCalendar,
   FiCheckCircle,
+  FiEdit2,
+  FiEye,
   FiPackage,
 } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
@@ -476,17 +478,21 @@ const AidDisbursementsList = () => {
                           </span>
                         </td>
                         <td>
-                          <button
-                            type="button"
-                            className={
-                              canRecord
-                                ? 'primary-btn aid-disb-row-btn'
-                                : 'secondary-btn aid-disb-row-btn'
-                            }
-                            onClick={() => openRow(row)}
-                          >
-                            {canRecord ? 'Record' : 'View'}
-                          </button>
+                          <div className="aid-icon-actions">
+                            <button
+                              type="button"
+                              className={`aid-icon-btn ${
+                                canRecord
+                                  ? 'aid-icon-btn--edit'
+                                  : 'aid-icon-btn--view'
+                              }`}
+                              title={canRecord ? 'Record' : 'View'}
+                              aria-label={canRecord ? 'Record' : 'View'}
+                              onClick={() => openRow(row)}
+                            >
+                              {canRecord ? <FiEdit2 /> : <FiEye />}
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );

@@ -379,6 +379,7 @@ const AidPeopleList = () => {
                             )}
                           </div>
                         </div>
+<<<<<<< HEAD
                       </td>
                       <td>{row.cnic || ''}</td>
                       <td>{row.phone || ''}</td>
@@ -403,6 +404,115 @@ const AidPeopleList = () => {
                 )}
               </tbody>
             </table>
+=======
+                      </div>
+
+                      <div className="aid-people-collapse__cell">
+                        {row.cnic || '—'}
+                      </div>
+                      <div className="aid-people-collapse__cell">
+                        {row.phone || '—'}
+                      </div>
+                      <div className="aid-people-collapse__cell">
+                        {row.city || '—'}
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-empty-col">
+                        —
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-empty-col">
+                        —
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-empty-col">
+                        —
+                      </div>
+                      <div className="aid-people-collapse__cell aid-people-collapse__cell--actions">
+                        <div className="aid-icon-actions">
+                          <button
+                            type="button"
+                            className="aid-icon-btn aid-icon-btn--view"
+                            title="View"
+                            aria-label="View"
+                            onClick={() =>
+                              navigate(`/dms/aid/people/view/${row.id}`)
+                            }
+                          >
+                            <FiEye />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      className={`aid-people-collapse__body${
+                        isOpen ? ' aid-people-collapse__body--open' : ''
+                      }`}
+                      aria-hidden={!isOpen}
+                    >
+                      <div className="aid-people-collapse__body-inner">
+                        <div className="aid-people-collapse__panel">
+                          {!isOpen && !members ? null : membersLoading ? (
+                            <div className="aid-people-collapse__panel-msg">
+                              Loading family members…
+                            </div>
+                          ) : !members || members.length === 0 ? (
+                            <div className="aid-people-collapse__panel-msg">
+                              No family members linked to this beneficiary.
+                            </div>
+                          ) : (
+                            <div className="aid-people-nested-wrap">
+                              <table className="aid-people-nested-table">
+                                <thead>
+                                  <tr>
+                                    <th>Member</th>
+                                    <th>Relation</th>
+                                    <th>Age</th>
+                                    <th>CNIC / B-Form</th>
+                                    <th>Phone</th>
+                                    <th>City</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {members.map((m) => {
+                                    const p = m.person;
+                                    const age = personAge(p.date_of_birth);
+                                    return (
+                                      <tr key={m.key}>
+                                        <td>
+                                          <button
+                                            type="button"
+                                            className="aid-text-link"
+                                            tabIndex={isOpen ? 0 : -1}
+                                            onClick={() =>
+                                              navigate(
+                                                `/dms/aid/people/view/${p.id}`,
+                                              )
+                                            }
+                                          >
+                                            {p.full_name || '—'}
+                                          </button>
+                                        </td>
+                                        <td>
+                                          {formatRelationLabel(m.relation)}
+                                        </td>
+                                        <td>{age != null ? age : '—'}</td>
+                                        <td>{p.cnic || '—'}</td>
+                                        <td>{p.phone || '—'}</td>
+                                        <td>{p.city || '—'}</td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           </div>
 
           {totalItems > 0 && (

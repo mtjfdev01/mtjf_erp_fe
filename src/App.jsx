@@ -15,6 +15,7 @@ import UpdateUser from './components/admin/user/UpdateUser';
 import UserList from './components/admin/user/UserList';
 import PermissionRolesList from './components/admin/permission_roles/list';
 import PermissionRoleForm from './components/admin/permission_roles/form';
+import ApiKeysList from './components/admin/api_keys/list';
 import ProtectedRoute, { ProtectedRoutes } from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
@@ -147,6 +148,8 @@ import AidDisbursementsList from './components/dms/aid/disbursements/list';
 import AidDisbursementRecord from './components/dms/aid/disbursements/record';
 import AidPeopleList from './components/dms/aid/people/list';
 import AidPersonView from './components/dms/aid/people/view';
+import AidAuditList from './components/dms/aid/audit/list';
+import AidAuditView from './components/dms/aid/audit/view';
 import { RecurringDonationsList, RecurringDonationView, AddRecurringDonation, UpdateRecurringDonation } from './components/dms/recurring_donations';
 import RecurringDonorsList from './components/dms/recurring_donors/list';
 import ManualRecurringList from './components/dms/manual_recurring/list';
@@ -299,6 +302,10 @@ const App = () => {
                                 <Route
                                   path="/admin/permission-roles/edit/:id"
                                   element={<PermissionRoleForm />}
+                                />
+                                <Route
+                                  path="/admin/api-keys"
+                                  element={<ApiKeysList />}
                                 />
                                 <Route path="/profile" element={<ProfileRedirect />} />
                                 <Route path="/users/:id" element={<UserView />} />
@@ -552,6 +559,8 @@ const App = () => {
                                 <Route path="/dms/aid/applications/add" element={<AidApplicationAdd />} />
                                 <Route path="/dms/aid/applications/edit/:id" element={<AidApplicationAdd />} />
                                 <Route path="/dms/aid/applications/view/:id" element={<AidApplicationView />} />
+                                <Route path="/dms/aid/audit/list" element={<AidAuditList />} />
+                                <Route path="/dms/aid/audit/applications/:id" element={<AidAuditView />} />
                                 <Route path="/dms/aid/people/list" element={<AidPeopleList />} />
                                 <Route path="/dms/aid/people/view/:id" element={<AidPersonView />} />
 

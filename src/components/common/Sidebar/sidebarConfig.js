@@ -19,6 +19,7 @@ import {
   FiGift,
   FiDollarSign,
   FiSettings,
+  FiKey,
   FiLifeBuoy,
   FiDroplet,
   FiBriefcase,
@@ -315,6 +316,14 @@ const programDepartmentItems = (isUser = false) => [
     icon: FiPackage
   },
   {
+    label: 'Aid Audit Logs',
+    path: '/dms/aid/audit/list',
+    type: 'list',
+    module: 'aid_audit',
+    permissionDepartment: 'program',
+    icon: FiClipboard
+  },
+  {
     label: 'Beneficiaries',
     path: '/dms/aid/people/list',
     type: 'list',
@@ -547,6 +556,13 @@ const adminDepartmentItems = () => [
     type: 'list',
     module: 'permission_roles',
     icon: FiSettings,
+  },
+  {
+    label: 'API Keys',
+    path: '/admin/api-keys',
+    type: 'list',
+    module: 'api_keys',
+    icon: FiKey,
   },
   {
     label: 'Dashboard',

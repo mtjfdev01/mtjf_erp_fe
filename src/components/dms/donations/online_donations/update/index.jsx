@@ -41,6 +41,7 @@ const donationMethodOptions = [
   { value: 'bank_transfer', label: 'Bank Transfer' },
   { value: 'credit_card', label: 'Credit Card' },
   { value: 'online', label: 'Online' },
+  { value: 'whatsapp', label: 'WhatsApp' },
   { value: 'meezan', label: 'Meezan Bank' },
   { value: 'blinq', label: 'Blinq' },
   { value: 'payfast', label: 'Payfast' },
@@ -60,6 +61,7 @@ const donationSourceOptions = [
   { value: 'referral', label: 'Referral' },
   { value: 'collection_box', label: 'Collection Box' },
   { value: 'bank', label: 'Bank' },
+  { value: 'receipt_intake', label: 'Receipt Intake' },
 ];
 
 const statusOptions = [

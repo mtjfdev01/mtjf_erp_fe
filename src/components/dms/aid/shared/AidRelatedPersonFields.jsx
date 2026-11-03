@@ -99,27 +99,66 @@ const AidRelatedPersonFields = ({
           : value.monthly_income || '',
       education_level: person.education_level || value.education_level || '',
       necta_status: person.necta_status || value.necta_status || '',
+      necta_document_url: person.necta_document_url || value.necta_document_url || '',
+      necta_document_name:
+        person.necta_document_name || value.necta_document_name || '',
+      bisp_status: person.bisp_status || value.bisp_status || '',
       vulnerability: person.vulnerability || value.vulnerability || '',
       household_dependency:
         person.household_dependency || value.household_dependency || '',
       has_disability: !!person.has_disability,
       disability_type: person.disability_type || '',
+      disability_certificate_url: person.disability_certificate_url || '',
+      disability_certificate_name: person.disability_certificate_name || '',
       literacy_status: person.literacy_status || value.literacy_status || '',
       literacy_category: person.literacy_category || value.literacy_category || '',
       student_class: person.student_class || value.student_class || '',
       student_class_type: person.student_class_type || value.student_class_type || '',
       student_class_name: person.student_class_name || value.student_class_name || '',
       address: person.address || value.address || '',
+      current_address: person.current_address || value.current_address || '',
       city: person.city || person.district || value.city || '',
       province: person.province || value.province || '',
       district: person.district || value.district || '',
       tehsil: person.tehsil || value.tehsil || '',
       union_council: person.union_council || value.union_council || '',
+      landmark: person.landmark || value.landmark || '',
+      // Asset / housing — copy so save does not wipe DB with false defaults
+      has_land: !!person.has_land,
+      property_type: person.property_type || '',
+      property_area: person.property_area || '',
+      property_details: person.property_details || '',
+      property_entries: Array.isArray(person.property_entries)
+        ? person.property_entries
+        : value.property_entries || [],
       resident_type: person.resident_type || value.resident_type || '',
+      resident_ownership_status:
+        person.resident_ownership_status || value.resident_ownership_status || '',
+      resident_ownership_other:
+        person.resident_ownership_other || value.resident_ownership_other || '',
       rented_amount:
         person.rented_amount != null && person.rented_amount !== ''
           ? String(person.rented_amount)
           : value.rented_amount || '',
+      house_area_marla:
+        person.house_area_marla != null && person.house_area_marla !== ''
+          ? String(person.house_area_marla)
+          : value.house_area_marla || '',
+      house_details: person.house_details || value.house_details || '',
+      resident_entries: Array.isArray(person.resident_entries)
+        ? person.resident_entries
+        : value.resident_entries || [],
+      has_livestock: !!person.has_livestock,
+      livestock_entries: Array.isArray(person.livestock_entries)
+        ? person.livestock_entries
+        : value.livestock_entries || [],
+      has_vehicle: !!person.has_vehicle,
+      vehicle_type: person.vehicle_type || value.vehicle_type || '',
+      vehicle_entries: Array.isArray(person.vehicle_entries)
+        ? person.vehicle_entries
+        : value.vehicle_entries || [],
+      thumb_impression: person.thumb_impression || value.thumb_impression || null,
+      signature: person.signature || value.signature || null,
     });
     setLookupHint(`Linked existing person #${person.id} — ${person.full_name}`);
   };

@@ -34,8 +34,9 @@ export default defineConfig({
         ],
       },
       workbox: {
-        // Main bundle can exceed Workbox default 2 MiB precache limit
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // Aid Pakistan locations list balloons the main chunk (~5.3 MiB).
+        // Raise Workbox precache limit so Vercel/PWA build does not fail.
+        maximumFileSizeToCacheInBytes: 8 * 1024 * 1024,
       },
     }),
   ],  

@@ -17,7 +17,10 @@ export const AID_UI_COPY = {
     pctComplete: '{n}% complete',
     applicationSteps: 'Application steps',
     draftHint:
-      'This form saves a draft. Assignment is done when an approver uses Data Entry → Consider (program user) to send it to Verification Process.',
+      'Your work is autosaved on this device only (no server call until Save). Use Clear form to discard it. Assignment is done when an approver uses Data Entry → Consider (program user) to send it to Verification Process.',
+    clearForm: 'Clear form',
+    clearFormConfirm:
+      'Discard all unsaved work on this form? This cannot be undone.',
 
     // Tabs
     tabFamily: 'Family Registration',
@@ -30,6 +33,8 @@ export const AID_UI_COPY = {
     tabRequestHint: 'Need & program',
     tabAttachments: 'Attachments',
     tabAttachmentsHint: 'Docs & forms',
+    tabSurvey: 'Survey',
+    tabSurveyHint: 'Water program survey',
 
     // Request
     application: 'Application',
@@ -44,12 +49,17 @@ export const AID_UI_COPY = {
     needDescription: 'Application summary',
     needPlaceholder: 'Describe the need…',
     downloadPng: 'Download as PNG',
+    printForm: 'Print',
 
     // Attachments
     attachments: 'Attachments',
     zakatLetter: 'Zakat Permission Letter',
     consentForm: 'Consent Form',
+    wheelchairConsentForm: 'Wheelchair Affidavit / Consent',
+    marriageGiftConsentForm: 'Marriage Gift Receipt / Consent',
     optionalExpand: 'Optional — click to fill or review',
+    formsAutoAttached:
+      'Attached to every application — beneficiary data (applicant for Marriage Gift); thumb & signature reuse from that person',
 
     // Beneficiary
     beneficiary: 'Beneficiary',
@@ -86,6 +96,7 @@ export const AID_UI_COPY = {
     wifeLate: 'Wife (late / optional)',
     isApplicant: '{name} is the applicant',
     optionalSection: '{name} (optional)',
+    addOptionalRelative: 'Add {name} (optional)',
     familyHeadSelect: 'Family Head (select type for each)',
     addFamilyHead: 'Add family head',
     caseSource: 'Case source',
@@ -138,7 +149,13 @@ export const AID_UI_COPY = {
       'Vulnerability Categories (Select all that apply)',
     viewCertificate: 'View certificate',
     photoOfHead: 'Photo of head',
-    captureUpload: 'Capture / upload',
+    removePhoto: 'Remove photo',
+    captureUpload: 'Upload photo',
+    openWebcam: 'Open webcam',
+    takePhoto: 'Take photo',
+    closeWebcam: 'Close',
+    webcamUnavailable: 'Camera not available or permission denied',
+    uploadingPhoto: 'Uploading…',
     cnicNumber: 'CNIC number',
     cnicExpiry: 'CNIC expiry',
     fullNameCnic: 'Full name (CNIC)',
@@ -251,13 +268,19 @@ export const AID_UI_COPY = {
 
     // Docs
     docsHint: 'All document uploads are optional.',
-    docsHintDetail: 'CNICs and certificates accept multiple files.',
+    docsHintDetail:
+      'CNICs use Front / Back per card; use + to add another CNIC. Certificates accept multiple files.',
     chooseFile: 'Choose file',
     fileN: 'File {n}',
     chooseFiles: 'Choose files',
     addMoreFiles: '+ Add more files',
     multiple: 'Multiple',
     optional: 'Optional',
+    frontBack: 'Front / Back',
+    cnicFront: 'Front',
+    cnicBack: 'Back',
+    cnicPair: 'CNIC {n}',
+    addCnicPair: 'Add another CNIC',
 
     // Family tree
     familyTreeEmpty:
@@ -395,7 +418,10 @@ export const AID_UI_COPY = {
     pctComplete: '{n}% مکمل',
     applicationSteps: 'درخواست کے مراحل',
     draftHint:
-      'یہ فارم ڈرافٹ محفوظ کرتا ہے۔ تفویض تب ہوتی ہے جب منظور کنندہ ڈیٹا انٹری → غور کریں استعمال کر کے تصدیقی عمل میں بھیجے۔',
+      'آپ کا کام صرف اس ڈیوائس پر خود بخود محفوظ ہوتا ہے (محفوظ کریں تک کوئی سرور کال نہیں)۔ صاف فارم سے رد کریں۔ تفویض تب ہوتی ہے جب منظور کنندہ ڈیٹا انٹری → غور کریں استعمال کر کے تصدیقی عمل میں بھیجے۔',
+    clearForm: 'فارم صاف کریں',
+    clearFormConfirm:
+      'اس فارم کا تمام غیر محفوظ کام رد کریں؟ یہ واپس نہیں ہو سکتا۔',
 
     tabFamily: 'خاندانی رجسٹریشن',
     tabFamilyHint: 'گھرانا',
@@ -407,6 +433,8 @@ export const AID_UI_COPY = {
     tabRequestHint: 'ضرورت و پروگرام',
     tabAttachments: 'منسلکات',
     tabAttachmentsHint: 'دستاویزات و فارم',
+    tabSurvey: 'سروی',
+    tabSurveyHint: 'واٹر پروگرام سروی',
 
     application: 'درخواست',
     title: 'عنوان',
@@ -420,11 +448,16 @@ export const AID_UI_COPY = {
     needDescription: 'درخواست کا خلاصہ',
     needPlaceholder: 'ضرورت بیان کریں…',
     downloadPng: 'PNG ڈاؤن لوڈ',
+    printForm: 'پرنٹ',
 
     attachments: 'منسلکات',
     zakatLetter: 'اجازت نامہ برائے زکوٰۃ',
     consentForm: 'کنسنٹ فارم',
+    wheelchairConsentForm: 'حلف نامہ برائے وہیل چیئر',
+    marriageGiftConsentForm: 'شادی تحفہ رسید / رضامندی',
     optionalExpand: 'اختیاری — کھولیں یا دیکھیں',
+    formsAutoAttached:
+      'ہر درخواست کے ساتھ — مستفید کا ڈیٹا (شادی تحفہ میں درخواست گزار)؛ انگوٹھا/دستخط اسی شخص سے',
 
     beneficiary: 'مستفید',
     beneficiaryIsApplicant: 'مستفید ہی درخواست گزار ہے',
@@ -458,6 +491,7 @@ export const AID_UI_COPY = {
     wifeLate: 'بیوی (مرحومہ / اختیاری)',
     isApplicant: '{name} درخواست گزار ہے',
     optionalSection: '{name} (اختیاری)',
+    addOptionalRelative: '{name} شامل کریں (اختیاری)',
     familyHeadSelect: 'خاندانی سربراہ (ہر ایک کی قسم منتخب کریں)',
     addFamilyHead: 'سربراہ شامل کریں',
     caseSource: 'کیس کا ذریعہ',
@@ -509,7 +543,13 @@ export const AID_UI_COPY = {
       'حساس زمروں (تمام لاگو منتخب کریں)',
     viewCertificate: 'سرٹیفکیٹ دیکھیں',
     photoOfHead: 'سربراہ کی تصویر',
+    removePhoto: 'تصویر ہٹائیں',
     captureUpload: 'کیپچر / اپ لوڈ',
+    openWebcam: 'ویب کیم کھولیں',
+    takePhoto: 'تصویر لیں',
+    closeWebcam: 'بند کریں',
+    webcamUnavailable: 'کیمرہ دستیاب نہیں یا اجازت نہیں دی گئی',
+    uploadingPhoto: 'اپ لوڈ ہو رہا ہے…',
     cnicNumber: 'شناختی کارڈ نمبر',
     cnicExpiry: 'شناختی کارڈ کی معیاد',
     fullNameCnic: 'مکمل نام (شناختی کارڈ)',
@@ -618,13 +658,19 @@ export const AID_UI_COPY = {
     className: 'جماعت کا نام',
 
     docsHint: 'تمام دستاویزی اپ لوڈ اختیاری ہیں۔',
-    docsHintDetail: 'شناختی کارڈ اور سرٹیفکیٹس کے لیے متعدد فائلیں قبول ہیں۔',
+    docsHintDetail:
+      'شناختی کارڈ کے لیے سامنے / پیچھے؛ مزید کارڈ کے لیے + دبائیں۔ سرٹیفکیٹس متعدد فائلیں قبول ہیں۔',
     chooseFile: 'فائل منتخب کریں',
     fileN: 'فائل {n}',
     chooseFiles: 'فائلیں منتخب کریں',
     addMoreFiles: '+ مزید فائلیں',
     multiple: 'متعدد',
     optional: 'اختیاری',
+    frontBack: 'سامنے / پیچھے',
+    cnicFront: 'سامنے',
+    cnicBack: 'پیچھے',
+    cnicPair: 'شناختی کارڈ {n}',
+    addCnicPair: 'ایک اور شناختی کارڈ شامل کریں',
 
     familyTreeEmpty:
       'ابھی خاندان دکھانے کے لیے کوئی رکن نہیں۔ پہلے خاندانی رجسٹریشن مکمل کریں۔',

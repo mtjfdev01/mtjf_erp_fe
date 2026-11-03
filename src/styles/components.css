@@ -218,8 +218,8 @@
   padding-bottom: 0;
 }
 
-/* Responsive Design for Form Wrapper */
-@media (max-width: 768px) {
+/* Responsive Design for Form Wrapper — screen only so print keeps multi-column layouts */
+@media screen and (max-width: 768px) {
   .form-wrapper {
     margin: 20px 15px 2rem;
     padding: 1.5rem;
@@ -235,7 +235,7 @@
   }
 }
 
-@media (max-width: 480px) {
+@media screen and (max-width: 480px) {
   .form-wrapper {
     margin: auto;
     padding: 0.5rem 0.25rem;

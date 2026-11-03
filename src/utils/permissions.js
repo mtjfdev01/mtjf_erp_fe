@@ -19,6 +19,26 @@ export const isSuperAdmin = (permissions) => {
 };
 
 /**
+ * Program department manager (Consider / Recommendation / forward to CEO).
+ * True when:
+ * - super_admin, or
+ * - permissions.program_manager flag, or
+ * - user role is manager / assistant_manager / dept_head in department `program`
+ */
+export const isProgramDepartmentManager = (permissions, user) => {
+  if (isSuperAdmin(permissions)) return true;
+  const dept = String(user?.department || '').toLowerCase();
+  if (dept !== 'program') return false;
+  if (permissions?.program_manager === true) return true;
+  const role = String(user?.role || '').toLowerCase();
+  return (
+    role === 'manager' ||
+    role === 'assistant_manager' ||
+    role === 'dept_head'
+  );
+};
+
+/**
  * Check if user has a specific permission
  * @param {Object} permissions - User permissions object
  * @param {string} department - Department name
@@ -51,7 +71,8 @@ export const hasPermission = (permissions, department, module, action) => {
       module === 'aid_drafts' ||
       module === 'aid_verification' ||
       module === 'aid_disbursements' ||
-      module === 'aid_overview') &&
+      module === 'aid_overview' ||
+      module === 'aid_audit') &&
     (department === 'program' || department === 'fund_raising')
   ) {
     const other =
@@ -194,6 +215,18 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
+  // Integration API keys (Ask Clinic, etc.) — staff managers + super admin
+  if (department === 'admin' && module === 'api_keys') {
+    if (
+      permissions.program_manager === true ||
+      permissions.fund_raising_manager === true ||
+      permissions.fund_raising?.manager === true
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   // My To-Dos: independent `todos` section; accept new + legacy fund_raising.dms_todos
   if (department === 'todos' && module === 'dms_todos') {
     if (
@@ -208,7 +241,7 @@ export const canViewModule = (permissions, department, module) => {
     return legacy?.view === true || legacy?.list_view === true;
   }
 
-  // Aid Overview / Applications / Drafts / Verification / Disbursements / Beneficiaries
+  // Aid Overview / Applications / Drafts / Verification / Disbursements / Beneficiaries / Audit
   if (
     (department === 'program' || department === 'fund_raising') &&
     (module === 'aid_people' ||
@@ -216,8 +249,20 @@ export const canViewModule = (permissions, department, module) => {
       module === 'aid_drafts' ||
       module === 'aid_verification' ||
       module === 'aid_disbursements' ||
-      module === 'aid_overview')
+      module === 'aid_overview' ||
+      module === 'aid_audit')
   ) {
+    // Aid audit is intentionally permission-only (no manager role bypass).
+    if (module === 'aid_audit') {
+      const next = permissions.program?.aid_audit;
+      const legacy = permissions.fund_raising?.aid_audit;
+      return (
+        next?.view === true ||
+        next?.list_view === true ||
+        legacy?.view === true ||
+        legacy?.list_view === true
+      );
+    }
     if (
       permissions.program_manager === true ||
       permissions.fund_raising_manager === true ||
@@ -635,6 +680,7 @@ export default {
   fundRaisingDonorsHas,
   fundRaisingOrganizationsOrPocsHas,
   isSuperAdmin,
+  isProgramDepartmentManager,
   getAccessibleModules,
   getModulePermissions,
   hasPermissionByPath,

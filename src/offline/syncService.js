@@ -53,6 +53,78 @@ function onlineConfig(extra = {}) {
   return { ...extra, _offlineSync: true };
 }
 
+async function dataUrlToBlob(dataUrl) {
+  const res = await fetch(dataUrl);
+  return res.blob();
+}
+
+/**
+ * Upload any checklist attachments stored as data: URLs while offline,
+ * then rewrite the patch so the server receives real file URLs.
+ */
+async function resolveOfflineAttachmentsInPayload(serverId, payload) {
+  if (!payload || typeof payload !== 'object') return payload;
+  const checklist = payload.verification_checklist;
+  if (!checklist || typeof checklist !== 'object') return payload;
+
+  const nextChecklist = { ...checklist };
+  let changed = false;
+
+  for (const [key, entry] of Object.entries(checklist)) {
+    if (!entry || typeof entry !== 'object') continue;
+    const atts = Array.isArray(entry.attachments) ? entry.attachments : [];
+    if (!atts.length) continue;
+
+    const nextAtts = [];
+    for (const att of atts) {
+      const url = String(att?.url || att?.file_url || '').trim();
+      const pending =
+        att?._offline_pending || (url.startsWith('data:') && url.includes(','));
+      if (pending && url.startsWith('data:')) {
+        const blob = await dataUrlToBlob(url);
+        const fd = new FormData();
+        fd.append('file', blob, att.name || att.file_name || 'attachment');
+        fd.append(
+          'context',
+          key === 'site_visit' ? 'site_visit' : 'verification',
+        );
+        fd.append('description', key);
+        const res = await axiosInstance.post(
+          `/aid/applications/${serverId}/attachments/upload`,
+          fd,
+          onlineConfig(),
+        );
+        const row = res.data?.data;
+        if (!row?.file_url) {
+          throw new Error('Offline attachment upload returned no file URL');
+        }
+        nextAtts.push({
+          id: row.id ?? null,
+          url: row.file_url,
+          name: row.file_name || att.name || att.file_name || 'Attached file',
+        });
+        changed = true;
+      } else {
+        const cleaned = { ...att };
+        delete cleaned._offline_pending;
+        if (cleaned.file_url && !cleaned.url) cleaned.url = cleaned.file_url;
+        nextAtts.push(cleaned);
+      }
+    }
+
+    nextChecklist[key] = {
+      ...entry,
+      attachments: nextAtts,
+      attachment_url: nextAtts[0]?.url || '',
+      attachment_name: nextAtts[0]?.name || '',
+      attachment_id: nextAtts[0]?.id ?? null,
+    };
+  }
+
+  if (!changed) return payload;
+  return { ...payload, verification_checklist: nextChecklist };
+}
+
 async function syncAidQueueItem(item) {
   const type = item.type;
   if (type === 'CREATE_AID_APPLICATION') {
@@ -94,17 +166,25 @@ async function syncAidQueueItem(item) {
     if (!serverId) {
       throw new Error('Missing server id for Aid update');
     }
+    const rawPatch = item.payload?.patch || item.payload;
+    const patch = await resolveOfflineAttachmentsInPayload(serverId, rawPatch);
     await axiosInstance.patch(
       `/aid/applications/${serverId}`,
-      item.payload?.patch || item.payload,
+      patch,
       onlineConfig(),
     );
     const local = await getRecord(STORES.aidApplications, item.localId);
     if (local) {
+      const nextRecord = {
+        ...(local.record || {}),
+        ...(patch || {}),
+        id: Number(serverId),
+      };
       await putRecord(STORES.aidApplications, {
         ...local,
         synced: true,
         serverId: Number(serverId),
+        record: nextRecord,
       });
     }
     await removeSyncedLocalRecord(null, null, item.queueId);
@@ -118,9 +198,11 @@ async function syncAidQueueItem(item) {
     if (!serverId) {
       throw new Error('Missing server id for Aid verify');
     }
+    const rawBody = item.payload?.body || {};
+    const body = await resolveOfflineAttachmentsInPayload(serverId, rawBody);
     await axiosInstance.post(
       `/aid/applications/${serverId}/verify`,
-      item.payload?.body || {},
+      body,
       onlineConfig(),
     );
     const local = await getRecord(STORES.aidApplications, item.localId);
@@ -129,6 +211,11 @@ async function syncAidQueueItem(item) {
         ...local,
         synced: true,
         serverId: Number(serverId),
+        record: {
+          ...(local.record || {}),
+          ...(body || {}),
+          id: Number(serverId),
+        },
       });
     }
     await removeSyncedLocalRecord(null, null, item.queueId);

@@ -891,6 +891,7 @@ const OnlineDonationsList = ({
         { value: 'bank_transfer', label: 'Bank Transfer' },
         { value: 'credit_card', label: 'Credit Card' },
         { value: 'online', label: 'Online' },
+        { value: 'whatsapp', label: 'WhatsApp' },
         { value: 'in_kind', label: 'In Kind' },
         { value: 'reconciliation', label: 'Reconciliation' },
       ];
@@ -911,7 +912,8 @@ const OnlineDonationsList = ({
     { value: 'event', label: 'Event' },
     { value: 'referral', label: 'Referral' },
     { value: 'collection_box', label: 'Collection Box' },
-    {value:'bank', label:'Bank'}
+    { value: 'bank', label: 'Bank' },
+    { value: 'receipt_intake', label: 'Receipt Intake' },
   ];
 
   const workflowTemplateOptions = useMemo(() => {

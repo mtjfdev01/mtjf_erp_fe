@@ -92,6 +92,7 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
   };
 
   return (
+<<<<<<< HEAD
     <div className="tkpendatt">
       <div className="tkpendatt-section-title">{title}</div>
 
@@ -101,13 +102,28 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
           <span>
             Drop files or <span className="tkpendatt-browse-link">browse</span>
             <span className="tkpendatt-meta"> • up to 10 MB each</span>
+=======
+    <div className="task-pending-attachments">
+      <div className="add-task-section-title">{title}</div>
+
+      <div className="task-pending-attachments__form task-pending-attachments__form--dropzone">
+        <label htmlFor={fileInputId} className="task-pending-attachments__dropzone-label">
+          <FiPaperclip className="task-pending-attachments__dropzone-icon" />
+          <span>
+            Drop files or <span className="task-pending-attachments__browse-link">browse</span>
+            <span className="task-pending-attachments__meta"> • up to 10 MB each</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           </span>
         </label>
 
         <input
           id={fileInputId}
           type="file"
+<<<<<<< HEAD
           className="tkpendatt-file-input"
+=======
+          className="task-pending-attachments__file-input"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           onChange={handleFileChange}
           disabled={disabled}
           accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.txt,application/pdf,image/*"
@@ -117,9 +133,15 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
       {items.length > 0 && (
         <ul className="tkpendatt-list">
           {items.map((item) => (
+<<<<<<< HEAD
             <li key={item.id} className="tkpendatt-item">
               <div className="tkpendatt-item-main">
                 <span className="tkpendatt-file-name">{item.file?.name || item.name}</span>
+=======
+            <li key={item.id} className="task-pending-attachments__item">
+              <div className="task-pending-attachments__item-main">
+                <span className="task-pending-attachments__file-name">{item.file?.name || item.name}</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
               </div>
               <button
                 type="button"
@@ -136,7 +158,11 @@ const TaskPendingAttachments = forwardRef(function TaskPendingAttachments(
         </ul>
       )}
 
+<<<<<<< HEAD
       {error && <div className="form-error tkpendatt-error">{error}</div>}
+=======
+      {error && <div className="form-error task-pending-attachments__error">{error}</div>}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     </div>
   );
 });

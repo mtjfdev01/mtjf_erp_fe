@@ -47,7 +47,11 @@ const DEPARTMENT_LABELS = {
 
 // "=" icon for the priority pill
 const EqualsIcon = ({ className = '' }) => (
+<<<<<<< HEAD
   <span className={`tkupd-pill-equals-icon ${className}`} aria-hidden="true">=</span>
+=======
+  <span className={`pill-equals-icon ${className}`} aria-hidden="true">=</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 );
 
 const formatPillDate = (value) => {
@@ -95,7 +99,11 @@ const DatePill = ({
 
   return (
     <div
+<<<<<<< HEAD
       className={`tkupd-pill-input-wrapper tkupd-pill-date ${value ? 'is-filled' : 'is-empty'} ${disabled ? 'is-disabled' : ''}`}
+=======
+      className={`pill-input-wrapper task-pill-date ${value ? 'is-filled' : 'is-empty'} ${disabled ? 'is-disabled' : ''}`}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
       onClick={openPicker}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -108,11 +116,19 @@ const DatePill = ({
       aria-disabled={disabled}
       title={title}
     >
+<<<<<<< HEAD
       <Icon className="tkupd-pill-icon" />
       <span className={`tkupd-pill-text ${value ? '' : 'is-placeholder'}`}>
         {value ? formatPillDate(value) : placeholder}
       </span>
       {!value && showDot && <span className="tkupd-pill-dot" />}
+=======
+      <Icon className="pill-icon" />
+      <span className={`pill-text ${value ? '' : 'is-placeholder'}`}>
+        {value ? formatPillDate(value) : placeholder}
+      </span>
+      {!value && showDot && <span className="pill-dot" />}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
       <input
         ref={inputRef}
         type="date"
@@ -120,7 +136,11 @@ const DatePill = ({
         value={value}
         onChange={onChange}
         disabled={disabled}
+<<<<<<< HEAD
         className="tkupd-pill-native-date"
+=======
+        className="pill-native-date"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
         tabIndex={-1}
         aria-label={title}
       />
@@ -335,13 +355,20 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
           Project/Program <span className="required-mark">*</span>
         </label>
       )}
+<<<<<<< HEAD
       <div className="tkupd-custom-select-container">
         <div
           className={`tkupd-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${isPill ? (value ? 'is-filled has-clear' : 'is-empty') : ''}`}
+=======
+      <div className="task-custom-select-container">
+        <div
+          className={`task-custom-select-display ${isOpen ? 'is-open' : ''} ${error ? 'has-error' : ''} ${isPill ? (value ? 'is-filled has-clear' : 'is-empty') : ''}`}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           onClick={handleToggle}
         >
           {isPill ? (
             <>
+<<<<<<< HEAD
               <span className="tkupd-custom-select-leading">
                 <LeadIcon className="tkupd-custom-select-field-icon" />
                 <span className={`tkupd-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
@@ -352,6 +379,18 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
             </>
           ) : value ? (
             <span className="tkupd-custom-select-value">{getDisplayValue()}</span>
+=======
+              <span className="task-custom-select-leading">
+                <LeadIcon className="task-custom-select-field-icon" />
+                <span className={`task-custom-select-value ${!value ? 'is-placeholder' : ''}`}>
+                  {value || 'Project'}
+                </span>
+              </span>
+              {!value && <span className="pill-dot" />}
+            </>
+          ) : value ? (
+            <span className="task-custom-select-value">{getDisplayValue()}</span>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
           ) : (
             <span className="tkupd-custom-select-placeholder">Select Project or Program</span>
           )}
@@ -361,7 +400,11 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
         {value && (
           <button
             type="button"
+<<<<<<< HEAD
             className="tkupd-custom-select-clear-btn"
+=======
+            className="task-custom-select-clear-btn"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
             onClick={handleClear}
             aria-label="Clear project"
           >
@@ -376,7 +419,11 @@ const ProjectProgramSelect = ({ value, onChange, error, variant = 'default' }) =
                 {selectionStep === 'category' ? 'Select Category' : projectCategory}
               </span>
               {selectionStep === 'item' && (
+<<<<<<< HEAD
                 <button type="button" className="tkupd-custom-select-back-link" onClick={handleBack}>
+=======
+                <button type="button" className="task-custom-select-back-link" onClick={handleBack}>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   {isPill ? '← Back' : '◀ Back'}
                 </button>
               )}
@@ -993,15 +1040,24 @@ const UpdateTask = ({
   //  - page : Navbar + centred page wrapper (no backdrop)
   const wrapShell = (card) =>
     isModal ? (
+<<<<<<< HEAD
       <div className="tkupd-modal-backdrop">{card}</div>
     ) : (
       <>
         <Navbar />
         <div className="tkupd-page tkupd-page--redesigned">{card}</div>
+=======
+      <div className="add-task-modal-backdrop">{card}</div>
+    ) : (
+      <>
+        <Navbar />
+        <div className="add-task-page add-task-page--redesigned">{card}</div>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
       </>
     );
 
   const popupHeader = (
+<<<<<<< HEAD
     <div className="tkupd-modal-header">
       <div className="tkupd-form-breadcrumb">
         {departmentLabel && (
@@ -1015,6 +1071,21 @@ const UpdateTask = ({
       <button
         type="button"
         className="tkupd-modal-close"
+=======
+    <div className="task-form-modal-header">
+      <div className="task-form-breadcrumb">
+        {departmentLabel && (
+          <>
+            <span className="task-form-dept-chip">{departmentLabel} Department</span>
+            <span className="task-form-breadcrumb-sep">›</span>
+          </>
+        )}
+        <h2 className="task-form-modal-title">Update task</h2>
+      </div>
+      <button
+        type="button"
+        className="task-form-modal-close"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
         onClick={handleBack}
         aria-label="Close"
       >
@@ -1028,9 +1099,15 @@ const UpdateTask = ({
   /* ================================================================ */
   if (loading) {
     return wrapShell(
+<<<<<<< HEAD
       <div className="tkupd-card tkupd-card--popup">
         {popupHeader}
         <div className="tkupd-popup-loading">Loading task...</div>
+=======
+      <div className="add-task-card add-task-card--popup">
+        {popupHeader}
+        <div className="popup-loading">Loading task...</div>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
       </div>
     );
   }
@@ -1057,6 +1134,7 @@ const UpdateTask = ({
     );
 
     return wrapShell(
+<<<<<<< HEAD
         <div className="tkupd-card tkupd-card--popup">
           {popupHeader}
 
@@ -1071,13 +1149,33 @@ const UpdateTask = ({
                   type="text"
                   name="title"
                   className="tkupd-title-legacy tkupd-title-input"
+=======
+        <div className="add-task-card add-task-card--popup">
+          {popupHeader}
+
+          {error && <div className="add-task-error">{error}</div>}
+
+          <form ref={formRef} onSubmit={handleSubmit} className="add-task-form">
+            <div className="add-task-body">
+
+              {/* Title + description */}
+              <div className="task-title-section">
+                <input
+                  type="text"
+                  name="title"
+                  className="task-title-input update-task-title-input"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   placeholder="Enter task title..."
                   value={form.title}
                   onChange={handleChange}
                 />
                 <textarea
                   name="description"
+<<<<<<< HEAD
                   className="tkupd-desc-input"
+=======
+                  className="task-desc-input"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   placeholder="Enter task description..."
                   value={form.description}
                   onChange={handleChange}
@@ -1085,16 +1183,28 @@ const UpdateTask = ({
                   maxLength={500}
                 />
                 {(form.description || '').length > 0 && (
+<<<<<<< HEAD
                   <div className="tkupd-desc-count">{(form.description || '').length}/500</div>
+=======
+                  <div className="task-desc-count">{(form.description || '').length}/500</div>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 )}
               </div>
 
               {/* Pills */}
+<<<<<<< HEAD
               <div className="tkupd-meta-pills">
                  <div className={`tkupd-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
                   {assignedUsers.length > 0 && (
                     <span
                       className="tkupd-assignee-avatar"
+=======
+              <div className="task-meta-pills">
+                 <div className={`update-task-assignee-field ${assignedUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                  {assignedUsers.length > 0 && (
+                    <span
+                      className="assignee-avatar"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                       aria-hidden="true"
                       title={assignedUsers.map(userDisplayName).join(', ')}
                     >
@@ -1124,7 +1234,11 @@ const UpdateTask = ({
                   }}
                 />
 
+<<<<<<< HEAD
                 <div className="tkupd-pill-status">
+=======
+                <div className="task-pill-status">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <TaskFormSelect
                     name="status"
                     label=""
@@ -1137,7 +1251,11 @@ const UpdateTask = ({
                 </div>
 
 
+<<<<<<< HEAD
                 <div className={`tkupd-pill-priority priority-${form.priority || 'medium'}`}>
+=======
+                <div className={`task-pill-priority priority-${form.priority || 'medium'}`}>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <TaskFormSelect
                     name="priority"
                     label=""
@@ -1200,10 +1318,17 @@ const UpdateTask = ({
                 />
 
                 {form.workflow_type === 'approval_required' && (
+<<<<<<< HEAD
                   <div className={`tkupd-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
                     <FiClipboard className="tkupd-approver-icon" aria-hidden="true" />
                     <SearchableMultiSelect
                       className="tkupd-approvers-select"
+=======
+                  <div className={`update-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                    <FiClipboard className="update-task-approver-icon" aria-hidden="true" />
+                    <SearchableMultiSelect
+                      className="update-task-approvers-select"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                       label=""
                       apiEndpoint="/users/options"
                       apiParams={multiSelectParams}
@@ -1224,15 +1349,26 @@ const UpdateTask = ({
 
               {/* Assignees summary (2+ people) */}
               {assignedUsers.length > 1 && (
+<<<<<<< HEAD
                 <div className="tkupd-popup-assignee-summary">
+=======
+                <div className="popup-assignee-summary">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <span>
                     {'\u2713'} {assignedUsers.length} users selected
                   </span>
                   {assignedUsers.map((u) => (
+<<<<<<< HEAD
                     <span key={u.id} className="tkupd-popup-assignee-chip">
                       <span className="tkupd-chip-avatar">{getInitials(u)}</span>
                       {userDisplayName(u)}
                       <span className="tkupd-chip-dept">
+=======
+                    <span key={u.id} className="popup-assignee-chip">
+                      <span className="chip-avatar">{getInitials(u)}</span>
+                      {userDisplayName(u)}
+                      <span className="chip-dept">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                         {formatDepartment(
                           assignedUserDepartments[u.id] || u.department || form.department || ''
                         )}
@@ -1244,7 +1380,11 @@ const UpdateTask = ({
 
               {/* Recurring options */}
               {form.task_type === 'recurring' && (
+<<<<<<< HEAD
                 <div className="tkupd-recurring-fields">
+=======
+                <div className="update-task-recurring-fields">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <TaskFormSelect
                     name="recurrence_frequency"
                     label="Recurring frequency"
@@ -1303,14 +1443,24 @@ const UpdateTask = ({
               )}
 
               {/* Done when (MOV) */}
+<<<<<<< HEAD
               <div className="tkupd-done-when-section">
                 <div className="tkupd-done-when-header">
+=======
+              <div className="done-when-section">
+                <div className="done-when-header">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   Done when... <span>Means of verification the assignee must tick off</span>
                 </div>
 
                 {movItems.map((item, index) => (
+<<<<<<< HEAD
                   <div key={index} className="tkupd-done-when-input-wrapper">
                     {/* <span className="tkupd-done-when-checkbox" aria-hidden="true" /> */}
+=======
+                  <div key={index} className="done-when-input-wrapper">
+                    {/* <span className="done-when-checkbox" aria-hidden="true" /> */}
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                     <input
                       type="text"
                       name={`mov_item_${index}`}
@@ -1330,7 +1480,11 @@ const UpdateTask = ({
                     {movItems.length > 1 && (
                       <button
                         type="button"
+<<<<<<< HEAD
                         className="tkupd-done-when-remove-btn"
+=======
+                        className="done-when-remove-btn"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                         onClick={() => handleMovRemove(index)}
                         title="Remove"
                         aria-label="Remove condition"
@@ -1341,16 +1495,26 @@ const UpdateTask = ({
                   </div>
                 ))}
 
+<<<<<<< HEAD
                 <button type="button" className="tkupd-done-when-add-btn" onClick={handleMovAdd}>
+=======
+                <button type="button" className="done-when-add-btn" onClick={handleMovAdd}>
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   <FiPlus /> Add condition
                 </button>
               </div>
 
               {/* Current attachments (view / remove) */}
               {existingAttachments.length > 0 && (
+<<<<<<< HEAD
                 <div className="tkupd-popup-existing-attachments">
                   <div className="tkupd-popup-existing-attachments-title">Current attachments</div>
                   <ul className="tkpendatt-list">
+=======
+                <div className="popup-existing-attachments">
+                  <div className="popup-existing-attachments-title">Current attachments</div>
+                  <ul className="task-pending-attachments__list">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                     {existingAttachments.map((a) => {
                       const displayName = a.description || a.file_name;
                       return (
@@ -1363,12 +1527,20 @@ const UpdateTask = ({
                                 <span>{a.file_name}</span>
                               )}
                           </div>
+<<<<<<< HEAD
                           <div className="tkupd-popup-attachment-actions">
+=======
+                          <div className="popup-attachment-actions">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                             <a
                               href={getAttachmentHref(a.file_url)}
                               target="_blank"
                               rel="noreferrer"
+<<<<<<< HEAD
                               className="tkupd-popup-attachment-link"
+=======
+                              className="popup-attachment-link"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                             >
                               View
                             </a>
@@ -1395,7 +1567,11 @@ const UpdateTask = ({
               )}
 
               {/* New attachments */}
+<<<<<<< HEAD
               <div className="tkupd-attachment-dropzone">
+=======
+              <div className="attachment-dropzone">
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 <TaskPendingAttachments
                   ref={attachmentsRef}
                   items={pendingAttachments}
@@ -1411,17 +1587,29 @@ const UpdateTask = ({
             </div>
 
             {/* Footer */}
+<<<<<<< HEAD
             <div className="tkupd-footer tkupd-footer--end">
               <div className="tkupd-footer-actions">
                 <button
                   type="button"
                   className="tkupd-cancel-btn"
+=======
+            <div className="add-task-footer add-task-footer--end">
+              <div className="footer-actions">
+                <button
+                  type="button"
+                  className="add-task-cancel-btn"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   onClick={handleBack}
                 >
                   Cancel
                 </button>
                 <button
+<<<<<<< HEAD
                   className="tkupd-submit"
+=======
+                  className="add-task-submit"
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                   type="submit"
                   disabled={submitDisabled}
                   title={editTitle}

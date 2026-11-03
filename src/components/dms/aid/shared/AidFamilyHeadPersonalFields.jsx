@@ -3,6 +3,7 @@ import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
+import SearchableDropdown from '../../../common/SearchableDropdown';
 import {
   AID_GENDERS,
   AID_LITERACY_EDUCATION_OPTIONS,
@@ -23,9 +24,10 @@ import {
 import { useAidLang } from '../lang/AidLangContext';
 import { aidOptionLabel, aidOptionsForLang } from '../lang/aidUiCopy';
 import AidRegistrationAside from './AidRegistrationAside';
+import AidWebcamCaptureModal from './AidWebcamCaptureModal';
 import {
   PAKISTAN_PROVINCES,
-  getPakistanCities,
+  searchPakistanCities,
 } from '../../../../data/pakistanLocations';
 
 const provinceSelectOptions = [
@@ -33,27 +35,10 @@ const provinceSelectOptions = [
   ...PAKISTAN_PROVINCES.map((p) => ({ value: p.value, label: p.label })),
 ];
 
-/** Cities for a province value or legacy full label. */
-const citiesForProvince = (provinceKey) => {
-  if (!provinceKey) return [];
-  const byValue = getPakistanCities(provinceKey);
-  if (byValue.length) return byValue;
-  const match = PAKISTAN_PROVINCES.find(
-    (p) => p.label === provinceKey || p.value === provinceKey,
-  );
-  return match?.cities || [];
-};
-
-const locationSelectOptions = (cities, current) => {
-  const opts = [
-    { value: '', label: '—' },
-    ...cities.map((c) => ({ value: c, label: c })),
-  ];
-  const cur = String(current || '').trim();
-  if (cur && !opts.some((o) => o.value === cur)) {
-    opts.push({ value: cur, label: cur });
-  }
-  return opts;
+/** SearchableDropdown value shape for a free-text location name. */
+const locationSearchValue = (name) => {
+  const n = String(name || '').trim();
+  return n ? { id: n, name: n } : null;
 };
 
 const formatShortMonth = (raw) => {
@@ -110,11 +95,14 @@ const AidFamilyHeadPersonalFields = ({
 
   const Req = () =>
     fieldsRequired ? <span className="required-mark">*</span> : null;
-  const patch = (partial) => onChange({ ...value, ...partial });
-  const age = calcAgeFromDob(value?.date_of_birth);
-  const selectedVulns = parseVulnerabilityList(value?.vulnerability);
   const photoInputRef = useRef(null);
   const lookupTimer = useRef(null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
+  const patch = (partial) =>
+    onChange({ ...(valueRef.current || value || {}), ...partial });
+  const age = calcAgeFromDob(value?.date_of_birth);
+  const selectedVulns = parseVulnerabilityList(value?.vulnerability);
   const previewUrl = value?._photo_preview || value?.photo_url || '';
   const isRented = value?.resident_type === 'rented';
   const sidebarEnabled = showSidebar != null ? !!showSidebar : !embedded;
@@ -122,6 +110,14 @@ const AidFamilyHeadPersonalFields = ({
   const [registryMatch, setRegistryMatch] = useState(null);
   const [registryLookingUp, setRegistryLookingUp] = useState(false);
   const [matchPayload, setMatchPayload] = useState(null);
+<<<<<<< HEAD
+=======
+  const [disabilityCertUploading, setDisabilityCertUploading] = useState(false);
+  const [disabilityCertError, setDisabilityCertError] = useState('');
+  const [webcamOpen, setWebcamOpen] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoError, setPhotoError] = useState('');
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 
   useEffect(
     () => () => {
@@ -317,17 +313,83 @@ const AidFamilyHeadPersonalFields = ({
     patch({ cnic: formatted, existing_person_id: null });
   };
 
-  const onPhotoPick = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  const applyPhotoFile = async (file) => {
+    if (!file || photoUploading) return;
+    const mime = String(file.type || '').toLowerCase();
+    const name = String(file.name || '').toLowerCase();
+    const ok =
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(mime) ||
+      /\.(jpe?g|png|webp)$/i.test(name);
+    if (!ok) {
+      setPhotoError('Only JPG, PNG, or WEBP images are allowed');
+      return;
+    }
+
     if (value?._photo_preview?.startsWith?.('blob:')) {
       URL.revokeObjectURL(value._photo_preview);
     }
-    const url = URL.createObjectURL(file);
+    const localPreview = URL.createObjectURL(file);
+    // Instant preview while upload runs
     patch({
       _photo_file: file,
-      _photo_preview: url,
+      _photo_preview: localPreview,
       photo_name: file.name,
+      _photo_cleared: false,
+    });
+    setPhotoUploading(true);
+    setPhotoError('');
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('context', 'profile');
+      const res = await axiosInstance.post(
+        '/aid/applications/documents/upload',
+        fd,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      const data = res.data?.data || {};
+      const remoteUrl = String(data.url || '').trim();
+      if (!remoteUrl) {
+        throw new Error('Upload returned no URL');
+      }
+      if (localPreview?.startsWith?.('blob:')) {
+        URL.revokeObjectURL(localPreview);
+      }
+      patch({
+        _photo_file: null,
+        _photo_preview: remoteUrl,
+        photo_url: remoteUrl,
+        photo_name: data.file_name || file.name,
+        _photo_cleared: false,
+      });
+    } catch (err) {
+      setPhotoError(
+        err.response?.data?.message || err.message || 'Photo upload failed',
+      );
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
+
+  const onPhotoPick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    applyPhotoFile(file);
+    e.target.value = '';
+  };
+
+  const clearPhoto = () => {
+    if (photoUploading) return;
+    if (value?._photo_preview?.startsWith?.('blob:')) {
+      URL.revokeObjectURL(value._photo_preview);
+    }
+    setPhotoError('');
+    patch({
+      _photo_file: null,
+      _photo_preview: '',
+      photo_url: '',
+      photo_name: '',
+      _photo_cleared: true,
     });
   };
 
@@ -374,23 +436,10 @@ const AidFamilyHeadPersonalFields = ({
     return opts;
   }, [value?.province]);
 
-  const provinceCities = useMemo(
-    () => citiesForProvince(value?.province),
-    [value?.province],
-  );
-
-  const districtOptions = useMemo(
-    () => locationSelectOptions(provinceCities, value?.district),
-    [provinceCities, value?.district],
-  );
-  const tehsilOptions = useMemo(
-    () => locationSelectOptions(provinceCities, value?.tehsil),
-    [provinceCities, value?.tehsil],
-  );
-  const cityOptions = useMemo(
-    () => locationSelectOptions(provinceCities, value?.city),
-    [provinceCities, value?.city],
-  );
+  const searchProvinceLocations = useMemo(() => {
+    const province = value?.province || '';
+    return async (term) => searchPakistanCities(province, term, { limit: 40 });
+  }, [value?.province]);
 
   const identityAndContact = (
     <>
@@ -413,7 +462,31 @@ const AidFamilyHeadPersonalFields = ({
                 className={`aid-fh-photo__frame${previewUrl ? ' has-image' : ''}`}
               >
                 {previewUrl ? (
-                  <img src={previewUrl} alt={t('photoOfHead')} />
+                  <>
+                    <img src={previewUrl} alt={t('photoOfHead')} />
+                    <button
+                      type="button"
+                      className="aid-fh-photo__remove"
+                      disabled={photoUploading}
+                      onClick={clearPhoto}
+                      title={t('removePhoto')}
+                      aria-label={t('removePhoto')}
+                    >
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2.25"
+                        aria-hidden
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M6 6l12 12M18 6L6 18"
+                        />
+                      </svg>
+                    </button>
+                  </>
                 ) : (
                   <>
                     <svg
@@ -438,17 +511,39 @@ const AidFamilyHeadPersonalFields = ({
                 ref={photoInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 className="aid-fh-photo__input"
                 onChange={onPhotoPick}
               />
-              <button
-                type="button"
-                className="aid-fh-photo__btn"
-                onClick={() => photoInputRef.current?.click()}
-              >
-                {t('captureUpload')}
-              </button>
+              <div className="aid-fh-photo__actions">
+                <button
+                  type="button"
+                  className="aid-fh-photo__btn aid-fh-photo__btn--primary"
+                  disabled={photoUploading}
+                  onClick={() => setWebcamOpen(true)}
+                >
+                  {photoUploading ? t('uploadingPhoto') : t('openWebcam')}
+                </button>
+                <button
+                  type="button"
+                  className="aid-fh-photo__btn"
+                  disabled={photoUploading}
+                  onClick={() => photoInputRef.current?.click()}
+                >
+                  {t('captureUpload')}
+                </button>
+              </div>
+              {photoError ? (
+                <p className="aid-fh-photo__error">{photoError}</p>
+              ) : null}
+              <AidWebcamCaptureModal
+                open={webcamOpen}
+                onClose={() => setWebcamOpen(false)}
+                onCapture={applyPhotoFile}
+                title={t('photoOfHead')}
+                captureLabel={t('takePhoto')}
+                closeLabel={t('closeWebcam')}
+                errorUnavailable={t('webcamUnavailable')}
+              />
             </div>
           ) : null}
 
@@ -639,44 +734,77 @@ const AidFamilyHeadPersonalFields = ({
               }
               options={provinceOptions}
             />
-            <FormSelect
+            <SearchableDropdown
               label={
                 <>
                   {t('district')} <Req />
                 </>
               }
               required={fieldsRequired}
-              value={value?.district || ''}
-              onChange={(e) =>
+              name="district"
+              placeholder={
+                value?.province
+                  ? 'Type to search district / city…'
+                  : 'Select province first'
+              }
+              value={locationSearchValue(value?.district)}
+              onSearch={searchProvinceLocations}
+              onSelect={(item) =>
                 patch({
-                  district: e.target.value,
+                  district: item?.name || '',
                   tehsil: '',
                 })
               }
-              options={districtOptions}
+              onClear={() => patch({ district: '', tehsil: '' })}
+              displayKey="name"
+              minSearchLength={1}
+              debounceDelay={200}
               disabled={!value?.province}
+              noResultsText="No matching place found"
             />
-            <FormSelect
+            <SearchableDropdown
               label={
                 <>
                   {t('tehsil')} <Req />
                 </>
               }
               required={fieldsRequired}
-              value={value?.tehsil || ''}
-              onChange={(e) => patch({ tehsil: e.target.value })}
-              options={tehsilOptions}
+              name="tehsil"
+              placeholder={
+                value?.province
+                  ? 'Type to search tehsil / city…'
+                  : 'Select province first'
+              }
+              value={locationSearchValue(value?.tehsil)}
+              onSearch={searchProvinceLocations}
+              onSelect={(item) => patch({ tehsil: item?.name || '' })}
+              onClear={() => patch({ tehsil: '' })}
+              displayKey="name"
+              minSearchLength={1}
+              debounceDelay={200}
               disabled={!value?.province}
+              noResultsText="No matching place found"
             />
           </div>
 
           <div className="aid-fh-contact__grid aid-fh-contact__grid--mid">
-            <FormSelect
+            <SearchableDropdown
               label={t('city')}
-              value={value?.city || ''}
-              onChange={(e) => patch({ city: e.target.value })}
-              options={cityOptions}
+              name="city"
+              placeholder={
+                value?.province
+                  ? 'Type to search city / town / village…'
+                  : 'Select province first'
+              }
+              value={locationSearchValue(value?.city)}
+              onSearch={searchProvinceLocations}
+              onSelect={(item) => patch({ city: item?.name || '' })}
+              onClear={() => patch({ city: '' })}
+              displayKey="name"
+              minSearchLength={1}
+              debounceDelay={200}
               disabled={!value?.province}
+              noResultsText="No matching place found"
             />
             <FormInput
               label={t('unionCouncil')}

@@ -5,6 +5,7 @@ import {
   FiChevronLeft,
   FiChevronRight,
   FiDownload,
+  FiPrinter,
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
@@ -14,6 +15,7 @@ import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import FormTextarea from '../../../../common/FormTextarea';
 import { PrimaryButton } from '../../../../common/buttons';
+import { ClearButton } from '../../../../common/filters';
 import SearchableDropdown from '../../../../common/SearchableDropdown';
 import AidLiteracyFields from '../../shared/AidLiteracyFields';
 import AidFamilyHeadPersonalFields from '../../shared/AidFamilyHeadPersonalFields';
@@ -26,17 +28,23 @@ import AidEducationApplicationFields from '../../shared/AidEducationApplicationF
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
+<<<<<<< HEAD
+=======
+import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
+import AidWheelchairConsentForm from '../../shared/AidWheelchairConsentForm';
+import AidMarriageGiftConsentForm from '../../shared/AidMarriageGiftConsentForm';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import AidFamilyMembersIntake from '../../shared/AidFamilyMembersIntake';
 import AidFamilyTreePanel from '../../shared/AidFamilyTreePanel';
 import AidApplicantCheckbox from '../../shared/AidApplicantCheckbox';
 import AidApplicationDocsIntake from '../../shared/AidApplicationDocsIntake';
 import { downloadAsPng } from '../../shared/downloadAsPng';
+import { printAidElement } from '../../shared/printAidElement';
 import { AidLangProvider, useAidLang } from '../../lang/AidLangContext';
 import AidLangToggle from '../../lang/AidLangToggle';
-import { getOfflineMode } from '../../../../../offline/mode';
 import {
   saveAidFormDraft,
   loadAidFormDraft,
@@ -65,6 +73,16 @@ import {
   emptyFinancialAssistanceDetails,
   emptyZakatPermission,
   emptyConsentForm,
+  emptyWheelchairConsentForm,
+  emptyMarriageGiftConsentForm,
+  isWheelchairConsentProgram,
+  isMarriageGiftConsentProgram,
+  resolveConsentVariant,
+  emptyConsentForVariant,
+  hasAidBiometric,
+  cloneAidBiometric,
+  resolveAidFormSubjectPerson,
+  applicationDocsFromAttachments,
   emptyFamilyHeadRow,
   AID_FAMILY_HEAD_TYPES,
   AID_FAMILY_HEAD_TYPE_OPTIONS,
@@ -81,6 +99,26 @@ import {
   resolveRelatedPersonKinship,
 } from '../../aidConstants';
 import '../../aid.css';
+
+/** Copy uploaded / pending photo fields between linked roles. */
+const personPhotoFields = (p) => ({
+  photo_url: p?.photo_url || '',
+  photo_name: p?.photo_name || '',
+  _photo_preview: p?._photo_preview || '',
+  _photo_file: p?._photo_file || null,
+});
+
+const personHasPhoto = (p) =>
+  !!(
+    String(p?.photo_url || '').trim() ||
+    String(p?._photo_preview || '').trim() ||
+    p?._photo_file
+  );
+
+const withPhotoFrom = (target, source) => {
+  if (!personHasPhoto(source) || personHasPhoto(target)) return target;
+  return { ...target, ...personPhotoFields(source) };
+};
 
 const emptyPerson = {
   full_name: '',
@@ -285,11 +323,75 @@ const familyHeadTypeLabel = (type) =>
 
 const HEAD_TYPE_VALUES = new Set(AID_FAMILY_HEAD_TYPES.map((t) => t.value));
 
+const FAMILY_TREE_BUCKETS = [
+  'parents',
+  'spouse',
+  'children',
+  'brothers',
+  'sisters',
+  'siblings',
+  'grandparents',
+  'grandchildren',
+  'extended',
+];
+
 const toFamilyHeadType = (relation) => {
   const r = String(relation || '').toLowerCase();
   if (HEAD_TYPE_VALUES.has(r)) return r;
   if (r === 'husband') return 'spouse';
   return 'other';
+};
+
+/** Flatten ego family_tree buckets into kinship rows (with person). */
+const flattenFamilyTreeRows = (tree) => {
+  const rows = [];
+  for (const key of FAMILY_TREE_BUCKETS) {
+    for (const row of tree?.[key] || []) {
+      if (row?.person?.id) rows.push(row);
+    }
+  }
+  return rows;
+};
+
+/** Prefer type from intake notes: "Family head (Son)" / "Applicant / Family head (Father)". */
+const parseFamilyHeadTypeFromNotes = (notes) => {
+  const m = String(notes || '').match(/family\s*head\s*\(([^)]+)\)/i);
+  if (!m) return null;
+  const raw = m[1].trim().toLowerCase();
+  const byValue = AID_FAMILY_HEAD_TYPES.find(
+    (t) => String(t.value).toLowerCase() === raw,
+  );
+  if (byValue) return byValue.value;
+  const byLabel = AID_FAMILY_HEAD_TYPES.find(
+    (t) => String(t.label).toLowerCase() === raw,
+  );
+  if (byLabel) return byLabel.value;
+  return toFamilyHeadType(raw);
+};
+
+/**
+ * Members saved under a head use notes like:
+ * - New: "Relative of Father (father) (son)"
+ * - Old: "Relative of father (son)"  ← first paren is MEMBER type, not head
+ */
+const parseRelativeOfHeadKey = (notes) => {
+  const raw = String(notes || '');
+  const dual = raw.match(
+    /relative of\s+([^(]+)\(([^)]+)\)\s*\(([^)]+)\)/i,
+  );
+  if (dual) return dual[2].trim().toLowerCase(); // head value
+  const legacy = raw.match(/relative of\s+([^(,/]+)/i);
+  if (legacy) return legacy[1].trim().toLowerCase(); // head label/value text
+  return null;
+};
+
+const notesSayBeneficiaryMember = (notes) =>
+  /beneficiary\s+family\s+member/i.test(String(notes || ''));
+
+const familyHeadMatchKey = (relationType) => {
+  const value = String(relationType || '').toLowerCase();
+  const label = String(familyHeadTypeLabel(relationType) || '').toLowerCase();
+  return { value, label };
 };
 
 /** Primary Type DD value: self, blood relation, or "guardian" when subtype / guardian. */
@@ -325,6 +427,12 @@ const mapPersonToForm = (p, extras = {}) => {
     photo_name: p.photo_name || '',
     city: p.city || '',
     address: p.address || '',
+<<<<<<< HEAD
+=======
+    current_address: p.current_address || '',
+    thumb_impression: p.thumb_impression || null,
+    signature: p.signature || null,
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     province: p.province || '',
     district: p.district || '',
     tehsil: p.tehsil || '',
@@ -441,6 +549,28 @@ const mapRelationToWriterRelation = (rel) => {
   return 'relative';
 };
 
+/** True when optional relative/spouse has any real data (not just empty shell). */
+const personHasEnteredDetails = (p) => {
+  if (!p || typeof p !== 'object') return false;
+  if (p.existing_person_id) return true;
+  if (p.is_applicant) return true;
+  const keys = [
+    'full_name',
+    'name_urdu',
+    'cnic',
+    'phone',
+    'father_or_husband_name',
+    'photo_url',
+    '_photo_preview',
+    'date_of_birth',
+    'caste',
+    'address',
+    'current_address',
+    'city',
+  ];
+  return keys.some((k) => String(p[k] || '').trim().length > 0);
+};
+
 const RelativeFields = ({ title, value, onChange, compact }) => {
   const { t } = useAidLang();
   return (
@@ -453,6 +583,7 @@ const RelativeFields = ({ title, value, onChange, compact }) => {
         contactTitle={t('contactAddress')}
         contactSubtitle={t('contactOptionalSubtitle')}
         fieldsRequired={false}
+        showSidebar={false}
         value={value}
         onChange={onChange}
         afterGrid={
@@ -484,8 +615,12 @@ const cleanPersonPayload = (p) => {
     cnic_expiry: p.cnic_expiry || undefined,
     phone: p.phone || undefined,
     phone_alternate: p.phone_alternate?.trim() || undefined,
-    photo_url: p.photo_url || undefined,
-    photo_name: p.photo_name || undefined,
+    photo_url: p._photo_cleared
+      ? null
+      : p.photo_url || undefined,
+    photo_name: p._photo_cleared
+      ? null
+      : p.photo_name || undefined,
     gender: p.gender || undefined,
     date_of_birth: p.date_of_birth || undefined,
     marital_status: p.marital_status || undefined,
@@ -510,7 +645,16 @@ const cleanPersonPayload = (p) => {
     necta_document_name: p.necta_document_name || undefined,
     bisp_status: p.bisp_status || undefined,
     is_alive: p.is_alive !== false,
+<<<<<<< HEAD
     address: p.address || undefined,
+=======
+    address: p.address?.trim() || undefined,
+    current_address: p.current_address?.trim() || undefined,
+    thumb_impression: hasAidBiometric(p.thumb_impression)
+      ? p.thumb_impression
+      : undefined,
+    signature: hasAidBiometric(p.signature) ? p.signature : undefined,
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
     city: p.city || p.district || undefined,
     province: p.province || undefined,
     district: p.district || undefined,
@@ -559,6 +703,7 @@ const AidApplicationAddInner = () => {
   const [zakatPermission, setZakatPermission] = useState(emptyZakatPermission());
   const [consentForm, setConsentForm] = useState(emptyConsentForm());
   const [applicationDocs, setApplicationDocs] = useState({});
+  const [missingDocuments, setMissingDocuments] = useState([]);
   const [familyHeads, setFamilyHeads] = useState([
     {
       ...emptyFamilyHeadRow('father'),
@@ -567,6 +712,8 @@ const AidApplicationAddInner = () => {
     },
   ]);
   const [spouse, setSpouse] = useState(emptyRelative());
+  /** Empty optional spouse stays collapsed until Add or existing data. */
+  const [spouseFormOpen, setSpouseFormOpen] = useState(false);
   /** Beneficiary tab — any relatives (children, siblings, parents, …). */
   const [beneficiaryMembers, setBeneficiaryMembers] = useState([]);
   const [saving, setSaving] = useState(false);
@@ -579,53 +726,86 @@ const AidApplicationAddInner = () => {
   const consentCaptureRef = useRef(null);
   const [pngDownloading, setPngDownloading] = useState(false);
   const [offlineDraftReady, setOfflineDraftReady] = useState(false);
-  const isDraftEdit = isEdit && editStatus === 'draft';
+  /** Server `updated_at` at last hydrate — gates local draft restore on edit. */
+  const baseUpdatedAtRef = useRef('');
+  const isDraftEdit =
+    isEdit &&
+    (editStatus === 'draft' || editStatus === 'incomplete_docs');
   const draftsListPath = '/dms/aid/applications/drafts/list';
   const offlineFormKey = `aid_form_${isEdit ? editId : 'new'}`;
 
-  // Restore offline form snapshot (survives tab switches / reload in offline mode)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!getOfflineMode()) {
-        setOfflineDraftReady(true);
-        return;
-      }
-      try {
-        const snap = await loadAidFormDraft(offlineFormKey);
-        if (cancelled || !snap) {
-          setOfflineDraftReady(true);
-          return;
-        }
-        if (snap.form) setForm(snap.form);
-        if (snap.beneficiary) setBeneficiary(snap.beneficiary);
-        if (snap.familyHeads) setFamilyHeads(snap.familyHeads);
-        if (snap.spouse) setSpouse(snap.spouse);
-        if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
-        if (snap.formTab) setFormTab(snap.formTab);
-        if (snap.educationDetails) setEducationDetails(snap.educationDetails);
-        if (snap.rationDetails) setRationDetails(snap.rationDetails);
-        if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
-        if (snap.financialAssistanceDetails) {
-          setFinancialAssistanceDetails(snap.financialAssistanceDetails);
-        }
-        if (snap.cleanWaterDetails) setCleanWaterDetails(snap.cleanWaterDetails);
-        if (snap.zakatPermission) setZakatPermission(snap.zakatPermission);
-        if (snap.consentForm) setConsentForm(snap.consentForm);
-        if (snap.applicationDocs) setApplicationDocs(snap.applicationDocs);
-        if (snap.beneficiaryMode) setBeneficiaryMode(snap.beneficiaryMode);
-      } finally {
-        if (!cancelled) setOfflineDraftReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [offlineFormKey]);
+  const applyLocalDraftSnapshot = useCallback((snap) => {
+    if (!snap || typeof snap !== 'object') return;
+    if (snap.form) setForm(snap.form);
+    if (snap.beneficiary) setBeneficiary(snap.beneficiary);
+    if (snap.familyHeads) setFamilyHeads(snap.familyHeads);
+    if (snap.spouse) setSpouse(snap.spouse);
+    if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
+    if (snap.formTab) setFormTab(snap.formTab);
+    if (snap.educationDetails) setEducationDetails(snap.educationDetails);
+    if (snap.rationDetails) setRationDetails(snap.rationDetails);
+    if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
+    if (snap.financialAssistanceDetails) {
+      setFinancialAssistanceDetails(snap.financialAssistanceDetails);
+    }
+    if (snap.cleanWaterDetails) setCleanWaterDetails(snap.cleanWaterDetails);
+    if (snap.zakatPermission) setZakatPermission(snap.zakatPermission);
+    if (snap.consentForm) setConsentForm(snap.consentForm);
+    if (snap.applicationDocs) setApplicationDocs(snap.applicationDocs);
+    if (Array.isArray(snap.missingDocuments)) {
+      setMissingDocuments(snap.missingDocuments);
+    }
+    if (snap.beneficiaryMode) setBeneficiaryMode(snap.beneficiaryMode);
+    if (snap.beneficiaryId != null) setBeneficiaryId(snap.beneficiaryId);
+    if (snap.existingBeneficiary !== undefined) {
+      setExistingBeneficiary(snap.existingBeneficiary);
+    }
+    if (snap.spouseFormOpen != null) setSpouseFormOpen(!!snap.spouseFormOpen);
+    if (snap.editStatus) setEditStatus(snap.editStatus);
+  }, []);
 
-  // Autosave full intake state while offline (including tab changes)
+  const resetFormToBlank = useCallback(() => {
+    const amt = resolveExpectedAmountFields('health', '');
+    setBeneficiaryMode('new');
+    setBeneficiaryId(null);
+    setExistingBeneficiary(null);
+    setBeneficiary({ ...emptyPerson, is_applicant: true });
+    setForm({
+      title: '',
+      request_summary: '',
+      requested_aid_type: 'health',
+      case_source: 'walk_in',
+      aid_program: amt.aid_program,
+      expected_amount: amt.expected_amount,
+      expected_amount_max: amt.expected_amount_max,
+    });
+    setEducationDetails(emptyEducationDetails());
+    setRationDetails(emptyRationDetails());
+    setMarriageGiftDetails(emptyMarriageGiftDetails());
+    setFinancialAssistanceDetails(emptyFinancialAssistanceDetails());
+    setCleanWaterDetails(emptyCleanWaterDetails());
+    setZakatPermission(emptyZakatPermission());
+    setConsentForm(emptyConsentForm());
+    setApplicationDocs({});
+    setMissingDocuments([]);
+    setFamilyHeads([
+      {
+        ...emptyFamilyHeadRow('father'),
+        is_applicant: false,
+        is_beneficiary: false,
+      },
+    ]);
+    setSpouse(emptyRelative());
+    setSpouseFormOpen(false);
+    setBeneficiaryMembers([]);
+    setFormTab('family');
+    setError('');
+  }, []);
+
+  // Autosave full intake state locally only (no API) — same idea as persisted filters
   useEffect(() => {
-    if (!offlineDraftReady || !getOfflineMode()) return undefined;
+    if (!offlineDraftReady) return undefined;
+    if (isEdit && loadingEdit) return undefined;
     const t = setTimeout(() => {
       saveAidFormDraft(offlineFormKey, {
         form,
@@ -642,14 +822,23 @@ const AidApplicationAddInner = () => {
         zakatPermission,
         consentForm,
         applicationDocs,
+        missingDocuments,
         beneficiaryMode,
         beneficiaryId,
+        existingBeneficiary,
+        spouseFormOpen,
+        editStatus,
+        // Marks edit snapshots safe to re-apply after server hydrate (tab switch)
+        capturedAfterHydrate: isEdit ? true : undefined,
+        baseUpdatedAt: isEdit ? baseUpdatedAtRef.current || undefined : undefined,
       }).catch(() => {});
     }, 400);
     return () => clearTimeout(t);
   }, [
     offlineDraftReady,
     offlineFormKey,
+    isEdit,
+    loadingEdit,
     form,
     formTab,
     beneficiary,
@@ -664,8 +853,12 @@ const AidApplicationAddInner = () => {
     zakatPermission,
     consentForm,
     applicationDocs,
+    missingDocuments,
     beneficiaryMode,
     beneficiaryId,
+    existingBeneficiary,
+    spouseFormOpen,
+    editStatus,
   ]);
 
   const hydrateFromApplication = useCallback(async (appId) => {
@@ -677,6 +870,7 @@ const AidApplicationAddInner = () => {
       if (!app?.id) throw new Error('Application not found');
 
       setEditStatus(app.status || null);
+      baseUpdatedAtRef.current = app.updated_at ? String(app.updated_at) : '';
 
       const closed =
         app.status === 'rejected' || app.status === 'delivered';
@@ -686,14 +880,31 @@ const AidApplicationAddInner = () => {
 
       const benId =
         app.beneficiary?.id || app.beneficiary_person_id || null;
-      let personDetail = null;
-      if (benId) {
+      // Prefer family_tree embedded on application findOne; fall back to people detail
+      let personDetail =
+        app.family_tree != null
+          ? {
+              person: app.beneficiary || null,
+              family_tree: app.family_tree || {},
+              family_counts: app.family_counts || {},
+              kinship: app.kinship || [],
+            }
+          : null;
+      if (benId && app.family_tree == null) {
         try {
           const peopleRes = await axiosInstance.get(`/aid/people/${benId}`);
           personDetail = peopleRes.data?.data || null;
-        } catch {
-          personDetail = null;
+        } catch (err) {
+          throw new Error(
+            err?.response?.data?.message ||
+              'Failed to load beneficiary family tree — cannot safely edit without family data',
+          );
         }
+      }
+      if (benId && (!personDetail || personDetail.family_tree == null)) {
+        throw new Error(
+          'Beneficiary family tree missing — cannot safely edit without family data',
+        );
       }
 
       const beneficiaryPerson =
@@ -754,19 +965,75 @@ const AidApplicationAddInner = () => {
           ? { ...emptyZakatPermission(), ...app.zakat_permission }
           : emptyZakatPermission(),
       );
-      setConsentForm(
-        app.consent_form
-          ? { ...emptyConsentForm(), ...app.consent_form }
-          : emptyConsentForm(),
-      );
+      setConsentForm(() => {
+        const variant = resolveConsentVariant(
+          app.requested_aid_type,
+          app.aid_program,
+        );
+        if (app.consent_form) {
+          const fromStored =
+            app.consent_form.variant ||
+            (variant !== 'media' ? variant : 'media');
+          return {
+            ...emptyConsentForVariant(fromStored),
+            ...app.consent_form,
+            variant: app.consent_form.variant || fromStored,
+          };
+        }
+        return emptyConsentForVariant(variant);
+      });
+
+      const fromAppMissing = Array.isArray(app.missing_documents)
+        ? app.missing_documents.map((k) => String(k).toLowerCase())
+        : [];
+      const fromAttachMissing = (app.attachments || [])
+        .filter((a) => a?.is_missing && a?.context)
+        .map((a) => String(a.context).toLowerCase());
+      setMissingDocuments([
+        ...new Set([...fromAppMissing, ...fromAttachMissing]),
+      ]);
+      setApplicationDocs(applicationDocsFromAttachments(app.attachments || []));
 
       const tree = personDetail?.family_tree || {};
-      const parents = tree.parents || [];
       const spouseRows = tree.spouse || [];
+      const rowRelation = (row) =>
+        String(row?.relation_type || row?.relation || '').toLowerCase();
+      const isFamilyHeadRow = (row) => {
+        const notes = String(row?.notes || '').toLowerCase();
+        if (notes.includes('family head')) return true;
+        // Legacy father/mother edges without notes still count as heads
+        return ['father', 'mother'].includes(rowRelation(row));
+      };
 
-      if (parents.length > 0) {
-        const heads = parents.map((row) => {
-          const rel = toFamilyHeadType(row.relation);
+      // Deduplicate all kinship rows by person id (prefer family-head-marked rows)
+      const byPersonId = new Map();
+      for (const row of flattenFamilyTreeRows(tree)) {
+        const pid = Number(row?.person?.id);
+        if (!Number.isFinite(pid) || pid <= 0) continue;
+        const prev = byPersonId.get(pid);
+        if (!prev || (isFamilyHeadRow(row) && !isFamilyHeadRow(prev))) {
+          byPersonId.set(pid, row);
+        }
+      }
+      const uniqueRows = Array.from(byPersonId.values());
+      const headSourceRows = uniqueRows.filter(isFamilyHeadRow);
+      const headPersonIds = new Set(
+        headSourceRows
+          .map((r) => Number(r?.person?.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      );
+      const spousePersonIds = new Set(
+        (spouseRows || [])
+          .map((r) => Number(r?.person?.id))
+          .filter((id) => Number.isFinite(id) && id > 0),
+      );
+
+      let heads = [];
+      if (headSourceRows.length > 0) {
+        heads = headSourceRows.map((row) => {
+          const fromNotes = parseFamilyHeadTypeFromNotes(row.notes);
+          const rel =
+            fromNotes || toFamilyHeadType(rowRelation(row)) || 'other';
           const pid = row.person?.id;
           return mapPersonToForm(row.person, {
             _relation_type: rel,
@@ -794,14 +1061,15 @@ const AidApplicationAddInner = () => {
           setExistingBeneficiary(beneficiaryPerson);
         }
       } else {
-        setFamilyHeads([
+        heads = [
           mapPersonToForm(beneficiaryPerson, {
             _relation_type: 'father',
             is_beneficiary: true,
             is_applicant: isWriterSelf,
             _family_members: [],
           }),
-        ]);
+        ];
+        setFamilyHeads(heads);
         setBeneficiary({ ...emptyPerson, is_applicant: false });
         setBeneficiaryMode('new');
         setBeneficiaryId(beneficiaryPersonId);
@@ -817,34 +1085,75 @@ const AidApplicationAddInner = () => {
               !isWriterSelf && Number(sp.id) === Number(writerId),
           }),
         );
+        setSpouseFormOpen(true);
       } else {
         setSpouse(emptyRelative());
+        setSpouseFormOpen(false);
       }
 
-      const memberKeys = [
-        'children',
-        'brothers',
-        'sisters',
-        'siblings',
-        'extended',
-        'grandparents',
-        'grandchildren',
-      ];
-      const members = [];
-      for (const key of memberKeys) {
-        for (const row of tree[key] || []) {
-          if (!row?.person) continue;
-          const rel = String(row.relation || 'other').toLowerCase();
-          members.push(
-            mapPersonToForm(row.person, {
-              relation_type: HEAD_TYPE_VALUES.has(rel) ? rel : 'other',
-              is_applicant:
-                !isWriterSelf && Number(row.person.id) === Number(writerId),
-            }),
-          );
+      // Nest relatives under Family Head (matches "Family Head — family members" UI).
+      // Family Tree also reads beneficiaryMembers — without nesting, kids show in the tree
+      // but the head members table stays empty.
+      const membersForBeneficiary = [];
+      const findHeadIndexForNotes = (notes) => {
+        const key = parseRelativeOfHeadKey(notes);
+        if (!key) return -1;
+        return heads.findIndex((h) => {
+          const { value, label } = familyHeadMatchKey(h._relation_type);
+          return key === value || key === label;
+        });
+      };
+      const primaryHeadIdx = heads.findIndex((h) =>
+        String(h?.full_name || '').trim(),
+      );
+      const attachToHead = (idx, member) => {
+        if (idx < 0 || !heads[idx]) return false;
+        heads[idx] = {
+          ...heads[idx],
+          _family_members: [...(heads[idx]._family_members || []), member],
+        };
+        return true;
+      };
+
+      for (const row of uniqueRows) {
+        const pid = Number(row?.person?.id);
+        if (!Number.isFinite(pid) || pid <= 0) continue;
+        if (headPersonIds.has(pid)) continue;
+        if (spousePersonIds.has(pid)) continue;
+        if (
+          Number(pid) === Number(beneficiaryPersonId) &&
+          !isFamilyHeadRow(row)
+        ) {
+          continue;
         }
+
+        // Prefer relation from notes "(son)" when API invert made ego-centric type odd
+        const notesMemberRel = String(row.notes || '').match(
+          /\(([^)]+)\)\s*$/,
+        );
+        const rel = resolveRelatedPersonKinship({
+          relation_type:
+            notesMemberRel?.[1] || rowRelation(row) || 'other',
+        });
+        const member = mapPersonToForm(row.person, {
+          relation_type: rel,
+          is_applicant:
+            !isWriterSelf && Number(pid) === Number(writerId),
+        });
+
+        if (notesSayBeneficiaryMember(row.notes)) {
+          membersForBeneficiary.push(member);
+          continue;
+        }
+
+        const headIdx = findHeadIndexForNotes(row.notes);
+        if (attachToHead(headIdx, member)) continue;
+        // Default: under primary Family Head so edit UI matches the tree
+        if (attachToHead(primaryHeadIdx, member)) continue;
+        membersForBeneficiary.push(member);
       }
-      setBeneficiaryMembers(members);
+      setFamilyHeads(heads.map((h) => ({ ...h })));
+      setBeneficiaryMembers(membersForBeneficiary);
     } catch (err) {
       setError(
         err.response?.data?.message ||
@@ -856,11 +1165,62 @@ const AidApplicationAddInner = () => {
     }
   }, []);
 
+  // Bootstrap: new → local draft; edit → server hydrate, then only same-revision local in-progress draft
   useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const snap = await loadAidFormDraft(offlineFormKey);
+        if (cancelled) return;
+        if (isEdit) {
+          await hydrateFromApplication(editId);
+          if (cancelled) return;
+          const serverUpdatedAt = baseUpdatedAtRef.current || '';
+          // Restore tab-switch work only when it was based on the same server revision
+          if (
+            snap?.capturedAfterHydrate &&
+            serverUpdatedAt &&
+            String(snap.baseUpdatedAt || '') === serverUpdatedAt
+          ) {
+            applyLocalDraftSnapshot(snap);
+          } else if (snap?.capturedAfterHydrate) {
+            // Stale local draft would wipe newer server data — drop it
+            await clearAidFormDraft(offlineFormKey).catch(() => {});
+          }
+        } else if (snap) {
+          applyLocalDraftSnapshot(snap);
+        }
+      } finally {
+        if (!cancelled) setOfflineDraftReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- run once per form key / edit id
+  }, [offlineFormKey, isEdit, editId]);
+
+  const handleClearForm = useCallback(async () => {
+    if (!window.confirm(t('clearFormConfirm'))) return;
+    await clearAidFormDraft(offlineFormKey).catch(() => {});
     if (isEdit) {
-      hydrateFromApplication(editId);
+      resetFormToBlank();
+      setLoadingEdit(true);
+      setOfflineDraftReady(false);
+      await hydrateFromApplication(editId);
+      setOfflineDraftReady(true);
+    } else {
+      resetFormToBlank();
     }
-  }, [isEdit, editId, hydrateFromApplication]);
+    toast.info(t('clearForm'));
+  }, [
+    t,
+    offlineFormKey,
+    isEdit,
+    editId,
+    resetFormToBlank,
+    hydrateFromApplication,
+  ]);
 
   const handleDownloadPng = async (ref, fileName) => {
     if (!ref?.current || pngDownloading) return;
@@ -879,6 +1239,9 @@ const AidApplicationAddInner = () => {
     { id: 'beneficiary', label: t('tabBeneficiary'), hint: t('tabBeneficiaryHint') },
     { id: 'family_tree', label: t('tabFamilyTree'), hint: t('tabFamilyTreeHint') },
     { id: 'request', label: t('tabRequest'), hint: t('tabRequestHint') },
+    ...(form.requested_aid_type === 'clean_water'
+      ? [{ id: 'survey', label: t('tabSurvey'), hint: t('tabSurveyHint') }]
+      : []),
     { id: 'attachments', label: t('tabAttachments'), hint: t('tabAttachmentsHint') },
   ];
   const stepIndex = FORM_TABS.findIndex((t) => t.id === formTab);
@@ -888,7 +1251,7 @@ const AidApplicationAddInner = () => {
   const headAsBeneficiary =
     familyHeads.find((h) => h.is_beneficiary) || null;
 
-  /** Person marked Applicant — used to auto-fill Zakat form header fields. */
+  /** Person marked Applicant (writer). */
   const zakatApplicantPerson = useMemo(() => {
     if (beneficiary.is_applicant) return beneficiary;
     if (spouse.is_applicant) return spouse;
@@ -911,8 +1274,105 @@ const AidApplicationAddInner = () => {
     headAsBeneficiary,
   ]);
 
+  const beneficiaryPersonForForms = useMemo(
+    () =>
+      headAsBeneficiary ||
+      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary),
+    [
+      headAsBeneficiary,
+      beneficiaryMode,
+      existingBeneficiary,
+      beneficiary,
+    ],
+  );
+
+  /**
+   * Zakat / Consent form subject: beneficiary for all programs,
+   * applicant for Marriage Gift. Thumb + signature come from this person.
+   */
+  const formSubjectPerson = useMemo(
+    () =>
+      resolveAidFormSubjectPerson({
+        aidType: form.requested_aid_type,
+        aidProgram: form.aid_program,
+        beneficiary: beneficiaryPersonForForms,
+        applicant: zakatApplicantPerson,
+      }),
+    [
+      form.requested_aid_type,
+      form.aid_program,
+      beneficiaryPersonForForms,
+      zakatApplicantPerson,
+    ],
+  );
+
+  const formSubjectPersonId = useMemo(() => {
+    const p = formSubjectPerson;
+    const id = Number(p?.existing_person_id || p?.id || 0);
+    return Number.isFinite(id) && id > 0 ? id : null;
+  }, [formSubjectPerson]);
+
+  const persistFormSubjectBiometrics = useCallback(
+    async (partial) => {
+      if (!formSubjectPersonId || !partial) return;
+      const payload = {};
+      if (partial.thumb_impression !== undefined) {
+        payload.thumb_impression = partial.thumb_impression;
+      }
+      if (partial.signature !== undefined) {
+        payload.signature = partial.signature;
+      }
+      if (!Object.keys(payload).length) return;
+      try {
+        await axiosInstance.patch(
+          `/aid/people/${formSubjectPersonId}`,
+          payload,
+        );
+      } catch {
+        /* non-blocking — form still keeps local capture */
+      }
+    },
+    [formSubjectPersonId],
+  );
+
+  const handleZakatBiometricSaved = useCallback(
+    (field, capture) => {
+      if (field === 'applicant_thumb') {
+        persistFormSubjectBiometrics({
+          thumb_impression: cloneAidBiometric(capture),
+        });
+      } else if (field === 'applicant_signature') {
+        persistFormSubjectBiometrics({
+          signature: cloneAidBiometric(capture),
+        });
+      }
+    },
+    [persistFormSubjectBiometrics],
+  );
+
+  const handleConsentBiometricSaved = useCallback(
+    (field, capture) => {
+      if (
+        field === 'applicant_thumb' ||
+        field === 'receiver_thumb'
+      ) {
+        persistFormSubjectBiometrics({
+          thumb_impression: cloneAidBiometric(capture),
+        });
+      } else if (
+        field === 'applicant_signature' ||
+        field === 'receiver_signature'
+      ) {
+        persistFormSubjectBiometrics({
+          signature: cloneAidBiometric(capture),
+        });
+      }
+    },
+    [persistFormSubjectBiometrics],
+  );
+
   useEffect(() => {
-    const person = zakatApplicantPerson;
+    const person = formSubjectPerson;
     if (!person) return;
     const age = calcAgeFromDob(person.date_of_birth);
     const eduLabel = formatEducation(person.education_level);
@@ -924,15 +1384,25 @@ const AidApplicationAddInner = () => {
           person.literacy_category ||
           '';
     const today = new Date().toISOString().slice(0, 10);
+    const thumb =
+      cloneAidBiometric(person.thumb_impression) || null;
+    const signature = cloneAidBiometric(person.signature) || null;
     setZakatPermission((prev) => {
+      // Prefill empty slots only — never wipe hydrated / user-entered letter fields
       const next = {
         ...prev,
         form_date: prev.form_date || today,
-        applicant_name: person.full_name || '',
-        age: age != null ? String(age) : '',
-        education: education || '',
-        cnic: formatCnicInput(person.cnic || ''),
-        phone: formatPkPhoneInput(person.phone || ''),
+        applicant_name: prev.applicant_name || person.full_name || '',
+        age: prev.age || (age != null ? String(age) : ''),
+        education: prev.education || education || '',
+        cnic: prev.cnic || formatCnicInput(person.cnic || ''),
+        phone: prev.phone || formatPkPhoneInput(person.phone || ''),
+        applicant_thumb: hasAidBiometric(prev.applicant_thumb)
+          ? prev.applicant_thumb
+          : thumb,
+        applicant_signature: hasAidBiometric(prev.applicant_signature)
+          ? prev.applicant_signature
+          : signature,
       };
       if (
         next.form_date === prev.form_date &&
@@ -940,13 +1410,188 @@ const AidApplicationAddInner = () => {
         next.age === prev.age &&
         next.education === prev.education &&
         next.cnic === prev.cnic &&
-        next.phone === prev.phone
+        next.phone === prev.phone &&
+        next.applicant_thumb === prev.applicant_thumb &&
+        next.applicant_signature === prev.applicant_signature
       ) {
         return prev;
       }
       return next;
     });
-  }, [zakatApplicantPerson]);
+  }, [formSubjectPerson]);
+
+  /** Prefill media consent from form subject (beneficiary, or applicant for MG). */
+  useEffect(() => {
+    if (
+      isWheelchairConsentProgram(form.aid_program) ||
+      isMarriageGiftConsentProgram(
+        form.requested_aid_type,
+        form.aid_program,
+      )
+    ) {
+      return;
+    }
+    const person = formSubjectPerson;
+    if (!person) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const thumb = cloneAidBiometric(person.thumb_impression);
+    const signature = cloneAidBiometric(person.signature);
+    setConsentForm((prev) => {
+      if (prev?.variant && prev.variant !== 'media') return prev;
+      const next = {
+        ...emptyConsentForm(),
+        ...prev,
+        variant: 'media',
+        form_date: prev.form_date || today,
+        full_name: prev.full_name || person.full_name || '',
+        parentage_or_spouse:
+          prev.parentage_or_spouse || person.father_or_husband_name || '',
+        cnic: prev.cnic || formatCnicInput(person.cnic || ''),
+        applicant_thumb: hasAidBiometric(prev.applicant_thumb)
+          ? prev.applicant_thumb
+          : thumb,
+        applicant_signature: hasAidBiometric(prev.applicant_signature)
+          ? prev.applicant_signature
+          : signature,
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.full_name === prev.full_name &&
+        next.parentage_or_spouse === prev.parentage_or_spouse &&
+        next.cnic === prev.cnic &&
+        next.applicant_thumb === prev.applicant_thumb &&
+        next.applicant_signature === prev.applicant_signature
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    form.aid_program,
+    form.requested_aid_type,
+    formSubjectPerson,
+  ]);
+
+  /** Prefill wheelchair affidavit from applicant + beneficiary; biometrics from subject. */
+  useEffect(() => {
+    if (!isWheelchairConsentProgram(form.aid_program)) return;
+    const applicant = zakatApplicantPerson;
+    const bene = beneficiaryPersonForForms;
+    if (!applicant && !bene) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const ageSrc = bene || applicant;
+    const age = calcAgeFromDob(ageSrc?.date_of_birth);
+    const subject = formSubjectPerson || bene || applicant;
+    const thumb = cloneAidBiometric(subject?.thumb_impression);
+    const signature = cloneAidBiometric(subject?.signature);
+    setConsentForm((prev) => {
+      if (prev?.variant && prev.variant !== 'wheelchair') return prev;
+      const next = {
+        ...emptyWheelchairConsentForm(),
+        ...prev,
+        variant: 'wheelchair',
+        form_date: prev.form_date || today,
+        applicant_name: applicant?.full_name || prev.applicant_name || '',
+        applicant_cnic: formatCnicInput(
+          applicant?.cnic || prev.applicant_cnic || '',
+        ),
+        beneficiary_name: bene?.full_name || prev.beneficiary_name || '',
+        beneficiary_cnic: formatCnicInput(
+          bene?.cnic || prev.beneficiary_cnic || '',
+        ),
+        mobile: formatPkPhoneInput(
+          bene?.phone || applicant?.phone || prev.mobile || '',
+        ),
+        age: age != null ? String(age) : prev.age || '',
+        applicant_thumb: hasAidBiometric(prev.applicant_thumb)
+          ? prev.applicant_thumb
+          : thumb,
+        applicant_signature: hasAidBiometric(prev.applicant_signature)
+          ? prev.applicant_signature
+          : signature,
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.applicant_name === prev.applicant_name &&
+        next.applicant_cnic === prev.applicant_cnic &&
+        next.beneficiary_name === prev.beneficiary_name &&
+        next.beneficiary_cnic === prev.beneficiary_cnic &&
+        next.mobile === prev.mobile &&
+        next.age === prev.age &&
+        next.applicant_thumb === prev.applicant_thumb &&
+        next.applicant_signature === prev.applicant_signature
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    form.aid_program,
+    zakatApplicantPerson,
+    beneficiaryPersonForForms,
+    formSubjectPerson,
+  ]);
+
+  /** Prefill marriage gift receipt — applicant data + biometrics on applicant. */
+  useEffect(() => {
+    if (
+      !isMarriageGiftConsentProgram(
+        form.requested_aid_type,
+        form.aid_program,
+      )
+    ) {
+      return;
+    }
+    const applicant = zakatApplicantPerson;
+    const bride = beneficiaryPersonForForms;
+    if (!applicant && !bride) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const thumb = cloneAidBiometric(applicant?.thumb_impression);
+    const signature = cloneAidBiometric(applicant?.signature);
+    setConsentForm((prev) => {
+      if (prev?.variant && prev.variant !== 'marriage_gift') return prev;
+      const next = {
+        ...emptyMarriageGiftConsentForm(),
+        ...prev,
+        variant: 'marriage_gift',
+        form_date: prev.form_date || today,
+        bride_name: bride?.full_name || prev.bride_name || '',
+        bride_cnic: formatCnicInput(bride?.cnic || prev.bride_cnic || ''),
+        applicant_name: applicant?.full_name || prev.applicant_name || '',
+        parentage_or_spouse:
+          applicant?.father_or_husband_name ||
+          prev.parentage_or_spouse ||
+          '',
+        applicant_cnic: formatCnicInput(
+          applicant?.cnic || prev.applicant_cnic || '',
+        ),
+        receiver_thumb: hasAidBiometric(prev.receiver_thumb)
+          ? prev.receiver_thumb
+          : thumb,
+        receiver_signature: hasAidBiometric(prev.receiver_signature)
+          ? prev.receiver_signature
+          : signature,
+      };
+      if (
+        next.form_date === prev.form_date &&
+        next.bride_name === prev.bride_name &&
+        next.bride_cnic === prev.bride_cnic &&
+        next.applicant_name === prev.applicant_name &&
+        next.parentage_or_spouse === prev.parentage_or_spouse &&
+        next.applicant_cnic === prev.applicant_cnic &&
+        next.receiver_thumb === prev.receiver_thumb &&
+        next.receiver_signature === prev.receiver_signature
+      ) {
+        return prev;
+      }
+      return next;
+    });
+  }, [
+    form.requested_aid_type,
+    form.aid_program,
+    zakatApplicantPerson,
+    beneficiaryPersonForForms,
+  ]);
 
   const beneficiaryGender = headAsBeneficiary
     ? headAsBeneficiary.gender || ''
@@ -984,6 +1629,23 @@ const AidApplicationAddInner = () => {
       : beneficiaryGender === 'female'
         ? 'male'
         : '';
+  const spouseHasDetails = personHasEnteredDetails(spouse);
+  const spousePanelVisible =
+    showSpouseSection &&
+    (spouseFormOpen || spouseHasDetails || !!spouse.is_applicant);
+
+  useEffect(() => {
+    if (spouseHasDetails || spouse.is_applicant) {
+      setSpouseFormOpen(true);
+    }
+  }, [spouseHasDetails, spouse.is_applicant]);
+
+  useEffect(() => {
+    // Marital status no longer implies spouse — collapse empty optional form
+    if (!showSpouseSection) {
+      setSpouseFormOpen(false);
+    }
+  }, [showSpouseSection]);
 
   /** Exactly one applicant: beneficiary, spouse, family head, or a family member. */
   const markApplicant = (target) => {
@@ -1006,6 +1668,8 @@ const AidApplicationAddInner = () => {
       );
       return;
     }
+    // When family head / member becomes applicant, carry over photo from beneficiary if needed
+    const photoSource = beneficiary;
     setBeneficiary((b) => ({
       ...b,
       is_applicant: kind === 'beneficiary',
@@ -1015,48 +1679,76 @@ const AidApplicationAddInner = () => {
       is_applicant: kind === 'spouse',
     }));
     setFamilyHeads((heads) =>
-      heads.map((h, i) => ({
-        ...h,
-        is_applicant: kind === 'family_head' && target.idx === i,
-        _family_members: (h._family_members || []).map((m, mi) => ({
-          ...m,
-          is_applicant:
-            kind === 'head_member' &&
-            target.headIdx === i &&
-            target.idx === mi,
-        })),
-      })),
+      heads.map((h, i) => {
+        const isTarget = kind === 'family_head' && target.idx === i;
+        let next = {
+          ...h,
+          is_applicant: isTarget,
+          _family_members: (h._family_members || []).map((m, mi) => {
+            const memberTarget =
+              kind === 'head_member' &&
+              target.headIdx === i &&
+              target.idx === mi;
+            const member = {
+              ...m,
+              is_applicant: memberTarget,
+            };
+            return memberTarget ? withPhotoFrom(member, photoSource) : member;
+          }),
+        };
+        if (isTarget) next = withPhotoFrom(next, photoSource);
+        return next;
+      }),
     );
     setBeneficiaryMembers((list) =>
-      list.map((m, i) => ({
-        ...m,
-        is_applicant: kind === 'beneficiary_member' && target.idx === i,
-      })),
+      list.map((m, i) => {
+        const isTarget = kind === 'beneficiary_member' && target.idx === i;
+        const next = { ...m, is_applicant: isTarget };
+        return isTarget ? withPhotoFrom(next, photoSource) : next;
+      }),
     );
   };
 
   /** Exactly one beneficiary source: Beneficiary form, Family Head, or a family member. */
   const markBeneficiary = (target) => {
     const kind = target?.kind || 'form';
+    const prevHead = familyHeads.find((h) => h.is_beneficiary) || null;
+    const photoSource =
+      kind === 'form' && prevHead ? prevHead : beneficiary;
+
     setFamilyHeads((heads) =>
-      heads.map((h, i) => ({
-        ...h,
-        is_beneficiary: kind === 'family_head' && target.idx === i,
-        _family_members: (h._family_members || []).map((m, mi) => ({
-          ...m,
-          is_beneficiary:
-            kind === 'head_member' &&
-            target.headIdx === i &&
-            target.idx === mi,
-        })),
-      })),
+      heads.map((h, i) => {
+        const isTarget = kind === 'family_head' && target.idx === i;
+        let next = {
+          ...h,
+          is_beneficiary: isTarget,
+          _family_members: (h._family_members || []).map((m, mi) => {
+            const memberTarget =
+              kind === 'head_member' &&
+              target.headIdx === i &&
+              target.idx === mi;
+            const member = {
+              ...m,
+              is_beneficiary: memberTarget,
+            };
+            return memberTarget ? withPhotoFrom(member, photoSource) : member;
+          }),
+        };
+        if (isTarget) next = withPhotoFrom(next, photoSource);
+        return next;
+      }),
     );
     setBeneficiaryMembers((list) =>
-      list.map((m, i) => ({
-        ...m,
-        is_beneficiary: kind === 'beneficiary_member' && target.idx === i,
-      })),
+      list.map((m, i) => {
+        const isTarget = kind === 'beneficiary_member' && target.idx === i;
+        const next = { ...m, is_beneficiary: isTarget };
+        return isTarget ? withPhotoFrom(next, photoSource) : next;
+      }),
     );
+    if (kind === 'form') {
+      // Returning to beneficiary form — keep photo from previous head if form empty
+      setBeneficiary((b) => withPhotoFrom({ ...b }, photoSource));
+    }
     if (
       kind === 'family_head' ||
       kind === 'head_member' ||
@@ -1160,10 +1852,12 @@ const AidApplicationAddInner = () => {
         }
       }
       for (const rel of head._family_members || []) {
+        // Include both label + value so edit hydrate can nest members under the same head
+        const headKey = `${familyHeadTypeLabel(uiType)} (${uiType})`;
         pushRelatedMember(members, rel, {
           notes: rel.is_applicant
-            ? `Applicant / relative of ${familyHeadTypeLabel(uiType).toLowerCase()} (${rel.relation_type || 'other'})`
-            : `Relative of ${familyHeadTypeLabel(uiType).toLowerCase()} (${rel.relation_type || 'other'})`,
+            ? `Applicant / relative of ${headKey} (${rel.relation_type || 'other'})`
+            : `Relative of ${headKey} (${rel.relation_type || 'other'})`,
         });
       }
     }
@@ -1349,6 +2043,7 @@ const AidApplicationAddInner = () => {
           : {}),
         zakat_permission: zakatPermission,
         consent_form: consentForm,
+        missing_documents: missingDocuments,
         writer_relation: 'self',
         family_members: buildFamilyMembers(),
       };
@@ -1363,6 +2058,12 @@ const AidApplicationAddInner = () => {
         }
         if (!person.date_of_birth) {
           throw new Error(`${label} date of birth is required`);
+        }
+        if (!String(person.address || '').trim()) {
+          throw new Error(`${label} address as per CNIC is required`);
+        }
+        if (!String(person.current_address || '').trim()) {
+          throw new Error(`${label} current address is required`);
         }
         if (person.cnic && !isValidCnic(person.cnic)) {
           throw new Error(
@@ -1382,9 +2083,11 @@ const AidApplicationAddInner = () => {
           payload.beneficiary_person_id = Number(
             beneficiaryHead.existing_person_id,
           );
-          if (isEdit) {
+          // Always send person fields (incl. photo_url) so create+existing updates the profile
+          const headPayload = cleanPersonPayload(beneficiaryHead);
+          if (headPayload) {
             payload.beneficiary = {
-              ...cleanPersonPayload(beneficiaryHead),
+              ...headPayload,
               full_name: beneficiaryHead.full_name.trim(),
             };
           }
@@ -1451,10 +2154,8 @@ const AidApplicationAddInner = () => {
         payload.writer_relation = applicant.relation || 'relative';
         if (person.existing_person_id) {
           payload.writer_person_id = Number(person.existing_person_id);
-          if (isEdit) {
-            const writerPayload = cleanPersonPayload(person);
-            if (writerPayload) payload.writer = writerPayload;
-          }
+          const writerPayload = cleanPersonPayload(person);
+          if (writerPayload) payload.writer = writerPayload;
         } else if (isEdit) {
           const writerPayload = cleanPersonPayload(person);
           if (!writerPayload) {
@@ -1510,11 +2211,23 @@ const AidApplicationAddInner = () => {
                 : [];
           list.forEach((item, i) => {
             if (item?.file) {
+              const side = String(item.side || '').toLowerCase();
+              const pair =
+                item.pair != null && Number.isFinite(Number(item.pair))
+                  ? Number(item.pair) + 1
+                  : null;
+              let description = context;
+              if (side === 'front' || side === 'back') {
+                description = pair
+                  ? `${context} #${pair} (${side})`
+                  : `${context} (${side})`;
+              } else if (list.length > 1) {
+                description = `${context} (${i + 1})`;
+              }
               uploads.push({
                 context,
                 file: item.file,
-                description:
-                  list.length > 1 ? `${context} (${i + 1})` : context,
+                description,
               });
             }
           });
@@ -1529,6 +2242,48 @@ const AidApplicationAddInner = () => {
             fd,
             { headers: { 'Content-Type': 'multipart/form-data' } },
           );
+        }
+
+        // Persist thumb/signature onto the form-subject person for reuse
+        try {
+          const appRes = await axiosInstance.get(
+            `/aid/applications/${savedId}`,
+          );
+          const savedApp = appRes.data?.data || appRes.data;
+          const isMg = isMarriageGiftConsentProgram(
+            savedApp?.requested_aid_type || form.requested_aid_type,
+            savedApp?.aid_program || form.aid_program,
+          );
+          const subjectId = Number(
+            isMg
+              ? savedApp?.writer_person_id ||
+                  savedApp?.writer?.id ||
+                  formSubjectPersonId
+              : savedApp?.beneficiary_person_id ||
+                  savedApp?.beneficiary?.id ||
+                  formSubjectPersonId,
+          );
+          if (Number.isFinite(subjectId) && subjectId > 0) {
+            const thumb =
+              cloneAidBiometric(zakatPermission?.applicant_thumb) ||
+              cloneAidBiometric(consentForm?.applicant_thumb) ||
+              cloneAidBiometric(consentForm?.receiver_thumb);
+            const signature =
+              cloneAidBiometric(zakatPermission?.applicant_signature) ||
+              cloneAidBiometric(consentForm?.applicant_signature) ||
+              cloneAidBiometric(consentForm?.receiver_signature);
+            const bioPayload = {};
+            if (thumb) bioPayload.thumb_impression = thumb;
+            if (signature) bioPayload.signature = signature;
+            if (Object.keys(bioPayload).length) {
+              await axiosInstance.patch(
+                `/aid/people/${subjectId}`,
+                bioPayload,
+              );
+            }
+          }
+        } catch {
+          /* non-blocking */
         }
       }
       const goDrafts = !isEdit || isDraftEdit;
@@ -1751,6 +2506,34 @@ const AidApplicationAddInner = () => {
                         : emptyFinancialAssistanceDetails(),
                     );
                   }
+<<<<<<< HEAD
+=======
+                  if (next === 'clean_water') {
+                    setCleanWaterDetails((prev) =>
+                      prev?.applicant_name != null ||
+                      prev?.village != null ||
+                      prev?.existing_source_of_water
+                        ? prev
+                        : emptyCleanWaterDetails(),
+                    );
+                  } else if (formTab === 'survey') {
+                    setFormTab('request');
+                  }
+                  setConsentForm((prev) => {
+                    const nextVariant = resolveConsentVariant(
+                      next,
+                      amt.aid_program,
+                    );
+                    if ((prev?.variant || 'media') === nextVariant) return prev;
+                    // Keep thumbs/signatures/declarations when switching consent variant
+                    return {
+                      ...emptyConsentForVariant(nextVariant),
+                      ...prev,
+                      variant: nextVariant,
+                      lang: prev?.lang || lang,
+                    };
+                  });
+>>>>>>> 39b92edacce441d6e63c45ccc30c53dd102affaf
                 }}
                 options={AID_REQUEST_TYPES}
               />
@@ -1765,12 +2548,26 @@ const AidApplicationAddInner = () => {
                       form.requested_aid_type,
                       e.target.value,
                     );
+                    const nextProgram = amt.aid_program;
                     setForm((p) => ({
                       ...p,
-                      aid_program: amt.aid_program,
+                      aid_program: nextProgram,
                       expected_amount: amt.expected_amount,
                       expected_amount_max: amt.expected_amount_max,
                     }));
+                    setConsentForm((prev) => {
+                      const nextVariant = resolveConsentVariant(
+                        form.requested_aid_type,
+                        nextProgram,
+                      );
+                      if ((prev?.variant || 'media') === nextVariant) return prev;
+                      return {
+                        ...emptyConsentForVariant(nextVariant),
+                        ...prev,
+                        variant: nextVariant,
+                        lang: prev?.lang || lang,
+                      };
+                    });
                   }}
                   options={[
                     { value: '', label: t('selectSubProgram') },
@@ -1861,38 +2658,106 @@ const AidApplicationAddInner = () => {
           </div>
           )}
 
+          {formTab === 'survey' &&
+            form.requested_aid_type === 'clean_water' && (
+              <div className="form-section">
+                <h3 className="form-section-heading">{t('tabSurvey')}</h3>
+                <AidCleanWaterSurveyForm
+                  value={cleanWaterDetails}
+                  onChange={setCleanWaterDetails}
+                  uiLang={lang}
+                  applicationNo={
+                    isEdit ? editId : undefined
+                  }
+                />
+              </div>
+            )}
+
           {formTab === 'attachments' && (
           <div className="form-section">
             <h3 className="form-section-heading">{t('attachments')}</h3>
             <AidApplicationDocsIntake
               value={applicationDocs}
               onChange={setApplicationDocs}
+              missingKeys={missingDocuments}
+              onRemoveSaved={
+                isEdit
+                  ? async (attachmentId) => {
+                      await axiosInstance.delete(
+                        `/aid/applications/attachments/${attachmentId}`,
+                      );
+                    }
+                  : undefined
+              }
+              onToggleMissing={async (key) => {
+                const k = String(key || '').toLowerCase();
+                if (!k) return;
+                const next = missingDocuments.includes(k)
+                  ? missingDocuments.filter((x) => x !== k)
+                  : [...missingDocuments, k];
+                setMissingDocuments(next);
+                if (isEdit && editId) {
+                  try {
+                    await axiosInstance.patch(
+                      `/aid/applications/${editId}/missing-documents`,
+                      { missing_documents: next },
+                    );
+                    setEditStatus(
+                      next.length ? 'incomplete_docs' : editStatus,
+                    );
+                    if (next.length) {
+                      toast.info('Status set to Incomplete Docs');
+                    }
+                  } catch (err) {
+                    toast.error(
+                      err.response?.data?.message ||
+                        err.message ||
+                        'Failed to update missing documents',
+                    );
+                  }
+                }
+              }}
               disabled={saving}
             />
 
             <AidCollapsibleSection
               className="aid-family-panel"
               title={t('zakatLetter')}
-              hint={t('optionalExpand')}
+              hint={t('formsAutoAttached')}
               actions={
-                <button
-                  type="button"
-                  className="aid-png-download-btn"
-                  title={t('downloadPng')}
-                  aria-label={t('downloadPng')}
-                  disabled={pngDownloading}
-                  onClick={() =>
-                    handleDownloadPng(zakatCaptureRef, 'zakat-permission-letter')
-                  }
-                >
-                  <FiDownload size={18} />
-                </button>
+                <span className="aid-form-export-actions">
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('printForm')}
+                    aria-label={t('printForm')}
+                    onClick={() => printAidElement(zakatCaptureRef.current)}
+                  >
+                    <FiPrinter size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('downloadPng')}
+                    aria-label={t('downloadPng')}
+                    disabled={pngDownloading}
+                    onClick={() =>
+                      handleDownloadPng(
+                        zakatCaptureRef,
+                        'zakat-permission-letter',
+                      )
+                    }
+                  >
+                    <FiDownload size={18} />
+                  </button>
+                </span>
               }
             >
               <div ref={zakatCaptureRef} className="aid-png-capture">
                 <AidZakatPermissionForm
                   value={zakatPermission}
                   onChange={setZakatPermission}
+                  onBiometricSaved={handleZakatBiometricSaved}
                   uiLang={lang}
                 />
               </div>
@@ -1900,29 +2765,86 @@ const AidApplicationAddInner = () => {
 
             <AidCollapsibleSection
               className="aid-family-panel"
-              title={t('consentForm')}
-              hint={t('optionalExpand')}
+              title={
+                resolveConsentVariant(
+                  form.requested_aid_type,
+                  form.aid_program,
+                ) === 'wheelchair'
+                  ? t('wheelchairConsentForm')
+                  : resolveConsentVariant(
+                        form.requested_aid_type,
+                        form.aid_program,
+                      ) === 'marriage_gift'
+                    ? t('marriageGiftConsentForm')
+                    : t('consentForm')
+              }
+              hint={t('formsAutoAttached')}
               actions={
-                <button
-                  type="button"
-                  className="aid-png-download-btn"
-                  title={t('downloadPng')}
-                  aria-label={t('downloadPng')}
-                  disabled={pngDownloading}
-                  onClick={() =>
-                    handleDownloadPng(consentCaptureRef, 'consent-form')
-                  }
-                >
-                  <FiDownload size={18} />
-                </button>
+                <span className="aid-form-export-actions">
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('printForm')}
+                    aria-label={t('printForm')}
+                    onClick={() => printAidElement(consentCaptureRef.current)}
+                  >
+                    <FiPrinter size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="aid-png-download-btn"
+                    title={t('downloadPng')}
+                    aria-label={t('downloadPng')}
+                    disabled={pngDownloading}
+                    onClick={() => {
+                      const v = resolveConsentVariant(
+                        form.requested_aid_type,
+                        form.aid_program,
+                      );
+                      handleDownloadPng(
+                        consentCaptureRef,
+                        v === 'wheelchair'
+                          ? 'wheelchair-consent-form'
+                          : v === 'marriage_gift'
+                            ? 'marriage-gift-consent-form'
+                            : 'consent-form',
+                      );
+                    }}
+                  >
+                    <FiDownload size={18} />
+                  </button>
+                </span>
               }
             >
               <div ref={consentCaptureRef} className="aid-png-capture">
-                <AidConsentForm
-                  value={consentForm}
-                  onChange={setConsentForm}
-                  uiLang={lang}
-                />
+                {resolveConsentVariant(
+                  form.requested_aid_type,
+                  form.aid_program,
+                ) === 'wheelchair' ? (
+                  <AidWheelchairConsentForm
+                    value={consentForm}
+                    onChange={setConsentForm}
+                    onBiometricSaved={handleConsentBiometricSaved}
+                    uiLang={lang}
+                  />
+                ) : resolveConsentVariant(
+                    form.requested_aid_type,
+                    form.aid_program,
+                  ) === 'marriage_gift' ? (
+                  <AidMarriageGiftConsentForm
+                    value={consentForm}
+                    onChange={setConsentForm}
+                    onBiometricSaved={handleConsentBiometricSaved}
+                    uiLang={lang}
+                  />
+                ) : (
+                  <AidConsentForm
+                    value={consentForm}
+                    onChange={setConsentForm}
+                    onBiometricSaved={handleConsentBiometricSaved}
+                    uiLang={lang}
+                  />
+                )}
               </div>
             </AidCollapsibleSection>
           </div>
@@ -2191,8 +3113,48 @@ const AidApplicationAddInner = () => {
               needed (spouse or family members can also be the applicant).
             </p> */}
 
-            {showSpouseSection && (
+            {showSpouseSection && !spousePanelVisible ? (
+              <div className="aid-family-panel aid-family-panel--optional-add">
+                <button
+                  type="button"
+                  className="aid-mini-btn aid-mini-btn--add"
+                  onClick={() => {
+                    setSpouse((s) => ({
+                      ...s,
+                      gender: s.gender || spouseDefaultGender,
+                      marital_status:
+                        s.marital_status ||
+                        (isMarried ? 'married' : s.marital_status || ''),
+                    }));
+                    setSpouseFormOpen(true);
+                  }}
+                >
+                  + {t('addOptionalRelative', { name: spouseLabel })}
+                </button>
+              </div>
+            ) : null}
+
+            {spousePanelVisible ? (
               <div className="aid-family-panel">
+                <div className="aid-family-panel__head">
+                  <h4 className="aid-family-panel__title">
+                    {t('optionalSection', { name: spouseLabel })}
+                  </h4>
+                  <button
+                    type="button"
+                    className="aid-mini-btn aid-mini-btn--remove"
+                    onClick={() => {
+                      const wasApplicant = !!spouse.is_applicant;
+                      setSpouse(emptyRelative());
+                      setSpouseFormOpen(false);
+                      if (wasApplicant) {
+                        markApplicant({ kind: 'beneficiary' });
+                      }
+                    }}
+                  >
+                    {t('remove')}
+                  </button>
+                </div>
                 <AidApplicantCheckbox
                   checked={!!spouse.is_applicant}
                   onChange={(yes) => {
@@ -2202,7 +3164,7 @@ const AidApplicationAddInner = () => {
                   label={t('isApplicant', { name: spouseLabel })}
                 />
                 <RelativeFields
-                  title={t('optionalSection', { name: spouseLabel })}
+                  title={t('identity')}
                   value={spouse}
                   onChange={(next) =>
                     setSpouse({ ...next, is_applicant: spouse.is_applicant })
@@ -2210,7 +3172,7 @@ const AidApplicationAddInner = () => {
                   compact
                 />
               </div>
-            )}
+            ) : null}
 
             <div className="aid-family-panel">
               <div className="aid-family-panel__head">
@@ -2584,9 +3546,16 @@ const AidApplicationAddInner = () => {
                 </button>
               )}
             </div>
-            <PrimaryButton type="submit" loading={saving} loadingText={t('saving')}>
-              {submitLabel}
-            </PrimaryButton>
+            <div className="aid-form-actions__submit">
+              <ClearButton
+                onClick={handleClearForm}
+                text={t('clearForm')}
+                disabled={saving || loadingEdit}
+              />
+              <PrimaryButton type="submit" loading={saving} loadingText={t('saving')}>
+                {submitLabel}
+              </PrimaryButton>
+            </div>
           </div>
         </form>
       </div>

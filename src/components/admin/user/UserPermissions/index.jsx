@@ -120,6 +120,7 @@ const mergeAidPermissions = (rawPermissions) => {
         'delete',
         'ceo_approve',
         'deliver',
+        'meal_edit',
       ],
     },
     {
@@ -133,6 +134,10 @@ const mergeAidPermissions = (rawPermissions) => {
     {
       key: 'aid_disbursements',
       actions: ['list_view', 'view', 'create', 'update', 'deliver'],
+    },
+    {
+      key: 'aid_audit',
+      actions: ['list_view', 'view'],
     },
   ];
 
@@ -423,6 +428,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
             'delete',
             'ceo_approve',
             'deliver',
+            'meal_edit',
           ],
         },
         aid_drafts: {
@@ -436,6 +442,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
         aid_disbursements: {
           label: 'Disbursements',
           actions: ['list_view', 'view', 'create', 'update', 'deliver'],
+        },
+        aid_audit: {
+          label: 'Aid Audit Logs',
+          actions: ['list_view', 'view'],
         },
         aid_people: {
           label: 'Beneficiaries',
@@ -784,6 +794,7 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
     ceo_approve: 'CEO Approve',
     deliver: 'Deliver',
     bulk_verify: 'Bulk verify checklist',
+    meal_edit: 'Edit MEAL (Preview)',
   };
 
   const initializePermissions = () => {

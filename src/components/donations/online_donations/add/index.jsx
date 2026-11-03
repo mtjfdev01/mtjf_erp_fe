@@ -614,6 +614,7 @@ const AddDonation = ({
         { value: 'cheque', label: 'Cheque' },
         { value: 'in_kind', label: 'In Kind' },
         { value: 'bank_transfer', label: 'Bank Transfer' },
+        { value: 'whatsapp', label: 'WhatsApp' },
       ];
 
   const statusOptions = [
