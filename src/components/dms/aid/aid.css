@@ -8827,3 +8827,144 @@ a.aid-contact-chip:hover {
     border-bottom: 1px solid var(--aid-preview-border);
   }
 }
+
+/* Health application form (after Application Summary) */
+.aid-health-yn {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.aid-health-yn__btn {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: 1px solid #d5d9e0;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.aid-health-yn__btn.is-active {
+  border-color: #2f5bea;
+  background: #2f5bea;
+  color: #fff;
+  font-weight: 600;
+}
+
+.aid-health-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.aid-health-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #d5d9e0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  background: #fff;
+}
+
+.aid-health-chip.is-active {
+  border-color: #2f5bea;
+  background: #eef2ff;
+}
+
+.aid-health-chip input {
+  margin: 0;
+}
+
+.aid-health-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aid-health-add-row {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 20px;
+  border: 1px solid #a7ddb9;
+  background: #f0faf3;
+  color: #15803d;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aid-health-nested {
+  border: 1px solid #e3e6eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafbfc;
+}
+
+.aid-health-nested__label {
+  color: #2f5bea;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.aid-health-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.aid-health-total.is-over {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.aid-health-total__label {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.aid-health-total__amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 2px;
+}
+
+.aid-health-cap-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.aid-health-cap-badge.is-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aid-health-cap-badge.is-over {
+  background: #fee2e2;
+  color: #991b1b;
+}

@@ -18,6 +18,7 @@ import AidUserAssignField, {
   toAssignableAidUser,
 } from '../../shared/AidUserAssignField';
 import AidEducationApplicationFields from '../../shared/AidEducationApplicationFields';
+import AidHealthApplicationFields from '../../shared/AidHealthApplicationFields';
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
@@ -1078,6 +1079,19 @@ const AidApplicationView = () => {
                       />
                     </div>
                   )}
+                {app.requested_aid_type === 'health' && app.health_details && (
+                  <div className="aid-detail-block">
+                    <AidHealthApplicationFields
+                      value={app.health_details}
+                      readOnly
+                      subprogramLimit={
+                        app.expected_amount != null && app.expected_amount !== ''
+                          ? Number(app.expected_amount)
+                          : null
+                      }
+                    />
+                  </div>
+                )}
                 {app.requested_aid_type === 'ration' && app.ration_details && (
                   <div className="aid-detail-block">
                     <AidRationApplicationFields

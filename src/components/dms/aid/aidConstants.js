@@ -443,6 +443,157 @@ export const emptyFinancialAssistanceDetails = () => ({
   alternative_if_not_approved: '',
 });
 
+/** Health — medicine row */
+export const emptyHealthMedicineRow = () => ({
+  name: '',
+  dosage: '',
+  monthly_cost: '',
+});
+
+/** Health — prescribed test row */
+export const emptyHealthTestRow = () => ({
+  name: '',
+  estimated_cost: '',
+});
+
+/**
+ * Health — shared Application tab (Patient Care / Medical Support / PWD Rehab).
+ * Matches MTJF Health Application Form (after Application Summary).
+ */
+export const emptyHealthDetails = () => ({
+  patient_key: '',
+  patient_name: '',
+  patient_relation: '',
+  patient_age: '',
+  nature_of_illness: '',
+  disease_condition: '',
+  ill_since_years: '',
+  ill_since_months: '',
+  diagnosed_by_doctor: '',
+  doctor_name: '',
+  hospital_name: '',
+  currently_under_treatment: '',
+  treatment_where: '',
+  current_medicines: [emptyHealthMedicineRow()],
+  previous_treatment_history: '',
+  support_needed: [],
+  prescribed_tests: [emptyHealthTestRow()],
+  preferred_facility: '',
+  cost_consultation: '',
+  cost_diagnostics: '',
+  cost_medicines: '',
+  cost_procedure: '',
+  cost_other: '',
+  cost_basis: 'once',
+  duration_value: '',
+  duration_unit: 'months',
+  paying_now: [],
+  has_sehat_card: '',
+  medical_help_other_org: '',
+  debt_due_to_illness: '',
+  patient_earning_member: '',
+  unable_work_years: '',
+  unable_work_months: '',
+  caregiver: '',
+  how_know_mtjf: '',
+  alternative_if_not_approved: '',
+});
+
+export const AID_HEALTH_NATURE_OF_ILLNESS = [
+  { value: 'acute', label: 'Acute', labelUr: 'شدید' },
+  { value: 'chronic', label: 'Chronic', labelUr: 'مزمن' },
+  { value: 'surgical', label: 'Surgical', labelUr: 'جراحی' },
+  { value: 'maternity', label: 'Maternity', labelUr: 'زچگی' },
+  { value: 'disability', label: 'Disability', labelUr: 'معذوری' },
+  { value: 'other', label: 'Other', labelUr: 'دیگر' },
+];
+
+export const AID_HEALTH_TREATMENT_WHERE = [
+  { value: 'govt_hospital', label: 'Govt hospital', labelUr: 'سرکاری ہسپتال' },
+  { value: 'private_clinic', label: 'Private clinic', labelUr: 'پرائیویٹ کلینک' },
+  { value: 'hakeem', label: 'Hakeem', labelUr: 'حکیم' },
+  { value: 'aas_clinics', label: 'AAS Clinics', labelUr: 'AAS کلینکس' },
+  { value: 'aas_lab', label: 'AAS Lab', labelUr: 'AAS لیبارٹری' },
+  {
+    value: 'other',
+    label: 'Other (specify in summary)',
+    labelUr: 'دیگر (خلاصے میں بتائیں)',
+  },
+];
+
+export const AID_HEALTH_SUPPORT_NEEDED = [
+  { value: 'consultation', label: 'Consultation', labelUr: 'معائنہ' },
+  {
+    value: 'diagnostic_tests',
+    label: 'Diagnostic tests',
+    labelUr: 'تشخیصی ٹیسٹ',
+  },
+  { value: 'medicines', label: 'Medicines', labelUr: 'ادویات' },
+  {
+    value: 'follow_up',
+    label: 'Follow-up visits',
+    labelUr: 'فالو اپ وزٹ',
+  },
+];
+
+export const AID_HEALTH_PREFERRED_FACILITY = [
+  { value: 'aas_clinics', label: 'AAS Clinics', labelUr: 'AAS کلینکس' },
+  { value: 'aas_lab', label: 'AAS Lab', labelUr: 'AAS لیبارٹری' },
+  {
+    value: 'other',
+    label: 'Other (specify in summary)',
+    labelUr: 'دیگر (خلاصے میں بتائیں)',
+  },
+];
+
+export const AID_HEALTH_PAYING_NOW = [
+  { value: 'self', label: 'Self', labelUr: 'خود' },
+  { value: 'relatives', label: 'Relatives', labelUr: 'رشتہ دار' },
+  { value: 'loan', label: 'Loan', labelUr: 'قرض' },
+  { value: 'other_ngo', label: 'Other NGO', labelUr: 'دیگر این جی او' },
+  {
+    value: 'zakat',
+    label: 'Zakat / Bait-ul-Mal',
+    labelUr: 'زکوٰۃ / بیت المال',
+  },
+  { value: 'no_one', label: 'No one', labelUr: 'کوئی نہیں' },
+];
+
+export const AID_HEALTH_DURATION_UNITS = [
+  { value: 'months', label: 'Months', labelUr: 'مہینے' },
+  { value: 'weeks', label: 'Weeks', labelUr: 'ہفتے' },
+  { value: 'days', label: 'Days', labelUr: 'دن' },
+];
+
+/** Convert duration to month multiplier for recurring cost total. */
+export function healthDurationToMonths(value, unit) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 1;
+  const u = String(unit || 'months').toLowerCase();
+  if (u === 'weeks') return Math.max(1, Math.ceil(n / 4.345));
+  if (u === 'days') return Math.max(1, Math.ceil(n / 30));
+  return Math.max(1, Math.ceil(n));
+}
+
+export function calcHealthEstimatedTotal(details) {
+  const d = details || {};
+  const nums = [
+    d.cost_consultation,
+    d.cost_diagnostics,
+    d.cost_medicines,
+    d.cost_procedure,
+    d.cost_other,
+  ].map((v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  });
+  const sub = nums.reduce((a, b) => a + b, 0);
+  if (String(d.cost_basis || 'once') === 'monthly') {
+    return sub * healthDurationToMonths(d.duration_value, d.duration_unit);
+  }
+  return sub;
+}
+
 /** Clean Water survey beneficiary row */
 export const emptyCleanWaterSurveyBeneficiary = () => ({
   name: '',

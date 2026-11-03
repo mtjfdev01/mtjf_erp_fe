@@ -25,6 +25,7 @@ import AidLivestockIntake from '../../shared/AidLivestockIntake';
 import AidVehicleIntake from '../../shared/AidVehicleIntake';
 import AidEligibilityStatus from '../../shared/AidEligibilityStatus';
 import AidEducationApplicationFields from '../../shared/AidEducationApplicationFields';
+import AidHealthApplicationFields from '../../shared/AidHealthApplicationFields';
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
@@ -65,6 +66,7 @@ import {
   emptyVehicleFields,
   emptyEligibilityStatusFields,
   emptyEducationDetails,
+  emptyHealthDetails,
   emptyRationDetails,
   emptyMarriageGiftDetails,
   emptyFinancialAssistanceDetails,
@@ -702,6 +704,7 @@ const AidApplicationAddInner = () => {
   const [educationDetails, setEducationDetails] = useState(
     emptyEducationDetails(),
   );
+  const [healthDetails, setHealthDetails] = useState(emptyHealthDetails());
   const [rationDetails, setRationDetails] = useState(emptyRationDetails());
   const [marriageGiftDetails, setMarriageGiftDetails] = useState(
     emptyMarriageGiftDetails(),
@@ -755,6 +758,7 @@ const AidApplicationAddInner = () => {
     if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
     if (snap.formTab) setFormTab(snap.formTab);
     if (snap.educationDetails) setEducationDetails(snap.educationDetails);
+    if (snap.healthDetails) setHealthDetails(snap.healthDetails);
     if (snap.rationDetails) setRationDetails(snap.rationDetails);
     if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
     if (snap.financialAssistanceDetails) {
@@ -792,6 +796,7 @@ const AidApplicationAddInner = () => {
       expected_amount_max: amt.expected_amount_max,
     });
     setEducationDetails(emptyEducationDetails());
+    setHealthDetails(emptyHealthDetails());
     setRationDetails(emptyRationDetails());
     setMarriageGiftDetails(emptyMarriageGiftDetails());
     setFinancialAssistanceDetails(emptyFinancialAssistanceDetails());
@@ -827,6 +832,7 @@ const AidApplicationAddInner = () => {
         spouse,
         beneficiaryMembers,
         educationDetails,
+        healthDetails,
         rationDetails,
         marriageGiftDetails,
         financialAssistanceDetails,
@@ -858,6 +864,7 @@ const AidApplicationAddInner = () => {
     spouse,
     beneficiaryMembers,
     educationDetails,
+    healthDetails,
     rationDetails,
     marriageGiftDetails,
     financialAssistanceDetails,
@@ -953,6 +960,11 @@ const AidApplicationAddInner = () => {
         app.education_details
           ? { ...emptyEducationDetails(), ...app.education_details }
           : emptyEducationDetails(),
+      );
+      setHealthDetails(
+        app.health_details
+          ? { ...emptyHealthDetails(), ...app.health_details }
+          : emptyHealthDetails(),
       );
       setRationDetails(
         app.ration_details
@@ -1302,6 +1314,126 @@ const AidApplicationAddInner = () => {
       beneficiary,
     ],
   );
+
+  const humanizeRelation = (raw) => {
+    const s = String(raw || '')
+      .trim()
+      .replace(/_/g, ' ');
+    if (!s) return '';
+    return s.replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  /** Family Tree people for Health → Patient dropdown (name/relation/age reflected). */
+  const healthPatientOptions = useMemo(() => {
+    const opts = [];
+    const seen = new Set();
+    const pushPerson = (key, person, relation, roleHint) => {
+      if (!person || typeof person !== 'object') return;
+      const name = String(person.full_name || '').trim();
+      if (!name && !person.existing_person_id) return;
+      if (seen.has(key)) return;
+      seen.add(key);
+      const age = calcAgeFromDob(person.date_of_birth);
+      const rel =
+        relation ||
+        (person.is_applicant || person === beneficiaryPersonForForms
+          ? 'Self'
+          : 'Relative');
+      const label = name
+        ? `${name}${roleHint ? ` (${roleHint})` : ''}`
+        : roleHint || key;
+      opts.push({
+        value: key,
+        label,
+        name: name || label,
+        relation: rel,
+        age: age != null ? String(age) : '',
+      });
+    };
+
+    const ben = beneficiaryPersonForForms;
+    const benIsApplicant =
+      !!ben?.is_applicant ||
+      !!beneficiary.is_applicant ||
+      !!headAsBeneficiary?.is_applicant;
+    pushPerson(
+      'beneficiary',
+      ben,
+      benIsApplicant ? 'Self' : 'Beneficiary',
+      'Beneficiary',
+    );
+
+    if (spouse && personHasEnteredDetails(spouse) && spouse !== ben) {
+      pushPerson(
+        'spouse',
+        spouse,
+        humanizeRelation('spouse') || 'Spouse',
+        'Spouse',
+      );
+    }
+
+    familyHeads.forEach((h, hi) => {
+      if (!h) return;
+      if (headAsBeneficiary && h === headAsBeneficiary) {
+        // already as beneficiary
+      } else if (personHasEnteredDetails(h)) {
+        const rel =
+          humanizeRelation(h._relation_type) ||
+          humanizeRelation(h.family_head_type) ||
+          'Family head';
+        pushPerson(`head:${hi}`, h, rel, rel);
+      }
+      (h._family_members || []).forEach((m, mi) => {
+        if (!personHasEnteredDetails(m)) return;
+        const rel = humanizeRelation(m.relation_type) || 'Relative';
+        pushPerson(`head:${hi}:m:${mi}`, m, rel, rel);
+      });
+    });
+
+    beneficiaryMembers.forEach((m, mi) => {
+      if (!personHasEnteredDetails(m)) return;
+      const rel = humanizeRelation(m.relation_type) || 'Relative';
+      pushPerson(`bm:${mi}`, m, rel, rel);
+    });
+
+    return opts;
+  }, [
+    beneficiaryPersonForForms,
+    beneficiary.is_applicant,
+    headAsBeneficiary,
+    spouse,
+    familyHeads,
+    beneficiaryMembers,
+  ]);
+
+  // Default Health patient to Beneficiary; refresh name/relation/age when that person changes
+  useEffect(() => {
+    if (form.requested_aid_type !== 'health') return;
+    setHealthDetails((prev) => {
+      const cur = prev || emptyHealthDetails();
+      const key = cur.patient_key || 'beneficiary';
+      const opt =
+        healthPatientOptions.find((o) => o.value === key) ||
+        healthPatientOptions[0];
+      if (!opt) return cur;
+      const next = {
+        ...cur,
+        patient_key: opt.value,
+        patient_name: opt.name,
+        patient_relation: opt.relation,
+        patient_age: opt.age,
+      };
+      if (
+        cur.patient_key === next.patient_key &&
+        cur.patient_name === next.patient_name &&
+        cur.patient_relation === next.patient_relation &&
+        cur.patient_age === next.patient_age
+      ) {
+        return cur;
+      }
+      return next;
+    });
+  }, [form.requested_aid_type, healthPatientOptions]);
 
   /**
    * Zakat / Consent form subject: beneficiary for all programs,
@@ -2049,6 +2181,9 @@ const AidApplicationAddInner = () => {
         ...(form.requested_aid_type === 'education'
           ? { education_details: educationDetails }
           : {}),
+        ...(form.requested_aid_type === 'health'
+          ? { health_details: healthDetails }
+          : {}),
         ...(form.requested_aid_type === 'ration'
           ? { ration_details: rationDetails }
           : {}),
@@ -2507,6 +2642,15 @@ const AidApplicationAddInner = () => {
                         : emptyEducationDetails(),
                     );
                   }
+                  if (next === 'health') {
+                    setHealthDetails((prev) =>
+                      prev?.nature_of_illness != null ||
+                      prev?.disease_condition != null ||
+                      prev?.patient_key
+                        ? prev
+                        : emptyHealthDetails(),
+                    );
+                  }
                   if (next === 'ration') {
                     setRationDetails((prev) =>
                       prev?.family_had_wheat != null
@@ -2651,6 +2795,18 @@ const AidApplicationAddInner = () => {
               <AidEducationApplicationFields
                 value={educationDetails}
                 onChange={setEducationDetails}
+              />
+            )}
+            {form.requested_aid_type === 'health' && (
+              <AidHealthApplicationFields
+                value={healthDetails}
+                onChange={setHealthDetails}
+                patientOptions={healthPatientOptions}
+                subprogramLimit={
+                  form.expected_amount != null && form.expected_amount !== ''
+                    ? Number(form.expected_amount)
+                    : getAidProgram(form.aid_program)?.amount ?? null
+                }
               />
             )}
             {form.requested_aid_type === 'ration' && (
