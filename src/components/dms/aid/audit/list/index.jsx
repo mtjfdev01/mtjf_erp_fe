@@ -16,7 +16,12 @@ import {
   ClearButton,
   CollapsibleFilters,
 } from '../../../../common/filters';
+import SearchableDropdown from '../../../../common/SearchableDropdown';
 import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
+import {
+  formatAidUserLabel,
+  toAssignableAidUser,
+} from '../../shared/AidUserAssignField';
 import {
   AID_ENTRY_STAGES,
   AID_REQUEST_TYPES,
@@ -33,6 +38,7 @@ const EMPTY_FILTERS = {
   stage: '',
   requested_aid_type: '',
   district: '',
+  interacted_by_user_id: '',
   date: '',
   start_date: '',
   end_date: '',
@@ -58,6 +64,7 @@ const AidAuditList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [tempFilters, setTempFilters] = useState({ ...EMPTY_FILTERS });
   const [appliedFilters, setAppliedFilters] = useState({ ...EMPTY_FILTERS });
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const handleFilterChange = (key, value) => {
     setTempFilters((f) => {
@@ -75,6 +82,20 @@ const AidAuditList = () => {
     });
   };
 
+  const handleUserSelect = (user) => {
+    const next = toAssignableAidUser(user);
+    setSelectedUser(next);
+    handleFilterChange(
+      'interacted_by_user_id',
+      next?.id != null ? String(next.id) : '',
+    );
+  };
+
+  const handleUserClear = () => {
+    setSelectedUser(null);
+    handleFilterChange('interacted_by_user_id', '');
+  };
+
   const handleApplyFilters = () => {
     setAppliedFilters({ ...tempFilters });
     setCurrentPage(1);
@@ -83,6 +104,7 @@ const AidAuditList = () => {
   const handleClearFilters = () => {
     setTempFilters({ ...EMPTY_FILTERS });
     setAppliedFilters({ ...EMPTY_FILTERS });
+    setSelectedUser(null);
     setCurrentPage(1);
   };
 
@@ -105,6 +127,8 @@ const AidAuditList = () => {
           stage: appliedFilters.stage || undefined,
           requested_aid_type: appliedFilters.requested_aid_type || undefined,
           district: appliedFilters.district || undefined,
+          interacted_by_user_id:
+            appliedFilters.interacted_by_user_id || undefined,
           date: appliedFilters.date || undefined,
           start_date: appliedFilters.start_date || undefined,
           end_date: appliedFilters.end_date || undefined,
@@ -233,6 +257,43 @@ const AidAuditList = () => {
                 onFilterChange={handleFilterChange}
                 placeholder="All districts"
               />
+
+              <div className="dropdown-filter-container" style={{ minWidth: 240 }}>
+                <SearchableDropdown
+                  label="Interacted by user"
+                  placeholder="Search user…"
+                  apiEndpoint="/users/options"
+                  value={selectedUser}
+                  displayKey="name"
+                  onSelect={handleUserSelect}
+                  onClear={handleUserClear}
+                  debounceDelay={400}
+                  minSearchLength={1}
+                  allowResearch
+                  renderOption={(user, index, list) => (
+                    <div
+                      key={user.id}
+                      className="searchable-dropdown__option"
+                      onClick={() => handleUserSelect(user)}
+                      style={{
+                        padding: '10px 12px',
+                        borderBottom:
+                          Array.isArray(list) && index < list.length - 1
+                            ? '1px solid #eee'
+                            : 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <div style={{ fontWeight: 500 }}>
+                        {formatAidUserLabel(user)}
+                      </div>
+                      <div style={{ fontSize: 12, color: '#666' }}>
+                        {user.email}
+                      </div>
+                    </div>
+                  )}
+                />
+              </div>
 
               <DateFilter
                 filterKey="date"
