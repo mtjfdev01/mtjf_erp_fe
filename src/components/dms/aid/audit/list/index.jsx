@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiFileText } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import { hasAidPermission, isSuperAdmin } from '../../../../../utils/permissions';
@@ -30,6 +30,7 @@ import {
   formatAidRequestType,
   aidStatusTone,
 } from '../../aidConstants';
+import AidUserInteractionReport from '../AidUserInteractionReport';
 import '../../aid.css';
 
 const EMPTY_FILTERS = {
@@ -65,6 +66,7 @@ const AidAuditList = () => {
   const [tempFilters, setTempFilters] = useState({ ...EMPTY_FILTERS });
   const [appliedFilters, setAppliedFilters] = useState({ ...EMPTY_FILTERS });
   const [selectedUser, setSelectedUser] = useState(null);
+  const [reportOpen, setReportOpen] = useState(false);
 
   const handleFilterChange = (key, value) => {
     setTempFilters((f) => {
@@ -93,6 +95,7 @@ const AidAuditList = () => {
 
   const handleUserClear = () => {
     setSelectedUser(null);
+    setReportOpen(false);
     handleFilterChange('interacted_by_user_id', '');
   };
 
@@ -105,7 +108,20 @@ const AidAuditList = () => {
     setTempFilters({ ...EMPTY_FILTERS });
     setAppliedFilters({ ...EMPTY_FILTERS });
     setSelectedUser(null);
+    setReportOpen(false);
     setCurrentPage(1);
+  };
+
+  const openInteractionReport = () => {
+    if (!selectedUser?.id) return;
+    const next = {
+      ...tempFilters,
+      interacted_by_user_id: String(selectedUser.id),
+    };
+    setTempFilters(next);
+    setAppliedFilters(next);
+    setCurrentPage(1);
+    setReportOpen(true);
   };
 
   const fetchRows = useCallback(async () => {
@@ -321,6 +337,23 @@ const AidAuditList = () => {
             </div>
           </CollapsibleFilters>
 
+          {selectedUser?.id ? (
+            <div className="aid-audit-report-cta">
+              <p>
+                Selected user: <strong>{formatAidUserLabel(selectedUser)}</strong>
+                . Open a full interaction report using the current date and
+                filter values.
+              </p>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={openInteractionReport}
+              >
+                <FiFileText aria-hidden /> Show complete interaction report
+              </button>
+            </div>
+          ) : null}
+
           {error ? (
             <div className="status-message status-message--error">{error}</div>
           ) : null}
@@ -414,6 +447,13 @@ const AidAuditList = () => {
           />
         </div>
       </div>
+
+      <AidUserInteractionReport
+        open={reportOpen}
+        user={selectedUser}
+        filters={appliedFilters}
+        onClose={() => setReportOpen(false)}
+      />
     </>
   );
 };

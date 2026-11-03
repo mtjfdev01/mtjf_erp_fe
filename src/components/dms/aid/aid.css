@@ -5266,6 +5266,88 @@ a.aid-contact-chip:hover {
     transform 0.15s ease, opacity 0.15s ease;
 }
 
+.aid-audit-report-modal__panel {
+  width: min(960px, 100%);
+  max-height: min(90vh, 920px);
+  display: flex;
+  flex-direction: column;
+}
+
+.aid-audit-report-modal__body {
+  overflow: auto;
+  padding-bottom: 1rem;
+}
+
+.aid-audit-report-modal__kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.aid-audit-report-modal__kpis > div {
+  border: 1px solid #e2e8f0;
+  border-radius: 0.65rem;
+  background: #f8fafc;
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.aid-audit-report-modal__kpis span {
+  font-size: 0.75rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.aid-audit-report-modal__kpis strong {
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.aid-audit-report-modal__actions-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 0.85rem;
+}
+
+.aid-audit-report-modal__changes {
+  margin: 0;
+  padding-left: 1rem;
+  font-size: 0.82rem;
+  color: #475569;
+}
+
+.aid-audit-report-modal__pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.aid-audit-report-cta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin: 0 0 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 0.65rem;
+  background: #eff6ff;
+}
+
+.aid-audit-report-cta p {
+  margin: 0;
+  flex: 1;
+  min-width: 12rem;
+  font-size: 0.875rem;
+  color: #1e3a8a;
+}
+
 .aid-rec-modal__actions .secondary-btn {
   border: 1px solid #dbe3ef;
   background: #fff;
