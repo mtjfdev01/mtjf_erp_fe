@@ -55,6 +55,11 @@ const CreateUser = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showPermissionsModal, setShowPermissionsModal] = useState(false);
   const [userPermissions, setUserPermissions] = useState({});
+  const [permissionRoleId, setPermissionRoleId] = useState('');
+  const [permissionRoleOptions, setPermissionRoleOptions] = useState([
+    { value: '', label: 'None — set privileges manually' },
+  ]);
+  const [loadingRolePerms, setLoadingRolePerms] = useState(false);
 
   const [geographicAssignments, setGeographicAssignments] = useState(
     EMPTY_GEOGRAPHIC_ASSIGNMENTS,
@@ -62,6 +67,63 @@ const CreateUser = () => {
   const [geographicOff, setGeographicOff] = useState(false);
 
   const showGeographicAssignment = isGeographicAssignmentDepartment(form.department);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axiosInstance.get('/permission-roles', {
+          params: { activeOnly: true },
+        });
+        const list = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+            ? res.data
+            : [];
+        if (cancelled) return;
+        setPermissionRoleOptions([
+          { value: '', label: 'None — set privileges manually' },
+          ...list.map((r) => ({
+            value: String(r.id),
+            label: r.name,
+          })),
+        ]);
+      } catch {
+        /* optional — create user still works without templates */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handlePermissionRoleChange = async (e) => {
+    const nextId = e.target.value;
+    setPermissionRoleId(nextId);
+    if (error) setError('');
+    if (!nextId) return;
+
+    setLoadingRolePerms(true);
+    try {
+      const res = await axiosInstance.get(`/permission-roles/${nextId}`);
+      const row = res.data?.data || res.data;
+      const perms =
+        row?.permissions && typeof row.permissions === 'object'
+          ? JSON.parse(JSON.stringify(row.permissions))
+          : {};
+      setUserPermissions(perms);
+      toast.success(
+        `Loaded privileges from role "${row?.name || 'template'}". You can still adjust them.`,
+      );
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message || 'Failed to load role privileges',
+      );
+      setPermissionRoleId('');
+    } finally {
+      setLoadingRolePerms(false);
+    }
+  };
 
   const handleManagersSelect = (users) => {
     const next = Array.isArray(users) ? users : [];
@@ -188,6 +250,9 @@ const CreateUser = () => {
         ...sanitizedForm,
         user_code: sanitizedForm.user_code?.trim() || null,
         permissions: userPermissions,
+        permission_role_id: permissionRoleId
+          ? Number(permissionRoleId)
+          : null,
         manager_ids: Array.isArray(form.manager_ids)
           ? form.manager_ids.map(Number).filter((n) => Number.isFinite(n) && n > 0)
           : [],
@@ -231,6 +296,7 @@ const CreateUser = () => {
       
       // Reset permissions and geographic assignments
       setUserPermissions({});
+      setPermissionRoleId('');
       setGeographicAssignments(EMPTY_GEOGRAPHIC_ASSIGNMENTS);
       setGeographicOff(false);
       navigate('/admin/users');
@@ -417,10 +483,19 @@ const CreateUser = () => {
 
               <FormSelect
                 name="role"
-                label="Role"
+                label="Job Role"
                 value={form.role}
                 options={availableRoles}
                 onChange={handleChange}
+              />
+
+              <FormSelect
+                name="permission_role_id"
+                label="Permission Role Template"
+                value={permissionRoleId}
+                options={permissionRoleOptions}
+                onChange={handlePermissionRoleChange}
+                disabled={loadingRolePerms}
               />
 
               <SearchableMultiSelect
@@ -491,14 +566,20 @@ const CreateUser = () => {
               </div>
             )}
 
+            <p className="status-message" style={{ marginTop: '1rem' }}>
+              Optional: pick a <strong>Permission Role Template</strong> to
+              seed privileges (same ACL as Manage Permissions). You can still
+              open Manage Permissions to tweak before creating. Editing a
+              template later does not change this user.
+            </p>
+
             <div className="form-actions">
-
-
               <button
                 type="button"
                 className="secondary_btn"
                 onClick={() => setShowPermissionsModal(true)}
                 style={{ marginTop: '10px' }}
+                disabled={loadingRolePerms}
               >
                 <FiShield style={{ marginRight: '5px' }} />
                 Manage Permissions
@@ -506,7 +587,7 @@ const CreateUser = () => {
               <button
                 type="submit"
                 className="primary_btn"
-                disabled={isSubmitting}
+                disabled={isSubmitting || loadingRolePerms}
               >
                 {isSubmitting ? 'Creating...' : 'Create User'}
               </button>
