@@ -82,7 +82,17 @@ const AidConsentForm = ({
   applicationNo,
   uiLang,
 }) => {
-  const details = { ...emptyConsentForm(), ...(value || {}) };
+  const details = {
+    ...emptyConsentForm(),
+    ...(value || {}),
+    full_name: value?.full_name || value?.applicant_name || '',
+    parentage_or_spouse:
+      value?.parentage_or_spouse || value?.applicant_parentage || '',
+    cnic: value?.cnic || value?.applicant_cnic || '',
+    applicant_thumb: value?.applicant_thumb || value?.receiver_thumb || null,
+    applicant_signature:
+      value?.applicant_signature || value?.receiver_signature || null,
+  };
   const lang = details.lang === 'en' ? 'en' : 'ur';
   const t = COPY[lang];
   const rtl = lang === 'ur';

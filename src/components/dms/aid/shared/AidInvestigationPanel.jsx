@@ -13,12 +13,28 @@ export const AID_RECOMMENDATION_DECISIONS = [
   { value: 'not_recommend', label: 'Not Recommend' },
 ];
 
+/** Sentinel stored in period_months for ongoing / lifetime support. */
+export const AID_RECOMMENDATION_LIFETIME_MONTHS = 9999;
+
 export const AID_RECOMMENDATION_PERIODS = [
   { value: 1, label: '1 month' },
   { value: 3, label: '3 months' },
   { value: 6, label: '6 months' },
   { value: 12, label: '12 months' },
+  { value: AID_RECOMMENDATION_LIFETIME_MONTHS, label: 'Life Time' },
 ];
+
+export const formatRecommendationPeriod = (months) => {
+  if (months == null || months === '') return '—';
+  const n = Number(months);
+  const hit = AID_RECOMMENDATION_PERIODS.find((p) => Number(p.value) === n);
+  if (hit) return hit.label;
+  if (Number.isFinite(n) && n > 0) return `${n} months`;
+  return '—';
+};
+
+export const isLifetimeRecommendationPeriod = (months) =>
+  Number(months) === AID_RECOMMENDATION_LIFETIME_MONTHS;
 
 /** Manager/CEO ration package picks */
 export const AID_RATION_REC_OPTIONS = [
@@ -537,6 +553,8 @@ const AidInvestigationPanel = ({
   showVulnerability,
   /** Allow editing recommendation even when checklist is locked (manager override). */
   recommendationEditable = false,
+  /** Unconditionally lock/disable recommendation section (e.g. after CEO rejection) */
+  recommendationDisabled = false,
   remarksLabel = 'Investigator remarks',
   /** Application aid type — ration uses package checkboxes for manager/CEO edit */
   aidType = null,
@@ -578,7 +596,7 @@ const AidInvestigationPanel = ({
     showRecForm ||
     Boolean(onSubmitReport) ||
     Boolean(onSaveProgress);
-  const recLocked = disabled && !recommendationEditable;
+  const recLocked = recommendationDisabled || (disabled && !recommendationEditable);
   const isRationAid = String(aidType || '').toLowerCase() === 'ration';
   const rationOverrideMode =
     Boolean(rationPackageMode) || (recommendationEditable && isRationAid);

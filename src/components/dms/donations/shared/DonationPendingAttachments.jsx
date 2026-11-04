@@ -176,6 +176,8 @@ export async function uploadPendingEntityAttachments({
   entityId,
   items,
   uploadPath,
+  /** Extra FormData fields (e.g. installment_ids for shared recurring attach) */
+  extraFields = null,
 }) {
   if (!entityId || !items?.length) return { uploaded: 0, failed: 0 };
 
@@ -189,6 +191,12 @@ export async function uploadPendingEntityAttachments({
       if (item.name) {
         formData.append('description', item.name);
         formData.append('name', item.name);
+      }
+      if (extraFields && typeof extraFields === 'object') {
+        Object.entries(extraFields).forEach(([key, value]) => {
+          if (value == null || value === '') return;
+          formData.append(key, String(value));
+        });
       }
       await axiosInstance.post(uploadPath(entityId), formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
@@ -220,11 +228,17 @@ export async function uploadPendingRecurringDonationAttachments({
   axiosInstance,
   recurringDonationId,
   items,
+  /** When set, same file is linked to each installment under this subscription */
+  installmentIds = null,
 }) {
+  const ids = Array.isArray(installmentIds)
+    ? installmentIds.filter((n) => Number.isFinite(Number(n)) && Number(n) > 0)
+    : [];
   return uploadPendingEntityAttachments({
     axiosInstance,
     entityId: recurringDonationId,
     items,
     uploadPath: (id) => `/recurring-donations/${id}/attachments/upload`,
+    extraFields: ids.length ? { installment_ids: ids.join(',') } : null,
   });
 }

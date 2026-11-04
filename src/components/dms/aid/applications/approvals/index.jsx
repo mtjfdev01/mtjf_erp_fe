@@ -32,6 +32,7 @@ import {
 } from '../../aidConstants';
 import {
   AID_RATION_REC_OPTIONS,
+  formatRecommendationPeriod,
   normalizeRationOptions,
 } from '../../shared/AidInvestigationPanel';
 import AidRationRecommendationModal from '../../shared/AidRationRecommendationModal';
@@ -612,7 +613,9 @@ const AidApprovalsList = () => {
                             <div style={{ fontSize: 12, color: '#64748b' }}>
                               PKR {rec.amount}
                               {rec.period_months
-                                ? ` · ${rec.period_months} mo`
+                                ? ` · ${formatRecommendationPeriod(
+                                    rec.period_months,
+                                  )}`
                                 : ''}
                             </div>
                           ) : null}

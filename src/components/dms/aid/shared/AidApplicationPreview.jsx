@@ -10,12 +10,18 @@ import {
   formatVulnerability,
   calcAgeFromDob,
   formatEducation,
+  isWheelchairConsentProgram,
+  isWheelchairConsentForm,
 } from '../aidConstants';
+import AidCollapsibleSection from './AidCollapsibleSection';
+import AidZakatPermissionForm from './AidZakatPermissionForm';
+import AidConsentForm from './AidConsentForm';
+import AidWheelchairConsentForm from './AidWheelchairConsentForm';
 import {
   normalizeInvestigationEntry,
-  AID_RECOMMENDATION_PERIODS,
   AID_RATION_REC_OPTIONS,
   formatRecommendationDecision,
+  formatRecommendationPeriod,
   isNegativeRecommendation,
   normalizeRationOptions,
   normalizeRecommendationDecision,
@@ -238,9 +244,7 @@ const statusLabel = (status) => {
 const decisionLabel = (decision) =>
   decision ? formatRecommendationDecision(decision) : dash(decision);
 
-const periodLabel = (months) =>
-  AID_RECOMMENDATION_PERIODS.find((p) => Number(p.value) === Number(months))
-    ?.label || (months ? `${months} months` : '—');
+const periodLabel = (months) => formatRecommendationPeriod(months);
 
 /**
  * Formal Beneficiary Registration + Investigation & Approval preview (2 pages).
@@ -265,6 +269,10 @@ const AidApplicationPreview = ({
   const page1Ref = useRef(null);
   const page2Ref = useRef(null);
   const bothRef = useRef(null);
+  const zakatPrintRef = useRef(null);
+  const consentPrintRef = useRef(null);
+  const zakatDetailsRef = useRef(null);
+  const consentDetailsRef = useRef(null);
   const [meal, setMeal] = useState(() =>
     normalizeMealReview(app?.meal_review),
   );
@@ -596,6 +604,24 @@ const AidApplicationPreview = ({
     printAidElement(bothRef.current, { fitSinglePage: false });
   const handlePrintPage1 = () => printAidElement(page1Ref.current);
   const handlePrintPage2 = () => printAidElement(page2Ref.current);
+  const handlePrintZakat = () => {
+    if (zakatDetailsRef.current && !zakatDetailsRef.current.open) {
+      zakatDetailsRef.current.open = true;
+    }
+    printAidElement(zakatPrintRef.current);
+  };
+  const handlePrintConsent = () => {
+    if (consentDetailsRef.current && !consentDetailsRef.current.open) {
+      consentDetailsRef.current.open = true;
+    }
+    printAidElement(consentPrintRef.current);
+  };
+
+  const consentTitle =
+    isWheelchairConsentProgram(app.aid_program) ||
+    isWheelchairConsentForm(app.consent_form)
+      ? 'Wheelchair Affidavit / Consent'
+      : 'Consent Form';
 
   return (
     <section className="aid-section aid-section--flush aid-preview-section">
@@ -610,6 +636,12 @@ const AidApplicationPreview = ({
           </button>
           <button type="button" className="secondary-btn" onClick={handlePrintPage2}>
             Print page 2
+          </button>
+          <button type="button" className="secondary-btn" onClick={handlePrintZakat}>
+            Print zakat
+          </button>
+          <button type="button" className="secondary-btn" onClick={handlePrintConsent}>
+            Print consent
           </button>
           <button type="button" className="primary-btn" onClick={handlePrintAll}>
             Print both
@@ -664,8 +696,14 @@ const AidApplicationPreview = ({
             <Cell label="Applicant name">{dash(applicant.full_name)}</Cell>
             <Cell label="CNIC no.">{dash(applicant.cnic)}</Cell>
             <Cell label="Contact no.">{dash(applicant.phone)}</Cell>
-            <Cell label="Permanent address" span={1}>
+            <Cell label="Permanent address">
               {dash(applicant.address)}
+            </Cell>
+            <Cell label="Current address">
+              {dash(applicant.current_address)}
+            </Cell>
+            <Cell label="Land Mark">
+              {dash(applicant.landmark || applicant.land_mark)}
             </Cell>
             <Cell label="City">{dash(applicant.city)}</Cell>
             <Cell label="District / Province">
@@ -707,6 +745,12 @@ const AidApplicationPreview = ({
                 : beneficiary.has_disability === false
                   ? 'No'
                   : dash(formatVulnerability(beneficiary.vulnerability))}
+            </Cell>
+            <Cell label="Current address">
+              {dash(beneficiary.current_address)}
+            </Cell>
+            <Cell label="Land Mark">
+              {dash(beneficiary.landmark || beneficiary.land_mark)}
             </Cell>
             <Cell label="Residence type">
               {housing || 'Not recorded'}
@@ -1395,6 +1439,101 @@ const AidApplicationPreview = ({
             <span>Page 2 of 2</span>
           </footer>
         </div>
+      </div>
+
+      <div className="aid-preview-collapsed-forms" style={{ marginTop: 20 }}>
+        <AidCollapsibleSection
+          ref={zakatDetailsRef}
+          title="Zakat Permission Letter"
+          hint="Click to expand"
+          actions={
+            <button
+              type="button"
+              className="secondary-btn"
+              style={{ padding: '3px 8px', fontSize: 12 }}
+              onClick={handlePrintZakat}
+            >
+              Print zakat
+            </button>
+          }
+        >
+          <div className="aid-printable-doc" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
+            <div className="aid-printable__toolbar no-print">
+              <p className="aid-printable__toolbar-hint">
+                Zakat Permission Letter
+              </p>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={handlePrintZakat}
+              >
+                Print zakat
+              </button>
+            </div>
+            <div
+              ref={zakatPrintRef}
+              id="aid-zakat-printable"
+              className="aid-printable aid-printable--form"
+            >
+              <AidZakatPermissionForm
+                value={app.zakat_permission || {}}
+                applicationNo={app.application_no}
+                readOnly
+              />
+            </div>
+          </div>
+        </AidCollapsibleSection>
+
+        <AidCollapsibleSection
+          ref={consentDetailsRef}
+          title={consentTitle}
+          hint="Click to expand"
+          actions={
+            <button
+              type="button"
+              className="secondary-btn"
+              style={{ padding: '3px 8px', fontSize: 12 }}
+              onClick={handlePrintConsent}
+            >
+              Print consent
+            </button>
+          }
+        >
+          <div className="aid-printable-doc" style={{ marginTop: 0, paddingTop: 0, borderTop: 'none' }}>
+            <div className="aid-printable__toolbar no-print">
+              <p className="aid-printable__toolbar-hint">
+                {consentTitle}
+              </p>
+              <button
+                type="button"
+                className="primary-btn"
+                onClick={handlePrintConsent}
+              >
+                Print consent
+              </button>
+            </div>
+            <div
+              ref={consentPrintRef}
+              id="aid-consent-printable"
+              className="aid-printable aid-printable--form"
+            >
+              {isWheelchairConsentProgram(app.aid_program) ||
+              isWheelchairConsentForm(app.consent_form) ? (
+                <AidWheelchairConsentForm
+                  value={app.consent_form || {}}
+                  applicationNo={app.application_no}
+                  readOnly
+                />
+              ) : (
+                <AidConsentForm
+                  value={app.consent_form || { variant: 'media' }}
+                  applicationNo={app.application_no}
+                  readOnly
+                />
+              )}
+            </div>
+          </div>
+        </AidCollapsibleSection>
       </div>
     </section>
   );

@@ -20,7 +20,6 @@ import AidCleanWaterSurveyForm from '../../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../../shared/AidConsentForm';
 import AidWheelchairConsentForm from '../../../shared/AidWheelchairConsentForm';
-import AidMarriageGiftConsentForm from '../../../shared/AidMarriageGiftConsentForm';
 import AidCollapsibleSection from '../../../shared/AidCollapsibleSection';
 import AidPersonProfileCard, {
   AidFamilyMemberLine,
@@ -28,7 +27,6 @@ import AidPersonProfileCard, {
 } from '../../../shared/AidPersonProfileCard';
 import AidFamilyTreePanel from '../../../shared/AidFamilyTreePanel';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
-import AidApplicationPrintable from '../../../shared/AidApplicationPrintable';
 import AidApplicationPreview from '../../../shared/AidApplicationPreview';
 import AidInvestigationPanel, {
   AID_RATION_REC_OPTIONS,
@@ -51,8 +49,6 @@ import {
   formatExpectedAmount,
   isWheelchairConsentProgram,
   isWheelchairConsentForm,
-  isMarriageGiftConsentProgram,
-  isMarriageGiftConsentForm,
 } from '../../../aidConstants';
 import { formatAuditActor } from '../../../../../common/audit/auditHistoryLabels';
 import '../../../aid.css';
@@ -64,12 +60,11 @@ const isSponsorshipDependent = (notes) =>
 
 const ENTRY_TABS_BASE = [
   { id: 'application', label: 'Application' },
+  { id: 'applicant', label: 'Applicant' },
   { id: 'beneficiary', label: 'Beneficiary' },
   { id: 'family', label: 'Family' },
-  { id: 'family_tree', label: 'Family Tree' },
   { id: 'attachments', label: 'Attachments' },
   { id: 'preview', label: 'Preview' },
-  { id: 'printable', label: 'Printable' },
   { id: 'verification', label: 'Verification' },
 ];
 
@@ -111,6 +106,14 @@ const AidEntryApplicationView = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [panelTab, setPanelTab] = useState('application');
+  const activePanelTab =
+    panelTab === 'writer'
+      ? 'applicant'
+      : panelTab === 'family_tree'
+        ? 'family'
+        : panelTab === 'printable'
+          ? 'preview'
+          : panelTab;
   const [approving, setApproving] = useState(false);
   const [assignUser, setAssignUser] = useState(null);
   const [showApprovePanel, setShowApprovePanel] = useState(false);
@@ -283,12 +286,16 @@ const AidEntryApplicationView = () => {
   }
 
   const status = app.status;
+  const isCeoRejected =
+    String(app?.ceo_approval_status || '').toLowerCase() === 'rejected' ||
+    String(status || '').toLowerCase() === 'rejected';
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
   const managerCanEditRecommendation =
+    !isCeoRejected &&
     isProgramDeptManager &&
     !recBusy &&
-    ['verification_completed', 'manager_review', 'rejected'].includes(
+    ['verification_completed', 'manager_review'].includes(
       String(status || '').toLowerCase(),
     );
   const rationOverrideEdit = isRationApp && managerCanEditRecommendation;
@@ -376,14 +383,20 @@ const AidEntryApplicationView = () => {
     }
   };
 
+  const attachIdx = ENTRY_TABS_BASE.findIndex((t) => t.id === 'attachments');
   const ENTRY_TABS =
     String(app.requested_aid_type || '').toLowerCase() === 'clean_water'
       ? [
-          ...ENTRY_TABS_BASE.slice(0, 5),
+          ...ENTRY_TABS_BASE.slice(0, attachIdx + 1),
           { id: 'survey', label: 'Survey' },
-          ...ENTRY_TABS_BASE.slice(5),
+          ...ENTRY_TABS_BASE.slice(attachIdx + 1),
         ]
       : ENTRY_TABS_BASE;
+  const isSelf =
+    !app.writer ||
+    app.writer.id === app.beneficiary?.id ||
+    String(app.writer_relation || '').toLowerCase() === 'self';
+  const applicantPerson = isSelf ? app.beneficiary : app.writer || app.beneficiary;
   const tree = familyTree || {};
   const fromTree = FAMILY_GROUPS.flatMap((g) =>
     (tree[g.key] || []).map((row) => ({ ...row, group: g.label })),
@@ -525,8 +538,8 @@ const AidEntryApplicationView = () => {
                 key={t.id}
                 type="button"
                 role="tab"
-                aria-selected={panelTab === t.id}
-                className={`aid-tab ${panelTab === t.id ? 'aid-tab--active' : ''}`}
+                aria-selected={activePanelTab === t.id}
+                className={`aid-tab ${activePanelTab === t.id ? 'aid-tab--active' : ''}`}
                 onClick={() => setPanelTab(t.id)}
               >
                 {t.label}
@@ -535,7 +548,7 @@ const AidEntryApplicationView = () => {
           </div>
 
           <div className="aid-panel__body">
-            {panelTab === 'application' && (
+            {activePanelTab === 'application' && (
               <section className="aid-section aid-section--flush">
                 <div className="aid-fact-grid aid-fact-grid--case">
                   <Fact label="Case source">
@@ -647,12 +660,7 @@ const AidEntryApplicationView = () => {
                     isWheelchairConsentProgram(app.aid_program) ||
                     isWheelchairConsentForm(app.consent_form)
                       ? 'Wheelchair Affidavit / Consent'
-                      : isMarriageGiftConsentProgram(
-                            app.requested_aid_type,
-                            app.aid_program,
-                          ) || isMarriageGiftConsentForm(app.consent_form)
-                        ? 'Marriage Gift Receipt / Consent'
-                        : 'Consent Form'
+                      : 'Consent Form'
                   }
                   hint="Attached to every application"
                   actions={
@@ -675,15 +683,6 @@ const AidEntryApplicationView = () => {
                         applicationNo={app.application_no}
                         readOnly
                       />
-                    ) : isMarriageGiftConsentProgram(
-                        app.requested_aid_type,
-                        app.aid_program,
-                      ) || isMarriageGiftConsentForm(app.consent_form) ? (
-                      <AidMarriageGiftConsentForm
-                        value={app.consent_form || {}}
-                        applicationNo={app.application_no}
-                        readOnly
-                      />
                     ) : (
                       <AidConsentForm
                         value={
@@ -700,7 +699,22 @@ const AidEntryApplicationView = () => {
               </section>
             )}
 
-            {panelTab === 'beneficiary' && (
+            {activePanelTab === 'applicant' && (
+              <section className="aid-section aid-section--flush">
+                <AidPersonProfileCard
+                  person={applicantPerson}
+                  title="Applicant"
+                  relation={isSelf ? 'Self' : app.writer_relation}
+                  roles={{
+                    applicant: true,
+                    beneficiary: isSelf,
+                  }}
+                  attachments={attachments}
+                />
+              </section>
+            )}
+
+            {activePanelTab === 'beneficiary' && (
               <section className="aid-section aid-section--flush">
                 <AidPersonProfileCard
                   person={app.beneficiary}
@@ -717,8 +731,25 @@ const AidEntryApplicationView = () => {
               </section>
             )}
 
-            {panelTab === 'family' && (
+            {activePanelTab === 'family' && (
               <section className="aid-section aid-section--flush">
+                <div style={{ marginBottom: 16 }}>
+                  <AidFamilyTreePanel
+                    apiTree={familyTree || {}}
+                    rootPerson={app.beneficiary}
+                    familyHeadHint={
+                      app.writer &&
+                      app.writer.id !== app.beneficiary?.id &&
+                      String(app.writer_relation || '').toLowerCase() !== 'self'
+                        ? app.writer
+                        : null
+                    }
+                    familyHeadRelation={app.writer_relation || ''}
+                    showHeader={false}
+                    emptyHint="No linked family tree for this beneficiary yet."
+                  />
+                </div>
+
                 {hasFamily ? (
                   <>
                     {app.writer &&
@@ -798,26 +829,7 @@ const AidEntryApplicationView = () => {
               </section>
             )}
 
-            {panelTab === 'family_tree' && (
-              <section className="aid-section aid-section--flush">
-                <AidFamilyTreePanel
-                  apiTree={familyTree || {}}
-                  rootPerson={app.beneficiary}
-                  familyHeadHint={
-                    app.writer &&
-                    app.writer.id !== app.beneficiary?.id &&
-                    String(app.writer_relation || '').toLowerCase() !== 'self'
-                      ? app.writer
-                      : null
-                  }
-                  familyHeadRelation={app.writer_relation || ''}
-                  showHeader={false}
-                  emptyHint="No linked family tree for this beneficiary yet."
-                />
-              </section>
-            )}
-
-            {panelTab === 'survey' &&
+            {activePanelTab === 'survey' &&
               String(app.requested_aid_type || '').toLowerCase() ===
                 'clean_water' && (
                 <section className="aid-section aid-section--flush">
@@ -835,7 +847,7 @@ const AidEntryApplicationView = () => {
                 </section>
               )}
 
-            {panelTab === 'attachments' && (
+            {activePanelTab === 'attachments' && (
               <section className="aid-section aid-section--flush">
                 {attachments.length === 0 ? (
                   <p className="aid-empty-note">No attachments on this entry.</p>
@@ -863,7 +875,7 @@ const AidEntryApplicationView = () => {
               </section>
             )}
 
-            {panelTab === 'preview' && (
+            {activePanelTab === 'preview' && (
               <AidApplicationPreview
                 app={app}
                 familyTree={familyTree}
@@ -880,20 +892,7 @@ const AidEntryApplicationView = () => {
               />
             )}
 
-            {panelTab === 'printable' && (
-              <AidApplicationPrintable
-                app={app}
-                familyTree={familyTree}
-                kinship={kinship}
-                preparedBy={
-                  app.created_by
-                    ? formatAuditActor(app.created_by)
-                    : undefined
-                }
-              />
-            )}
-
-            {panelTab === 'verification' && (
+            {activePanelTab === 'verification' && (
               <section className="aid-section aid-section--flush">
                 {verificationError ? (
                   <div className="error-message">{verificationError}</div>
@@ -954,7 +953,21 @@ const AidEntryApplicationView = () => {
                         Notes: {app.verification_notes}
                       </p>
                     ) : null}
-                    {managerCanEditRecommendation ? (
+                    {isCeoRejected ? (
+                      <p
+                        className="aid-section-hint"
+                        style={{
+                          marginTop: 0,
+                          color: '#dc2626',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Application rejected by CEO — recommendation is locked and cannot be edited.
+                        {app.ceo_rejection_reason
+                          ? ` (Reason: ${app.ceo_rejection_reason})`
+                          : ''}
+                      </p>
+                    ) : managerCanEditRecommendation ? (
                       <p className="aid-section-hint" style={{ marginTop: 0 }}>
                         Program manager: you can edit the Recommendation and
                         submit for CEO approval.
@@ -980,6 +993,7 @@ const AidEntryApplicationView = () => {
                           .length > 0
                       }
                       showVulnerability
+                      recommendationDisabled={isCeoRejected}
                       recommendationEditable={managerCanEditRecommendation}
                       aidType={app.requested_aid_type}
                       rationPackageMode={

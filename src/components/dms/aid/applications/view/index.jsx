@@ -26,7 +26,6 @@ import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidWheelchairConsentForm from '../../shared/AidWheelchairConsentForm';
-import AidMarriageGiftConsentForm from '../../shared/AidMarriageGiftConsentForm';
 import AidApplicationPreview from '../../shared/AidApplicationPreview';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import { printAidElement } from '../../shared/printAidElement';
@@ -37,6 +36,7 @@ import AidInvestigationPanel, {
   emptyRecommendation,
   enrichInvestigationFromAttachments,
   formatRecommendationDecision,
+  formatRecommendationPeriod,
   isInvestigationComplete,
   isNegativeRecommendation,
   isRecommendationComplete,
@@ -60,8 +60,6 @@ import {
   formatExpectedAmount,
   isWheelchairConsentProgram,
   isWheelchairConsentForm,
-  isMarriageGiftConsentProgram,
-  isMarriageGiftConsentForm,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -439,18 +437,22 @@ const AidApplicationView = () => {
     investigationItems,
     investigation,
   );
+  const isCeoRejected =
+    String(app?.ceo_approval_status || '').toLowerCase() === 'rejected' ||
+    String(status || '').toLowerCase() === 'rejected';
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
   /**
-   * Program manager may override investigator Recommendation (including old-flow
-   * investigator Reject → status rejected) and forward to CEO.
+   * Program manager may forward to CEO, but never after CEO rejection.
    */
   const showManagerForward =
+    !isCeoRejected &&
     isProgramDeptManager &&
-    ['manager_review', 'verification_completed', 'rejected'].includes(status);
+    ['manager_review', 'verification_completed'].includes(status);
   const showVerify =
     canInvestigate && ['submitted', 'under_review'].includes(status);
   const managerCanEditRecommendation =
+    !isCeoRejected &&
     isProgramDeptManager &&
     !busy &&
     ![
@@ -459,6 +461,7 @@ const AidApplicationView = () => {
       'delivered',
       'incomplete',
       'incomplete_docs',
+      'rejected',
     ].includes(status);
   /** Manager / CEO (and Program manager → CEO) ration edit: checkboxes + remarks only */
   const rationOverrideEdit =
@@ -1158,12 +1161,7 @@ const AidApplicationView = () => {
                     isWheelchairConsentProgram(app.aid_program) ||
                     isWheelchairConsentForm(app.consent_form)
                       ? 'Wheelchair Affidavit / Consent'
-                      : isMarriageGiftConsentProgram(
-                            app.requested_aid_type,
-                            app.aid_program,
-                          ) || isMarriageGiftConsentForm(app.consent_form)
-                        ? 'Marriage Gift Receipt / Consent'
-                        : 'Consent Form'
+                      : 'Consent Form'
                   }
                   hint="Attached to every application"
                   actions={
@@ -1182,15 +1180,6 @@ const AidApplicationView = () => {
                     {isWheelchairConsentProgram(app.aid_program) ||
                     isWheelchairConsentForm(app.consent_form) ? (
                       <AidWheelchairConsentForm
-                        value={app.consent_form || {}}
-                        applicationNo={app.application_no}
-                        readOnly
-                      />
-                    ) : isMarriageGiftConsentProgram(
-                        app.requested_aid_type,
-                        app.aid_program,
-                      ) || isMarriageGiftConsentForm(app.consent_form) ? (
-                      <AidMarriageGiftConsentForm
                         value={app.consent_form || {}}
                         applicationNo={app.application_no}
                         readOnly
@@ -1346,6 +1335,7 @@ const AidApplicationView = () => {
                     'marriage_certificate',
                     'education_certificate',
                     'e_stamp_paper',
+                    'others',
                     'zakat',
                     'consent',
                     'delivery',
@@ -1524,6 +1514,21 @@ const AidApplicationView = () => {
                           permission.
                         </p>
                       ) : null}
+                      {isCeoRejected && (
+                        <p
+                          className="aid-section-hint"
+                          style={{
+                            marginTop: 0,
+                            color: '#dc2626',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Application rejected by CEO — recommendation is locked and cannot be edited.
+                          {app.ceo_rejection_reason
+                            ? ` (Reason: ${app.ceo_rejection_reason})`
+                            : ''}
+                        </p>
+                      )}
                       <AidInvestigationPanel
                         items={investigationItems}
                         value={investigation}
@@ -1534,6 +1539,7 @@ const AidApplicationView = () => {
                           activePanelTab === 'field_process'
                         }
                         showVulnerability={activePanelTab === 'field_process'}
+                        recommendationDisabled={isCeoRejected}
                         recommendationEditable={managerCanEditRecommendation}
                         aidType={app.requested_aid_type}
                         rationPackageMode={!!rationOverrideEdit}
@@ -1704,7 +1710,9 @@ const AidApplicationView = () => {
                               ? ` · PKR ${app.investigation_recommendation.amount}`
                               : ''}
                             {app.investigation_recommendation.period_months
-                              ? ` · ${app.investigation_recommendation.period_months} months`
+                              ? ` · ${formatRecommendationPeriod(
+                                  app.investigation_recommendation.period_months,
+                                )}`
                               : ''}
                           </p>
                         )}

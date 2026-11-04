@@ -322,14 +322,20 @@ const AidApplicationDocsIntake = ({
                       {doc.multiple
                         ? files.length
                           ? t('addMoreFiles')
-                          : t('chooseFiles')
+                          : doc.imagesOnly
+                            ? t('chooseImages')
+                            : t('chooseFiles')
                         : t('chooseFile')}
                     </span>
                     <input
                       type="file"
                       disabled={disabled}
                       multiple={!!doc.multiple}
-                      accept=".pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf"
+                      accept={
+                        doc.imagesOnly
+                          ? '.jpg,.jpeg,.png,.webp,image/*'
+                          : '.pdf,.jpg,.jpeg,.png,.webp,image/*,application/pdf'
+                      }
                       onChange={(e) => {
                         addFiles(doc, e.target.files);
                         e.target.value = '';
@@ -340,7 +346,11 @@ const AidApplicationDocsIntake = ({
                 <div className="aid-app-docs__slot-head-right">
                   {renderMissingToggle(doc.value)}
                   <span>
-                    {doc.multiple ? t('multiple') : t('optional')}
+                    {doc.multiple
+                      ? doc.imagesOnly
+                        ? t('multipleImages')
+                        : t('multiple')
+                      : t('optional')}
                   </span>
                 </div>
               </div>

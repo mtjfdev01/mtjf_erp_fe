@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import ConfirmationModal from '../../../common/ConfirmationModal';
+import FormInput from '../../../common/FormInput';
+import FormSelect from '../../../common/FormSelect';
 import {
   FiRepeat,
   FiUser,
@@ -14,11 +17,16 @@ import {
   FiX,
   FiTrash2,
   FiPaperclip,
+  FiPlus,
 } from 'react-icons/fi';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission, isSuperAdmin, canReconcileRecurring } from '../../../../utils/permissions';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 import RecurringAttachmentPanel from '../shared/RecurringAttachmentPanel';
+import DonationPendingAttachments, {
+  uploadPendingRecurringDonationAttachments,
+} from '../../donations/shared/DonationPendingAttachments';
+import './recurringDonationView.css';
 
 const INSTALLMENT_STATUS_OPTIONS = [
   { value: 'pending', label: 'Pending' },
@@ -51,6 +59,19 @@ const RecurringDonationView = () => {
   const [deleteSubTarget, setDeleteSubTarget] = useState(false);
   const [deletingSub, setDeletingSub] = useState(false);
   const [installmentAttachmentTarget, setInstallmentAttachmentTarget] = useState(null);
+  const [showAddInstallments, setShowAddInstallments] = useState(false);
+  const [addInstForm, setAddInstForm] = useState({
+    count: '1',
+    status: 'pending',
+    amount: '',
+  });
+  const [addInstPendingFiles, setAddInstPendingFiles] = useState([]);
+  const addInstAttachmentsRef = useRef(null);
+  const [addingInstallments, setAddingInstallments] = useState(false);
+  const [attachingToSelected, setAttachingToSelected] = useState(false);
+  const selectedAttachRef = useRef(null);
+  const [selectedAttachPending, setSelectedAttachPending] = useState([]);
+  const [showAttachSelected, setShowAttachSelected] = useState(false);
 
   const isFrAdmin = useMemo(() => {
     const role = String(user?.role || '').toLowerCase();
@@ -149,8 +170,14 @@ const RecurringDonationView = () => {
       .reduce((sum, inst) => sum + (Number(inst.amount) || 0), 0);
   }, [pendingInstallments, selectedIds]);
 
-  const toggleOne = (installmentId, isPending) => {
-    if (!isPending) return;
+  const toggleOne = (installmentId, allowNonPending) => {
+    // Mark-paid selection is pending-only; attach-to-selected allows any row
+    if (!allowNonPending) {
+      const inst = (data?.installments || []).find(
+        (row) => row.id === installmentId,
+      );
+      if (String(inst?.status || '').toLowerCase() !== 'pending') return;
+    }
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(installmentId)) next.delete(installmentId);
@@ -165,6 +192,18 @@ const RecurringDonationView = () => {
       return;
     }
     setSelectedIds(new Set(pendingInstallments.map((inst) => inst.id)));
+  };
+
+  const toggleAllInstallments = () => {
+    const list = data?.installments || [];
+    if (
+      list.length > 0 &&
+      list.every((inst) => selectedIds.has(inst.id))
+    ) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(list.map((inst) => inst.id)));
   };
 
   const sendInstallmentLink = async () => {
@@ -325,6 +364,104 @@ const RecurringDonationView = () => {
     }
   };
 
+  const submitAddInstallments = async () => {
+    const count = Math.floor(Number(addInstForm.count));
+    if (!Number.isFinite(count) || count < 1 || count > 36) {
+      toast.error('Installment count must be between 1 and 36');
+      return;
+    }
+    const amountRaw = String(addInstForm.amount || '').trim();
+    const amountNum = amountRaw === '' ? null : Number(amountRaw);
+    if (amountRaw !== '' && (!Number.isFinite(amountNum) || amountNum <= 0)) {
+      toast.error('Amount must be greater than 0');
+      return;
+    }
+
+    setAddingInstallments(true);
+    try {
+      const formData = new FormData();
+      formData.append('count', String(count));
+      formData.append('status', addInstForm.status || 'pending');
+      if (amountNum != null) formData.append('amount', String(amountNum));
+
+      const items =
+        addInstAttachmentsRef.current?.collectForSubmit?.() ||
+        addInstPendingFiles;
+      const firstFile = items[0];
+      if (firstFile?.file) {
+        formData.append('file', firstFile.file);
+        if (firstFile.name) {
+          formData.append('description', firstFile.name);
+          formData.append('name', firstFile.name);
+        }
+      }
+
+      const response = await axiosInstance.post(
+        `/recurring-donations/${id}/installments/bulk`,
+        formData,
+        { headers: { 'Content-Type': 'multipart/form-data' } },
+      );
+      if (response.data.success) {
+        toast.success(response.data.message || 'Installments added');
+        setShowAddInstallments(false);
+        setAddInstForm({ count: '1', status: 'pending', amount: '' });
+        setAddInstPendingFiles([]);
+        await load();
+      } else {
+        toast.error(response.data.message || 'Failed to add installments');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to add installments');
+    } finally {
+      setAddingInstallments(false);
+    }
+  };
+
+  const submitAttachToSelected = async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) {
+      toast.error('Select at least one installment');
+      return;
+    }
+    const items =
+      selectedAttachRef.current?.collectForSubmit?.() || selectedAttachPending;
+    if (!items.length) {
+      toast.info('Add at least one attachment');
+      return;
+    }
+    setAttachingToSelected(true);
+    try {
+      const { uploaded, failed } =
+        await uploadPendingRecurringDonationAttachments({
+          axiosInstance,
+          recurringDonationId: Number(id),
+          items,
+          installmentIds: ids,
+        });
+      if (uploaded > 0) {
+        toast.success(
+          uploaded === 1
+            ? `Attachment linked to ${ids.length} installment(s)`
+            : `${uploaded} attachments linked to ${ids.length} installment(s)`,
+        );
+        setShowAttachSelected(false);
+        setSelectedAttachPending([]);
+        await load();
+      }
+      if (failed > 0) {
+        toast.error(
+          failed === 1
+            ? 'Failed to upload 1 attachment.'
+            : `Failed to upload ${failed} attachments.`,
+        );
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to attach file');
+    } finally {
+      setAttachingToSelected(false);
+    }
+  };
+
   if (loading && !data) {
     return (
       <>
@@ -380,6 +517,17 @@ const RecurringDonationView = () => {
     canUpdate && !subscription.stripe_subscription_id;
   const canDeleteInstallments = canDelete;
   const showInstallmentActions = canEditInstallments || canDeleteInstallments;
+  const canAddInstallments = canEditInstallments;
+  const showInstallmentCheckboxes =
+    canMarkPaid || canEditInstallments;
+  const canAttachToSelected =
+    canEditInstallments && selectedIds.size > 0;
+  const allInstallmentsSelected =
+    (installments || []).length > 0 &&
+    (installments || []).every((inst) => selectedIds.has(inst.id));
+  const addInstStatusOptions = canReconcile
+    ? INSTALLMENT_STATUS_OPTIONS
+    : [{ value: 'pending', label: 'Pending' }];
 
   return (
     <>
@@ -437,130 +585,219 @@ const RecurringDonationView = () => {
           )}
 
           <section className="view-section">
-            <h3>
-              <FiRepeat style={{ marginRight: 8 }} />
-              Subscription
-            </h3>
-            <div className="view-grid">
-              <div>
-                <strong>Status</strong>
-                <p>{subscription.status}</p>
+            <div className="rd-sub-card">
+              <div className="rd-sub-card__head">
+                <h3 className="rd-sub-card__title">
+                  <span className="rd-sub-card__title-icon" aria-hidden>
+                    <FiRepeat size={17} />
+                  </span>
+                  Subscription
+                </h3>
+                <span
+                  className={`rd-sub-status rd-sub-status--${
+                    ['active', 'past_due', 'failed', 'canceled', 'cancelled'].includes(
+                      String(subscription.status || '').toLowerCase(),
+                    )
+                      ? String(subscription.status).toLowerCase()
+                      : 'default'
+                  }`}
+                >
+                  {subscription.status || '—'}
+                </span>
               </div>
-              <div>
-                <strong>Installment Amount</strong>
-                <p>
-                  {formatAmount(subscription.amount, subscription.currency)}
-                </p>
+
+              <div className="rd-sub-kpis">
+                <div className="rd-sub-kpi">
+                  <span className="rd-sub-kpi__label">Installment</span>
+                  <p className="rd-sub-kpi__value">
+                    {formatAmount(subscription.amount, subscription.currency)}
+                  </p>
+                </div>
+                <div className="rd-sub-kpi">
+                  <span className="rd-sub-kpi__label">Paid</span>
+                  <p className="rd-sub-kpi__value rd-sub-kpi__value--ok">
+                    {formatAmount(
+                      summary?.total_paid_amount,
+                      subscription.currency,
+                    )}
+                  </p>
+                </div>
+                <div className="rd-sub-kpi">
+                  <span className="rd-sub-kpi__label">Missing</span>
+                  <p
+                    className={`rd-sub-kpi__value${
+                      Number(summary?.pending_installment_count) > 0
+                        ? ' rd-sub-kpi__value--warn'
+                        : ''
+                    }`}
+                  >
+                    {summary?.pending_installment_count ?? 0}
+                    <span style={{ fontWeight: 500, fontSize: '0.85rem', color: '#64748b' }}>
+                      {' '}
+                      / {summary?.completed_installment_count ?? 0} paid
+                    </span>
+                  </p>
+                </div>
+                <div className="rd-sub-kpi">
+                  <span className="rd-sub-kpi__label">Arrears</span>
+                  <p
+                    className={`rd-sub-kpi__value${
+                      Number(summary?.arrears_amount) > 0
+                        ? ' rd-sub-kpi__value--warn'
+                        : ''
+                    }`}
+                  >
+                    {formatAmount(
+                      summary?.arrears_amount,
+                      subscription.currency,
+                    )}
+                  </p>
+                </div>
               </div>
-              <div>
-                <strong>Total Amount</strong>
-                <p>
-                  {subscription.total_amount != null
-                    ? formatAmount(
-                        subscription.total_amount,
-                        subscription.currency,
-                      )
-                    : '—'}
-                </p>
-              </div>
-              <div>
-                <strong>Billing</strong>
-                <p>
-                  {subscription.billing_interval} (every{' '}
-                  {subscription.billing_interval_count || 1})
-                </p>
-              </div>
-              {(subscription.prepaid_periods > 0 ||
-                subscription.prepaid_months > 0) && (
-                <>
-                  <div>
-                    <strong>Prepaid periods</strong>
-                    <p>
-                      {subscription.prepaid_periods ||
-                        subscription.prepaid_months}{' '}
-                      {subscription.billing_interval === 'day'
-                        ? 'day(s)'
-                        : subscription.billing_interval === 'week'
-                          ? 'week(s)'
-                          : 'month(s)'}
+
+              <div className="rd-sub-body">
+                <div className="rd-sub-grid">
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Total amount</span>
+                    <p className="rd-sub-field__value">
+                      {subscription.total_amount != null
+                        ? formatAmount(
+                            subscription.total_amount,
+                            subscription.currency,
+                          )
+                        : '—'}
                     </p>
                   </div>
-                  <div>
-                    <strong>Prepaid coverage</strong>
-                    <p>
-                      {subscription.prepaid_start_period_key &&
-                      subscription.prepaid_end_period_key
-                        ? `${subscription.prepaid_start_period_key} → ${subscription.prepaid_end_period_key}`
-                        : '-'}
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Billing</span>
+                    <p className="rd-sub-field__value">
+                      {subscription.billing_interval || '—'}
+                      {subscription.billing_interval
+                        ? ` · every ${subscription.billing_interval_count || 1}`
+                        : ''}
                     </p>
                   </div>
-                  <div>
-                    <strong>Next recurring after prepaid</strong>
-                    <p>{subscription.start_date || '-'}</p>
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Method</span>
+                    <p className="rd-sub-field__value">
+                      {subscription.donation_method
+                        ? String(subscription.donation_method).replace(
+                            /_/g,
+                            ' ',
+                          )
+                        : '—'}
+                    </p>
                   </div>
-                </>
-              )}
-              <div>
-                <strong>Stripe subscription</strong>
-                <p>{subscription.stripe_subscription_id || '-'}</p>
-              </div>
-              <div>
-                <strong>Stripe customer</strong>
-                <p>{subscription.stripe_customer_id || '-'}</p>
-              </div>
-              <div>
-                <strong>Method</strong>
-                <p>{subscription.donation_method || '-'}</p>
-              </div>
-              <div>
-                <strong>On behalf name(s)</strong>
-                <p>{subscription.on_behalf_names || '-'}</p>
-              </div>
-              <div>
-                <strong>Project</strong>
-                <p>{subscription.project_id || '-'}</p>
-              </div>
-              <div>
-                <strong>Campaign</strong>
-                <p>{subscription.campaign_id || '-'}</p>
-              </div>
-              <div>
-                <strong>Started</strong>
-                <p>{formatDate(subscription.created_at)}</p>
-              </div>
-              <div>
-                <strong>Created by</strong>
-                <p>
-                  {subscription.created_by
-                    ? formatAuditActor(subscription.created_by)
-                    : '—'}
-                </p>
-              </div>
-              <div>
-                <strong>Installments paid</strong>
-                <p>{summary?.completed_installment_count ?? 0}</p>
-              </div>
-              <div>
-                <strong>Missing installments</strong>
-                <p>{summary?.pending_installment_count ?? 0}</p>
-              </div>
-              <div>
-                <strong>Arrears amount</strong>
-                <p>
-                  {formatAmount(
-                    summary?.arrears_amount,
-                    subscription.currency,
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Project</span>
+                    <p
+                      className={`rd-sub-field__value${
+                        subscription.project_id ? '' : ' rd-sub-field__value--muted'
+                      }`}
+                    >
+                      {subscription.project_id || '—'}
+                    </p>
+                  </div>
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Campaign</span>
+                    <p
+                      className={`rd-sub-field__value${
+                        subscription.campaign_id
+                          ? ''
+                          : ' rd-sub-field__value--muted'
+                      }`}
+                    >
+                      {subscription.campaign_id || '—'}
+                    </p>
+                  </div>
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">On behalf</span>
+                    <p
+                      className={`rd-sub-field__value${
+                        subscription.on_behalf_names
+                          ? ''
+                          : ' rd-sub-field__value--muted'
+                      }`}
+                    >
+                      {subscription.on_behalf_names || '—'}
+                    </p>
+                  </div>
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Started</span>
+                    <p className="rd-sub-field__value">
+                      {formatDate(subscription.created_at)}
+                    </p>
+                  </div>
+                  <div className="rd-sub-field">
+                    <span className="rd-sub-field__label">Created by</span>
+                    <p className="rd-sub-field__value">
+                      {subscription.created_by
+                        ? formatAuditActor(subscription.created_by)
+                        : '—'}
+                    </p>
+                  </div>
+
+                  {(subscription.prepaid_periods > 0 ||
+                    subscription.prepaid_months > 0) && (
+                    <>
+                      <div className="rd-sub-section-label">Prepaid</div>
+                      <div className="rd-sub-field">
+                        <span className="rd-sub-field__label">Periods</span>
+                        <p className="rd-sub-field__value">
+                          {subscription.prepaid_periods ||
+                            subscription.prepaid_months}{' '}
+                          {subscription.billing_interval === 'day'
+                            ? 'day(s)'
+                            : subscription.billing_interval === 'week'
+                              ? 'week(s)'
+                              : 'month(s)'}
+                        </p>
+                      </div>
+                      <div className="rd-sub-field">
+                        <span className="rd-sub-field__label">Coverage</span>
+                        <p className="rd-sub-field__value">
+                          {subscription.prepaid_start_period_key &&
+                          subscription.prepaid_end_period_key
+                            ? `${subscription.prepaid_start_period_key} → ${subscription.prepaid_end_period_key}`
+                            : '—'}
+                        </p>
+                      </div>
+                      <div className="rd-sub-field">
+                        <span className="rd-sub-field__label">
+                          Next after prepaid
+                        </span>
+                        <p className="rd-sub-field__value">
+                          {subscription.start_date || '—'}
+                        </p>
+                      </div>
+                    </>
                   )}
-                </p>
-              </div>
-              <div>
-                <strong>Total paid amount</strong>
-                <p>
-                  {formatAmount(
-                    summary?.total_paid_amount,
-                    subscription.currency,
+
+                  {(subscription.stripe_subscription_id ||
+                    subscription.stripe_customer_id) && (
+                    <>
+                      <div className="rd-sub-section-label">Stripe</div>
+                      {subscription.stripe_subscription_id && (
+                        <div className="rd-sub-field">
+                          <span className="rd-sub-field__label">
+                            Subscription
+                          </span>
+                          <p className="rd-sub-field__value">
+                            {subscription.stripe_subscription_id}
+                          </p>
+                        </div>
+                      )}
+                      {subscription.stripe_customer_id && (
+                        <div className="rd-sub-field">
+                          <span className="rd-sub-field__label">Customer</span>
+                          <p className="rd-sub-field__value">
+                            {subscription.stripe_customer_id}
+                          </p>
+                        </div>
+                      )}
+                    </>
                   )}
-                </p>
+                </div>
               </div>
             </div>
           </section>
@@ -679,63 +916,213 @@ const RecurringDonationView = () => {
           </section>
 
           <section className="view-section">
-            <div
-              style={{
-                display: 'flex',
-                gap: 12,
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                marginBottom: 12,
-              }}
-            >
-              <h3 style={{ margin: 0 }}>Installments</h3>
-              {canMarkPaid && (
-                <>
+            <div className="rd-inst-toolbar">
+              <h3 className="rd-inst-toolbar__title">Installments</h3>
+              <div className="rd-inst-toolbar__actions">
+                {canAddInstallments && (
                   <button
                     type="button"
-                    className="primary_btn"
+                    className={`rd-inst-btn ${
+                      showAddInstallments ? 'rd-inst-btn--ghost' : 'rd-inst-btn--soft'
+                    }`}
+                    onClick={() => setShowAddInstallments((v) => !v)}
+                  >
+                    {showAddInstallments ? <FiX size={16} /> : <FiPlus size={16} />}
+                    {showAddInstallments ? 'Close' : 'Add installments'}
+                  </button>
+                )}
+                {canAttachToSelected && (
+                  <button
+                    type="button"
+                    className={`rd-inst-btn ${
+                      showAttachSelected ? 'rd-inst-btn--ghost' : 'rd-inst-btn--ghost'
+                    }`}
+                    onClick={() => setShowAttachSelected((v) => !v)}
+                  >
+                    <FiPaperclip size={15} />
+                    {showAttachSelected
+                      ? 'Close attach'
+                      : `Attach (${selectedIds.size})`}
+                  </button>
+                )}
+                {canMarkPaid && (
+                  <button
+                    type="button"
+                    className="rd-inst-btn rd-inst-btn--success"
                     disabled={markingPaid || selectedIds.size === 0}
                     onClick={markSelectedPaid}
                   >
-                    <FiCheck style={{ marginRight: 6 }} />
+                    <FiCheck size={16} />
                     {markingPaid
-                      ? 'Saving...'
-                      : `Mark selected paid (${selectedIds.size})`}
+                      ? 'Saving…'
+                      : `Mark paid (${selectedIds.size})`}
                   </button>
-                  {selectedIds.size > 0 && (
-                    <span style={{ fontSize: 13, color: '#4b5563' }}>
-                      Total:{' '}
-                      {formatAmount(
-                        selectedPendingAmount,
-                        subscription.currency,
-                      )}
-                    </span>
-                  )}
-                </>
-              )}
-              {markMessage && (
-                <span style={{ fontSize: 13, color: '#4b5563' }}>
-                  {markMessage}
-                </span>
-              )}
-              {editMessage && (
-                <span style={{ fontSize: 13, color: '#4b5563' }}>
-                  {editMessage}
-                </span>
-              )}
+                )}
+                {selectedIds.size > 0 && canMarkPaid && (
+                  <span className="rd-inst-toolbar__meta">
+                    Total{' '}
+                    {formatAmount(
+                      selectedPendingAmount,
+                      subscription.currency,
+                    )}
+                  </span>
+                )}
+                {markMessage && (
+                  <span className="rd-inst-toolbar__meta">{markMessage}</span>
+                )}
+                {editMessage && (
+                  <span className="rd-inst-toolbar__meta">{editMessage}</span>
+                )}
+              </div>
             </div>
+            {showAddInstallments && canAddInstallments && (
+              <div className="rd-inst-panel">
+                <div className="rd-inst-panel__head">
+                  <div>
+                    <h4 className="rd-inst-panel__title">Add installments</h4>
+                    <p className="rd-inst-panel__hint">
+                      Creates the next unused periods. One attachment (optional)
+                      is shared across all new installments.
+                    </p>
+                  </div>
+                </div>
+                <div className="rd-inst-panel__grid">
+                  <FormInput
+                    label="Count *"
+                    type="number"
+                    min="1"
+                    max="36"
+                    value={addInstForm.count}
+                    onChange={(e) =>
+                      setAddInstForm((p) => ({ ...p, count: e.target.value }))
+                    }
+                  />
+                  <FormSelect
+                    label="Status"
+                    value={addInstForm.status}
+                    onChange={(e) =>
+                      setAddInstForm((p) => ({ ...p, status: e.target.value }))
+                    }
+                    options={addInstStatusOptions}
+                  />
+                  <FormInput
+                    label="Amount (optional)"
+                    type="number"
+                    min="1"
+                    placeholder={
+                      subscription.amount != null
+                        ? String(subscription.amount)
+                        : 'Subscription amount'
+                    }
+                    value={addInstForm.amount}
+                    onChange={(e) =>
+                      setAddInstForm((p) => ({ ...p, amount: e.target.value }))
+                    }
+                  />
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  <DonationPendingAttachments
+                    ref={addInstAttachmentsRef}
+                    items={addInstPendingFiles}
+                    onChange={setAddInstPendingFiles}
+                    disabled={addingInstallments}
+                    title="Shared attachment (optional — applies to all new installments)"
+                    fileInputId={`recurring-bulk-inst-attach-${id}`}
+                  />
+                </div>
+                <div className="rd-inst-panel__footer">
+                  <button
+                    type="button"
+                    className="rd-inst-btn rd-inst-btn--primary"
+                    disabled={addingInstallments}
+                    onClick={submitAddInstallments}
+                  >
+                    <FiPlus size={16} />
+                    {addingInstallments ? 'Adding…' : 'Add installments'}
+                  </button>
+                  <button
+                    type="button"
+                    className="rd-inst-btn rd-inst-btn--ghost"
+                    disabled={addingInstallments}
+                    onClick={() => {
+                      setShowAddInstallments(false);
+                      setAddInstPendingFiles([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+            {showAttachSelected && canAttachToSelected && (
+              <div className="rd-inst-panel">
+                <div className="rd-inst-panel__head">
+                  <div>
+                    <h4 className="rd-inst-panel__title">
+                      Attach to {selectedIds.size} selected
+                    </h4>
+                    <p className="rd-inst-panel__hint">
+                      One upload is linked to every selected installment (same
+                      file).
+                    </p>
+                  </div>
+                </div>
+                <DonationPendingAttachments
+                  ref={selectedAttachRef}
+                  items={selectedAttachPending}
+                  onChange={setSelectedAttachPending}
+                  disabled={attachingToSelected}
+                  title="Attachment"
+                  fileInputId={`recurring-selected-inst-attach-${id}`}
+                />
+                <div className="rd-inst-panel__footer">
+                  <button
+                    type="button"
+                    className="rd-inst-btn rd-inst-btn--primary"
+                    disabled={attachingToSelected}
+                    onClick={submitAttachToSelected}
+                  >
+                    <FiPaperclip size={15} />
+                    {attachingToSelected ? 'Uploading…' : 'Upload & link'}
+                  </button>
+                  <button
+                    type="button"
+                    className="rd-inst-btn rd-inst-btn--ghost"
+                    disabled={attachingToSelected}
+                    onClick={() => {
+                      setShowAttachSelected(false);
+                      setSelectedAttachPending([]);
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="table-container">
               <table className="data-table">
                 <thead>
                   <tr>
-                    {canMarkPaid && (
+                    {showInstallmentCheckboxes && (
                       <th style={{ width: 40 }}>
                         <input
                           type="checkbox"
-                          checked={allPendingSelected}
-                          onChange={toggleAllPending}
-                          title="Select all pending"
-                          aria-label="Select all pending installments"
+                          checked={
+                            canMarkPaid && !canEditInstallments
+                              ? allPendingSelected
+                              : allInstallmentsSelected
+                          }
+                          onChange={
+                            canMarkPaid && !canEditInstallments
+                              ? toggleAllPending
+                              : toggleAllInstallments
+                          }
+                          title={
+                            canEditInstallments
+                              ? 'Select all installments'
+                              : 'Select all pending'
+                          }
+                          aria-label="Select installments"
                         />
                       </th>
                     )}
@@ -744,7 +1131,6 @@ const RecurringDonationView = () => {
                     <th>Amount</th>
                     <th>Status</th>
                     <th>Created by</th>
-                    <th>Donation / invoice</th>
                     <th>Paid at</th>
                     <th>Reason</th>
                     <th style={{ width: 120 }}>Attachments</th>
@@ -762,13 +1148,18 @@ const RecurringDonationView = () => {
                       const isEditing = editingId === inst.id;
                       return (
                         <tr key={inst.id}>
-                          {canMarkPaid && (
+                          {showInstallmentCheckboxes && (
                             <td>
                               <input
                                 type="checkbox"
-                                disabled={!isPending || isEditing}
+                                disabled={
+                                  isEditing ||
+                                  (!canEditInstallments && !isPending)
+                                }
                                 checked={selectedIds.has(inst.id)}
-                                onChange={() => toggleOne(inst.id, isPending)}
+                                onChange={() =>
+                                  toggleOne(inst.id, canEditInstallments)
+                                }
                                 aria-label={`Select installment ${inst.id}`}
                               />
                             </td>
@@ -840,85 +1231,74 @@ const RecurringDonationView = () => {
                               ? formatAuditActor(inst.created_by)
                               : '—'}
                           </td>
-                          <td
-                            style={{
-                              maxWidth: 160,
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                            }}
-                          >
-                            {inst.stripe_payment_intent_id ? (
-                              <Link
-                                to={`/donations/online_donations/view/${inst.stripe_payment_intent_id}`}
-                              >
-                                {inst.stripe_invoice_id ||
-                                  inst.stripe_payment_intent_id}
-                              </Link>
-                            ) : (
-                              inst.stripe_invoice_id || '-'
-                            )}
-                          </td>
                           <td>{formatDate(inst.paid_at)}</td>
                           <td>{inst.stripe_billing_reason || '-'}</td>
                           <td>
                             <button
                               type="button"
-                              className="btn-secondary"
-                              onClick={() => setInstallmentAttachmentTarget(inst)}
+                              className="rd-inst-attach-chip"
+                              onClick={() =>
+                                setInstallmentAttachmentTarget(inst)
+                              }
                               title="Manage installment attachments"
                             >
-                              <FiPaperclip style={{ marginRight: 4, verticalAlign: -2 }} />
-                              {(inst.attachments || []).length}
+                              <FiPaperclip size={14} />
+                              <span className="rd-inst-attach-chip__count">
+                                {(inst.attachments || []).length}
+                              </span>
                             </button>
                           </td>
                           {showInstallmentActions && (
                             <td>
                               {isEditing ? (
-                                <div style={{ display: 'flex', gap: 6 }}>
+                                <div className="rd-inst-actions">
                                   <button
                                     type="button"
-                                    className="primary_btn"
+                                    className="rd-inst-icon-btn rd-inst-icon-btn--save"
                                     disabled={savingEdit}
                                     onClick={() =>
                                       saveInstallmentEdit(inst.id)
                                     }
                                     title="Save"
+                                    aria-label="Save installment"
                                   >
-                                    <FiCheck />
+                                    <FiCheck size={15} />
                                   </button>
                                   <button
                                     type="button"
-                                    className="btn-secondary"
+                                    className="rd-inst-icon-btn"
                                     disabled={savingEdit}
                                     onClick={cancelEdit}
                                     title="Cancel"
+                                    aria-label="Cancel edit"
                                   >
-                                    <FiX />
+                                    <FiX size={15} />
                                   </button>
                                 </div>
                               ) : (
-                                <div style={{ display: 'flex', gap: 6 }}>
+                                <div className="rd-inst-actions">
                                   {canEditInstallments && (
                                     <button
                                       type="button"
-                                      className="btn-secondary"
+                                      className="rd-inst-icon-btn rd-inst-icon-btn--edit"
                                       onClick={() => startEdit(inst)}
                                       title="Edit installment"
+                                      aria-label="Edit installment"
                                     >
-                                      <FiEdit2 />
+                                      <FiEdit2 size={14} />
                                     </button>
                                   )}
                                   {canDeleteInstallments && (
                                     <button
                                       type="button"
-                                      className="btn-secondary"
+                                      className="rd-inst-icon-btn rd-inst-icon-btn--delete"
                                       onClick={() =>
                                         setDeleteInstallmentTarget(inst)
                                       }
                                       title="Delete installment"
-                                      style={{ color: '#ef4444' }}
+                                      aria-label="Delete installment"
                                     >
-                                      <FiTrash2 />
+                                      <FiTrash2 size={14} />
                                     </button>
                                   )}
                                 </div>
@@ -932,8 +1312,8 @@ const RecurringDonationView = () => {
                     <tr>
                       <td
                         colSpan={
-                          (canMarkPaid ? 1 : 0) +
-                          9 +
+                          (showInstallmentCheckboxes ? 1 : 0) +
+                          8 +
                           (showInstallmentActions ? 1 : 0)
                         }
                         style={{ textAlign: 'center' }}

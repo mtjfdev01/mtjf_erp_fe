@@ -1571,13 +1571,7 @@ const AidApplicationAddInner = () => {
 
   /** Prefill media consent from form subject (beneficiary, or applicant for MG). */
   useEffect(() => {
-    if (
-      isWheelchairConsentProgram(form.aid_program) ||
-      isMarriageGiftConsentProgram(
-        form.requested_aid_type,
-        form.aid_program,
-      )
-    ) {
+    if (isWheelchairConsentProgram(form.aid_program)) {
       return;
     }
     const person = formSubjectPerson;
@@ -1681,8 +1675,9 @@ const AidApplicationAddInner = () => {
     formSubjectPerson,
   ]);
 
-  /** Prefill marriage gift receipt — applicant data + biometrics on applicant. */
+  /** Prefill marriage gift receipt — kept separate as receiving form, not shown for now. */
   useEffect(() => {
+    if (true) return;
     if (
       !isMarriageGiftConsentProgram(
         form.requested_aid_type,
@@ -2995,16 +2990,6 @@ const AidApplicationAddInner = () => {
                   form.aid_program,
                 ) === 'wheelchair' ? (
                   <AidWheelchairConsentForm
-                    value={consentForm}
-                    onChange={setConsentForm}
-                    onBiometricSaved={handleConsentBiometricSaved}
-                    uiLang={lang}
-                  />
-                ) : resolveConsentVariant(
-                    form.requested_aid_type,
-                    form.aid_program,
-                  ) === 'marriage_gift' ? (
-                  <AidMarriageGiftConsentForm
                     value={consentForm}
                     onChange={setConsentForm}
                     onBiometricSaved={handleConsentBiometricSaved}

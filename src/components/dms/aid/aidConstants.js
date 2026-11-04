@@ -807,7 +807,7 @@ export function isMarriageGiftConsentForm(value) {
 /** Resolve which consent form variant to show for an application. */
 export function resolveConsentVariant(aidType, aidProgram) {
   if (isWheelchairConsentProgram(aidProgram)) return 'wheelchair';
-  if (isMarriageGiftConsentProgram(aidType, aidProgram)) return 'marriage_gift';
+  // Marriage gift uses standard consent form (receiving receipt form kept separate)
   return 'media';
 }
 
@@ -1895,6 +1895,7 @@ export const AID_ATTACHMENT_CONTEXTS = [
   { value: 'marriage_certificate', label: 'Marriage Certificates' },
   { value: 'education_certificate', label: 'Education Certificates' },
   { value: 'e_stamp_paper', label: 'E-Stamp Paper' },
+  { value: 'others', label: 'Others' },
   { value: 'zakat', label: 'Zakat form' },
   { value: 'consent', label: 'Consent form' },
 ];
@@ -1914,6 +1915,13 @@ export const AID_APPLICATION_DOC_TYPES = [
   { value: 'marriage_certificate', label: 'Marriage Certificates', multiple: true },
   { value: 'education_certificate', label: 'Education Certificates', multiple: true },
   { value: 'e_stamp_paper', label: 'E-Stamp Paper', multiple: false },
+  {
+    value: 'others',
+    label: 'Others',
+    labelUr: 'دیگر',
+    multiple: true,
+    imagesOnly: true,
+  },
 ];
 
 /** Normalize a docs slot to a list of { file?, name?, url?, side?, pair? }. */
