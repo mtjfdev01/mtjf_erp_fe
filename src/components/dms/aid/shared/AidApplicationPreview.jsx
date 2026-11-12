@@ -20,12 +20,44 @@ import AidWheelchairConsentForm from './AidWheelchairConsentForm';
 import {
   normalizeInvestigationEntry,
   AID_RATION_REC_OPTIONS,
+  AID_RECOMMENDATION_PERIODS,
   formatRecommendationDecision,
   formatRecommendationPeriod,
+  getRecommendationDecisionOrEmpty,
+  getRationLayerDecision,
   isNegativeRecommendation,
   normalizeRationOptions,
   normalizeRecommendationDecision,
+  resolveManagerRecommendation,
 } from './AidInvestigationPanel';
+
+/** Map stored approval/CEO values → Recommend / Not Recommend UI. */
+const toRecommendationUiDecision = (decision) => {
+  const d = String(decision || '').trim().toLowerCase();
+  if (!d) return '';
+  if (
+    d === 'not_recommend' ||
+    d === 'reject' ||
+    d === 'rejected' ||
+    d === 're_investigate'
+  ) {
+    return 'not_recommend';
+  }
+  if (
+    d === 'recommend' ||
+    d === 'approved' ||
+    d === 'approved_with_changes' ||
+    d === 'approve_as_requested' ||
+    d === 'approve_with_changes'
+  ) {
+    return 'recommend';
+  }
+  return normalizeRecommendationDecision(d) === 'not_recommend'
+    ? 'not_recommend'
+    : d
+      ? 'recommend'
+      : '';
+};
 import { printAidElement } from './printAidElement';
 
 const emptyMealReview = () => ({
@@ -53,8 +85,11 @@ const normalizeMealReview = (raw) => {
 };
 
 const emptyPreviewApproval = () => ({
-  decision: null,
+  decision: '',
   remarks: '',
+  ration_options: [],
+  amount: '',
+  period_months: 6,
   approved_support: '',
   approved_amount: '',
   locked: false,
@@ -67,22 +102,33 @@ const normalizePreviewApproval = (raw, fallback = {}) => {
       ? raw
       : fallback;
   if (!src || typeof src !== 'object') return base;
-  const d = String(src.decision || '').toLowerCase();
+  const uiDecision = toRecommendationUiDecision(src.decision);
+  const ration_options = normalizeRationOptions(
+    src.ration_options != null
+      ? src.ration_options
+      : typeof src.approved_support === 'string'
+        ? String(src.approved_support)
+            .split(/[,/|]/)
+            .map((s) => s.trim().toLowerCase())
+        : [],
+  );
+  const amountRaw =
+    src.amount != null && src.amount !== ''
+      ? src.amount
+      : src.approved_amount;
   return {
-    decision: [
-      'approved',
-      'approved_with_changes',
-      'rejected',
-      're_investigate',
-    ].includes(d)
-      ? d
-      : null,
+    decision: uiDecision,
     remarks: String(src.remarks || ''),
+    ration_options,
+    amount:
+      amountRaw != null && amountRaw !== '' ? String(amountRaw) : '',
+    period_months:
+      src.period_months != null && src.period_months !== ''
+        ? Number(src.period_months)
+        : 6,
     approved_support: String(src.approved_support || ''),
     approved_amount:
-      src.approved_amount != null && src.approved_amount !== ''
-        ? String(src.approved_amount)
-        : '',
+      amountRaw != null && amountRaw !== '' ? String(amountRaw) : '',
     locked: src.locked === true,
   };
 };
@@ -188,12 +234,28 @@ const SectionBar = ({ title, right, lockControl = null }) => (
 const SectionLockButton = ({
   locked,
   canEdit,
+  canUnlock = false,
   saving,
   onLock,
+  onUnlock,
   label = 'section',
 }) => {
   if (!canEdit && !locked) return null;
   if (locked) {
+    if (canUnlock && onUnlock) {
+      return (
+        <button
+          type="button"
+          className="aid-preview__lock aid-preview__lock--open no-print"
+          disabled={saving}
+          title={`Unlock ${label} (super admin)`}
+          onClick={() => onUnlock?.()}
+        >
+          <FiUnlock aria-hidden />
+          <span>{saving ? 'Unlocking…' : 'Unlock'}</span>
+        </button>
+      );
+    }
     return (
       <span
         className="aid-preview__lock aid-preview__lock--locked no-print"
@@ -265,6 +327,10 @@ const AidApplicationPreview = ({
   canEditApproval = false,
   onSaveApproval,
   approvalSaving = false,
+  /** Super admin may unlock and edit locked MEAL / Approval sections. */
+  canUnlockSections = false,
+  /** Hide print toolbar when embedded in a popup. */
+  hideToolbar = false,
 }) => {
   const page1Ref = useRef(null);
   const page2Ref = useRef(null);
@@ -285,25 +351,28 @@ const AidApplicationPreview = ({
   }, [app?.id, app?.meal_review]);
 
   useEffect(() => {
-    // Prefer saved preview_approval; else seed from live CEO/app status.
+    // Prefer saved preview_approval; else seed from recommendation / CEO status.
     const status = String(app?.status || '').toLowerCase();
-    let fallbackDecision = '';
-    if (status === 'successful' || status === 'delivered') {
-      fallbackDecision = 'approved';
-    } else if (status === 'rejected') {
-      fallbackDecision = 'rejected';
-    } else if (
-      String(app?.ceo_approval_status || '')
-        .toLowerCase()
-        .includes('reject')
-    ) {
-      fallbackDecision = 'rejected';
-    } else if (
-      String(app?.ceo_approval_status || '')
-        .toLowerCase()
-        .includes('approv')
-    ) {
-      fallbackDecision = 'approved';
+    const rec = app?.investigation_recommendation || {};
+    let fallbackDecision = toRecommendationUiDecision(rec.decision);
+    if (!fallbackDecision) {
+      if (status === 'successful' || status === 'delivered') {
+        fallbackDecision = 'recommend';
+      } else if (status === 'rejected') {
+        fallbackDecision = 'not_recommend';
+      } else if (
+        String(app?.ceo_approval_status || '')
+          .toLowerCase()
+          .includes('reject')
+      ) {
+        fallbackDecision = 'not_recommend';
+      } else if (
+        String(app?.ceo_approval_status || '')
+          .toLowerCase()
+          .includes('approv')
+      ) {
+        fallbackDecision = 'recommend';
+      }
     }
     const liveLocked =
       ['successful', 'delivered', 'rejected'].includes(status) ||
@@ -313,21 +382,24 @@ const AidApplicationPreview = ({
       String(app?.ceo_approval_status || '')
         .toLowerCase()
         .includes('reject');
-    const rationFallback = Array.isArray(
-      app?.investigation_recommendation?.ration_options,
-    )
-      ? app.investigation_recommendation.ration_options.join(', ')
-      : '';
+    const rationOpts = normalizeRationOptions(rec.ration_options);
     setApproval(
       normalizePreviewApproval(app?.preview_approval, {
-        decision: fallbackDecision || null,
-        remarks: app?.ceo_remarks || app?.ceo_rejection_reason || '',
-        approved_support:
-          rationFallback ||
-          formatAidProgramLabel(app?.aid_program) ||
-          formatAidRequestType(app?.requested_aid_type) ||
+        decision: fallbackDecision || '',
+        remarks:
+          app?.ceo_remarks ||
+          app?.ceo_rejection_reason ||
+          rec.remarks ||
           '',
-        approved_amount: app?.approved_amount ?? '',
+        ration_options: rationOpts,
+        amount: rec.amount ?? app?.approved_amount ?? '',
+        period_months: rec.period_months ?? 6,
+        approved_support: rationOpts.length
+          ? rationOpts.join(', ')
+          : formatAidProgramLabel(app?.aid_program) ||
+            formatAidRequestType(app?.requested_aid_type) ||
+            '',
+        approved_amount: rec.amount ?? app?.approved_amount ?? '',
         locked: liveLocked,
       }),
     );
@@ -345,9 +417,44 @@ const AidApplicationPreview = ({
   ]);
 
   const mealLocked = meal.locked === true;
-  const mealEditable = canEditMeal && !mealLocked;
+  const mealEditable =
+    canEditMeal && (!mealLocked || canUnlockSections);
   const approvalLocked = approval.locked === true;
-  const approvalEditable = canEditApproval && !approvalLocked;
+  const approvalEditable =
+    canEditApproval && (!approvalLocked || canUnlockSections);
+
+  const buildApprovalSavePayload = (locked) => {
+    const decision =
+      toRecommendationUiDecision(approval.decision) || 'recommend';
+    const notRecommend = decision === 'not_recommend';
+    const ration_options = notRecommend
+      ? []
+      : normalizeRationOptions(approval.ration_options);
+    const amountRaw = notRecommend
+      ? null
+      : approval.amount !== '' && approval.amount != null
+        ? Number(approval.amount)
+        : approval.approved_amount !== '' && approval.approved_amount != null
+          ? Number(approval.approved_amount)
+          : null;
+    const amount = Number.isFinite(amountRaw) ? amountRaw : null;
+    return {
+      decision,
+      remarks: approval.remarks || null,
+      ration_options,
+      amount,
+      period_months: notRecommend
+        ? null
+        : Number(approval.period_months) || null,
+      approved_support: notRecommend
+        ? null
+        : ration_options.length
+          ? ration_options.join(', ')
+          : approval.approved_support || null,
+      approved_amount: amount,
+      locked: locked === true,
+    };
+  };
 
   const data = useMemo(() => {
     if (!app) return null;
@@ -593,6 +700,20 @@ const AidApplicationPreview = ({
   } = data;
 
   const rationOpts = normalizeRationOptions(rec.ration_options);
+  const managerRec = resolveManagerRecommendation(rec);
+  const managerRationOpts = normalizeRationOptions(managerRec?.ration_options);
+  const managerDecision = managerRec
+    ? getRationLayerDecision(managerRec) ||
+      getRecommendationDecisionOrEmpty(managerRec.decision)
+    : '';
+  const isRationApp =
+    String(app.requested_aid_type || '').toLowerCase() === 'ration';
+  const ceoUiDecision =
+    toRecommendationUiDecision(approval.decision) ||
+    toRecommendationUiDecision(approvalDecision);
+  const ceoShowDetails =
+    ceoUiDecision === 'recommend' ||
+    (approvalEditable && !ceoUiDecision);
   const vulnAfter = vuln?.after_visit?.total;
   const vulnDeclared = vuln?.declared?.total;
 
@@ -625,29 +746,31 @@ const AidApplicationPreview = ({
 
   return (
     <section className="aid-section aid-section--flush aid-preview-section">
-      <div className="aid-printable__toolbar no-print">
-        <p className="aid-printable__toolbar-hint">
-          Formal registration preview (Page 1) and investigation &amp; approval
-          (Page 2).
-        </p>
-        <div className="aid-preview__toolbar-actions">
-          <button type="button" className="secondary-btn" onClick={handlePrintPage1}>
-            Print page 1
-          </button>
-          <button type="button" className="secondary-btn" onClick={handlePrintPage2}>
-            Print page 2
-          </button>
-          <button type="button" className="secondary-btn" onClick={handlePrintZakat}>
-            Print zakat
-          </button>
-          <button type="button" className="secondary-btn" onClick={handlePrintConsent}>
-            Print consent
-          </button>
-          <button type="button" className="primary-btn" onClick={handlePrintAll}>
-            Print both
-          </button>
+      {!hideToolbar ? (
+        <div className="aid-printable__toolbar no-print">
+          <p className="aid-printable__toolbar-hint">
+            Formal registration preview (Page 1) and investigation &amp; approval
+            (Page 2).
+          </p>
+          <div className="aid-preview__toolbar-actions">
+            <button type="button" className="secondary-btn" onClick={handlePrintPage1}>
+              Print page 1
+            </button>
+            <button type="button" className="secondary-btn" onClick={handlePrintPage2}>
+              Print page 2
+            </button>
+            <button type="button" className="secondary-btn" onClick={handlePrintZakat}>
+              Print zakat
+            </button>
+            <button type="button" className="secondary-btn" onClick={handlePrintConsent}>
+              Print consent
+            </button>
+            <button type="button" className="primary-btn" onClick={handlePrintAll}>
+              Print both
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div ref={bothRef} className="aid-preview-print-root">
         {/* ——— Page 1: Beneficiary Registration Form ——— */}
@@ -1128,17 +1251,25 @@ const AidApplicationPreview = ({
               <SectionLockButton
                 locked={mealLocked}
                 canEdit={canEditMeal}
+                canUnlock={canUnlockSections}
                 saving={mealSaving}
                 label="MEAL"
                 onLock={() =>
                   onSaveMeal?.({ ...meal, locked: true })
+                }
+                onUnlock={() =>
+                  onSaveMeal?.({ ...meal, locked: false })
                 }
               />
             }
           />
           <div
             className={`aid-preview__meal${
-              mealLocked ? ' is-locked' : mealEditable ? ' is-editable' : ''
+              mealLocked && !mealEditable
+                ? ' is-locked'
+                : mealEditable
+                  ? ' is-editable'
+                  : ''
             }`}
           >
             <div className="aid-preview__cell aid-preview__decision">
@@ -1253,23 +1384,89 @@ const AidApplicationPreview = ({
           </div>
 
           <SectionBar
-            title="Approval"
+            title="Manager Recommendation"
+            right="Program manager decision"
+          />
+          <div className="aid-preview__meal aid-preview__manager-rec">
+            {managerRec ? (
+              <>
+                <div className="aid-preview__cell aid-preview__decision">
+                  <span className="aid-preview__label">Recommendation</span>
+                  <span className="aid-preview__checks">
+                    <Check
+                      label="Recommend"
+                      checked={
+                        !!managerDecision &&
+                        managerDecision !== 'not_recommend'
+                      }
+                    />
+                    <Check
+                      label="Not Recommend"
+                      checked={managerDecision === 'not_recommend'}
+                    />
+                  </span>
+                </div>
+                {isRationApp ? (
+                  <div className="aid-preview__cell aid-preview__decision">
+                    <span className="aid-preview__label">Package</span>
+                    <span className="aid-preview__checks">
+                      {AID_RATION_REC_OPTIONS.map((opt) => (
+                        <Check
+                          key={opt.value}
+                          label={opt.label}
+                          checked={managerRationOpts.includes(opt.value)}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="aid-preview__grid aid-preview__grid--2">
+                    <Cell label="Amount (PKR)">
+                      {managerDecision === 'not_recommend'
+                        ? '—'
+                        : money(managerRec.amount)}
+                    </Cell>
+                    <Cell label="Period">
+                      {managerDecision === 'not_recommend'
+                        ? '—'
+                        : periodLabel(managerRec.period_months)}
+                    </Cell>
+                  </div>
+                )}
+                <div className="aid-preview__block">
+                  <span className="aid-preview__label">Remarks</span>
+                  <Lines lines={3} text={managerRec.remarks || ''} />
+                </div>
+              </>
+            ) : (
+              <p className="aid-preview__empty-note">
+                No manager recommendation recorded yet.
+              </p>
+            )}
+          </div>
+
+          <SectionBar
+            title="CEO Recommendation"
             right="CEO / approving authority"
             lockControl={
               <SectionLockButton
                 locked={approvalLocked}
                 canEdit={canEditApproval}
+                canUnlock={canUnlockSections}
                 saving={approvalSaving}
                 label="Approval"
                 onLock={() =>
-                  onSaveApproval?.({ ...approval, locked: true })
+                  onSaveApproval?.(buildApprovalSavePayload(true))
+                }
+                onUnlock={() =>
+                  onSaveApproval?.(buildApprovalSavePayload(false))
                 }
               />
             }
           />
           <div
-            className={`aid-preview__approval-edit${
-              approvalLocked
+            className={`aid-preview__meal aid-preview__approval-edit${
+              approvalLocked && !approvalEditable
                 ? ' is-locked'
                 : approvalEditable
                   ? ' is-editable'
@@ -1277,90 +1474,139 @@ const AidApplicationPreview = ({
             }`}
           >
             <div className="aid-preview__cell aid-preview__decision">
-              <span className="aid-preview__label">Decision</span>
+              <span className="aid-preview__label">Recommendation</span>
               <span className="aid-preview__checks">
                 {(
                   [
-                    ['approved', 'Approve'],
-                    ['rejected', 'Not Approve'],
+                    ['recommend', 'Recommend'],
+                    ['not_recommend', 'Not Recommend'],
                   ]
                 ).map(([value, label]) => (
                   <ChoiceCheck
                     key={value}
                     label={label}
-                    checked={
-                      approval.decision === value ||
-                      (!approval.decision && value === approvalDecision)
-                    }
+                    checked={ceoUiDecision === value}
                     editable={approvalEditable}
                     onChange={(on) =>
                       setApproval((prev) => ({
                         ...prev,
-                        decision: on ? value : null,
+                        decision: on ? value : '',
+                        ...(value === 'not_recommend' && on
+                          ? {
+                              ration_options: [],
+                              amount: '',
+                              approved_amount: '',
+                              approved_support: '',
+                            }
+                          : {}),
                       }))
                     }
                   />
                 ))}
               </span>
             </div>
-            <div className="aid-preview__grid aid-preview__grid--2">
-              {approvalEditable ? (
-                <>
-                  <label className="aid-preview__cell">
-                    <span className="aid-preview__label">Approved support</span>
-                    <input
-                      className="aid-preview__inline-input"
-                      type="text"
-                      value={approval.approved_support || ''}
-                      onChange={(e) =>
-                        setApproval((prev) => ({
-                          ...prev,
-                          approved_support: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                  <label className="aid-preview__cell">
-                    <span className="aid-preview__label">
-                      Approved amount (PKR)
-                    </span>
-                    <input
-                      className="aid-preview__inline-input"
-                      type="number"
-                      value={approval.approved_amount}
-                      placeholder="0"
-                      onChange={(e) =>
-                        setApproval((prev) => ({
-                          ...prev,
-                          approved_amount: e.target.value,
-                        }))
-                      }
-                    />
-                  </label>
-                </>
-              ) : (
-                <>
-                  <Cell label="Approved support">
-                    {dash(
-                      approval.approved_support ||
-                        (Array.isArray(rec.ration_options) &&
-                        rec.ration_options.length
-                          ? rec.ration_options.join(', ')
-                          : programLabel),
-                    )}
-                  </Cell>
-                  <Cell label="Approved amount (PKR)">
-                    {money(
-                      approval.approved_amount ||
-                        app.approved_amount ||
-                        (!isNegativeRecommendation(rec.decision)
-                          ? rec.amount
-                          : ''),
-                    )}
-                  </Cell>
-                </>
-              )}
-            </div>
+
+            {ceoShowDetails && isRationApp ? (
+              <div className="aid-preview__cell aid-preview__decision">
+                <span className="aid-preview__label">Package</span>
+                <span className="aid-preview__checks">
+                  {AID_RATION_REC_OPTIONS.map((opt) => {
+                    const selected = normalizeRationOptions(
+                      approval.ration_options,
+                    ).includes(opt.value);
+                    return (
+                      <ChoiceCheck
+                        key={opt.value}
+                        label={opt.label}
+                        checked={selected}
+                        editable={approvalEditable}
+                        onChange={(on) =>
+                          setApproval((prev) => {
+                            const cur = normalizeRationOptions(
+                              prev.ration_options,
+                            );
+                            const next = on
+                              ? [...cur, opt.value]
+                              : cur.filter((v) => v !== opt.value);
+                            const unique = [...new Set(next)];
+                            return {
+                              ...prev,
+                              decision: 'recommend',
+                              ration_options: unique,
+                              approved_support: unique.join(', '),
+                            };
+                          })
+                        }
+                      />
+                    );
+                  })}
+                </span>
+              </div>
+            ) : null}
+
+            {ceoShowDetails && !isRationApp ? (
+              <div className="aid-preview__grid aid-preview__grid--2">
+                {approvalEditable ? (
+                  <>
+                    <label className="aid-preview__cell">
+                      <span className="aid-preview__label">Amount (PKR)</span>
+                      <input
+                        className="aid-preview__inline-input"
+                        type="number"
+                        min="0"
+                        value={approval.amount || approval.approved_amount}
+                        placeholder="Amount"
+                        onChange={(e) =>
+                          setApproval((prev) => ({
+                            ...prev,
+                            decision: 'recommend',
+                            amount: e.target.value,
+                            approved_amount: e.target.value,
+                          }))
+                        }
+                      />
+                    </label>
+                    <label className="aid-preview__cell">
+                      <span className="aid-preview__label">Period</span>
+                      <select
+                        className="aid-preview__inline-input"
+                        value={approval.period_months || 6}
+                        onChange={(e) =>
+                          setApproval((prev) => ({
+                            ...prev,
+                            decision: 'recommend',
+                            period_months: Number(e.target.value),
+                          }))
+                        }
+                      >
+                        {AID_RECOMMENDATION_PERIODS.map((p) => (
+                          <option key={p.value} value={p.value}>
+                            {p.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </>
+                ) : (
+                  <>
+                    <Cell label="Amount (PKR)">
+                      {money(
+                        approval.amount ||
+                          approval.approved_amount ||
+                          app.approved_amount ||
+                          rec.amount,
+                      )}
+                    </Cell>
+                    <Cell label="Period">
+                      {periodLabel(
+                        approval.period_months ?? rec.period_months,
+                      )}
+                    </Cell>
+                  </>
+                )}
+              </div>
+            ) : null}
+
             <div className="aid-preview__block">
               <span className="aid-preview__label">Remarks</span>
               {approvalEditable ? (
@@ -1368,7 +1614,7 @@ const AidApplicationPreview = ({
                   className="aid-preview__meal-remarks"
                   rows={3}
                   value={approval.remarks || ''}
-                  placeholder="Approval remarks…"
+                  placeholder="Remarks…"
                   onChange={(e) =>
                     setApproval((prev) => ({
                       ...prev,
@@ -1395,7 +1641,7 @@ const AidApplicationPreview = ({
                   className="aid-btn aid-btn--ghost"
                   disabled={approvalSaving || !onSaveApproval}
                   onClick={() =>
-                    onSaveApproval?.({ ...approval, locked: false })
+                    onSaveApproval?.(buildApprovalSavePayload(false))
                   }
                 >
                   {approvalSaving ? 'Saving…' : 'Save progress'}
@@ -1405,7 +1651,7 @@ const AidApplicationPreview = ({
                   className="aid-btn aid-btn--primary"
                   disabled={approvalSaving || !onSaveApproval}
                   onClick={() =>
-                    onSaveApproval?.({ ...approval, locked: true })
+                    onSaveApproval?.(buildApprovalSavePayload(true))
                   }
                 >
                   <FiLock aria-hidden />{' '}

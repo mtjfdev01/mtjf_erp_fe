@@ -3,7 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { FiEye, FiFileText } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
-import { hasAidPermission, isSuperAdmin } from '../../../../../utils/permissions';
+import {
+  getAidScopedProgram,
+  hasAidPermission,
+  isSuperAdmin,
+  withAidProgramApiFilter,
+} from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import Pagination from '../../../../common/Pagination';
@@ -24,7 +29,7 @@ import {
 } from '../../shared/AidUserAssignField';
 import {
   AID_ENTRY_STAGES,
-  AID_REQUEST_TYPES,
+  AID_REQUEST_TYPES_FOR_FILTER,
   AID_STATUS_OPTIONS,
   formatAidStatus,
   formatAidRequestType,
@@ -47,8 +52,9 @@ const EMPTY_FILTERS = {
 
 const AidAuditList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const { filtersOpen, toggleFilters } = useFiltersPanel(true);
+  const scopedProgram = getAidScopedProgram(user, permissions);
 
   const canList =
     isSuperAdmin(permissions) ||
@@ -105,8 +111,12 @@ const AidAuditList = () => {
   };
 
   const handleClearFilters = () => {
-    setTempFilters({ ...EMPTY_FILTERS });
-    setAppliedFilters({ ...EMPTY_FILTERS });
+    const cleared = {
+      ...EMPTY_FILTERS,
+      ...(scopedProgram ? { requested_aid_type: scopedProgram } : {}),
+    };
+    setTempFilters(cleared);
+    setAppliedFilters(cleared);
     setSelectedUser(null);
     setReportOpen(false);
     setCurrentPage(1);
@@ -134,23 +144,27 @@ const AidAuditList = () => {
     setError('');
     try {
       const res = await axiosInstance.get('/aid/audit/applications', {
-        params: {
-          page: currentPage,
-          pageSize,
-          queue: 'audit',
-          search: appliedFilters.search || undefined,
-          status: appliedFilters.status || undefined,
-          stage: appliedFilters.stage || undefined,
-          requested_aid_type: appliedFilters.requested_aid_type || undefined,
-          district: appliedFilters.district || undefined,
-          interacted_by_user_id:
-            appliedFilters.interacted_by_user_id || undefined,
-          date: appliedFilters.date || undefined,
-          start_date: appliedFilters.start_date || undefined,
-          end_date: appliedFilters.end_date || undefined,
-          sortField: 'updated_at',
-          sortOrder: 'DESC',
-        },
+        params: withAidProgramApiFilter(
+          {
+            page: currentPage,
+            pageSize,
+            queue: 'audit',
+            search: appliedFilters.search || undefined,
+            status: appliedFilters.status || undefined,
+            stage: appliedFilters.stage || undefined,
+            requested_aid_type: appliedFilters.requested_aid_type || undefined,
+            district: appliedFilters.district || undefined,
+            interacted_by_user_id:
+              appliedFilters.interacted_by_user_id || undefined,
+            date: appliedFilters.date || undefined,
+            start_date: appliedFilters.start_date || undefined,
+            end_date: appliedFilters.end_date || undefined,
+            sortField: 'updated_at',
+            sortOrder: 'DESC',
+          },
+          user,
+          permissions,
+        ),
       });
       setRows(res.data?.data || []);
       setTotalItems(res.data?.totalItems ?? res.data?.total ?? 0);
@@ -178,10 +192,28 @@ const AidAuditList = () => {
     [districts],
   );
 
-  const programOptions = useMemo(
-    () => AID_REQUEST_TYPES.map((o) => ({ value: o.value, label: o.label })),
-    [],
-  );
+  const programOptions = useMemo(() => {
+    const all = AID_REQUEST_TYPES_FOR_FILTER.map((o) => ({
+      value: o.value,
+      label: o.label,
+    }));
+    if (!scopedProgram) return all;
+    return all.filter((o) => o.value === scopedProgram);
+  }, [scopedProgram]);
+
+  useEffect(() => {
+    if (!scopedProgram) return;
+    setTempFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+    setAppliedFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+  }, [scopedProgram]);
 
   const stageOptions = useMemo(
     () => AID_ENTRY_STAGES.map((s) => ({ value: s.id, label: s.label })),
@@ -263,6 +295,7 @@ const AidAuditList = () => {
                 filters={tempFilters}
                 onFilterChange={handleFilterChange}
                 placeholder="All programs"
+                disabled={!!scopedProgram}
               />
 
               <DropdownFilter

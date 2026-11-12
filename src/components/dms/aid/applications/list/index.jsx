@@ -14,6 +14,7 @@ import {
   hasAidPermission,
   isProgramDepartmentManager,
   isSuperAdmin,
+  withAidProgramApiFilter,
 } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -130,14 +131,18 @@ const AidApplicationsList = () => {
       setLoading(true);
       setError('');
       const res = await axiosInstance.get('/aid/applications', {
-        params: {
-          search: appliedFilters.search || undefined,
-          status: appliedFilters.status || undefined,
-          page: currentPage,
-          pageSize,
-          sortField,
-          sortOrder,
-        },
+        params: withAidProgramApiFilter(
+          {
+            search: appliedFilters.search || undefined,
+            status: appliedFilters.status || undefined,
+            page: currentPage,
+            pageSize,
+            sortField,
+            sortOrder,
+          },
+          user,
+          permissions,
+        ),
       });
       setRows(res.data?.data || []);
       setTotalItems(res.data?.total || 0);

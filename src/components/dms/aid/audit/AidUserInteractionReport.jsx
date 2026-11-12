@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FiDownload, FiX } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
+import { useAuth } from '../../../../context/AuthContext';
+import { withAidProgramApiFilter } from '../../../../utils/permissions';
 import { formatAuditActor, formatAuditValue } from '../../../common/audit/auditHistoryLabels';
 import {
   formatAidRequestType,
@@ -20,6 +22,7 @@ const AidUserInteractionReport = ({
   filters = {},
   onClose,
 }) => {
+  const { permissions, user: authUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [payload, setPayload] = useState(null);
@@ -32,19 +35,23 @@ const AidUserInteractionReport = ({
       setError('');
       try {
         const res = await axiosInstance.get('/aid/audit/user-interactions', {
-          params: {
-            user_id: user.id,
-            page: pageNum,
-            pageSize: 50,
-            search: filters.search || undefined,
-            status: filters.status || undefined,
-            stage: filters.stage || undefined,
-            requested_aid_type: filters.requested_aid_type || undefined,
-            district: filters.district || undefined,
-            date: filters.date || undefined,
-            start_date: filters.start_date || undefined,
-            end_date: filters.end_date || undefined,
-          },
+          params: withAidProgramApiFilter(
+            {
+              user_id: user.id,
+              page: pageNum,
+              pageSize: 50,
+              search: filters.search || undefined,
+              status: filters.status || undefined,
+              stage: filters.stage || undefined,
+              requested_aid_type: filters.requested_aid_type || undefined,
+              district: filters.district || undefined,
+              date: filters.date || undefined,
+              start_date: filters.start_date || undefined,
+              end_date: filters.end_date || undefined,
+            },
+            authUser,
+            permissions,
+          ),
         });
         setPayload(res.data || null);
         setPage(pageNum);
@@ -59,7 +66,7 @@ const AidUserInteractionReport = ({
         setLoading(false);
       }
     },
-    [open, user?.id, filters],
+    [open, user?.id, filters, authUser, permissions],
   );
 
   useEffect(() => {

@@ -77,6 +77,8 @@ import {
   emptyMarriageGiftConsentForm,
   isWheelchairConsentProgram,
   isMarriageGiftConsentProgram,
+  isMarriageGiftProgram,
+  isFinancialAssistanceProgram,
   resolveConsentVariant,
   emptyConsentForVariant,
   hasAidBiometric,
@@ -2182,10 +2184,16 @@ const AidApplicationAddInner = () => {
         ...(form.requested_aid_type === 'ration'
           ? { ration_details: rationDetails }
           : {}),
-        ...(form.requested_aid_type === 'marriage_gift'
+        ...(isMarriageGiftProgram(
+          form.requested_aid_type,
+          amountFields.aid_program || form.aid_program,
+        )
           ? { marriage_gift_details: marriageGiftDetails }
           : {}),
-        ...(form.requested_aid_type === 'financial_assistance'
+        ...(isFinancialAssistanceProgram(
+          form.requested_aid_type,
+          amountFields.aid_program || form.aid_program,
+        )
           ? { financial_assistance_details: financialAssistanceDetails }
           : {}),
         ...(form.requested_aid_type === 'clean_water'
@@ -2653,12 +2661,12 @@ const AidApplicationAddInner = () => {
                         : emptyRationDetails(),
                     );
                   }
-                  if (next === 'marriage_gift') {
+                  if (isMarriageGiftProgram(next, amt.aid_program)) {
                     setMarriageGiftDetails((prev) =>
                       prev?.items?.length ? prev : emptyMarriageGiftDetails(),
                     );
                   }
-                  if (next === 'financial_assistance') {
+                  if (isFinancialAssistanceProgram(next, amt.aid_program)) {
                     setFinancialAssistanceDetails((prev) =>
                       prev?.monthly_household_income != null
                         ? prev
@@ -2711,6 +2719,28 @@ const AidApplicationAddInner = () => {
                       expected_amount: amt.expected_amount,
                       expected_amount_max: amt.expected_amount_max,
                     }));
+                    if (
+                      isMarriageGiftProgram(
+                        form.requested_aid_type,
+                        nextProgram,
+                      )
+                    ) {
+                      setMarriageGiftDetails((prev) =>
+                        prev?.items?.length ? prev : emptyMarriageGiftDetails(),
+                      );
+                    }
+                    if (
+                      isFinancialAssistanceProgram(
+                        form.requested_aid_type,
+                        nextProgram,
+                      )
+                    ) {
+                      setFinancialAssistanceDetails((prev) =>
+                        prev?.monthly_household_income != null
+                          ? prev
+                          : emptyFinancialAssistanceDetails(),
+                      );
+                    }
                     setConsentForm((prev) => {
                       const nextVariant = resolveConsentVariant(
                         form.requested_aid_type,
@@ -2810,13 +2840,19 @@ const AidApplicationAddInner = () => {
                 onChange={setRationDetails}
               />
             )}
-            {form.requested_aid_type === 'marriage_gift' && (
+            {isMarriageGiftProgram(
+              form.requested_aid_type,
+              form.aid_program,
+            ) && (
               <AidMarriageGiftApplicationFields
                 value={marriageGiftDetails}
                 onChange={setMarriageGiftDetails}
               />
             )}
-            {form.requested_aid_type === 'financial_assistance' && (
+            {isFinancialAssistanceProgram(
+              form.requested_aid_type,
+              form.aid_program,
+            ) && (
               <AidFinancialAssistanceFields
                 value={financialAssistanceDetails}
                 onChange={setFinancialAssistanceDetails}

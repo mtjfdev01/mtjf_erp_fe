@@ -49,6 +49,8 @@ import {
   formatExpectedAmount,
   isWheelchairConsentProgram,
   isWheelchairConsentForm,
+  isMarriageGiftProgram,
+  isFinancialAssistanceProgram,
 } from '../../../aidConstants';
 import { formatAuditActor } from '../../../../../common/audit/auditHistoryLabels';
 import '../../../aid.css';
@@ -147,14 +149,20 @@ const AidEntryApplicationView = () => {
       ),
     );
     const saved = payload.investigation_recommendation || {};
+    const ration_options = normalizeRationOptions(saved.ration_options);
+    const rawDecision = String(saved.decision || '').trim();
     setRecommendation({
       ...emptyRecommendation(),
-      decision: normalizeRecommendationDecision(saved.decision),
+      decision: rawDecision
+        ? normalizeRecommendationDecision(rawDecision)
+        : ration_options.length > 0
+          ? 'recommend'
+          : '',
       amount: saved.amount ?? '',
       period_months: saved.period_months ?? 6,
       remarks: saved.remarks || '',
       found_monthly_income: saved.found_monthly_income ?? '',
-      ration_options: normalizeRationOptions(saved.ration_options),
+      ration_options,
     });
     setVulnerability(
       payload.vulnerability ||
@@ -305,15 +313,20 @@ const AidEntryApplicationView = () => {
 
   const buildRecommendationBody = () => {
     const ration_options = normalizeRationOptions(recommendation.ration_options);
-    const decision = normalizeRecommendationDecision(recommendation.decision);
+    const decision = isNegativeRecommendation(recommendation.decision)
+      ? 'not_recommend'
+      : normalizeRecommendationDecision(
+          recommendation.decision || (ration_options.length ? 'recommend' : ''),
+        );
     if (isRationApp && rationOverrideEdit) {
+      const notRecommend = decision === 'not_recommend';
       return {
-        decision: 'recommend',
+        decision: notRecommend ? 'not_recommend' : 'recommend',
         amount: null,
         period_months: null,
         remarks: recommendation.remarks,
         found_monthly_income: null,
-        ration_options,
+        ration_options: notRecommend ? [] : ration_options,
       };
     }
     return {
@@ -335,20 +348,7 @@ const AidEntryApplicationView = () => {
     setRecSaving(true);
     try {
       await axiosInstance.patch(`/aid/applications/${id}`, {
-        investigation_recommendation: {
-          decision: normalizeRecommendationDecision(recommendation.decision),
-          amount: isNegativeRecommendation(recommendation.decision)
-            ? null
-            : recommendation.amount !== '' && recommendation.amount != null
-              ? Number(recommendation.amount)
-              : null,
-          period_months: Number(recommendation.period_months) || null,
-          remarks: recommendation.remarks || '',
-          found_monthly_income: recommendation.found_monthly_income
-            ? Number(recommendation.found_monthly_income)
-            : null,
-          ration_options: normalizeRationOptions(recommendation.ration_options),
-        },
+        investigation_recommendation: buildRecommendationBody(),
       });
       await load();
       toast.success('Recommendation saved');
@@ -419,9 +419,9 @@ const AidEntryApplicationView = () => {
     (app.requested_aid_type === 'education' && app.education_details) ||
     (app.requested_aid_type === 'health' && app.health_details) ||
     (app.requested_aid_type === 'ration' && app.ration_details) ||
-    (app.requested_aid_type === 'marriage_gift' &&
+    (isMarriageGiftProgram(app.requested_aid_type, app.aid_program) &&
       app.marriage_gift_details) ||
-    (app.requested_aid_type === 'financial_assistance' &&
+    (isFinancialAssistanceProgram(app.requested_aid_type, app.aid_program) &&
       app.financial_assistance_details) ||
     (app.requested_aid_type === 'clean_water' && app.clean_water_details);
 
@@ -613,14 +613,20 @@ const AidEntryApplicationView = () => {
                           readOnly
                         />
                       )}
-                    {app.requested_aid_type === 'marriage_gift' &&
+                    {isMarriageGiftProgram(
+                      app.requested_aid_type,
+                      app.aid_program,
+                    ) &&
                       app.marriage_gift_details && (
                         <AidMarriageGiftApplicationFields
                           value={app.marriage_gift_details}
                           readOnly
                         />
                       )}
-                    {app.requested_aid_type === 'financial_assistance' &&
+                    {isFinancialAssistanceProgram(
+                      app.requested_aid_type,
+                      app.aid_program,
+                    ) &&
                       app.financial_assistance_details && (
                         <AidFinancialAssistanceFields
                           value={app.financial_assistance_details}

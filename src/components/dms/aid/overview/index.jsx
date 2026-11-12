@@ -4,7 +4,12 @@ import { Chart, registerables } from 'chart.js';
 import { FiDownload } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
-import { canViewModule, hasAidPermission } from '../../../../utils/permissions';
+import {
+  canViewModule,
+  getAidScopedProgram,
+  hasAidPermission,
+  withAidProgramApiFilter,
+} from '../../../../utils/permissions';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormSelect from '../../../common/FormSelect';
@@ -31,7 +36,7 @@ const budgetTone = (pct) => {
 
 const AidWelfareOverview = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -41,7 +46,12 @@ const AidWelfareOverview = () => {
     permissions?.super_admin ||
     permissions?.program_manager;
 
-  const [program, setProgram] = useState('all');
+  const scopedProgram = getAidScopedProgram(user, permissions);
+  const [program, setProgram] = useState(scopedProgram || 'all');
+
+  useEffect(() => {
+    if (scopedProgram) setProgram(scopedProgram);
+  }, [scopedProgram]);
   const [dateFilters, setDateFilters] = useState({
     date: '',
     start_date: '',
@@ -81,12 +91,17 @@ const AidWelfareOverview = () => {
       setLoading(true);
       setError('');
       const res = await axiosInstance.get('/aid/overview', {
-        params: {
-          date: dateFilters.date || undefined,
-          start_date: dateFilters.start_date || undefined,
-          end_date: dateFilters.end_date || undefined,
-          program: program === 'all' ? undefined : program,
-        },
+        params: withAidProgramApiFilter(
+          {
+            date: dateFilters.date || undefined,
+            start_date: dateFilters.start_date || undefined,
+            end_date: dateFilters.end_date || undefined,
+            program: program === 'all' ? undefined : program,
+          },
+          user,
+          permissions,
+          { key: 'program' },
+        ),
       });
       setData(res.data?.data || null);
     } catch (err) {
@@ -204,7 +219,12 @@ const AidWelfareOverview = () => {
               label="Program"
               value={program}
               onChange={(e) => setProgram(e.target.value)}
-              options={programOptions}
+              options={
+                scopedProgram
+                  ? programOptions.filter((o) => o.value === scopedProgram)
+                  : programOptions
+              }
+              disabled={!!scopedProgram}
             />
             <button
               type="button"

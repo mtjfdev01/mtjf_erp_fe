@@ -59,9 +59,71 @@ export const normalizeRecommendationDecision = (decision) => {
   return d;
 };
 
+/** Empty stays empty (for initial Recommend / Not Recommend layer). */
+export const getRecommendationDecisionOrEmpty = (decision) => {
+  const d = String(decision || '').trim();
+  if (!d) return '';
+  return normalizeRecommendationDecision(d);
+};
+
 export const isNegativeRecommendation = (decision) => {
-  const d = normalizeRecommendationDecision(decision);
+  const d = getRecommendationDecisionOrEmpty(decision);
+  if (!d) return false;
   return d === 'not_recommend';
+};
+
+/** Ration manager layer: explicit decision, or legacy packages ⇒ recommend. */
+export const getRationLayerDecision = (rec = {}) => {
+  const explicit = getRecommendationDecisionOrEmpty(rec?.decision);
+  if (explicit) return explicit;
+  if (normalizeRationOptions(rec?.ration_options).length > 0) return 'recommend';
+  return '';
+};
+
+/** True when recommendation payload has any meaningful fields. */
+export const hasRecommendationContent = (rec) => {
+  if (!rec || typeof rec !== 'object') return false;
+  return (
+    !!String(rec.decision || '').trim() ||
+    normalizeRationOptions(rec.ration_options).length > 0 ||
+    !!String(rec.remarks || '').trim() ||
+    (rec.amount != null && rec.amount !== '') ||
+    rec.period_months != null
+  );
+};
+
+/**
+ * Manager recommendation for preview / CEO popup.
+ * Prefers nested manager_recommendation; else live top-level after manager forward.
+ */
+export const resolveManagerRecommendation = (rec) => {
+  if (!rec || typeof rec !== 'object') return null;
+  const nested = rec.manager_recommendation;
+  if (nested && typeof nested === 'object' && hasRecommendationContent(nested)) {
+    return {
+      decision: nested.decision ?? null,
+      amount: nested.amount ?? null,
+      period_months: nested.period_months ?? null,
+      remarks: nested.remarks ?? null,
+      found_monthly_income: nested.found_monthly_income ?? null,
+      ration_options: normalizeRationOptions(nested.ration_options),
+    };
+  }
+  if (
+    rec.manager_forwarded_at ||
+    rec.submitted_by_role === 'program_manager' ||
+    hasRecommendationContent(rec)
+  ) {
+    return {
+      decision: rec.decision ?? null,
+      amount: rec.amount ?? null,
+      period_months: rec.period_months ?? null,
+      remarks: rec.remarks ?? null,
+      found_monthly_income: rec.found_monthly_income ?? null,
+      ration_options: normalizeRationOptions(rec.ration_options),
+    };
+  }
+  return null;
 };
 
 export const formatRecommendationDecision = (decision) => {
@@ -74,7 +136,7 @@ export const formatRecommendationDecision = (decision) => {
 };
 
 export const emptyRecommendation = () => ({
-  decision: 'recommend',
+  decision: '',
   amount: '',
   period_months: 6,
   remarks: '',
@@ -381,14 +443,19 @@ export const getInvestigationIncompleteReasons = (items = [], state = {}) => {
 };
 
 export const isRecommendationComplete = (rec = {}, opts = {}) => {
-  const remarks = String(rec.remarks || '').trim();
-  if (remarks.length < 3) return false;
   if (opts.rationOverride) {
+    const decision = getRationLayerDecision(rec);
+    if (!decision) return false;
+    if (decision === 'not_recommend') return true;
+    const remarks = String(rec.remarks || '').trim();
+    if (remarks.length < 3) return false;
     return normalizeRationOptions(rec.ration_options).length > 0;
   }
-  const decision = normalizeRecommendationDecision(rec.decision);
-  if (isNegativeRecommendation(decision)) return true;
+  const remarks = String(rec.remarks || '').trim();
+  if (remarks.length < 3) return false;
+  const decision = getRecommendationDecisionOrEmpty(rec.decision);
   if (!decision) return false;
+  if (isNegativeRecommendation(decision)) return true;
   const amount = Number(rec.amount);
   if (!Number.isFinite(amount) || amount <= 0) return false;
   return true;
@@ -397,11 +464,17 @@ export const isRecommendationComplete = (rec = {}, opts = {}) => {
 /** Human-readable gaps blocking Recommendation / submit. */
 export const getRecommendationIncompleteReasons = (rec = {}, opts = {}) => {
   const reasons = [];
-  const remarks = String(rec?.remarks || '').trim();
-  if (remarks.length < 3) {
-    reasons.push('Recommendation: add remarks (min 3 characters)');
-  }
   if (opts.rationOverride) {
+    const decision = getRationLayerDecision(rec);
+    if (!decision) {
+      reasons.push('Recommendation: choose Recommend or Not Recommend');
+      return reasons;
+    }
+    if (decision === 'not_recommend') return reasons;
+    const remarks = String(rec?.remarks || '').trim();
+    if (remarks.length < 3) {
+      reasons.push('Recommendation: add remarks (min 3 characters)');
+    }
     if (normalizeRationOptions(rec?.ration_options).length === 0) {
       reasons.push(
         'Recommendation: select at least one ration option (Full, Half, Monthly, Alternate)',
@@ -409,8 +482,12 @@ export const getRecommendationIncompleteReasons = (rec = {}, opts = {}) => {
     }
     return reasons;
   }
-  const decision = normalizeRecommendationDecision(rec?.decision);
-  if (!rec?.decision) {
+  const remarks = String(rec?.remarks || '').trim();
+  if (remarks.length < 3) {
+    reasons.push('Recommendation: add remarks (min 3 characters)');
+  }
+  const decision = getRecommendationDecisionOrEmpty(rec?.decision);
+  if (!decision) {
     reasons.push('Recommendation: choose Recommend or Not Recommend');
   }
   if (decision && !isNegativeRecommendation(decision)) {
@@ -983,38 +1060,45 @@ const AidInvestigationPanel = ({
                 {rationOverrideMode ? (
                   <>
                     <p className="aid-section-hint" style={{ marginTop: 0 }}>
-                      Select package options and add remarks only.
+                      Choose Recommend or Not Recommend first.
                     </p>
-                    <div className="aid-rec-options aid-rec-options--checks">
-                      {AID_RATION_REC_OPTIONS.map((opt) => {
-                        const selected = normalizeRationOptions(
-                          rec.ration_options,
-                        ).includes(opt.value);
+                    <div className="aid-rec-options">
+                      {AID_RECOMMENDATION_DECISIONS.map((opt) => {
+                        const layerDecision = getRationLayerDecision(rec);
                         return (
                           <label
                             key={opt.value}
                             className={`aid-rec-option${
-                              selected ? ' is-active' : ''
+                              layerDecision === opt.value ? ' is-active' : ''
+                            }${
+                              opt.value === 'not_recommend'
+                                ? ' aid-rec-option--reject'
+                                : ''
                             }`}
                           >
                             <input
-                              type="checkbox"
-                              checked={selected}
+                              type="radio"
+                              name="aid-ration-rec-decision"
+                              value={opt.value}
+                              checked={layerDecision === opt.value}
                               disabled={recLocked}
                               onChange={() => {
-                                const cur = normalizeRationOptions(
-                                  rec.ration_options,
-                                );
-                                const next = selected
-                                  ? cur.filter((v) => v !== opt.value)
-                                  : [...cur, opt.value];
-                                setRec({
-                                  ration_options: next,
-                                  decision: 'recommend',
-                                  amount: '',
-                                  period_months: null,
-                                  found_monthly_income: '',
-                                });
+                                if (opt.value === 'not_recommend') {
+                                  setRec({
+                                    decision: 'not_recommend',
+                                    ration_options: [],
+                                    amount: '',
+                                    period_months: null,
+                                    found_monthly_income: '',
+                                  });
+                                } else {
+                                  setRec({
+                                    decision: 'recommend',
+                                    amount: '',
+                                    period_months: null,
+                                    found_monthly_income: '',
+                                  });
+                                }
                               }}
                             />
                             <span>{opt.label}</span>
@@ -1022,16 +1106,76 @@ const AidInvestigationPanel = ({
                         );
                       })}
                     </div>
-                    <label className="aid-rec-field">
-                      <span>{remarksLabel}</span>
-                      <textarea
-                        rows={3}
-                        disabled={recLocked}
-                        placeholder="Remarks…"
-                        value={rec.remarks}
-                        onChange={(e) => setRec({ remarks: e.target.value })}
-                      />
-                    </label>
+
+                    {getRationLayerDecision(rec) === 'not_recommend' ? (
+                      <label className="aid-rec-field">
+                        <span>{remarksLabel} (optional)</span>
+                        <textarea
+                          rows={3}
+                          disabled={recLocked}
+                          placeholder="Remarks…"
+                          value={rec.remarks}
+                          onChange={(e) => setRec({ remarks: e.target.value })}
+                        />
+                      </label>
+                    ) : null}
+
+                    {getRationLayerDecision(rec) === 'recommend' ? (
+                      <>
+                        <p className="aid-section-hint">
+                          Select package options and add remarks only.
+                        </p>
+                        <div className="aid-rec-options aid-rec-options--checks">
+                          {AID_RATION_REC_OPTIONS.map((opt) => {
+                            const selected = normalizeRationOptions(
+                              rec.ration_options,
+                            ).includes(opt.value);
+                            return (
+                              <label
+                                key={opt.value}
+                                className={`aid-rec-option${
+                                  selected ? ' is-active' : ''
+                                }`}
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={selected}
+                                  disabled={recLocked}
+                                  onChange={() => {
+                                    const cur = normalizeRationOptions(
+                                      rec.ration_options,
+                                    );
+                                    const next = selected
+                                      ? cur.filter((v) => v !== opt.value)
+                                      : [...cur, opt.value];
+                                    setRec({
+                                      ration_options: next,
+                                      decision: 'recommend',
+                                      amount: '',
+                                      period_months: null,
+                                      found_monthly_income: '',
+                                    });
+                                  }}
+                                />
+                                <span>{opt.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                        <label className="aid-rec-field">
+                          <span>{remarksLabel}</span>
+                          <textarea
+                            rows={3}
+                            disabled={recLocked}
+                            placeholder="Remarks…"
+                            value={rec.remarks}
+                            onChange={(e) =>
+                              setRec({ remarks: e.target.value })
+                            }
+                          />
+                        </label>
+                      </>
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -1040,7 +1184,7 @@ const AidInvestigationPanel = ({
                         <label
                           key={opt.value}
                           className={`aid-rec-option${
-                            normalizeRecommendationDecision(rec.decision) ===
+                            getRecommendationDecisionOrEmpty(rec.decision) ===
                             opt.value
                               ? ' is-active'
                               : ''
@@ -1055,7 +1199,7 @@ const AidInvestigationPanel = ({
                             name="aid-rec-decision"
                             value={opt.value}
                             checked={
-                              normalizeRecommendationDecision(rec.decision) ===
+                              getRecommendationDecisionOrEmpty(rec.decision) ===
                               opt.value
                             }
                             disabled={recLocked}
@@ -1066,7 +1210,8 @@ const AidInvestigationPanel = ({
                       ))}
                     </div>
 
-                    {!isNegativeRecommendation(rec.decision) ? (
+                    {getRecommendationDecisionOrEmpty(rec.decision) &&
+                    !isNegativeRecommendation(rec.decision) ? (
                       <div className="aid-rec-grid">
                         <label className="aid-rec-field">
                           <span>Amount (PKR)</span>

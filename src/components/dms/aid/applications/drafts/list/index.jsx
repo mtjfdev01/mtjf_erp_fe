@@ -5,7 +5,9 @@ import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
 import {
   canViewModule,
+  getAidScopedProgram,
   hasAidPermission,
+  withAidProgramApiFilter,
 } from '../../../../../../utils/permissions';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
@@ -14,7 +16,7 @@ import FormInput from '../../../../../common/FormInput';
 import FormSelect from '../../../../../common/FormSelect';
 import AidUserAssignField from '../../../shared/AidUserAssignField';
 import {
-  AID_REQUEST_TYPES,
+  AID_REQUEST_TYPES_FOR_FILTER,
   formatAidProgramLabel,
   formatAidRequestType,
   formatRelativeAidTime,
@@ -37,7 +39,8 @@ const emptyFilters = {
  */
 const AidDraftsList = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
+  const scopedProgram = getAidScopedProgram(user, permissions);
 
   const isStaffElevated =
     !!permissions?.super_admin ||
@@ -104,16 +107,20 @@ const AidDraftsList = () => {
       setLoading(true);
       setError('');
       const res = await axiosInstance.get('/aid/applications', {
-        params: {
-          queue: 'drafts',
-          search: appliedFilters.search || undefined,
-          requested_aid_type: appliedFilters.requested_aid_type || undefined,
-          district: appliedFilters.district || undefined,
-          page: currentPage,
-          pageSize,
-          sortField,
-          sortOrder,
-        },
+        params: withAidProgramApiFilter(
+          {
+            queue: 'drafts',
+            search: appliedFilters.search || undefined,
+            requested_aid_type: appliedFilters.requested_aid_type || undefined,
+            district: appliedFilters.district || undefined,
+            page: currentPage,
+            pageSize,
+            sortField,
+            sortOrder,
+          },
+          user,
+          permissions,
+        ),
       });
       setRows(res.data?.data || []);
       setTotalItems(res.data?.total || 0);
@@ -170,14 +177,38 @@ const AidDraftsList = () => {
 
   useOfflineDataRefresh(() => fetchRows(), [appliedFilters, currentPage], ['aid']);
 
-  const programOptions = [
-    { value: '', label: 'All programs' },
-    ...AID_REQUEST_TYPES.map((t) => ({ value: t.value, label: t.label })),
-  ];
+  const programOptions = scopedProgram
+    ? AID_REQUEST_TYPES_FOR_FILTER.filter(
+        (t) => t.value === scopedProgram,
+      ).map((t) => ({
+        value: t.value,
+        label: t.label,
+      }))
+    : [
+        { value: '', label: 'All programs' },
+        ...AID_REQUEST_TYPES_FOR_FILTER.map((t) => ({
+          value: t.value,
+          label: t.label,
+        })),
+      ];
   const districtOptions = [
     { value: '', label: 'All districts' },
     ...districts.map((d) => ({ value: d, label: d })),
   ];
+
+  useEffect(() => {
+    if (!scopedProgram) return;
+    setTempFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+    setAppliedFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+  }, [scopedProgram]);
 
   const approveRow = rows.find((r) => r.id === approveRowId);
 
@@ -266,6 +297,7 @@ const AidDraftsList = () => {
                   }))
                 }
                 options={programOptions}
+                disabled={!!scopedProgram}
               />
             </div>
             <div className="aid-entry-filters__field">

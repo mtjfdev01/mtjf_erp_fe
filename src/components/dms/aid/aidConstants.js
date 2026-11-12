@@ -71,8 +71,6 @@ export const AID_REQUEST_TYPES = [
   { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
   { value: 'ration', label: 'Ration' },
-  { value: 'marriage_gift', label: 'Marriage Gift' },
-  { value: 'financial_assistance', label: 'Financial Assistance' },
   { value: 'clean_water', label: 'Clean Water' },
   { value: 'apna_ghar', label: 'Apna Ghar' },
   { value: 'disaster_relief', label: 'Disaster Relief' },
@@ -81,6 +79,21 @@ export const AID_REQUEST_TYPES = [
   { value: 'aas_lab_diagnostics', label: 'AAS Lab & Diagnostics' },
   { value: 'community_services', label: 'Community Services' },
   { value: 'other', label: 'Other' },
+];
+
+/**
+ * Former top-level programs now filed under Community Services subprograms.
+ * Kept for filters / labels on existing rows.
+ */
+export const AID_LEGACY_REQUEST_TYPES = [
+  { value: 'marriage_gift', label: 'Marriage Gift (legacy)' },
+  { value: 'financial_assistance', label: 'Financial Assistance (legacy)' },
+];
+
+/** Program filter options including legacy types. */
+export const AID_REQUEST_TYPES_FOR_FILTER = [
+  ...AID_REQUEST_TYPES,
+  ...AID_LEGACY_REQUEST_TYPES,
 ];
 
 /**
@@ -243,17 +256,6 @@ export const AID_PROGRAMS = [
       'Recommended for woman-headed families to promote sustainable livelihoods.',
   },
   {
-    value: 'marriage_gift_standard',
-    aid_type: 'marriage_gift',
-    label: 'Marriage Gift',
-    uom: 'Per Beneficiary',
-    amount: 150000,
-    zakat: true,
-    general: true,
-    narration:
-      'Support for deserving girls whose families cannot arrange marriage expenses.',
-  },
-  {
     value: 'ration_feed_family_month',
     aid_type: 'ration',
     label: 'Feed a Family for whole month',
@@ -264,10 +266,56 @@ export const AID_PROGRAMS = [
     narration:
       'Monthly ration of essential food items for deserving families.',
   },
+  {
+    value: 'community_services_marriage_gift',
+    aid_type: 'community_services',
+    label: 'Marriage Gift',
+    uom: 'Per Beneficiary',
+    amount: 150000,
+    zakat: true,
+    general: true,
+    narration:
+      'Support for deserving girls whose families cannot arrange marriage expenses.',
+  },
+  {
+    value: 'community_services_financial_assistance',
+    aid_type: 'community_services',
+    label: 'Financial Assistance',
+    uom: 'Per Beneficiary',
+    amount: 950000,
+    zakat: true,
+    general: true,
+    narration:
+      'Direct financial support for deserving families under Community Services.',
+  },
+  {
+    value: 'community_services_wheelchair',
+    aid_type: 'community_services',
+    label: 'Wheelchair',
+    uom: 'Per Beneficiary',
+    amount: 20000,
+    zakat: true,
+    general: true,
+    narration:
+      'Provision of wheelchair / mobility aid under Community Services.',
+  },
+  /** @deprecated Prefer community_services_marriage_gift — kept for existing rows */
+  {
+    value: 'marriage_gift_standard',
+    aid_type: 'community_services',
+    label: 'Marriage Gift',
+    uom: 'Per Beneficiary',
+    amount: 150000,
+    zakat: true,
+    general: true,
+    hidden: true,
+    narration:
+      'Support for deserving girls whose families cannot arrange marriage expenses.',
+  },
 ];
 
 export function getAidProgramsForType(aidType) {
-  return AID_PROGRAMS.filter((p) => p.aid_type === aidType);
+  return AID_PROGRAMS.filter((p) => p.aid_type === aidType && !p.hidden);
 }
 
 export function getAidProgram(programKey) {
@@ -785,15 +833,39 @@ export const emptyMarriageGiftConsentForm = () => ({
   lang: 'ur',
 });
 
-/** Wheelchair affidavit is used for PWD rehab (wheelchairs / mobility aids). */
+/** Wheelchair affidavit — Health PWD rehab or Community Services wheelchair. */
 export function isWheelchairConsentProgram(aidProgram) {
-  return String(aidProgram || '').toLowerCase() === 'health_pwd_rehab';
+  const program = String(aidProgram || '').toLowerCase();
+  return (
+    program === 'health_pwd_rehab' ||
+    program === 'community_services_wheelchair' ||
+    program.includes('wheelchair')
+  );
 }
 
-export function isMarriageGiftConsentProgram(aidType, aidProgram) {
+export function isMarriageGiftProgram(aidType, aidProgram) {
   const type = String(aidType || '').toLowerCase();
   const program = String(aidProgram || '').toLowerCase();
-  return type === 'marriage_gift' || program.startsWith('marriage_gift');
+  return (
+    type === 'marriage_gift' ||
+    program === 'community_services_marriage_gift' ||
+    program.startsWith('marriage_gift')
+  );
+}
+
+export function isFinancialAssistanceProgram(aidType, aidProgram) {
+  const type = String(aidType || '').toLowerCase();
+  const program = String(aidProgram || '').toLowerCase();
+  return (
+    type === 'financial_assistance' ||
+    program === 'community_services_financial_assistance' ||
+    program.includes('financial_assistance')
+  );
+}
+
+/** @deprecated Use isMarriageGiftProgram */
+export function isMarriageGiftConsentProgram(aidType, aidProgram) {
+  return isMarriageGiftProgram(aidType, aidProgram);
 }
 
 export function isWheelchairConsentForm(value) {
@@ -2078,7 +2150,15 @@ export function formatAidStatus(status) {
 }
 
 export function formatAidRequestType(type) {
-  return AID_REQUEST_TYPES.find((o) => o.value === type)?.label || type || '—';
+  return (
+    AID_REQUEST_TYPES.find((o) => o.value === type)?.label ||
+    AID_LEGACY_REQUEST_TYPES.find((o) => o.value === type)?.label?.replace(
+      /\s*\(legacy\)\s*$/i,
+      '',
+    ) ||
+    type ||
+    '—'
+  );
 }
 
 /** Program + SubProgram label for lists (e.g. "Health · Patient Care Initiative"). */

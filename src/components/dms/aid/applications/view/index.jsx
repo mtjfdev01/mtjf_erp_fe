@@ -37,6 +37,8 @@ import AidInvestigationPanel, {
   enrichInvestigationFromAttachments,
   formatRecommendationDecision,
   formatRecommendationPeriod,
+  getRecommendationDecisionOrEmpty,
+  getRationLayerDecision,
   isInvestigationComplete,
   isNegativeRecommendation,
   isRecommendationComplete,
@@ -60,6 +62,8 @@ import {
   formatExpectedAmount,
   isWheelchairConsentProgram,
   isWheelchairConsentForm,
+  isMarriageGiftProgram,
+  isFinancialAssistanceProgram,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -175,14 +179,20 @@ const AidApplicationView = () => {
       {
         const saved = payload?.investigation_recommendation;
         if (saved && typeof saved === 'object') {
+          const ration_options = normalizeRationOptions(saved.ration_options);
+          const rawDecision = String(saved.decision || '').trim();
           setRecommendation({
             ...emptyRecommendation(),
-            decision: normalizeRecommendationDecision(saved.decision),
+            decision: rawDecision
+              ? normalizeRecommendationDecision(rawDecision)
+              : ration_options.length > 0
+                ? 'recommend'
+                : '',
             amount: saved.amount ?? '',
             period_months: saved.period_months ?? 6,
             remarks: saved.remarks || '',
             found_monthly_income: saved.found_monthly_income ?? '',
-            ration_options: normalizeRationOptions(saved.ration_options),
+            ration_options,
           });
         } else {
           setRecommendation(emptyRecommendation());
@@ -477,15 +487,20 @@ const AidApplicationView = () => {
 
   const buildRecommendationBody = () => {
     const ration_options = normalizeRationOptions(recommendation.ration_options);
-    const decision = normalizeRecommendationDecision(recommendation.decision);
+    const decision = isNegativeRecommendation(recommendation.decision)
+      ? 'not_recommend'
+      : normalizeRecommendationDecision(
+          recommendation.decision || (ration_options.length ? 'recommend' : ''),
+        );
     if (isRationApp && rationOverrideEdit) {
+      const notRecommend = decision === 'not_recommend';
       return {
-        decision: 'recommend',
+        decision: notRecommend ? 'not_recommend' : 'recommend',
         amount: null,
         period_months: null,
         remarks: recommendation.remarks,
         found_monthly_income: null,
-        ration_options,
+        ration_options: notRecommend ? [] : ration_options,
       };
     }
     return {
@@ -549,20 +564,32 @@ const AidApplicationView = () => {
     setApprovalSaving(true);
     setActionError('');
     try {
-      const amountRaw = approval?.approved_amount;
+      const amountRaw =
+        approval?.amount != null && approval.amount !== ''
+          ? approval.amount
+          : approval?.approved_amount;
       const amount =
         amountRaw === '' || amountRaw == null
           ? null
           : Number(amountRaw);
+      const payload = {
+        decision: approval?.decision || null,
+        remarks: approval?.remarks || null,
+        ration_options: Array.isArray(approval?.ration_options)
+          ? approval.ration_options
+          : [],
+        amount: Number.isFinite(amount) ? amount : null,
+        period_months:
+          approval?.period_months != null
+            ? Number(approval.period_months)
+            : null,
+        approved_support: approval?.approved_support || null,
+        approved_amount: Number.isFinite(amount) ? amount : null,
+        locked: approval?.locked === true,
+      };
       const res = await axiosInstance.patch(
         `/aid/applications/${id}/preview-approval`,
-        {
-          decision: approval?.decision || null,
-          remarks: approval?.remarks || null,
-          approved_support: approval?.approved_support || null,
-          approved_amount: Number.isFinite(amount) ? amount : null,
-          locked: approval?.locked === true,
-        },
+        payload,
       );
       const updated = res.data?.data;
       if (updated) {
@@ -572,13 +599,7 @@ const AidApplicationView = () => {
           prev
             ? {
                 ...prev,
-                preview_approval: {
-                  decision: approval?.decision || null,
-                  remarks: approval?.remarks || null,
-                  approved_support: approval?.approved_support || null,
-                  approved_amount: Number.isFinite(amount) ? amount : null,
-                  locked: approval?.locked === true,
-                },
+                preview_approval: payload,
               }
             : prev,
         );
@@ -1103,7 +1124,10 @@ const AidApplicationView = () => {
                     />
                   </div>
                 )}
-                {app.requested_aid_type === 'marriage_gift' &&
+                {isMarriageGiftProgram(
+                  app.requested_aid_type,
+                  app.aid_program,
+                ) &&
                   app.marriage_gift_details && (
                     <div className="aid-detail-block">
                       <AidMarriageGiftApplicationFields
@@ -1112,7 +1136,10 @@ const AidApplicationView = () => {
                       />
                     </div>
                   )}
-                {app.requested_aid_type === 'financial_assistance' &&
+                {isFinancialAssistanceProgram(
+                  app.requested_aid_type,
+                  app.aid_program,
+                ) &&
                   app.financial_assistance_details && (
                     <div className="aid-detail-block">
                       <AidFinancialAssistanceFields
@@ -1478,9 +1505,10 @@ const AidApplicationView = () => {
                 canEditMeal={canEditMeal}
                 onSaveMeal={saveMealReview}
                 mealSaving={mealSaving}
-                canEditApproval={canCeo}
+                canEditApproval={canCeo || isSuperAdmin(permissions)}
                 onSaveApproval={savePreviewApproval}
                 approvalSaving={approvalSaving}
+                canUnlockSections={isSuperAdmin(permissions)}
               />
             )}
 
@@ -1807,39 +1835,48 @@ const AidApplicationView = () => {
                   {isRationApp ? (
                     <>
                       <p className="aid-section-hint" style={{ marginTop: 0 }}>
-                        Select package options and add remarks only.
+                        Choose Recommend or Not Recommend first.
                       </p>
-                      <div className="aid-rec-options aid-rec-options--checks">
-                        {AID_RATION_REC_OPTIONS.map((opt) => {
-                          const selected = normalizeRationOptions(
-                            recommendation.ration_options,
-                          ).includes(opt.value);
+                      <div className="aid-rec-options">
+                        {AID_RECOMMENDATION_DECISIONS.map((opt) => {
+                          const layerDecision =
+                            getRationLayerDecision(recommendation);
                           return (
                             <label
                               key={opt.value}
                               className={`aid-rec-option${
-                                selected ? ' is-active' : ''
+                                layerDecision === opt.value ? ' is-active' : ''
+                              }${
+                                opt.value === 'not_recommend'
+                                  ? ' aid-rec-option--reject'
+                                  : ''
                               }`}
                             >
                               <input
-                                type="checkbox"
-                                checked={selected}
+                                type="radio"
+                                name="aid-ceo-ration-rec-decision"
+                                value={opt.value}
+                                checked={layerDecision === opt.value}
                                 disabled={busy}
                                 onChange={() => {
-                                  const cur = normalizeRationOptions(
-                                    recommendation.ration_options,
-                                  );
-                                  const next = selected
-                                    ? cur.filter((v) => v !== opt.value)
-                                    : [...cur, opt.value];
-                                  setRecommendation((prev) => ({
-                                    ...prev,
-                                    ration_options: next,
-                                    decision: 'recommend',
-                                    amount: '',
-                                    period_months: null,
-                                    found_monthly_income: '',
-                                  }));
+                                  if (opt.value === 'not_recommend') {
+                                    setRecommendation((prev) => ({
+                                      ...prev,
+                                      decision: 'not_recommend',
+                                      ration_options: [],
+                                      amount: '',
+                                      period_months: null,
+                                      found_monthly_income: '',
+                                    }));
+                                  } else {
+                                    setRecommendation((prev) => ({
+                                      ...prev,
+                                      decision: 'recommend',
+                                      amount: '',
+                                      period_months: null,
+                                      found_monthly_income: '',
+                                    }));
+                                  }
                                 }}
                               />
                               <span>{opt.label}</span>
@@ -1847,21 +1884,85 @@ const AidApplicationView = () => {
                           );
                         })}
                       </div>
-                      <label className="aid-rec-field">
-                        <span>Remarks</span>
-                        <textarea
-                          rows={3}
-                          disabled={busy}
-                          placeholder="Remarks…"
-                          value={recommendation.remarks}
-                          onChange={(e) =>
-                            setRecommendation((prev) => ({
-                              ...prev,
-                              remarks: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
+                      {getRationLayerDecision(recommendation) ===
+                      'not_recommend' ? (
+                        <label className="aid-rec-field">
+                          <span>Remarks (optional)</span>
+                          <textarea
+                            rows={3}
+                            disabled={busy}
+                            placeholder="Remarks…"
+                            value={recommendation.remarks}
+                            onChange={(e) =>
+                              setRecommendation((prev) => ({
+                                ...prev,
+                                remarks: e.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                      ) : null}
+                      {getRationLayerDecision(recommendation) ===
+                      'recommend' ? (
+                        <>
+                          <p className="aid-section-hint">
+                            Select package options and add remarks only.
+                          </p>
+                          <div className="aid-rec-options aid-rec-options--checks">
+                            {AID_RATION_REC_OPTIONS.map((opt) => {
+                              const selected = normalizeRationOptions(
+                                recommendation.ration_options,
+                              ).includes(opt.value);
+                              return (
+                                <label
+                                  key={opt.value}
+                                  className={`aid-rec-option${
+                                    selected ? ' is-active' : ''
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    disabled={busy}
+                                    onChange={() => {
+                                      const cur = normalizeRationOptions(
+                                        recommendation.ration_options,
+                                      );
+                                      const next = selected
+                                        ? cur.filter((v) => v !== opt.value)
+                                        : [...cur, opt.value];
+                                      setRecommendation((prev) => ({
+                                        ...prev,
+                                        ration_options: next,
+                                        decision: 'recommend',
+                                        amount: '',
+                                        period_months: null,
+                                        found_monthly_income: '',
+                                      }));
+                                    }}
+                                  />
+                                  <span>{opt.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <label className="aid-rec-field">
+                            <span>Remarks</span>
+                            <textarea
+                              rows={3}
+                              disabled={busy}
+                              placeholder="Remarks…"
+                              value={recommendation.remarks}
+                              onChange={(e) =>
+                                setRecommendation((prev) => ({
+                                  ...prev,
+                                  remarks: e.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+                        </>
+                      ) : null}
                     </>
                   ) : (
                     <>
@@ -1870,7 +1971,7 @@ const AidApplicationView = () => {
                           <label
                             key={opt.value}
                             className={`aid-rec-option${
-                              normalizeRecommendationDecision(
+                              getRecommendationDecisionOrEmpty(
                                 recommendation.decision,
                               ) === opt.value
                                 ? ' is-active'
@@ -1886,7 +1987,7 @@ const AidApplicationView = () => {
                               name="aid-ceo-rec-decision"
                               value={opt.value}
                               checked={
-                                normalizeRecommendationDecision(
+                                getRecommendationDecisionOrEmpty(
                                   recommendation.decision,
                                 ) === opt.value
                               }
@@ -1902,7 +2003,10 @@ const AidApplicationView = () => {
                           </label>
                         ))}
                       </div>
-                      {!isNegativeRecommendation(recommendation.decision) ? (
+                      {getRecommendationDecisionOrEmpty(
+                        recommendation.decision,
+                      ) &&
+                      !isNegativeRecommendation(recommendation.decision) ? (
                         <div className="aid-rec-grid">
                           <label className="aid-rec-field">
                             <span>Amount (PKR)</span>

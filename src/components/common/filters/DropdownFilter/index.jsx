@@ -27,7 +27,8 @@ const DropdownFilter = ({
   placeholder = 'Select an option',
   required = false,
   className = '',
-  showClearButton = true
+  showClearButton = true,
+  disabled = false,
 }) => {
   const handleDropdownChange = (e) => {
     const newValue = e.target.value;
@@ -73,6 +74,7 @@ const DropdownFilter = ({
           value={currentValue}
           onChange={handleDropdownChange}
           required={required}
+          disabled={disabled}
         >
           <option value="">{placeholder}</option>
           {normalizedData.map((option, index) => (
@@ -81,7 +83,7 @@ const DropdownFilter = ({
             </option>
           ))}
         </select>
-        {showClearButton && currentValue && (
+        {showClearButton && currentValue && !disabled && (
           <button
             type="button"
             className="dropdown-filter-clear"

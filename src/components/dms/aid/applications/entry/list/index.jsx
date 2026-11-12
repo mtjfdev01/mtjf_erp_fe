@@ -6,9 +6,11 @@ import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
 import {
   canViewModule,
+  getAidScopedProgram,
   hasAidPermission,
   isProgramDepartmentManager,
   isSuperAdmin,
+  withAidProgramApiFilter,
 } from '../../../../../../utils/permissions';
 import Navbar from '../../../../../Navbar';
 import PageHeader from '../../../../../common/PageHeader';
@@ -16,7 +18,7 @@ import Pagination from '../../../../../common/Pagination';
 import FormInput from '../../../../../common/FormInput';
 import FormSelect from '../../../../../common/FormSelect';
 import {
-  AID_REQUEST_TYPES,
+  AID_REQUEST_TYPES_FOR_FILTER,
   formatAidProgramLabel,
   AID_ENTRY_STAGES,
   formatAidRequestType,
@@ -47,6 +49,7 @@ const isRationApp = (row) =>
 const AidEntryApplicationsList = () => {
   const navigate = useNavigate();
   const { permissions, user } = useAuth();
+  const scopedProgram = getAidScopedProgram(user, permissions);
 
   const isStaffElevated =
     !!permissions?.super_admin ||
@@ -127,17 +130,21 @@ const AidEntryApplicationsList = () => {
       setLoading(true);
       setError('');
       const res = await axiosInstance.get('/aid/applications', {
-        params: {
-          queue: 'entry',
-          search: appliedFilters.search || undefined,
-          stage: appliedFilters.stage || undefined,
-          requested_aid_type: appliedFilters.requested_aid_type || undefined,
-          district: appliedFilters.district || undefined,
-          page: currentPage,
-          pageSize,
-          sortField,
-          sortOrder,
-        },
+        params: withAidProgramApiFilter(
+          {
+            queue: 'entry',
+            search: appliedFilters.search || undefined,
+            stage: appliedFilters.stage || undefined,
+            requested_aid_type: appliedFilters.requested_aid_type || undefined,
+            district: appliedFilters.district || undefined,
+            page: currentPage,
+            pageSize,
+            sortField,
+            sortOrder,
+          },
+          user,
+          permissions,
+        ),
       });
       setRows(res.data?.data || []);
       setTotalItems(res.data?.total || 0);
@@ -228,10 +235,30 @@ const AidEntryApplicationsList = () => {
     [districts],
   );
 
-  const programOptions = useMemo(
-    () => [{ value: '', label: 'All programs' }, ...AID_REQUEST_TYPES],
-    [],
-  );
+  const programOptions = useMemo(() => {
+    const all = [
+      { value: '', label: 'All programs' },
+      ...AID_REQUEST_TYPES_FOR_FILTER,
+    ];
+    if (!scopedProgram) return all;
+    return AID_REQUEST_TYPES_FOR_FILTER.filter(
+      (o) => o.value === scopedProgram,
+    );
+  }, [scopedProgram]);
+
+  useEffect(() => {
+    if (!scopedProgram) return;
+    setTempFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+    setAppliedFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+  }, [scopedProgram]);
 
   return (
     <>
@@ -295,6 +322,7 @@ const AidEntryApplicationsList = () => {
                   }))
                 }
                 options={programOptions}
+                disabled={!!scopedProgram}
               />
             </div>
             <div className="aid-entry-filters__field">
