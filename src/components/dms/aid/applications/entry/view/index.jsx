@@ -430,7 +430,7 @@ const AidEntryApplicationView = () => {
       <Navbar />
       <div className="form-content aid-view aid-entry-view">
         <PageHeader
-          title={app.application_no}
+          title={app.application_no || `Draft #${app.id}`}
           backPath={listPath}
           onBackClick={() => navigate(listPath)}
           showAdd={false}

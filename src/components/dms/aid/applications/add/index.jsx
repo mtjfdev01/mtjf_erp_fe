@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
+import { useAuth } from '../../../../../context/AuthContext';
+import { getAidScopedProgram } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
@@ -680,9 +682,30 @@ const cleanPersonPayload = (p) => {
 const AidApplicationAddInner = () => {
   const { t, lang, rtl } = useAidLang();
   const navigate = useNavigate();
+  const { user, permissions } = useAuth();
+  const scopedProgram = getAidScopedProgram(user, permissions);
+  const programOptions = useMemo(() => {
+    if (!scopedProgram) return AID_REQUEST_TYPES;
+    return AID_REQUEST_TYPES.filter((o) => o.value === scopedProgram);
+  }, [scopedProgram]);
   const { id: editIdParam } = useParams();
   const editId = editIdParam ? Number(editIdParam) : null;
   const isEdit = Number.isFinite(editId) && editId > 0;
+
+  useEffect(() => {
+    if (!scopedProgram || isEdit) return;
+    setForm((p) => {
+      if (p.requested_aid_type === scopedProgram) return p;
+      const amt = resolveExpectedAmountFields(scopedProgram, '');
+      return {
+        ...p,
+        requested_aid_type: scopedProgram,
+        aid_program: amt.aid_program,
+        expected_amount: amt.expected_amount,
+        expected_amount_max: amt.expected_amount_max,
+      };
+    });
+  }, [scopedProgram, isEdit]);
 
   const [beneficiaryMode, setBeneficiaryMode] = useState('new');
   const [beneficiaryId, setBeneficiaryId] = useState(null);
@@ -2699,7 +2722,8 @@ const AidApplicationAddInner = () => {
                     };
                   });
                 }}
-                options={AID_REQUEST_TYPES}
+                options={programOptions}
+                disabled={!!scopedProgram}
               />
               {getAidProgramsForType(form.requested_aid_type).length > 0 ? (
                 <FormSelect

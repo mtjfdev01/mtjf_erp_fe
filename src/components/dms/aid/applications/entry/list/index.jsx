@@ -397,7 +397,7 @@ const AidEntryApplicationsList = () => {
                       <tr key={row.id}>
                         <td>
                           <strong className="aid-entry-table__app-no">
-                            {row.application_no}
+                            {row.application_no || `Draft #${row.id}`}
                           </strong>
                         </td>
                         <td>
