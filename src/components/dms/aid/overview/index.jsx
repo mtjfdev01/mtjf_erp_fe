@@ -268,7 +268,11 @@ const AidWelfareOverview = () => {
             <div className="aid-wo-kpi__value">
               {(kpis.families_supported ?? 0).toLocaleString()}
             </div>
-            <div className="aid-wo-kpi__meta">Active this period</div>
+            <div className="aid-wo-kpi__meta">
+              {data?.filters?.range_label === 'All time'
+                ? 'Approved / delivered'
+                : 'Active this period'}
+            </div>
           </div>
           <div className="aid-wo-kpi">
             <div className="aid-wo-kpi__label">Intake → decision</div>
@@ -302,8 +306,11 @@ const AidWelfareOverview = () => {
         <div className="aid-wo-grid-2">
           <section className="aid-wo-card">
             <div className="aid-wo-card__head">
-              <h3>Pipeline this month</h3>
-              <span>From registration to disbursement</span>
+              <h3>Pipeline</h3>
+              <span>
+                {data?.filters?.range_label || 'All time'} · registration →
+                disbursement
+              </span>
             </div>
             <div className="aid-wo-funnel">
               {pipeline.map((stage, idx) => {
@@ -350,7 +357,10 @@ const AidWelfareOverview = () => {
           <section className="aid-wo-card">
             <div className="aid-wo-card__head">
               <h3>Where cases are stuck</h3>
-              <span>Open cases past their target time</span>
+              <span>
+                {data?.stuck?.open_cases ?? 0} open of{' '}
+                {kpis.applications ?? 0} applications
+              </span>
             </div>
             <div className="aid-wo-stuck">
               <button

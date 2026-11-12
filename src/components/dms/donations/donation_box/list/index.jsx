@@ -88,6 +88,7 @@ const DonationBoxDonationsList = () => {
     setPaginationState((prev) => ({ ...prev, sortOrder: v, currentPage: 1 }));
 
   const [totalItems, setTotalItems] = useState(0);
+  const [totalDonationAmount, setTotalDonationAmount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [listRefreshNonce, setListRefreshNonce] = useState(0);
 
@@ -406,7 +407,7 @@ const DonationBoxDonationsList = () => {
           <PageHeader
           onRefresh={handleRefresh}
           refreshing={loading} 
-            title = 'Donation Box Collections'  
+            title = 'Collection Units Collections'  
             showBackButton={!!donationBoxId} 
             backPath={getBackPath()}
             showAdd={true}
@@ -428,7 +429,7 @@ const DonationBoxDonationsList = () => {
           title={
             donationBoxId && donationBoxInfo
               ? `Collections — ${donationBoxInfo.shop_name || donationBoxInfo.key_no}`
-              : 'Donation Box Collections'
+              : 'Collection Units Collections'
           }
           showBackButton={!!donationBoxId}
           backPath={getBackPath()}

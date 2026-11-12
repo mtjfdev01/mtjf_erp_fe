@@ -1,6 +1,7 @@
 /**
- * Resolves CRM API paths for individual donors vs CSR donors.
- * Individual flows use donorId only; CSR flows use csrDonorId (+ optional csrPocId).
+ * Resolves CRM API paths for individual donors vs CSR donors vs standalone POCs.
+ * Individual flows use donorId only; CSR flows use csrDonorId (+ optional csrPocId);
+ * Collection Unit POC flows use csrPocId.
  */
 export function resolveCrmApiPaths({ donorId, csrDonorId, csrPocId }) {
   if (csrDonorId) {
@@ -18,6 +19,18 @@ export function resolveCrmApiPaths({ donorId, csrDonorId, csrPocId }) {
       followupsParams: params,
       interactionAddQuery: queryParts.join('&'),
       responseEntityKey: 'csr_donor',
+    };
+  }
+  if (csrPocId) {
+    const params = { csr_poc_id: csrPocId };
+    return {
+      pipelineHistory: null,
+      pipelineStage: null,
+      auditHistory: null,
+      interactionsParams: params,
+      followupsParams: params,
+      interactionAddQuery: `csr_poc_id=${csrPocId}`,
+      responseEntityKey: 'csr_poc',
     };
   }
   if (donorId) {

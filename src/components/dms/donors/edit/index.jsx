@@ -8,6 +8,7 @@ import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import Modal from '../../../common/Modal';
 import { FiKey } from 'react-icons/fi';
+import CapacityAssessmentFormSection from '../shared/CapacityAssessmentFormSection';
 import '../register/index.css';
 
 const EditDonor = ({
@@ -66,6 +67,14 @@ const EditDonor = ({
   const [assignedUser, setAssignedUser] = useState(null);
   const [referrerUser, setReferrerUser] = useState(null);
   const [selectedOrganization, setSelectedOrganization] = useState(null);
+  const [capacityAssessment, setCapacityAssessment] = useState({
+    estimated_net_worth: '',
+    salary: '',
+    donations_past_5y: '',
+    gift_capacity: '',
+    total_value_of_shares: '',
+    shares_held: [],
+  });
 
   useEffect(() => {
     fetchDonor();
@@ -122,6 +131,18 @@ const EditDonor = ({
       setAssignedUser(withFullName(d.assigned_to));
       setReferrerUser(withFullName(d.referred_by));
       setSelectedOrganization(primaryAff?.organization || null);
+      if (d.capacity_assessment) {
+        setCapacityAssessment({
+          estimated_net_worth: d.capacity_assessment.estimated_net_worth || '',
+          salary: d.capacity_assessment.salary || '',
+          donations_past_5y: d.capacity_assessment.donations_past_5y || '',
+          gift_capacity: d.capacity_assessment.gift_capacity || '',
+          total_value_of_shares: d.capacity_assessment.total_value_of_shares || '',
+          shares_held: Array.isArray(d.capacity_assessment.shares_held)
+            ? d.capacity_assessment.shares_held
+            : [],
+        });
+      }
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to load donor');
     } finally {
@@ -236,6 +257,17 @@ const EditDonor = ({
         payload.affiliation_role = form.affiliation_role || 'contact';
         payload.affiliation_is_primary = true;
       }
+
+      payload.capacity_assessment = {
+        estimated_net_worth: capacityAssessment.estimated_net_worth?.trim() || null,
+        salary: capacityAssessment.salary?.trim() || null,
+        donations_past_5y: capacityAssessment.donations_past_5y?.trim() || null,
+        gift_capacity: capacityAssessment.gift_capacity?.trim() || null,
+        total_value_of_shares: capacityAssessment.total_value_of_shares?.trim() || null,
+        shares_held: (capacityAssessment.shares_held || []).filter(
+          (s) => s.issuer?.trim() || s.ticker?.trim() || s.est_value?.trim(),
+        ),
+      };
 
       const res = await axiosInstance.patch(`/donors/${id}`, payload);
       if (!res.data?.success) throw new Error(res.data?.message || 'Failed to update donor');
@@ -515,7 +547,8 @@ const EditDonor = ({
               </section>
             )}
 
-            <section className="donor-register-card">
+            {form.donor_type === 'csr' && (
+<section className="donor-register-card">
               <h3 className="donor-register-card__title">
                 2b. CSR Donor Link {form.donor_type === 'csr' ? '(required)' : '(optional)'}
               </h3>
@@ -543,6 +576,7 @@ const EditDonor = ({
                 />
               </div>
             </section>
+            )}
 
             <section className="donor-register-card">
               <h3 className="donor-register-card__title">3. Address</h3>
@@ -665,8 +699,17 @@ const EditDonor = ({
               </div>
             </section>
 
+            <CapacityAssessmentFormSection
+              stepNumber="5"
+              title="Giving Capacity"
+              value={capacityAssessment}
+              onChange={setCapacityAssessment}
+              collapsible={true}
+              defaultExpanded={true}
+            />
+
             <section className="donor-register-card">
-              <h3 className="donor-register-card__title">5. Notes</h3>
+              <h3 className="donor-register-card__title">6. Notes</h3>
               <FormInput
                 label="Notes"
                 type="textarea"

@@ -14,12 +14,15 @@ import {
 } from '../../../../utils/geolocation';
 import { useAuth } from '../../../../context/AuthContext';
 import { dispatchListDataChanged } from '../../../../hooks/useListAutoRefresh';
+import { COLLECTION_UNIT_TYPES, DEFAULT_COLLECTION_UNIT_TYPE } from '../../../../config/collectionUnits';
 
 const AddDonationBox = () => {
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
   const [form, setForm] = useState({
-    // Box identification
+    // Unit identification
+    type: DEFAULT_COLLECTION_UNIT_TYPE,
+    name: '',
     key_no: '',
     
     // Location information
@@ -136,7 +139,12 @@ const AddDonationBox = () => {
     const { name, value, type, checked } = e.target;
     const nextValue = type === 'checkbox' ? checked : value;
     console.log(`Form field changed: ${name} = ${nextValue}`);
-    setForm({ ...form, [name]: nextValue });
+    setForm(prev => {
+      const updated = { ...prev, [name]: nextValue };
+      if (name === 'name') updated.shop_name = nextValue;
+      if (name === 'shop_name') updated.name = nextValue;
+      return updated;
+    });
     
     // Handle cascading dropdowns
     if (name === 'region') {
@@ -174,17 +182,21 @@ const AddDonationBox = () => {
           ? [currentUser.id]
           : [];
 
+      const unitName = form.name?.trim() || form.shop_name?.trim() || '';
+      const isDonationBox = form.type === 'Donation Boxes';
       const donationBoxData = {
-        key_no: form.key_no || null,
+        type: form.type || DEFAULT_COLLECTION_UNIT_TYPE,
+        name: unitName,
+        shop_name: unitName,
+        key_no: isDonationBox ? (form.key_no || null) : (form.key_no || null),
         city_id: form.city_id || null,
         route_id: form.route_id ? Number(form.route_id) : null,
         assigned_user_ids: assignedIds,
-        shop_name: form.shop_name,
         shopkeeper: form.shopkeeper || null,
         cell_no: form.cell_no || null,
         landmark_marketplace: form.landmark_marketplace || null,
         route: form.route || null,
-        box_type: form.box_type,
+        box_type: isDonationBox ? form.box_type : 'custom',
         active_since: form.active_since,
         status: form.status,
         collection_frequency: form.collection_frequency,
@@ -268,7 +280,7 @@ const AddDonationBox = () => {
       <Navbar />
       <div className="form-content">
         <PageHeader 
-          title="Add Donation Box" 
+          title="Add Collection Unit" 
           onBack={handleBack}
         />
         
@@ -279,32 +291,54 @@ const AddDonationBox = () => {
         )}
 
         <form onSubmit={handleSubmit} className="form">
-          {/* Box Identification */}
+          {/* Unit Identification */}
           <div className="form-section">
-            <h3 className="form-section-heading">Box Identification</h3>
-            <div className="form-grid-2">
-
-              <FormInput
-                label="Key Number"
-                type="text"
-                name="key_no"
-                value={form.key_no}
-                onChange={handleChange}
-                placeholder="e.g., 625, 71, 681"
-              />
-            </div>
-          </div>
-          {/* Box Configuration */}
-          <div className="form-section">
+            <h3 className="form-section-heading">Collection Unit Identification</h3>
             <div className="form-grid-2">
               <FormSelect
-                label="Box Type"
-                name="box_type"
-                value={form.box_type}
+                label="Collection Unit Type"
+                name="type"
+                value={form.type}
                 onChange={handleChange}
-                options={boxTypeOptions}
+                options={COLLECTION_UNIT_TYPES.map(t => ({ value: t, label: t }))}
                 required
               />
+
+              <FormInput
+                label={form.type === 'Mosques' ? 'Mosque Name' : 'Name'}
+                type="text"
+                name="name"
+                value={form.name || form.shop_name}
+                onChange={handleChange}
+                placeholder={form.type === 'Mosques' ? 'e.g., Jamia Masjid Bilal' : 'e.g., Al-Madina Store, City Mall, etc.'}
+                required
+              />
+
+              {form.type === 'Donation Boxes' && (
+                <FormInput
+                  label="Key Number"
+                  type="text"
+                  name="key_no"
+                  value={form.key_no}
+                  onChange={handleChange}
+                  placeholder="e.g., 625, 71, 681"
+                />
+              )}
+            </div>
+          </div>
+          {/* Unit Configuration */}
+          <div className="form-section">
+            <div className="form-grid-2">
+              {form.type === 'Donation Boxes' && (
+                <FormSelect
+                  label="Box Size"
+                  name="box_type"
+                  value={form.box_type}
+                  onChange={handleChange}
+                  options={boxTypeOptions}
+                  required
+                />
+              )}
 
               <FormSelect
                 label="Collection Frequency"
@@ -416,27 +450,17 @@ const AddDonationBox = () => {
             </div>
           </div>
 
-          {/* Shop Details */}
+          {/* Contact Details */}
           <div className="form-section">
-            <h3 className="form-section-heading">Shop Details</h3>
+            <h3 className="form-section-heading">{form.type === "Mosques" ? "Mosque Contact Details" : "Contact Details"}</h3>
             <div className="form-grid-2">
               <FormInput
-                label="Shop Name"
-                type="text"
-                name="shop_name"
-                value={form.shop_name}
-                onChange={handleChange}
-                required
-                placeholder="e.g., Flexon, DAH Club & Authority"
-              />
-
-              <FormInput
-                label="Shopkeeper Name"
+                label={form.type === "Mosques" ? "Contact Person / Imam Name" : "Shopkeeper / Contact Person"}
                 type="text"
                 name="shopkeeper"
                 value={form.shopkeeper}
                 onChange={handleChange}
-                placeholder="e.g., Muneeb, Muzamil"
+                placeholder={form.type === "Mosques" ? "e.g., Imam Abdul Rehman, Qari Saeed" : "e.g., Muneeb, Muzamil"}
               />
 
               <FormInput
@@ -493,7 +517,7 @@ const AddDonationBox = () => {
               className="primary_btn" 
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Adding Donation Box...' : 'Add Donation Box'}
+              {isSubmitting ? 'Adding Collection Unit...' : 'Add Collection Unit'}
             </button>
           </div>
         </form>

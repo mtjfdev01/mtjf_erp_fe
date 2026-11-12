@@ -13,6 +13,7 @@ import {
   FiDollarSign,
   FiSend,
   FiCheck,
+  FiCheckCircle,
   FiEdit2,
   FiX,
   FiTrash2,
@@ -45,6 +46,7 @@ const RecurringDonationView = () => {
   const [linkMessage, setLinkMessage] = useState('');
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const [markingPaid, setMarkingPaid] = useState(false);
+  const [markingInstallmentId, setMarkingInstallmentId] = useState(null);
   const [markMessage, setMarkMessage] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState({
@@ -243,7 +245,7 @@ const RecurringDonationView = () => {
     }
     if (
       !window.confirm(
-        `Mark ${ids.length} installment(s) as paid (${formatAmount(
+        `Mark ${ids.length} installment(s) as complete (${formatAmount(
           selectedPendingAmount,
           data?.subscription?.currency,
         )})?`,
@@ -260,15 +262,62 @@ const RecurringDonationView = () => {
         { installment_ids: ids },
       );
       if (response.data.success) {
-        setMarkMessage(response.data.message || 'Marked as paid');
+        toast.success(
+          response.data.message ||
+            `Marked ${response.data.data?.marked || ids.length} installment(s) as complete`,
+        );
+        setMarkMessage(response.data.message || 'Marked as complete');
         await load();
       } else {
-        setMarkMessage(response.data.message || 'Failed to mark as paid');
+        toast.error(response.data.message || 'Failed to mark as complete');
+        setMarkMessage(response.data.message || 'Failed to mark as complete');
       }
     } catch (err) {
-      setMarkMessage(err.response?.data?.message || 'Failed to mark as paid');
+      toast.error(
+        err.response?.data?.message || 'Failed to mark as complete',
+      );
+      setMarkMessage(err.response?.data?.message || 'Failed to mark as complete');
     } finally {
       setMarkingPaid(false);
+    }
+  };
+
+  const markSingleInstallmentPaid = async (inst) => {
+    if (!inst?.id) return;
+    if (String(inst.status || '').toLowerCase() !== 'pending') return;
+    if (
+      !window.confirm(
+        `Mark installment #${inst.id} (${inst.period_key || 'Period'}) as complete?`,
+      )
+    ) {
+      return;
+    }
+    setMarkingInstallmentId(inst.id);
+    setMarkMessage('');
+    try {
+      const response = await axiosInstance.post(
+        `/recurring-donations/${id}/mark-installments-paid`,
+        { installment_ids: [inst.id] },
+      );
+      if (response.data.success) {
+        toast.success(
+          response.data.message ||
+            `Installment #${inst.id} marked as complete`,
+        );
+        await load();
+      } else {
+        toast.error(
+          response.data.message || 'Failed to mark installment as complete',
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to mark installment as complete',
+      );
+    } finally {
+      setMarkingInstallmentId(null);
     }
   };
 
@@ -516,7 +565,10 @@ const RecurringDonationView = () => {
   const canEditInstallments =
     canUpdate && !subscription.stripe_subscription_id;
   const canDeleteInstallments = canDelete;
-  const showInstallmentActions = canEditInstallments || canDeleteInstallments;
+  const showInstallmentActions =
+    canEditInstallments ||
+    canDeleteInstallments ||
+    (canReconcile && !subscription.stripe_subscription_id);
   const canAddInstallments = canEditInstallments;
   const showInstallmentCheckboxes =
     canMarkPaid || canEditInstallments;
@@ -952,10 +1004,10 @@ const RecurringDonationView = () => {
                     disabled={markingPaid || selectedIds.size === 0}
                     onClick={markSelectedPaid}
                   >
-                    <FiCheck size={16} />
+                    <FiCheckCircle size={16} />
                     {markingPaid
                       ? 'Saving…'
-                      : `Mark paid (${selectedIds.size})`}
+                      : `Mark as complete (${selectedIds.size})`}
                   </button>
                 )}
                 {selectedIds.size > 0 && canMarkPaid && (
@@ -1223,7 +1275,20 @@ const RecurringDonationView = () => {
                                 ))}
                               </select>
                             ) : (
-                              inst.status
+                              <span
+                                className={`rd-sub-status rd-sub-status--${
+                                  String(inst.status || '').toLowerCase() === 'completed'
+                                    ? 'active'
+                                    : String(inst.status || '').toLowerCase() === 'failed'
+                                    ? 'failed'
+                                    : String(inst.status || '').toLowerCase() === 'pending'
+                                    ? 'pending'
+                                    : 'default'
+                                }`}
+                                style={{ padding: '3px 10px', fontSize: '12px' }}
+                              >
+                                {inst.status || 'pending'}
+                              </span>
                             )}
                           </td>
                           <td>
@@ -1277,6 +1342,18 @@ const RecurringDonationView = () => {
                                 </div>
                               ) : (
                                 <div className="rd-inst-actions">
+                                  {canReconcile && !subscription.stripe_subscription_id && isPending && (
+                                    <button
+                                      type="button"
+                                      className="rd-inst-icon-btn rd-inst-icon-btn--complete"
+                                      disabled={markingInstallmentId === inst.id || markingPaid}
+                                      onClick={() => markSingleInstallmentPaid(inst)}
+                                      title="Mark as Complete"
+                                      aria-label={`Mark installment ${inst.id} as complete`}
+                                    >
+                                      <FiCheckCircle size={15} />
+                                    </button>
+                                  )}
                                   {canEditInstallments && (
                                     <button
                                       type="button"

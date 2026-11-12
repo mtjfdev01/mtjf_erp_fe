@@ -11,6 +11,7 @@ import PageHeader from '../../../common/PageHeader';
 import Modal from '../../../common/Modal';
 import DonorAuditHistory from '../shared/DonorAuditHistory';
 import DonorPipelinePanel from '../shared/DonorPipelinePanel';
+import CapacityAssessmentCard from '../shared/CapacityAssessmentCard';
 import DonorCommunication from '../../donor_relationship/shared/DonorCommunication';
 import ManualRecurringDonorPanel from '../../manual_recurring/ManualRecurringDonorPanel';
 import { OnlineDonationsList } from '../../donations/online_donations';
@@ -860,10 +861,13 @@ const ViewDonor = ({
               ) : mainTab === 'add-note' ? (
                 <AddDonorInteraction
                   key={`add-note-${id}`}
-                  embedded
+                  isModal={true}
                   embeddedDonorId={id}
                   onCancel={() => setMainTab('overview')}
-                  onSaved={() => setMainTab('overview')}
+                  onSaved={() => {
+                    setMainTab('overview');
+                    loadDonor();
+                  }}
                 />
               ) : (
                 <>
@@ -960,6 +964,13 @@ const ViewDonor = ({
                   if (updated) setDonor(updated);
                   else fetchDonor();
                 }}
+              />
+
+              <CapacityAssessmentCard
+                capacityAssessment={donor.capacity_assessment}
+                onEdit={handleEdit}
+                canEdit={true}
+                defaultExpanded={true}
               />
 
               {showDonorJourney ? (

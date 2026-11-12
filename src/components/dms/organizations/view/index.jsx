@@ -1042,11 +1042,14 @@ const ViewOrganization = () => {
               ) : mainTab === 'add-note' ? (
                 <AddDonorInteraction
                   key={`add-note-${id}-${selectedPocId || 'all'}`}
-                  embedded
+                  isModal={true}
                   embeddedCsrDonorId={id}
                   embeddedCsrPocId={selectedPocId || null}
                   onCancel={() => setMainTab('poc')}
-                  onSaved={() => setMainTab('poc')}
+                  onSaved={() => {
+                    setMainTab('poc');
+                    loadOrg();
+                  }}
                 />
               ) : mainTab === 'poc' ? (
                 <>

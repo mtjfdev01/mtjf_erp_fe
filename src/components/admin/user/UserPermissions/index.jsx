@@ -269,11 +269,11 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           actions: ['create','list_view', 'view', 'update', 'delete', 'reconciler']
         },
         donation_box: {
-          label: 'Donation Box',
+          label: 'Collection Units',
           actions: ['create','list_view', 'view', 'update', 'delete']
         },
         donation_box_donations: {
-          label: 'Donation Box Donations',
+          label: 'Collection Units Collections',
           actions: ['create','list_view', 'view', 'update', 'delete', 'bypass_location', 'reconciler']
         },
         donation_in_kind_items: {

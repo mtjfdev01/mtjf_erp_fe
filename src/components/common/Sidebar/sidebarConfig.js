@@ -765,14 +765,14 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiUsers
   },
   {
-    label: 'Donation Box',
+    label: 'Collection Units',
     path: '/dms/donation_box/list',
     type: 'list',
     module: 'donation_box',
     icon: FiBox
   },
   {
-    label: 'Donation Box Donations',
+    label: 'Collection Units Collections',
     path: '/dms/donation-box-donations/list',
     type: 'list',
     module: 'donation_box_donations',

@@ -19,7 +19,7 @@ import {
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
 import { useAuth } from '../../../../context/AuthContext';
-import { hasPermission, isSuperAdmin } from '../../../../utils/permissions';
+import { hasPermission, isSuperAdmin, canReconcileRecurring } from '../../../../utils/permissions';
 import { FiEye, FiRepeat, FiSend, FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 const STATUS_OPTIONS = [
@@ -90,6 +90,7 @@ const RecurringDonationsList = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalItems, setTotalItems] = useState(0);
+  const [totalDonationAmount, setTotalDonationAmount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState('created_at');
   const [sortOrder, setSortOrder] = useState('DESC');
@@ -114,7 +115,8 @@ const RecurringDonationsList = () => {
     return (
       isFrAdmin ||
       hasPermission(permissions, 'fund_raising', 'recurring_donations', 'list_view') ||
-      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view')
+      hasPermission(permissions, 'fund_raising', 'recurring_donations', 'view') ||
+      canReconcileRecurring(permissions)
     );
   }, [permissions, user, isFrAdmin]);
 

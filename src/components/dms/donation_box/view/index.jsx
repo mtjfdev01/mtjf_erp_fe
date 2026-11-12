@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
-import { FiDollarSign } from 'react-icons/fi';
+import { FiDollarSign, FiUser } from 'react-icons/fi';
 import DonationBoxAuditHistory from '../shared/DonationBoxAuditHistory';
 import { formatAuditActor } from '../../../common/audit/auditHistoryLabels';
 import { formatRadiusDisplay, getGoogleMapsUrl } from '../../../../utils/geolocation';
@@ -77,7 +77,7 @@ const ViewDonationBox = () => {
         <Navbar />
         <div className="view-wrapper">
           <PageHeader 
-            title="View Donation Box"
+            title="View Collection Unit"
             showBackButton={true}
             backPath="/dms/donation_box/list"
           />
@@ -93,7 +93,7 @@ const ViewDonationBox = () => {
         <Navbar />
         <div className="view-wrapper">
           <PageHeader 
-            title="View Donation Box"
+            title="View Collection Unit"
             showBackButton={true}
             backPath="/dms/donation_box/list"
           />
@@ -111,7 +111,7 @@ const ViewDonationBox = () => {
         <Navbar />
         <div className="view-wrapper">
           <PageHeader 
-            title="View Donation Box"
+            title="View Collection Unit"
             showBackButton={true}
             backPath="/dms/donation_box/list"
           />
@@ -128,26 +128,40 @@ const ViewDonationBox = () => {
       <Navbar />
       <div className="view-wrapper">
         <PageHeader 
-          title="View Donation Box"
+          title="View Collection Unit"
           showBackButton={true}
           backPath="/dms/donation_box/list"
         />
         <div className="view-content">
           <div className="view-section">
-            <h3 className="view-section-title">Box Identification</h3>
+            <h3 className="view-section-title">Collection Unit Identification</h3>
             <div className="view-grid">
               <div className="view-item">
-                <span className="view-item-label">Box ID</span>
-                <span className="view-item-value">{donationBox.box_id_no}</span>
+                <span className="view-item-label">Unit Type</span>
+                <span className="view-item-value">
+                  <span className="badge badge--info">{donationBox.type || 'Donation Boxes'}</span>
+                </span>
               </div>
               <div className="view-item">
-                <span className="view-item-label">Key Number</span>
-                <span className="view-item-value">{donationBox.key_no || '-'}</span>
+                <span className="view-item-label">{donationBox.type === 'Mosques' ? 'Mosque Name' : 'Name'}</span>
+                <span className="view-item-value" style={{ fontWeight: 600 }}>{donationBox.name || donationBox.shop_name || '-'}</span>
               </div>
               <div className="view-item">
-                <span className="view-item-label">Box Type</span>
-                <span className="view-item-value">{getBoxTypeBadge(donationBox.box_type)}</span>
+                <span className="view-item-label">Unit ID</span>
+                <span className="view-item-value">{donationBox.box_id_no || '-'}</span>
               </div>
+              {(donationBox.type === 'Donation Boxes' || !donationBox.type) && (
+                <>
+                  <div className="view-item">
+                    <span className="view-item-label">Key Number</span>
+                    <span className="view-item-value">{donationBox.key_no || '-'}</span>
+                  </div>
+                  <div className="view-item">
+                    <span className="view-item-label">Box Size</span>
+                    <span className="view-item-value">{getBoxTypeBadge(donationBox.box_type)}</span>
+                  </div>
+                </>
+              )}
               <div className="view-item">
                 <span className="view-item-label">Status</span>
                 <span className="view-item-value">{getStatusBadge(donationBox.status)}</span>
@@ -248,19 +262,58 @@ const ViewDonationBox = () => {
           </div>
 
           <div className="view-section">
-            <h3 className="view-section-title">Shop Details</h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 className="view-section-title" style={{ margin: 0 }}>
+                {donationBox.type === 'Mosques' ? 'Mosque Contact & Person of Contact (POC)' : 'Contact & Person of Contact (POC)'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => navigate(`/dms/donation_box/profile/${id}`)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '6px 14px',
+                  background: '#0284c7',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                <FiUser /> View Profile
+              </button>
+            </div>
             <div className="view-grid">
               <div className="view-item">
-                <span className="view-item-label">Shop Name</span>
-                <span className="view-item-value">{donationBox.shop_name || '-'}</span>
+                <span className="view-item-label">Name</span>
+                <span className="view-item-value">{donationBox.name || donationBox.shop_name || '-'}</span>
               </div>
               <div className="view-item">
-                <span className="view-item-label">Shopkeeper</span>
-                <span className="view-item-value">{donationBox.shopkeeper || '-'}</span>
+                <span className="view-item-label">Contact Person (POC)</span>
+                <span className="view-item-value" style={{ fontWeight: 600, color: '#0f172a' }}>
+                  {donationBox.poc?.name || donationBox.shopkeeper || '-'}
+                </span>
               </div>
               <div className="view-item">
                 <span className="view-item-label">Cell Number</span>
-                <span className="view-item-value">{donationBox.cell_no || '-'}</span>
+                <span className="view-item-value">{donationBox.poc?.phone || donationBox.cell_no || '-'}</span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">POC Type</span>
+                <span className="view-item-value">
+                  <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>
+                    {donationBox.poc?.type || (donationBox.type === 'Mosques' ? 'Mosques' : 'Donation Boxes')}
+                  </span>
+                </span>
+              </div>
+              <div className="view-item">
+                <span className="view-item-label">POC ID</span>
+                <span className="view-item-value">
+                  {donationBox.poc?.id ? `#${donationBox.poc.id}` : '—'}
+                </span>
               </div>
             </div>
           </div>
@@ -301,6 +354,27 @@ const ViewDonationBox = () => {
           </div>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+            <button
+              type="button"
+              onClick={() => navigate(`/dms/donation_box/profile/${id}`)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                backgroundColor: '#0284c7',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              <FiUser /> View Profile
+            </button>
             <button
               type="button"
               onClick={() => navigate(`/dms/donation_box/edit/${id}`)}

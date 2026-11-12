@@ -1028,3 +1028,18 @@ export const donationStatusOptionsForUser = (
   return pendingOnly;
 };
 
+
+/**
+ * Access check for Reconciliation Workbench.
+ * Shown ONLY to users who have reconciler capabilities or super_admin / fund_raising_manager.
+ */
+export const canAccessReconciliationWorkbench = (permissions, user = null) => {
+  if (!permissions && !user) return false;
+  if (permissions?.super_admin === true || user?.role === 'super_admin') return true;
+  if (permissions?.fund_raising_manager === true || user?.role === 'fund_raising_manager') return true;
+  return (
+    canReconcileDonations(permissions) ||
+    canReconcileBoxCollections(permissions) ||
+    canReconcileRecurring(permissions)
+  );
+};

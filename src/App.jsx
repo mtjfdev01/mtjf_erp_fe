@@ -159,7 +159,9 @@ import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from '
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
+import DonationBoxCollectionMonitor from './components/dms/donation_box/collection_monitor';
 import ViewDonationBox from './components/dms/donation_box/view';
+import CollectionUnitProfile from './components/dms/donation_box/profile';
 import EditDonationBox from './components/dms/donation_box/edit';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
@@ -169,6 +171,8 @@ import FundRaising from './components/dms/fund_raising';
 import ReconciliationList from './components/dms/reconciliation/list';
 import ReconciliationAdd from './components/dms/reconciliation/add';
 import ReconciliationView from './components/dms/reconciliation/view';
+import ReconciliationWorkbench from './components/dms/reconciliation_workbench';
+import ReconciliationAgentModule from './components/dms/reconciliation_agent';
 import FollowUpsList from './components/dms/donor_relationship/follow_ups';
 import InteractionsList from './components/dms/donor_relationship/interactions';
 import AddDonorInteraction from './components/dms/donor_relationship/add';
@@ -193,7 +197,10 @@ import AddInKindItem from './components/dms/in_kind/in_kind_items/add';
 import InKindItemsList from './components/dms/in_kind/in_kind_items/list';
 import EditInKindItem from './components/dms/in_kind/in_kind_items/edit';
 import ViewInKindItem from './components/dms/in_kind/in_kind_items/view';
+import GrantsModulePlaceholder from './components/dms/grants/GrantsModulePlaceholder';
 import DonationReports from './components/dms/reports/create';
+import ReportsDashboard from './components/dms/reports/dashboard';
+import FundraisingSummary from './components/dms/reports/fundraising_summary';
 import CountriesList from './components/dms/geographic/countries/list';
 import AddCountry from './components/dms/geographic/countries/add';
 import RegionsList from './components/dms/geographic/regions/list';
@@ -464,17 +471,31 @@ const App = () => {
                                 <Route path="/fund_raising" element={<FundRaising />} />
                                 <Route path="/fund_raising/dashboard" element={<FundRaisingDashboardPage />} />
                                 <Route path="/fund_raising/recurring-performance" element={<RecurringPerformanceDashboardPage />} />
-                                {/* DMS Section Routes */}
+                                {/* DMS Section Routes (supporting underscore and hyphen variants) */}
                                 <Route path="/dms/donation_box/add" element={<AddDonationBox />} />
+                                <Route path="/dms/donation-box/add" element={<AddDonationBox />} />
+                                <Route path="/dms/donation-boxes/add" element={<AddDonationBox />} />
                                 <Route path="/dms/donation_box/list" element={<DonationBoxList />} />
+                                <Route path="/dms/donation-box/list" element={<DonationBoxList />} />
+                                <Route path="/dms/donation-boxes/list" element={<DonationBoxList />} />
+                                <Route path="/dms/donation-box-collections/overview" element={<DonationBoxCollectionMonitor />} />
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
+                                <Route path="/dms/donation-box/view/:id" element={<ViewDonationBox />} />
+                                <Route path="/dms/donation-boxes/view/:id" element={<ViewDonationBox />} />
+                                <Route path="/dms/donation_box/profile/:id" element={<CollectionUnitProfile />} />
+                                <Route path="/dms/donation-box/profile/:id" element={<CollectionUnitProfile />} />
+                                <Route path="/dms/donation-boxes/profile/:id" element={<CollectionUnitProfile />} />
+                                <Route path="/dms/poc/profile/:id" element={<CollectionUnitProfile />} />
+                                <Route path="/dms/pocs/profile/:id" element={<CollectionUnitProfile />} />
+                                <Route path="/dms/csr-pocs/profile/:id" element={<CollectionUnitProfile />} />
                                 <Route path="/dms/donation_box/edit/:id" element={<EditDonationBox />} />
+                                <Route path="/dms/donation-box/edit/:id" element={<EditDonationBox />} />
+                                <Route path="/dms/donation-boxes/edit/:id" element={<EditDonationBox />} />
                                 <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/add/:id" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/list/:id" element={<DonationBoxDonationsList />} />
                                 <Route path="/dms/donation-box-donations/view/:id" element={<ViewDonationBoxDonation />} />
-                                <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
                                 <Route path="/dms/todos" element={<DmsTodosPage />} />
                                 
                                 {/* Donations Routes */}
@@ -578,8 +599,20 @@ const App = () => {
                                 <Route path="/dms/in-kind-items/edit/:id" element={<EditInKindItem />} />
                                 <Route path="/dms/in-kind-items/view/:id" element={<ViewInKindItem />} />
 
+                                {/* Grants Routes */}
+                                <Route path="/dms/grants/funders" element={<GrantsModulePlaceholder />} />
+                                <Route path="/dms/grants/applications" element={<GrantsModulePlaceholder />} />
+                                <Route path="/dms/grants/disbursements" element={<GrantsModulePlaceholder />} />
+                                <Route path="/dms/grants" element={<GrantsModulePlaceholder />} />
+
                                 {/* Donation Emails Route */}
                                 <Route path="/dms/reports/create" element={<DonationReports />} />
+                                <Route path="/dms/reports/dashboard" element={<ReportsDashboard />} />
+                                <Route path="/dms/reports-dashboard" element={<ReportsDashboard />} />
+                                <Route path="/fund_raising/reports-dashboard" element={<ReportsDashboard />} />
+                                <Route path="/dms/reports/fundraising-summary" element={<FundraisingSummary />} />
+                                <Route path="/dms/fundraising-summary" element={<FundraisingSummary />} />
+                                <Route path="/fund_raising/fundraising-summary" element={<FundraisingSummary />} />
 
                                 {/* Geographic (Countries → Regions → Districts → Tehsils → Cities → Routes) */}
                                 <Route path="/dms/geographic/countries/list" element={<CountriesList />} />
@@ -658,9 +691,22 @@ const App = () => {
                                 <Route path="/dms/website_home_hero/add" element={<WebsiteHomeHeroForm />} />
                                 <Route path="/dms/website_home_hero/edit/:id" element={<WebsiteHomeHeroForm />} />
 
+                                {/* Bank Statements & Existing Reconciliation */}
                                 <Route path="/dms/reconciliation/list" element={<ReconciliationList />} />
                                 <Route path="/dms/reconciliation/add" element={<ReconciliationAdd />} />
                                 <Route path="/dms/reconciliation/view/:id" element={<ReconciliationView />} />
+                                <Route path="/dms/reconciliation-workbench" element={<ReconciliationWorkbench />} />
+                                <Route path="/dms/reconciliation/workbench" element={<ReconciliationWorkbench />} />
+
+                                {/* Reconciliation Agent (Full Width, Top Tabs, Main ERP Sidebar) */}
+                                <Route path="/dms/reconciliation" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation/overview" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation/queue" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation/box-collections" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation-agent" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation-agent/overview" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation-agent/queue" element={<ReconciliationAgentModule />} />
+                                <Route path="/dms/reconciliation-agent/box-collections" element={<ReconciliationAgentModule />} />
 
                                 <Route path="/dms/donor-relationship/follow-ups" element={<FollowUpsList />} />
                                 <Route path="/dms/donor-relationship/interactions" element={<InteractionsList />} />

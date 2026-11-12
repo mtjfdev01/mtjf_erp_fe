@@ -4,6 +4,7 @@ import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
 import { hasPermission } from '../../../../utils/permissions';
 import InteractionEditModal from './InteractionEditModal';
+import AddDonorInteraction from '../add';
 import {
   formatActivityType,
   formatDateTime,
@@ -101,6 +102,7 @@ const DonorCommunication = ({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [editingInteraction, setEditingInteraction] = useState(null);
+  const [showAddInteractionModal, setShowAddInteractionModal] = useState(false);
   const [search, setSearch] = useState('');
   const [showFilter, setShowFilter] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
@@ -320,9 +322,7 @@ const DonorCommunication = ({
                   onAddInteraction();
                   return;
                 }
-                navigate(
-                  `/dms/donor-relationship/add?${apiPaths?.interactionAddQuery || ''}`,
-                );
+                setShowAddInteractionModal(true);
               }}
             >
               <FiPlus />
@@ -511,6 +511,20 @@ const DonorCommunication = ({
         onClose={() => setEditingInteraction(null)}
         onSaved={() => loadInteractions()}
       />
+
+      {showAddInteractionModal && (
+        <AddDonorInteraction
+          isModal={true}
+          embeddedDonorId={donorId}
+          embeddedCsrDonorId={csrDonorId}
+          embeddedCsrPocId={csrPocId}
+          onClose={() => setShowAddInteractionModal(false)}
+          onSaved={() => {
+            setShowAddInteractionModal(false);
+            loadInteractions();
+          }}
+        />
+      )}
     </div>
   );
 };
