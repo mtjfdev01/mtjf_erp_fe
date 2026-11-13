@@ -287,12 +287,20 @@ const DonationBoxDonationsList = () => {
         setDonations(response.data.data || []);
         setTotalItems(response.data.pagination?.total || 0);
         setTotalPages(response.data.pagination?.totalPages || 1);
+        const totalRaw =
+          response.data.totalDonationAmount ??
+          response.data.total_donation_amount ??
+          response.data.pagination?.totalDonationAmount ??
+          0;
+        setTotalDonationAmount(Number(totalRaw) || 0);
       } else {
         setError('Failed to fetch donations');
+        setTotalDonationAmount(0);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch donations');
       console.error('Error fetching donations:', err);
+      setTotalDonationAmount(0);
     } finally {
       setLoading(false);
     }
@@ -561,22 +569,52 @@ const DonationBoxDonationsList = () => {
             </div>
           </CollapsibleFilters>
 
-          {canImportCsv && (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              flexWrap: 'wrap',
+              margin: '0 0 8px 10px',
+              minHeight: 0,
+              lineHeight: 1.2,
+            }}
+          >
             <div
               style={{
-                display: 'flex',
-                justifyContent: 'flex-end',
-                marginBottom: '16px',
+                display: 'inline-flex',
+                alignItems: 'baseline',
+                gap: '8px',
+                flexWrap: 'wrap',
               }}
             >
+              <span style={{ fontSize: '14px', color: '#6c757d' }}>
+                Total Collection Amount
+                {totalItems > 0
+                  ? ` (${totalItems.toLocaleString()} records)`
+                  : ''}
+                :
+              </span>
+              <span
+                style={{
+                  fontSize: '18px',
+                  fontWeight: 700,
+                  color: '#28a745',
+                }}
+              >
+                {formatAmount(totalDonationAmount)}
+              </span>
+            </div>
+            {canImportCsv && (
               <DataImport
                 entityName="donation_box_donations"
                 buttonText="Import CSV"
                 disabled={loading}
                 onImportComplete={() => fetchDonations()}
               />
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="table-container">
             <table className="data-table">

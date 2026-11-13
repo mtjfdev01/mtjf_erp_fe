@@ -736,20 +736,21 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'offline_donations',
     icon: BiSolidDonateHeart
   },
-  {
-    label: 'Website Donation Projects',
-    path: '/dms/website_donation_projects/list',
-    type: 'list',
-    module: 'website_donation_projects',
-    icon: FiGrid
-  },
-  {
-    label: 'Home Hero Slides',
-    path: '/dms/website_home_hero/list',
-    type: 'list',
-    module: 'website_home_hero',
-    icon: FiLayers
-  },
+  // {
+  //   label: 'Website Donation Projects',
+  //   path: '/dms/website_donation_projects/list',
+  //   type: 'list',
+  //   module: 'website_donation_projects',
+  //   icon: FiGrid
+  // },
+  // {
+  //   label: 'Home Hero Slides',
+  //   path: '/dms/website_home_hero/list',
+  //   type: 'list',
+  //   module: 'website_home_hero',
+  //   icon: FiLayers
+  // },
+
   {
     label: 'Online Donors',
     path: '/dms/online_donors/list',
