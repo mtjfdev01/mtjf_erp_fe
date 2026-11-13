@@ -352,7 +352,7 @@ const FAMILY_TREE_BUCKETS = [
 const toFamilyHeadType = (relation) => {
   const r = String(relation || '').toLowerCase();
   if (HEAD_TYPE_VALUES.has(r)) return r;
-  if (r === 'husband') return 'spouse';
+  if (r === 'husband' || r === 'wife') return 'spouse';
   return 'other';
 };
 
@@ -2548,11 +2548,11 @@ const AidApplicationAddInner = () => {
           <div className="status-message status-message--error">{error}</div>
         )}
 
-        {!isEdit || isDraftEdit ? (
+        {/* {!isEdit || isDraftEdit ? (
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
             {t('draftHint')}
           </p>
-        ) : null}
+        ) : null} */}
 
         <form
           onSubmit={handleSubmit}
@@ -2565,14 +2565,14 @@ const AidApplicationAddInner = () => {
             role="navigation"
             aria-label={t('applicationSteps')}
           >
-            <div className="aid-steps__meta">
+            {/* <div className="aid-steps__meta">
               <span className="aid-steps__meta-label">
                 {t('stepOf', { n: stepIndex + 1, total: FORM_TABS.length })}
               </span>
               <span className="aid-steps__meta-pct">
                 {t('pctComplete', { n: Math.round(stepProgress) })}
               </span>
-            </div>
+            </div> */}
             <div
               className="aid-steps__track"
               role="progressbar"
@@ -3384,7 +3384,7 @@ const AidApplicationAddInner = () => {
             ) : null}
 
             <div className="aid-family-panel">
-              <div className="aid-family-panel__head">
+              {/* <div className="aid-family-panel__head">
                 <h4 className="aid-family-panel__title">
                   {t('familyHeadSelect')}
                 </h4>
@@ -3404,7 +3404,7 @@ const AidApplicationAddInner = () => {
                 >
                   + {t('addFamilyHead')}
                 </button>
-              </div>
+              </div> */}
               {familyHeads.map((head, idx) => {
                 const primaryType = familyHeadPrimaryType(head._relation_type);
                 const subtype = familyHeadSubtype(head._relation_type);

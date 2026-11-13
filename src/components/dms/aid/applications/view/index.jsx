@@ -452,8 +452,12 @@ const AidApplicationView = () => {
     String(status || '').toLowerCase() === 'rejected';
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
+  const showMealForward =
+    !isCeoRejected &&
+    canEditMeal &&
+    status === 'meal_approval_required';
   /**
-   * Program manager may forward to CEO, but never after CEO rejection.
+   * Program manager may forward to MEAL, but never after CEO rejection.
    */
   const showManagerForward =
     !isCeoRejected &&
@@ -472,14 +476,18 @@ const AidApplicationView = () => {
       'incomplete',
       'incomplete_docs',
       'rejected',
+      'meal_approval_required',
+      'ceo_approval_required',
     ].includes(status);
-  /** Manager / CEO (and Program manager → CEO) ration edit: checkboxes + remarks only */
+  /** Manager / MEAL / CEO ration edit: checkboxes + remarks only */
   const rationOverrideEdit =
     isRationApp &&
     (showManagerForward ||
+      showMealForward ||
       showCeo ||
       (showVerify && isProgramDeptManager) ||
       status === 'manager_review' ||
+      status === 'meal_approval_required' ||
       status === 'ceo_approval_required');
   const recommendationComplete = isRecommendationComplete(recommendation, {
     rationOverride: !!rationOverrideEdit,
@@ -687,7 +695,7 @@ const AidApplicationView = () => {
   const showResumeIncomplete =
     canUpdate && (status === 'incomplete' || status === 'incomplete_docs');
   const submitLabel = isProgramDeptManager
-    ? 'Submit for Approvals to CEO'
+    ? 'Submit for MEAL Approval'
     : 'Verification completed';
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
@@ -1642,7 +1650,7 @@ const AidApplicationView = () => {
                                       },
                                     );
                                     toast.success(
-                                      'Forwarded for CEO approval',
+                                      'Forwarded for MEAL approval',
                                     );
                                     return;
                                   }
@@ -1664,7 +1672,7 @@ const AidApplicationView = () => {
                                       },
                                     );
                                     toast.success(
-                                      'Submitted for CEO approval',
+                                      'Submitted for MEAL approval',
                                     );
                                     return;
                                   }
@@ -1693,8 +1701,8 @@ const AidApplicationView = () => {
                             }}
                           >
                             {status === 'rejected'
-                              ? 'Investigator rejected this case — you can change the recommendation and reopen / submit for CEO approval.'
-                              : 'You can overwrite the investigator recommendation before submitting for CEO approval.'}
+                              ? 'Investigator rejected this case — you can change the recommendation and reopen / submit for MEAL approval.'
+                              : 'You can overwrite the investigator recommendation before submitting for MEAL approval.'}
                           </p>
                         )}
                       {activePanelTab === 'field_process' &&
@@ -1795,10 +1803,10 @@ const AidApplicationView = () => {
           </div>
         </div>
 
-        {(showReject || showCeo || showDelivery) && (
+        {(showReject || showMealForward || showCeo || showDelivery) && (
           <div
             id="aid-ceo-decision"
-            className={`aid-cta-strip${showCeo ? ' aid-ceo-panel' : ''}`}
+            className={`aid-cta-strip${showCeo || showMealForward ? ' aid-ceo-panel' : ''}`}
           >
             {showReject && !showVerify && (
               <button
@@ -1809,6 +1817,38 @@ const AidApplicationView = () => {
               >
                 Reject
               </button>
+            )}
+            {showMealForward && (
+              <>
+                <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                  MEAL approval — review the case, then submit for CEO approval.
+                </p>
+                <button
+                  type="button"
+                  className="primary-btn"
+                  disabled={
+                    busy ||
+                    !leakageOverrideOk ||
+                    (isRationApp && !recommendationComplete)
+                  }
+                  onClick={() =>
+                    run(async () => {
+                      await axiosInstance.post(
+                        `/aid/applications/${id}/meal-forward`,
+                        {
+                          recommendation: buildRecommendationBody(),
+                          leakage_override_reason: needsLeakageOverride
+                            ? leakageOverride.trim()
+                            : undefined,
+                        },
+                      );
+                      toast.success('Submitted for CEO approval');
+                    })
+                  }
+                >
+                  Submit for CEO Approval
+                </button>
+              </>
             )}
             {showCeo && (
               <>

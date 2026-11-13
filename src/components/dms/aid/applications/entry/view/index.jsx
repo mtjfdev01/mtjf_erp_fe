@@ -363,20 +363,20 @@ const AidEntryApplicationView = () => {
     }
   };
 
-  const forwardToCeo = async () => {
+  const forwardToMeal = async () => {
     if (!id || !managerCanEditRecommendation || recBusy) return;
     setRecBusy(true);
     try {
       await axiosInstance.post(`/aid/applications/${id}/manager-forward`, {
         recommendation: buildRecommendationBody(),
       });
-      toast.success('Forwarded for CEO approval');
+      toast.success('Forwarded for MEAL approval');
       await load();
     } catch (err) {
       toast.error(
         err.response?.data?.message ||
           err.message ||
-          'Failed to forward for CEO approval',
+          'Failed to forward for MEAL approval',
       );
     } finally {
       setRecBusy(false);
@@ -976,7 +976,7 @@ const AidEntryApplicationView = () => {
                     ) : managerCanEditRecommendation ? (
                       <p className="aid-section-hint" style={{ marginTop: 0 }}>
                         Program manager: you can edit the Recommendation and
-                        submit for CEO approval.
+                        submit for MEAL approval.
                         {' '}
                         <Link
                           to={`/dms/aid/applications/view/${id}`}
@@ -1030,7 +1030,7 @@ const AidEntryApplicationView = () => {
                       }
                       saveProgressBusy={recSaving}
                       saveProgressDisabled={recBusy || recSaving}
-                      submitLabel="Submit for Approvals to CEO"
+                      submitLabel="Submit for MEAL Approval"
                       submitDisabled={
                         recBusy ||
                         recSaving ||
@@ -1038,7 +1038,7 @@ const AidEntryApplicationView = () => {
                       }
                       onSubmitReport={
                         managerCanEditRecommendation
-                          ? forwardToCeo
+                          ? forwardToMeal
                           : undefined
                       }
                     />

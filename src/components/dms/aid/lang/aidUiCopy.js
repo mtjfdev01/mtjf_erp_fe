@@ -16,8 +16,8 @@ export const AID_UI_COPY = {
     stepOf: 'Step {n} of {total}',
     pctComplete: '{n}% complete',
     applicationSteps: 'Application steps',
-    draftHint:
-      'Your work is autosaved on this device only (no server call until Save). Use Clear form to discard it. Assignment is done when an approver uses Data Entry → Consider (program user) to send it to Verification Process.',
+    // draftHint:
+    //   'Your work is autosaved on this device only (no server call until Save). Use Clear form to discard it. Assignment is done when an approver uses Data Entry → Consider (program user) to send it to Verification Process.',
     clearForm: 'Clear form',
     clearFormConfirm:
       'Discard all unsaved work on this form? This cannot be undone.',
@@ -107,7 +107,7 @@ export const AID_UI_COPY = {
     applicant: 'Applicant',
     applicantHeadHint: 'This Family Head submitted the application',
     beneficiaryHeadHint: 'Single-person family — this head is the beneficiary',
-    identityFamilyHead: 'Identity of family head',
+    identityFamilyHead: 'Family Head',
     propertyHead: 'Family Head — property',
     residentHead: 'Family Head — resident',
     livestockHead: 'Family Head — livestock',

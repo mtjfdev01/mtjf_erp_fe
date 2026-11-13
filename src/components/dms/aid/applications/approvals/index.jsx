@@ -37,9 +37,11 @@ import '../../overview/overview.css';
 import useListAutoRefresh from '../../../../../hooks/useListAutoRefresh';
 
 const CEO_PENDING = 'ceo_approval_required';
+const MEAL_PENDING = 'meal_approval_required';
 
 const STATUS_FILTERS = [
   { value: '', label: 'All (not rejected)' },
+  { value: MEAL_PENDING, label: 'Awaiting MEAL approval' },
   { value: CEO_PENDING, label: 'Awaiting CEO approval' },
   { value: 'successful', label: 'CEO approved' },
   { value: 'delivered', label: 'Delivered' },
@@ -66,10 +68,15 @@ const AidApprovalsList = () => {
   const canCeo =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
+  const canMeal =
+    isStaffElevated ||
+    isSuperAdmin(permissions) ||
+    hasAidPermission(permissions, 'aid_applications', 'meal_edit');
 
   const canList =
     canViewModule(permissions, 'program', 'aid_applications') ||
     canCeo ||
+    canMeal ||
     isStaffElevated;
 
   const scopedProgram = getAidScopedProgram(user, permissions);
@@ -82,7 +89,9 @@ const AidApprovalsList = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [sortField, setSortField] = useState('verified_at');
   const [sortOrder, setSortOrder] = useState('DESC');
-  const initialStatus = searchParams.get('status') || CEO_PENDING;
+  const initialStatus =
+    searchParams.get('status') ||
+    (canMeal && !canCeo ? MEAL_PENDING : CEO_PENDING);
   const [tempFilters, setTempFilters] = useState({
     search: '',
     status: initialStatus,
@@ -425,8 +434,8 @@ const AidApprovalsList = () => {
 
           <div className="aid-list-banner">
             Applications that completed investigation and are{' '}
-            <strong>not rejected</strong>. Use View or Approve to open the CEO
-            decision on the application.
+            <strong>not rejected</strong>. Flow: Manager → MEAL Approval → CEO.
+            Use the hourglass / View action to open the case.
           </div>
 
           <CollapsibleFilters open={filtersOpen}>
@@ -465,6 +474,24 @@ const AidApprovalsList = () => {
           </CollapsibleFilters>
 
           <div className="aid-list-toolbar">
+            <button
+              type="button"
+              className={`aid-filter-chip${
+                appliedFilters.status === MEAL_PENDING
+                  ? ' aid-filter-chip--active'
+                  : ''
+              }`}
+              onClick={() =>
+                applyFilters({
+                  ...appliedFilters,
+                  status:
+                    appliedFilters.status === MEAL_PENDING ? '' : MEAL_PENDING,
+                })
+              }
+            >
+              <FiCheckCircle />
+              Awaiting MEAL
+            </button>
             <button
               type="button"
               className={`aid-filter-chip${
@@ -509,11 +536,14 @@ const AidApprovalsList = () => {
                 ) : (
                   rows.map((row) => {
                     const needsCeo = canCeo && row.status === CEO_PENDING;
+                    const needsMeal = canMeal && row.status === MEAL_PENDING;
                     return (
                       <tr
                         key={row.id}
                         className={
-                          needsCeo ? 'aid-row--ceo-pending' : undefined
+                          needsCeo || needsMeal
+                            ? 'aid-row--ceo-pending'
+                            : undefined
                         }
                       >
                         <td>

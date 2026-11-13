@@ -7,6 +7,7 @@ export const AID_STATUS_OPTIONS = [
   { value: 'verification_completed', label: 'Verification completed' },
   { value: 'manager_review', label: 'Manager Review' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'meal_approval_required', label: 'MEAL Approval' },
   { value: 'ceo_approval_required', label: 'CEO approval required' },
   { value: 'successful', label: 'Successful' },
   { value: 'delivered', label: 'Delivered' },
@@ -18,7 +19,8 @@ export const AID_ENTRY_STAGES = [
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
   { id: 'manager_review', label: 'Manager Review', hint: 'With Program manager' },
-  { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
+  { id: 'meal_approval', label: 'MEAL Approval', hint: 'With MEAL' },
+  { id: 'pending_approval', label: 'Pending approval', hint: 'With CEO' },
   { id: 'approved', label: 'Approved', hint: 'This month' },
   { id: 'returned', label: 'Returned', hint: 'Need correction' },
 ];
@@ -39,6 +41,8 @@ export function aidEntryStageTone(stage) {
       return 'warn';
     case 'manager_review':
       return 'warn';
+    case 'meal_approval':
+      return 'info';
     case 'pending_approval':
       return 'purple';
     case 'approved':
@@ -1521,6 +1525,9 @@ export const AID_DEPENDENT_RELATIONS = [
   { value: 'son', label: 'Son' },
   { value: 'daughter', label: 'Daughter' },
   { value: 'child', label: 'Child' },
+  { value: 'wife', label: 'Wife' },
+  { value: 'husband', label: 'Husband' },
+  { value: 'spouse', label: 'Spouse' },
   { value: 'brother', label: 'Brother' },
   { value: 'sister', label: 'Sister' },
   { value: 'sibling', label: 'Sibling' },
@@ -1543,6 +1550,8 @@ export const AID_DEPENDENT_RELATIONS = [
 export const AID_RELATED_PERSON_TYPES = [
   { value: 'father', label: 'Father (Parent)', labelUr: 'والد' },
   { value: 'mother', label: 'Mother (Parent)', labelUr: 'والدہ' },
+  { value: 'wife', label: 'Wife', labelUr: 'بیوی' },
+  { value: 'husband', label: 'Husband', labelUr: 'شوہر' },
   { value: 'spouse', label: 'Spouse', labelUr: 'شریک حیات' },
   { value: 'son', label: 'Son (Child)', labelUr: 'بیٹا' },
   { value: 'daughter', label: 'Daughter (Child)', labelUr: 'بیٹی' },
@@ -1593,6 +1602,8 @@ export function resolveRelatedPersonKinship(row) {
     'father',
     'mother',
     'spouse',
+    'wife',
+    'husband',
     'son',
     'daughter',
     'child',
@@ -1620,6 +1631,7 @@ export function resolveRelatedPersonKinship(row) {
   ];
   if (exact.includes(r)) {
     // UI subtypes → closest kinship enum accepted by API
+    if (r === 'wife' || r === 'husband') return 'spouse';
     if (r === 'step_brother' || r === 'half_brother') return 'brother';
     if (r === 'step_sister' || r === 'half_sister') return 'sister';
     if (r === 'nephew' || r === 'niece') return 'cousin';
@@ -1645,11 +1657,13 @@ export function mapDependentRelationToKinship(relation) {
     'cousin',
     'father',
     'mother',
+    'spouse',
     'guardian',
     'in_law',
     'other',
   ]);
   if (r === 'nephew' || r === 'niece') return 'cousin';
+  if (r === 'wife' || r === 'husband') return 'spouse';
   if (allowed.has(r)) return r;
   return 'other';
 }
@@ -1708,6 +1722,8 @@ export function ageFromDob(dob) {
 export const AID_KINSHIP_TYPES = [
   { value: 'father', label: 'Father' },
   { value: 'mother', label: 'Mother' },
+  { value: 'wife', label: 'Wife' },
+  { value: 'husband', label: 'Husband' },
   { value: 'spouse', label: 'Spouse' },
   { value: 'son', label: 'Son' },
   { value: 'daughter', label: 'Daughter' },
@@ -1741,7 +1757,9 @@ export const AID_FAMILY_HEAD_BLOOD_TYPES = [
 
 /** Shown as Subtype when Family Head Type = Guardian */
 export const AID_FAMILY_HEAD_GUARDIAN_SUBTYPES = [
-  { value: 'spouse', label: 'Husband' },
+  { value: 'wife', label: 'Wife' },
+  { value: 'husband', label: 'Husband' },
+  { value: 'spouse', label: 'Spouse' },
   { value: 'step_brother', label: 'Step Brother' },
   { value: 'step_sister', label: 'Step Sister' },
   { value: 'half_brother', label: 'Half Brother' },
@@ -1796,11 +1814,13 @@ const FAMILY_HEAD_FEMALE_TYPES = new Set([
   'niece',
   'grandmother',
   'maternal_grandmother',
+  'wife',
 ]);
 
 const FAMILY_HEAD_MALE_TYPES = new Set([
   'father',
   'spouse',
+  'husband',
   'son',
   'brother',
   'step_brother',
@@ -2194,6 +2214,7 @@ export function aidStatusTone(status) {
     case 'incomplete':
     case 'incomplete_docs':
     case 'ceo_approval_required':
+    case 'meal_approval_required':
     case 'manager_review':
       return 'warn';
     case 'verification_completed':
