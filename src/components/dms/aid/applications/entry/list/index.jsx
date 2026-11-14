@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FiEdit2, FiEye } from 'react-icons/fi';
+import { GiSandsOfTime } from 'react-icons/gi';
 import { MdZoomIn } from 'react-icons/md';
 import axiosInstance from '../../../../../../utils/axios';
 import { useAuth } from '../../../../../../context/AuthContext';
@@ -23,10 +23,10 @@ import {
   AID_ENTRY_STAGES,
   formatAidRequestType,
   formatAidEntryStage,
-  formatRelativeAidTime,
   aidEntryStageTone,
 } from '../../../aidConstants';
 import AidRationRecommendationModal from '../../../shared/AidRationRecommendationModal';
+import AidApplicationPreviewModal from '../../../shared/AidApplicationPreviewModal';
 import '../../../aid.css';
 import useOfflineDataRefresh from '../../../../../../hooks/useOfflineDataRefresh';
 
@@ -69,6 +69,11 @@ const AidEntryApplicationsList = () => {
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
 
+  const canEditMeal =
+    isStaffElevated ||
+    isSuperAdmin(permissions) ||
+    hasAidPermission(permissions, 'aid_applications', 'meal_edit');
+
   const canList =
     canViewModule(permissions, 'program', 'aid_applications') ||
     hasAidPermission(permissions, 'aid_applications', 'create') ||
@@ -91,6 +96,7 @@ const AidEntryApplicationsList = () => {
   const [rationMode, setRationMode] = useState('ceo');
   const [rationBusy, setRationBusy] = useState(false);
   const [rationError, setRationError] = useState('');
+  const [previewRow, setPreviewRow] = useState(null);
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -361,26 +367,22 @@ const AidEntryApplicationsList = () => {
                   <th>Family head</th>
                   <th>Program</th>
                   <th>Location</th>
-                  <th>Members</th>
-                  <th>Vulnerability</th>
                   <th>Stage</th>
-                  <th>Updated</th>
                   <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={9}>Loading…</td>
+                    <td colSpan={6}>Loading…</td>
                   </tr>
                 ) : rows.length === 0 ? (
                   <tr>
-                    <td colSpan={9}>No applications found.</td>
+                    <td colSpan={6}>No applications found.</td>
                   </tr>
                 ) : (
                   rows.map((row) => {
                     const stage = row.stage || 'submitted';
-                    const pct = Number(row.vulnerability_pct) || 0;
                     const ration = isRationApp(row);
                     const status = String(row.status || '').toLowerCase();
                     const needsManagerRation =
@@ -425,23 +427,6 @@ const AidEntryApplicationsList = () => {
                           ) : null}
                         </td>
                         <td>{row.location || '—'}</td>
-                        <td>{row.members_count ?? '—'}</td>
-                        <td>
-                          <div className="aid-vuln-bar" title={`${pct}%`}>
-                            <span
-                              className={`aid-vuln-bar__track aid-vuln-bar__track--${
-                                pct >= 70
-                                  ? 'high'
-                                  : pct >= 40
-                                    ? 'mid'
-                                    : 'low'
-                              }`}
-                            >
-                              <i style={{ width: `${Math.min(100, pct)}%` }} />
-                            </span>
-                            <span className="aid-vuln-bar__pct">{pct}%</span>
-                          </div>
-                        </td>
                         <td>
                           <span
                             className={`aid-stage-pill aid-stage-pill--${aidEntryStageTone(
@@ -451,38 +436,17 @@ const AidEntryApplicationsList = () => {
                             {formatAidEntryStage(stage)}
                           </span>
                         </td>
-                        <td>{formatRelativeAidTime(row.updated_at)}</td>
                         <td>
                           <div className="aid-icon-actions">
                             <button
                               type="button"
                               className="aid-icon-btn aid-icon-btn--view"
-                              title="Open"
-                              aria-label="Open"
-                              onClick={() =>
-                                navigate(
-                                  `/dms/aid/applications/entry/view/${row.id}`,
-                                )
-                              }
+                              title="Preview application"
+                              aria-label="Preview application"
+                              onClick={() => setPreviewRow(row)}
                             >
-                              <FiEye />
+                              <GiSandsOfTime />
                             </button>
-                            {row.status !== 'rejected' &&
-                            row.status !== 'delivered' ? (
-                              <button
-                                type="button"
-                                className="aid-icon-btn aid-icon-btn--edit"
-                                title="Edit"
-                                aria-label="Edit"
-                                onClick={() =>
-                                  navigate(
-                                    `/dms/aid/applications/edit/${row.id}`,
-                                  )
-                                }
-                              >
-                                <FiEdit2 />
-                              </button>
-                            ) : null}
                             {needsManagerRation ? (
                               <button
                                 type="button"
@@ -524,6 +488,22 @@ const AidEntryApplicationsList = () => {
             onClose={closeRationModal}
             onSave={saveRationRecommendation}
             onApprove={submitRationRecommendation}
+          />
+
+          <AidApplicationPreviewModal
+            open={!!previewRow}
+            applicationId={previewRow?.id || null}
+            onClose={() => setPreviewRow(null)}
+            onViewDetail={() => {
+              const id = previewRow?.id;
+              setPreviewRow(null);
+              if (id) {
+                navigate(`/dms/aid/applications/entry/view/${id}`);
+              }
+            }}
+            canEditMeal={canEditMeal}
+            canEditApproval={canCeo || isSuperAdmin(permissions)}
+            canUnlockSections={isSuperAdmin(permissions)}
           />
 
           {totalItems > 0 && (

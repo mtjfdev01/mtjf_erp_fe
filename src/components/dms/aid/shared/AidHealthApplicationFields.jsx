@@ -87,13 +87,14 @@ const ChipMulti = ({ options, values, onChange, disabled }) => {
 
 /**
  * Health aid — Application tab (after Application Summary).
- * Patient list comes from Family Tree / Beneficiary; name/relation/age reflect selection.
+ * Patient defaults to the Beneficiary (not the Applicant). If Applicant is also
+ * the Beneficiary, their data is shown. Family Tree options remain selectable.
  */
 const AidHealthApplicationFields = ({
   value,
   onChange,
   readOnly = false,
-  /** [{ value, label, name, relation, age }] */
+  /** [{ value, label, name, relation, age }] — beneficiary first */
   patientOptions = [],
   /** SubProgram expected amount (PKR) for limit badge */
   subprogramLimit = null,

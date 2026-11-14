@@ -1305,6 +1305,39 @@ const AidApplicationAddInner = () => {
   const headAsBeneficiary =
     familyHeads.find((h) => h.is_beneficiary) || null;
 
+  /**
+   * True aid beneficiary: family head, head-member, beneficiary-member,
+   * or the Beneficiary tab person. Never the applicant unless they are also
+   * marked beneficiary.
+   */
+  const markedBeneficiary = useMemo(() => {
+    if (headAsBeneficiary) {
+      return { key: 'beneficiary', person: headAsBeneficiary };
+    }
+    for (let hi = 0; hi < familyHeads.length; hi += 1) {
+      const members = familyHeads[hi]?._family_members || [];
+      for (let mi = 0; mi < members.length; mi += 1) {
+        if (members[mi]?.is_beneficiary) {
+          return { key: 'beneficiary', person: members[mi] };
+        }
+      }
+    }
+    const bm = beneficiaryMembers.find((m) => m.is_beneficiary);
+    if (bm) {
+      return { key: 'beneficiary', person: bm };
+    }
+    const formBen =
+      beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary;
+    return { key: 'beneficiary', person: formBen };
+  }, [
+    headAsBeneficiary,
+    familyHeads,
+    beneficiaryMembers,
+    beneficiaryMode,
+    existingBeneficiary,
+    beneficiary,
+  ]);
+
   /** Person marked Applicant (writer). */
   const zakatApplicantPerson = useMemo(() => {
     if (beneficiary.is_applicant) return beneficiary;
@@ -1319,26 +1352,16 @@ const AidApplicationAddInner = () => {
       );
       if (m) return m;
     }
-    return headAsBeneficiary || beneficiary;
+    return markedBeneficiary.person || beneficiary;
   }, [
     beneficiary,
     spouse,
     familyHeads,
     beneficiaryMembers,
-    headAsBeneficiary,
+    markedBeneficiary,
   ]);
 
-  const beneficiaryPersonForForms = useMemo(
-    () =>
-      headAsBeneficiary ||
-      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary),
-    [
-      headAsBeneficiary,
-      beneficiaryMode,
-      existingBeneficiary,
-      beneficiary,
-    ],
-  );
+  const beneficiaryPersonForForms = markedBeneficiary.person;
 
   const humanizeRelation = (raw) => {
     const s = String(raw || '')
@@ -1348,21 +1371,35 @@ const AidApplicationAddInner = () => {
     return s.replace(/\b\w/g, (c) => c.toUpperCase());
   };
 
-  /** Family Tree people for Health → Patient dropdown (name/relation/age reflected). */
+  /** Family Tree people for Health → Patient dropdown (defaults to beneficiary). */
   const healthPatientOptions = useMemo(() => {
     const opts = [];
-    const seen = new Set();
-    const pushPerson = (key, person, relation, roleHint) => {
+    const seenKeys = new Set();
+    const seenPeople = new Set();
+    const personIdentity = (person) => {
+      if (!person || typeof person !== 'object') return '';
+      if (person.existing_person_id) return `id:${person.existing_person_id}`;
+      const cnic = String(person.cnic || '').replace(/\D/g, '');
+      if (cnic) return `cnic:${cnic}`;
+      const name = String(person.full_name || '').trim().toLowerCase();
+      return name ? `name:${name}` : '';
+    };
+    const pushPerson = (key, person, relation, roleHint, { force = false } = {}) => {
       if (!person || typeof person !== 'object') return;
       const name = String(person.full_name || '').trim();
-      if (!name && !person.existing_person_id) return;
-      if (seen.has(key)) return;
-      seen.add(key);
+      if (!force && !name && !person.existing_person_id) return;
+      if (seenKeys.has(key)) return;
+      const identity = personIdentity(person);
+      if (identity && seenPeople.has(identity)) return;
+      seenKeys.add(key);
+      if (identity) seenPeople.add(identity);
       const age = calcAgeFromDob(person.date_of_birth);
       const rel =
         relation ||
-        (person.is_applicant || person === beneficiaryPersonForForms
-          ? 'Self'
+        (person === beneficiaryPersonForForms
+          ? person.is_applicant
+            ? 'Self'
+            : 'Beneficiary'
           : 'Relative');
       const label = name
         ? `${name}${roleHint ? ` (${roleHint})` : ''}`
@@ -1377,15 +1414,14 @@ const AidApplicationAddInner = () => {
     };
 
     const ben = beneficiaryPersonForForms;
-    const benIsApplicant =
-      !!ben?.is_applicant ||
-      !!beneficiary.is_applicant ||
-      !!headAsBeneficiary?.is_applicant;
+    // Patient = beneficiary. "Self" only when that same person is also applicant.
+    const benIsAlsoApplicant = !!ben?.is_applicant;
     pushPerson(
-      'beneficiary',
+      markedBeneficiary.key || 'beneficiary',
       ben,
-      benIsApplicant ? 'Self' : 'Beneficiary',
+      benIsAlsoApplicant ? 'Self' : 'Beneficiary',
       'Beneficiary',
+      { force: true },
     );
 
     if (spouse && personHasEnteredDetails(spouse) && spouse !== ben) {
@@ -1399,7 +1435,7 @@ const AidApplicationAddInner = () => {
 
     familyHeads.forEach((h, hi) => {
       if (!h) return;
-      if (headAsBeneficiary && h === headAsBeneficiary) {
+      if (h.is_beneficiary || h === ben) {
         // already as beneficiary
       } else if (personHasEnteredDetails(h)) {
         const rel =
@@ -1409,14 +1445,18 @@ const AidApplicationAddInner = () => {
         pushPerson(`head:${hi}`, h, rel, rel);
       }
       (h._family_members || []).forEach((m, mi) => {
-        if (!personHasEnteredDetails(m)) return;
+        if (!personHasEnteredDetails(m) || m.is_beneficiary || m === ben) {
+          return;
+        }
         const rel = humanizeRelation(m.relation_type) || 'Relative';
         pushPerson(`head:${hi}:m:${mi}`, m, rel, rel);
       });
     });
 
     beneficiaryMembers.forEach((m, mi) => {
-      if (!personHasEnteredDetails(m)) return;
+      if (!personHasEnteredDetails(m) || m.is_beneficiary || m === ben) {
+        return;
+      }
       const rel = humanizeRelation(m.relation_type) || 'Relative';
       pushPerson(`bm:${mi}`, m, rel, rel);
     });
@@ -1424,22 +1464,26 @@ const AidApplicationAddInner = () => {
     return opts;
   }, [
     beneficiaryPersonForForms,
-    beneficiary.is_applicant,
-    headAsBeneficiary,
+    markedBeneficiary.key,
     spouse,
     familyHeads,
     beneficiaryMembers,
   ]);
 
-  // Default Health patient to Beneficiary; refresh name/relation/age when that person changes
+  // Default Health patient to Beneficiary only (not applicant unless same person)
   useEffect(() => {
     if (form.requested_aid_type !== 'health') return;
     setHealthDetails((prev) => {
       const cur = prev || emptyHealthDetails();
-      const key = cur.patient_key || 'beneficiary';
+      const preferredKey = markedBeneficiary.key || 'beneficiary';
+      const key =
+        cur.patient_key &&
+        healthPatientOptions.some((o) => o.value === cur.patient_key)
+          ? cur.patient_key
+          : preferredKey;
       const opt =
         healthPatientOptions.find((o) => o.value === key) ||
-        healthPatientOptions[0];
+        healthPatientOptions.find((o) => o.value === preferredKey);
       if (!opt) return cur;
       const next = {
         ...cur,
@@ -1458,7 +1502,7 @@ const AidApplicationAddInner = () => {
       }
       return next;
     });
-  }, [form.requested_aid_type, healthPatientOptions]);
+  }, [form.requested_aid_type, healthPatientOptions, markedBeneficiary.key]);
 
   /**
    * Zakat / Consent form subject: beneficiary for all programs,

@@ -6,6 +6,7 @@ import {
   FiCheckCircle,
   FiTruck,
 } from 'react-icons/fi';
+import { GiSandsOfTime } from 'react-icons/gi';
 import { MdZoomIn } from 'react-icons/md';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
@@ -35,6 +36,7 @@ import {
   formatAidProgramLabel,
 } from '../../aidConstants';
 import AidRationRecommendationModal from '../../shared/AidRationRecommendationModal';
+import AidApplicationPreviewModal from '../../shared/AidApplicationPreviewModal';
 import '../../aid.css';
 import useListAutoRefresh from '../../../../../hooks/useListAutoRefresh';
 
@@ -70,6 +72,11 @@ const AidApplicationsList = () => {
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'ceo_approve');
 
+  const canEditMeal =
+    isStaffElevated ||
+    isSuperAdmin(permissions) ||
+    hasAidPermission(permissions, 'aid_applications', 'meal_edit');
+
   const canDeliver =
     isStaffElevated ||
     hasAidPermission(permissions, 'aid_applications', 'deliver');
@@ -100,6 +107,7 @@ const AidApplicationsList = () => {
   const [rationMode, setRationMode] = useState('ceo');
   const [rationBusy, setRationBusy] = useState(false);
   const [rationError, setRationError] = useState('');
+  const [previewRow, setPreviewRow] = useState(null);
 
   const handleSortChange = (field, order) => {
     setSortField(field);
@@ -390,6 +398,15 @@ const AidApplicationsList = () => {
                             <button
                               type="button"
                               className="aid-icon-btn aid-icon-btn--view"
+                              title="Preview application"
+                              aria-label="Preview application"
+                              onClick={() => setPreviewRow(row)}
+                            >
+                              <GiSandsOfTime />
+                            </button>
+                            <button
+                              type="button"
+                              className="aid-icon-btn aid-icon-btn--view"
                               title="View"
                               aria-label="View"
                               onClick={() =>
@@ -481,6 +498,20 @@ const AidApplicationsList = () => {
             onClose={closeRationModal}
             onSave={saveRationRecommendation}
             onApprove={submitRationRecommendation}
+          />
+
+          <AidApplicationPreviewModal
+            open={!!previewRow}
+            applicationId={previewRow?.id || null}
+            onClose={() => setPreviewRow(null)}
+            onViewDetail={() => {
+              const id = previewRow?.id;
+              setPreviewRow(null);
+              if (id) navigate(`/dms/aid/applications/view/${id}`);
+            }}
+            canEditMeal={canEditMeal}
+            canEditApproval={canCeo || isSuperAdmin(permissions)}
+            canUnlockSections={isSuperAdmin(permissions)}
           />
 
           {totalItems > 0 && (
