@@ -82,6 +82,12 @@ const UpdateUser = () => {
     { value: 'hr', label: 'HR'},
     { value: 'aas_lab', label: 'Aas Lab'},
     { value: 'admin', label: 'Admin'},
+    { value: 'reception', label: 'Reception'},
+    { value: 'pathology', label: 'Pathology'},
+    { value: 'radiology', label: 'Radiology'},
+    { value: 'smd', label: 'SMD'},
+    { value: 'call_center', label: 'Call Center'},
+    { value: 'operations', label: 'Operations'}
   ];
 
   const bloodGroups = [
