@@ -844,7 +844,15 @@
 .aid-disb-record .primary-btn,
 .aid-disb-record .primary_btn,
 .aid-disb-list .primary-btn,
-.aid-disb-list .primary_btn {
+.aid-disb-list .primary_btn,
+.aid-preview-section .primary-btn,
+.aid-preview-section .primary_btn,
+.aid-preview-modal .primary-btn,
+.aid-preview-modal .primary_btn,
+.aid-rec-modal .primary-btn,
+.aid-rec-modal .primary_btn,
+.aid-welfare-overview .primary-btn,
+.aid-welfare-overview .primary_btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -879,7 +887,15 @@
 .aid-disb-record .primary-btn:hover:not(:disabled),
 .aid-disb-record .primary_btn:hover:not(:disabled),
 .aid-disb-list .primary-btn:hover:not(:disabled),
-.aid-disb-list .primary_btn:hover:not(:disabled) {
+.aid-disb-list .primary_btn:hover:not(:disabled),
+.aid-preview-section .primary-btn:hover:not(:disabled),
+.aid-preview-section .primary_btn:hover:not(:disabled),
+.aid-preview-modal .primary-btn:hover:not(:disabled),
+.aid-preview-modal .primary_btn:hover:not(:disabled),
+.aid-rec-modal .primary-btn:hover:not(:disabled),
+.aid-rec-modal .primary_btn:hover:not(:disabled),
+.aid-welfare-overview .primary-btn:hover:not(:disabled),
+.aid-welfare-overview .primary_btn:hover:not(:disabled) {
   background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
   box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
@@ -896,7 +912,15 @@
 .aid-disb-record .secondary-btn,
 .aid-disb-record .secondary_btn,
 .aid-disb-list .secondary-btn,
-.aid-disb-list .secondary_btn {
+.aid-disb-list .secondary_btn,
+.aid-preview-section .secondary-btn,
+.aid-preview-section .secondary_btn,
+.aid-preview-modal .secondary-btn,
+.aid-preview-modal .secondary_btn,
+.aid-rec-modal .secondary-btn,
+.aid-rec-modal .secondary_btn,
+.aid-welfare-overview .secondary-btn,
+.aid-welfare-overview .secondary_btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -927,6 +951,14 @@
 .aid-list .secondary_btn:hover:not(:disabled),
 .aid-people-view .secondary-btn:hover:not(:disabled),
 .aid-people-view .secondary_btn:hover:not(:disabled),
+.aid-preview-section .secondary-btn:hover:not(:disabled),
+.aid-preview-section .secondary_btn:hover:not(:disabled),
+.aid-preview-modal .secondary-btn:hover:not(:disabled),
+.aid-preview-modal .secondary_btn:hover:not(:disabled),
+.aid-rec-modal .secondary-btn:hover:not(:disabled),
+.aid-rec-modal .secondary_btn:hover:not(:disabled),
+.aid-welfare-overview .secondary-btn:hover:not(:disabled),
+.aid-welfare-overview .secondary_btn:hover:not(:disabled),
 .aid-disb-record .secondary-btn:hover:not(:disabled),
 .aid-disb-record .secondary_btn:hover:not(:disabled),
 .aid-disb-list .secondary-btn:hover:not(:disabled),
@@ -1320,7 +1352,7 @@
 
 /* Application wizard ? step progress */
 .aid-steps {
-  margin: 0 0 1rem;
+  margin: 0;
   padding: 0;
   border: none;
   border-radius: 0;
@@ -4172,7 +4204,9 @@ a.aid-contact-chip:hover {
   box-sizing: border-box;
 }
 
+.form.aid-application-form,
 .aid-application-form {
+  margin-top: 0;
   gap: 0.85rem;
   font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
@@ -4182,6 +4216,7 @@ a.aid-contact-chip:hover {
   border: 1px solid #d0d7e2;
   border-radius: 14px;
   padding: 1.25rem 1.35rem 1.35rem;
+  margin-top: 0;
   margin-bottom: 0;
   border-bottom: 1px solid #d0d7e2;
   box-shadow: 0 2px 8px rgba(15, 23, 42, 0.06);
@@ -5237,6 +5272,118 @@ a.aid-contact-chip:hover {
   color: #b91c1c;
 }
 
+.aid-rec-view-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.aid-rec-view-row--block {
+  display: block;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.aid-rec-view-label {
+  font-size: 0.75rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #64748b;
+}
+
+.aid-rec-view-value {
+  font-size: 0.95rem;
+  color: #0f172a;
+  text-align: right;
+}
+
+.aid-rec-view-value.is-bad {
+  color: #b45309;
+}
+
+.aid-rec-view-remarks {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: #334155;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.aid-rec-cell-btn {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.aid-rec-cell-btn:hover .aid-rec-cell-primary {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.aid-rec-cell-primary {
+  text-transform: capitalize;
+}
+
+.aid-rec-cell-sub {
+  font-size: 12px;
+  color: #64748b;
+}
+
+.aid-rec-card--manager {
+  margin-bottom: 0.75rem;
+  background: #f8fafc;
+  border-color: #dbe3ec;
+}
+
+.aid-rec-card__title {
+  margin: 0 0 0.55rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1f5c3f;
+}
+
+.aid-preview__manager-rec {
+  margin-bottom: 0.75rem;
+}
+
+.aid-preview-modal__panel {
+  width: min(1100px, 96vw);
+  max-height: min(92vh, 980px);
+  display: flex;
+  flex-direction: column;
+}
+
+.aid-preview-modal__body {
+  flex: 1 1 auto;
+  overflow: auto;
+  max-height: none;
+  padding: 0.75rem 1rem 1rem;
+  background: #f8fafc;
+}
+
+.aid-preview-modal__body .aid-preview-section {
+  margin: 0;
+}
+
+.aid-preview-modal__loading {
+  padding: 2rem 1rem;
+  text-align: center;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
 .aid-rec-modal__actions {
   display: flex;
   flex-wrap: wrap;
@@ -5346,6 +5493,41 @@ a.aid-contact-chip:hover {
   min-width: 12rem;
   font-size: 0.875rem;
   color: #1e3a8a;
+}
+
+.aid-audit-list .aid-audit-user-filter {
+  min-width: 240px;
+}
+
+.aid-audit-list .aid-audit-user-filter .searchable-dropdown {
+  margin-bottom: 0;
+  min-width: 0;
+  width: 100%;
+  gap: 0;
+}
+
+.aid-audit-list .aid-audit-user-filter .searchable-dropdown__input {
+  padding: 10px 35px 10px 12px;
+  border-radius: 6px;
+  font-size: 14px;
+  border: 1px solid var(--color-border, #e5e7eb);
+}
+
+.aid-audit-list .aid-audit-row-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.aid-audit-list .aid-audit-row-actions .secondary-btn {
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+
+.aid-audit-list .aid-audit-report-cta .primary-btn {
+  white-space: nowrap;
 }
 
 .aid-rec-modal__actions .secondary-btn {
@@ -8607,10 +8789,51 @@ a.aid-contact-chip:hover {
   opacity: 0.96;
 }
 
+.aid-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 1rem;
+  border-radius: 0.65rem;
+  font-size: 0.875rem;
+  font-weight: 650;
+  font-family: inherit;
+  line-height: 1.25;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease,
+    transform 0.15s ease, opacity 0.15s ease;
+}
+
+.aid-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .aid-btn--ghost {
   background: #fff;
   color: #334155;
   border: 1px solid #cbd5e1;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.aid-btn--ghost:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.aid-btn--primary {
+  background: linear-gradient(180deg, #3b82f6 0%, #2563eb 100%);
+  color: #fff;
+  border: none;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
+}
+
+.aid-btn--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%);
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+  transform: translateY(-1px);
 }
 
 .aid-preview__approval-foot {
@@ -8791,4 +9014,145 @@ a.aid-contact-chip:hover {
     border-right: none;
     border-bottom: 1px solid var(--aid-preview-border);
   }
+}
+
+/* Health application form (after Application Summary) */
+.aid-health-yn {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.aid-health-yn__btn {
+  height: 42px;
+  padding: 0 20px;
+  border-radius: 8px;
+  border: 1px solid #d5d9e0;
+  background: #fff;
+  color: #1f2937;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.aid-health-yn__btn.is-active {
+  border-color: #2f5bea;
+  background: #2f5bea;
+  color: #fff;
+  font-weight: 600;
+}
+
+.aid-health-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.aid-health-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid #d5d9e0;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  background: #fff;
+}
+
+.aid-health-chip.is-active {
+  border-color: #2f5bea;
+  background: #eef2ff;
+}
+
+.aid-health-chip input {
+  margin: 0;
+}
+
+.aid-health-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.aid-health-add-row {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 20px;
+  border: 1px solid #a7ddb9;
+  background: #f0faf3;
+  color: #15803d;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aid-health-nested {
+  border: 1px solid #e3e6eb;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafbfc;
+}
+
+.aid-health-nested__label {
+  color: #2f5bea;
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.aid-health-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+
+.aid-health-total.is-over {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+
+.aid-health-total__label {
+  font-size: 13px;
+  color: #4b5563;
+}
+
+.aid-health-total__amount {
+  font-size: 20px;
+  font-weight: 700;
+  color: #111827;
+  margin-top: 2px;
+}
+
+.aid-health-cap-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.aid-health-cap-badge.is-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.aid-health-cap-badge.is-over {
+  background: #fee2e2;
+  color: #991b1b;
 }

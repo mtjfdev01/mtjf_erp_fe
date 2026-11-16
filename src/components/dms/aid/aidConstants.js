@@ -7,6 +7,7 @@ export const AID_STATUS_OPTIONS = [
   { value: 'verification_completed', label: 'Verification completed' },
   { value: 'manager_review', label: 'Manager Review' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'meal_approval_required', label: 'MEAL Approval' },
   { value: 'ceo_approval_required', label: 'CEO approval required' },
   { value: 'successful', label: 'Successful' },
   { value: 'delivered', label: 'Delivered' },
@@ -18,7 +19,8 @@ export const AID_ENTRY_STAGES = [
   { id: 'submitted', label: 'Submitted', hint: 'Awaiting investigator' },
   { id: 'investigation', label: 'Investigation', hint: 'Field visit due' },
   { id: 'manager_review', label: 'Manager Review', hint: 'With Program manager' },
-  { id: 'pending_approval', label: 'Pending approval', hint: 'With committee' },
+  { id: 'meal_approval', label: 'MEAL Approval', hint: 'With MEAL' },
+  { id: 'pending_approval', label: 'Pending approval', hint: 'With CEO' },
   { id: 'approved', label: 'Approved', hint: 'This month' },
   { id: 'returned', label: 'Returned', hint: 'Need correction' },
 ];
@@ -39,6 +41,8 @@ export function aidEntryStageTone(stage) {
       return 'warn';
     case 'manager_review':
       return 'warn';
+    case 'meal_approval':
+      return 'info';
     case 'pending_approval':
       return 'purple';
     case 'approved':
@@ -71,8 +75,6 @@ export const AID_REQUEST_TYPES = [
   { value: 'health', label: 'Health' },
   { value: 'education', label: 'Education' },
   { value: 'ration', label: 'Ration' },
-  { value: 'marriage_gift', label: 'Marriage Gift' },
-  { value: 'financial_assistance', label: 'Financial Assistance' },
   { value: 'clean_water', label: 'Clean Water' },
   { value: 'apna_ghar', label: 'Apna Ghar' },
   { value: 'disaster_relief', label: 'Disaster Relief' },
@@ -81,6 +83,21 @@ export const AID_REQUEST_TYPES = [
   { value: 'aas_lab_diagnostics', label: 'AAS Lab & Diagnostics' },
   { value: 'community_services', label: 'Community Services' },
   { value: 'other', label: 'Other' },
+];
+
+/**
+ * Former top-level programs now filed under Community Services subprograms.
+ * Kept for filters / labels on existing rows.
+ */
+export const AID_LEGACY_REQUEST_TYPES = [
+  { value: 'marriage_gift', label: 'Marriage Gift (legacy)' },
+  { value: 'financial_assistance', label: 'Financial Assistance (legacy)' },
+];
+
+/** Program filter options including legacy types. */
+export const AID_REQUEST_TYPES_FOR_FILTER = [
+  ...AID_REQUEST_TYPES,
+  ...AID_LEGACY_REQUEST_TYPES,
 ];
 
 /**
@@ -243,17 +260,6 @@ export const AID_PROGRAMS = [
       'Recommended for woman-headed families to promote sustainable livelihoods.',
   },
   {
-    value: 'marriage_gift_standard',
-    aid_type: 'marriage_gift',
-    label: 'Marriage Gift',
-    uom: 'Per Beneficiary',
-    amount: 150000,
-    zakat: true,
-    general: true,
-    narration:
-      'Support for deserving girls whose families cannot arrange marriage expenses.',
-  },
-  {
     value: 'ration_feed_family_month',
     aid_type: 'ration',
     label: 'Feed a Family for whole month',
@@ -264,10 +270,56 @@ export const AID_PROGRAMS = [
     narration:
       'Monthly ration of essential food items for deserving families.',
   },
+  {
+    value: 'community_services_marriage_gift',
+    aid_type: 'community_services',
+    label: 'Marriage Gift',
+    uom: 'Per Beneficiary',
+    amount: 150000,
+    zakat: true,
+    general: true,
+    narration:
+      'Support for deserving girls whose families cannot arrange marriage expenses.',
+  },
+  {
+    value: 'community_services_financial_assistance',
+    aid_type: 'community_services',
+    label: 'Financial Assistance',
+    uom: 'Per Beneficiary',
+    amount: 950000,
+    zakat: true,
+    general: true,
+    narration:
+      'Direct financial support for deserving families under Community Services.',
+  },
+  {
+    value: 'community_services_wheelchair',
+    aid_type: 'community_services',
+    label: 'Wheelchair',
+    uom: 'Per Beneficiary',
+    amount: 20000,
+    zakat: true,
+    general: true,
+    narration:
+      'Provision of wheelchair / mobility aid under Community Services.',
+  },
+  /** @deprecated Prefer community_services_marriage_gift — kept for existing rows */
+  {
+    value: 'marriage_gift_standard',
+    aid_type: 'community_services',
+    label: 'Marriage Gift',
+    uom: 'Per Beneficiary',
+    amount: 150000,
+    zakat: true,
+    general: true,
+    hidden: true,
+    narration:
+      'Support for deserving girls whose families cannot arrange marriage expenses.',
+  },
 ];
 
 export function getAidProgramsForType(aidType) {
-  return AID_PROGRAMS.filter((p) => p.aid_type === aidType);
+  return AID_PROGRAMS.filter((p) => p.aid_type === aidType && !p.hidden);
 }
 
 export function getAidProgram(programKey) {
@@ -442,6 +494,157 @@ export const emptyFinancialAssistanceDetails = () => ({
   how_managed_so_far: '',
   alternative_if_not_approved: '',
 });
+
+/** Health — medicine row */
+export const emptyHealthMedicineRow = () => ({
+  name: '',
+  dosage: '',
+  monthly_cost: '',
+});
+
+/** Health — prescribed test row */
+export const emptyHealthTestRow = () => ({
+  name: '',
+  estimated_cost: '',
+});
+
+/**
+ * Health — shared Application tab (Patient Care / Medical Support / PWD Rehab).
+ * Matches MTJF Health Application Form (after Application Summary).
+ */
+export const emptyHealthDetails = () => ({
+  patient_key: '',
+  patient_name: '',
+  patient_relation: '',
+  patient_age: '',
+  nature_of_illness: '',
+  disease_condition: '',
+  ill_since_years: '',
+  ill_since_months: '',
+  diagnosed_by_doctor: '',
+  doctor_name: '',
+  hospital_name: '',
+  currently_under_treatment: '',
+  treatment_where: '',
+  current_medicines: [emptyHealthMedicineRow()],
+  previous_treatment_history: '',
+  support_needed: [],
+  prescribed_tests: [emptyHealthTestRow()],
+  preferred_facility: '',
+  cost_consultation: '',
+  cost_diagnostics: '',
+  cost_medicines: '',
+  cost_procedure: '',
+  cost_other: '',
+  cost_basis: 'once',
+  duration_value: '',
+  duration_unit: 'months',
+  paying_now: [],
+  has_sehat_card: '',
+  medical_help_other_org: '',
+  debt_due_to_illness: '',
+  patient_earning_member: '',
+  unable_work_years: '',
+  unable_work_months: '',
+  caregiver: '',
+  how_know_mtjf: '',
+  alternative_if_not_approved: '',
+});
+
+export const AID_HEALTH_NATURE_OF_ILLNESS = [
+  { value: 'acute', label: 'Acute', labelUr: 'شدید' },
+  { value: 'chronic', label: 'Chronic', labelUr: 'مزمن' },
+  { value: 'surgical', label: 'Surgical', labelUr: 'جراحی' },
+  { value: 'maternity', label: 'Maternity', labelUr: 'زچگی' },
+  { value: 'disability', label: 'Disability', labelUr: 'معذوری' },
+  { value: 'other', label: 'Other', labelUr: 'دیگر' },
+];
+
+export const AID_HEALTH_TREATMENT_WHERE = [
+  { value: 'govt_hospital', label: 'Govt hospital', labelUr: 'سرکاری ہسپتال' },
+  { value: 'private_clinic', label: 'Private clinic', labelUr: 'پرائیویٹ کلینک' },
+  { value: 'hakeem', label: 'Hakeem', labelUr: 'حکیم' },
+  { value: 'aas_clinics', label: 'AAS Clinics', labelUr: 'AAS کلینکس' },
+  { value: 'aas_lab', label: 'AAS Lab', labelUr: 'AAS لیبارٹری' },
+  {
+    value: 'other',
+    label: 'Other (specify in summary)',
+    labelUr: 'دیگر (خلاصے میں بتائیں)',
+  },
+];
+
+export const AID_HEALTH_SUPPORT_NEEDED = [
+  { value: 'consultation', label: 'Consultation', labelUr: 'معائنہ' },
+  {
+    value: 'diagnostic_tests',
+    label: 'Diagnostic tests',
+    labelUr: 'تشخیصی ٹیسٹ',
+  },
+  { value: 'medicines', label: 'Medicines', labelUr: 'ادویات' },
+  {
+    value: 'follow_up',
+    label: 'Follow-up visits',
+    labelUr: 'فالو اپ وزٹ',
+  },
+];
+
+export const AID_HEALTH_PREFERRED_FACILITY = [
+  { value: 'aas_clinics', label: 'AAS Clinics', labelUr: 'AAS کلینکس' },
+  { value: 'aas_lab', label: 'AAS Lab', labelUr: 'AAS لیبارٹری' },
+  {
+    value: 'other',
+    label: 'Other (specify in summary)',
+    labelUr: 'دیگر (خلاصے میں بتائیں)',
+  },
+];
+
+export const AID_HEALTH_PAYING_NOW = [
+  { value: 'self', label: 'Self', labelUr: 'خود' },
+  { value: 'relatives', label: 'Relatives', labelUr: 'رشتہ دار' },
+  { value: 'loan', label: 'Loan', labelUr: 'قرض' },
+  { value: 'other_ngo', label: 'Other NGO', labelUr: 'دیگر این جی او' },
+  {
+    value: 'zakat',
+    label: 'Zakat / Bait-ul-Mal',
+    labelUr: 'زکوٰۃ / بیت المال',
+  },
+  { value: 'no_one', label: 'No one', labelUr: 'کوئی نہیں' },
+];
+
+export const AID_HEALTH_DURATION_UNITS = [
+  { value: 'months', label: 'Months', labelUr: 'مہینے' },
+  { value: 'weeks', label: 'Weeks', labelUr: 'ہفتے' },
+  { value: 'days', label: 'Days', labelUr: 'دن' },
+];
+
+/** Convert duration to month multiplier for recurring cost total. */
+export function healthDurationToMonths(value, unit) {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n <= 0) return 1;
+  const u = String(unit || 'months').toLowerCase();
+  if (u === 'weeks') return Math.max(1, Math.ceil(n / 4.345));
+  if (u === 'days') return Math.max(1, Math.ceil(n / 30));
+  return Math.max(1, Math.ceil(n));
+}
+
+export function calcHealthEstimatedTotal(details) {
+  const d = details || {};
+  const nums = [
+    d.cost_consultation,
+    d.cost_diagnostics,
+    d.cost_medicines,
+    d.cost_procedure,
+    d.cost_other,
+  ].map((v) => {
+    const n = Number(v);
+    return Number.isFinite(n) && n > 0 ? n : 0;
+  });
+  const sub = nums.reduce((a, b) => a + b, 0);
+  if (String(d.cost_basis || 'once') === 'monthly') {
+    return sub * healthDurationToMonths(d.duration_value, d.duration_unit);
+  }
+  return sub;
+}
 
 /** Clean Water survey beneficiary row */
 export const emptyCleanWaterSurveyBeneficiary = () => ({
@@ -634,15 +837,39 @@ export const emptyMarriageGiftConsentForm = () => ({
   lang: 'ur',
 });
 
-/** Wheelchair affidavit is used for PWD rehab (wheelchairs / mobility aids). */
+/** Wheelchair affidavit — Health PWD rehab or Community Services wheelchair. */
 export function isWheelchairConsentProgram(aidProgram) {
-  return String(aidProgram || '').toLowerCase() === 'health_pwd_rehab';
+  const program = String(aidProgram || '').toLowerCase();
+  return (
+    program === 'health_pwd_rehab' ||
+    program === 'community_services_wheelchair' ||
+    program.includes('wheelchair')
+  );
 }
 
-export function isMarriageGiftConsentProgram(aidType, aidProgram) {
+export function isMarriageGiftProgram(aidType, aidProgram) {
   const type = String(aidType || '').toLowerCase();
   const program = String(aidProgram || '').toLowerCase();
-  return type === 'marriage_gift' || program.startsWith('marriage_gift');
+  return (
+    type === 'marriage_gift' ||
+    program === 'community_services_marriage_gift' ||
+    program.startsWith('marriage_gift')
+  );
+}
+
+export function isFinancialAssistanceProgram(aidType, aidProgram) {
+  const type = String(aidType || '').toLowerCase();
+  const program = String(aidProgram || '').toLowerCase();
+  return (
+    type === 'financial_assistance' ||
+    program === 'community_services_financial_assistance' ||
+    program.includes('financial_assistance')
+  );
+}
+
+/** @deprecated Use isMarriageGiftProgram */
+export function isMarriageGiftConsentProgram(aidType, aidProgram) {
+  return isMarriageGiftProgram(aidType, aidProgram);
 }
 
 export function isWheelchairConsentForm(value) {
@@ -656,7 +883,7 @@ export function isMarriageGiftConsentForm(value) {
 /** Resolve which consent form variant to show for an application. */
 export function resolveConsentVariant(aidType, aidProgram) {
   if (isWheelchairConsentProgram(aidProgram)) return 'wheelchair';
-  if (isMarriageGiftConsentProgram(aidType, aidProgram)) return 'marriage_gift';
+  // Marriage gift uses standard consent form (receiving receipt form kept separate)
   return 'media';
 }
 
@@ -1298,6 +1525,9 @@ export const AID_DEPENDENT_RELATIONS = [
   { value: 'son', label: 'Son' },
   { value: 'daughter', label: 'Daughter' },
   { value: 'child', label: 'Child' },
+  { value: 'wife', label: 'Wife' },
+  { value: 'husband', label: 'Husband' },
+  { value: 'spouse', label: 'Spouse' },
   { value: 'brother', label: 'Brother' },
   { value: 'sister', label: 'Sister' },
   { value: 'sibling', label: 'Sibling' },
@@ -1320,6 +1550,8 @@ export const AID_DEPENDENT_RELATIONS = [
 export const AID_RELATED_PERSON_TYPES = [
   { value: 'father', label: 'Father (Parent)', labelUr: 'والد' },
   { value: 'mother', label: 'Mother (Parent)', labelUr: 'والدہ' },
+  { value: 'wife', label: 'Wife', labelUr: 'بیوی' },
+  { value: 'husband', label: 'Husband', labelUr: 'شوہر' },
   { value: 'spouse', label: 'Spouse', labelUr: 'شریک حیات' },
   { value: 'son', label: 'Son (Child)', labelUr: 'بیٹا' },
   { value: 'daughter', label: 'Daughter (Child)', labelUr: 'بیٹی' },
@@ -1370,6 +1602,8 @@ export function resolveRelatedPersonKinship(row) {
     'father',
     'mother',
     'spouse',
+    'wife',
+    'husband',
     'son',
     'daughter',
     'child',
@@ -1397,6 +1631,7 @@ export function resolveRelatedPersonKinship(row) {
   ];
   if (exact.includes(r)) {
     // UI subtypes → closest kinship enum accepted by API
+    if (r === 'wife' || r === 'husband') return 'spouse';
     if (r === 'step_brother' || r === 'half_brother') return 'brother';
     if (r === 'step_sister' || r === 'half_sister') return 'sister';
     if (r === 'nephew' || r === 'niece') return 'cousin';
@@ -1422,11 +1657,13 @@ export function mapDependentRelationToKinship(relation) {
     'cousin',
     'father',
     'mother',
+    'spouse',
     'guardian',
     'in_law',
     'other',
   ]);
   if (r === 'nephew' || r === 'niece') return 'cousin';
+  if (r === 'wife' || r === 'husband') return 'spouse';
   if (allowed.has(r)) return r;
   return 'other';
 }
@@ -1485,6 +1722,8 @@ export function ageFromDob(dob) {
 export const AID_KINSHIP_TYPES = [
   { value: 'father', label: 'Father' },
   { value: 'mother', label: 'Mother' },
+  { value: 'wife', label: 'Wife' },
+  { value: 'husband', label: 'Husband' },
   { value: 'spouse', label: 'Spouse' },
   { value: 'son', label: 'Son' },
   { value: 'daughter', label: 'Daughter' },
@@ -1518,7 +1757,9 @@ export const AID_FAMILY_HEAD_BLOOD_TYPES = [
 
 /** Shown as Subtype when Family Head Type = Guardian */
 export const AID_FAMILY_HEAD_GUARDIAN_SUBTYPES = [
-  { value: 'spouse', label: 'Husband' },
+  { value: 'wife', label: 'Wife' },
+  { value: 'husband', label: 'Husband' },
+  { value: 'spouse', label: 'Spouse' },
   { value: 'step_brother', label: 'Step Brother' },
   { value: 'step_sister', label: 'Step Sister' },
   { value: 'half_brother', label: 'Half Brother' },
@@ -1573,11 +1814,13 @@ const FAMILY_HEAD_FEMALE_TYPES = new Set([
   'niece',
   'grandmother',
   'maternal_grandmother',
+  'wife',
 ]);
 
 const FAMILY_HEAD_MALE_TYPES = new Set([
   'father',
   'spouse',
+  'husband',
   'son',
   'brother',
   'step_brother',
@@ -1744,6 +1987,7 @@ export const AID_ATTACHMENT_CONTEXTS = [
   { value: 'marriage_certificate', label: 'Marriage Certificates' },
   { value: 'education_certificate', label: 'Education Certificates' },
   { value: 'e_stamp_paper', label: 'E-Stamp Paper' },
+  { value: 'others', label: 'Others' },
   { value: 'zakat', label: 'Zakat form' },
   { value: 'consent', label: 'Consent form' },
 ];
@@ -1763,6 +2007,13 @@ export const AID_APPLICATION_DOC_TYPES = [
   { value: 'marriage_certificate', label: 'Marriage Certificates', multiple: true },
   { value: 'education_certificate', label: 'Education Certificates', multiple: true },
   { value: 'e_stamp_paper', label: 'E-Stamp Paper', multiple: false },
+  {
+    value: 'others',
+    label: 'Others',
+    labelUr: 'دیگر',
+    multiple: true,
+    imagesOnly: true,
+  },
 ];
 
 /** Normalize a docs slot to a list of { file?, name?, url?, side?, pair? }. */
@@ -1919,7 +2170,15 @@ export function formatAidStatus(status) {
 }
 
 export function formatAidRequestType(type) {
-  return AID_REQUEST_TYPES.find((o) => o.value === type)?.label || type || '—';
+  return (
+    AID_REQUEST_TYPES.find((o) => o.value === type)?.label ||
+    AID_LEGACY_REQUEST_TYPES.find((o) => o.value === type)?.label?.replace(
+      /\s*\(legacy\)\s*$/i,
+      '',
+    ) ||
+    type ||
+    '—'
+  );
 }
 
 /** Program + SubProgram label for lists (e.g. "Health · Patient Care Initiative"). */
@@ -1955,6 +2214,7 @@ export function aidStatusTone(status) {
     case 'incomplete':
     case 'incomplete_docs':
     case 'ceo_approval_required':
+    case 'meal_approval_required':
     case 'manager_review':
       return 'warn';
     case 'verification_completed':

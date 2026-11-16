@@ -20,6 +20,31 @@
   color: var(--color-text-secondary, #666);
 }
 
+.permission-roles-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.permission-roles-empty p {
+  margin: 0;
+}
+
+.permission-roles-empty .primary_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.permission-roles-list-container .page-header-content .primary_btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .permission-roles-table-wrap {
   overflow-x: auto;
 }

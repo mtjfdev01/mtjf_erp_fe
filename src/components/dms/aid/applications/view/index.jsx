@@ -18,6 +18,7 @@ import AidUserAssignField, {
   toAssignableAidUser,
 } from '../../shared/AidUserAssignField';
 import AidEducationApplicationFields from '../../shared/AidEducationApplicationFields';
+import AidHealthApplicationFields from '../../shared/AidHealthApplicationFields';
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
@@ -25,7 +26,6 @@ import AidCleanWaterSurveyForm from '../../shared/AidCleanWaterSurveyForm';
 import AidZakatPermissionForm from '../../shared/AidZakatPermissionForm';
 import AidConsentForm from '../../shared/AidConsentForm';
 import AidWheelchairConsentForm from '../../shared/AidWheelchairConsentForm';
-import AidMarriageGiftConsentForm from '../../shared/AidMarriageGiftConsentForm';
 import AidApplicationPreview from '../../shared/AidApplicationPreview';
 import AidCollapsibleSection from '../../shared/AidCollapsibleSection';
 import { printAidElement } from '../../shared/printAidElement';
@@ -36,6 +36,9 @@ import AidInvestigationPanel, {
   emptyRecommendation,
   enrichInvestigationFromAttachments,
   formatRecommendationDecision,
+  formatRecommendationPeriod,
+  getRecommendationDecisionOrEmpty,
+  getRationLayerDecision,
   isInvestigationComplete,
   isNegativeRecommendation,
   isRecommendationComplete,
@@ -59,8 +62,8 @@ import {
   formatExpectedAmount,
   isWheelchairConsentProgram,
   isWheelchairConsentForm,
-  isMarriageGiftConsentProgram,
-  isMarriageGiftConsentForm,
+  isMarriageGiftProgram,
+  isFinancialAssistanceProgram,
 } from '../../aidConstants';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import '../../aid.css';
@@ -176,14 +179,20 @@ const AidApplicationView = () => {
       {
         const saved = payload?.investigation_recommendation;
         if (saved && typeof saved === 'object') {
+          const ration_options = normalizeRationOptions(saved.ration_options);
+          const rawDecision = String(saved.decision || '').trim();
           setRecommendation({
             ...emptyRecommendation(),
-            decision: normalizeRecommendationDecision(saved.decision),
+            decision: rawDecision
+              ? normalizeRecommendationDecision(rawDecision)
+              : ration_options.length > 0
+                ? 'recommend'
+                : '',
             amount: saved.amount ?? '',
             period_months: saved.period_months ?? 6,
             remarks: saved.remarks || '',
             found_monthly_income: saved.found_monthly_income ?? '',
-            ration_options: normalizeRationOptions(saved.ration_options),
+            ration_options,
           });
         } else {
           setRecommendation(emptyRecommendation());
@@ -438,18 +447,26 @@ const AidApplicationView = () => {
     investigationItems,
     investigation,
   );
+  const isCeoRejected =
+    String(app?.ceo_approval_status || '').toLowerCase() === 'rejected' ||
+    String(status || '').toLowerCase() === 'rejected';
   const isRationApp =
     String(app?.requested_aid_type || '').toLowerCase() === 'ration';
+  const showMealForward =
+    !isCeoRejected &&
+    canEditMeal &&
+    status === 'meal_approval_required';
   /**
-   * Program manager may override investigator Recommendation (including old-flow
-   * investigator Reject → status rejected) and forward to CEO.
+   * Program manager may forward to MEAL, but never after CEO rejection.
    */
   const showManagerForward =
+    !isCeoRejected &&
     isProgramDeptManager &&
-    ['manager_review', 'verification_completed', 'rejected'].includes(status);
+    ['manager_review', 'verification_completed'].includes(status);
   const showVerify =
     canInvestigate && ['submitted', 'under_review'].includes(status);
   const managerCanEditRecommendation =
+    !isCeoRejected &&
     isProgramDeptManager &&
     !busy &&
     ![
@@ -458,14 +475,19 @@ const AidApplicationView = () => {
       'delivered',
       'incomplete',
       'incomplete_docs',
+      'rejected',
+      'meal_approval_required',
+      'ceo_approval_required',
     ].includes(status);
-  /** Manager / CEO (and Program manager → CEO) ration edit: checkboxes + remarks only */
+  /** Manager / MEAL / CEO ration edit: checkboxes + remarks only */
   const rationOverrideEdit =
     isRationApp &&
     (showManagerForward ||
+      showMealForward ||
       showCeo ||
       (showVerify && isProgramDeptManager) ||
       status === 'manager_review' ||
+      status === 'meal_approval_required' ||
       status === 'ceo_approval_required');
   const recommendationComplete = isRecommendationComplete(recommendation, {
     rationOverride: !!rationOverrideEdit,
@@ -473,15 +495,20 @@ const AidApplicationView = () => {
 
   const buildRecommendationBody = () => {
     const ration_options = normalizeRationOptions(recommendation.ration_options);
-    const decision = normalizeRecommendationDecision(recommendation.decision);
+    const decision = isNegativeRecommendation(recommendation.decision)
+      ? 'not_recommend'
+      : normalizeRecommendationDecision(
+          recommendation.decision || (ration_options.length ? 'recommend' : ''),
+        );
     if (isRationApp && rationOverrideEdit) {
+      const notRecommend = decision === 'not_recommend';
       return {
-        decision: 'recommend',
+        decision: notRecommend ? 'not_recommend' : 'recommend',
         amount: null,
         period_months: null,
         remarks: recommendation.remarks,
         found_monthly_income: null,
-        ration_options,
+        ration_options: notRecommend ? [] : ration_options,
       };
     }
     return {
@@ -545,20 +572,32 @@ const AidApplicationView = () => {
     setApprovalSaving(true);
     setActionError('');
     try {
-      const amountRaw = approval?.approved_amount;
+      const amountRaw =
+        approval?.amount != null && approval.amount !== ''
+          ? approval.amount
+          : approval?.approved_amount;
       const amount =
         amountRaw === '' || amountRaw == null
           ? null
           : Number(amountRaw);
+      const payload = {
+        decision: approval?.decision || null,
+        remarks: approval?.remarks || null,
+        ration_options: Array.isArray(approval?.ration_options)
+          ? approval.ration_options
+          : [],
+        amount: Number.isFinite(amount) ? amount : null,
+        period_months:
+          approval?.period_months != null
+            ? Number(approval.period_months)
+            : null,
+        approved_support: approval?.approved_support || null,
+        approved_amount: Number.isFinite(amount) ? amount : null,
+        locked: approval?.locked === true,
+      };
       const res = await axiosInstance.patch(
         `/aid/applications/${id}/preview-approval`,
-        {
-          decision: approval?.decision || null,
-          remarks: approval?.remarks || null,
-          approved_support: approval?.approved_support || null,
-          approved_amount: Number.isFinite(amount) ? amount : null,
-          locked: approval?.locked === true,
-        },
+        payload,
       );
       const updated = res.data?.data;
       if (updated) {
@@ -568,13 +607,7 @@ const AidApplicationView = () => {
           prev
             ? {
                 ...prev,
-                preview_approval: {
-                  decision: approval?.decision || null,
-                  remarks: approval?.remarks || null,
-                  approved_support: approval?.approved_support || null,
-                  approved_amount: Number.isFinite(amount) ? amount : null,
-                  locked: approval?.locked === true,
-                },
+                preview_approval: payload,
               }
             : prev,
         );
@@ -662,7 +695,7 @@ const AidApplicationView = () => {
   const showResumeIncomplete =
     canUpdate && (status === 'incomplete' || status === 'incomplete_docs');
   const submitLabel = isProgramDeptManager
-    ? 'Submit for Approvals to CEO'
+    ? 'Submit for MEAL Approval'
     : 'Verification completed';
   const showDelivery = canDeliver && (status === 'successful' || status === 'delivered');
   const tabAtt = attachments.filter((a) => a.context === attachContext);
@@ -1078,6 +1111,19 @@ const AidApplicationView = () => {
                       />
                     </div>
                   )}
+                {app.requested_aid_type === 'health' && app.health_details && (
+                  <div className="aid-detail-block">
+                    <AidHealthApplicationFields
+                      value={app.health_details}
+                      readOnly
+                      subprogramLimit={
+                        app.expected_amount != null && app.expected_amount !== ''
+                          ? Number(app.expected_amount)
+                          : null
+                      }
+                    />
+                  </div>
+                )}
                 {app.requested_aid_type === 'ration' && app.ration_details && (
                   <div className="aid-detail-block">
                     <AidRationApplicationFields
@@ -1086,7 +1132,10 @@ const AidApplicationView = () => {
                     />
                   </div>
                 )}
-                {app.requested_aid_type === 'marriage_gift' &&
+                {isMarriageGiftProgram(
+                  app.requested_aid_type,
+                  app.aid_program,
+                ) &&
                   app.marriage_gift_details && (
                     <div className="aid-detail-block">
                       <AidMarriageGiftApplicationFields
@@ -1095,7 +1144,10 @@ const AidApplicationView = () => {
                       />
                     </div>
                   )}
-                {app.requested_aid_type === 'financial_assistance' &&
+                {isFinancialAssistanceProgram(
+                  app.requested_aid_type,
+                  app.aid_program,
+                ) &&
                   app.financial_assistance_details && (
                     <div className="aid-detail-block">
                       <AidFinancialAssistanceFields
@@ -1144,12 +1196,7 @@ const AidApplicationView = () => {
                     isWheelchairConsentProgram(app.aid_program) ||
                     isWheelchairConsentForm(app.consent_form)
                       ? 'Wheelchair Affidavit / Consent'
-                      : isMarriageGiftConsentProgram(
-                            app.requested_aid_type,
-                            app.aid_program,
-                          ) || isMarriageGiftConsentForm(app.consent_form)
-                        ? 'Marriage Gift Receipt / Consent'
-                        : 'Consent Form'
+                      : 'Consent Form'
                   }
                   hint="Attached to every application"
                   actions={
@@ -1168,15 +1215,6 @@ const AidApplicationView = () => {
                     {isWheelchairConsentProgram(app.aid_program) ||
                     isWheelchairConsentForm(app.consent_form) ? (
                       <AidWheelchairConsentForm
-                        value={app.consent_form || {}}
-                        applicationNo={app.application_no}
-                        readOnly
-                      />
-                    ) : isMarriageGiftConsentProgram(
-                        app.requested_aid_type,
-                        app.aid_program,
-                      ) || isMarriageGiftConsentForm(app.consent_form) ? (
-                      <AidMarriageGiftConsentForm
                         value={app.consent_form || {}}
                         applicationNo={app.application_no}
                         readOnly
@@ -1332,6 +1370,7 @@ const AidApplicationView = () => {
                     'marriage_certificate',
                     'education_certificate',
                     'e_stamp_paper',
+                    'others',
                     'zakat',
                     'consent',
                     'delivery',
@@ -1474,9 +1513,10 @@ const AidApplicationView = () => {
                 canEditMeal={canEditMeal}
                 onSaveMeal={saveMealReview}
                 mealSaving={mealSaving}
-                canEditApproval={canCeo}
+                canEditApproval={canCeo || isSuperAdmin(permissions)}
                 onSaveApproval={savePreviewApproval}
                 approvalSaving={approvalSaving}
+                canUnlockSections={isSuperAdmin(permissions)}
               />
             )}
 
@@ -1510,6 +1550,21 @@ const AidApplicationView = () => {
                           permission.
                         </p>
                       ) : null}
+                      {isCeoRejected && (
+                        <p
+                          className="aid-section-hint"
+                          style={{
+                            marginTop: 0,
+                            color: '#dc2626',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Application rejected by CEO — recommendation is locked and cannot be edited.
+                          {app.ceo_rejection_reason
+                            ? ` (Reason: ${app.ceo_rejection_reason})`
+                            : ''}
+                        </p>
+                      )}
                       <AidInvestigationPanel
                         items={investigationItems}
                         value={investigation}
@@ -1520,6 +1575,7 @@ const AidApplicationView = () => {
                           activePanelTab === 'field_process'
                         }
                         showVulnerability={activePanelTab === 'field_process'}
+                        recommendationDisabled={isCeoRejected}
                         recommendationEditable={managerCanEditRecommendation}
                         aidType={app.requested_aid_type}
                         rationPackageMode={!!rationOverrideEdit}
@@ -1594,7 +1650,7 @@ const AidApplicationView = () => {
                                       },
                                     );
                                     toast.success(
-                                      'Forwarded for CEO approval',
+                                      'Forwarded for MEAL approval',
                                     );
                                     return;
                                   }
@@ -1616,7 +1672,7 @@ const AidApplicationView = () => {
                                       },
                                     );
                                     toast.success(
-                                      'Submitted for CEO approval',
+                                      'Submitted for MEAL approval',
                                     );
                                     return;
                                   }
@@ -1645,8 +1701,8 @@ const AidApplicationView = () => {
                             }}
                           >
                             {status === 'rejected'
-                              ? 'Investigator rejected this case — you can change the recommendation and reopen / submit for CEO approval.'
-                              : 'You can overwrite the investigator recommendation before submitting for CEO approval.'}
+                              ? 'Investigator rejected this case — you can change the recommendation and reopen / submit for MEAL approval.'
+                              : 'You can overwrite the investigator recommendation before submitting for MEAL approval.'}
                           </p>
                         )}
                       {activePanelTab === 'field_process' &&
@@ -1690,7 +1746,9 @@ const AidApplicationView = () => {
                               ? ` · PKR ${app.investigation_recommendation.amount}`
                               : ''}
                             {app.investigation_recommendation.period_months
-                              ? ` · ${app.investigation_recommendation.period_months} months`
+                              ? ` · ${formatRecommendationPeriod(
+                                  app.investigation_recommendation.period_months,
+                                )}`
                               : ''}
                           </p>
                         )}
@@ -1745,10 +1803,10 @@ const AidApplicationView = () => {
           </div>
         </div>
 
-        {(showReject || showCeo || showDelivery) && (
+        {(showReject || showMealForward || showCeo || showDelivery) && (
           <div
             id="aid-ceo-decision"
-            className={`aid-cta-strip${showCeo ? ' aid-ceo-panel' : ''}`}
+            className={`aid-cta-strip${showCeo || showMealForward ? ' aid-ceo-panel' : ''}`}
           >
             {showReject && !showVerify && (
               <button
@@ -1759,6 +1817,38 @@ const AidApplicationView = () => {
               >
                 Reject
               </button>
+            )}
+            {showMealForward && (
+              <>
+                <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                  MEAL approval — review the case, then submit for CEO approval.
+                </p>
+                <button
+                  type="button"
+                  className="primary-btn"
+                  disabled={
+                    busy ||
+                    !leakageOverrideOk ||
+                    (isRationApp && !recommendationComplete)
+                  }
+                  onClick={() =>
+                    run(async () => {
+                      await axiosInstance.post(
+                        `/aid/applications/${id}/meal-forward`,
+                        {
+                          recommendation: buildRecommendationBody(),
+                          leakage_override_reason: needsLeakageOverride
+                            ? leakageOverride.trim()
+                            : undefined,
+                        },
+                      );
+                      toast.success('Submitted for CEO approval');
+                    })
+                  }
+                >
+                  Submit for CEO Approval
+                </button>
+              </>
             )}
             {showCeo && (
               <>
@@ -1785,39 +1875,48 @@ const AidApplicationView = () => {
                   {isRationApp ? (
                     <>
                       <p className="aid-section-hint" style={{ marginTop: 0 }}>
-                        Select package options and add remarks only.
+                        Choose Recommend or Not Recommend first.
                       </p>
-                      <div className="aid-rec-options aid-rec-options--checks">
-                        {AID_RATION_REC_OPTIONS.map((opt) => {
-                          const selected = normalizeRationOptions(
-                            recommendation.ration_options,
-                          ).includes(opt.value);
+                      <div className="aid-rec-options">
+                        {AID_RECOMMENDATION_DECISIONS.map((opt) => {
+                          const layerDecision =
+                            getRationLayerDecision(recommendation);
                           return (
                             <label
                               key={opt.value}
                               className={`aid-rec-option${
-                                selected ? ' is-active' : ''
+                                layerDecision === opt.value ? ' is-active' : ''
+                              }${
+                                opt.value === 'not_recommend'
+                                  ? ' aid-rec-option--reject'
+                                  : ''
                               }`}
                             >
                               <input
-                                type="checkbox"
-                                checked={selected}
+                                type="radio"
+                                name="aid-ceo-ration-rec-decision"
+                                value={opt.value}
+                                checked={layerDecision === opt.value}
                                 disabled={busy}
                                 onChange={() => {
-                                  const cur = normalizeRationOptions(
-                                    recommendation.ration_options,
-                                  );
-                                  const next = selected
-                                    ? cur.filter((v) => v !== opt.value)
-                                    : [...cur, opt.value];
-                                  setRecommendation((prev) => ({
-                                    ...prev,
-                                    ration_options: next,
-                                    decision: 'recommend',
-                                    amount: '',
-                                    period_months: null,
-                                    found_monthly_income: '',
-                                  }));
+                                  if (opt.value === 'not_recommend') {
+                                    setRecommendation((prev) => ({
+                                      ...prev,
+                                      decision: 'not_recommend',
+                                      ration_options: [],
+                                      amount: '',
+                                      period_months: null,
+                                      found_monthly_income: '',
+                                    }));
+                                  } else {
+                                    setRecommendation((prev) => ({
+                                      ...prev,
+                                      decision: 'recommend',
+                                      amount: '',
+                                      period_months: null,
+                                      found_monthly_income: '',
+                                    }));
+                                  }
                                 }}
                               />
                               <span>{opt.label}</span>
@@ -1825,21 +1924,85 @@ const AidApplicationView = () => {
                           );
                         })}
                       </div>
-                      <label className="aid-rec-field">
-                        <span>Remarks</span>
-                        <textarea
-                          rows={3}
-                          disabled={busy}
-                          placeholder="Remarks…"
-                          value={recommendation.remarks}
-                          onChange={(e) =>
-                            setRecommendation((prev) => ({
-                              ...prev,
-                              remarks: e.target.value,
-                            }))
-                          }
-                        />
-                      </label>
+                      {getRationLayerDecision(recommendation) ===
+                      'not_recommend' ? (
+                        <label className="aid-rec-field">
+                          <span>Remarks (optional)</span>
+                          <textarea
+                            rows={3}
+                            disabled={busy}
+                            placeholder="Remarks…"
+                            value={recommendation.remarks}
+                            onChange={(e) =>
+                              setRecommendation((prev) => ({
+                                ...prev,
+                                remarks: e.target.value,
+                              }))
+                            }
+                          />
+                        </label>
+                      ) : null}
+                      {getRationLayerDecision(recommendation) ===
+                      'recommend' ? (
+                        <>
+                          <p className="aid-section-hint">
+                            Select package options and add remarks only.
+                          </p>
+                          <div className="aid-rec-options aid-rec-options--checks">
+                            {AID_RATION_REC_OPTIONS.map((opt) => {
+                              const selected = normalizeRationOptions(
+                                recommendation.ration_options,
+                              ).includes(opt.value);
+                              return (
+                                <label
+                                  key={opt.value}
+                                  className={`aid-rec-option${
+                                    selected ? ' is-active' : ''
+                                  }`}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    checked={selected}
+                                    disabled={busy}
+                                    onChange={() => {
+                                      const cur = normalizeRationOptions(
+                                        recommendation.ration_options,
+                                      );
+                                      const next = selected
+                                        ? cur.filter((v) => v !== opt.value)
+                                        : [...cur, opt.value];
+                                      setRecommendation((prev) => ({
+                                        ...prev,
+                                        ration_options: next,
+                                        decision: 'recommend',
+                                        amount: '',
+                                        period_months: null,
+                                        found_monthly_income: '',
+                                      }));
+                                    }}
+                                  />
+                                  <span>{opt.label}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                          <label className="aid-rec-field">
+                            <span>Remarks</span>
+                            <textarea
+                              rows={3}
+                              disabled={busy}
+                              placeholder="Remarks…"
+                              value={recommendation.remarks}
+                              onChange={(e) =>
+                                setRecommendation((prev) => ({
+                                  ...prev,
+                                  remarks: e.target.value,
+                                }))
+                              }
+                            />
+                          </label>
+                        </>
+                      ) : null}
                     </>
                   ) : (
                     <>
@@ -1848,7 +2011,7 @@ const AidApplicationView = () => {
                           <label
                             key={opt.value}
                             className={`aid-rec-option${
-                              normalizeRecommendationDecision(
+                              getRecommendationDecisionOrEmpty(
                                 recommendation.decision,
                               ) === opt.value
                                 ? ' is-active'
@@ -1864,7 +2027,7 @@ const AidApplicationView = () => {
                               name="aid-ceo-rec-decision"
                               value={opt.value}
                               checked={
-                                normalizeRecommendationDecision(
+                                getRecommendationDecisionOrEmpty(
                                   recommendation.decision,
                                 ) === opt.value
                               }
@@ -1880,7 +2043,10 @@ const AidApplicationView = () => {
                           </label>
                         ))}
                       </div>
-                      {!isNegativeRecommendation(recommendation.decision) ? (
+                      {getRecommendationDecisionOrEmpty(
+                        recommendation.decision,
+                      ) &&
+                      !isNegativeRecommendation(recommendation.decision) ? (
                         <div className="aid-rec-grid">
                           <label className="aid-rec-field">
                             <span>Amount (PKR)</span>

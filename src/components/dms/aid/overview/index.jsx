@@ -4,7 +4,12 @@ import { Chart, registerables } from 'chart.js';
 import { FiDownload } from 'react-icons/fi';
 import axiosInstance from '../../../../utils/axios';
 import { useAuth } from '../../../../context/AuthContext';
-import { canViewModule, hasAidPermission } from '../../../../utils/permissions';
+import {
+  canViewModule,
+  getAidScopedProgram,
+  hasAidPermission,
+  withAidProgramApiFilter,
+} from '../../../../utils/permissions';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import FormSelect from '../../../common/FormSelect';
@@ -31,7 +36,7 @@ const budgetTone = (pct) => {
 
 const AidWelfareOverview = () => {
   const navigate = useNavigate();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
   const chartRef = useRef(null);
   const chartInstance = useRef(null);
 
@@ -41,7 +46,12 @@ const AidWelfareOverview = () => {
     permissions?.super_admin ||
     permissions?.program_manager;
 
-  const [program, setProgram] = useState('all');
+  const scopedProgram = getAidScopedProgram(user, permissions);
+  const [program, setProgram] = useState(scopedProgram || 'all');
+
+  useEffect(() => {
+    if (scopedProgram) setProgram(scopedProgram);
+  }, [scopedProgram]);
   const [dateFilters, setDateFilters] = useState({
     date: '',
     start_date: '',
@@ -81,12 +91,17 @@ const AidWelfareOverview = () => {
       setLoading(true);
       setError('');
       const res = await axiosInstance.get('/aid/overview', {
-        params: {
-          date: dateFilters.date || undefined,
-          start_date: dateFilters.start_date || undefined,
-          end_date: dateFilters.end_date || undefined,
-          program: program === 'all' ? undefined : program,
-        },
+        params: withAidProgramApiFilter(
+          {
+            date: dateFilters.date || undefined,
+            start_date: dateFilters.start_date || undefined,
+            end_date: dateFilters.end_date || undefined,
+            program: program === 'all' ? undefined : program,
+          },
+          user,
+          permissions,
+          { key: 'program' },
+        ),
       });
       setData(res.data?.data || null);
     } catch (err) {
@@ -204,7 +219,12 @@ const AidWelfareOverview = () => {
               label="Program"
               value={program}
               onChange={(e) => setProgram(e.target.value)}
-              options={programOptions}
+              options={
+                scopedProgram
+                  ? programOptions.filter((o) => o.value === scopedProgram)
+                  : programOptions
+              }
+              disabled={!!scopedProgram}
             />
             <button
               type="button"
@@ -268,7 +288,11 @@ const AidWelfareOverview = () => {
             <div className="aid-wo-kpi__value">
               {(kpis.families_supported ?? 0).toLocaleString()}
             </div>
-            <div className="aid-wo-kpi__meta">Active this period</div>
+            <div className="aid-wo-kpi__meta">
+              {data?.filters?.range_label === 'All time'
+                ? 'Approved / delivered'
+                : 'Active this period'}
+            </div>
           </div>
           <div className="aid-wo-kpi">
             <div className="aid-wo-kpi__label">Intake → decision</div>
@@ -302,8 +326,11 @@ const AidWelfareOverview = () => {
         <div className="aid-wo-grid-2">
           <section className="aid-wo-card">
             <div className="aid-wo-card__head">
-              <h3>Pipeline this month</h3>
-              <span>From registration to disbursement</span>
+              <h3>Pipeline</h3>
+              <span>
+                {data?.filters?.range_label || 'All time'} · registration →
+                disbursement
+              </span>
             </div>
             <div className="aid-wo-funnel">
               {pipeline.map((stage, idx) => {
@@ -350,7 +377,10 @@ const AidWelfareOverview = () => {
           <section className="aid-wo-card">
             <div className="aid-wo-card__head">
               <h3>Where cases are stuck</h3>
-              <span>Open cases past their target time</span>
+              <span>
+                {data?.stuck?.open_cases ?? 0} open of{' '}
+                {kpis.applications ?? 0} applications
+              </span>
             </div>
             <div className="aid-wo-stuck">
               <button

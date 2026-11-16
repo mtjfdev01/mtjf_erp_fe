@@ -7,6 +7,7 @@ import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import DonationBoxAuditHistory from '../shared/DonationBoxAuditHistory';
+import { COLLECTION_UNIT_TYPES, DEFAULT_COLLECTION_UNIT_TYPE } from '../../../../config/collectionUnits';
 import LocationMapPicker from '../../../common/LocationMapPicker';
 import {
   DEFAULT_COLLECTION_RADIUS_METERS,
@@ -27,6 +28,8 @@ const EditDonationBox = () => {
   const [donationBox, setDonationBox] = useState(null);
 
   const [settingsForm, setSettingsForm] = useState({
+    type: DEFAULT_COLLECTION_UNIT_TYPE,
+    name: '',
     key_no: '',
     box_type: 'medium',
     status: 'active',
@@ -122,6 +125,8 @@ const EditDonationBox = () => {
         box.location_radius_meters || DEFAULT_COLLECTION_RADIUS_METERS,
       );
       setSettingsForm({
+        type: box.type || DEFAULT_COLLECTION_UNIT_TYPE,
+        name: box.name || box.shop_name || '',
         key_no: box.key_no || '',
         box_type: box.box_type || 'medium',
         status: box.status || 'active',
@@ -235,9 +240,14 @@ const EditDonationBox = () => {
         return;
       }
 
+      const unitName = settingsForm.name?.trim() || donationBox?.shop_name || '';
+      const isDonationBox = settingsForm.type === 'Donation Boxes';
       const payload = {
-        key_no: settingsForm.key_no || null,
-        box_type: settingsForm.box_type,
+        type: settingsForm.type || DEFAULT_COLLECTION_UNIT_TYPE,
+        name: unitName,
+        shop_name: unitName,
+        key_no: isDonationBox ? (settingsForm.key_no || null) : null,
+        box_type: isDonationBox ? settingsForm.box_type : 'custom',
         status: settingsForm.status,
         removal_date:
           settingsForm.status === 'removed' ? settingsForm.removal_date : null,
@@ -365,7 +375,7 @@ const EditDonationBox = () => {
       <>
         <Navbar />
         <div className="form-content">
-          <PageHeader title="Update Donation Box" onBack={handleBack} />
+          <PageHeader title="Update Collection Unit" onBack={handleBack} />
           <div className="loading">Loading...</div>
         </div>
       </>
@@ -377,7 +387,7 @@ const EditDonationBox = () => {
       <>
         <Navbar />
         <div className="form-content">
-          <PageHeader title="Update Donation Box" onBack={handleBack} />
+          <PageHeader title="Update Collection Unit" onBack={handleBack} />
           <div className="status-message status-message--error">
             {error || 'Donation box not found'}
           </div>
@@ -391,7 +401,7 @@ const EditDonationBox = () => {
       <Navbar />
       <div className="form-content">
         <PageHeader
-          title={`Update Donation Box — Key ${donationBox.key_no || donationBox.id}`}
+          title={`Update Collection Unit — ${donationBox.name || donationBox.shop_name || donationBox.key_no || donationBox.id}`}
           onBack={handleBack}
         />
 
@@ -598,24 +608,47 @@ const EditDonationBox = () => {
 
         <form onSubmit={handleSaveSettings} className="form" style={{ marginTop: '32px' }}>
           <div className="form-section">
-            <h3 className="form-section-heading">Box settings</h3>
+            <h3 className="form-section-heading">Collection Unit Settings</h3>
             <div className="form-grid-2">
-              <FormInput
-                label="Key number"
-                type="text"
-                name="key_no"
-                value={settingsForm.key_no}
-                onChange={handleSettingsChange}
-              />
-
               <FormSelect
-                label="Box type"
-                name="box_type"
-                value={settingsForm.box_type}
+                label="Collection Unit Type"
+                name="type"
+                value={settingsForm.type}
                 onChange={handleSettingsChange}
-                options={boxTypeOptions}
+                options={COLLECTION_UNIT_TYPES.map(t => ({ value: t, label: t }))}
                 required
               />
+
+              <FormInput
+                label={settingsForm.type === 'Mosques' ? 'Mosque Name' : 'Name'}
+                type="text"
+                name="name"
+                value={settingsForm.name}
+                onChange={handleSettingsChange}
+                placeholder="Unit / Mosque Name"
+                required
+              />
+
+              {settingsForm.type === 'Donation Boxes' && (
+                <FormInput
+                  label="Key number"
+                  type="text"
+                  name="key_no"
+                  value={settingsForm.key_no}
+                  onChange={handleSettingsChange}
+                />
+              )}
+
+              {settingsForm.type === 'Donation Boxes' && (
+                <FormSelect
+                  label="Box type"
+                  name="box_type"
+                  value={settingsForm.box_type}
+                  onChange={handleSettingsChange}
+                  options={boxTypeOptions}
+                  required
+                />
+              )}
 
               <FormSelect
                 label="Status"

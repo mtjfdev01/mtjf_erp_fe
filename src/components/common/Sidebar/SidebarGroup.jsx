@@ -1,12 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { IoIosArrowDown } from "react-icons/io";
+import { IoIosArrowDown } from 'react-icons/io';
 import SidebarItem from './SidebarItem';
 import './Sidebar.css';
 
 const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
-  const [expanded, setExpanded] = useState(false);
-
   const singleLink =
     group.items?.length === 1 &&
     group.items[0]?.path &&
@@ -14,13 +12,26 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
       ? group.items[0]
       : null;
 
-  const isActiveGroup = group.items.some(item =>
-    activeItem.startsWith(item.path) ||
-    item.subItems?.some(subItem => activeItem.startsWith(subItem.path))
+  const isActiveGroup = group.items?.some(
+    (item) =>
+      (item.path && activeItem.startsWith(item.path)) ||
+      item.subItems?.some(
+        (subItem) => subItem.path && activeItem.startsWith(subItem.path)
+      )
   );
 
+  const [expanded, setExpanded] = useState(
+    Boolean(isActiveGroup || group.defaultExpanded || group.id === 'fund_raising')
+  );
+
+  useEffect(() => {
+    if (isActiveGroup) {
+      setExpanded(true);
+    }
+  }, [isActiveGroup]);
+
   const handleGroupClick = () => {
-    setExpanded(e => !e);
+    setExpanded((e) => !e);
   };
 
   const handleNavigate = (event) => {
@@ -46,12 +57,18 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
       <div className="sidebar-group">
         <Link
           to={singleLink.path}
-          className={`sidebar-group-header ${isActiveGroup ? 'sidebar-group-header--active' : ''}`}
+          className={`sidebar-group-header ${
+            isActiveGroup ? 'sidebar-group-header--active' : ''
+          }`}
           onClick={handleNavigate}
           data-tooltip={collapsed ? tooltipLabel : undefined}
           title={collapsed ? tooltipLabel : undefined}
         >
-          {Icon && <span className="sidebar-group-icon"><Icon /></span>}
+          {Icon && (
+            <span className="sidebar-group-icon">
+              <Icon />
+            </span>
+          )}
           <span className="sidebar-group-label">{group.label}</span>
         </Link>
       </div>
@@ -61,23 +78,33 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
   return (
     <div className="sidebar-group">
       <div
-        className={`sidebar-group-header ${isActiveGroup ? 'sidebar-group-header--active' : ''}`}
+        className={`sidebar-group-header ${
+          isActiveGroup ? 'sidebar-group-header--active' : ''
+        }`}
         onClick={handleGroupClick}
         style={{ cursor: 'pointer' }}
         data-tooltip={collapsed ? tooltipLabel : undefined}
         title={collapsed ? tooltipLabel : undefined}
       >
-        {group.icon && <span className="sidebar-group-icon"><group.icon /></span>}
+        {group.icon && (
+          <span className="sidebar-group-icon">
+            <group.icon />
+          </span>
+        )}
         <span className="sidebar-group-label">{group.label}</span>
-        <span className={`sidebar-group-arrow${expanded ? ' sidebar-group-arrow--expanded' : ''}`}>
+        <span
+          className={`sidebar-group-arrow${
+            expanded ? ' sidebar-group-arrow--expanded' : ''
+          }`}
+        >
           <IoIosArrowDown />
         </span>
       </div>
       {!collapsed && expanded && (
         <div className="sidebar-group-items">
-          {group.items.map((item, index) => (
+          {group.items?.map((item, index) => (
             <SidebarItem
-              key={index}
+              key={item.id || item.path || index}
               item={item}
               activeItem={activeItem}
               onNavigate={onNavigate}

@@ -36,19 +36,11 @@ const Sidebar = () => {
 
   const sidebarConfig = getSidebarConfig(user, permissions);
 
-  // Debug logging (remove in production)
-  useEffect(() => {
-    if (user && permissions) {
-      // console.log('Sidebar - User:', user);
-      // console.log('Sidebar - Permissions:', permissions);
-      // console.log('Sidebar - Config:', sidebarConfig);
-    }
-  }, [user, permissions, sidebarConfig]);
-
   return (
     <>
       {/* Mobile Hamburger Icon */}
-      <button 
+      <button
+        type="button"
         className={`mobile-hamburger${mobileOpen ? ' mobile-hamburger--shifted' : ''}`}
         onClick={toggleMobile}
         title="Toggle Sidebar"
@@ -57,7 +49,7 @@ const Sidebar = () => {
       </button>
 
       {/* Mobile Overlay */}
-      <div 
+      <div
         className={`sidebar-overlay ${mobileOpen ? 'sidebar-overlay--visible' : ''}`}
         onClick={closeMobile}
       />
@@ -67,10 +59,12 @@ const Sidebar = () => {
         <div className="sidebar-content">
           {/* Global Toggle Button */}
           <div className="sidebar-toggle-container">
-            <button 
+            <button
+              type="button"
               className="sidebar-toggle"
               onClick={toggleCollapse}
               title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
+              aria-label={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
             >
               {collapsed ? <FiChevronsRight /> : <FiChevronsLeft />}
             </button>
@@ -91,4 +85,4 @@ const Sidebar = () => {
   );
 };
 
-export default Sidebar; 
+export default Sidebar;

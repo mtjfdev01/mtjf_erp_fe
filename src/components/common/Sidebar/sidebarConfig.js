@@ -736,20 +736,21 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     module: 'offline_donations',
     icon: BiSolidDonateHeart
   },
-  {
-    label: 'Website Donation Projects',
-    path: '/dms/website_donation_projects/list',
-    type: 'list',
-    module: 'website_donation_projects',
-    icon: FiGrid
-  },
-  {
-    label: 'Home Hero Slides',
-    path: '/dms/website_home_hero/list',
-    type: 'list',
-    module: 'website_home_hero',
-    icon: FiLayers
-  },
+  // {
+  //   label: 'Website Donation Projects',
+  //   path: '/dms/website_donation_projects/list',
+  //   type: 'list',
+  //   module: 'website_donation_projects',
+  //   icon: FiGrid
+  // },
+  // {
+  //   label: 'Home Hero Slides',
+  //   path: '/dms/website_home_hero/list',
+  //   type: 'list',
+  //   module: 'website_home_hero',
+  //   icon: FiLayers
+  // },
+
   {
     label: 'Online Donors',
     path: '/dms/online_donors/list',
@@ -765,14 +766,14 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiUsers
   },
   {
-    label: 'Donation Box',
+    label: 'Collection Units',
     path: '/dms/donation_box/list',
     type: 'list',
     module: 'donation_box',
     icon: FiBox
   },
   {
-    label: 'Donation Box Donations',
+    label: 'Collection Units Collections',
     path: '/dms/donation-box-donations/list',
     type: 'list',
     module: 'donation_box_donations',

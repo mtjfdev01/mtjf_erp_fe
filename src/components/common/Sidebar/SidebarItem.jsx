@@ -1,14 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { IoIosArrowDown } from 'react-icons/io';
 import './Sidebar.css';
 
 const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
-  const [expanded, setExpanded] = useState(false);
+  const hasSubItems = Boolean(item.subItems && item.subItems.length > 0);
+  const isChildActive = Boolean(
+    hasSubItems && item.subItems.some((subItem) => activeItem === subItem.path)
+  );
+  const isSelfActive = activeItem === item.path;
+  const isActive = isSelfActive || isChildActive;
+
+  const [expanded, setExpanded] = useState(Boolean(isChildActive || item.defaultExpanded));
+
+  useEffect(() => {
+    if (isChildActive) {
+      setExpanded(true);
+    }
+  }, [isChildActive]);
+
   const tooltipProps = collapsed
     ? { 'data-tooltip': item.label, title: item.label }
     : {};
 
-  const toggleExpanded = () => setExpanded(!expanded);
+  const toggleExpanded = () => setExpanded((prev) => !prev);
 
   const handleNavigate = (event) => {
     if (
@@ -32,21 +47,15 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
       !event.shiftKey &&
       !event.altKey;
 
-    // Keep original behavior: clicking the parent header expands/collapses.
     if (isPlainLeftClick) {
       event.preventDefault();
       toggleExpanded();
       return;
     }
 
-    // Ctrl/Cmd/middle/right-click should behave like a real link (open in new tab).
     onNavigate?.();
   };
 
-  const isActive = activeItem === item.path || 
-    item.subItems?.some(subItem => activeItem === subItem.path);
-
-  const hasSubItems = item.subItems && item.subItems.length > 0;
   const headerClassName = `sidebar-item-header ${isActive ? 'sidebar-item-header--active' : ''}`;
 
   return (
@@ -65,12 +74,18 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
               </span>
             )}
             <span className="sidebar-item-label">{item.label}</span>
+            {item.badge && (
+              <span className={`sidebar-sub-item-badge ${item.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}>
+                {item.badge}
+              </span>
+            )}
+            {item.dot && <span className="sidebar-alert-dot" />}
             <span
               className={`sidebar-item-arrow ${
                 expanded ? 'sidebar-item-arrow--expanded' : ''
               }`}
             >
-              ▶
+              <IoIosArrowDown />
             </span>
           </Link>
         ) : (
@@ -87,10 +102,24 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
             }}
             {...tooltipProps}
           >
-            {item.icon && <span className="sidebar-item-icon"><item.icon /></span>}
+            {item.icon && (
+              <span className="sidebar-item-icon">
+                <item.icon />
+              </span>
+            )}
             <span className="sidebar-item-label">{item.label}</span>
-            <span className={`sidebar-item-arrow ${expanded ? 'sidebar-item-arrow--expanded' : ''}`}>
-              ▶
+            {item.badge && (
+              <span className={`sidebar-sub-item-badge ${item.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}>
+                {item.badge}
+              </span>
+            )}
+            {item.dot && <span className="sidebar-alert-dot" />}
+            <span
+              className={`sidebar-item-arrow ${
+                expanded ? 'sidebar-item-arrow--expanded' : ''
+              }`}
+            >
+              <IoIosArrowDown />
             </span>
           </div>
         )
@@ -101,24 +130,50 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
           onClick={handleNavigate}
           {...tooltipProps}
         >
-          {item.icon && <span className="sidebar-item-icon"><item.icon /></span>}
+          {item.icon && (
+            <span className="sidebar-item-icon">
+              <item.icon />
+            </span>
+          )}
           <span className="sidebar-item-label">{item.label}</span>
+          {item.badge && (
+            <span className={`sidebar-sub-item-badge ${item.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}>
+              {item.badge}
+            </span>
+          )}
+          {item.dot && <span className="sidebar-alert-dot" />}
         </Link>
       )}
-      
-      {expanded && hasSubItems && (
+
+      {expanded && hasSubItems && !collapsed && (
         <div className="sidebar-sub-items">
           {item.subItems.map((subItem, index) => {
             const isSubActive = activeItem === subItem.path;
             return (
               <Link
-                key={index}
+                key={subItem.id || subItem.path || index}
                 to={subItem.path}
-                className={`sidebar-sub-item ${isSubActive ? 'sidebar-sub-item--active' : ''}`}
+                className={`sidebar-sub-item ${
+                  isSubActive ? 'sidebar-sub-item--active' : ''
+                }`}
                 onClick={handleNavigate}
               >
-                {subItem.icon && <span className="sidebar-sub-item-icon"><subItem.icon /></span>}
+                {subItem.icon && (
+                  <span className="sidebar-sub-item-icon">
+                    <subItem.icon />
+                  </span>
+                )}
                 <span className="sidebar-sub-item-label">{subItem.label}</span>
+                {subItem.badge && (
+                  <span
+                    className={`sidebar-sub-item-badge ${
+                      subItem.badge === 'Pending' ? 'sidebar-badge-pending' : ''
+                    } ${subItem.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}
+                  >
+                    {subItem.badge}
+                  </span>
+                )}
+                {subItem.dot && <span className="sidebar-alert-dot" />}
               </Link>
             );
           })}
@@ -128,4 +183,4 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
   );
 };
 
-export default SidebarItem; 
+export default SidebarItem;

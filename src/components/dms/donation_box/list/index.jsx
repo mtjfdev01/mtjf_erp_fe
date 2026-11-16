@@ -24,10 +24,12 @@ import SearchableDropdown from '../../../common/SearchableDropdown';
 import usePersistedFilters from '../../../../hooks/usePersistedFilters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
+import { COLLECTION_UNIT_TYPES, DEFAULT_COLLECTION_UNIT_TYPE } from '../../../../config/collectionUnits';
 
-import { FiEye, FiEdit2, FiTrash2, FiPlusCircle } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiPlusCircle, FiUser } from 'react-icons/fi';
 
 const EMPTY_FILTERS = {
+  type: DEFAULT_COLLECTION_UNIT_TYPE,
   search: '',
   status: '',
   box_type: '',
@@ -75,6 +77,7 @@ const DonationBoxList = () => {
     setPaginationState((prev) => ({ ...prev, sortOrder: v, currentPage: 1 }));
 
   const [totalItems, setTotalItems] = useState(0);
+  const [totalDonationAmount, setTotalDonationAmount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [listRefreshNonce, setListRefreshNonce] = useState(0);
 
@@ -256,10 +259,10 @@ const DonationBoxList = () => {
         setTotalItems(response.data.pagination?.total || 0);
         setTotalPages(response.data.pagination?.totalPages || 1);
       } else {
-        setError('Failed to fetch donation boxes');
+        setError('Failed to fetch collection units');
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch donation boxes');
+      setError(err.response?.data?.message || 'Failed to fetch collection units');
       console.error('Error fetching donation boxes:', err);
     } finally {
       setLoading(false);
@@ -293,7 +296,7 @@ const DonationBoxList = () => {
         // Refresh the current page after deletion
         fetchDonationBoxes();
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to delete donation box');
+        setError(err.response?.data?.message || 'Failed to delete collection unit');
         console.error('Error deleting donation box:', err);
       }
     }
@@ -372,6 +375,13 @@ const DonationBoxList = () => {
       visible: true
     },
     {
+      icon: <FiUser />,
+      label: 'View Profile',
+      color: '#0284c7',
+      to: `/dms/donation_box/profile/${donationBox.id}`,
+      visible: true
+    },
+    {
       icon: <FiEdit2 />,
       label: 'Update / Relocate',
       color: '#2196F3',
@@ -412,6 +422,11 @@ const DonationBoxList = () => {
     { value: 'misplaced_stolen', label: 'Misplaced/Stolen' },
   ];
 
+  const unitTypeOptions = [
+    ...COLLECTION_UNIT_TYPES.map(t => ({ value: t, label: t })),
+    { value: 'all', label: 'All Units' },
+  ];
+
   const boxTypeOptions = [
     { value: 'small', label: 'Small' },
     { value: 'medium', label: 'Medium' },
@@ -447,10 +462,10 @@ const DonationBoxList = () => {
           <PageHeader
           onRefresh={handleRefresh}
           refreshing={loading} 
-            title="Donation Boxes" 
+            title="Collection Units" 
             showBackButton={false} 
             showAdd={true}
-            addPath='/dms/donation-boxes/add'
+            addPath='/dms/donation_box/add'
           />
           <div className="loading">Loading...</div>
         </div>
@@ -465,7 +480,7 @@ const DonationBoxList = () => {
         <PageHeader
           onRefresh={handleRefresh}
           refreshing={loading}
-          title="Donation Boxes"
+          title="Collection Units"
           showBackButton={false}
           showFilterToggle
           filtersOpen={filtersOpen}
@@ -479,12 +494,21 @@ const DonationBoxList = () => {
 
           <CollapsibleFilters open={filtersOpen}>
             <div className="filters-section">
+              <DropdownFilter
+                filterKey="type"
+                label="Unit Type"
+                data={unitTypeOptions}
+                filters={tempFilters}
+                onFilterChange={handleFilterChange}
+                placeholder="Select Unit Type"
+              />
+
               <SearchFilter
                 filterKey="search"
                 label="Search"
                 filters={tempFilters}
                 onFilterChange={handleFilterChange}
-                placeholder="Search by key no, shop name, shopkeeper, route..."
+                placeholder="Search by name, key no, route..."
               />
 
               <DropdownFilter
@@ -496,14 +520,16 @@ const DonationBoxList = () => {
                 placeholder="All Status"
               />
 
-              <DropdownFilter
-                filterKey="box_type"
-                label="Box Type"
-                data={boxTypeOptions}
-                filters={tempFilters}
-                onFilterChange={handleFilterChange}
-                placeholder="All Types"
-              />
+              {tempFilters.type !== 'Mosques' && (
+                <DropdownFilter
+                  filterKey="box_type"
+                  label="Box Size"
+                  data={boxTypeOptions}
+                  filters={tempFilters}
+                  onFilterChange={handleFilterChange}
+                  placeholder="All Sizes"
+                />
+              )}
 
               <DropdownFilter
                 filterKey="frequency"
@@ -624,10 +650,11 @@ const DonationBoxList = () => {
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Box ID</th>
-                  <th>Shop Name</th>
+                  <th>Unit ID</th>
+                  <th>Unit Type</th>
+                  <th>Name</th>
                   <th>Location</th>
-                  <th>Box Type</th>
+                  <th>Size</th>
                   <th className="hide-on-mobile">Last Collection</th>
                   <th>Status</th>
                   <th>Active Since</th>
@@ -644,7 +671,7 @@ const DonationBoxList = () => {
                           className="box-id"
                           style={{ color: 'inherit', textDecoration: 'inherit' }}
                         >
-                          {box.box_id_no || 'N/A'}
+                          {box.box_id_no || (box.key_no ? `Key: ${box.key_no}` : `#${box.id}`)}
                         </Link>
                         {box.route?.name && (
                           <div className="box-key hide-on-mobile">Route: {box.route.name}</div>
@@ -652,8 +679,23 @@ const DonationBoxList = () => {
                       </div>
                     </td>
                     <td>
+                      <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>
+                        {box.type || DEFAULT_COLLECTION_UNIT_TYPE}
+                      </span>
+                    </td>
+                    <td>
                       <div className="shop-info">
-                        <div className="shop-name">{box.shop_name}</div>
+                        <div className="shop-name" style={{ fontWeight: 600 }}>{box.name || box.shop_name}</div>
+                        {box.shopkeeper && (
+                          <Link
+                            to={`/dms/donation_box/profile/${box.id}`}
+                            className="shopkeeper hide-on-mobile"
+                            style={{ fontSize: '12px', color: '#0284c7', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                            title="View POC Profile"
+                          >
+                            <FiUser style={{ fontSize: '11px' }} /> {box.shopkeeper}
+                          </Link>
+                        )}
                         {box.route && (
                           <div className="shop-route hide-on-mobile">Route: {box.route?.name}</div>
                         )}
@@ -667,7 +709,13 @@ const DonationBoxList = () => {
                         )}
                       </div>
                     </td>
-                    <td>{getBoxTypeBadge(box.box_type)}</td>
+                    <td>
+                      {box.type === 'Donation Boxes' || !box.type ? (
+                        getBoxTypeBadge(box.box_type)
+                      ) : (
+                        <span style={{ color: '#94a3b8' }}>—</span>
+                      )}
+                    </td>
                     <td className="hide-on-mobile">{box.last_collection_date ? formatDate(box.last_collection_date) : '-'}</td>
                     <td>{getStatusBadge(box.status)}</td>
                     <td>{formatDate(box.active_since || box.created_at)}</td>
@@ -698,8 +746,8 @@ const DonationBoxList = () => {
           {donationBoxes.length === 0 && totalItems === 0 && (
             <div className="empty-state">
               <div className="empty-state-icon">📦</div>
-              <div className="empty-state-text">No donation boxes found</div>
-              <div className="empty-state-subtext">Donation boxes will appear here once they are registered</div>
+              <div className="empty-state-text">No collection units found</div>
+              <div className="empty-state-subtext">Collection units will appear here once they are registered</div>
             </div>
           )}
         </div>
@@ -707,7 +755,7 @@ const DonationBoxList = () => {
       
       <ConfirmationModal
         isOpen={showDeleteModal}
-        text={`Are you sure you want to delete donation box ${boxToDelete?.box_id_no} at ${boxToDelete?.shop_name}?`}
+        text={`Are you sure you want to delete collection unit ${boxToDelete?.box_id_no || boxToDelete?.name || boxToDelete?.shop_name}?`}
         delete={true}
         onConfirm={handleDeleteConfirm}
         onCancel={handleDeleteCancel}

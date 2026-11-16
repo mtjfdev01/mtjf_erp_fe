@@ -12,6 +12,7 @@ import {
 import FormSelect from '../../../common/FormSelect';
 import SearchableDropdown from '../../../common/SearchableDropdown';
 import Navbar from '../../../Navbar';
+import CapacityAssessmentFormSection from '../shared/CapacityAssessmentFormSection';
 import { useAuth } from '../../../../context/AuthContext';
 import './index.css';
 
@@ -121,6 +122,14 @@ const RegisterDonor = () => {
   const [error, setError] = useState('');
   const [checkingDonor, setCheckingDonor] = useState(false);
   const [donorSearchMessage, setDonorSearchMessage] = useState('');
+  const [capacityAssessment, setCapacityAssessment] = useState({
+    estimated_net_worth: '',
+    salary: '',
+    donations_past_5y: '',
+    gift_capacity: '',
+    total_value_of_shares: '',
+    shares_held: [],
+  });
 
   useEffect(() => {
     if (presetDonorType === 'csr' && presetOrgId) {
@@ -232,6 +241,30 @@ const RegisterDonor = () => {
         donorData.organization_id = selectedOrganization.id;
         donorData.affiliation_role = form.affiliation_role || 'contact';
         donorData.affiliation_is_primary = true;
+      }
+
+      const hasCapacityData =
+        Boolean(capacityAssessment.estimated_net_worth?.trim()) ||
+        Boolean(capacityAssessment.salary?.trim()) ||
+        Boolean(capacityAssessment.donations_past_5y?.trim()) ||
+        Boolean(capacityAssessment.gift_capacity?.trim()) ||
+        Boolean(capacityAssessment.total_value_of_shares?.trim()) ||
+        (Array.isArray(capacityAssessment.shares_held) &&
+          capacityAssessment.shares_held.some(
+            (s) => s.issuer?.trim() || s.ticker?.trim() || s.est_value?.trim(),
+          ));
+
+      if (hasCapacityData) {
+        donorData.capacity_assessment = {
+          estimated_net_worth: capacityAssessment.estimated_net_worth?.trim() || null,
+          salary: capacityAssessment.salary?.trim() || null,
+          donations_past_5y: capacityAssessment.donations_past_5y?.trim() || null,
+          gift_capacity: capacityAssessment.gift_capacity?.trim() || null,
+          total_value_of_shares: capacityAssessment.total_value_of_shares?.trim() || null,
+          shares_held: (capacityAssessment.shares_held || []).filter(
+            (s) => s.issuer?.trim() || s.ticker?.trim() || s.est_value?.trim(),
+          ),
+        };
       }
 
       await axiosInstance.post('/donors/register', donorData);
@@ -428,7 +461,8 @@ const RegisterDonor = () => {
               </div>
             </section>
 
-            <section className="donor-register-card">
+            {form.donor_type === 'csr' && (
+<section className="donor-register-card">
               <h3 className="donor-register-card__title">2b. CSR Donor (optional)</h3>
               <div className="form-grid-2">
                 <SearchableDropdown
@@ -507,6 +541,7 @@ const RegisterDonor = () => {
                 </>
               )}
             </section>
+            )}
 
             <section className="donor-register-card">
               <h3 className="donor-register-card__title">3. Address</h3>
@@ -614,8 +649,17 @@ const RegisterDonor = () => {
               </div>
             </section>
 
+            <CapacityAssessmentFormSection
+              stepNumber="5"
+              title="Giving Capacity"
+              value={capacityAssessment}
+              onChange={setCapacityAssessment}
+              collapsible={true}
+              defaultExpanded={false}
+            />
+
             <section className="donor-register-card">
-              <h3 className="donor-register-card__title">5. Notes</h3>
+              <h3 className="donor-register-card__title">6. Notes</h3>
               <FormInput
                 label="Notes"
                 type="textarea"

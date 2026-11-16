@@ -1,0 +1,203 @@
+.donor-capacity-form-section {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1.25rem;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.donor-capacity-form-section__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.donor-capacity-form-section__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.donor-capacity-form-section__icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #059669;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.donor-capacity-form-section__title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.donor-capacity-form-section__badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #a7f3d0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.donor-capacity-form-section__toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+}
+
+.donor-capacity-form-section__toggle-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.donor-capacity-form-section__hint {
+  font-size: 0.82rem;
+  color: #64748b;
+  margin: 0.75rem 0 1rem;
+}
+
+.donor-capacity-form-section__shares {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.donor-capacity-form-section__shares-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.donor-capacity-form-section__shares-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0;
+}
+
+.donor-capacity-shares-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.donor-capacity-shares-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.donor-capacity-shares-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 0.55rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.donor-capacity-shares-table td {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.donor-capacity-shares-table tr:last-child td {
+  border-bottom: none;
+}
+
+.donor-capacity-shares-table input {
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  color: #0f172a;
+  outline: none;
+  background: #fff;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.donor-capacity-shares-table input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+}
+
+.donor-capacity-shares-table__del-btn {
+  background: transparent;
+  border: 1px solid #fecaca;
+  color: #ef4444;
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.donor-capacity-shares-table__del-btn:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+}
+
+.donor-capacity-add-share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  background: #f8fafc;
+  border: 1px dashed #94a3b8;
+  color: #334155;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.donor-capacity-add-share-btn:hover {
+  background: #eff6ff;
+  border-color: #3b82f6;
+  color: #1d4ed8;
+}
+
+.donor-capacity-empty-shares {
+  padding: 1rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  background: #fcfcfd;
+}

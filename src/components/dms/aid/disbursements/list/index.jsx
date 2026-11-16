@@ -12,7 +12,9 @@ import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import {
   canViewModule,
+  getAidScopedProgram,
   hasAidPermission,
+  withAidProgramApiFilter,
 } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
@@ -20,7 +22,7 @@ import Pagination from '../../../../common/Pagination';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
 import {
-  AID_REQUEST_TYPES,
+  AID_REQUEST_TYPES_FOR_FILTER,
   formatAidProgramLabel,
   formatAidRequestType,
 } from '../../aidConstants';
@@ -132,7 +134,8 @@ const statusTone = (s) => {
 const AidDisbursementsList = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { permissions } = useAuth();
+  const { permissions, user } = useAuth();
+  const scopedProgram = getAidScopedProgram(user, permissions);
 
   const isStaffElevated =
     !!permissions?.super_admin ||
@@ -190,20 +193,24 @@ const AidDisbursementsList = () => {
       setLoading(true);
       setError('');
       const res = await axiosInstance.get('/aid/disbursements', {
-        params: {
-          search: appliedFilters.search || undefined,
-          requested_aid_type: appliedFilters.requested_aid_type || undefined,
-          office_name: appliedFilters.office_name || undefined,
-          fund_source: appliedFilters.fund_source || undefined,
-          assigned_to_user_id:
-            appliedFilters.assigned_to_user_id || undefined,
-          status: appliedFilters.status || undefined,
-          application_id: appIdFromUrl || undefined,
-          page: currentPage,
-          pageSize,
-          sortField: 'due_at',
-          sortOrder: 'ASC',
-        },
+        params: withAidProgramApiFilter(
+          {
+            search: appliedFilters.search || undefined,
+            requested_aid_type: appliedFilters.requested_aid_type || undefined,
+            office_name: appliedFilters.office_name || undefined,
+            fund_source: appliedFilters.fund_source || undefined,
+            assigned_to_user_id:
+              appliedFilters.assigned_to_user_id || undefined,
+            status: appliedFilters.status || undefined,
+            application_id: appIdFromUrl || undefined,
+            page: currentPage,
+            pageSize,
+            sortField: 'due_at',
+            sortOrder: 'ASC',
+          },
+          user,
+          permissions,
+        ),
       });
       setRows(res.data?.data || []);
       setTotalItems(res.data?.total || 0);
@@ -229,10 +236,30 @@ const AidDisbursementsList = () => {
     ['aid'],
   );
 
-  const programOptions = useMemo(
-    () => [{ value: '', label: 'All programs' }, ...AID_REQUEST_TYPES],
-    [],
-  );
+  const programOptions = useMemo(() => {
+    const all = [
+      { value: '', label: 'All programs' },
+      ...AID_REQUEST_TYPES_FOR_FILTER,
+    ];
+    if (!scopedProgram) return all;
+    return AID_REQUEST_TYPES_FOR_FILTER.filter(
+      (o) => o.value === scopedProgram,
+    );
+  }, [scopedProgram]);
+
+  useEffect(() => {
+    if (!scopedProgram) return;
+    setTempFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+    setAppliedFilters((p) =>
+      p.requested_aid_type === scopedProgram
+        ? p
+        : { ...p, requested_aid_type: scopedProgram },
+    );
+  }, [scopedProgram]);
   const officeOptions = useMemo(
     () => [
       { value: '', label: 'All offices' },
@@ -340,6 +367,7 @@ const AidDisbursementsList = () => {
                   }))
                 }
                 options={programOptions}
+                disabled={!!scopedProgram}
               />
             </div>
             <div className="aid-disb-filters__field">

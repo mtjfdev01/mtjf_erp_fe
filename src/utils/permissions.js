@@ -39,6 +39,33 @@ export const isProgramDepartmentManager = (permissions, user) => {
 };
 
 /**
+ * Aid program scope from user department (frontend API filter).
+ * - health department → only `health` applications
+ * - program / others / super_admin → null (all programs, current behavior)
+ */
+export const getAidScopedProgram = (user, permissions) => {
+  if (isSuperAdmin(permissions)) return null;
+  const dept = String(user?.department || '').toLowerCase();
+  if (dept === 'health') return 'health';
+  return null;
+};
+
+/**
+ * Merge department program scope into list/overview API params.
+ * Does not override when already scoped; forces health for health users.
+ */
+export const withAidProgramApiFilter = (
+  params = {},
+  user,
+  permissions,
+  { key = 'requested_aid_type' } = {},
+) => {
+  const scoped = getAidScopedProgram(user, permissions);
+  if (!scoped) return { ...params };
+  return { ...params, [key]: scoped };
+};
+
+/**
  * Check if user has a specific permission
  * @param {Object} permissions - User permissions object
  * @param {string} department - Department name
@@ -681,6 +708,8 @@ export default {
   fundRaisingOrganizationsOrPocsHas,
   isSuperAdmin,
   isProgramDepartmentManager,
+  getAidScopedProgram,
+  withAidProgramApiFilter,
   getAccessibleModules,
   getModulePermissions,
   hasPermissionByPath,
@@ -1028,3 +1057,18 @@ export const donationStatusOptionsForUser = (
   return pendingOnly;
 };
 
+
+/**
+ * Access check for Reconciliation Workbench.
+ * Shown ONLY to users who have reconciler capabilities or super_admin / fund_raising_manager.
+ */
+export const canAccessReconciliationWorkbench = (permissions, user = null) => {
+  if (!permissions && !user) return false;
+  if (permissions?.super_admin === true || user?.role === 'super_admin') return true;
+  if (permissions?.fund_raising_manager === true || user?.role === 'fund_raising_manager') return true;
+  return (
+    canReconcileDonations(permissions) ||
+    canReconcileBoxCollections(permissions) ||
+    canReconcileRecurring(permissions)
+  );
+};

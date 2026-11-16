@@ -66,11 +66,10 @@ const PermissionRolesList = () => {
         <PageHeader
           title="Permission Roles"
           backPath="/admin/users"
-          breadcrumbs={[
-            { label: 'Admin', path: '/admin' },
-            { label: 'Permission Roles' },
-          ]}
-          actions={
+          showAdd
+          addPath="/admin/permission-roles/create"
+          addTitle="New Role"
+          rightElement={
             <button
               type="button"
               className="primary_btn"
@@ -95,7 +94,15 @@ const PermissionRolesList = () => {
           <div className="permission-roles-loading">Loading…</div>
         ) : roles.length === 0 ? (
           <div className="permission-roles-empty">
-            No permission roles yet. Create one to seed ACL on new users.
+            <p>No permission roles yet. Create one to seed ACL on new users.</p>
+            <button
+              type="button"
+              className="primary_btn"
+              onClick={() => navigate('/admin/permission-roles/create')}
+            >
+              <FiPlus style={{ marginRight: 6 }} />
+              Create Role
+            </button>
           </div>
         ) : (
           <div className="permission-roles-table-wrap">

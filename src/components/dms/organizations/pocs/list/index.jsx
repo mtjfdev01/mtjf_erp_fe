@@ -1,6 +1,7 @@
+import { POC_TYPES } from '../../../../../config/pocTypes';
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiEye } from 'react-icons/fi';
+import { FiEye, FiUser, FiPackage } from 'react-icons/fi';
 import axiosInstance from '../../../../../utils/axios';
 import { useAuth } from '../../../../../context/AuthContext';
 import { canViewModule } from '../../../../../utils/permissions';
@@ -89,6 +90,7 @@ const CsrPocsList = () => {
       sortField,
       sortOrder,
     };
+    if (appliedFilters.type && appliedFilters.type !== 'all') params.type = appliedFilters.type;
     if (appliedFilters.search?.trim()) params.search = appliedFilters.search.trim();
     if (appliedFilters.csr_donor_id) params.csr_donor_id = appliedFilters.csr_donor_id;
     if (appliedFilters.role) params.role = appliedFilters.role;
@@ -159,6 +161,7 @@ const CsrPocsList = () => {
   const getRowActions = (row) => {
     const poc = getRowPoc(row);
     const csrDonorId = row.csr_donor_id || row.csr_donor?.id;
+    const donationBoxId = row.donation_box_id || poc.donation_box_id || row.donation_box?.id || poc.donation_box?.id;
     return [
       {
         icon: <FiEye />,
@@ -168,6 +171,24 @@ const CsrPocsList = () => {
           ? `/dms/csr-donors/view/${csrDonorId}?person=${poc.id}`
           : undefined,
         visible: !!csrDonorId,
+      },
+      {
+        icon: <FiUser />,
+        label: 'View POC Profile',
+        color: '#0284c7',
+        to: donationBoxId
+          ? `/dms/donation_box/profile/${donationBoxId}`
+          : undefined,
+        visible: !!donationBoxId,
+      },
+      {
+        icon: <FiPackage />,
+        label: 'View Collection Unit',
+        color: '#6366f1',
+        to: donationBoxId
+          ? `/dms/donation_box/view/${donationBoxId}`
+          : undefined,
+        visible: !!donationBoxId,
       },
     ];
   };
@@ -307,6 +328,8 @@ const CsrPocsList = () => {
                     const poc = getRowPoc(row);
                     const company = row.csr_donor;
                     const csrDonorId = row.csr_donor_id || company?.id;
+                    const donationBoxId = row.donation_box_id || poc.donation_box_id || row.donation_box?.id || poc.donation_box?.id;
+                    const unitName = row.donation_box?.name || poc.donation_box?.name || company?.name || (donationBoxId ? `Unit #${donationBoxId}` : '—');
                     return (
                       <tr key={poc.id || row.poc_id}>
                         <td>
@@ -315,6 +338,15 @@ const CsrPocsList = () => {
                               to={`/dms/csr-donors/view/${csrDonorId}?person=${poc.id}`}
                               className="donor-name"
                               style={{ color: 'inherit', textDecoration: 'inherit' }}
+                            >
+                              {poc.name || '—'}
+                            </Link>
+                          ) : donationBoxId ? (
+                            <Link
+                              to={`/dms/donation_box/profile/${donationBoxId}`}
+                              className="donor-name"
+                              style={{ color: '#0284c7', textDecoration: 'none', fontWeight: 600 }}
+                              title="View POC Profile"
                             >
                               {poc.name || '—'}
                             </Link>
@@ -330,8 +362,16 @@ const CsrPocsList = () => {
                             >
                               {company?.name || '—'}
                             </Link>
+                          ) : donationBoxId ? (
+                            <Link
+                              to={`/dms/donation_box/view/${donationBoxId}`}
+                              style={{ color: 'inherit', textDecoration: 'inherit', fontWeight: 500 }}
+                              title="View Collection Unit"
+                            >
+                              {unitName}
+                            </Link>
                           ) : (
-                            company?.name || '—'
+                            unitName
                           )}
                         </td>
                         <td>{poc.email || '—'}</td>

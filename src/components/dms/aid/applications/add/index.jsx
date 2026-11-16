@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../../utils/axios';
+import { useAuth } from '../../../../../context/AuthContext';
+import { getAidScopedProgram } from '../../../../../utils/permissions';
 import Navbar from '../../../../Navbar';
 import PageHeader from '../../../../common/PageHeader';
 import FormInput from '../../../../common/FormInput';
@@ -25,6 +27,7 @@ import AidLivestockIntake from '../../shared/AidLivestockIntake';
 import AidVehicleIntake from '../../shared/AidVehicleIntake';
 import AidEligibilityStatus from '../../shared/AidEligibilityStatus';
 import AidEducationApplicationFields from '../../shared/AidEducationApplicationFields';
+import AidHealthApplicationFields from '../../shared/AidHealthApplicationFields';
 import AidRationApplicationFields from '../../shared/AidRationApplicationFields';
 import AidMarriageGiftApplicationFields from '../../shared/AidMarriageGiftApplicationFields';
 import AidFinancialAssistanceFields from '../../shared/AidFinancialAssistanceFields';
@@ -65,6 +68,7 @@ import {
   emptyVehicleFields,
   emptyEligibilityStatusFields,
   emptyEducationDetails,
+  emptyHealthDetails,
   emptyRationDetails,
   emptyMarriageGiftDetails,
   emptyFinancialAssistanceDetails,
@@ -75,6 +79,8 @@ import {
   emptyMarriageGiftConsentForm,
   isWheelchairConsentProgram,
   isMarriageGiftConsentProgram,
+  isMarriageGiftProgram,
+  isFinancialAssistanceProgram,
   resolveConsentVariant,
   emptyConsentForVariant,
   hasAidBiometric,
@@ -346,7 +352,7 @@ const FAMILY_TREE_BUCKETS = [
 const toFamilyHeadType = (relation) => {
   const r = String(relation || '').toLowerCase();
   if (HEAD_TYPE_VALUES.has(r)) return r;
-  if (r === 'husband') return 'spouse';
+  if (r === 'husband' || r === 'wife') return 'spouse';
   return 'other';
 };
 
@@ -676,9 +682,30 @@ const cleanPersonPayload = (p) => {
 const AidApplicationAddInner = () => {
   const { t, lang, rtl } = useAidLang();
   const navigate = useNavigate();
+  const { user, permissions } = useAuth();
+  const scopedProgram = getAidScopedProgram(user, permissions);
+  const programOptions = useMemo(() => {
+    if (!scopedProgram) return AID_REQUEST_TYPES;
+    return AID_REQUEST_TYPES.filter((o) => o.value === scopedProgram);
+  }, [scopedProgram]);
   const { id: editIdParam } = useParams();
   const editId = editIdParam ? Number(editIdParam) : null;
   const isEdit = Number.isFinite(editId) && editId > 0;
+
+  useEffect(() => {
+    if (!scopedProgram || isEdit) return;
+    setForm((p) => {
+      if (p.requested_aid_type === scopedProgram) return p;
+      const amt = resolveExpectedAmountFields(scopedProgram, '');
+      return {
+        ...p,
+        requested_aid_type: scopedProgram,
+        aid_program: amt.aid_program,
+        expected_amount: amt.expected_amount,
+        expected_amount_max: amt.expected_amount_max,
+      };
+    });
+  }, [scopedProgram, isEdit]);
 
   const [beneficiaryMode, setBeneficiaryMode] = useState('new');
   const [beneficiaryId, setBeneficiaryId] = useState(null);
@@ -702,6 +729,7 @@ const AidApplicationAddInner = () => {
   const [educationDetails, setEducationDetails] = useState(
     emptyEducationDetails(),
   );
+  const [healthDetails, setHealthDetails] = useState(emptyHealthDetails());
   const [rationDetails, setRationDetails] = useState(emptyRationDetails());
   const [marriageGiftDetails, setMarriageGiftDetails] = useState(
     emptyMarriageGiftDetails(),
@@ -755,6 +783,7 @@ const AidApplicationAddInner = () => {
     if (snap.beneficiaryMembers) setBeneficiaryMembers(snap.beneficiaryMembers);
     if (snap.formTab) setFormTab(snap.formTab);
     if (snap.educationDetails) setEducationDetails(snap.educationDetails);
+    if (snap.healthDetails) setHealthDetails(snap.healthDetails);
     if (snap.rationDetails) setRationDetails(snap.rationDetails);
     if (snap.marriageGiftDetails) setMarriageGiftDetails(snap.marriageGiftDetails);
     if (snap.financialAssistanceDetails) {
@@ -792,6 +821,7 @@ const AidApplicationAddInner = () => {
       expected_amount_max: amt.expected_amount_max,
     });
     setEducationDetails(emptyEducationDetails());
+    setHealthDetails(emptyHealthDetails());
     setRationDetails(emptyRationDetails());
     setMarriageGiftDetails(emptyMarriageGiftDetails());
     setFinancialAssistanceDetails(emptyFinancialAssistanceDetails());
@@ -827,6 +857,7 @@ const AidApplicationAddInner = () => {
         spouse,
         beneficiaryMembers,
         educationDetails,
+        healthDetails,
         rationDetails,
         marriageGiftDetails,
         financialAssistanceDetails,
@@ -858,6 +889,7 @@ const AidApplicationAddInner = () => {
     spouse,
     beneficiaryMembers,
     educationDetails,
+    healthDetails,
     rationDetails,
     marriageGiftDetails,
     financialAssistanceDetails,
@@ -953,6 +985,11 @@ const AidApplicationAddInner = () => {
         app.education_details
           ? { ...emptyEducationDetails(), ...app.education_details }
           : emptyEducationDetails(),
+      );
+      setHealthDetails(
+        app.health_details
+          ? { ...emptyHealthDetails(), ...app.health_details }
+          : emptyHealthDetails(),
       );
       setRationDetails(
         app.ration_details
@@ -1268,6 +1305,39 @@ const AidApplicationAddInner = () => {
   const headAsBeneficiary =
     familyHeads.find((h) => h.is_beneficiary) || null;
 
+  /**
+   * True aid beneficiary: family head, head-member, beneficiary-member,
+   * or the Beneficiary tab person. Never the applicant unless they are also
+   * marked beneficiary.
+   */
+  const markedBeneficiary = useMemo(() => {
+    if (headAsBeneficiary) {
+      return { key: 'beneficiary', person: headAsBeneficiary };
+    }
+    for (let hi = 0; hi < familyHeads.length; hi += 1) {
+      const members = familyHeads[hi]?._family_members || [];
+      for (let mi = 0; mi < members.length; mi += 1) {
+        if (members[mi]?.is_beneficiary) {
+          return { key: 'beneficiary', person: members[mi] };
+        }
+      }
+    }
+    const bm = beneficiaryMembers.find((m) => m.is_beneficiary);
+    if (bm) {
+      return { key: 'beneficiary', person: bm };
+    }
+    const formBen =
+      beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary;
+    return { key: 'beneficiary', person: formBen };
+  }, [
+    headAsBeneficiary,
+    familyHeads,
+    beneficiaryMembers,
+    beneficiaryMode,
+    existingBeneficiary,
+    beneficiary,
+  ]);
+
   /** Person marked Applicant (writer). */
   const zakatApplicantPerson = useMemo(() => {
     if (beneficiary.is_applicant) return beneficiary;
@@ -1282,26 +1352,157 @@ const AidApplicationAddInner = () => {
       );
       if (m) return m;
     }
-    return headAsBeneficiary || beneficiary;
+    return markedBeneficiary.person || beneficiary;
   }, [
     beneficiary,
     spouse,
     familyHeads,
     beneficiaryMembers,
-    headAsBeneficiary,
+    markedBeneficiary,
   ]);
 
-  const beneficiaryPersonForForms = useMemo(
-    () =>
-      headAsBeneficiary ||
-      (beneficiaryMode === 'existing' ? existingBeneficiary : beneficiary),
-    [
-      headAsBeneficiary,
-      beneficiaryMode,
-      existingBeneficiary,
-      beneficiary,
-    ],
-  );
+  const beneficiaryPersonForForms = markedBeneficiary.person;
+
+  const humanizeRelation = (raw) => {
+    const s = String(raw || '')
+      .trim()
+      .replace(/_/g, ' ');
+    if (!s) return '';
+    return s.replace(/\b\w/g, (c) => c.toUpperCase());
+  };
+
+  /** Family Tree people for Health → Patient dropdown (defaults to beneficiary). */
+  const healthPatientOptions = useMemo(() => {
+    const opts = [];
+    const seenKeys = new Set();
+    const seenPeople = new Set();
+    const personIdentity = (person) => {
+      if (!person || typeof person !== 'object') return '';
+      if (person.existing_person_id) return `id:${person.existing_person_id}`;
+      const cnic = String(person.cnic || '').replace(/\D/g, '');
+      if (cnic) return `cnic:${cnic}`;
+      const name = String(person.full_name || '').trim().toLowerCase();
+      return name ? `name:${name}` : '';
+    };
+    const pushPerson = (key, person, relation, roleHint, { force = false } = {}) => {
+      if (!person || typeof person !== 'object') return;
+      const name = String(person.full_name || '').trim();
+      if (!force && !name && !person.existing_person_id) return;
+      if (seenKeys.has(key)) return;
+      const identity = personIdentity(person);
+      if (identity && seenPeople.has(identity)) return;
+      seenKeys.add(key);
+      if (identity) seenPeople.add(identity);
+      const age = calcAgeFromDob(person.date_of_birth);
+      const rel =
+        relation ||
+        (person === beneficiaryPersonForForms
+          ? person.is_applicant
+            ? 'Self'
+            : 'Beneficiary'
+          : 'Relative');
+      const label = name
+        ? `${name}${roleHint ? ` (${roleHint})` : ''}`
+        : roleHint || key;
+      opts.push({
+        value: key,
+        label,
+        name: name || label,
+        relation: rel,
+        age: age != null ? String(age) : '',
+      });
+    };
+
+    const ben = beneficiaryPersonForForms;
+    // Patient = beneficiary. "Self" only when that same person is also applicant.
+    const benIsAlsoApplicant = !!ben?.is_applicant;
+    pushPerson(
+      markedBeneficiary.key || 'beneficiary',
+      ben,
+      benIsAlsoApplicant ? 'Self' : 'Beneficiary',
+      'Beneficiary',
+      { force: true },
+    );
+
+    if (spouse && personHasEnteredDetails(spouse) && spouse !== ben) {
+      pushPerson(
+        'spouse',
+        spouse,
+        humanizeRelation('spouse') || 'Spouse',
+        'Spouse',
+      );
+    }
+
+    familyHeads.forEach((h, hi) => {
+      if (!h) return;
+      if (h.is_beneficiary || h === ben) {
+        // already as beneficiary
+      } else if (personHasEnteredDetails(h)) {
+        const rel =
+          humanizeRelation(h._relation_type) ||
+          humanizeRelation(h.family_head_type) ||
+          'Family head';
+        pushPerson(`head:${hi}`, h, rel, rel);
+      }
+      (h._family_members || []).forEach((m, mi) => {
+        if (!personHasEnteredDetails(m) || m.is_beneficiary || m === ben) {
+          return;
+        }
+        const rel = humanizeRelation(m.relation_type) || 'Relative';
+        pushPerson(`head:${hi}:m:${mi}`, m, rel, rel);
+      });
+    });
+
+    beneficiaryMembers.forEach((m, mi) => {
+      if (!personHasEnteredDetails(m) || m.is_beneficiary || m === ben) {
+        return;
+      }
+      const rel = humanizeRelation(m.relation_type) || 'Relative';
+      pushPerson(`bm:${mi}`, m, rel, rel);
+    });
+
+    return opts;
+  }, [
+    beneficiaryPersonForForms,
+    markedBeneficiary.key,
+    spouse,
+    familyHeads,
+    beneficiaryMembers,
+  ]);
+
+  // Default Health patient to Beneficiary only (not applicant unless same person)
+  useEffect(() => {
+    if (form.requested_aid_type !== 'health') return;
+    setHealthDetails((prev) => {
+      const cur = prev || emptyHealthDetails();
+      const preferredKey = markedBeneficiary.key || 'beneficiary';
+      const key =
+        cur.patient_key &&
+        healthPatientOptions.some((o) => o.value === cur.patient_key)
+          ? cur.patient_key
+          : preferredKey;
+      const opt =
+        healthPatientOptions.find((o) => o.value === key) ||
+        healthPatientOptions.find((o) => o.value === preferredKey);
+      if (!opt) return cur;
+      const next = {
+        ...cur,
+        patient_key: opt.value,
+        patient_name: opt.name,
+        patient_relation: opt.relation,
+        patient_age: opt.age,
+      };
+      if (
+        cur.patient_key === next.patient_key &&
+        cur.patient_name === next.patient_name &&
+        cur.patient_relation === next.patient_relation &&
+        cur.patient_age === next.patient_age
+      ) {
+        return cur;
+      }
+      return next;
+    });
+  }, [form.requested_aid_type, healthPatientOptions, markedBeneficiary.key]);
 
   /**
    * Zakat / Consent form subject: beneficiary for all programs,
@@ -1439,13 +1640,7 @@ const AidApplicationAddInner = () => {
 
   /** Prefill media consent from form subject (beneficiary, or applicant for MG). */
   useEffect(() => {
-    if (
-      isWheelchairConsentProgram(form.aid_program) ||
-      isMarriageGiftConsentProgram(
-        form.requested_aid_type,
-        form.aid_program,
-      )
-    ) {
+    if (isWheelchairConsentProgram(form.aid_program)) {
       return;
     }
     const person = formSubjectPerson;
@@ -1549,8 +1744,9 @@ const AidApplicationAddInner = () => {
     formSubjectPerson,
   ]);
 
-  /** Prefill marriage gift receipt — applicant data + biometrics on applicant. */
+  /** Prefill marriage gift receipt — kept separate as receiving form, not shown for now. */
   useEffect(() => {
+    if (true) return;
     if (
       !isMarriageGiftConsentProgram(
         form.requested_aid_type,
@@ -2049,13 +2245,22 @@ const AidApplicationAddInner = () => {
         ...(form.requested_aid_type === 'education'
           ? { education_details: educationDetails }
           : {}),
+        ...(form.requested_aid_type === 'health'
+          ? { health_details: healthDetails }
+          : {}),
         ...(form.requested_aid_type === 'ration'
           ? { ration_details: rationDetails }
           : {}),
-        ...(form.requested_aid_type === 'marriage_gift'
+        ...(isMarriageGiftProgram(
+          form.requested_aid_type,
+          amountFields.aid_program || form.aid_program,
+        )
           ? { marriage_gift_details: marriageGiftDetails }
           : {}),
-        ...(form.requested_aid_type === 'financial_assistance'
+        ...(isFinancialAssistanceProgram(
+          form.requested_aid_type,
+          amountFields.aid_program || form.aid_program,
+        )
           ? { financial_assistance_details: financialAssistanceDetails }
           : {}),
         ...(form.requested_aid_type === 'clean_water'
@@ -2387,11 +2592,11 @@ const AidApplicationAddInner = () => {
           <div className="status-message status-message--error">{error}</div>
         )}
 
-        {!isEdit || isDraftEdit ? (
+        {/* {!isEdit || isDraftEdit ? (
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
             {t('draftHint')}
           </p>
-        ) : null}
+        ) : null} */}
 
         <form
           onSubmit={handleSubmit}
@@ -2404,14 +2609,14 @@ const AidApplicationAddInner = () => {
             role="navigation"
             aria-label={t('applicationSteps')}
           >
-            <div className="aid-steps__meta">
+            {/* <div className="aid-steps__meta">
               <span className="aid-steps__meta-label">
                 {t('stepOf', { n: stepIndex + 1, total: FORM_TABS.length })}
               </span>
               <span className="aid-steps__meta-pct">
                 {t('pctComplete', { n: Math.round(stepProgress) })}
               </span>
-            </div>
+            </div> */}
             <div
               className="aid-steps__track"
               role="progressbar"
@@ -2507,6 +2712,15 @@ const AidApplicationAddInner = () => {
                         : emptyEducationDetails(),
                     );
                   }
+                  if (next === 'health') {
+                    setHealthDetails((prev) =>
+                      prev?.nature_of_illness != null ||
+                      prev?.disease_condition != null ||
+                      prev?.patient_key
+                        ? prev
+                        : emptyHealthDetails(),
+                    );
+                  }
                   if (next === 'ration') {
                     setRationDetails((prev) =>
                       prev?.family_had_wheat != null
@@ -2514,12 +2728,12 @@ const AidApplicationAddInner = () => {
                         : emptyRationDetails(),
                     );
                   }
-                  if (next === 'marriage_gift') {
+                  if (isMarriageGiftProgram(next, amt.aid_program)) {
                     setMarriageGiftDetails((prev) =>
                       prev?.items?.length ? prev : emptyMarriageGiftDetails(),
                     );
                   }
-                  if (next === 'financial_assistance') {
+                  if (isFinancialAssistanceProgram(next, amt.aid_program)) {
                     setFinancialAssistanceDetails((prev) =>
                       prev?.monthly_household_income != null
                         ? prev
@@ -2552,7 +2766,8 @@ const AidApplicationAddInner = () => {
                     };
                   });
                 }}
-                options={AID_REQUEST_TYPES}
+                options={programOptions}
+                disabled={!!scopedProgram}
               />
               {getAidProgramsForType(form.requested_aid_type).length > 0 ? (
                 <FormSelect
@@ -2572,6 +2787,28 @@ const AidApplicationAddInner = () => {
                       expected_amount: amt.expected_amount,
                       expected_amount_max: amt.expected_amount_max,
                     }));
+                    if (
+                      isMarriageGiftProgram(
+                        form.requested_aid_type,
+                        nextProgram,
+                      )
+                    ) {
+                      setMarriageGiftDetails((prev) =>
+                        prev?.items?.length ? prev : emptyMarriageGiftDetails(),
+                      );
+                    }
+                    if (
+                      isFinancialAssistanceProgram(
+                        form.requested_aid_type,
+                        nextProgram,
+                      )
+                    ) {
+                      setFinancialAssistanceDetails((prev) =>
+                        prev?.monthly_household_income != null
+                          ? prev
+                          : emptyFinancialAssistanceDetails(),
+                      );
+                    }
                     setConsentForm((prev) => {
                       const nextVariant = resolveConsentVariant(
                         form.requested_aid_type,
@@ -2653,19 +2890,37 @@ const AidApplicationAddInner = () => {
                 onChange={setEducationDetails}
               />
             )}
+            {form.requested_aid_type === 'health' && (
+              <AidHealthApplicationFields
+                value={healthDetails}
+                onChange={setHealthDetails}
+                patientOptions={healthPatientOptions}
+                subprogramLimit={
+                  form.expected_amount != null && form.expected_amount !== ''
+                    ? Number(form.expected_amount)
+                    : getAidProgram(form.aid_program)?.amount ?? null
+                }
+              />
+            )}
             {form.requested_aid_type === 'ration' && (
               <AidRationApplicationFields
                 value={rationDetails}
                 onChange={setRationDetails}
               />
             )}
-            {form.requested_aid_type === 'marriage_gift' && (
+            {isMarriageGiftProgram(
+              form.requested_aid_type,
+              form.aid_program,
+            ) && (
               <AidMarriageGiftApplicationFields
                 value={marriageGiftDetails}
                 onChange={setMarriageGiftDetails}
               />
             )}
-            {form.requested_aid_type === 'financial_assistance' && (
+            {isFinancialAssistanceProgram(
+              form.requested_aid_type,
+              form.aid_program,
+            ) && (
               <AidFinancialAssistanceFields
                 value={financialAssistanceDetails}
                 onChange={setFinancialAssistanceDetails}
@@ -2839,16 +3094,6 @@ const AidApplicationAddInner = () => {
                   form.aid_program,
                 ) === 'wheelchair' ? (
                   <AidWheelchairConsentForm
-                    value={consentForm}
-                    onChange={setConsentForm}
-                    onBiometricSaved={handleConsentBiometricSaved}
-                    uiLang={lang}
-                  />
-                ) : resolveConsentVariant(
-                    form.requested_aid_type,
-                    form.aid_program,
-                  ) === 'marriage_gift' ? (
-                  <AidMarriageGiftConsentForm
                     value={consentForm}
                     onChange={setConsentForm}
                     onBiometricSaved={handleConsentBiometricSaved}
@@ -3183,7 +3428,7 @@ const AidApplicationAddInner = () => {
             ) : null}
 
             <div className="aid-family-panel">
-              <div className="aid-family-panel__head">
+              {/* <div className="aid-family-panel__head">
                 <h4 className="aid-family-panel__title">
                   {t('familyHeadSelect')}
                 </h4>
@@ -3203,7 +3448,7 @@ const AidApplicationAddInner = () => {
                 >
                   + {t('addFamilyHead')}
                 </button>
-              </div>
+              </div> */}
               {familyHeads.map((head, idx) => {
                 const primaryType = familyHeadPrimaryType(head._relation_type);
                 const subtype = familyHeadSubtype(head._relation_type);

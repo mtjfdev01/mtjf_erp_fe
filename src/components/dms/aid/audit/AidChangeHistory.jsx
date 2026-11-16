@@ -186,6 +186,7 @@ function checklistItemLabel(field) {
 function nodeKind(action) {
   switch (action) {
     case 'manager_forwarded':
+    case 'meal_forwarded':
       return 'forward';
     case 'verification_completed':
     case 'verified':
@@ -226,6 +227,7 @@ function activityBucket(action) {
       'status_changed',
       'verification_completed',
       'manager_forwarded',
+      'meal_forwarded',
       'ceo_decided',
       'draft_approved',
       'rejected',
@@ -351,14 +353,24 @@ function EntryCard({ entry, expanded, onToggle }) {
     action === 'attachment_deleted' ||
     groups.attachments.length > 0;
   const isStatusEvent =
-    ['manager_forwarded', 'verification_completed', 'status_changed', 'ceo_decided', 'verified'].includes(
-      action,
-    ) ||
+    [
+      'manager_forwarded',
+      'meal_forwarded',
+      'verification_completed',
+      'status_changed',
+      'ceo_decided',
+      'verified',
+    ].includes(action) ||
     (groups.status.length > 0 && changeCount <= 4 && groups.checklistStatuses.length === 0);
 
   const awaiting =
     action === 'manager_forwarded' ||
-    groups.status.some((c) => c.new_value === 'ceo_approval_required');
+    action === 'meal_forwarded' ||
+    groups.status.some(
+      (c) =>
+        c.new_value === 'ceo_approval_required' ||
+        c.new_value === 'meal_approval_required',
+    );
 
   const [notesOpen, setNotesOpen] = useState(false);
 

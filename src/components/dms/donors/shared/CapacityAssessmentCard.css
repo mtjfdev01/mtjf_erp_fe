@@ -1,0 +1,237 @@
+.donor-capacity-card {
+  background: #fff;
+  border: 1px solid #e8eef5;
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  padding: 1.15rem 1.35rem;
+  margin-top: 1.25rem;
+  transition: all 0.2s ease;
+}
+
+.donor-capacity-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+}
+
+.donor-capacity-card__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.donor-capacity-card__icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: #ecfdf5;
+  color: #059669;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.05rem;
+}
+
+.donor-capacity-card__title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.donor-capacity-card__badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #059669;
+  background: #ecfdf5;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid #a7f3d0;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.donor-capacity-card__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.donor-capacity-card__edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.donor-capacity-card__edit-btn:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.donor-capacity-card__chevron {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.donor-capacity-card__chevron:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.donor-capacity-card__body {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* Metric list mimicking reference table rows */
+.donor-capacity-metric-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.donor-capacity-metric-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 0.25rem;
+  border-bottom: 1px solid #f8fafc;
+  transition: background 0.15s ease;
+}
+
+.donor-capacity-metric-row:hover {
+  background: #fafbfc;
+}
+
+.donor-capacity-metric-row:last-child {
+  border-bottom: none;
+}
+
+.donor-capacity-metric-label {
+  font-size: 0.88rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.donor-capacity-metric-value {
+  font-size: 0.92rem;
+  color: #0f172a;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.donor-capacity-metric-value--highlight {
+  color: #059669;
+  background: #ecfdf5;
+  padding: 0.2rem 0.55rem;
+  border-radius: 6px;
+}
+
+.donor-capacity-metric-value--muted {
+  color: #94a3b8;
+  font-weight: 400;
+  font-style: italic;
+}
+
+/* Shares held display */
+.donor-capacity-shares-section {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.donor-capacity-shares-title {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.donor-capacity-display-table-wrap {
+  overflow-x: auto;
+  border: 1px solid #e8eef5;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.donor-capacity-display-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.donor-capacity-display-table th {
+  background: #f8fafc;
+  color: #475569;
+  font-weight: 600;
+  padding: 0.65rem 0.85rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+}
+
+.donor-capacity-display-table td {
+  padding: 0.7rem 0.85rem;
+  border-bottom: 1px solid #f1f5f9;
+  color: #1e293b;
+  vertical-align: middle;
+}
+
+.donor-capacity-display-table tr:last-child td {
+  border-bottom: none;
+}
+
+.donor-capacity-display-table tr:hover td {
+  background: #fafbfc;
+}
+
+.donor-capacity-source-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+/* Empty unassessed card */
+.donor-capacity-unassessed {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  color: #64748b;
+}
+
+.donor-capacity-unassessed p {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+}
