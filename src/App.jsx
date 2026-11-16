@@ -176,7 +176,7 @@ import ReconciliationAgentModule from './components/dms/reconciliation_agent';
 import FollowUpsList from './components/dms/donor_relationship/follow_ups';
 import InteractionsList from './components/dms/donor_relationship/interactions';
 import AddDonorInteraction from './components/dms/donor_relationship/add';
-import ManagementOverview from './components/dms/donor_relationship/overview';
+import DonorRelationshipManagementOverview from './components/dms/donor_relationship/overview';
 import FundRaisingDashboardPage from './components/dms/fund_raising_dashboard';
 import RecurringPerformanceDashboardPage from './components/dms/recurring_performance_dashboard';
 import { EventPledgesList, AddEventPledge, EditEventPledge, ViewEventPledge } from './components/dms/event_pledges';
@@ -201,6 +201,13 @@ import GrantsModulePlaceholder from './components/dms/grants/GrantsModulePlaceho
 import DonationReports from './components/dms/reports/create';
 import ReportsDashboard from './components/dms/reports/dashboard';
 import FundraisingSummary from './components/dms/reports/fundraising_summary';
+import FundraisingManagementOverview from './components/dms/reports/management_overview';
+import ReconciliationDesk from './components/dms/reports/reconciliation_desk';
+  import FieldTeamDonationBoxes from './components/dms/reports/field_team_donation_boxes';
+  import DonorRetentionRecurring from './components/dms/reports/donor_retention_recurring';
+  import DonorProfilesDemographics from './components/dms/reports/donor_profiles_demographics';
+  import DmsTargetsList from './components/dms/targets/list';
+  import DmsTargetForm from './components/dms/targets/form';
 import CountriesList from './components/dms/geographic/countries/list';
 import AddCountry from './components/dms/geographic/countries/add';
 import RegionsList from './components/dms/geographic/regions/list';
@@ -613,6 +620,24 @@ const App = () => {
                                 <Route path="/dms/reports/fundraising-summary" element={<FundraisingSummary />} />
                                 <Route path="/dms/fundraising-summary" element={<FundraisingSummary />} />
                                 <Route path="/fund_raising/fundraising-summary" element={<FundraisingSummary />} />
+                                <Route path="/dms/reports/management-overview" element={<FundraisingManagementOverview />} />
+                                <Route path="/dms/management-overview" element={<FundraisingManagementOverview />} />
+                                <Route path="/fund_raising/management-overview" element={<FundraisingManagementOverview />} />
+                                <Route path="/dms/reports/reconciliation-desk" element={<ReconciliationDesk />} />
+                                <Route path="/dms/reconciliation-desk" element={<ReconciliationDesk />} />
+                                <Route path="/fund_raising/reconciliation-desk" element={<ReconciliationDesk />} />
+                                <Route path="/dms/reports/field-team-donation-boxes" element={<FieldTeamDonationBoxes />} />
+                                <Route path="/dms/field-team-donation-boxes" element={<FieldTeamDonationBoxes />} />
+                                <Route path="/fund_raising/field-team-donation-boxes" element={<FieldTeamDonationBoxes />} />
+                                <Route path="/dms/reports/donor-retention-recurring" element={<DonorRetentionRecurring />} />
+                                <Route path="/dms/donor-retention-recurring" element={<DonorRetentionRecurring />} />
+                                <Route path="/fund_raising/donor-retention-recurring" element={<DonorRetentionRecurring />} />
+                                <Route path="/dms/reports/donor-profiles-demographics" element={<DonorProfilesDemographics />} />
+                                <Route path="/dms/donor-profiles-demographics" element={<DonorProfilesDemographics />} />
+                                <Route path="/fund_raising/donor-profiles-demographics" element={<DonorProfilesDemographics />} />
+                                <Route path="/dms/targets/list" element={<DmsTargetsList />} />
+                                <Route path="/dms/targets/add" element={<DmsTargetForm />} />
+                                <Route path="/dms/targets/edit/:id" element={<DmsTargetForm />} />
 
                                 {/* Geographic (Countries → Regions → Districts → Tehsils → Cities → Routes) */}
                                 <Route path="/dms/geographic/countries/list" element={<CountriesList />} />
@@ -711,7 +736,7 @@ const App = () => {
                                 <Route path="/dms/donor-relationship/follow-ups" element={<FollowUpsList />} />
                                 <Route path="/dms/donor-relationship/interactions" element={<InteractionsList />} />
                                 <Route path="/dms/donor-relationship/add" element={<AddDonorInteraction />} />
-                                <Route path="/dms/donor-relationship/overview" element={<ManagementOverview />} />
+                                <Route path="/dms/donor-relationship/overview" element={<DonorRelationshipManagementOverview />} />
 
                                 {/* Tasks — flat routes for all users */}
                                 <Route path="/tasks/list" element={<TasksPage />} />

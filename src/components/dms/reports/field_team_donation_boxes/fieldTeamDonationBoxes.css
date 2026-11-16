@@ -1,0 +1,348 @@
+/* Field Team & Donation Boxes */
+.ftb-container {
+  margin-top: var(--navbar-height, 64px);
+  padding: 28px 36px 60px;
+  background-color: #f1f5f9;
+  min-height: calc(100vh - var(--navbar-height, 64px));
+  color: #0f172a;
+}
+
+.ftb-wrap {
+  max-width: 1480px;
+  margin: 0 auto;
+}
+
+.ftb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 22px;
+}
+
+.ftb-filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ftb-control {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ftb-control label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.ftb-select {
+  height: 40px;
+  min-width: 170px;
+  padding: 0 34px 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff
+    url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")
+    no-repeat right 12px center / 14px;
+  appearance: none;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1e293b;
+  cursor: pointer;
+}
+
+.ftb-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ftb-title-row h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.ftb-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #9a3412;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.ftb-subtitle {
+  margin: 8px 0 0;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.ftb-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+@media (max-width: 1200px) {
+  .ftb-kpis {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .ftb-kpis {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ftb-kpi {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 18px 18px 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  min-height: 122px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ftb-kpi__title {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.ftb-kpi__value {
+  margin: 0 0 8px;
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.ftb-kpi__value--green {
+  color: #15803d;
+}
+
+.ftb-kpi__value--blue {
+  color: #1d4ed8;
+}
+
+.ftb-kpi__value--red {
+  color: #dc2626;
+}
+
+.ftb-kpi__value--amber {
+  color: #c2410c;
+}
+
+.ftb-kpi__footer {
+  margin-top: auto;
+  font-size: 12.5px;
+  color: #64748b;
+}
+
+.ftb-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 1024px) {
+  .ftb-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ftb-card {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.ftb-card__title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.ftb-card__subtitle {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.ftb-collectors {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ftb-collector__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.ftb-collector__name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ftb-collector__meta {
+  font-size: 12.5px;
+  color: #64748b;
+  text-align: right;
+}
+
+.ftb-collector__meta strong {
+  color: #334155;
+  font-weight: 600;
+}
+
+.ftb-bar-track {
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.ftb-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.ftb-bar-fill--green {
+  background: #16a34a;
+}
+
+.ftb-bar-fill--amber {
+  background: #d97706;
+}
+
+.ftb-bar-fill--orange {
+  background: #ea580c;
+}
+
+.ftb-bar-fill--red {
+  background: #ef4444;
+}
+
+.ftb-bar-fill--rose {
+  background: #fb7185;
+}
+
+.ftb-collector__bottom {
+  margin-top: 6px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+.ftb-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.ftb-table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 8px 10px 0;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.ftb-table th:last-child,
+.ftb-table td:last-child {
+  text-align: right;
+}
+
+.ftb-table td {
+  padding: 12px 8px 12px 0;
+  border-bottom: 1px solid #f8fafc;
+  color: #334155;
+  font-weight: 500;
+  vertical-align: middle;
+}
+
+.ftb-table tr:last-child td {
+  border-bottom: none;
+}
+
+.ftb-rank {
+  color: #94a3b8;
+  font-weight: 600;
+  width: 28px;
+}
+
+.ftb-key {
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ftb-size {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+.ftb-amount {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.ftb-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 16px;
+  font-size: 13.5px;
+}
+
+.ftb-loading {
+  color: #64748b;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+.ftb-empty {
+  margin: 12px 0 0;
+  color: #64748b;
+  font-size: 13.5px;
+}

@@ -362,6 +362,38 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Bank Reconciliation',
           actions: ['create', 'list_view', 'view']
         },
+        reconciliation_workbench: {
+          label: 'Reconciliation Workbench',
+          actions: ['list_view', 'view']
+        },
+        reconciliation_desk: {
+          label: 'Reconciliation Desk',
+          actions: ['list_view', 'view']
+        },
+        field_team_donation_boxes: {
+          label: 'Field Team & Donation Boxes',
+          actions: ['list_view', 'view']
+        },
+        donor_retention_recurring: {
+          label: 'Donor Retention & Recurring',
+          actions: ['list_view', 'view']
+        },
+        donor_profiles_demographics: {
+          label: 'Donor Profiles & Demographics',
+          actions: ['list_view', 'view']
+        },
+        targets: {
+          label: 'Targets',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
+        reports_dashboard: {
+          label: 'Reports Dashboard',
+          actions: ['list_view', 'view']
+        },
+        management_overview: {
+          label: 'Management Overview',
+          actions: ['list_view', 'view']
+        },
         donation_allotments: {
           label: 'Donation Allotments',
           actions: ['create', 'list_view', 'view', 'approve']

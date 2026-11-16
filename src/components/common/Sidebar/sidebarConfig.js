@@ -1,5 +1,10 @@
 // Sidebar configuration for different user roles and departments
-import { canViewModule, hasPermission, isSuperAdmin } from '../../../utils/permissions';
+import {
+  canAccessReconciliationWorkbench,
+  canViewModule,
+  hasPermission,
+  isSuperAdmin,
+} from '../../../utils/permissions';
 import {
   FiHome,
   FiUsers,
@@ -50,6 +55,7 @@ import {
   FiSend,
   FiCoffee,
   FiSearch,
+  FiInbox,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -901,6 +907,48 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiRefreshCw
   },
   {
+    label: 'Reconciliation Workbench',
+    path: '/dms/reconciliation-workbench',
+    type: 'list',
+    module: 'reconciliation_workbench',
+    icon: FiInbox
+  },
+  {
+    label: 'Reconciliation Desk',
+    path: '/dms/reconciliation-desk',
+    type: 'list',
+    module: 'reconciliation_desk',
+    icon: FiClipboard
+  },
+  {
+    label: 'Field Team & Donation Boxes',
+    path: '/dms/field-team-donation-boxes',
+    type: 'list',
+    module: 'field_team_donation_boxes',
+    icon: FiBox
+  },
+  {
+    label: 'Donor Retention & Recurring',
+    path: '/dms/donor-retention-recurring',
+    type: 'list',
+    module: 'donor_retention_recurring',
+    icon: FiRepeat
+  },
+  {
+    label: 'Donor Profiles & Demographics',
+    path: '/dms/donor-profiles-demographics',
+    type: 'list',
+    module: 'donor_profiles_demographics',
+    icon: FiUsers
+  },
+  {
+    label: 'Targets',
+    path: '/dms/targets/list',
+    type: 'list',
+    module: 'targets',
+    icon: FiTarget
+  },
+  {
     label: 'Donor Relationship',
     path: '/dms/donor-relationship/follow-ups',
     type: 'list',
@@ -959,6 +1007,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'dashboard',
     icon: FiHome
+  },
+  {
+    label: 'Reports Dashboard',
+    path: '/dms/reports/dashboard',
+    type: 'list',
+    module: 'reports_dashboard',
+    icon: FiBarChart2
+  },
+  {
+    label: 'Management Overview',
+    path: '/dms/management-overview',
+    type: 'list',
+    module: 'management_overview',
+    icon: FiTrendingUp
   },
   {
     label: 'Recurring Performance',
@@ -1331,6 +1393,14 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
   const moduleKey = item.module || parentModule;
   const permDept =
     item.permissionDepartment || permissionDepartmentFor(department);
+
+  // Reconciliation Workbench: reconcilers + FR manager + super_admin
+  if (
+    moduleKey === 'reconciliation_workbench' &&
+    permDept === 'fund_raising'
+  ) {
+    return canAccessReconciliationWorkbench(permissions);
+  }
 
   // Explicit action (e.g. manage_overview) — must be granted on the module
   if (item.action) {
