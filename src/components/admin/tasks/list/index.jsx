@@ -707,11 +707,34 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       toast.error(hoverText('update') || 'You do not have permission to update tasks');
       return;
     }
+
+    let transitionReason = '';
+    const requiresReason =
+      ['blocked', 'rejected', 'cancelled'].includes(nextStatus) ||
+      (task.status === 'closed' && nextStatus !== 'closed');
+    if (requiresReason) {
+      const promptLabel =
+        nextStatus === 'blocked'
+          ? 'Enter a mandatory reason for blocking this task:'
+          : nextStatus === 'rejected'
+          ? 'Enter a mandatory reason for requesting revisions / rejecting deliverables:'
+          : nextStatus === 'cancelled'
+          ? 'Enter a mandatory reason for cancelling this task:'
+          : 'Enter a mandatory reason for reopening this task:';
+      const input = window.prompt(promptLabel);
+      if (!input || !input.trim()) {
+        toast.error('A mandatory reason is required for this action.');
+        return;
+      }
+      transitionReason = input.trim();
+    }
+
     setStatusUpdatingId(task.id);
     try {
       const res = await axiosInstance.post(`/tasks/${task.id}/status-transition`, {
         status: nextStatus,
-        notes: '',
+        notes: transitionReason,
+        reason: transitionReason,
       });
       const updated = res.data?.data || null;
       if (updated) {
@@ -1090,30 +1113,29 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     };
     const canReviewApproval =
       isApprovalWorkflow &&
-      ['pending_approval', 'rejected'].includes(status) &&
+      status === 'pending_approval' &&
       hasPendingApproval &&
       isStatusActionAvailable('APPROVE', approvalContext) &&
       isStatusActionAvailable('REJECT', approvalContext);
     const canStartTask =
       canChangeStatus &&
-      ['open', 'assigned'].includes(status) &&
+      ['open', 'assigned', 'draft'].includes(status) &&
       isStatusActionAvailable('START', approvalContext);
     const canCompleteTask =
       canChangeStatus &&
-      status === 'in_progress' &&
+      ((isApprovalWorkflow && status === 'approved') || (!isApprovalWorkflow && status === 'in_progress')) &&
       isStatusActionAvailable('COMPLETE', approvalContext);
     const canReopenTask =
       canChangeStatus &&
-      status === 'blocked' &&
+      (status === 'blocked' || status === 'rejected') &&
       isStatusActionAvailable('REOPEN_IN_PROGRESS', approvalContext);
     const canSubmitApproval =
       isApprovalWorkflow &&
-      status === 'completed' &&
+      status === 'in_progress' &&
       isAssignee &&
-      !isAdminRole &&
       isStatusActionAvailable('SUBMIT_APPROVAL', approvalContext);
     const canCloseTask =
-      (status === 'approved' || (status === 'completed' && !isApprovalWorkflow)) &&
+      status === 'completed' &&
       isStatusActionAvailable('CLOSE', approvalContext);
 
     const rawChecklist = Array.isArray(t.checklist) ? t.checklist : (Array.isArray(t.done_when) ? t.done_when : []);

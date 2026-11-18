@@ -608,22 +608,27 @@ const AddTask = ({
   const syncFromTaskType = (next) => {
     const tt = next.task_type;
     const freq = next.recurrence_frequency;
-    let wt = next.workflow_type;
+    let wt = next.workflow_type || 'standard';
     let rr = next.recurrence_rule;
     if (tt === 'approval_based') wt = 'approval_required';
     if (tt === 'one_time' || tt === 'project_linked') {
-      wt = 'standard';
+      wt = wt || 'standard';
       rr = '';
     }
     if (tt === 'recurring') {
-      wt = 'standard';
+      wt = wt || 'standard';
       if (freq === 'other') {
         rr = next.custom_recurrence_days ? `${next.custom_recurrence_days} days` : '';
       } else {
         rr = freq || '';
       }
     }
-    setForm((prev) => ({ ...prev, workflow_type: wt, recurrence_rule: rr }));
+    setForm((prev) => ({
+      ...prev,
+      workflow_type: wt,
+      recurrence_rule: rr,
+      approval_required: wt === 'approval_required',
+    }));
   };
   const handleSelectChange = (e) => {
     const { name, value } = e.target;
@@ -632,6 +637,13 @@ const AddTask = ({
     // If switching frequency to other, clear custom days
     if (name === 'recurrence_frequency' && value !== 'other') {
       next.custom_recurrence_days = '';
+    }
+
+    if (name === 'workflow_type') {
+      next.approval_required = value === 'approval_required';
+      if (value !== 'approval_required') {
+        setApproverUsers([]);
+      }
     }
 
     // Automatically set start_date to today if priority is 'critical'
@@ -976,10 +988,10 @@ const AddTask = ({
                 <TaskFormSelect
                   name="workflow_type"
                   label=""
-                  value={form.workflow_type}
+                  value={form.workflow_type || 'standard'}
                   onChange={handleSelectChange}
                   icon={FiGitBranch}
-                  defaultOptionText="Workflow"
+                  defaultOptionText="Standard workflow"
                   options={[
                     { value: 'standard', label: 'Standard workflow' },
                     { value: 'approval_required', label: 'Approval required' },

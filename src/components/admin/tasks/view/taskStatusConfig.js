@@ -1,27 +1,43 @@
 export const STATUS_BUTTON_CONFIG = {
-  DRAFT: [],
-  OPEN: [],
-  ASSIGNED: [],
-  IN_PROGRESS: [],
+  DRAFT: [
+    { label: 'Start Task', action: 'START', color: 'primary' },
+  ],
+  OPEN: [
+    { label: 'Start Task', action: 'START', color: 'primary' },
+  ],
+  ASSIGNED: [
+    { label: 'Start Task', action: 'START', color: 'primary' },
+  ],
+  IN_PROGRESS: [
+    { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
+    { label: 'Complete Task', action: 'COMPLETE', color: 'success' },
+    { label: 'Block Task', action: 'BLOCK', color: 'danger' },
+  ],
   PENDING: [],
   PENDING_APPROVAL: [
-    { label: 'Approve', action: 'APPROVE', color: 'success' },
-    { label: 'Reject', action: 'REJECT', color: 'danger' },
+    { label: 'Approve Deliverables', action: 'APPROVE', color: 'success' },
+    { label: 'Request Revisions (Reject)', action: 'REJECT', color: 'danger' },
   ],
-  REJECTED: [],
+  REJECTED: [
+    { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+  ],
   APPROVED: [
-    { label: 'Close Task', action: 'CLOSE', color: 'danger' },
+    { label: 'Mark Completed', action: 'COMPLETE', color: 'success' },
   ],
   COMPLETED: [
-    { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
     { label: 'Close Task', action: 'CLOSE', color: 'danger' },
+    { label: 'Reopen Task', action: 'REOPEN', color: 'secondary' },
   ],
-  CLOSED: [],
-  CANCELLED: [],
+  CLOSED: [
+    { label: 'Reopen Task', action: 'REOPEN', color: 'primary' },
+  ],
+  CANCELLED: [
+    { label: 'Reopen Task', action: 'REOPEN', color: 'primary' },
+  ],
   FAILED: [],
   REGISTERED: [],
   BLOCKED: [
-    { label: 'Reopen In Progress', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+    { label: 'Unblock Task (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
   ],
 };
 
@@ -32,10 +48,11 @@ export const STATUS_TRANSITION_MAP = {
   BLOCK: 'blocked',
   REOPEN_IN_PROGRESS: 'in_progress',
   CLOSE: 'closed',
-  REOPEN: 'open',
+  REOPEN: 'in_progress',
   SUBMIT_APPROVAL: 'pending_approval',
   APPROVE: 'approved',
   REJECT: 'rejected',
+  CANCEL: 'cancelled',
 };
 
 export const QUICK_ACTIONS = [
@@ -140,60 +157,48 @@ export const isStatusActionAvailable = (action, context) => {
       const decision = String(meta.decision || 'pending').toLowerCase();
       return decision === 'approved' || decision === 'rejected';
     });
+  const isCreator =
+    context.currentUserId != null &&
+    context.createdByUserId != null &&
+    Number(context.currentUserId) === Number(context.createdByUserId);
+  const reporterIds = Array.isArray(context.reportedByIds)
+    ? context.reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0)
+    : (context.reportedById != null ? [Number(context.reportedById)] : []);
+  const isReporter =
+    context.currentUserId != null &&
+    reporterIds.includes(Number(context.currentUserId));
+  const isManagement = isCreator || isReporter || isAdminRole;
+
   switch (action) {
     case 'START':
-      return isAssignee && sameDeptOrOrg;
+      return (isAssignee || isManagement) && sameDeptOrOrg;
     case 'PAUSE':
     case 'BLOCK':
-    case 'REOPEN':
+      return (isAssignee || isManagement) && sameDeptOrOrg && currentStatusRaw === 'in_progress';
     case 'REOPEN_IN_PROGRESS':
-      return isAssignee && perms.canUpdate && sameDeptOrOrg;
+      return (isAssignee || isManagement) && sameDeptOrOrg && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
+    case 'REOPEN':
+      return isManagement && sameDeptOrOrg && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
     case 'COMPLETE':
-      return isAssignee && sameDeptOrOrg;
-    case 'CLOSE': {
-      // Preserve creator/reporter closure after completion or approval; other changes require assignment.
-      const isCreator =
-        context.currentUserId != null &&
-        context.createdByUserId != null &&
-        Number(context.currentUserId) === Number(context.createdByUserId);
-      // Multi-manager support: resolve all reporting managers from reportedByIds array or legacy reportedById
-      const reporterIds = Array.isArray(context.reportedByIds)
-        ? context.reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0)
-        : (context.reportedById != null ? [Number(context.reportedById)] : []);
-      const isReporter =
-        context.currentUserId != null &&
-        reporterIds.includes(Number(context.currentUserId));
-      const isCreatorOrReporter = isCreator || isReporter;
-
-      if (
-        currentStatusRaw === 'approved' ||
-        (currentStatusRaw === 'completed' && workflowRaw !== 'APPROVAL_REQUIRED')
-      ) {
-        return isCreatorOrReporter && sameDeptOrOrg;
-      }
-
       if (workflowRaw === 'APPROVAL_REQUIRED') {
-        if (allApprovalsCompleted) {
-          return isCreatorOrReporter && sameDeptOrOrg;
-        }
-        return perms.canApprove === true && isCreatorOrReporter && sameDeptOrOrg;
+        // In approval workflow, only an APPROVED task moves to COMPLETED
+        return (isAssignee || isManagement || isConfiguredApprover) && sameDeptOrOrg && currentStatusRaw === 'approved';
       }
-
-      return (
-        isAssignee &&
-        (perms.canUpdate || perms.canComplete) &&
-        sameDeptOrOrg
-      );
-    }
+      return (isAssignee || isManagement) && sameDeptOrOrg && currentStatusRaw === 'in_progress';
+    case 'CLOSE':
+      // Only COMPLETED tasks can be formally closed by Management
+      return isManagement && sameDeptOrOrg && currentStatusRaw === 'completed';
+    case 'CANCEL':
+      return isManagement && !['completed', 'closed', 'cancelled'].includes(currentStatusRaw) && sameDeptOrOrg;
     case 'SUBMIT_APPROVAL':
-      return isAssignee && (perms.canUpdate || perms.canView) && !isAdminRole;
+      return isAssignee && workflowRaw === 'APPROVAL_REQUIRED' && currentStatusRaw === 'in_progress' && sameDeptOrOrg;
     case 'APPROVE':
     case 'REJECT':
-      if (currentStatusRaw === 'approved' || currentStatusRaw === 'closed') {
+      if (currentStatusRaw !== 'pending_approval') {
         return false;
       }
       if (approverIds.length === 0) return false;
-      if (!isConfiguredApprover) return false;
+      if (!isConfiguredApprover && !isAdminRole) return false;
       if (hasActedOnApproval) return false;
       if (currentDecision === 'approved' || currentDecision === 'rejected') {
         return false;

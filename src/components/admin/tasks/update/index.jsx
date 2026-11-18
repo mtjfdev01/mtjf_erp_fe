@@ -753,37 +753,43 @@ const UpdateTask = ({
 
   const statusOptions = useMemo(() => {
     const s = originalStatus;
-    const w = originalWorkflowType;
+    const w = originalWorkflowType || form.workflow_type || 'standard';
     let allowed = [];
 
     switch (s) {
       case 'draft':
-        allowed = ['open'];
+        allowed = ['open', 'in_progress', 'cancelled'];
         break;
       case 'open':
+      case 'assigned':
         allowed = ['in_progress', 'cancelled'];
         break;
       case 'in_progress':
-        allowed = ['completed', 'cancelled'];
-        break;
-      case 'completed':
         allowed =
           w === 'approval_required'
-            ? ['pending_approval', 'in_progress']
-            : ['closed', 'in_progress'];
+            ? ['pending_approval', 'blocked', 'cancelled']
+            : ['completed', 'blocked', 'cancelled'];
+        break;
+      case 'blocked':
+        allowed = ['in_progress', 'cancelled'];
         break;
       case 'pending_approval':
-        allowed = ['approved', 'rejected', 'closed', 'in_progress'];
+        allowed = ['approved', 'rejected', 'in_progress'];
         break;
       case 'approved':
-        allowed = ['closed'];
+        allowed = ['completed'];
         break;
       case 'rejected':
         allowed = ['in_progress', 'cancelled'];
         break;
+      case 'completed':
+        allowed = ['closed', 'in_progress'];
+        break;
       case 'closed':
+        allowed = ['in_progress'];
+        break;
       case 'cancelled':
-        allowed = ['open'];
+        allowed = ['in_progress'];
         break;
       default:
         allowed = [];
@@ -793,10 +799,10 @@ const UpdateTask = ({
       value: status,
       label: status
         .split('_')
-        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .map((w) => w ? w[0].toUpperCase() + w.slice(1) : '')
         .join(' ')
     }));
-  }, [originalStatus, originalWorkflowType]);
+  }, [originalStatus, originalWorkflowType, form.workflow_type]);
 
   const getAttachmentHref = (urlStr) => {
     if (!urlStr) return '#';
@@ -887,12 +893,39 @@ const UpdateTask = ({
       // When no MOV text is submitted, omit MOV fields so existing data is not wiped.
       const titleTrimmed = String(form.title || '').trim();
       const descriptionTrimmed = String(form.description || '').trim();
+
+      let transitionNotes = '';
+      if (form.status && form.status !== originalStatus) {
+        const requiresReason =
+          ['blocked', 'rejected', 'cancelled'].includes(form.status) ||
+          originalStatus === 'closed';
+        if (requiresReason) {
+          const promptLabel =
+            form.status === 'blocked'
+              ? 'Enter a mandatory reason for blocking this task:'
+              : form.status === 'rejected'
+              ? 'Enter a mandatory reason for requesting revisions / rejecting deliverables:'
+              : form.status === 'cancelled'
+              ? 'Enter a mandatory reason for cancelling this task:'
+              : 'Enter a mandatory reason for reopening this closed task:';
+          const reasonInput = window.prompt(promptLabel);
+          if (!reasonInput || !reasonInput.trim()) {
+            setError(`A mandatory reason is required to change status to ${form.status}.`);
+            setLoading(false);
+            return;
+          }
+          transitionNotes = reasonInput.trim();
+        }
+      }
+
       const payload = {
         title: titleTrimmed || undefined,
         description: descriptionTrimmed || titleTrimmed || undefined,
         priority: form.priority || undefined,
         status: form.status || undefined,
         workflow_type: form.workflow_type || undefined,
+        notes: transitionNotes || undefined,
+        reason: transitionNotes || undefined,
         task_type: form.task_type || undefined,
         start_date: form.start_date || undefined,
         due_date: form.due_date || undefined,
@@ -1189,10 +1222,10 @@ const UpdateTask = ({
                 <TaskFormSelect
                   name="workflow_type"
                   label=""
-                  value={form.workflow_type}
+                  value={form.workflow_type || 'standard'}
                   onChange={handleChange}
                   icon={FiGitBranch}
-                  defaultOptionText="Workflow"
+                  defaultOptionText="Standard workflow"
                   options={[
                     { value: 'standard', label: 'Standard workflow' },
                     { value: 'approval_required', label: 'Approval required' },

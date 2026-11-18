@@ -48,7 +48,7 @@ const QUICK_ACTION_ICON_MAP = {
   GENERATE_REPORT: FiFileText,
 };
 
-// Stepper shown in the header. Only open / in_progress / completed can be set inline.
+// Stepper shown in the header
 const STANDARD_STEP_DEFS = [
   { key: 'open', label: 'Assigned' },
   { key: 'in_progress', label: 'In progress' },
@@ -59,28 +59,42 @@ const STANDARD_STEP_DEFS = [
 const APPROVAL_STEP_DEFS = [
   { key: 'open', label: 'Assigned' },
   { key: 'in_progress', label: 'In progress' },
-  { key: 'completed', label: 'Completed' },
   { key: 'pending_approval', label: 'Pending Approval' },
   { key: 'approved', label: 'Approved' },
+  { key: 'completed', label: 'Completed' },
   { key: 'closed', label: 'Closed' },
 ];
 
 const getStepIndex = (statusLowerVal, isApprovalWorkflow) => {
-  switch (statusLowerVal) {
-    case 'in_progress':
-      return 1;
-    case 'completed':
-      return 2;
-    case 'pending_approval':
-      return isApprovalWorkflow ? 3 : 2;
-    case 'approved':
-      return isApprovalWorkflow ? 4 : 2;
-    case 'rejected':
-      return isApprovalWorkflow ? 3 : 2;
-    case 'closed':
-      return isApprovalWorkflow ? 5 : 3;
-    default:
-      return 0;
+  if (isApprovalWorkflow) {
+    switch (statusLowerVal) {
+      case 'in_progress':
+      case 'blocked':
+        return 1;
+      case 'pending_approval':
+      case 'rejected':
+        return 2;
+      case 'approved':
+        return 3;
+      case 'completed':
+        return 4;
+      case 'closed':
+        return 5;
+      default:
+        return 0;
+    }
+  } else {
+    switch (statusLowerVal) {
+      case 'in_progress':
+      case 'blocked':
+        return 1;
+      case 'completed':
+        return 2;
+      case 'closed':
+        return 3;
+      default:
+        return 0;
+    }
   }
 };
 
@@ -1135,21 +1149,56 @@ const ViewTask = ({
   const inlineStatusOptions = useMemo(() => {
     const currentStatus = String(task?.status || '').toLowerCase();
     if (currentStatus === 'closed') {
-      return [
-        { value: 'closed', label: 'Closed' },
-      ];
+      return [{ value: 'closed', label: 'Closed' }];
     }
-    if (currentStatus === 'approved') {
-      return [
-        { value: 'approved', label: 'Approved' },
-      ];
+    if (isApprovalWorkflow) {
+      if (['open', 'draft', 'assigned'].includes(currentStatus)) {
+        return [
+          { value: 'open', label: 'Assigned' },
+          { value: 'in_progress', label: 'In Progress' },
+        ];
+      }
+      if (currentStatus === 'in_progress') {
+        return [
+          { value: 'in_progress', label: 'In Progress' },
+          { value: 'pending_approval', label: 'Submit for Approval' },
+        ];
+      }
+      if (currentStatus === 'approved') {
+        return [
+          { value: 'approved', label: 'Approved' },
+          { value: 'completed', label: 'Mark Completed' },
+        ];
+      }
+      if (currentStatus === 'completed') {
+        return [
+          { value: 'completed', label: 'Completed' },
+          { value: 'closed', label: 'Close Task' },
+        ];
+      }
+      return [{ value: currentStatus, label: currentStatus }];
+    } else {
+      if (['open', 'draft', 'assigned'].includes(currentStatus)) {
+        return [
+          { value: 'open', label: 'Assigned' },
+          { value: 'in_progress', label: 'In Progress' },
+        ];
+      }
+      if (currentStatus === 'in_progress') {
+        return [
+          { value: 'in_progress', label: 'In Progress' },
+          { value: 'completed', label: 'Mark Completed' },
+        ];
+      }
+      if (currentStatus === 'completed') {
+        return [
+          { value: 'completed', label: 'Completed' },
+          { value: 'closed', label: 'Close Task' },
+        ];
+      }
+      return [{ value: currentStatus, label: currentStatus }];
     }
-    return [
-      { value: 'open', label: 'Open' },
-      { value: 'in_progress', label: 'In Progress' },
-      { value: 'completed', label: 'Completed' },
-    ];
-  }, [task?.status]);
+  }, [task?.status, isApprovalWorkflow]);
 
   const availableQuickActions = useMemo(() => {
     if (!task || approvalLoading) return [];
@@ -2268,11 +2317,13 @@ const ViewTask = ({
               <div className="status-modal-backdrop" role="dialog" aria-modal="true">
                 <div className="status-modal">
                   <div className="status-modal-header">
-                    <h3 className="status-modal-title">All MOV Items Completed</h3>
+                    <h3 className="status-modal-title">All Deliverables / MOVs Completed</h3>
                   </div>
                   <div className="status-modal-body">
                     <p className="status-modal-text">
-                      All MOV items are completed. Do you want to change the task status to Completed?
+                      {isApprovalWorkflow
+                        ? 'All verification points (MOVs) are completed. Do you want to submit this task for formal approval?'
+                        : 'All verification points (MOVs) are completed. Do you want to mark this task as Completed?'}
                     </p>
                   </div>
                   <div className="status-modal-footer">
@@ -2281,29 +2332,34 @@ const ViewTask = ({
                       className="task-status-modal-cancel"
                       onClick={() => setShowMovCompletionPrompt(false)}
                     >
-                      No
+                      No, Keep In Progress
                     </button>
                     <PrimaryButton
                       style={{ color: '#ffffff' }}
                       type="button"
                       onClick={async () => {
-                        // Change task status to Completed
                         try {
-                          const payload = { status: 'completed', notes: 'All MOV items completed' };
+                          const targetStatus = isApprovalWorkflow ? 'pending_approval' : 'completed';
+                          const transitionNote = isApprovalWorkflow
+                            ? 'All deliverables/MOVs completed. Submitted for approval.'
+                            : 'All deliverables/MOVs completed.';
+                          const payload = {
+                            status: targetStatus,
+                            notes: transitionNote,
+                            reason: transitionNote,
+                          };
                           await axiosInstance.post(`/tasks/${task.id}/status-transition`, payload);
                           const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
                           const updatedTask = refreshed.data?.data || null;
                           if (updatedTask) {
                             setTask(updatedTask);
                           }
-                          toast.success('Task marked as Completed');
+                          toast.success(
+                            isApprovalWorkflow
+                              ? 'Task submitted for approval'
+                              : 'Task marked as Completed',
+                          );
                           setShowMovCompletionPrompt(false);
-
-                          // If task is approval-based, show Submit for Approval modal
-                          if (String(task.workflow_type).toLowerCase() === 'approval_required') {
-                            setStatusModalAction('SUBMIT_APPROVAL');
-                            setStatusModalOpen(true);
-                          }
                         } catch (e) {
                           const msg = e.response?.data?.message || 'Failed to update status.';
                           setError(msg);
@@ -2311,7 +2367,7 @@ const ViewTask = ({
                         }
                       }}
                     >
-                      Yes
+                      {isApprovalWorkflow ? 'Submit for Approval' : 'Mark Completed'}
                     </PrimaryButton>
                   </div>
                 </div>
