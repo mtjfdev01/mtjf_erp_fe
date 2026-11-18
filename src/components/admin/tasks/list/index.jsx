@@ -1103,7 +1103,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       workflowType: workflow,
       currentStatus: status,
       currentUserId,
-      createdByUserId: t.created_by_id,
+      createdByUserId: t.created_by_id ?? t.created_by?.id ?? t.createdBy,
       reportedById: t.reported_to_id,
       // Array of all reporting manager IDs for multi-manager action authorization
       reportedByIds: t.reported_to_ids || t.reported_to,

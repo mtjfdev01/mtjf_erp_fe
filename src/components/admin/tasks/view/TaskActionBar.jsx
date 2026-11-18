@@ -89,16 +89,24 @@ const TaskActionBar = ({
   );
 
   const availableButtons = useMemo(() => {
-    // Don't show any buttons while approval data is loading ONLY if it's an approval workflow
-    if (approvalLoading && normalizedWorkflow === 'APPROVAL_REQUIRED') {
+    const isApprovalWorkflow =
+      normalizedWorkflow === 'APPROVAL_REQUIRED' ||
+      normalizedWorkflow === 'APPROVAL_BASED';
+
+    // Don't show approval buttons while approval data is loading ONLY if it's pending approval
+    if (approvalLoading && isApprovalWorkflow && normalizedStatus === 'PENDING_APPROVAL') {
       return [];
     }
     const rawRole = String(userRole || '').toLowerCase();
     const isAdminRole = rawRole === 'super_admin' || rawRole === 'admin';
     const isAssigneeUser = isAssignee === true;
-    const approverIds = Array.isArray(approvalRequiredUserIds)
+    const taskApproverIds = Array.isArray(approvalRequiredUserIds)
       ? approvalRequiredUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0)
       : [];
+    const metaApproverIds = Array.isArray(approvalsMeta)
+      ? approvalsMeta.map((m) => Number(m?.user_id)).filter((v) => Number.isFinite(v) && v > 0)
+      : [];
+    const approverIds = Array.from(new Set([...taskApproverIds, ...metaApproverIds]));
     const isConfiguredApprover = currentUserId != null && approverIds.includes(Number(currentUserId));
 
     let baseButtons = [];
@@ -108,7 +116,7 @@ const TaskActionBar = ({
         // { label: 'Start Task (In Progress)', action: 'START', color: 'primary' },
       ];
     } else if (normalizedStatus === 'IN_PROGRESS') {
-      if (normalizedWorkflow === 'APPROVAL_REQUIRED') {
+      if (isApprovalWorkflow) {
         baseButtons = [
           { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
           { label: 'Block Task', action: 'BLOCK', color: 'danger' },
@@ -149,14 +157,32 @@ const TaskActionBar = ({
       ];
     }
 
-    if (normalizedStatus === 'PENDING_APPROVAL' && !canApprove && !isConfiguredApprover) {
-      return [];
+    if (normalizedStatus === 'PENDING_APPROVAL') {
+      const isCreator = currentUserId != null && createdByUserId != null && Number(currentUserId) === Number(createdByUserId);
+      const isReporter = currentUserId != null && effectiveReporterIds.includes(Number(currentUserId));
+      const canActOnApproval = isConfiguredApprover || isAdminRole || (approverIds.length === 0 && (isCreator || isReporter));
+      if (!canActOnApproval) {
+        return [];
+      }
     }
 
     return baseButtons.filter((btn) =>
       isStatusActionAvailable(btn.action, availabilityContext),
     );
-  }, [normalizedStatus, normalizedWorkflow, canApprove, availabilityContext, approvalLoading]);
+  }, [
+    normalizedStatus,
+    normalizedWorkflow,
+    canApprove,
+    availabilityContext,
+    approvalLoading,
+    currentUserId,
+    createdByUserId,
+    effectiveReporterIds,
+    approvalRequiredUserIds,
+    approvalsMeta,
+    userRole,
+    isAssignee,
+  ]);
 
   const visibleQuickActions = useMemo(
     () => {

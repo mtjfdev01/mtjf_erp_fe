@@ -119,6 +119,8 @@ export const isStatusActionAvailable = (action, context) => {
   const isAssignee = context.isAssignee === true;
   const sameDeptOrOrg = isSameDeptOrOrg(context);
   const workflowRaw = String(context.workflowType || '').toUpperCase();
+  const isApprovalWorkflow =
+    workflowRaw === 'APPROVAL_REQUIRED' || workflowRaw === 'APPROVAL_BASED';
   const currentStatusRaw = String(context.currentStatus || '').toLowerCase();
   const approverIdsRaw = context.approvalRequiredUserIds;
   const approverIds = Array.isArray(approverIdsRaw)
@@ -126,18 +128,24 @@ export const isStatusActionAvailable = (action, context) => {
         .map((v) => Number(v))
         .filter((v) => Number.isFinite(v) && v > 0)
     : [];
-  const currentUserIdNum =
-    context.currentUserId != null ? Number(context.currentUserId) : null;
-  const isConfiguredApprover =
-    currentUserIdNum != null && approverIds.length > 0
-      ? approverIds.includes(currentUserIdNum)
-      : false;
-  const hasActedOnApproval =
-    context.currentUserHasActedOnApproval === true;
   const approvalsMetaRaw = context.approvalsMeta;
   const approvalsMeta = Array.isArray(approvalsMetaRaw)
     ? approvalsMetaRaw
     : [];
+  const metaApproverIds = approvalsMeta
+    .map((m) => (m && m.user_id ? Number(m.user_id) : null))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  const effectiveApproverIds = Array.from(
+    new Set([...approverIds, ...metaApproverIds]),
+  );
+  const currentUserIdNum =
+    context.currentUserId != null ? Number(context.currentUserId) : null;
+  const isConfiguredApprover =
+    currentUserIdNum != null && effectiveApproverIds.length > 0
+      ? effectiveApproverIds.includes(currentUserIdNum)
+      : false;
+  const hasActedOnApproval =
+    context.currentUserHasActedOnApproval === true;
   const currentApprovalMeta =
     currentUserIdNum != null
       ? approvalsMeta.find(
@@ -148,8 +156,8 @@ export const isStatusActionAvailable = (action, context) => {
     ? String(currentApprovalMeta.decision || 'pending').toLowerCase()
     : 'pending';
   const allApprovalsCompleted =
-    approverIds.length > 0 &&
-    approverIds.every((idVal) => {
+    effectiveApproverIds.length > 0 &&
+    effectiveApproverIds.every((idVal) => {
       const meta = approvalsMeta.find(
         (m) => m && Number(m.user_id) === Number(idVal),
       );
@@ -157,48 +165,62 @@ export const isStatusActionAvailable = (action, context) => {
       const decision = String(meta.decision || 'pending').toLowerCase();
       return decision === 'approved' || decision === 'rejected';
     });
+  const createdByUid =
+    context.createdByUserId != null
+      ? Number(context.createdByUserId)
+      : (context.task?.created_by_id != null
+          ? Number(context.task.created_by_id)
+          : (context.task?.created_by?.id != null
+              ? Number(context.task.created_by?.id)
+              : null));
+  const currentUid =
+    context.currentUserId != null ? Number(context.currentUserId) : null;
   const isCreator =
-    context.currentUserId != null &&
-    context.createdByUserId != null &&
-    Number(context.currentUserId) === Number(context.createdByUserId);
+    currentUid != null &&
+    createdByUid != null &&
+    currentUid === createdByUid;
   const reporterIds = Array.isArray(context.reportedByIds)
     ? context.reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0)
     : (context.reportedById != null ? [Number(context.reportedById)] : []);
   const isReporter =
-    context.currentUserId != null &&
-    reporterIds.includes(Number(context.currentUserId));
+    currentUid != null &&
+    reporterIds.includes(currentUid);
   const isManagement = isCreator || isReporter || isAdminRole;
 
   switch (action) {
     case 'START':
-      return (isAssignee || isManagement) && sameDeptOrOrg;
+      return isAssignee || (isManagement && sameDeptOrOrg);
     case 'PAUSE':
     case 'BLOCK':
-      return (isAssignee || isManagement) && sameDeptOrOrg && currentStatusRaw === 'in_progress';
+      return (isAssignee || (isManagement && sameDeptOrOrg)) && currentStatusRaw === 'in_progress';
     case 'REOPEN_IN_PROGRESS':
-      return (isAssignee || isManagement) && sameDeptOrOrg && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
+      return (isAssignee || (isManagement && sameDeptOrOrg)) && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
     case 'REOPEN':
-      return isManagement && sameDeptOrOrg && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
+      // Only the Task Creator (or Admin) can reopen completed, closed, or cancelled tasks
+      return (isCreator || isAdminRole) && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
     case 'COMPLETE':
-      if (workflowRaw === 'APPROVAL_REQUIRED') {
+      if (isApprovalWorkflow) {
         // In approval workflow, only an APPROVED task moves to COMPLETED
-        return (isAssignee || isManagement || isConfiguredApprover) && sameDeptOrOrg && currentStatusRaw === 'approved';
+        return (isAssignee || isConfiguredApprover || (isManagement && sameDeptOrOrg)) && currentStatusRaw === 'approved';
       }
-      return (isAssignee || isManagement) && sameDeptOrOrg && currentStatusRaw === 'in_progress';
+      return (isAssignee || (isManagement && sameDeptOrOrg)) && currentStatusRaw === 'in_progress';
     case 'CLOSE':
-      // Only COMPLETED tasks can be formally closed by Management
-      return isManagement && sameDeptOrOrg && currentStatusRaw === 'completed';
+      // Only COMPLETED tasks can be formally closed by the Task Creator (or Admin)
+      return (isCreator || isAdminRole) && currentStatusRaw === 'completed';
     case 'CANCEL':
       return isManagement && !['completed', 'closed', 'cancelled'].includes(currentStatusRaw) && sameDeptOrOrg;
     case 'SUBMIT_APPROVAL':
-      return isAssignee && workflowRaw === 'APPROVAL_REQUIRED' && currentStatusRaw === 'in_progress' && sameDeptOrOrg;
+      return (isAssignee || isAdminRole) && isApprovalWorkflow && (currentStatusRaw === 'in_progress' || currentStatusRaw === 'in progress');
     case 'APPROVE':
     case 'REJECT':
       if (currentStatusRaw !== 'pending_approval') {
         return false;
       }
-      if (approverIds.length === 0) return false;
-      if (!isConfiguredApprover && !isAdminRole) return false;
+      if (effectiveApproverIds.length > 0) {
+        if (!isConfiguredApprover && !isAdminRole) return false;
+      } else {
+        if (!isManagement) return false;
+      }
       if (hasActedOnApproval) return false;
       if (currentDecision === 'approved' || currentDecision === 'rejected') {
         return false;

@@ -768,14 +768,27 @@ const ViewTask = ({
 
   const isCurrentUserAssignee = useMemo(() => {
     if (!user || !task) return false;
+    const currentUid = Number(user.id || user.user_id || 0);
+    if (!currentUid) return false;
+
     const assignedIds = Array.isArray(task.assigned_user_ids)
-      ? task.assigned_user_ids
+      ? task.assigned_user_ids.map(Number)
+      : Array.isArray(task.assigned_users)
+      ? task.assigned_users.map((u) => Number(typeof u === 'object' ? u.id : u))
+      : task.assigned_user_id
+      ? [Number(task.assigned_user_id)]
+      : task.assignee_id
+      ? [Number(task.assignee_id)]
       : [];
+
     const metaIds = Array.isArray(task.assigned_users_meta)
-      ? task.assigned_users_meta.map((m) => Number(m?.user_id)).filter((n) => Number.isInteger(n) && n > 0)
+      ? task.assigned_users_meta
+          .map((m) => Number(m?.user_id || m?.id))
+          .filter((n) => Number.isInteger(n) && n > 0)
       : [];
-    const allIds = [...assignedIds, ...metaIds].map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
-    return allIds.includes(Number(user.id));
+
+    const allIds = [...assignedIds, ...metaIds].filter((n) => Number.isInteger(n) && n > 0);
+    return allIds.includes(currentUid);
   }, [user, task]);
 
   const canEditTaskByCurrentUser =
@@ -805,7 +818,9 @@ const ViewTask = ({
 
   const isCurrentUserCreator = useMemo(() => {
     if (!user || !task) return false;
-    return Number(task.created_by_id) === Number(user.id);
+    const taskCreatorId = Number(task.created_by_id ?? task.created_by?.id ?? task.createdBy);
+    const uid = Number(user.id || user.user_id);
+    return taskCreatorId > 0 && taskCreatorId === uid;
   }, [user, task]);
 
   const canDeleteAttachment = (attachment) => {
@@ -1171,10 +1186,13 @@ const ViewTask = ({
         ];
       }
       if (currentStatus === 'completed') {
-        return [
-          { value: 'completed', label: 'Completed' },
-          { value: 'closed', label: 'Close Task' },
-        ];
+        const canClose = isCurrentUserCreator || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
+        return canClose
+          ? [
+              { value: 'completed', label: 'Completed' },
+              { value: 'closed', label: 'Close Task' },
+            ]
+          : [{ value: 'completed', label: 'Completed' }];
       }
       return [{ value: currentStatus, label: currentStatus }];
     } else {
@@ -1191,14 +1209,17 @@ const ViewTask = ({
         ];
       }
       if (currentStatus === 'completed') {
-        return [
-          { value: 'completed', label: 'Completed' },
-          { value: 'closed', label: 'Close Task' },
-        ];
+        const canClose = isCurrentUserCreator || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
+        return canClose
+          ? [
+              { value: 'completed', label: 'Completed' },
+              { value: 'closed', label: 'Close Task' },
+            ]
+          : [{ value: 'completed', label: 'Completed' }];
       }
       return [{ value: currentStatus, label: currentStatus }];
     }
-  }, [task?.status, isApprovalWorkflow]);
+  }, [task?.status, isApprovalWorkflow, isCurrentUserCreator, user?.role]);
 
   const availableQuickActions = useMemo(() => {
     if (!task || approvalLoading) return [];
@@ -1212,7 +1233,7 @@ const ViewTask = ({
       workflowType: String(task?.workflow_type || '').toUpperCase(),
       currentStatus: String(task?.status || '').toLowerCase(),
       currentUserId: user?.id,
-      createdByUserId: task?.created_by_id,
+      createdByUserId: task?.created_by_id ?? task?.created_by?.id ?? task?.createdBy,
       reportedById: task?.reported_to_id,
       // Array of all reporting manager IDs for multi-manager action authorization
       reportedByIds: task?.reported_to_ids || task?.reported_to,
@@ -1651,6 +1672,18 @@ const ViewTask = ({
                       </div>
                     </div>
                   ) : null}
+
+                  {statusLower === 'in_progress' && Array.isArray(approvalState?.rejected_note) && approvalState.rejected_note.length > 0 && (
+                    <div className="tv2-alert tv2-alert--warning" role="status" style={{ borderLeft: '4px solid #e11d48', background: '#fff1f2', color: '#9f1239' }}>
+                      <div className="tv2-alert-big"><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label">Deliverables Rejected / Revisions Requested</span>
+                        <span className="tv2-alert-sub">
+                          {approvalState.rejected_note[approvalState.rejected_note.length - 1]?.note || approvalState.rejected_note[approvalState.rejected_note.length - 1]?.reason}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="tv2-header-bar">
@@ -1714,7 +1747,7 @@ const ViewTask = ({
                       userRole={user?.role}
                       isAssignee={isCurrentUserAssignee}
                       currentUserId={user?.id}
-                      createdByUserId={task.created_by_id}
+                      createdByUserId={task?.created_by_id ?? task?.created_by?.id ?? task?.createdBy}
                       reportedById={task.reported_to_id}
                       reportedByIds={
                         // Pass array of all reporting manager IDs for multi-manager action controls
@@ -1844,8 +1877,35 @@ const ViewTask = ({
                       )}
                       {movChecklistLines.length > 0 && (
                         <p className="tv2-done-note">
-                          “Mark complete” unlocks when every condition is ticked.
+                          {isApprovalWorkflow
+                            ? '“Submit for Approval” unlocks when every condition is ticked.'
+                            : '“Mark complete” unlocks when every condition is ticked.'}
                         </p>
+                      )}
+                      {isApprovalWorkflow && statusLower === 'in_progress' && isCurrentUserAssignee && (
+                        <div style={{ marginTop: '12px' }}>
+                          <button
+                            type="button"
+                            className="tv2-btn tv2-btn--primary"
+                            style={{
+                              background: '#0d9488',
+                              color: '#ffffff',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              border: 'none',
+                            }}
+                            onClick={() => handleStatusActionClick('SUBMIT_APPROVAL')}
+                            disabled={statusActionLoading}
+                          >
+                            <span>Submit for Approval</span>
+                          </button>
+                        </div>
                       )}
                     </section>
                   )}
@@ -2019,6 +2079,18 @@ const ViewTask = ({
                           </li>
                         ))}
                       </ul>
+                      {Array.isArray(approvalState?.rejected_note) && approvalState.rejected_note.length > 0 && (
+                        <div style={{ marginTop: '10px', padding: '8px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '6px', fontSize: '12px', color: '#9f1239' }}>
+                          <strong>Rejection Feedback:</strong>
+                          <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
+                            {approvalState.rejected_note.map((rn, idx) => (
+                              <li key={idx}>
+                                {rn.note || rn.reason} {rn.decided_at && <span style={{ opacity: 0.7, fontSize: '10px' }}>({new Date(rn.decided_at).toLocaleString()})</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </section>
                   )}
 
