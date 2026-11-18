@@ -343,34 +343,129 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+  margin-top: 10px;
 }
 
 .drr-age-item {
-  display: grid;
-  grid-template-columns: 90px 1fr;
-  gap: 10px;
-  align-items: start;
+  padding: 13px 14px;
+  border-radius: 11px;
+  background: #eaf2ff;
+  color: #0f172a;
   font-size: 13px;
 }
 
-.drr-age-item strong {
-  display: block;
+.drr-age-item--8_30 {
+  background: #fff3dc;
 }
 
-.drr-age-item span {
-  color: #64748b;
+.drr-age-item--31_90 {
+  background: #fdeaea;
+}
+
+.drr-age-item--90_plus {
+  background: #edf2f8;
+}
+
+.drr-age-item__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.drr-age-item__top strong {
+  font-size: 13.5px;
+}
+
+.drr-age-item__top span {
+  color: #1d4ed8;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-align: right;
+}
+
+.drr-age-item--8_30 .drr-age-item__top span {
+  color: #9a5b00;
+}
+
+.drr-age-item--31_90 .drr-age-item__top span {
+  color: #c52222;
+}
+
+.drr-age-item--90_plus .drr-age-item__top span {
+  color: #173a70;
+}
+
+.drr-age-item__action {
+  margin-top: 7px;
+  color: #243b63;
   font-size: 12.5px;
 }
 
+.drr-action-card {
+  border-radius: 14px;
+  padding: 20px 18px 18px;
+}
+
 .drr-method-row {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .drr-method-row__top {
   display: flex;
   justify-content: space-between;
+  gap: 14px;
+  font-size: 12.5px;
+  margin-bottom: 7px;
+}
+
+.drr-method-row__top > strong {
+  color: #0f172a;
   font-size: 13px;
-  margin-bottom: 5px;
+}
+
+.drr-method-row__top > span {
+  color: #334155;
+  text-align: right;
+}
+
+.drr-method-row--red .drr-method-row__top > span strong {
+  color: #c52222;
+}
+
+.drr-method-row--amber .drr-method-row__top > span strong {
+  color: #a35c00;
+}
+
+.drr-method-row--green .drr-method-row__top > span strong {
+  color: #08783f;
+}
+
+.drr-method-row--red .drr-bar-fill {
+  background: #c72920;
+}
+
+.drr-method-row--amber .drr-bar-fill {
+  background: #a05b00;
+}
+
+.drr-method-row--green .drr-bar-fill {
+  background: #08783f;
+}
+
+.drr-method-list .drr-bar-track {
+  height: 12px;
+  background: #edf1f5;
+}
+
+.drr-method-note {
+  margin-top: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff3dc;
+  color: #475569;
+  font-size: 12.5px;
+  line-height: 1.45;
 }
 
 .drr-week-chart {
@@ -496,3 +591,19 @@
 .drr-cohort-cell--mid { background: #3b82f6; color: #fff; }
 .drr-cohort-cell--lo { background: #93c5fd; color: #1e3a8a; }
 .drr-cohort-cell--vlo { background: #dbeafe; color: #1e40af; }
+
+@media (max-width: 560px) {
+  .drr-age-item__top,
+  .drr-method-row__top {
+    align-items: flex-start;
+  }
+
+  .drr-age-item__top {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .drr-age-item__top span {
+    text-align: left;
+  }
+}

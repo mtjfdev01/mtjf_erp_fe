@@ -13,6 +13,7 @@ const ViewCampaign = () => {
   const { id } = useParams();
   const [campaign, setCampaign] = useState(null);
   const [donationItems, setDonationItems] = useState([]);
+  const [adSpends, setAdSpends] = useState([]);
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,6 +46,14 @@ const ViewCampaign = () => {
           }
         } catch {
           setDonationItems([]);
+        }
+        try {
+          const spendsRes = await axiosInstance.get(`/campaigns/${id}/ad-spends`);
+          if (spendsRes.data.success) {
+            setAdSpends(spendsRes.data.data || []);
+          }
+        } catch {
+          setAdSpends([]);
         }
       }
     } catch (err) {
@@ -162,6 +171,16 @@ const ViewCampaign = () => {
     Slug: campaign.slug || '-',
     Currency: campaign.currency || 'PKR',
     [goalLabel]: formatAmount(campaign.goal_amount, campaign.currency),
+    Budget: formatAmount(campaign.budget_amount, campaign.currency),
+    Spend: formatAmount(campaign.spent_amount, campaign.currency),
+    'Pending Budget': formatAmount(
+      campaign.pending_budget != null
+        ? campaign.pending_budget
+        : campaign.budget_amount != null
+          ? Number(campaign.budget_amount) - Number(campaign.spent_amount || 0)
+          : null,
+      campaign.currency,
+    ),
     'Start Date': campaign.start_at ? new Date(campaign.start_at).toLocaleString() : '-',
     'End Date': campaign.end_at ? new Date(campaign.end_at).toLocaleString() : '-',
     Featured: campaign.is_featured ? 'Yes' : 'No'
@@ -325,6 +344,66 @@ const ViewCampaign = () => {
                   ? 'Used on website checkout and recurring donor pledges.'
                   : 'Used on website checkout for one-time donations.'}
               </p>
+            </div>
+          )}
+
+          {adSpends.length > 0 && (
+            <div style={{
+              padding: '20px',
+              backgroundColor: '#fff',
+              border: '1px solid #e5e7eb',
+              borderRadius: '8px',
+              marginBottom: '20px'
+            }}>
+              <h3 style={{ marginBottom: '12px' }}>Advertising spend by platform</h3>
+              <div className="table-container">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Platform</th>
+                      <th>Date</th>
+                      <th>Notes / reference</th>
+                      <th>Attachment</th>
+                      <th>Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {adSpends.map((spend) => (
+                      <tr key={spend.id}>
+                        <td>{spend.platform}</td>
+                        <td>{spend.spend_date || '—'}</td>
+                        <td>{spend.notes || '—'}</td>
+                        <td>
+                          {spend.attachment_url ? (
+                            <a
+                              href={spend.attachment_url}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {spend.attachment_name || 'View attachment'}
+                            </a>
+                          ) : '—'}
+                        </td>
+                        <td>{formatAmount(spend.amount, campaign.currency)}</td>
+                      </tr>
+                    ))}
+                    <tr>
+                      <td colSpan="4"><strong>Total spend</strong></td>
+                      <td>
+                        <strong>
+                          {formatAmount(
+                            adSpends.reduce(
+                              (sum, spend) => sum + Number(spend.amount || 0),
+                              0,
+                            ),
+                            campaign.currency,
+                          )}
+                        </strong>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
 

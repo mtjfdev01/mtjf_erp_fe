@@ -6,6 +6,18 @@ export const TARGET_TYPES = [
 export const targetTypeLabel = (value) =>
   TARGET_TYPES.find((t) => t.value === value)?.label || value || '—';
 
+export const TARGET_PERIOD_TYPES = [
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'quarterly', label: 'Quarterly' },
+  { value: 'six_months', label: 'Six months' },
+  { value: 'yearly', label: 'Complete yearly' },
+];
+
+export const targetPeriodTypeLabel = (value) =>
+  TARGET_PERIOD_TYPES.find((type) => type.value === value)?.label ||
+  value ||
+  'Monthly';
+
 export const MONTH_OPTIONS = [
   { value: 1, label: 'January' },
   { value: 2, label: 'February' },
@@ -23,6 +35,37 @@ export const MONTH_OPTIONS = [
 
 export const monthLabel = (m) =>
   MONTH_OPTIONS.find((o) => o.value === Number(m))?.label || String(m || '—');
+
+export const periodStartOptions = (type) => {
+  if (type === 'quarterly') {
+    return [
+      { value: 1, label: 'Q1 · January–March' },
+      { value: 4, label: 'Q2 · April–June' },
+      { value: 7, label: 'Q3 · July–September' },
+      { value: 10, label: 'Q4 · October–December' },
+    ];
+  }
+  if (type === 'six_months') {
+    return [
+      { value: 1, label: 'First half · January–June' },
+      { value: 7, label: 'Second half · July–December' },
+    ];
+  }
+  if (type === 'yearly') return [{ value: 1, label: 'January–December' }];
+  return MONTH_OPTIONS;
+};
+
+export const formatTargetPeriod = (target) => {
+  if (target?.period_start && target?.period_end) {
+    const format = (value) =>
+      new Date(`${String(value).slice(0, 10)}T12:00:00`).toLocaleDateString(
+        'en-US',
+        { month: 'short', year: 'numeric' },
+      );
+    return `${format(target.period_start)} – ${format(target.period_end)}`;
+  }
+  return `${monthLabel(target?.period_month)} ${target?.period_year || ''}`.trim();
+};
 
 export const formatTargetAmount = (n) => {
   const num = Number(n);

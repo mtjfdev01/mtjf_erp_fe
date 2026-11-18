@@ -841,20 +841,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
   //   module: 'events',
   //   icon: FiCalendar
   // },
-  // {
-  //   label: 'Campaigns',
-  //   path: '/dms/campaigns/list',
-  //   type: 'list',
-  //   module: 'campaigns',
-  //   icon: FiFlag
-  // },
-  // {
-  //   label: 'Appeals',
-  //   path: '/dms/appeals/list',
-  //   type: 'list',
-  //   module: 'appeals',
-  //   icon: FiAlertCircle
-  // },
+  {
+    label: 'Campaigns',
+    path: '/dms/campaigns/list',
+    type: 'list',
+    module: 'campaigns',
+    icon: FiFlag
+  },
+  {
+    label: 'Appeals',
+    path: '/dms/appeals/list',
+    type: 'list',
+    module: 'appeals',
+    icon: FiAlertCircle
+  },
   {
     label: 'Social Posts',
     path: '/dms/social-posts/list',
@@ -926,6 +926,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'field_team_donation_boxes',
     icon: FiBox
+  },
+  {
+    label: 'Campaign ROI',
+    path: '/dms/campaign-roi',
+    type: 'list',
+    module: 'campaigns',
+    icon: FiTrendingUp
   },
   {
     label: 'Donor Retention & Recurring',

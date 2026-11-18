@@ -113,6 +113,15 @@ const DonorRetentionRecurring = () => {
     ...(funnel.items || []).map((i) => Number(i.count || 0)),
   );
   const weekMax = Number(weekly.max || 1);
+  const neverPaidTotal = (neverAge.items || []).reduce(
+    (sum, item) => sum + Number(item.count || 0),
+    0,
+  );
+  const methodTone = (pct) => {
+    if (Number(pct) >= 75) return 'green';
+    if (Number(pct) >= 40) return 'amber';
+    return 'red';
+  };
 
   return (
     <>
@@ -272,54 +281,72 @@ const DonorRetentionRecurring = () => {
                 </div>
 
                 <div className="drr-grid-2">
-                  <section className="drr-card">
+                  <section className="drr-card drr-action-card">
                     <h3 className="drr-section__title">
-                      {neverAge.title || 'Never-paid plans, by age'}
+                      {neverPaidTotal.toLocaleString('en-US')}{' '}
+                      {neverAge.title?.toLowerCase() || 'never-paid plans, by age'}
                     </h3>
+                    <p className="drr-section__subtitle">
+                      Days since sign-up · each bucket has its own action
+                    </p>
                     <div className="drr-age-list">
                       {(neverAge.items || []).map((item) => (
-                        <div className="drr-age-item" key={item.id}>
-                          <div>
+                        <div
+                          className={`drr-age-item drr-age-item--${item.id}`}
+                          key={item.id}
+                        >
+                          <div className="drr-age-item__top">
                             <strong>{item.label}</strong>
                             <span>
-                              {Number(item.count || 0).toLocaleString('en-US')}{' '}
-                              · {item.amount_formatted}
+                              {Number(item.count || 0).toLocaleString('en-US')} plans
+                              {' · '}
+                              {item.amount_formatted}
                             </span>
                           </div>
-                          <div>{item.action}</div>
+                          <div className="drr-age-item__action">→ {item.action}</div>
                         </div>
                       ))}
                     </div>
                   </section>
 
-                  <section className="drr-card">
+                  <section className="drr-card drr-action-card">
                     <h3 className="drr-section__title">
                       {methods.title || 'Activation by payment method'}
                     </h3>
-                    <p className="drr-section__subtitle">{methods.subtitle}</p>
+                    <p className="drr-section__subtitle">
+                      Plans that paid at least once · plans registered
+                    </p>
                     {(methods.items || []).length === 0 ? (
                       <p className="drr-empty">No method data.</p>
                     ) : (
-                      (methods.items || []).map((item) => (
-                        <div className="drr-method-row" key={item.id}>
+                      <div className="drr-method-list">
+                        {(methods.items || []).map((item) => (
+                        <div
+                          className={`drr-method-row drr-method-row--${methodTone(
+                            item.success_pct,
+                          )}`}
+                          key={item.id}
+                        >
                           <div className="drr-method-row__top">
-                            <span>{item.method}</span>
+                            <strong>{item.method}</strong>
                             <span>
-                              {item.paying} of {item.registered} (
-                              {item.success_pct}%)
+                              {item.paying} of {item.registered} ·{' '}
+                              <strong>{item.success_pct}%</strong>
                             </span>
                           </div>
                           <div className="drr-bar-track">
                             <div
-                              className="drr-bar-fill drr-bar-fill--blue"
+                              className="drr-bar-fill"
                               style={{
                                 width: `${Math.min(100, Number(item.bar_pct || 0))}%`,
                               }}
                             />
                           </div>
                         </div>
-                      ))
+                        ))}
+                      </div>
                     )}
+                    <div className="drr-method-note">{methods.subtitle}</div>
                   </section>
                 </div>
               </div>

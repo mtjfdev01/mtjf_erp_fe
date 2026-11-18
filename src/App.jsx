@@ -206,6 +206,7 @@ import ReconciliationDesk from './components/dms/reports/reconciliation_desk';
   import FieldTeamDonationBoxes from './components/dms/reports/field_team_donation_boxes';
   import DonorRetentionRecurring from './components/dms/reports/donor_retention_recurring';
   import DonorProfilesDemographics from './components/dms/reports/donor_profiles_demographics';
+  import CampaignRoi from './components/dms/reports/campaign_roi';
   import DmsTargetsList from './components/dms/targets/list';
   import DmsTargetForm from './components/dms/targets/form';
 import CountriesList from './components/dms/geographic/countries/list';
@@ -635,6 +636,9 @@ const App = () => {
                                 <Route path="/dms/reports/donor-profiles-demographics" element={<DonorProfilesDemographics />} />
                                 <Route path="/dms/donor-profiles-demographics" element={<DonorProfilesDemographics />} />
                                 <Route path="/fund_raising/donor-profiles-demographics" element={<DonorProfilesDemographics />} />
+                                <Route path="/dms/reports/campaign-roi" element={<CampaignRoi />} />
+                                <Route path="/dms/campaign-roi" element={<CampaignRoi />} />
+                                <Route path="/fund_raising/campaign-roi" element={<CampaignRoi />} />
                                 <Route path="/dms/targets/list" element={<DmsTargetsList />} />
                                 <Route path="/dms/targets/add" element={<DmsTargetForm />} />
                                 <Route path="/dms/targets/edit/:id" element={<DmsTargetForm />} />

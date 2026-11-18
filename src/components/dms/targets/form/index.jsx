@@ -8,7 +8,12 @@ import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
 import FormTextarea from '../../../common/FormTextarea';
 import SearchableDropdown from '../../../common/SearchableDropdown';
-import { TARGET_TYPES, MONTH_OPTIONS, userDisplayName } from '../constants';
+import {
+  TARGET_TYPES,
+  TARGET_PERIOD_TYPES,
+  periodStartOptions,
+  userDisplayName,
+} from '../constants';
 
 const now = new Date();
 
@@ -16,6 +21,7 @@ const emptyForm = {
   user_id: '',
   target_type: 'donation_amount',
   target_amount: '',
+  period_type: 'monthly',
   period_year: String(now.getFullYear()),
   period_month: String(now.getMonth() + 1),
   notes: '',
@@ -45,6 +51,7 @@ const TargetForm = () => {
           user_id: String(row.user_id || row.user?.id || ''),
           target_type: row.target_type || 'donation_amount',
           target_amount: String(row.target_amount ?? ''),
+          period_type: row.period_type || 'monthly',
           period_year: String(row.period_year || now.getFullYear()),
           period_month: String(row.period_month || now.getMonth() + 1),
           notes: row.notes || '',
@@ -94,6 +101,7 @@ const TargetForm = () => {
       user_id: Number(form.user_id),
       target_type: form.target_type,
       target_amount: amount,
+      period_type: form.period_type,
       period_year: Number(form.period_year),
       period_month: Number(form.period_month),
       notes: form.notes?.trim() || undefined,
@@ -182,6 +190,22 @@ const TargetForm = () => {
                 />
 
                 <FormSelect
+                  label="Time Duration"
+                  required
+                  value={form.period_type}
+                  onChange={(e) => {
+                    const periodType = e.target.value;
+                    const firstStart = periodStartOptions(periodType)[0]?.value || 1;
+                    setForm((p) => ({
+                      ...p,
+                      period_type: periodType,
+                      period_month: String(firstStart),
+                    }));
+                  }}
+                  options={TARGET_PERIOD_TYPES}
+                />
+
+                <FormSelect
                   label="Year"
                   required
                   value={form.period_year}
@@ -191,18 +215,26 @@ const TargetForm = () => {
                   options={yearOptions}
                 />
 
-                <FormSelect
-                  label="Month"
-                  required
-                  value={form.period_month}
-                  onChange={(e) =>
-                    setForm((p) => ({ ...p, period_month: e.target.value }))
-                  }
-                  options={MONTH_OPTIONS.map((m) => ({
-                    value: String(m.value),
-                    label: m.label,
-                  }))}
-                />
+                {form.period_type !== 'yearly' ? (
+                  <FormSelect
+                    label={
+                      form.period_type === 'quarterly'
+                        ? 'Quarter'
+                        : form.period_type === 'six_months'
+                          ? 'Half Year'
+                          : 'Month'
+                    }
+                    required
+                    value={form.period_month}
+                    onChange={(e) =>
+                      setForm((p) => ({ ...p, period_month: e.target.value }))
+                    }
+                    options={periodStartOptions(form.period_type).map((option) => ({
+                      value: String(option.value),
+                      label: option.label,
+                    }))}
+                  />
+                ) : null}
               </div>
 
               <FormTextarea

@@ -75,6 +75,12 @@ const FieldTeamDonationBoxes = () => {
   const cards = data?.cards || {};
   const collectors = data?.collector_performance || {};
   const topBoxes = data?.top_boxes || {};
+  const averageBySize = data?.average_per_collection_by_size || {};
+  const averageBySizeItems = averageBySize.items || [];
+  const largestSizeAverage = Math.max(
+    ...averageBySizeItems.map((item) => Number(item.amount || 0)),
+    1,
+  );
 
   const kpiOrder = [
     'boxes_registered',
@@ -231,6 +237,34 @@ const FieldTeamDonationBoxes = () => {
                   )}
                 </section>
               </div>
+
+              <section className="ftb-card ftb-size-chart">
+                <h2 className="ftb-card__title">
+                  {averageBySize.title || 'Average per collection by size'}
+                </h2>
+                <p className="ftb-card__subtitle">
+                  {averageBySize.subtitle || 'Decides which size to place where'}
+                </p>
+                <div className="ftb-size-chart__plot">
+                  {averageBySizeItems.map((item) => (
+                    <div className="ftb-size-chart__column" key={item.size}>
+                      <strong className="ftb-size-chart__value">
+                        {item.amount_formatted}
+                      </strong>
+                      <div
+                        className="ftb-size-chart__bar"
+                        style={{
+                          height: `${Math.max(
+                            Number(item.amount || 0) > 0 ? 8 : 0,
+                            (Number(item.amount || 0) / largestSizeAverage) * 140,
+                          )}px`,
+                        }}
+                      />
+                      <span className="ftb-size-chart__label">{item.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </section>
             </>
           ) : null}
         </div>
