@@ -19,9 +19,11 @@ import {
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import {
   TARGET_TYPES,
+  TARGET_PERIOD_TYPES,
   MONTH_OPTIONS,
   formatTargetAmount,
-  monthLabel,
+  formatTargetPeriod,
+  targetPeriodTypeLabel,
   targetTypeLabel,
   userDisplayName,
 } from '../constants';
@@ -35,6 +37,7 @@ const YEAR_OPTIONS = Array.from({ length: 6 }, (_, i) => {
 const emptyFilters = {
   search: '',
   target_type: '',
+  period_type: '',
   period_year: '',
   period_month: '',
 };
@@ -76,6 +79,7 @@ const TargetsList = () => {
       const params = { page, pageSize };
       if (appliedFilters.search) params.search = appliedFilters.search;
       if (appliedFilters.target_type) params.target_type = appliedFilters.target_type;
+      if (appliedFilters.period_type) params.period_type = appliedFilters.period_type;
       if (appliedFilters.period_year) params.period_year = appliedFilters.period_year;
       if (appliedFilters.period_month) {
         params.period_month = appliedFilters.period_month;
@@ -171,6 +175,16 @@ const TargetsList = () => {
             onFilterChange={handleFilterChange}
           />
           <DropdownFilter
+            filterKey="period_type"
+            label="Duration"
+            data={[
+              { value: '', label: 'All durations' },
+              ...TARGET_PERIOD_TYPES,
+            ]}
+            filters={tempFilters}
+            onFilterChange={handleFilterChange}
+          />
+          <DropdownFilter
             filterKey="period_month"
             label="Month"
             data={[
@@ -195,6 +209,7 @@ const TargetsList = () => {
               <tr>
                 <th>User</th>
                 <th>Type</th>
+                <th>Duration</th>
                 <th>Period</th>
                 <th>Target Amount</th>
                 <th>Notes</th>
@@ -204,13 +219,13 @@ const TargetsList = () => {
             <tbody>
               {loading && rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
+                  <td colSpan={7} style={{ textAlign: 'center' }}>
                     Loading…
                   </td>
                 </tr>
               ) : rows.length === 0 ? (
                 <tr>
-                  <td colSpan={6} style={{ textAlign: 'center' }}>
+                  <td colSpan={7} style={{ textAlign: 'center' }}>
                     No targets found
                   </td>
                 </tr>
@@ -219,9 +234,8 @@ const TargetsList = () => {
                   <tr key={row.id}>
                     <td>{userDisplayName(row.user)}</td>
                     <td>{targetTypeLabel(row.target_type)}</td>
-                    <td>
-                      {monthLabel(row.period_month)} {row.period_year}
-                    </td>
+                    <td>{targetPeriodTypeLabel(row.period_type)}</td>
+                    <td>{formatTargetPeriod(row)}</td>
                     <td>{formatTargetAmount(row.target_amount)}</td>
                     <td>{row.notes || '—'}</td>
                     <td>

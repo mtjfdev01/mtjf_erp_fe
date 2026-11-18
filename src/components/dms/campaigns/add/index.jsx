@@ -10,16 +10,20 @@ import { TARGET_FREQUENCY_OPTIONS, emptyCommunicationTemplates, communicationTem
 import CampaignCommunicationSection from '../CampaignCommunicationSection';
 import CampaignDonationItemsSection from '../CampaignDonationItemsSection';
 import CampaignProgramFields, { parseOptionalCampaignId } from '../CampaignProgramFields';
+import CampaignAdSpendSection from '../CampaignAdSpendSection';
 
 const AddCampaign = () => {
   const navigate = useNavigate();
   const [donationItems, setDonationItems] = useState([]);
+  const [adSpends, setAdSpends] = useState([]);
   const [form, setForm] = useState({
     title: '',
     slug: '',
     description: '',
     status: 'draft',
     goal_amount: '',
+    budget_amount: '',
+    spent_amount: '',
     currency: 'PKR',
     start_at: '',
     end_at: '',
@@ -94,6 +98,32 @@ const AddCampaign = () => {
       const campaignData = {
         ...form,
         goal_amount: form.goal_amount ? parseFloat(form.goal_amount) : undefined,
+        budget_amount: form.budget_amount
+          ? parseFloat(form.budget_amount)
+          : undefined,
+        spent_amount: adSpends.reduce(
+          (sum, item) => sum + (Number(item.amount) || 0),
+          0,
+        ),
+        ad_spends: adSpends.map(
+          ({
+            platform,
+            amount,
+            spend_date,
+            notes,
+            attachment_url,
+            attachment_name,
+            attachment_type,
+          }) => ({
+            platform,
+            amount: Number(amount),
+            spend_date: spend_date || null,
+            notes: notes || null,
+            attachment_url: attachment_url || null,
+            attachment_name: attachment_name || null,
+            attachment_type: attachment_type || null,
+          }),
+        ),
         is_recurring: form.is_recurring,
         target_frequency: form.is_recurring ? form.target_frequency : null,
         monthly_donor_automation_enabled: form.is_recurring ? form.monthly_donor_automation_enabled : false,
@@ -144,6 +174,18 @@ const AddCampaign = () => {
     { value: 'EUR', label: 'EUR' },
     { value: 'GBP', label: 'GBP' }
   ];
+  const pendingBudget =
+    form.budget_amount === ''
+      ? ''
+      : Number(form.budget_amount || 0) -
+        adSpends.reduce(
+          (sum, item) => sum + (Number(item.amount) || 0),
+          0,
+        );
+  const adSpendTotal = adSpends.reduce(
+    (sum, item) => sum + (Number(item.amount) || 0),
+    0,
+  );
 
   return (
     <>
@@ -178,6 +220,36 @@ const AddCampaign = () => {
                 placeholder="campaign-url-slug"
               />
             </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-grid-2">
+              <FormInput
+                label="Budget"
+                type="number"
+                name="budget_amount"
+                value={form.budget_amount}
+                onChange={handleChange}
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+              />
+
+              <FormInput
+                label="Total Spend (automatic)"
+                type="number"
+                name="spent_amount"
+                value={adSpendTotal}
+                readOnly
+              />
+            </div>
+            <FormInput
+              label="Pending Budget (automatic)"
+              type="number"
+              name="pending_budget"
+              value={pendingBudget}
+              readOnly
+            />
           </div>
 
           <div className="form-section">
@@ -252,6 +324,12 @@ const AddCampaign = () => {
             onDraftItemsChange={setDonationItems}
             defaultCurrency={form.currency || 'PKR'}
             isRecurring={form.is_recurring}
+          />
+
+          <CampaignAdSpendSection
+            draftSpends={adSpends}
+            onDraftSpendsChange={setAdSpends}
+            currency={form.currency || 'PKR'}
           />
 
           <CampaignProgramFields

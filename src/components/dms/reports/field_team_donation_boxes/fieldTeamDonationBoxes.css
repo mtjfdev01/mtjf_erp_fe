@@ -191,6 +191,57 @@
   line-height: 1.4;
 }
 
+.ftb-size-chart {
+  margin-top: 16px;
+}
+
+.ftb-size-chart__plot {
+  height: 210px;
+  margin-top: 22px;
+  padding: 0 7%;
+  border-bottom: 1px solid #cbd5e1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-around;
+  gap: 28px;
+}
+
+.ftb-size-chart__column {
+  width: min(18%, 100px);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  text-align: center;
+}
+
+.ftb-size-chart__value {
+  margin-bottom: 7px;
+  color: #0f172a;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.ftb-size-chart__bar {
+  width: 100%;
+  min-height: 0;
+  border-radius: 7px 7px 0 0;
+  background: #2166d5;
+}
+
+.ftb-size-chart__label {
+  position: relative;
+  top: 13px;
+  color: #334155;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.ftb-size-chart {
+  padding-bottom: 44px;
+}
+
 .ftb-collectors {
   margin-top: 18px;
   display: flex;
@@ -345,4 +396,19 @@
   margin: 12px 0 0;
   color: #64748b;
   font-size: 13.5px;
+}
+
+@media (max-width: 560px) {
+  .ftb-size-chart__plot {
+    padding: 0 3%;
+    gap: 14px;
+  }
+
+  .ftb-size-chart__column {
+    width: 25%;
+  }
+
+  .ftb-size-chart__value {
+    font-size: 10.5px;
+  }
 }

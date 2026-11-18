@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import PageHeader from '../../../common/PageHeader';
@@ -15,6 +15,7 @@ import {
 import CampaignCommunicationSection from '../CampaignCommunicationSection';
 import CampaignDonationItemsSection from '../CampaignDonationItemsSection';
 import CampaignProgramFields, { parseOptionalCampaignId } from '../CampaignProgramFields';
+import CampaignAdSpendSection from '../CampaignAdSpendSection';
 
 const EditCampaign = () => {
   const navigate = useNavigate();
@@ -25,6 +26,8 @@ const EditCampaign = () => {
     description: '',
     status: 'draft',
     goal_amount: '',
+    budget_amount: '',
+    spent_amount: '',
     currency: 'PKR',
     start_at: '',
     end_at: '',
@@ -57,6 +60,9 @@ const EditCampaign = () => {
           description: c.description || '',
           status: c.status || 'draft',
           goal_amount: c.goal_amount != null ? String(c.goal_amount) : '',
+          budget_amount:
+            c.budget_amount != null ? String(c.budget_amount) : '',
+          spent_amount: c.spent_amount != null ? String(c.spent_amount) : '',
           currency: c.currency || 'PKR',
           start_at: c.start_at ? new Date(c.start_at).toISOString().slice(0, 16) : '',
           end_at: c.end_at ? new Date(c.end_at).toISOString().slice(0, 16) : '',
@@ -103,6 +109,14 @@ const EditCampaign = () => {
     }));
   };
 
+  const handleAdSpendTotalChange = useCallback((total) => {
+    setForm((prev) =>
+      Number(prev.spent_amount || 0) === Number(total)
+        ? prev
+        : { ...prev, spent_amount: String(total) },
+    );
+  }, []);
+
   const handleSlotChange = (slotKey, field, value) => {
     setForm((prev) => ({
       ...prev,
@@ -136,6 +150,12 @@ const EditCampaign = () => {
       const campaignData = {
         ...form,
         goal_amount: form.goal_amount ? parseFloat(form.goal_amount) : null,
+        budget_amount: form.budget_amount
+          ? parseFloat(form.budget_amount)
+          : null,
+        spent_amount: form.spent_amount
+          ? parseFloat(form.spent_amount)
+          : 0,
         is_recurring: form.is_recurring,
         target_frequency: form.is_recurring ? form.target_frequency : null,
         monthly_donor_automation_enabled: form.is_recurring ? form.monthly_donor_automation_enabled : false,
@@ -175,6 +195,10 @@ const EditCampaign = () => {
     { value: 'EUR', label: 'EUR' },
     { value: 'GBP', label: 'GBP' }
   ];
+  const pendingBudget =
+    form.budget_amount === ''
+      ? ''
+      : Number(form.budget_amount || 0) - Number(form.spent_amount || 0);
 
   if (loading) {
     return (
@@ -222,6 +246,36 @@ const EditCampaign = () => {
                 maxLength={220}
               />
             </div>
+          </div>
+
+          <div className="form-section">
+            <div className="form-grid-2">
+              <FormInput
+                label="Budget"
+                type="number"
+                name="budget_amount"
+                value={form.budget_amount}
+                onChange={handleChange}
+                min={0}
+                step="0.01"
+                placeholder="0.00"
+              />
+
+              <FormInput
+                label="Total Spend (automatic)"
+                type="number"
+                name="spent_amount"
+                value={form.spent_amount}
+                readOnly
+              />
+            </div>
+            <FormInput
+              label="Pending Budget (automatic)"
+              type="number"
+              name="pending_budget"
+              value={pendingBudget}
+              readOnly
+            />
           </div>
 
           <div className="form-section">
@@ -293,6 +347,12 @@ const EditCampaign = () => {
             campaignId={Number(id)}
             defaultCurrency={form.currency || 'PKR'}
             isRecurring={form.is_recurring}
+          />
+
+          <CampaignAdSpendSection
+            campaignId={Number(id)}
+            currency={form.currency || 'PKR'}
+            onTotalChange={handleAdSpendTotalChange}
           />
 
           <CampaignProgramFields
