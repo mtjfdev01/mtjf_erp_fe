@@ -41,6 +41,24 @@
   flex: 0 0 auto;
 }
 
+.donation-pending-attachments__add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 38px;
+  padding: 0 1rem;
+  border-radius: 8px;
+  white-space: nowrap;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+
+.donation-pending-attachments__add-btn:disabled {
+  opacity: 0.55;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 .donation-pending-attachments__sr-only {
   position: absolute;
   width: 1px;

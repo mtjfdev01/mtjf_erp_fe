@@ -435,9 +435,6 @@ const EditDonor = ({
                   onChange={handleChange}
                 />
               </div>
-              <p className="donor-register-contact-hint">
-                At least one of email or phone is required.
-              </p>
             </section>
 
             {form.donor_type === 'individual' ? (

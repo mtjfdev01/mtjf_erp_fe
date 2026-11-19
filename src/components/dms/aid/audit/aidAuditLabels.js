@@ -5,6 +5,7 @@ export const AID_AUDIT_ACTION_LABELS = {
   draft_approved: 'Draft approved (to verification)',
   assignee_changed: 'Assignee changed',
   marked_incomplete: 'Marked incomplete',
+  marked_out_of_area: 'Marked Out of Area',
   resumed: 'Resumed to verification',
   rejected: 'Rejected',
   verified: 'Investigation verified',

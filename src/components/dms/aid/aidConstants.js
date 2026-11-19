@@ -7,6 +7,7 @@ export const AID_STATUS_OPTIONS = [
   { value: 'verification_completed', label: 'Verification completed' },
   { value: 'manager_review', label: 'Manager Review' },
   { value: 'rejected', label: 'Rejected' },
+  { value: 'out_of_area', label: 'Out of Area' },
   { value: 'meal_approval_required', label: 'MEAL Approval' },
   { value: 'ceo_approval_required', label: 'CEO approval required' },
   { value: 'successful', label: 'Successful' },
@@ -2211,6 +2212,8 @@ export function aidStatusTone(status) {
       return 'success';
     case 'rejected':
       return 'danger';
+    case 'out_of_area':
+      return 'warn';
     case 'incomplete':
     case 'incomplete_docs':
     case 'ceo_approval_required':

@@ -130,6 +130,8 @@ const AidApplicationView = () => {
   const [rejectReason, setRejectReason] = useState('');
   const [incompleteOpen, setIncompleteOpen] = useState(false);
   const [incompleteReason, setIncompleteReason] = useState('');
+  const [outOfAreaOpen, setOutOfAreaOpen] = useState(false);
+  const [outOfAreaReason, setOutOfAreaReason] = useState('');
   const [verifyNotes, setVerifyNotes] = useState('');
   const [investigation, setInvestigation] = useState({});
   const investigationRef = useRef({});
@@ -679,9 +681,15 @@ const AidApplicationView = () => {
   };
   const showReject =
     canUpdate &&
-    !['successful', 'delivered', 'rejected', 'incomplete', 'incomplete_docs', 'draft'].includes(
-      status,
-    );
+    ![
+      'successful',
+      'delivered',
+      'rejected',
+      'out_of_area',
+      'incomplete',
+      'incomplete_docs',
+      'draft',
+    ].includes(status);
   const showMarkIncomplete =
     canUpdate &&
     ![
@@ -691,7 +699,9 @@ const AidApplicationView = () => {
       'successful',
       'delivered',
       'rejected',
+      'out_of_area',
     ].includes(status);
+  const showOutOfArea = showMarkIncomplete;
   const showResumeIncomplete =
     canUpdate && (status === 'incomplete' || status === 'incomplete_docs');
   const submitLabel = isProgramDeptManager
@@ -747,6 +757,7 @@ const AidApplicationView = () => {
             </span>
             {canUpdate &&
             status !== 'rejected' &&
+            status !== 'out_of_area' &&
             status !== 'delivered' ? (
               <button
                 type="button"
@@ -765,10 +776,25 @@ const AidApplicationView = () => {
                 disabled={busy}
                 onClick={() => {
                   setIncompleteOpen(true);
+                  setOutOfAreaOpen(false);
                   setRejectOpen(false);
                 }}
               >
                 Mark Incomplete
+              </button>
+            ) : null}
+            {showOutOfArea ? (
+              <button
+                type="button"
+                className="secondary-btn"
+                disabled={busy}
+                onClick={() => {
+                  setOutOfAreaOpen(true);
+                  setIncompleteOpen(false);
+                  setRejectOpen(false);
+                }}
+              >
+                Out of Area
               </button>
             ) : null}
             {showResumeIncomplete ? (
@@ -2261,6 +2287,58 @@ const AidApplicationView = () => {
                 onClick={() => {
                   setIncompleteOpen(false);
                   setIncompleteReason('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {outOfAreaOpen && (
+          <div className="aid-card" style={{ marginBottom: 16 }}>
+            <FormTextarea
+              label="Out of Area note (optional)"
+              value={outOfAreaReason}
+              onChange={(e) => setOutOfAreaReason(e.target.value)}
+              rows={3}
+              placeholder="Why is this case outside the service area?"
+            />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              <button
+                type="button"
+                className="primary-btn"
+                disabled={busy}
+                onClick={async () => {
+                  const reason = outOfAreaReason.trim();
+                  setOutOfAreaOpen(false);
+                  setBusy(true);
+                  setActionError('');
+                  try {
+                    await axiosInstance.post(
+                      `/aid/applications/${id}/out-of-area`,
+                      reason ? { reason } : {},
+                    );
+                    toast.success('Marked Out of Area');
+                    navigate('/dms/aid/applications/list');
+                  } catch (err) {
+                    setActionError(
+                      err.response?.data?.message ||
+                        err.message ||
+                        'Failed to mark Out of Area',
+                    );
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                Confirm Out of Area
+              </button>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => {
+                  setOutOfAreaOpen(false);
+                  setOutOfAreaReason('');
                 }}
               >
                 Cancel
