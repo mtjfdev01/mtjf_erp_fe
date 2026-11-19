@@ -21,11 +21,11 @@ export default function useTasksServerQuery({
     },
   );
   const [tempFilters, setTempFilters, clearTempFilters] = usePersistedFilters(
-    `${storagePrefix}:temp`,
+    `${storagePrefix}:temp:v2`,
     EMPTY_TASK_FILTERS,
   );
   const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
-    `${storagePrefix}:applied`,
+    `${storagePrefix}:applied:v2`,
     EMPTY_TASK_FILTERS,
   );
 

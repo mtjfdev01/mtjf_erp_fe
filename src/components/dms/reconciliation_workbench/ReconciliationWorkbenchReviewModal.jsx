@@ -60,6 +60,8 @@ const ReconciliationWorkbenchReviewModal = ({
     fullRecordUrl = `/donations/offline_donations/view/${item.id}`;
   } else if (item.type === 'online') {
     fullRecordUrl = `/donations/online_donations/view/${item.id}`;
+  } else if (item.type === 'in_kind') {
+    fullRecordUrl = `/dms/in-kind-donations/view/${item.id}`;
   } else if (item.type === 'donation_box') {
     fullRecordUrl = `/dms/donation-box-donations/view/${item.id}`;
   } else if (item.type === 'recurring_subscription') {
