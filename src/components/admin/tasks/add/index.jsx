@@ -401,6 +401,7 @@ const AddTask = ({
     custom_recurrence_days: '',
     start_date: '',
     due_date: '',
+    approval_due_date: '',
     project_name: '',
     recurrence_rule: '',
     recurrence_next_date: '',
@@ -710,6 +711,9 @@ const AddTask = ({
       if (!approverUsers || approverUsers.length === 0) {
         validationErrors.push('At least one approver is required for approval-required tasks.');
       }
+      if (form.start_date && form.approval_due_date && form.approval_due_date < form.start_date) {
+        validationErrors.push('Approval due date cannot be earlier than start date.');
+      }
     }
     if (form.task_type === 'recurring') {
       if (!form.recurrence_frequency) {
@@ -763,6 +767,10 @@ const AddTask = ({
         recurrence_end_date: form.recurrence_end_date || undefined,
         recurrence_end_occurrences: form.recurrence_end_occurrences ? parseInt(form.recurrence_end_occurrences) : undefined,
         approval_required: !!form.approval_required,
+        approval_due_date:
+          form.workflow_type === 'approval_required'
+            ? form.approval_due_date || undefined
+            : undefined,
         approval_required_user_ids:
           approverUsers && approverUsers.length > 0
             ? approverUsers.map((u) => u.id)
@@ -998,32 +1006,44 @@ const AddTask = ({
                   ]}
                 />
 
-               {/* Approvers */}
+               {/* Approvers & Approval Due Date */}
                 {form.workflow_type === 'approval_required' && (
-                  <div className={`add-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
-                    <FiClipboard className="add-task-approver-icon" aria-hidden="true" />
-                    <SearchableMultiSelect
-                      className="task-approvers-select add-task-approvers-select"
-                      label=""
-                      apiEndpoint="/users/options"
-                      apiParams={multiSelectParams}
-                      onSelect={(users) => setApproverUsers(users)}
-                      onClear={() => setApproverUsers([])}
-                      value={approverUsers}
-                      displayKey="first_name"
-                      valueKey="id"
-                      allowResearch={true}
-                      debounceDelay={500}
-                      minSearchLength={2}
-                      placeholder="Approvers"
-                      renderOption={(user) => (
-                        <div className="assign-user-option">
-                          <div className="assign-user-name">{user.first_name} {user.last_name}</div>
-                          <div className="assign-user-email">{user.email}</div>
-                        </div>
-                      )}
+                  <>
+                    <div className={`add-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                      <FiClipboard className="add-task-approver-icon" aria-hidden="true" />
+                      <SearchableMultiSelect
+                        className="task-approvers-select add-task-approvers-select"
+                        label=""
+                        apiEndpoint="/users/options"
+                        apiParams={multiSelectParams}
+                        onSelect={(users) => setApproverUsers(users)}
+                        onClear={() => setApproverUsers([])}
+                        value={approverUsers}
+                        displayKey="first_name"
+                        valueKey="id"
+                        allowResearch={true}
+                        debounceDelay={500}
+                        minSearchLength={2}
+                        placeholder="Approvers"
+                        renderOption={(user) => (
+                          <div className="assign-user-option">
+                            <div className="assign-user-name">{user.first_name} {user.last_name}</div>
+                            <div className="assign-user-email">{user.email}</div>
+                          </div>
+                        )}
+                      />
+                    </div>
+
+                    <DatePill
+                      name="approval_due_date"
+                      value={form.approval_due_date}
+                      onChange={handleChange}
+                      icon={FiCalendar}
+                      placeholder="Approval due date"
+                      title="Approval Due Date"
+                      showDot
                     />
-                  </div>
+                  </>
                 )}
 
               </div>

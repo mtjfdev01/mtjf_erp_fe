@@ -2306,6 +2306,12 @@ const ViewTask = ({
                       </dd>
                       <dt>Due Date</dt>
                       <dd className={overdueAfterToday ? 'is-danger' : ''}>{formatDateOnly(task.due_date)}</dd>
+                      {isApprovalWorkflow && task.approval_due_date && (
+                        <>
+                          <dt>Approval Due Date</dt>
+                          <dd>{formatDateOnly(task.approval_due_date)}</dd>
+                        </>
+                      )}
                       <dt>Created Date</dt>
                       <dd>{formatDateOnly(task.created_at)}</dd>
                       <dt>Updated Date</dt>
