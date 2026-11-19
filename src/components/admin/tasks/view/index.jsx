@@ -1180,10 +1180,13 @@ const ViewTask = ({
         ];
       }
       if (currentStatus === 'approved') {
-        return [
-          { value: 'approved', label: 'Approved' },
-          { value: 'completed', label: 'Mark Completed' },
-        ];
+        const canComplete = isCurrentUserAssignee || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
+        return canComplete
+          ? [
+              { value: 'approved', label: 'Approved' },
+              { value: 'completed', label: 'Mark Completed' },
+            ]
+          : [{ value: 'approved', label: 'Approved' }];
       }
       if (currentStatus === 'completed') {
         const canClose = isCurrentUserCreator || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
@@ -1854,7 +1857,11 @@ const ViewTask = ({
                           currentUser={user}
                           progressActivities={task.activities || []}
                           taskStatus={task.status}
-                          onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
+                          onShowMovCompletionPrompt={() => {
+                            if (isCurrentUserAssignee || isSuperAdmin) {
+                              setShowMovCompletionPrompt(true);
+                            }
+                          }}
                           onUpdate={(progress, notes, updatedTask) => {
                             if (updatedTask) {
                               setTask(updatedTask);

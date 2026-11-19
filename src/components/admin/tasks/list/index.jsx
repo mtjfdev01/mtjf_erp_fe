@@ -1122,7 +1122,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       ['open', 'assigned', 'draft'].includes(status) &&
       isStatusActionAvailable('START', approvalContext);
     const canCompleteTask =
-      canChangeStatus &&
+      (isAssignee || isAdminRole) &&
       ((isApprovalWorkflow && status === 'approved') || (!isApprovalWorkflow && status === 'in_progress')) &&
       isStatusActionAvailable('COMPLETE', approvalContext);
     const canReopenTask =

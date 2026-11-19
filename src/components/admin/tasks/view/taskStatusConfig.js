@@ -189,21 +189,21 @@ export const isStatusActionAvailable = (action, context) => {
 
   switch (action) {
     case 'START':
-      return isAssignee || (isManagement && sameDeptOrOrg);
+      return isAssignee || isAdminRole;
     case 'PAUSE':
     case 'BLOCK':
-      return (isAssignee || (isManagement && sameDeptOrOrg)) && currentStatusRaw === 'in_progress';
+      return (isAssignee || isAdminRole) && currentStatusRaw === 'in_progress';
     case 'REOPEN_IN_PROGRESS':
-      return (isAssignee || (isManagement && sameDeptOrOrg)) && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
+      return (isAssignee || isAdminRole) && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
     case 'REOPEN':
       // Only the Task Creator (or Admin) can reopen completed, closed, or cancelled tasks
       return (isCreator || isAdminRole) && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
     case 'COMPLETE':
       if (isApprovalWorkflow) {
-        // In approval workflow, only an APPROVED task moves to COMPLETED
-        return (isAssignee || isConfiguredApprover || (isManagement && sameDeptOrOrg)) && currentStatusRaw === 'approved';
+        // In approval workflow, only an APPROVED task moves to COMPLETED by Assignee (or Admin)
+        return (isAssignee || isAdminRole) && currentStatusRaw === 'approved';
       }
-      return (isAssignee || (isManagement && sameDeptOrOrg)) && currentStatusRaw === 'in_progress';
+      return (isAssignee || isAdminRole) && currentStatusRaw === 'in_progress';
     case 'CLOSE':
       // Only COMPLETED tasks can be formally closed by the Task Creator (or Admin)
       return (isCreator || isAdminRole) && currentStatusRaw === 'completed';
