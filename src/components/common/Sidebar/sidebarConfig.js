@@ -1,5 +1,6 @@
 // Sidebar configuration for different user roles and departments
 import {
+  canAccessAgentScreen,
   canAccessReconciliationWorkbench,
   canViewModule,
   hasPermission,
@@ -56,6 +57,7 @@ import {
   FiCoffee,
   FiSearch,
   FiInbox,
+  FiUpload,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -772,6 +774,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     icon: FiUsers
   },
   {
+    label: 'Agent Screen',
+    path: '/dms/agent',
+    type: 'list',
+    module: 'agent_screen',
+    icon: FiMapPin
+  },
+  {
     label: 'Collection Units',
     path: '/dms/donation_box/list',
     type: 'list',
@@ -861,6 +870,13 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     type: 'list',
     module: 'social_posts',
     icon: FiFileText
+  },
+  {
+    label: 'Upload Posts',
+    path: '/dms/upload-posts/list',
+    type: 'list',
+    module: 'upload_posts',
+    icon: FiUpload
   },
   {
     label: 'Recurring Donations',
@@ -1407,6 +1423,11 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
     permDept === 'fund_raising'
   ) {
     return canAccessReconciliationWorkbench(permissions);
+  }
+
+  // Agent Screen: fundraising + collection units + donors + donations
+  if (moduleKey === 'agent_screen' && permDept === 'fund_raising') {
+    return canAccessAgentScreen(permissions);
   }
 
   // Explicit action (e.g. manage_overview) — must be granted on the module

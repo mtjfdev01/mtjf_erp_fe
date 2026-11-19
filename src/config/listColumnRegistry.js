@@ -290,6 +290,20 @@ export const LIST_COLUMN_REGISTRY = {
     ],
   }),
 
+  'upload_posts.list': defineScreen({
+    screenKey: 'upload_posts.list',
+    label: 'Upload posts',
+    entity: 'UploadPost / upload_posts',
+    columns: [
+      { id: 'id', label: 'ID', priority: 1 },
+      { id: 'platforms', label: 'Platforms', priority: 2 },
+      { id: 'title', label: 'Title', priority: 3 },
+      { id: 'scheduled', label: 'Scheduled', priority: 4 },
+      { id: 'status', label: 'Status', priority: 5 },
+      { id: 'actions', label: 'Actions', required: true, priority: 0 },
+    ],
+  }),
+
   'reconciliation.list': defineScreen({
     screenKey: 'reconciliation.list',
     label: 'Reconciliations',

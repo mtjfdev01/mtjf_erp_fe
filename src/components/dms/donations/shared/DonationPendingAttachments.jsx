@@ -1,6 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { FiPaperclip, FiPlus, FiTrash2 } from 'react-icons/fi';
-import FormInput from '../../../common/FormInput';
 import { SecondaryButton } from '../../../common/buttons';
 import './DonationPendingAttachments.css';
 
@@ -95,52 +94,63 @@ const DonationPendingAttachments = forwardRef(function DonationPendingAttachment
   return (
     <div className="donation-pending-attachments">
       <h3 className="form-section-heading">{title}</h3>
-      <p className="donation-pending-attachments__hint">
-        Enter a name and choose a file, then save the donation (or click Add attachment to queue several files). Max 10MB each.
-      </p>
+      {/* <p className="donation-pending-attachments__hint">
+        Choose a file, add a name/note, then click Add (or save the donation). Max 10MB each.
+      </p> */}
 
       <div className="donation-pending-attachments__form">
-        <FormInput
-          name="attachment_name"
-          label="Attachment name"
-          value={name}
-          onChange={(e) => {
-            setName(e.target.value);
-            if (error) setError('');
-          }}
-          placeholder="e.g. Cheque scan, Bank receipt, Proof of payment"
-          disabled={disabled}
-        />
+        <div className="donation-pending-attachments__row">
+          <div className="donation-pending-attachments__field donation-pending-attachments__field--file">
+            <label className="donation-pending-attachments__sr-only" htmlFor={fileInputId}>
+              File
+            </label>
+            <input
+              id={fileInputId}
+              type="file"
+              className="donation-pending-attachments__file-input"
+              onChange={handleFileChange}
+              disabled={disabled}
+              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.txt,application/pdf,image/*"
+            />
+          </div>
 
-        <div className="form-group">
-          <label className="form-label" htmlFor={fileInputId}>
-            File
-          </label>
-          <input
-            id={fileInputId}
-            type="file"
-            className="form-input"
-            onChange={handleFileChange}
-            disabled={disabled}
-            accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx,.txt,application/pdf,image/*"
-          />
-          {file && (
-            <div className="donation-pending-attachments__selected">
-              <FiPaperclip /> Selected: {file.name}
-            </div>
-          )}
+          <div className="donation-pending-attachments__field donation-pending-attachments__field--name">
+            <label className="donation-pending-attachments__sr-only" htmlFor={`${fileInputId}-name`}>
+              Attachment name
+            </label>
+            <input
+              id={`${fileInputId}-name`}
+              type="text"
+              className="donation-pending-attachments__name-input"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (error) setError('');
+              }}
+              placeholder="Name / note (e.g. Cheque scan)"
+              disabled={disabled}
+            />
+          </div>
+
+          <div className="donation-pending-attachments__field donation-pending-attachments__field--action">
+            <SecondaryButton
+              type="button"
+              onClick={handleAdd}
+              disabled={disabled}
+              icon={<FiPlus />}
+            >
+              Add
+            </SecondaryButton>
+          </div>
         </div>
 
-        {error && <div className="form-error">{error}</div>}
+        {file && (
+          <div className="donation-pending-attachments__selected">
+            <FiPaperclip /> Selected: {file.name}
+          </div>
+        )}
 
-        <SecondaryButton
-          type="button"
-          onClick={handleAdd}
-          disabled={disabled}
-          icon={<FiPlus />}
-        >
-          Add attachment
-        </SecondaryButton>
+        {error && <div className="form-error">{error}</div>}
       </div>
 
       {items.length > 0 && (

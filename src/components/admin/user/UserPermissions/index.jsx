@@ -338,6 +338,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Social Posts',
           actions: ['create', 'list_view', 'view', 'update', 'delete']
         },
+        upload_posts: {
+          label: 'Upload Posts',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         campaigns: {
           label: 'Campaigns',
           actions: ['create', 'list_view', 'view', 'update', 'delete']

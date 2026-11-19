@@ -802,11 +802,15 @@ const AidApplicationPreview = ({
                 </strong>
               </div>
               <div className="aid-preview__meta-row">
-                <span>Date</span>
-                <strong>
-                  {formatDate(app.submitted_at || app.created_at)}
-                </strong>
+                <span>Application date</span>
+                <strong>{formatDate(app.created_at)}</strong>
               </div>
+              {app.considered_at ? (
+                <div className="aid-preview__meta-row">
+                  <span>Consideration date</span>
+                  <strong>{formatDate(app.considered_at)}</strong>
+                </div>
+              ) : null}
               <div className="aid-preview__meta-row">
                 <span>Program</span>
                 <strong>{dash(programLabel)}</strong>
@@ -991,7 +995,7 @@ const AidApplicationPreview = ({
                   <div>
                     <span className="aid-preview__label">Date</span>
                     <span className="aid-preview__dotted">
-                      {formatDate(app.submitted_at || app.created_at)}
+                      {formatDate(app.created_at)}
                     </span>
                   </div>
                 </div>

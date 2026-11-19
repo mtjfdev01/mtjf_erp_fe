@@ -156,6 +156,7 @@ import ManualRecurringList from './components/dms/manual_recurring/list';
 import RecurringReminderLogsList from './components/dms/recurring_reminder_logs/list';
 import RecurringReminderLogView from './components/dms/recurring_reminder_logs/view';
 import { SocialPostsList, SocialPostAdd, SocialPostView, SocialPostEdit } from './components/dms/social_posts';
+import { UploadPostsList, UploadPostAdd, UploadPostView, UploadPostEdit } from './components/dms/upload_posts';
 import AddDonation from './components/donations/online_donations/add';
 import AddDonationBox from './components/dms/donation_box/add';
 import DonationBoxList from './components/dms/donation_box/list';
@@ -163,6 +164,7 @@ import DonationBoxCollectionMonitor from './components/dms/donation_box/collecti
 import ViewDonationBox from './components/dms/donation_box/view';
 import CollectionUnitProfile from './components/dms/donation_box/profile';
 import EditDonationBox from './components/dms/donation_box/edit';
+import AgentScreen from './components/dms/agent';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
 import ViewDonationBoxDonation from './components/dms/donations/donation_box/view';
@@ -487,6 +489,8 @@ const App = () => {
                                 <Route path="/dms/donation-box/list" element={<DonationBoxList />} />
                                 <Route path="/dms/donation-boxes/list" element={<DonationBoxList />} />
                                 <Route path="/dms/donation-box-collections/overview" element={<DonationBoxCollectionMonitor />} />
+                                <Route path="/dms/agent" element={<AgentScreen />} />
+                                <Route path="/fund_raising/agent" element={<AgentScreen />} />
                                 <Route path="/dms/donation_box/view/:id" element={<ViewDonationBox />} />
                                 <Route path="/dms/donation-box/view/:id" element={<ViewDonationBox />} />
                                 <Route path="/dms/donation-boxes/view/:id" element={<ViewDonationBox />} />
@@ -537,6 +541,10 @@ const App = () => {
                                 <Route path="/dms/social-posts/add" element={<SocialPostAdd />} />
                                 <Route path="/dms/social-posts/view/:id" element={<SocialPostView />} />
                                 <Route path="/dms/social-posts/edit/:id" element={<SocialPostEdit />} />
+                                <Route path="/dms/upload-posts/list" element={<UploadPostsList />} />
+                                <Route path="/dms/upload-posts/add" element={<UploadPostAdd />} />
+                                <Route path="/dms/upload-posts/view/:id" element={<UploadPostView />} />
+                                <Route path="/dms/upload-posts/edit/:id" element={<UploadPostEdit />} />
                                 
                                 {/* Donors Routes */}
                                 <Route path="/dms/donors/list" element={<DonorsList key="donors-list" />} />
