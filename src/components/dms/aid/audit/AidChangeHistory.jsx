@@ -154,7 +154,7 @@ function pillTone(field, value) {
     if (['ceo_approval_required', 'under_review', 'submitted', 'manager_review'].includes(v)) {
       return 'info';
     }
-    if (['rejected', 'incomplete', 'incomplete_docs'].includes(v)) return 'danger';
+    if (['rejected', 'incomplete', 'incomplete_docs', 'out_of_area'].includes(v)) return 'danger';
     return 'muted';
   }
   if (
@@ -200,6 +200,7 @@ function nodeKind(action) {
       return 'file';
     case 'rejected':
     case 'marked_incomplete':
+    case 'marked_out_of_area':
       return 'warn';
     case 'updated':
     case 'status_changed':

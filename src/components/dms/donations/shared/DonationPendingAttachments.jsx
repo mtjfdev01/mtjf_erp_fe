@@ -1,6 +1,6 @@
 import React, { forwardRef, useImperativeHandle, useRef, useState } from 'react';
 import { FiPaperclip, FiPlus, FiTrash2 } from 'react-icons/fi';
-import { SecondaryButton } from '../../../common/buttons';
+import { PrimaryButton } from '../../../common/buttons';
 import './DonationPendingAttachments.css';
 
 const MAX_FILE_BYTES = 10 * 1024 * 1024;
@@ -133,14 +133,15 @@ const DonationPendingAttachments = forwardRef(function DonationPendingAttachment
           </div>
 
           <div className="donation-pending-attachments__field donation-pending-attachments__field--action">
-            <SecondaryButton
+            <PrimaryButton
               type="button"
+              className="donation-pending-attachments__add-btn"
               onClick={handleAdd}
               disabled={disabled}
               icon={<FiPlus />}
             >
               Add
-            </SecondaryButton>
+            </PrimaryButton>
           </div>
         </div>
 

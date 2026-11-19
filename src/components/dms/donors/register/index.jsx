@@ -313,8 +313,6 @@ const RegisterDonor = () => {
     }
   };
 
-  const donorTypeOptions = [{ value: 'individual', label: 'Individual Donor' }];
-
   const renderUserOption = (user, index, onSelect) => (
     <div
       key={user.id}
@@ -372,16 +370,8 @@ const RegisterDonor = () => {
 
           <form onSubmit={handleSubmit} className="form donor-register-form">
             <section className="donor-register-card">
-              <h3 className="donor-register-card__title">1. Contact & Type</h3>
+              <h3 className="donor-register-card__title">1. Personal Details</h3>
               <div className="form-grid-3">
-                <FormSelect
-                  label="Donor Type"
-                  name="donor_type"
-                  value={form.donor_type}
-                  onChange={handleChange}
-                  options={donorTypeOptions}
-                  required
-                />
                 <FormInput
                   label="Email"
                   type="email"
@@ -396,30 +386,26 @@ const RegisterDonor = () => {
                   value={form.phone}
                   onChange={handleChange}
                 />
+                <div className="donor-register-check-field">
+                  <span className="donor-register-check-field__label" aria-hidden="true">
+                    &nbsp;
+                  </span>
+                  <button
+                    type="button"
+                    className="primary_btn"
+                    onClick={handleCheckDonorExists}
+                    disabled={checkingDonor}
+                    title="Check if a donor with this email or phone already exists"
+                  >
+                    <FiSearch size={16} />
+                    {checkingDonor ? 'Checking...' : 'Check existing donor'}
+                  </button>
+                </div>
               </div>
-              <p className="donor-register-contact-hint">
-                At least one of email or phone is required.
-              </p>
-              <div className="donor-register-lookup">
-                <button
-                  type="button"
-                  className="primary_btn"
-                  onClick={handleCheckDonorExists}
-                  disabled={checkingDonor}
-                  title="Check if a donor with this email or phone already exists"
-                >
-                  <FiSearch size={16} />
-                  {checkingDonor ? 'Checking...' : 'Check existing donor'}
-                </button>
-                {donorSearchMessage && (
-                  <span className="donor-register-lookup__msg">{donorSearchMessage}</span>
-                )}
-              </div>
-            </section>
-
-            <section className="donor-register-card">
-              <h3 className="donor-register-card__title">2. Personal Details</h3>
-              <div className="form-grid-3">
+              {donorSearchMessage && (
+                <span className="donor-register-lookup__msg">{donorSearchMessage}</span>
+              )}
+              <div className="form-grid-3 donor-register-card__row">
                 <FormInput
                   label="First Name"
                   type="text"
