@@ -763,6 +763,10 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
     const canChangeStatus = canUpdate || canChangeAsAssignee;
 
+    const isApprovalTask = String(task.workflow_type || '').toLowerCase() === 'approval_required';
+    const isSuperAdmin = String(user?.role || '').toLowerCase() === 'super_admin';
+    const isCreator = currentUserId != null && Number(task.created_by_id) === currentUserId;
+
     return [
       {
         icon: <FiEye />,
@@ -790,27 +794,27 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
         icon: <FiPlay />,
         label: 'Start',
         color: '#2563eb',
-        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'in_progress') : undefined,
-        visible: canChangeStatus,
-        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        onClick: (isAssignee || isSuperAdmin) ? () => handleQuickStatusChange(task, 'in_progress') : undefined,
+        visible: (isAssignee || isSuperAdmin) && ['open', 'assigned', 'draft'].includes(status),
+        disabled: statusUpdatingId === task.id,
         title: 'Start',
       },
       {
         icon: <FiCheckCircle />,
         label: 'Complete',
         color: '#16a34a',
-        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'completed') : undefined,
-        visible: canChangeStatus,
-        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        onClick: (isAssignee || isSuperAdmin) ? () => handleQuickStatusChange(task, 'completed') : undefined,
+        visible: (isAssignee || isSuperAdmin) && ((isApprovalTask && status === 'approved') || (!isApprovalTask && status === 'in_progress')),
+        disabled: statusUpdatingId === task.id,
         title: 'Complete',
       },
       {
         icon: <FiRotateCcw />,
         label: 'Reopen',
         color: '#ca8a04',
-        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'open') : undefined,
-        visible: canChangeStatus,
-        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        onClick: (isCreator || isSuperAdmin) ? () => handleQuickStatusChange(task, 'open') : undefined,
+        visible: (isCreator || isSuperAdmin) && ['completed', 'closed', 'cancelled'].includes(status),
+        disabled: statusUpdatingId === task.id,
         title: 'Reopen',
       },
       {
@@ -1122,7 +1126,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       ['open', 'assigned', 'draft'].includes(status) &&
       isStatusActionAvailable('START', approvalContext);
     const canCompleteTask =
-      (isAssignee || isAdminRole) &&
+      (isAssignee || String(user?.role || '').toLowerCase() === 'super_admin') &&
       ((isApprovalWorkflow && status === 'approved') || (!isApprovalWorkflow && status === 'in_progress')) &&
       isStatusActionAvailable('COMPLETE', approvalContext);
     const canReopenTask =

@@ -57,7 +57,7 @@ export const STATUS_TRANSITION_MAP = {
 
 export const QUICK_ACTIONS = [
   { key: 'REASSIGN', label: 'Reassign task' },
-  { key: 'CHANGE_DUE_DATE', label: 'Change due date' },
+  { key: 'CHANGE_DUE_DATE', label: 'Extend / Change due date' },
   { key: 'CHANGE_PRIORITY', label: 'Change priority' },
   // { key: 'ESCALATE', label: 'Escalate to manager' },
   { key: 'MOVE_PROJECT', label: 'Move to another project' },
@@ -115,7 +115,8 @@ const applyDepartmentQuickRules = (key, context, baseAllowed) => {
 export const isStatusActionAvailable = (action, context) => {
   const perms = context.permissions || {};
   const role = String(context.userRole || '').toLowerCase();
-  const isAdminRole = role === 'super_admin' || role === 'admin';
+  const isSuperAdmin = role === 'super_admin';
+  const isAdminRole = isSuperAdmin || role === 'admin';
   const isAssignee = context.isAssignee === true;
   const sameDeptOrOrg = isSameDeptOrOrg(context);
   const workflowRaw = String(context.workflowType || '').toUpperCase();
@@ -189,35 +190,35 @@ export const isStatusActionAvailable = (action, context) => {
 
   switch (action) {
     case 'START':
-      return isAssignee || isAdminRole;
+      return isAssignee || isSuperAdmin;
     case 'PAUSE':
     case 'BLOCK':
-      return (isAssignee || isAdminRole) && currentStatusRaw === 'in_progress';
+      return (isAssignee || isSuperAdmin) && currentStatusRaw === 'in_progress';
     case 'REOPEN_IN_PROGRESS':
-      return (isAssignee || isAdminRole) && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
+      return (isAssignee || isSuperAdmin) && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
     case 'REOPEN':
-      // Only the Task Creator (or Admin) can reopen completed, closed, or cancelled tasks
-      return (isCreator || isAdminRole) && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
+      // Only the Task Creator (or Super Admin) can reopen completed, closed, or cancelled tasks
+      return (isCreator || isSuperAdmin) && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
     case 'COMPLETE':
       if (isApprovalWorkflow) {
-        // In approval workflow, only an APPROVED task moves to COMPLETED by Assignee (or Admin)
-        return (isAssignee || isAdminRole) && currentStatusRaw === 'approved';
+        // In approval workflow, only an APPROVED task moves to COMPLETED by Assignee (or Super Admin)
+        return (isAssignee || isSuperAdmin) && currentStatusRaw === 'approved';
       }
-      return (isAssignee || isAdminRole) && currentStatusRaw === 'in_progress';
+      return (isAssignee || isSuperAdmin) && currentStatusRaw === 'in_progress';
     case 'CLOSE':
-      // Only COMPLETED tasks can be formally closed by the Task Creator (or Admin)
-      return (isCreator || isAdminRole) && currentStatusRaw === 'completed';
+      // Only COMPLETED tasks can be formally closed by the Task Creator (or Super Admin)
+      return (isCreator || isSuperAdmin) && currentStatusRaw === 'completed';
     case 'CANCEL':
       return isManagement && !['completed', 'closed', 'cancelled'].includes(currentStatusRaw) && sameDeptOrOrg;
     case 'SUBMIT_APPROVAL':
-      return (isAssignee || isAdminRole) && isApprovalWorkflow && (currentStatusRaw === 'in_progress' || currentStatusRaw === 'in progress');
+      return (isAssignee || isSuperAdmin) && isApprovalWorkflow && (currentStatusRaw === 'in_progress' || currentStatusRaw === 'in progress');
     case 'APPROVE':
     case 'REJECT':
       if (currentStatusRaw !== 'pending_approval') {
         return false;
       }
       if (effectiveApproverIds.length > 0) {
-        if (!isConfiguredApprover && !isAdminRole) return false;
+        if (!isConfiguredApprover && !isSuperAdmin) return false;
       } else {
         if (!isManagement) return false;
       }
@@ -235,6 +236,19 @@ export const isQuickActionAvailable = (key, context) => {
   const perms = context.permissions || {};
   const sameDeptOrOrg = isSameDeptOrOrg(context);
   const statusRaw = String(context.currentStatus || '').toLowerCase();
+  const isAssignee = context.isAssignee === true;
+  const role = String(context.userRole || '').toLowerCase();
+  const isSuperAdmin = role === 'super_admin';
+  const isAdminRole = isSuperAdmin || role === 'admin';
+  const currentUid = context.currentUserId != null ? Number(context.currentUserId) : null;
+  const createdByUid =
+    context.createdByUserId != null
+      ? Number(context.createdByUserId)
+      : (context.task?.created_by_id != null
+          ? Number(context.task.created_by_id)
+          : null);
+  const isCreator = currentUid != null && createdByUid != null && currentUid === createdByUid;
+
   const canReassignForStatus = (() => {
     if (!statusRaw) return false;
     if (
@@ -256,6 +270,11 @@ export const isQuickActionAvailable = (key, context) => {
       baseAllowed = perms.canAssign && sameDeptOrOrg && canReassignForStatus;
       break;
     case 'CHANGE_DUE_DATE':
+      baseAllowed =
+        (perms.canUpdate || isAssignee || isCreator || isAdminRole) &&
+        sameDeptOrOrg &&
+        !['completed', 'closed', 'cancelled'].includes(statusRaw);
+      break;
     case 'CHANGE_PRIORITY':
     case 'MOVE_PROJECT':
       baseAllowed = perms.canUpdate && sameDeptOrOrg;

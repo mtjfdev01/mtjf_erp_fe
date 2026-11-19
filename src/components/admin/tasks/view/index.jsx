@@ -595,6 +595,7 @@ const ViewTask = ({
   const [quickActionsDropdownOpen, setQuickActionsDropdownOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [quickActionKey, setQuickActionKey] = useState(null);
+  const [extensionReviewLoading, setExtensionReviewLoading] = useState(false);
   const [currentUserHasActedOnApproval, setCurrentUserHasActedOnApproval] =
     useState(false);
 
@@ -1260,6 +1261,53 @@ const ViewTask = ({
     currentUserHasActedOnApproval,
   ]);
 
+  const pendingExtension = useMemo(() => {
+    if (!task || !Array.isArray(task.due_date_extensions)) return null;
+    return task.due_date_extensions.find((e) => e && e.status === 'pending') || null;
+  }, [task?.due_date_extensions]);
+
+  const canReviewExtension = useMemo(() => {
+    if (!user || !task) return false;
+    const isSuperAdminRole = String(user.role || '').toLowerCase() === 'super_admin';
+    const isAdmin = isSuperAdminRole || String(user.role || '').toLowerCase() === 'admin';
+    const isCreator = isCurrentUserCreator;
+    const reporterIds = (task.reported_to_ids || task.reported_to || []).map(Number);
+    const isReporter = reporterIds.includes(Number(user.id));
+    const isDeptHead = user.role === 'dept_head' && Boolean(user.department && user.department === task.department);
+    return isCreator || isReporter || isAdmin || isDeptHead;
+  }, [user, task, isCurrentUserCreator]);
+
+  const handleReviewExtension = async (extensionId, decision) => {
+    const promptNote = window.prompt(
+      decision === 'approved'
+        ? 'Optional note / instructions for approval:'
+        : 'Reason / note for rejection (optional):'
+    );
+    if (promptNote === null) return;
+
+    setExtensionReviewLoading(true);
+    try {
+      await axiosInstance.post(`/tasks/${task.id}/review-extension`, {
+        extension_id: extensionId,
+        decision,
+        note: promptNote ? promptNote.trim() : undefined,
+      });
+      toast.success(
+        decision === 'approved'
+          ? 'Deadline extension approved and new due date applied'
+          : 'Deadline extension rejected'
+      );
+      const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
+      if (refreshed.data?.data) {
+        setTask(refreshed.data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to review extension request');
+    } finally {
+      setExtensionReviewLoading(false);
+    }
+  };
+
   const dueInfo = getDueInfo(task?.due_date, task?.status);
 
   const reassignmentActivities = useMemo(() => {
@@ -1793,6 +1841,120 @@ const ViewTask = ({
               {/* ================================ BODY ================================ */}
               <div className="tv2-body">
                 <div className="tv2-main">
+                  {/* ---- Pending Extension Request Banner ---- */}
+                  {pendingExtension && (
+                    <div
+                      style={{
+                        marginBottom: '20px',
+                        padding: '16px 20px',
+                        background: '#fffbeb',
+                        border: '1px solid #fde68a',
+                        borderRadius: '10px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '12px',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '18px' }}>⏳</span>
+                          <strong style={{ color: '#92400e', fontSize: '15px' }}>
+                            Deadline Extension Requested
+                          </strong>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            color: '#b45309',
+                            background: '#fef3c7',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Pending Review
+                        </span>
+                      </div>
+
+                      <p style={{ margin: '4px 0 10px 0', fontSize: '13px', color: '#78350f' }}>
+                        <strong>
+                          {pendingExtension.requested_by
+                            ? getUserDisplayName(pendingExtension.requested_by)
+                            : 'Assignee'}
+                        </strong>{' '}
+                        has requested to extend the task deadline from{' '}
+                        <strong style={{ textDecoration: 'line-through' }}>
+                          {formatDateOnly(pendingExtension.current_due_date || task.due_date)}
+                        </strong>{' '}
+                        to{' '}
+                        <strong style={{ color: '#b45309', fontSize: '14px' }}>
+                          {formatDateOnly(pendingExtension.proposed_due_date)}
+                        </strong>
+                        .
+                      </p>
+
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          border: '1px solid #fef3c7',
+                          padding: '10px 14px',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          color: '#451a03',
+                          marginBottom: canReviewExtension ? '14px' : '0',
+                        }}
+                      >
+                        <strong>Reason for Extension:</strong> {pendingExtension.reason}
+                      </div>
+
+                      {canReviewExtension && (
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            disabled={extensionReviewLoading}
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '8px 18px',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
+                              fontSize: '13px',
+                            }}
+                            onClick={() => handleReviewExtension(pendingExtension.id, 'approved')}
+                          >
+                            Approve Extension
+                          </button>
+                          <button
+                            type="button"
+                            disabled={extensionReviewLoading}
+                            style={{
+                              backgroundColor: '#dc2626',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '8px 18px',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
+                              fontSize: '13px',
+                            }}
+                            onClick={() => handleReviewExtension(pendingExtension.id, 'rejected')}
+                          >
+                            Reject Extension
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* ---- Brief ---- */}
                   {activeTab === 'overview' && (
                     <section>
@@ -2304,7 +2466,20 @@ const ViewTask = ({
                       <dd className={task.start_date ? '' : 'is-muted'}>
                         {task.start_date ? formatDateOnly(task.start_date) : 'Not set'}
                       </dd>
-                      <dt>Due Date</dt>
+                      {task.original_due_date && formatDateOnly(task.original_due_date) !== formatDateOnly(task.due_date) && (
+                        <>
+                          <dt>Original Due Date</dt>
+                          <dd style={{ textDecoration: 'line-through', color: '#64748b' }}>
+                            {formatDateOnly(task.original_due_date)}
+                          </dd>
+                        </>
+                      )}
+                      <dt>
+                        Due Date
+                        {task.original_due_date && formatDateOnly(task.original_due_date) !== formatDateOnly(task.due_date) && (
+                          <span style={{ fontSize: '11px', color: '#0284c7', marginLeft: '4px' }}>(Extended)</span>
+                        )}
+                      </dt>
                       <dd className={overdueAfterToday ? 'is-danger' : ''}>{formatDateOnly(task.due_date)}</dd>
                       {isApprovalWorkflow && task.approval_due_date && (
                         <>
@@ -2462,9 +2637,13 @@ const ViewTask = ({
             <QuickActionModal
               isOpen={quickActionOpen}
               taskId={task.id}
+              task={task}
               actionKey={quickActionKey}
               userDepartment={user?.department}
               taskRouteBase={taskRouteBase}
+              isAssignee={isCurrentUserAssignee}
+              isCreator={isCurrentUserCreator}
+              isAdmin={isSuperAdmin || String(user?.role || '').toLowerCase() === 'admin'}
               onClose={() => {
                 setQuickActionOpen(false);
                 setQuickActionKey(null);
