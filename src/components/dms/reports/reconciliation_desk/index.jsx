@@ -1,7 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { FiGift, FiMapPin, FiRepeat } from 'react-icons/fi';
 import Navbar from '../../../Navbar';
 import axios from '../../../../utils/axios';
 import './reconciliationDesk.css';
+
+const CHANNEL_META = {
+  offline: { icon: FiMapPin, theme: 'offline' },
+  in_kind: { icon: FiGift, theme: 'in_kind' },
+  recurring: { icon: FiRepeat, theme: 'recurring' },
+};
 
 const kpiValueClass = (tone) => {
   if (tone === 'amber') return 'rdk-kpi__value rdk-kpi__value--amber';
@@ -68,6 +75,7 @@ const ReconciliationDesk = () => {
   const cards = view.cards || {};
   const byAge = view.pending_by_age || {};
   const byMethod = view.pending_by_method || {};
+  const byChannel = view.channel_breakdown || {};
   const outcome = view.payfast_outcome || {};
 
   const ageMax = useMemo(() => {
@@ -118,6 +126,64 @@ const ReconciliationDesk = () => {
               );
             })}
           </div>
+
+          {(byChannel.items || []).length > 0 ? (
+            <section className="rdk-channel-section">
+              <h2 className="rdk-card__title">{byChannel.title || 'By channel'}</h2>
+              <p className="rdk-card__subtitle">
+                {byChannel.subtitle ||
+                  'Offline, in-kind and recurring — pending, completed and rejected'}
+              </p>
+              <div className="rdk-channel-grid">
+                {(byChannel.items || []).map((ch) => {
+                  const meta = CHANNEL_META[ch.id] || CHANNEL_META.offline;
+                  const Icon = meta.icon;
+                  return (
+                    <div
+                      className={`rdk-channel-card rdk-channel-card--${meta.theme}`}
+                      key={ch.id || ch.label}
+                    >
+                      <div className="rdk-channel-card__head">
+                        <span className="rdk-channel-card__icon" aria-hidden="true">
+                          <Icon />
+                        </span>
+                        <p className="rdk-channel-card__label">{ch.label}</p>
+                      </div>
+                      <div className="rdk-channel-card__stats">
+                        <div>
+                          <span className="rdk-channel-card__stat-label">Pending</span>
+                          <span className="rdk-channel-card__stat-value rdk-channel-card__stat-value--pending">
+                            {formatCount(ch.pending)}
+                          </span>
+                          <span className="rdk-channel-card__stat-amount">
+                            {ch.pending_amount_formatted || '—'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="rdk-channel-card__stat-label">Completed</span>
+                          <span className="rdk-channel-card__stat-value rdk-channel-card__stat-value--done">
+                            {formatCount(ch.completed)}
+                          </span>
+                          <span className="rdk-channel-card__stat-amount">
+                            {ch.completed_amount_formatted || '—'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="rdk-channel-card__stat-label">Rejected</span>
+                          <span className="rdk-channel-card__stat-value rdk-channel-card__stat-value--rejected">
+                            {formatCount(ch.rejected)}
+                          </span>
+                          <span className="rdk-channel-card__stat-amount">
+                            {ch.rejected_amount_formatted || '—'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          ) : null}
 
           <div className="rdk-grid">
             <section className="rdk-card">

@@ -10,6 +10,14 @@ import {
   FiCheckCircle,
   FiExternalLink,
   FiInbox,
+  FiMapPin,
+  FiGift,
+  FiRepeat,
+  FiLayers,
+  FiZap,
+  FiClock,
+  FiAlertTriangle,
+  FiAlertCircle,
 } from 'react-icons/fi';
 import { RiFileExcel2Line } from 'react-icons/ri';
 import axiosInstance from '../../../utils/axios';
@@ -20,10 +28,60 @@ import './reconciliationWorkbench.css';
 
 const TABS = [
   { id: 'all', label: 'All' },
-  { id: 'online', label: 'Online Donations' },
   { id: 'offline', label: 'Offline Donations' },
   { id: 'donation_box', label: 'Donation Box Donations' },
   { id: 'recurring', label: 'Recurring Donations' },
+  { id: 'in_kind', label: 'In Kind Donations' },
+];
+
+const CHANNEL_META = {
+  offline: { icon: FiMapPin, theme: 'offline' },
+  in_kind: { icon: FiGift, theme: 'in_kind' },
+  recurring: { icon: FiRepeat, theme: 'recurring' },
+};
+
+const AGE_KPI_CARDS = [
+  {
+    id: 'all',
+    label: 'All pending',
+    kpiKey: 'all_pending',
+    theme: 'all',
+    icon: FiLayers,
+    title: 'Click to view all pending items',
+    showAmount: true,
+  },
+  {
+    id: '0_3',
+    label: '0–3 days',
+    kpiKey: 'age_0_3',
+    theme: 'fresh',
+    icon: FiZap,
+    title: 'Click to filter 0-3 days old',
+  },
+  {
+    id: '4_7',
+    label: '4–7 days',
+    kpiKey: 'age_4_7',
+    theme: 'watch',
+    icon: FiClock,
+    title: 'Click to filter 4-7 days old',
+  },
+  {
+    id: '8_15',
+    label: '8–15 days',
+    kpiKey: 'age_8_15',
+    theme: 'aging',
+    icon: FiAlertTriangle,
+    title: 'Click to filter 8-15 days old',
+  },
+  {
+    id: 'over_15',
+    label: 'Over 15 days',
+    kpiKey: 'age_over_15',
+    theme: 'overdue',
+    icon: FiAlertCircle,
+    title: 'Click to filter over 15 days old',
+  },
 ];
 
 const RECURRING_SUB_TABS = [
@@ -54,6 +112,7 @@ const ReconciliationWorkbench = () => {
     age_8_15: { count: 0, total_amount: 0 },
     age_over_15: { count: 0, total_amount: 0 },
   });
+  const [channelBreakdown, setChannelBreakdown] = useState([]);
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -89,6 +148,11 @@ const ReconciliationWorkbench = () => {
         if (res.data.data.kpis) {
           setKpis(res.data.data.kpis);
         }
+        setChannelBreakdown(
+          Array.isArray(res.data.data.channel_breakdown)
+            ? res.data.data.channel_breakdown
+            : [],
+        );
         if (res.data.data.pagination) {
           setPagination(res.data.data.pagination);
         }
@@ -272,8 +336,11 @@ const ReconciliationWorkbench = () => {
     if (activeTab === 'recurring') {
       return recurringSubTab === 'installments' ? 'Installment' : 'Subscription Plan';
     }
-    if (activeTab === 'online' || activeTab === 'offline') {
+    if (activeTab === 'offline') {
       return 'Payment Method';
+    }
+    if (activeTab === 'in_kind') {
+      return 'Donation Type';
     }
     if (activeTab === 'donation_box') {
       return 'Box & Collector';
@@ -344,54 +411,99 @@ const ReconciliationWorkbench = () => {
 
         {/* Aging KPI Cards */}
         <div className="rw-kpi-grid">
-          <div
-            className={`rw-kpi-card ${selectedAgeBucket === 'all' ? 'selected' : ''}`}
-            onClick={() => handleAgeBucketClick('all')}
-            title="Click to view all pending items"
-          >
-            <div className="rw-kpi-label">All pending</div>
-            <div className="rw-kpi-number-dark">{kpis.all_pending?.count || 0}</div>
-            <div className="rw-kpi-subtext">
-              PKR {(kpis.all_pending?.total_amount || 0).toLocaleString()}
+          {AGE_KPI_CARDS.map((card) => {
+            const Icon = card.icon;
+            const kpi = kpis[card.kpiKey] || { count: 0, total_amount: 0 };
+            const isSelected = selectedAgeBucket === card.id;
+            return (
+              <button
+                key={card.id}
+                type="button"
+                className={`rw-kpi-card rw-kpi-card--${card.theme} ${
+                  isSelected ? 'selected' : ''
+                }`}
+                onClick={() => handleAgeBucketClick(card.id)}
+                title={card.title}
+              >
+                <div className="rw-kpi-card__head">
+                  <span className="rw-kpi-card__icon" aria-hidden="true">
+                    <Icon />
+                  </span>
+                  <span className="rw-kpi-label">{card.label}</span>
+                </div>
+                <div className="rw-kpi-number">{Number(kpi.count || 0).toLocaleString()}</div>
+                {(card.showAmount || Number(kpi.total_amount) > 0) && (
+                  <div className="rw-kpi-subtext">
+                    PKR {Number(kpi.total_amount || 0).toLocaleString()}
+                  </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Channel segregation — pending vs completed */}
+        {channelBreakdown.length > 0 && (
+          <div className="rw-channel-section">
+            <div className="rw-channel-section__title">By channel</div>
+            <div className="rw-channel-section__subtitle">
+              Offline, in-kind and recurring — pending, completed and rejected
+            </div>
+            <div className="rw-channel-grid">
+              {channelBreakdown.map((ch) => {
+                const meta = CHANNEL_META[ch.id] || CHANNEL_META.offline;
+                const Icon = meta.icon;
+                return (
+                  <button
+                    key={ch.id}
+                    type="button"
+                    className={`rw-channel-card rw-channel-card--${meta.theme} ${
+                      activeTab === ch.id ? 'selected' : ''
+                    }`}
+                    onClick={() => handleTabChange(ch.id)}
+                    title={`Open ${ch.label} tab`}
+                  >
+                    <div className="rw-channel-card__head">
+                      <span className="rw-channel-card__icon" aria-hidden="true">
+                        <Icon />
+                      </span>
+                      <div className="rw-channel-card__label">{ch.label}</div>
+                    </div>
+                    <div className="rw-channel-card__stats">
+                      <div>
+                        <span className="rw-channel-card__stat-label">Pending</span>
+                        <span className="rw-channel-card__stat-value rw-channel-card__stat-value--pending">
+                          {Number(ch.pending || 0).toLocaleString()}
+                        </span>
+                        <span className="rw-channel-card__stat-amount">
+                          PKR {Number(ch.pending_amount || 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="rw-channel-card__stat-label">Completed</span>
+                        <span className="rw-channel-card__stat-value rw-channel-card__stat-value--done">
+                          {Number(ch.completed || 0).toLocaleString()}
+                        </span>
+                        <span className="rw-channel-card__stat-amount">
+                          PKR {Number(ch.completed_amount || 0).toLocaleString()}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="rw-channel-card__stat-label">Rejected</span>
+                        <span className="rw-channel-card__stat-value rw-channel-card__stat-value--rejected">
+                          {Number(ch.rejected || 0).toLocaleString()}
+                        </span>
+                        <span className="rw-channel-card__stat-amount">
+                          PKR {Number(ch.rejected_amount || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-          <div
-            className={`rw-kpi-card ${selectedAgeBucket === '0_3' ? 'selected' : ''}`}
-            onClick={() => handleAgeBucketClick('0_3')}
-            title="Click to filter 0-3 days old"
-          >
-            <div className="rw-kpi-label">0-3 days</div>
-            <div className="rw-kpi-number-green">{kpis.age_0_3?.count || 0}</div>
-          </div>
-
-          <div
-            className={`rw-kpi-card ${selectedAgeBucket === '4_7' ? 'selected' : ''}`}
-            onClick={() => handleAgeBucketClick('4_7')}
-            title="Click to filter 4-7 days old"
-          >
-            <div className="rw-kpi-label">4-7 days</div>
-            <div className="rw-kpi-number-green">{kpis.age_4_7?.count || 0}</div>
-          </div>
-
-          <div
-            className={`rw-kpi-card ${selectedAgeBucket === '8_15' ? 'selected' : ''}`}
-            onClick={() => handleAgeBucketClick('8_15')}
-            title="Click to filter 8-15 days old"
-          >
-            <div className="rw-kpi-label">8-15 days</div>
-            <div className="rw-kpi-number-green">{kpis.age_8_15?.count || 0}</div>
-          </div>
-
-          <div
-            className={`rw-kpi-card ${selectedAgeBucket === 'over_15' ? 'selected' : ''}`}
-            onClick={() => handleAgeBucketClick('over_15')}
-            title="Click to filter over 15 days old"
-          >
-            <div className="rw-kpi-label">Over 15 days</div>
-            <div className="rw-kpi-number-green">{kpis.age_over_15?.count || 0}</div>
-          </div>
-        </div>
+        )}
 
         {/* Search & Date Filter Toolbar */}
         <div className="rw-filter-toolbar">

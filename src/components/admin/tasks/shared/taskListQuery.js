@@ -1,10 +1,12 @@
+import { TEAM_FILTER_DEFAULT } from '../../../common/filters/TeamFilter';
+
 export const EMPTY_TASK_FILTERS = {
   search: '',
   department: '',
   project_name: '',
   status: '',
   priority: '',
-  team_filter: 'all',
+  team_filter: TEAM_FILTER_DEFAULT,
   team_filter_user_id: '',
 };
 
@@ -40,7 +42,9 @@ export function buildTasksSearchPayload({
     filters.assignee_id = assigneeId;
   }
 
-  const teamMode = String(appliedFilters.team_filter || 'all').trim().toLowerCase();
+  const teamMode = String(appliedFilters.team_filter || TEAM_FILTER_DEFAULT)
+    .trim()
+    .toLowerCase();
   filters.team_filter = teamMode;
   if (teamMode === 'user' && appliedFilters.team_filter_user_id) {
     filters.team_filter_user_id = appliedFilters.team_filter_user_id;
