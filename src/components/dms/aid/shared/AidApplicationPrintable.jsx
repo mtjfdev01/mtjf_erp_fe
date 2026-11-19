@@ -196,9 +196,15 @@ const AidApplicationPrintable = ({
         <div className="aid-printable__grid aid-printable__grid--3">
           <div className="aid-printable__col">
             <Field
-              label="Date"
-              value={formatDate(app.submitted_at || app.created_at)}
+              label="Application Date"
+              value={formatDate(app.created_at)}
             />
+            {app.considered_at ? (
+              <Field
+                label="Consideration Date"
+                value={formatDate(app.considered_at)}
+              />
+            ) : null}
             <Field
               label="Applicant Name"
               value={(isSelf ? beneficiary : writer)?.full_name}

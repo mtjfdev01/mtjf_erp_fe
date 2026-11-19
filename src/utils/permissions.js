@@ -1072,3 +1072,53 @@ export const canAccessReconciliationWorkbench = (permissions, user = null) => {
     canReconcileRecurring(permissions)
   );
 };
+
+/**
+ * Agent Screen: fundraising users with Collection Units + Donors + Donations access.
+ */
+export const canAccessAgentScreen = (permissions, user = null) => {
+  if (!permissions && !user) return false;
+  if (permissions?.super_admin === true || user?.role === 'super_admin') return true;
+  if (
+    permissions?.fund_raising_manager === true ||
+    user?.role === 'fund_raising_manager' ||
+    permissions?.fund_raising?.manager === true
+  ) {
+    return true;
+  }
+
+  const fr = permissions?.fund_raising;
+  if (!fr) return false;
+
+  const hasCollectionUnits =
+    fr.donation_box?.view === true ||
+    fr.donation_box?.list_view === true ||
+    fr.donation_box?.create === true ||
+    fr.donation_box_donations?.view === true ||
+    fr.donation_box_donations?.list_view === true ||
+    fr.donation_box_donations?.create === true;
+
+  const hasDonors =
+    fr.donors?.view === true ||
+    fr.donors?.list_view === true ||
+    fr.donors?.create === true ||
+    fr.offline_donors?.view === true ||
+    fr.offline_donors?.list_view === true ||
+    fr.offline_donors?.create === true ||
+    fr.online_donors?.view === true ||
+    fr.online_donors?.list_view === true ||
+    fr.online_donors?.create === true;
+
+  const hasDonations =
+    fr.offline_donations?.view === true ||
+    fr.offline_donations?.list_view === true ||
+    fr.offline_donations?.create === true ||
+    fr.online_donations?.view === true ||
+    fr.online_donations?.list_view === true ||
+    fr.online_donations?.create === true ||
+    fr.donations?.view === true ||
+    fr.donations?.list_view === true ||
+    fr.donations?.create === true;
+
+  return hasCollectionUnits && hasDonors && hasDonations;
+};

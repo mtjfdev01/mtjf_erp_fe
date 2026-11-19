@@ -1,0 +1,224 @@
+.agent-screen {
+  --agent-green: #0f766e;
+  --agent-green-dark: #0b5f59;
+  --agent-blue: #2563eb;
+  --agent-blue-soft: #e8eefc;
+  --agent-due: #b45309;
+  --agent-alert: #b42318;
+  --agent-cash-bg: #f5ecd8;
+  --agent-cash: #92400e;
+  --agent-border: #e5e7eb;
+  --agent-muted: #6b7280;
+  --agent-text: #111827;
+  --agent-bg: #f3f4f6;
+
+  margin-top: var(--navbar-height, 64px);
+  min-height: calc(100vh - var(--navbar-height, 64px));
+  background: var(--agent-bg);
+  color: var(--agent-text);
+}
+
+.agent-screen__wrap {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 16px 16px 110px;
+}
+
+.agent-screen__actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.agent-screen__btn {
+  height: 44px;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agent-screen__btn--primary {
+  border: 0;
+  background: var(--agent-green);
+  color: #fff;
+}
+
+.agent-screen__btn--primary:hover {
+  background: var(--agent-green-dark);
+}
+
+.agent-screen__btn--secondary {
+  border: 1.5px solid var(--agent-blue);
+  background: #fff;
+  color: var(--agent-blue);
+}
+
+.agent-screen__section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.agent-screen__section-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.agent-screen__section-head span {
+  color: var(--agent-muted);
+  font-size: 13px;
+}
+
+.agent-screen__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-screen__card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px;
+  background: #fff;
+  border: 1px solid var(--agent-border);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.agent-screen__card-main {
+  min-width: 0;
+  flex: 1;
+}
+
+.agent-screen__card-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.agent-screen__card-meta {
+  margin: 0 0 6px;
+  color: var(--agent-muted);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.agent-screen__card-status {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+.agent-screen__card-status--due {
+  color: var(--agent-due);
+}
+
+.agent-screen__card-status--alert {
+  color: var(--agent-alert);
+}
+
+.agent-screen__card-action {
+  flex-shrink: 0;
+  min-width: 78px;
+  height: 36px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--agent-blue-soft);
+  color: var(--agent-blue);
+  font-size: 13px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.agent-screen__card-action:hover {
+  filter: brightness(0.97);
+}
+
+.agent-screen__empty,
+.agent-screen__loading,
+.agent-screen__error {
+  padding: 18px 14px;
+  border: 1px solid var(--agent-border);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--agent-muted);
+  font-size: 14px;
+}
+
+.agent-screen__error {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.agent-screen__denied {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 40px 16px;
+  text-align: center;
+  color: var(--agent-muted);
+}
+
+.agent-screen__cash {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  padding: 0 16px 16px;
+  pointer-events: none;
+}
+
+.agent-screen__cash-inner {
+  max-width: 480px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: var(--agent-cash-bg);
+  box-shadow: 0 -4px 18px rgba(15, 23, 42, 0.08);
+  pointer-events: auto;
+}
+
+.agent-screen__cash-copy strong {
+  display: block;
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--agent-text);
+}
+
+.agent-screen__cash-copy span {
+  display: block;
+  margin-top: 2px;
+  color: var(--agent-muted);
+  font-size: 12px;
+}
+
+.agent-screen__cash-amount {
+  flex-shrink: 0;
+  color: var(--agent-cash);
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+@media (min-width: 640px) {
+  .agent-screen__wrap {
+    padding-top: 22px;
+  }
+}
