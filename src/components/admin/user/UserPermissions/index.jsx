@@ -577,6 +577,10 @@ const UserPermissions = ({ user, onSave, onCancel, isOpen }) => {
           label: 'Users',
           actions: ['create','list_view', 'view', 'update', 'delete', 'csv_xport']
         },
+        reporting_hierarchy: {
+          label: 'Reporting Hierarchy',
+          actions: ['create', 'list_view', 'view', 'update', 'delete']
+        },
         permission_roles: {
           label: 'Role Creation',
           actions: ['create', 'list_view', 'view', 'update', 'delete']

@@ -3,15 +3,48 @@ import { Link } from 'react-router-dom';
 import { IoIosArrowDown } from 'react-icons/io';
 import './Sidebar.css';
 
-const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
+/** Match list routes and their view/edit/add children without colliding on shared prefixes. */
+export const isSidebarPathActive = (activeItem, path) => {
+  if (!activeItem || !path) return false;
+  if (activeItem === path) return true;
+  const normalized = path.endsWith('/') ? path.slice(0, -1) : path;
+  if (activeItem.startsWith(`${normalized}/`)) return true;
+  if (normalized.endsWith('/list')) {
+    const base = normalized.slice(0, -'/list'.length);
+    if (base && activeItem.startsWith(`${base}/`)) return true;
+  }
+  return false;
+};
+
+const entryOrDescendantActive = (entry, activeItem) => {
+  if (!entry) return false;
+  if (entry.path && isSidebarPathActive(activeItem, entry.path)) return true;
+  return Boolean(
+    entry.subItems?.some((child) => entryOrDescendantActive(child, activeItem))
+  );
+};
+
+const SidebarItem = ({
+  item,
+  activeItem,
+  onNavigate,
+  collapsed = false,
+  depth = 0,
+}) => {
   const hasSubItems = Boolean(item.subItems && item.subItems.length > 0);
   const isChildActive = Boolean(
-    hasSubItems && item.subItems.some((subItem) => activeItem === subItem.path)
+    hasSubItems &&
+      item.subItems.some((subItem) => entryOrDescendantActive(subItem, activeItem))
   );
-  const isSelfActive = activeItem === item.path;
+  const isSelfActive =
+    Boolean(item.path) &&
+    isSidebarPathActive(activeItem, item.path) &&
+    !isChildActive;
   const isActive = isSelfActive || isChildActive;
 
-  const [expanded, setExpanded] = useState(Boolean(isChildActive || item.defaultExpanded));
+  const [expanded, setExpanded] = useState(
+    Boolean(isChildActive || item.defaultExpanded)
+  );
 
   useEffect(() => {
     if (isChildActive) {
@@ -56,16 +89,27 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
     onNavigate?.();
   };
 
-  const headerClassName = `sidebar-item-header ${isActive ? 'sidebar-item-header--active' : ''}`;
+  const headerClassName = `sidebar-item-header ${
+    isActive ? 'sidebar-item-header--active' : ''
+  }${depth > 0 ? ' sidebar-item-header--nested' : ''}`;
+
+  const directCount = hasSubItems ? item.subItems.length : 0;
+  const countBadge =
+    directCount > 0 ? (
+      <span className="sidebar-item-count" aria-label={`${directCount} options`}>
+        {directCount}
+      </span>
+    ) : null;
 
   return (
-    <div className="sidebar-item">
+    <div className={`sidebar-item${depth > 0 ? ' sidebar-item--nested' : ''}`}>
       {hasSubItems ? (
         item.path ? (
           <Link
             to={item.path}
             className={headerClassName}
             onClick={handleHeaderWithSubItemsClick}
+            aria-current={isSelfActive ? 'page' : undefined}
             {...tooltipProps}
           >
             {item.icon && (
@@ -75,10 +119,15 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
             )}
             <span className="sidebar-item-label">{item.label}</span>
             {item.badge && (
-              <span className={`sidebar-sub-item-badge ${item.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}>
+              <span
+                className={`sidebar-sub-item-badge ${
+                  item.badge === 'NEW' ? 'sidebar-badge-new' : ''
+                }`}
+              >
                 {item.badge}
               </span>
             )}
+            {countBadge}
             {item.dot && <span className="sidebar-alert-dot" />}
             <span
               className={`sidebar-item-arrow ${
@@ -109,10 +158,15 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
             )}
             <span className="sidebar-item-label">{item.label}</span>
             {item.badge && (
-              <span className={`sidebar-sub-item-badge ${item.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}>
+              <span
+                className={`sidebar-sub-item-badge ${
+                  item.badge === 'NEW' ? 'sidebar-badge-new' : ''
+                }`}
+              >
                 {item.badge}
               </span>
             )}
+            {countBadge}
             {item.dot && <span className="sidebar-alert-dot" />}
             <span
               className={`sidebar-item-arrow ${
@@ -128,6 +182,7 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
           to={item.path}
           className={headerClassName}
           onClick={handleNavigate}
+          aria-current={isActive ? 'page' : undefined}
           {...tooltipProps}
         >
           {item.icon && (
@@ -137,7 +192,11 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
           )}
           <span className="sidebar-item-label">{item.label}</span>
           {item.badge && (
-            <span className={`sidebar-sub-item-badge ${item.badge === 'NEW' ? 'sidebar-badge-new' : ''}`}>
+            <span
+              className={`sidebar-sub-item-badge ${
+                item.badge === 'NEW' ? 'sidebar-badge-new' : ''
+              }`}
+            >
               {item.badge}
             </span>
           )}
@@ -148,7 +207,21 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
       {expanded && hasSubItems && !collapsed && (
         <div className="sidebar-sub-items">
           {item.subItems.map((subItem, index) => {
-            const isSubActive = activeItem === subItem.path;
+            const nestedHasChildren = Boolean(subItem.subItems?.length);
+            if (nestedHasChildren) {
+              return (
+                <SidebarItem
+                  key={subItem.id || subItem.path || index}
+                  item={subItem}
+                  activeItem={activeItem}
+                  onNavigate={onNavigate}
+                  collapsed={collapsed}
+                  depth={depth + 1}
+                />
+              );
+            }
+
+            const isSubActive = isSidebarPathActive(activeItem, subItem.path);
             return (
               <Link
                 key={subItem.id || subItem.path || index}
@@ -157,6 +230,7 @@ const SidebarItem = ({ item, activeItem, onNavigate, collapsed = false }) => {
                   isSubActive ? 'sidebar-sub-item--active' : ''
                 }`}
                 onClick={handleNavigate}
+                aria-current={isSubActive ? 'page' : undefined}
               >
                 {subItem.icon && (
                   <span className="sidebar-sub-item-icon">

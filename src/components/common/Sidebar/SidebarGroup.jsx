@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { IoIosArrowDown } from 'react-icons/io';
-import SidebarItem from './SidebarItem';
+import SidebarItem, { isSidebarPathActive } from './SidebarItem';
 import './Sidebar.css';
+
+const isEntryActiveDeep = (entry, activeItem) => {
+  if (!entry) return false;
+  if (entry.path && isSidebarPathActive(activeItem, entry.path)) return true;
+  return Boolean(
+    entry.subItems?.some((child) => isEntryActiveDeep(child, activeItem))
+  );
+};
 
 const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
   const singleLink =
@@ -12,12 +20,8 @@ const SidebarGroup = ({ group, collapsed, activeItem, onNavigate }) => {
       ? group.items[0]
       : null;
 
-  const isActiveGroup = group.items?.some(
-    (item) =>
-      (item.path && activeItem.startsWith(item.path)) ||
-      item.subItems?.some(
-        (subItem) => subItem.path && activeItem.startsWith(subItem.path)
-      )
+  const isActiveGroup = group.items?.some((item) =>
+    isEntryActiveDeep(item, activeItem)
   );
 
   const [expanded, setExpanded] = useState(
