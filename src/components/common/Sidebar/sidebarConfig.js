@@ -58,6 +58,7 @@ import {
   FiSearch,
   FiInbox,
   FiUpload,
+  FiGitBranch,
 } from 'react-icons/fi';
 import { BiSolidDonateHeart } from 'react-icons/bi';
 import { departments } from '../../../utils/admin';
@@ -559,6 +560,13 @@ const adminDepartmentItems = () => [
     // ]
   },
   {
+    label: 'Reporting Hierarchy',
+    path: '/dms/reporting-hierarchy',
+    type: 'list',
+    module: 'reporting_hierarchy',
+    icon: FiGitBranch,
+  },
+  {
     label: 'Role Creation',
     path: '/admin/permission-roles',
     type: 'list',
@@ -729,329 +737,363 @@ const geographicItems = (isUser = false) => [
   { label: 'Routes', path: '/dms/geographic/routes/list', type: 'list', module: 'routes', icon: FiNavigation }
 ];
 
+/**
+ * CRD sidebar (Donor Management restructure).
+ * Parent section label stays "CRD". Modules/paths/permissions unchanged —
+ * only grouping + display titles updated so existing grants still apply.
+ */
 const fundRaisingDepartmentItems = (isUser = false) => [
   {
-    label: 'Online Donations',
-    path: '/donations/online_donations/list',
-    type: 'list',
-    module: 'online_donations',
-    icon: BiSolidDonateHeart
-  },
-  {
-    label: 'Offline Donations',
-    path: '/donations/offline_donations/list',
-    type: 'list',
-    module: 'offline_donations',
-    icon: BiSolidDonateHeart
-  },
-  // {
-  //   label: 'Website Donation Projects',
-  //   path: '/dms/website_donation_projects/list',
-  //   type: 'list',
-  //   module: 'website_donation_projects',
-  //   icon: FiGrid
-  // },
-  // {
-  //   label: 'Home Hero Slides',
-  //   path: '/dms/website_home_hero/list',
-  //   type: 'list',
-  //   module: 'website_home_hero',
-  //   icon: FiLayers
-  // },
-
-  {
-    label: 'Online Donors',
-    path: '/dms/online_donors/list',
-    type: 'list',
-    module: 'online_donors',
-    icon: FiUsers
-  },
-  {
-    label: 'Offline Donors',
-    path: '/dms/offline_donors/list',
-    type: 'list',
-    module: 'offline_donors',
-    icon: FiUsers
-  },
-  {
-    label: 'Agent Screen',
-    path: '/dms/agent',
-    type: 'list',
-    module: 'agent_screen',
-    icon: FiMapPin
-  },
-  {
-    label: 'Collection Units',
-    path: '/dms/donation_box/list',
-    type: 'list',
-    module: 'donation_box',
-    icon: FiBox
-  },
-  {
-    label: 'Collection Units Collections',
-    path: '/dms/donation-box-donations/list',
-    type: 'list',
-    module: 'donation_box_donations',
-    icon: FiPackage
-  },
-  {
-    label: 'In Kind Items',
-    path: '/dms/in-kind-items/list',
-    type: 'list',
-    module: 'donation_in_kind_items',
-    icon: FiGift
-  },
-  {
-    label: 'In Kind Donations',
-    path: '/dms/in-kind-donations/list',
-    type: 'list',
-    module: 'in_kind_donations',
-    icon: FiGift
-  },
-  {
-    label: 'CSR Donors',
-    path: '/dms/csr-donors/list',
-    type: 'list',
-    module: 'organizations',
-    icon: FiBriefcase
-  },
-  {
-    label: 'CSR Donations',
-    path: '/dms/csr-donations/list',
-    type: 'list',
-    module: 'organizations',
-    icon: BiSolidDonateHeart
-  },
-  {
-    label: 'CSR POCs',
-    path: '/dms/csr-pocs/list',
-    type: 'list',
-    module: 'csr_pocs',
-    icon: FiUsers
-  },
-  {
-    label: 'Volunteers',
-    path: '/dms/volunteers/list',
-    type: 'list',
-    module: 'volunteers',
-    icon: FiUserPlus
-  },
-  // {
-  //   label: 'Surveys',
-  //   path: '/dms/surveys/list',
-  //   type: 'list',
-  //   module: 'surveys',
-  //   icon: FiClipboard
-  // },
-  // {
-  //   label: 'Events',
-  //   path: '/dms/events/list',
-  //   type: 'list',
-  //   module: 'events',
-  //   icon: FiCalendar
-  // },
-  {
-    label: 'Campaigns',
-    path: '/dms/campaigns/list',
-    type: 'list',
-    module: 'campaigns',
-    icon: FiFlag
-  },
-  {
-    label: 'Appeals',
-    path: '/dms/appeals/list',
-    type: 'list',
-    module: 'appeals',
-    icon: FiAlertCircle
-  },
-  {
-    label: 'Social Posts',
-    path: '/dms/social-posts/list',
-    type: 'list',
-    module: 'social_posts',
-    icon: FiFileText
-  },
-  {
-    label: 'Upload Posts',
-    path: '/dms/upload-posts/list',
-    type: 'list',
-    module: 'upload_posts',
-    icon: FiUpload
-  },
-  {
-    label: 'Recurring Donations',
-    path: '/dms/recurring-donations/list',
-    type: 'list',
-    module: 'recurring_donations',
-    icon: FiRepeat,
+    id: 'crd_dashboards',
+    label: 'Dashboards',
+    icon: FiHome,
+    defaultExpanded: false,
     subItems: [
       {
-        label: 'Subscriptions',
+        label: 'Fundraising Dashboard',
+        path: '/fund_raising/dashboard',
+        type: 'list',
+        module: 'dashboard',
+        icon: FiHome,
+      },
+      {
+        label: 'Management Overview',
+        path: '/dms/management-overview',
+        type: 'list',
+        module: 'management_overview',
+        icon: FiTrendingUp,
+      },
+    ],
+  },
+  {
+    id: 'crd_donors',
+    label: 'Donors',
+    icon: FiUsers,
+    defaultExpanded: false,
+    subItems: [
+      {
+        label: 'Individual Donors – Online',
+        path: '/dms/online_donors/list',
+        type: 'list',
+        module: 'online_donors',
+        icon: FiUsers,
+      },
+      {
+        label: 'Individual Donors – Offline',
+        path: '/dms/offline_donors/list',
+        type: 'list',
+        module: 'offline_donors',
+        icon: FiUsers,
+      },
+      {
+        label: 'Recurring Donors',
+        path: '/dms/recurring-donors/list',
+        type: 'list',
+        module: 'recurring_donors',
+        icon: FiUsers,
+      },
+      {
+        label: 'Corporate Donors (CSR)',
+        path: '/dms/csr-donors/list',
+        type: 'list',
+        module: 'organizations',
+        icon: FiBriefcase,
+      },
+      {
+        label: 'Corporate Contacts',
+        path: '/dms/csr-pocs/list',
+        type: 'list',
+        module: 'csr_pocs',
+        icon: FiUsers,
+      },
+    ],
+  },
+  {
+    id: 'crd_donations',
+    label: 'Donations',
+    icon: BiSolidDonateHeart,
+    defaultExpanded: false,
+    subItems: [
+      {
+        label: 'Online Donations',
+        path: '/donations/online_donations/list',
+        type: 'list',
+        module: 'online_donations',
+        icon: BiSolidDonateHeart,
+      },
+      {
+        label: 'Offline Donations',
+        path: '/donations/offline_donations/list',
+        type: 'list',
+        module: 'offline_donations',
+        icon: BiSolidDonateHeart,
+      },
+      {
+        label: 'Corporate Donations (CSR)',
+        path: '/dms/csr-donations/list',
+        type: 'list',
+        module: 'organizations',
+        icon: BiSolidDonateHeart,
+      },
+      {
+        label: 'In-Kind Donations',
+        path: '/dms/in-kind-donations/list',
+        type: 'list',
+        module: 'in_kind_donations',
+        icon: FiGift,
+      },
+      {
+        label: 'Pledges',
+        path: '/dms/event-pledges/list',
+        type: 'list',
+        module: 'event_pledges',
+        icon: FiClipboard,
+      },
+      {
+        label: 'Recurring Donations',
         path: '/dms/recurring-donations/list',
         type: 'list',
         module: 'recurring_donations',
-        icon: FiList,
-      },
-      {
-        label: 'Reminder Logs',
-        path: '/dms/recurring-reminder-logs/list',
-        type: 'list',
-        module: 'recurring_reminder_logs',
-        icon: FiMail,
+        icon: FiRepeat,
+        subItems: [
+          {
+            label: 'Subscriptions',
+            path: '/dms/recurring-donations/list',
+            type: 'list',
+            module: 'recurring_donations',
+            icon: FiList,
+          },
+          {
+            label: 'Reminder Logs',
+            path: '/dms/recurring-reminder-logs/list',
+            type: 'list',
+            module: 'recurring_reminder_logs',
+            icon: FiMail,
+          },
+        ],
       },
     ],
   },
   {
-    label: 'Recurring Donors',
-    path: '/dms/recurring-donors/list',
-    type: 'list',
-    module: 'recurring_donors',
-    icon: FiUsers
-  },
-  {
-    label: 'Event Pledges',
-    path: '/dms/event-pledges/list',
-    type: 'list',
-    module: 'event_pledges',
-    icon: FiClipboard
-  },
-  {
-    label: 'Reconciliation',
-    path: '/dms/reconciliation/list',
-    type: 'list',
-    module: 'reconciliation',
-    icon: FiRefreshCw
-  },
-  {
-    label: 'Reconciliation Workbench',
-    path: '/dms/reconciliation-workbench',
-    type: 'list',
-    module: 'reconciliation_workbench',
-    icon: FiInbox
-  },
-  {
-    label: 'Reconciliation Desk',
-    path: '/dms/reconciliation-desk',
-    type: 'list',
-    module: 'reconciliation_desk',
-    icon: FiClipboard
-  },
-  {
-    label: 'Field Team & Donation Boxes',
-    path: '/dms/field-team-donation-boxes',
-    type: 'list',
-    module: 'field_team_donation_boxes',
-    icon: FiBox
-  },
-  {
-    label: 'Campaign ROI',
-    path: '/dms/campaign-roi',
-    type: 'list',
-    module: 'campaigns',
-    icon: FiTrendingUp
-  },
-  {
-    label: 'Donor Retention & Recurring',
-    path: '/dms/donor-retention-recurring',
-    type: 'list',
-    module: 'donor_retention_recurring',
-    icon: FiRepeat
-  },
-  {
-    label: 'Donor Profiles & Demographics',
-    path: '/dms/donor-profiles-demographics',
-    type: 'list',
-    module: 'donor_profiles_demographics',
-    icon: FiUsers
-  },
-  {
-    label: 'Targets',
-    path: '/dms/targets/list',
-    type: 'list',
-    module: 'targets',
-    icon: FiTarget
-  },
-  {
-    label: 'Donor Relationship',
-    path: '/dms/donor-relationship/follow-ups',
-    type: 'list',
-    module: 'donor_relationship',
-    icon: FiUsers,
+    id: 'crd_field',
+    label: 'Field Collections',
+    icon: FiBox,
+    defaultExpanded: false,
     subItems: [
-      { label: 'Follow Ups & Interactions', path: '/dms/donor-relationship/follow-ups', type: 'list', icon: FiList },
-      { label: 'Add Interaction', path: '/dms/donor-relationship/add', type: 'create', action: 'create', icon: FiPlusCircle },
       {
-        label: 'Management Overview',
-        path: '/dms/donor-relationship/overview',
+        label: 'Donation Boxes',
+        path: '/dms/donation_box/list',
         type: 'list',
-        action: 'manage_overview',
+        module: 'donation_box',
+        icon: FiBox,
+      },
+      {
+        label: 'Box Collections',
+        path: '/dms/donation-box-donations/list',
+        type: 'list',
+        module: 'donation_box_donations',
+        icon: FiPackage,
+      },
+      {
+        label: 'Field Team',
+        path: '/dms/field-team-donation-boxes',
+        type: 'list',
+        module: 'field_team_donation_boxes',
+        icon: FiBox,
+      },
+      {
+        label: 'Field Agent Console',
+        path: '/dms/agent',
+        type: 'list',
+        module: 'agent_screen',
+        icon: FiMapPin,
+      },
+    ],
+  },
+  {
+    id: 'crd_campaigns',
+    label: 'Campaigns & Appeals',
+    icon: FiFlag,
+    defaultExpanded: false,
+    subItems: [
+      {
+        label: 'Campaigns',
+        path: '/dms/campaigns/list',
+        type: 'list',
+        module: 'campaigns',
+        icon: FiFlag,
+      },
+      {
+        label: 'Appeals',
+        path: '/dms/appeals/list',
+        type: 'list',
+        module: 'appeals',
+        icon: FiAlertCircle,
+      },
+      {
+        label: 'Fundraising Targets',
+        path: '/dms/targets/list',
+        type: 'list',
+        module: 'targets',
+        icon: FiTarget,
+      },
+      {
+        label: 'Social Media Posts',
+        path: '/dms/social-posts/list',
+        type: 'list',
+        module: 'social_posts',
+        icon: FiFileText,
+      },
+      {
+        label: 'Upload Posts',
+        path: '/dms/upload-posts/list',
+        type: 'list',
+        module: 'upload_posts',
+        icon: FiUpload,
+      },
+    ],
+  },
+  {
+    id: 'crd_steward',
+    label: 'Donor Stewardship',
+    icon: FiHeart,
+    defaultExpanded: false,
+    subItems: [
+      {
+        label: 'Donor Relationship',
+        path: '/dms/donor-relationship/follow-ups',
+        type: 'list',
+        module: 'donor_relationship',
+        icon: FiUsers,
+        subItems: [
+          {
+            label: 'Follow Ups & Interactions',
+            path: '/dms/donor-relationship/follow-ups',
+            type: 'list',
+            icon: FiList,
+          },
+          {
+            label: 'Add Interaction',
+            path: '/dms/donor-relationship/add',
+            type: 'create',
+            action: 'create',
+            icon: FiPlusCircle,
+          },
+          {
+            label: 'Management Overview',
+            path: '/dms/donor-relationship/overview',
+            type: 'list',
+            action: 'manage_overview',
+            icon: FiBarChart2,
+          },
+        ],
+      },
+      {
+        label: 'Volunteers',
+        path: '/dms/volunteers/list',
+        type: 'list',
+        module: 'volunteers',
+        icon: FiUserPlus,
+      },
+    ],
+  },
+  {
+    id: 'crd_recon',
+    label: 'Reconciliation',
+    icon: FiRefreshCw,
+    defaultExpanded: false,
+    subItems: [
+      {
+        label: 'Reconciliation Desk',
+        path: '/dms/reconciliation-desk',
+        type: 'list',
+        module: 'reconciliation_desk',
+        icon: FiClipboard,
+      },
+      {
+        label: 'Reconciliation Workbench',
+        path: '/dms/reconciliation-workbench',
+        type: 'list',
+        module: 'reconciliation_workbench',
+        icon: FiInbox,
+        // Legacy Reconciliation list kept nested so reconciliation permission still works
+        subItems: [
+          {
+            label: 'Workbench',
+            path: '/dms/reconciliation-workbench',
+            type: 'list',
+            module: 'reconciliation_workbench',
+            icon: FiInbox,
+          },
+          {
+            label: 'Reconciliation',
+            path: '/dms/reconciliation/list',
+            type: 'list',
+            module: 'reconciliation',
+            icon: FiRefreshCw,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'crd_reports',
+    label: 'Reports & Analytics',
+    icon: FiBarChart2,
+    defaultExpanded: false,
+    subItems: [
+      {
+        label: 'Reports Dashboard',
+        path: '/dms/reports/dashboard',
+        type: 'list',
+        module: 'reports_dashboard',
         icon: FiBarChart2,
       },
+      {
+        label: 'Campaign ROI',
+        path: '/dms/campaign-roi',
+        type: 'list',
+        module: 'campaigns',
+        icon: FiTrendingUp,
+      },
+      {
+        label: 'Donor Retention Analysis',
+        path: '/dms/donor-retention-recurring',
+        type: 'list',
+        module: 'donor_retention_recurring',
+        icon: FiRepeat,
+      },
+      {
+        label: 'Recurring Giving Performance',
+        path: '/fund_raising/recurring-performance',
+        type: 'list',
+        module: 'recurring_performance',
+        icon: FiRepeat,
+      },
+      {
+        label: 'Donor Demographics',
+        path: '/dms/donor-profiles-demographics',
+        type: 'list',
+        module: 'donor_profiles_demographics',
+        icon: FiUsers,
+      },
     ],
   },
-  // {
-  //   label: 'Allotment Approvals',
-  //   path: '/donations/allotments/pending',
-  //   type: 'list',
-  //   module: 'donation_allotments',
-  //   icon: FiCheckCircle,
-  // },
-  // {
-  //   label: 'Receipt Templates',
-  //   path: '/dms/receipt_templates/list',
-  //   type: 'list',
-  //   module: 'receipt_templates',
-  //   icon: FiFileText,
-  //   subItems: [
-  //     { label: 'Templates List', path: '/dms/receipt_templates/list', type: 'list', icon: FiList },
-  //     { label: 'Add Template', path: '/dms/receipt_templates/add', type: 'list', icon: FiPlusCircle }
-  //   ]
-  // },
-  // {
-  //   label: 'Reports',
-  //   path: '/dms/reports/create',
-  //   type: 'create',
-  //   module: 'reports'
-  // },
   {
-    label: 'Tasking',
-    path: '/tasks/list',
-    type: 'list',
-    module: 'tasks',
-    icon: FiCheckSquare,
+    id: 'crd_setup',
+    label: 'Setup',
+    icon: FiSettings,
+    defaultExpanded: false,
     subItems: [
-      { label: 'Tasking List', path: '/tasks/list', type: 'list', icon: FiList },
-      { label: 'Tasking Dashboard', path: '/tasks/dashboard', type: 'list', icon: FiBarChart2 }
-    ]
+      {
+        label: 'In-Kind Item Catalogue',
+        path: '/dms/in-kind-items/list',
+        type: 'list',
+        module: 'donation_in_kind_items',
+        icon: FiGift,
+      },
+    ],
   },
-  {
-    label: 'Dashboard',
-    path: '/fund_raising/dashboard',
-    type: 'list',
-    module: 'dashboard',
-    icon: FiHome
-  },
-  {
-    label: 'Reports Dashboard',
-    path: '/dms/reports/dashboard',
-    type: 'list',
-    module: 'reports_dashboard',
-    icon: FiBarChart2
-  },
-  {
-    label: 'Management Overview',
-    path: '/dms/management-overview',
-    type: 'list',
-    module: 'management_overview',
-    icon: FiTrendingUp
-  },
-  {
-    label: 'Recurring Performance',
-    path: '/fund_raising/recurring-performance',
-    type: 'list',
-    module: 'recurring_performance',
-    icon: FiRepeat
-  }
 ];
 
 const taskingItems = (isUser = false) => [
@@ -1454,14 +1496,14 @@ const canAccessSidebarEntry = (permissions, department, item, parentModule = nul
 };
 
 // Filter items (and nested subItems) based on user permissions
-const filterItemsByPermissions = (items, permissions, department) => {
+const filterItemsByPermissions = (items, permissions, department, parentModule = null) => {
   if (!permissions || !department) {
     return items;
   }
 
   return items
     .map((item) => {
-      if (!canAccessSidebarEntry(permissions, department, item)) {
+      if (!canAccessSidebarEntry(permissions, department, item, parentModule)) {
         return null;
       }
 
@@ -1469,9 +1511,12 @@ const filterItemsByPermissions = (items, permissions, department) => {
         return item;
       }
 
-      const parentModule = item.module || null;
-      const filteredSubItems = item.subItems.filter((subItem) =>
-        canAccessSidebarEntry(permissions, department, subItem, parentModule),
+      const nextParentModule = item.module || parentModule;
+      const filteredSubItems = filterItemsByPermissions(
+        item.subItems,
+        permissions,
+        department,
+        nextParentModule,
       );
 
       if (!filteredSubItems.length) {

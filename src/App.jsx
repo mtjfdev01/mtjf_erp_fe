@@ -175,6 +175,13 @@ import ReconciliationAdd from './components/dms/reconciliation/add';
 import ReconciliationView from './components/dms/reconciliation/view';
 import ReconciliationWorkbench from './components/dms/reconciliation_workbench';
 import ReconciliationAgentModule from './components/dms/reconciliation_agent';
+import ReportingHierarchyModule, {
+  PersonHierarchyView,
+  PersonHierarchyEdit,
+  ReportingEdgesList,
+  EmployeeOrganogram,
+  HierarchyImport,
+} from './components/dms/reporting_hierarchy';
 import FollowUpsList from './components/dms/donor_relationship/follow_ups';
 import InteractionsList from './components/dms/donor_relationship/interactions';
 import AddDonorInteraction from './components/dms/donor_relationship/add';
@@ -319,6 +326,35 @@ const App = () => {
                                 <Route
                                   path="/admin/permission-roles/edit/:id"
                                   element={<PermissionRoleForm />}
+                                />
+                                {/* Reporting Hierarchy (standalone store; legacy manager_id unchanged) */}
+                                <Route
+                                  path="/dms/reporting-hierarchy"
+                                  element={<ReportingHierarchyModule />}
+                                />
+                                <Route
+                                  path="/dms/reporting-hierarchy/organogram"
+                                  element={<EmployeeOrganogram />}
+                                />
+                                <Route
+                                  path="/dms/reporting-hierarchy/import"
+                                  element={<HierarchyImport />}
+                                />
+                                <Route
+                                  path="/dms/reporting-hierarchy/edges"
+                                  element={<ReportingEdgesList />}
+                                />
+                                <Route
+                                  path="/dms/reporting-hierarchy/assign"
+                                  element={<PersonHierarchyEdit />}
+                                />
+                                <Route
+                                  path="/dms/reporting-hierarchy/people/:userId"
+                                  element={<PersonHierarchyView />}
+                                />
+                                <Route
+                                  path="/dms/reporting-hierarchy/people/:userId/edit"
+                                  element={<PersonHierarchyEdit />}
                                 />
                                 <Route
                                   path="/admin/api-keys"
