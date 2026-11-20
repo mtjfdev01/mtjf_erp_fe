@@ -113,12 +113,12 @@ const TaskActionBar = ({
 
     if (['DRAFT', 'OPEN', 'ASSIGNED'].includes(normalizedStatus)) {
       baseButtons = [
-        // { label: 'Start Task (In Progress)', action: 'START', color: 'primary' },
+        { label: 'Start Task (In Progress)', action: 'START', color: 'primary' },
       ];
     } else if (normalizedStatus === 'IN_PROGRESS') {
       if (isApprovalWorkflow) {
         baseButtons = [
-          { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
+          // { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
           { label: 'Block Task', action: 'BLOCK', color: 'danger' },
         ];
       } else {
@@ -129,8 +129,8 @@ const TaskActionBar = ({
       }
     } else if (normalizedStatus === 'PENDING_APPROVAL') {
       baseButtons = [
-        { label: 'Approve Deliverables', action: 'APPROVE', color: 'success' },
-        { label: 'Request Revisions (Reject)', action: 'REJECT', color: 'danger' },
+        { label: 'Approve', action: 'APPROVE', color: 'success' },
+        { label: 'Reject', action: 'REJECT', color: 'danger' },
       ];
     } else if (normalizedStatus === 'APPROVED') {
       // Approved task moves to Completed

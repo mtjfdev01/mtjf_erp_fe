@@ -95,8 +95,8 @@ const QuickActionModal = ({
           return;
         }
 
-        if (isAssignee && !isAdmin && !isCreator) {
-          await axiosInstance.post(`/tasks/${taskId}/extend-due-date`, {
+        if (isAssignee && !isCreator) {
+          await axiosInstance.post(`/tasks/${taskId}/request-extension`, {
             proposed_due_date: formState.dueDate,
             reason: formState.reason.trim(),
           });
@@ -164,13 +164,13 @@ const QuickActionModal = ({
 
   const title =
     actionKey === 'CHANGE_DUE_DATE'
-      ? isAssignee && !isAdmin && !isCreator
+      ? isAssignee && !isCreator
         ? 'Request Deadline Extension'
         : 'Extend / Change Due Date'
       : QUICK_ACTION_LABEL_MAP[actionKey] || 'Task action';
   const submitLabel =
     actionKey === 'CHANGE_DUE_DATE'
-      ? isAssignee && !isAdmin && !isCreator
+      ? isAssignee && !isCreator
         ? 'Submit Extension Request'
         : 'Update Due Date'
       : QUICK_ACTION_LABEL_MAP[actionKey] || 'Submit';
@@ -249,7 +249,7 @@ const QuickActionModal = ({
                 )}
                 <FormInput
                   name="dueDate"
-                  label={isAssignee && !isAdmin && !isCreator ? "Proposed new due date *" : "New due date *"}
+                  label="Proposed new due date *"
                   type="date"
                   required
                   value={formState.dueDate}

@@ -596,6 +596,12 @@ const ViewTask = ({
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [quickActionKey, setQuickActionKey] = useState(null);
   const [extensionReviewLoading, setExtensionReviewLoading] = useState(false);
+  const [reviewExtensionModal, setReviewExtensionModal] = useState({
+    isOpen: false,
+    extension: null,
+    decision: 'approved',
+    note: '',
+  });
   const [currentUserHasActedOnApproval, setCurrentUserHasActedOnApproval] =
     useState(false);
 
@@ -1277,35 +1283,48 @@ const ViewTask = ({
 
   const canReviewExtension = useMemo(() => {
     if (!user || !task) return false;
-    const isSuperAdminRole = String(user.role || '').toLowerCase() === 'super_admin';
-    const isAdmin = isSuperAdminRole || String(user.role || '').toLowerCase() === 'admin';
-    const isCreator = isCurrentUserCreator;
-    const reporterIds = (task.reported_to_ids || task.reported_to || []).map(Number);
-    const isReporter = reporterIds.includes(Number(user.id));
-    const isDeptHead = user.role === 'dept_head' && Boolean(user.department && user.department === task.department);
-    return isCreator || isReporter || isAdmin || isDeptHead;
-  }, [user, task, isCurrentUserCreator]);
+    return isCurrentUserCreator || isAdmin;
+  }, [user, task, isCurrentUserCreator, isAdmin]);
 
-  const handleReviewExtension = async (extensionId, decision) => {
-    const promptNote = window.prompt(
-      decision === 'approved'
-        ? 'Optional note / instructions for approval:'
-        : 'Reason / note for rejection (optional):'
-    );
-    if (promptNote === null) return;
+  const showPendingExtensionBanner = useMemo(() => {
+    if (!pendingExtension) return false;
+    // Show ONLY to the Task Creator (Assigner), Administrator, or the Assignee themselves.
+    // The assignee's reporting manager and third parties MUST NOT see this.
+    return isCurrentUserCreator || isAdmin || isCurrentUserAssignee;
+  }, [pendingExtension, isCurrentUserCreator, isAdmin, isCurrentUserAssignee]);
+
+  const handleOpenReviewExtensionModal = (extension, decision) => {
+    setReviewExtensionModal({
+      isOpen: true,
+      extension: extension || pendingExtension,
+      decision,
+      note: '',
+    });
+  };
+
+  const handleConfirmReviewExtension = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!task || !reviewExtensionModal.extension) return;
+
+    const { extension, decision, note } = reviewExtensionModal;
+    if (decision === 'rejected' && (!note || note.trim().length < 5)) {
+      toast.error('A mandatory rejection reason (at least 5 characters) is required.');
+      return;
+    }
 
     setExtensionReviewLoading(true);
     try {
       await axiosInstance.post(`/tasks/${task.id}/review-extension`, {
-        extension_id: extensionId,
+        extension_id: extension.id,
         decision,
-        note: promptNote ? promptNote.trim() : undefined,
+        note: note ? note.trim() : undefined,
       });
       toast.success(
         decision === 'approved'
           ? 'Deadline extension approved and new due date applied'
           : 'Deadline extension rejected'
       );
+      setReviewExtensionModal({ isOpen: false, extension: null, decision: 'approved', note: '' });
       const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
       if (refreshed.data?.data) {
         setTask(refreshed.data.data);
@@ -1315,6 +1334,11 @@ const ViewTask = ({
     } finally {
       setExtensionReviewLoading(false);
     }
+  };
+
+  const handleReviewExtension = async (extensionId, decision) => {
+    const ext = (task?.due_date_extensions || []).find((e) => e && e.id === extensionId) || pendingExtension;
+    handleOpenReviewExtensionModal(ext, decision);
   };
 
   const dueInfo = getDueInfo(task?.due_date, task?.status);
@@ -1777,26 +1801,6 @@ const ViewTask = ({
                   </ol>
 
                   <div className="tv2-actions">
-                    {/* {canRequestNewDate && (
-                      <button
-                        type="button"
-                        className="tv2-btn tv2-btn--ghost"
-                        onClick={() => handleQuickAction('CHANGE_DUE_DATE')}
-                      >
-                        Request new date
-                      </button>
-                    )} */}
-                    {showStartWork && (
-                      <button
-                        type="button"
-                        className="tv2-btn tv2-btn--light"
-                        disabled={statusActionLoading}
-                        onClick={() => handleInlineStatusChange('in_progress')}
-                      >
-                        <span aria-hidden="true">▸</span> Start work
-                      </button>
-                    )}
-
                     <TaskActionBar
                       taskId={task.id}
                       currentStatus={task.status}
@@ -1851,7 +1855,7 @@ const ViewTask = ({
               <div className="tv2-body">
                 <div className="tv2-main">
                   {/* ---- Pending Extension Request Banner ---- */}
-                  {pendingExtension && (
+                  {showPendingExtensionBanner && (
                     <div
                       style={{
                         marginBottom: '20px',
@@ -1923,6 +1927,12 @@ const ViewTask = ({
                         <strong>Reason for Extension:</strong> {pendingExtension.reason}
                       </div>
 
+                      {!canReviewExtension && isCurrentUserAssignee && (
+                        <div style={{ fontSize: '13px', color: '#b45309', fontWeight: 500, background: '#fef3c7', padding: '8px 12px', borderRadius: '6px' }}>
+                          ⏳ Your extension request has been submitted and is currently awaiting review by the Task Creator.
+                        </div>
+                      )}
+
                       {canReviewExtension && (
                         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                           <button
@@ -1938,7 +1948,7 @@ const ViewTask = ({
                               cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
                               fontSize: '13px',
                             }}
-                            onClick={() => handleReviewExtension(pendingExtension.id, 'approved')}
+                            onClick={() => handleOpenReviewExtensionModal(pendingExtension, 'approved')}
                           >
                             Approve Extension
                           </button>
@@ -1955,7 +1965,7 @@ const ViewTask = ({
                               cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
                               fontSize: '13px',
                             }}
-                            onClick={() => handleReviewExtension(pendingExtension.id, 'rejected')}
+                            onClick={() => handleOpenReviewExtensionModal(pendingExtension, 'rejected')}
                           >
                             Reject Extension
                           </button>
@@ -2291,6 +2301,91 @@ const ViewTask = ({
                     </section>
                   )}
 
+                  {showExtras && Array.isArray(task.due_date_extensions) && task.due_date_extensions.length > 0 && (
+                    <section className="tv2-card" style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span className="tv2-label" style={{ marginBottom: 0 }}>Deadline Extension History</span>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                          {task.due_date_extensions.length} {task.due_date_extensions.length === 1 ? 'request' : 'requests'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {task.due_date_extensions.map((ext) => {
+                          const isAppr = ext.status === 'approved';
+                          const isRej = ext.status === 'rejected';
+                          const isPend = ext.status === 'pending';
+                          return (
+                            <div
+                              key={ext.id}
+                              style={{
+                                padding: '12px 14px',
+                                borderRadius: '8px',
+                                border: `1px solid ${isAppr ? '#bbf7d0' : isRej ? '#fecaca' : '#fde68a'}`,
+                                background: isAppr ? '#f0fdf4' : isRej ? '#fef2f2' : '#fffbeb',
+                                fontSize: '13px',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontWeight: 700,
+                                      fontSize: '11px',
+                                      textTransform: 'uppercase',
+                                      color: isAppr ? '#15803d' : isRej ? '#b91c1c' : '#b45309',
+                                      background: isAppr ? '#dcfce7' : isRej ? '#fee2e2' : '#fef3c7',
+                                    }}
+                                  >
+                                    {ext.status}
+                                  </span>
+                                  <span style={{ color: '#475569' }}>
+                                    Requested by <strong>{getUserDisplayName(ext.requested_by)}</strong>
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  {ext.created_at ? new Date(ext.created_at).toLocaleString() : ''}
+                                </span>
+                              </div>
+
+                              <div style={{ margin: '4px 0 8px 0', color: '#334155' }}>
+                                <span style={{ color: '#64748b' }}>Proposed Due Date: </span>
+                                <strong style={{ color: '#0f172a' }}>{formatDateOnly(ext.proposed_due_date)}</strong>
+                                {ext.current_due_date && (
+                                  <span style={{ color: '#94a3b8', marginLeft: '6px' }}>
+                                    (Current was: {formatDateOnly(ext.current_due_date)})
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ background: 'rgba(255,255,255,0.85)', padding: '6px 10px', borderRadius: '4px', marginBottom: ext.reviewed_at ? '6px' : '0' }}>
+                                <strong style={{ color: '#475569' }}>Reason: </strong>
+                                <span style={{ color: '#1e293b' }}>{ext.reason}</span>
+                              </div>
+
+                              {ext.reviewed_at && (
+                                <div style={{ borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: '6px', marginTop: '4px', fontSize: '12px', color: '#475569' }}>
+                                  <div>
+                                    <strong>{isAppr ? 'Approved' : 'Rejected'} by: </strong>
+                                    {getUserDisplayName(ext.reviewed_by)} on {new Date(ext.reviewed_at).toLocaleString()}
+                                  </div>
+                                  {ext.review_note && (
+                                    <div style={{ marginTop: '2px', color: isRej ? '#991b1b' : '#166534' }}>
+                                      <strong>{isRej ? 'Rejection Reason: ' : 'Note: '}</strong>
+                                      {ext.review_note}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </section>
+                  )}
+
                   {showExtras && !isApproverView && reassignmentActivities.length > 0 && (
                     <section className="tv2-card">
                       <span className="tv2-label">Reassignment history</span>
@@ -2489,7 +2584,30 @@ const ViewTask = ({
                           <span style={{ fontSize: '11px', color: '#0284c7', marginLeft: '4px' }}>(Extended)</span>
                         )}
                       </dt>
-                      <dd className={overdueAfterToday ? 'is-danger' : ''}>{formatDateOnly(task.due_date)}</dd>
+                      <dd className={overdueAfterToday ? 'is-danger' : ''}>
+                        {formatDateOnly(task.due_date)}
+                        {isCurrentUserAssignee && !isCurrentUserCreator && !pendingExtension && !['completed', 'closed', 'cancelled'].includes(statusLower) && (
+                          <button
+                            type="button"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#0284c7',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              padding: '0 0 0 8px',
+                              textDecoration: 'underline',
+                              fontWeight: 500,
+                            }}
+                            onClick={() => {
+                              setQuickActionKey('CHANGE_DUE_DATE');
+                              setQuickActionOpen(true);
+                            }}
+                          >
+                            Request Extension
+                          </button>
+                        )}
+                      </dd>
                       {isApprovalWorkflow && task.approval_due_date && (
                         <>
                           <dt>Approval Due Date</dt>
@@ -2639,6 +2757,166 @@ const ViewTask = ({
                       {isApprovalWorkflow ? 'Submit for Approval' : 'Mark Completed'}
                     </PrimaryButton>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ---- Extension Review Decision Modal ---- */}
+            {reviewExtensionModal.isOpen && (
+              <div className="status-modal-backdrop" role="dialog" aria-modal="true">
+                <div className="status-modal" style={{ maxWidth: '500px' }}>
+                  <div
+                    className="status-modal-header"
+                    style={{
+                      background: reviewExtensionModal.decision === 'approved' ? '#f0fdf4' : '#fef2f2',
+                      borderBottom: `1px solid ${reviewExtensionModal.decision === 'approved' ? '#bbf7d0' : '#fecaca'}`,
+                    }}
+                  >
+                    <h3
+                      className="status-modal-title"
+                      style={{
+                        color: reviewExtensionModal.decision === 'approved' ? '#166534' : '#991b1b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      {reviewExtensionModal.decision === 'approved'
+                        ? '✓ Approve Deadline Extension'
+                        : '✕ Reject Deadline Extension'}
+                    </h3>
+                  </div>
+                  <form onSubmit={handleConfirmReviewExtension}>
+                    <div className="status-modal-body" style={{ padding: '20px' }}>
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '12px 16px',
+                          marginBottom: '16px',
+                          fontSize: '13px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Requested by:</span>
+                          <strong>{getUserDisplayName(reviewExtensionModal.extension?.requested_by) || 'Assignee'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Current Due Date:</span>
+                          <span style={{ textDecoration: 'line-through', color: '#64748b' }}>
+                            {formatDateOnly(reviewExtensionModal.extension?.current_due_date || task.due_date)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ color: '#64748b' }}>Proposed New Date:</span>
+                          <strong style={{ color: '#0284c7' }}>
+                            {formatDateOnly(reviewExtensionModal.extension?.proposed_due_date)}
+                          </strong>
+                        </div>
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px' }}>
+                          <span style={{ color: '#64748b', display: 'block', marginBottom: '2px' }}>Reason:</span>
+                          <div
+                            style={{
+                              color: '#1e293b',
+                              fontStyle: 'italic',
+                              background: '#ffffff',
+                              padding: '6px 10px',
+                              borderRadius: '4px',
+                              border: '1px solid #cbd5e1',
+                            }}
+                          >
+                            "{reviewExtensionModal.extension?.reason}"
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label
+                          className="form-label"
+                          style={{ fontWeight: 600, fontSize: '13px', color: '#334155' }}
+                        >
+                          {reviewExtensionModal.decision === 'approved'
+                            ? 'Approval instructions / note (optional)'
+                            : 'Reason for rejection *'}
+                        </label>
+                        <textarea
+                          className="form-textarea"
+                          rows={3}
+                          value={reviewExtensionModal.note}
+                          onChange={(e) =>
+                            setReviewExtensionModal((prev) => ({ ...prev, note: e.target.value }))
+                          }
+                          placeholder={
+                            reviewExtensionModal.decision === 'approved'
+                              ? 'Add any comments or instructions for the assignee...'
+                              : 'Provide the mandatory reason why this extension cannot be granted...'
+                          }
+                          required={reviewExtensionModal.decision === 'rejected'}
+                          style={{
+                            width: '100%',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '13px',
+                          }}
+                        />
+                        {reviewExtensionModal.decision === 'rejected' && (
+                          <small style={{ color: '#dc2626', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                            The rejection reason will be permanently recorded in the task history and communicated to the assignee.
+                          </small>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      className="status-modal-footer"
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        gap: '10px',
+                        padding: '12px 20px',
+                        borderTop: '1px solid #e2e8f0',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="task-status-modal-cancel"
+                        onClick={() =>
+                          setReviewExtensionModal({
+                            isOpen: false,
+                            extension: null,
+                            decision: 'approved',
+                            note: '',
+                          })
+                        }
+                        disabled={extensionReviewLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={extensionReviewLoading}
+                        style={{
+                          backgroundColor:
+                            reviewExtensionModal.decision === 'approved' ? '#16a34a' : '#dc2626',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '8px 20px',
+                          borderRadius: '6px',
+                          fontWeight: 600,
+                          cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
+                          fontSize: '13px',
+                        }}
+                      >
+                        {extensionReviewLoading
+                          ? 'Submitting...'
+                          : reviewExtensionModal.decision === 'approved'
+                            ? 'Confirm Approval'
+                            : 'Confirm Rejection'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}

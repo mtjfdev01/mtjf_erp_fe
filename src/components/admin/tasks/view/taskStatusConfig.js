@@ -57,7 +57,7 @@ export const STATUS_TRANSITION_MAP = {
 
 export const QUICK_ACTIONS = [
   { key: 'REASSIGN', label: 'Reassign task' },
-  { key: 'CHANGE_DUE_DATE', label: 'Extend / Change due date' },
+  { key: 'CHANGE_DUE_DATE', label: 'Request to extend due date' },
   { key: 'CHANGE_PRIORITY', label: 'Change priority' },
   // { key: 'ESCALATE', label: 'Escalate to manager' },
   { key: 'MOVE_PROJECT', label: 'Move to another project' },
@@ -99,6 +99,7 @@ const DEPARTMENT_QUICK_ACTION_RULES = {
 
 const applyDepartmentQuickRules = (key, context, baseAllowed) => {
   if (!baseAllowed) return false;
+  if (key === 'CHANGE_DUE_DATE') return true;
   const dept = context.taskDepartment || context.userDepartment;
   if (!dept) return baseAllowed;
   const rules = DEPARTMENT_QUICK_ACTION_RULES[dept];
@@ -270,9 +271,9 @@ export const isQuickActionAvailable = (key, context) => {
       baseAllowed = perms.canAssign && sameDeptOrOrg && canReassignForStatus;
       break;
     case 'CHANGE_DUE_DATE':
+      // Only the assignee can request a deadline extension; the assigner/creator reviews it.
       baseAllowed =
-        (perms.canUpdate || isAssignee || isCreator || isAdminRole) &&
-        sameDeptOrOrg &&
+        isAssignee &&
         !['completed', 'closed', 'cancelled'].includes(statusRaw);
       break;
     case 'CHANGE_PRIORITY':
