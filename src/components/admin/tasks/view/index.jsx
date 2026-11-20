@@ -824,6 +824,16 @@ const ViewTask = ({
     return taskCreatorId > 0 && taskCreatorId === uid;
   }, [user, task]);
 
+  const isSuperAdmin = useMemo(
+    () => String(user?.role || '').toLowerCase() === 'super_admin',
+    [user?.role],
+  );
+
+  const isAdmin = useMemo(
+    () => isSuperAdmin || String(user?.role || '').toLowerCase() === 'admin',
+    [isSuperAdmin, user?.role],
+  );
+
   const canDeleteAttachment = (attachment) => {
     if (!hasAttachmentDeletePermission) return false;
     const taskCreatorId = Number(task?.created_by_id);
@@ -892,7 +902,6 @@ const ViewTask = ({
     const isAssignee =
       Array.isArray(task.assigned_user_ids) &&
       task.assigned_user_ids.some(id => Number(id) === Number(user?.id));
-    const isSuperAdmin = String(user?.role || '').toLowerCase() === 'super_admin';
     const canInteract = taskPerms?.canView === true || isSuperAdmin;
 
     // Creators can see all MOVs, but can interact only when also assigned.
@@ -900,7 +909,7 @@ const ViewTask = ({
 
     // Other users can interact only with their assigned MOVs.
     return isAssignee && canInteract;
-  }, [task, user, taskPerms]);
+  }, [task, user, taskPerms, isSuperAdmin]);
 
   const canChangeStatusInline = useMemo(() => {
     if (!task || !user || !isCurrentUserAssignee) return false;
@@ -2643,7 +2652,7 @@ const ViewTask = ({
               taskRouteBase={taskRouteBase}
               isAssignee={isCurrentUserAssignee}
               isCreator={isCurrentUserCreator}
-              isAdmin={isSuperAdmin || String(user?.role || '').toLowerCase() === 'admin'}
+              isAdmin={isAdmin}
               onClose={() => {
                 setQuickActionOpen(false);
                 setQuickActionKey(null);
