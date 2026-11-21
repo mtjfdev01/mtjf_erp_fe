@@ -441,6 +441,7 @@ const UpdateTask = ({
     custom_recurrence_days: '',
     start_date: '',
     due_date: '',
+    approval_due_date: '',
     project_id: '',
     project_name: '',
     recurrence_rule: '',
@@ -630,6 +631,7 @@ const UpdateTask = ({
           task_type: t.task_type || '',
           start_date: t.start_date ? t.start_date.slice(0, 10) : '',
           due_date: t.due_date ? t.due_date.slice(0, 10) : '',
+          approval_due_date: t.approval_due_date ? t.approval_due_date.slice(0, 10) : '',
           project_id: t.project_id || '',
           project_name: t.project_name || '',
           recurrence_rule: t.recurrence_rule || '',
@@ -753,37 +755,43 @@ const UpdateTask = ({
 
   const statusOptions = useMemo(() => {
     const s = originalStatus;
-    const w = originalWorkflowType;
+    const w = originalWorkflowType || form.workflow_type || 'standard';
     let allowed = [];
 
     switch (s) {
       case 'draft':
-        allowed = ['open'];
+        allowed = ['open', 'in_progress', 'cancelled'];
         break;
       case 'open':
+      case 'assigned':
         allowed = ['in_progress', 'cancelled'];
         break;
       case 'in_progress':
-        allowed = ['completed', 'cancelled'];
-        break;
-      case 'completed':
         allowed =
           w === 'approval_required'
-            ? ['pending_approval', 'in_progress']
-            : ['closed', 'in_progress'];
+            ? ['pending_approval', 'blocked', 'cancelled']
+            : ['completed', 'blocked', 'cancelled'];
+        break;
+      case 'blocked':
+        allowed = ['in_progress', 'cancelled'];
         break;
       case 'pending_approval':
-        allowed = ['approved', 'rejected', 'closed', 'in_progress'];
+        allowed = ['approved', 'rejected', 'in_progress'];
         break;
       case 'approved':
-        allowed = ['closed'];
+        allowed = ['completed'];
         break;
       case 'rejected':
         allowed = ['in_progress', 'cancelled'];
         break;
+      case 'completed':
+        allowed = ['closed', 'in_progress'];
+        break;
       case 'closed':
+        allowed = ['in_progress'];
+        break;
       case 'cancelled':
-        allowed = ['open'];
+        allowed = ['in_progress'];
         break;
       default:
         allowed = [];
@@ -793,10 +801,10 @@ const UpdateTask = ({
       value: status,
       label: status
         .split('_')
-        .map((w) => w[0].toUpperCase() + w.slice(1))
+        .map((w) => w ? w[0].toUpperCase() + w.slice(1) : '')
         .join(' ')
     }));
-  }, [originalStatus, originalWorkflowType]);
+  }, [originalStatus, originalWorkflowType, form.workflow_type]);
 
   const getAttachmentHref = (urlStr) => {
     if (!urlStr) return '#';
@@ -887,15 +895,59 @@ const UpdateTask = ({
       // When no MOV text is submitted, omit MOV fields so existing data is not wiped.
       const titleTrimmed = String(form.title || '').trim();
       const descriptionTrimmed = String(form.description || '').trim();
+
+      let transitionNotes = '';
+      if (form.status && form.status !== originalStatus) {
+        const requiresReason =
+          ['blocked', 'rejected', 'cancelled'].includes(form.status) ||
+          originalStatus === 'closed';
+        if (requiresReason) {
+          const promptLabel =
+            form.status === 'blocked'
+              ? 'Enter a mandatory reason for blocking this task:'
+              : form.status === 'rejected'
+              ? 'Enter a mandatory reason for requesting revisions / rejecting deliverables:'
+              : form.status === 'cancelled'
+              ? 'Enter a mandatory reason for cancelling this task:'
+              : 'Enter a mandatory reason for reopening this closed task:';
+          const reasonInput = window.prompt(promptLabel);
+          if (!reasonInput || !reasonInput.trim()) {
+            setError(`A mandatory reason is required to change status to ${form.status}.`);
+            setLoading(false);
+            return;
+          }
+          transitionNotes = reasonInput.trim();
+        }
+      }
+
+      if (form.workflow_type === 'approval_required') {
+        if (!approverUsers || approverUsers.length === 0) {
+          toast.error('At least one approver is required for approval-required tasks.');
+          setSaving(false);
+          return;
+        }
+        if (form.start_date && form.approval_due_date && form.approval_due_date < form.start_date) {
+          toast.error('Approval due date cannot be earlier than start date.');
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = {
         title: titleTrimmed || undefined,
         description: descriptionTrimmed || titleTrimmed || undefined,
         priority: form.priority || undefined,
         status: form.status || undefined,
         workflow_type: form.workflow_type || undefined,
+        notes: transitionNotes || undefined,
+        reason: transitionNotes || undefined,
         task_type: form.task_type || undefined,
         start_date: form.start_date || undefined,
         due_date: form.due_date || undefined,
+        approval_due_date:
+          form.workflow_type === 'approval_required'
+            ? form.approval_due_date || null
+            : null,
         project_name: form.project_name || undefined,
         assigned_users: assignedUsers && assignedUsers.length > 0
           ? assignedUsers.map((u) => u.id)
@@ -1189,10 +1241,10 @@ const UpdateTask = ({
                 <TaskFormSelect
                   name="workflow_type"
                   label=""
-                  value={form.workflow_type}
+                  value={form.workflow_type || 'standard'}
                   onChange={handleChange}
                   icon={FiGitBranch}
-                  defaultOptionText="Workflow"
+                  defaultOptionText="Standard workflow"
                   options={[
                     { value: 'standard', label: 'Standard workflow' },
                     { value: 'approval_required', label: 'Approval required' },
@@ -1200,25 +1252,37 @@ const UpdateTask = ({
                 />
 
                 {form.workflow_type === 'approval_required' && (
-                  <div className={`update-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
-                    <FiClipboard className="update-task-approver-icon" aria-hidden="true" />
-                    <SearchableMultiSelect
-                      className="update-task-approvers-select"
-                      label=""
-                      apiEndpoint="/users/options"
-                      apiParams={multiSelectParams}
-                      onSelect={(users) => setApproverUsers(users)}
-                      onClear={() => setApproverUsers([])}
-                      value={approverUsers}
-                      displayKey="first_name"
-                      valueKey="id"
-                      allowResearch={true}
-                      debounceDelay={500}
-                      minSearchLength={2}
-                      placeholder="Approvers"
-                      renderOption={userOption}
+                  <>
+                    <div className={`update-task-approver-field ${approverUsers.length > 0 ? 'is-filled' : 'is-empty'}`}>
+                      <FiClipboard className="update-task-approver-icon" aria-hidden="true" />
+                      <SearchableMultiSelect
+                        className="update-task-approvers-select"
+                        label=""
+                        apiEndpoint="/users/options"
+                        apiParams={multiSelectParams}
+                        onSelect={(users) => setApproverUsers(users)}
+                        onClear={() => setApproverUsers([])}
+                        value={approverUsers}
+                        displayKey="first_name"
+                        valueKey="id"
+                        allowResearch={true}
+                        debounceDelay={500}
+                        minSearchLength={2}
+                        placeholder="Approvers"
+                        renderOption={userOption}
+                      />
+                    </div>
+
+                    <DatePill
+                      name="approval_due_date"
+                      value={form.approval_due_date}
+                      onChange={handleChange}
+                      icon={FiCalendar}
+                      placeholder="Approval due date"
+                      title="Approval Due Date"
+                      showDot
                     />
-                  </div>
+                  </>
                 )}
               </div>
 

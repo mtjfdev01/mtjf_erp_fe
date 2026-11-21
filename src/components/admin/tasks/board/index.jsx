@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { FiPlus, FiUserCheck, FiUsers, FiList } from 'react-icons/fi';
+import { FiPlus, FiUserCheck, FiUsers, FiList, FiLayers } from 'react-icons/fi';
 import { toast } from 'react-toastify';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -247,6 +247,28 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
       return;
     }
 
+    const requiresReason =
+      ['blocked', 'rejected', 'cancelled'].includes(normalizedNext) ||
+      (current === 'closed' && normalizedNext !== 'closed');
+    let transitionReason = '';
+    if (requiresReason) {
+      const promptLabel =
+        normalizedNext === 'blocked'
+          ? 'Enter a mandatory reason for blocking this task:'
+          : normalizedNext === 'rejected'
+          ? 'Enter a mandatory reason for requesting revisions / rejecting deliverables:'
+          : normalizedNext === 'cancelled'
+          ? 'Enter a mandatory reason for cancelling this task:'
+          : 'Enter a mandatory reason for reopening this task:';
+      const input = window.prompt(promptLabel);
+      if (!input || !input.trim()) {
+        toast.error('A mandatory reason is required for this action.');
+        setDraggingTaskId(null);
+        return;
+      }
+      transitionReason = input.trim();
+    }
+
     const requestId = statusRequestRef.current + 1;
     statusRequestRef.current = requestId;
 
@@ -273,7 +295,8 @@ const TasksBoard = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 })
     try {
       const res = await axiosInstance.post(`/tasks/${taskId}/status-transition`, {
         status: normalizedNext,
-        notes: '',
+        notes: transitionReason,
+        reason: transitionReason,
       });
 
       if (requestId !== statusRequestRef.current) return;

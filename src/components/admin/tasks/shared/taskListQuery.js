@@ -1,12 +1,10 @@
-import { TEAM_FILTER_DEFAULT } from '../../../common/filters/TeamFilter';
-
 export const EMPTY_TASK_FILTERS = {
   search: '',
   department: '',
   project_name: '',
   status: '',
   priority: '',
-  team_filter: TEAM_FILTER_DEFAULT,
+  team_filter: 'all',
   team_filter_user_id: '',
 };
 
@@ -16,6 +14,7 @@ export function mapActiveTabToViewType(activeTab) {
     assigned_to_team: 'direct_reports',
     other_tasks: 'other_tasks',
     approval_tasks: 'approval_tasks',
+    all: 'all',
   };
   return map[activeTab] || 'assigned';
 }
@@ -42,12 +41,16 @@ export function buildTasksSearchPayload({
     filters.assignee_id = assigneeId;
   }
 
-  const teamMode = String(appliedFilters.team_filter || TEAM_FILTER_DEFAULT)
+  // Only apply team_filter narrowing if the user explicitly selected a mode other than 'all'
+  // and the view is not "Assigned by me" (which is specifically tasks created by currentUser).
+  const teamMode = String(appliedFilters.team_filter || 'all')
     .trim()
     .toLowerCase();
-  filters.team_filter = teamMode;
-  if (teamMode === 'user' && appliedFilters.team_filter_user_id) {
-    filters.team_filter_user_id = appliedFilters.team_filter_user_id;
+  if (teamMode && teamMode !== 'all' && activeTab !== 'other_tasks') {
+    filters.team_filter = teamMode;
+    if (teamMode === 'user' && appliedFilters.team_filter_user_id) {
+      filters.team_filter_user_id = appliedFilters.team_filter_user_id;
+    }
   }
 
   return {

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiPlus, FiClock, FiList, FiUsers,
+  FiEye, FiEdit2, FiTrash2, FiThumbsUp, FiUserCheck, FiPlus, FiClock, FiList, FiUsers, FiLayers,
   FiMoreHorizontal, FiCheckCircle, FiArrowUp, FiArrowDown, FiMinus, FiPlay, FiRotateCcw,
   FiX, FiExternalLink, FiFilter, FiSearch, FiChevronDown, FiChevronUp,
 } from 'react-icons/fi';
@@ -707,11 +707,34 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       toast.error(hoverText('update') || 'You do not have permission to update tasks');
       return;
     }
+
+    let transitionReason = '';
+    const requiresReason =
+      ['blocked', 'rejected', 'cancelled'].includes(nextStatus) ||
+      (task.status === 'closed' && nextStatus !== 'closed');
+    if (requiresReason) {
+      const promptLabel =
+        nextStatus === 'blocked'
+          ? 'Enter a mandatory reason for blocking this task:'
+          : nextStatus === 'rejected'
+          ? 'Enter a mandatory reason for requesting revisions / rejecting deliverables:'
+          : nextStatus === 'cancelled'
+          ? 'Enter a mandatory reason for cancelling this task:'
+          : 'Enter a mandatory reason for reopening this task:';
+      const input = window.prompt(promptLabel);
+      if (!input || !input.trim()) {
+        toast.error('A mandatory reason is required for this action.');
+        return;
+      }
+      transitionReason = input.trim();
+    }
+
     setStatusUpdatingId(task.id);
     try {
       const res = await axiosInstance.post(`/tasks/${task.id}/status-transition`, {
         status: nextStatus,
-        notes: '',
+        notes: transitionReason,
+        reason: transitionReason,
       });
       const updated = res.data?.data || null;
       if (updated) {
@@ -740,6 +763,10 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       isAssignee && (taskPerms.canUpdate === true || taskPerms.canComplete === true);
     const canChangeStatus = canUpdate || canChangeAsAssignee;
 
+    const isApprovalTask = String(task.workflow_type || '').toLowerCase() === 'approval_required';
+    const isSuperAdmin = String(user?.role || '').toLowerCase() === 'super_admin';
+    const isCreator = currentUserId != null && Number(task.created_by_id) === currentUserId;
+
     return [
       {
         icon: <FiEye />,
@@ -767,27 +794,27 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
         icon: <FiPlay />,
         label: 'Start',
         color: '#2563eb',
-        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'in_progress') : undefined,
-        visible: canChangeStatus,
-        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        onClick: (isAssignee || isSuperAdmin) ? () => handleQuickStatusChange(task, 'in_progress') : undefined,
+        visible: (isAssignee || isSuperAdmin) && ['open', 'assigned', 'draft'].includes(status),
+        disabled: statusUpdatingId === task.id,
         title: 'Start',
       },
       {
         icon: <FiCheckCircle />,
         label: 'Complete',
         color: '#16a34a',
-        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'completed') : undefined,
-        visible: canChangeStatus,
-        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        onClick: (isAssignee || isSuperAdmin) ? () => handleQuickStatusChange(task, 'completed') : undefined,
+        visible: (isAssignee || isSuperAdmin) && ((isApprovalTask && status === 'approved') || (!isApprovalTask && status === 'in_progress')),
+        disabled: statusUpdatingId === task.id,
         title: 'Complete',
       },
       {
         icon: <FiRotateCcw />,
         label: 'Reopen',
         color: '#ca8a04',
-        onClick: canChangeStatus ? () => handleQuickStatusChange(task, 'open') : undefined,
-        visible: canChangeStatus,
-        disabled: !canChangeStatus || statusUpdatingId === task.id,
+        onClick: (isCreator || isSuperAdmin) ? () => handleQuickStatusChange(task, 'open') : undefined,
+        visible: (isCreator || isSuperAdmin) && ['completed', 'closed', 'cancelled'].includes(status),
+        disabled: statusUpdatingId === task.id,
         title: 'Reopen',
       },
       {
@@ -1080,7 +1107,7 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
       workflowType: workflow,
       currentStatus: status,
       currentUserId,
-      createdByUserId: t.created_by_id,
+      createdByUserId: t.created_by_id ?? t.created_by?.id ?? t.createdBy,
       reportedById: t.reported_to_id,
       // Array of all reporting manager IDs for multi-manager action authorization
       reportedByIds: t.reported_to_ids || t.reported_to,
@@ -1090,30 +1117,29 @@ const TasksList = ({ viewMode = 'kanban', onViewModeChange, refreshNonce = 0 }) 
     };
     const canReviewApproval =
       isApprovalWorkflow &&
-      ['pending_approval', 'rejected'].includes(status) &&
+      status === 'pending_approval' &&
       hasPendingApproval &&
       isStatusActionAvailable('APPROVE', approvalContext) &&
       isStatusActionAvailable('REJECT', approvalContext);
     const canStartTask =
       canChangeStatus &&
-      ['open', 'assigned'].includes(status) &&
+      ['open', 'assigned', 'draft'].includes(status) &&
       isStatusActionAvailable('START', approvalContext);
     const canCompleteTask =
-      canChangeStatus &&
-      status === 'in_progress' &&
+      (isAssignee || String(user?.role || '').toLowerCase() === 'super_admin') &&
+      ((isApprovalWorkflow && status === 'approved') || (!isApprovalWorkflow && status === 'in_progress')) &&
       isStatusActionAvailable('COMPLETE', approvalContext);
     const canReopenTask =
       canChangeStatus &&
-      status === 'blocked' &&
+      (status === 'blocked' || status === 'rejected') &&
       isStatusActionAvailable('REOPEN_IN_PROGRESS', approvalContext);
     const canSubmitApproval =
       isApprovalWorkflow &&
-      status === 'completed' &&
+      status === 'in_progress' &&
       isAssignee &&
-      !isAdminRole &&
       isStatusActionAvailable('SUBMIT_APPROVAL', approvalContext);
     const canCloseTask =
-      (status === 'approved' || (status === 'completed' && !isApprovalWorkflow)) &&
+      status === 'completed' &&
       isStatusActionAvailable('CLOSE', approvalContext);
 
     const rawChecklist = Array.isArray(t.checklist) ? t.checklist : (Array.isArray(t.done_when) ? t.done_when : []);

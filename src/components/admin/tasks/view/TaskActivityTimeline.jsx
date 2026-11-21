@@ -77,6 +77,62 @@ const resolveActivity = (activity) => {
     return { icon: 'info', title: 'Task reassigned', body: '', author };
   }
 
+  if (action === 'due_date_extension_requested') {
+    const proposed = details.proposed_due_date ? formatTimelineDate(details.proposed_due_date) : '';
+    const reason = details.reason ? ` Reason: ${details.reason}` : '';
+    return {
+      icon: 'info',
+      title: 'Deadline extension requested',
+      body: proposed ? `Proposed due date: ${proposed}.${reason}` : reason,
+      author,
+    };
+  }
+
+  if (action === 'due_date_extension_approved') {
+    const newDue = details.new_due_date ? formatTimelineDate(details.new_due_date) : '';
+    const origDue = details.original_due_date ? formatTimelineDate(details.original_due_date) : '';
+    const note = details.note ? ` Note: ${details.note}` : '';
+    return {
+      icon: 'success',
+      title: 'Deadline extension approved',
+      body: `New due date: ${newDue}${origDue ? ` (Original: ${origDue})` : ''}.${note}`,
+      author,
+    };
+  }
+
+  if (action === 'due_date_extension_rejected') {
+    const curDue = details.current_due_date ? formatTimelineDate(details.current_due_date) : '';
+    const note = details.note ? ` Note: ${details.note}` : '';
+    return {
+      icon: 'note',
+      title: 'Deadline extension rejected',
+      body: `Due date retained as ${curDue}.${note}`,
+      author,
+    };
+  }
+
+  if (action === 'due_date_changed') {
+    const newDue = details.new_due_date ? formatTimelineDate(details.new_due_date) : '';
+    const prevDue = details.previous_due_date ? formatTimelineDate(details.previous_due_date) : '';
+    return {
+      icon: 'info',
+      title: 'Due date changed',
+      body: `Due date changed from ${prevDue || 'N/A'} to ${newDue}.`,
+      author,
+    };
+  }
+
+  if (action === 'overdue_escalated') {
+    const level = details.level_name || (details.escalation_level >= 2 ? 'Level 2 (Department Head)' : 'Level 1 (Reporting Manager)');
+    const days = details.overdue_days ? `Task is ${details.overdue_days} day(s) overdue. ` : '';
+    return {
+      icon: 'info',
+      title: `Overdue Escalation (${level})`,
+      body: `${days}${details.notes || ''}`.trim(),
+      author: 'System',
+    };
+  }
+
   return {
     icon: 'neutral',
     title: capitalize(action.replace(/_/g, ' ')) || 'Activity',

@@ -13,16 +13,21 @@ import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 const QuickActionModal = ({
   isOpen,
   taskId,
+  task,
   actionKey,
   onClose,
   onCompleted,
   userDepartment,
   taskRouteBase = '/tasks',
+  isAssignee = false,
+  isCreator = false,
+  isAdmin = false,
 }) => {
   console.log('QuickActionModal props:', { isOpen, taskId, actionKey });
   const [formState, setFormState] = useState({
     assignee: '',
     dueDate: '',
+    reason: '',
     priority: '',
     // escalationNotes: '',
     project: '',
@@ -78,15 +83,36 @@ const QuickActionModal = ({
           assigned_users_meta: meta,
         });
         updated = res.data?.data || null;
+      } else if (actionKey === 'CHANGE_DUE_DATE') {
+        if (!formState.dueDate) {
+          toast.error('Please specify a new proposed due date.');
+          setLoading(false);
+          return;
+        }
+        if (!formState.reason || formState.reason.trim().length < 5) {
+          toast.error('A mandatory reason (at least 5 characters) is required for requesting a due date extension.');
+          setLoading(false);
+          return;
+        }
+
+        if (isAssignee && !isCreator) {
+          await axiosInstance.post(`/tasks/${taskId}/request-extension`, {
+            proposed_due_date: formState.dueDate,
+            reason: formState.reason.trim(),
+          });
+          toast.success('Deadline extension request submitted for review');
+        } else {
+          await axiosInstance.patch(`/tasks/${taskId}`, {
+            due_date: formState.dueDate,
+            reason: formState.reason.trim(),
+          });
+          toast.success('Task due date updated successfully');
+        }
       } else if (
-        actionKey === 'CHANGE_DUE_DATE' ||
         actionKey === 'CHANGE_PRIORITY' ||
         actionKey === 'MOVE_PROJECT'
       ) {
         const payload = {};
-        if (actionKey === 'CHANGE_DUE_DATE') {
-          payload.due_date = formState.dueDate || null;
-        }
         if (actionKey === 'CHANGE_PRIORITY') {
           payload.priority = formState.priority || null;
         }
@@ -136,8 +162,18 @@ const QuickActionModal = ({
     }
   };
 
-  const title = QUICK_ACTION_LABEL_MAP[actionKey] || 'Task action';
-  const submitLabel = QUICK_ACTION_LABEL_MAP[actionKey] || 'Submit';
+  const title =
+    actionKey === 'CHANGE_DUE_DATE'
+      ? isAssignee && !isCreator
+        ? 'Request Deadline Extension'
+        : 'Extend / Change Due Date'
+      : QUICK_ACTION_LABEL_MAP[actionKey] || 'Task action';
+  const submitLabel =
+    actionKey === 'CHANGE_DUE_DATE'
+      ? isAssignee && !isCreator
+        ? 'Submit Extension Request'
+        : 'Update Due Date'
+      : QUICK_ACTION_LABEL_MAP[actionKey] || 'Submit';
   const submitLoadingText =
     actionKey === 'GENERATE_REPORT' ? 'Generating...' : 'Submitting...';
 
@@ -192,13 +228,48 @@ const QuickActionModal = ({
               />
             )}
             {showDueDate && (
-              <FormInput
-                name="dueDate"
-                label="New due date"
-                type="date"
-                value={formState.dueDate}
-                onChange={(e) => handleChange('dueDate', e.target.value)}
-              />
+              <>
+                {task && (
+                  <div style={{ marginBottom: '14px', padding: '10px 14px', background: '#f8fafc', borderRadius: '6px', border: '1px solid #e2e8f0', fontSize: '13px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ color: '#64748b' }}>Original Due Date:</span>
+                      <strong>
+                        {task.original_due_date
+                          ? new Date(task.original_due_date).toLocaleDateString()
+                          : (task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set')}
+                      </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748b' }}>Current Due Date:</span>
+                      <strong style={{ color: '#0f172a' }}>
+                        {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'Not set'}
+                      </strong>
+                    </div>
+                  </div>
+                )}
+                <FormInput
+                  name="dueDate"
+                  label="Proposed new due date *"
+                  type="date"
+                  required
+                  value={formState.dueDate}
+                  onChange={(e) => handleChange('dueDate', e.target.value)}
+                />
+                <div style={{ marginTop: '12px' }}>
+                  <FormTextarea
+                    name="reason"
+                    label="Reason for extension *"
+                    placeholder="Provide a clear, detailed reason for this due date change / extension..."
+                    rows={3}
+                    required
+                    value={formState.reason}
+                    onChange={(e) => handleChange('reason', e.target.value)}
+                  />
+                  <small style={{ color: '#64748b', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                    A mandatory reason is required and will be permanently recorded in the task history and audit trail.
+                  </small>
+                </div>
+              </>
             )}
             {showPriority && (
               <div className="form-group">

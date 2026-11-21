@@ -34,10 +34,11 @@ const STATUS_CONFIG = {
 
 /**
  * Returns true if the task status represents a completed/terminal positive outcome.
+ * Pending approval and approved tasks are NOT counted as completed in KPIs.
  */
 const isCompletedStatus = (status) => {
   const s = String(status || '').toLowerCase();
-  return ['completed', 'closed', 'approved'].includes(s);
+  return ['completed', 'closed'].includes(s);
 };
 
 /**
@@ -45,7 +46,7 @@ const isCompletedStatus = (status) => {
  */
 const isTaskOverdue = (task, todayIso, selectedDay) => {
   const s = String(task.status || '').toLowerCase();
-  if (['completed', 'closed', 'approved', 'cancelled'].includes(s)) return false;
+  if (['completed', 'closed', 'cancelled'].includes(s)) return false;
   const taskDate = task.due_date || task.recurrence_next_date;
   if (!taskDate) return false;
   const dateStr = String(taskDate).slice(0, 10);
@@ -177,7 +178,7 @@ const KpiDetailsModal = ({
   const completionMetrics = useMemo(() => {
     const total = statsData?.total_tasks ?? allTasks.length;
     const completed = allTasks.filter((t) => isCompletedStatus(t.status)).length;
-    const inProgress = allTasks.filter((t) => ['in_progress', 'pending_approval'].includes(String(t.status || '').toLowerCase())).length;
+    const inProgress = allTasks.filter((t) => ['in_progress', 'pending_approval', 'approved', 'rejected', 'blocked'].includes(String(t.status || '').toLowerCase())).length;
     const notStarted = allTasks.filter((t) => ['open', 'draft'].includes(String(t.status || '').toLowerCase())).length;
     const overdue = statsData?.overdue_tasks ?? allTasks.filter((t) => isTaskOverdue(t, todayIso, selectedDay)).length;
     const other = Math.max(0, total - completed - inProgress - notStarted);

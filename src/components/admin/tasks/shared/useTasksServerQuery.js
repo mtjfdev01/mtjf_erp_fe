@@ -21,11 +21,11 @@ export default function useTasksServerQuery({
     },
   );
   const [tempFilters, setTempFilters, clearTempFilters] = usePersistedFilters(
-    `${storagePrefix}:temp:v2`,
+    `${storagePrefix}:temp:v3`,
     EMPTY_TASK_FILTERS,
   );
   const [appliedFilters, setAppliedFilters, clearAppliedFilters] = usePersistedFilters(
-    `${storagePrefix}:applied:v2`,
+    `${storagePrefix}:applied:v3`,
     EMPTY_TASK_FILTERS,
   );
 
@@ -38,6 +38,8 @@ export default function useTasksServerQuery({
     assigned_to_me: 0,
     assigned_to_team: 0,
     other_tasks: 0,
+    approval_tasks: 0,
+    all: 0,
   });
   const [localRefreshNonce, setLocalRefreshNonce] = useState(0);
   const requestIdRef = useRef(0);

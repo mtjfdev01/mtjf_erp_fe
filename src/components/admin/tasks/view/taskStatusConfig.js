@@ -1,27 +1,49 @@
 export const STATUS_BUTTON_CONFIG = {
-  DRAFT: [],
-  OPEN: [],
-  ASSIGNED: [],
-  IN_PROGRESS: [],
+  DRAFT: [
+    { label: 'Start Task', action: 'START', color: 'primary' },
+  ],
+  OPEN: [
+    { label: 'Start Task', action: 'START', color: 'primary' },
+  ],
+  ASSIGNED: [
+    { label: 'Start Task', action: 'START', color: 'primary' },
+  ],
+  IN_PROGRESS: [
+    { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
+    { label: 'Complete Task', action: 'COMPLETE', color: 'success' },
+    { label: 'Block Task', action: 'BLOCK', color: 'danger' },
+  ],
   PENDING: [],
   PENDING_APPROVAL: [
-    { label: 'Approve', action: 'APPROVE', color: 'success' },
-    { label: 'Reject', action: 'REJECT', color: 'danger' },
+    { label: 'Approve Deliverables', action: 'APPROVE', color: 'success' },
+    { label: 'Request Revisions (Reject)', action: 'REJECT', color: 'danger' },
   ],
-  REJECTED: [],
+  REJECTED: [
+    { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+  ],
   APPROVED: [
-    { label: 'Close Task', action: 'CLOSE', color: 'danger' },
+    { label: 'Mark Completed', action: 'COMPLETE', color: 'success' },
   ],
   COMPLETED: [
-    { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
     { label: 'Close Task', action: 'CLOSE', color: 'danger' },
+    { label: 'Reopen Task', action: 'REOPEN', color: 'secondary' },
   ],
-  CLOSED: [],
-  CANCELLED: [],
+  CLOSED: [
+    { label: 'Reopen Task', action: 'REOPEN', color: 'primary' },
+  ],
+  CANCELLED: [
+    { label: 'Reopen Task', action: 'REOPEN', color: 'primary' },
+  ],
   FAILED: [],
   REGISTERED: [],
   BLOCKED: [
-    { label: 'Reopen In Progress', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+    { label: 'Unblock Task (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+  ],
+  PAUSED: [
+    { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+  ],
+  ON_HOLD: [
+    { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
   ],
 };
 
@@ -32,15 +54,16 @@ export const STATUS_TRANSITION_MAP = {
   BLOCK: 'blocked',
   REOPEN_IN_PROGRESS: 'in_progress',
   CLOSE: 'closed',
-  REOPEN: 'open',
+  REOPEN: 'in_progress',
   SUBMIT_APPROVAL: 'pending_approval',
   APPROVE: 'approved',
   REJECT: 'rejected',
+  CANCEL: 'cancelled',
 };
 
 export const QUICK_ACTIONS = [
   { key: 'REASSIGN', label: 'Reassign task' },
-  { key: 'CHANGE_DUE_DATE', label: 'Change due date' },
+  { key: 'CHANGE_DUE_DATE', label: 'Request to extend due date' },
   { key: 'CHANGE_PRIORITY', label: 'Change priority' },
   // { key: 'ESCALATE', label: 'Escalate to manager' },
   { key: 'MOVE_PROJECT', label: 'Move to another project' },
@@ -82,6 +105,7 @@ const DEPARTMENT_QUICK_ACTION_RULES = {
 
 const applyDepartmentQuickRules = (key, context, baseAllowed) => {
   if (!baseAllowed) return false;
+  if (key === 'CHANGE_DUE_DATE') return true;
   const dept = context.taskDepartment || context.userDepartment;
   if (!dept) return baseAllowed;
   const rules = DEPARTMENT_QUICK_ACTION_RULES[dept];
@@ -98,10 +122,13 @@ const applyDepartmentQuickRules = (key, context, baseAllowed) => {
 export const isStatusActionAvailable = (action, context) => {
   const perms = context.permissions || {};
   const role = String(context.userRole || '').toLowerCase();
-  const isAdminRole = role === 'super_admin' || role === 'admin';
+  const isSuperAdmin = role === 'super_admin';
+  const isAdminRole = isSuperAdmin || role === 'admin';
   const isAssignee = context.isAssignee === true;
   const sameDeptOrOrg = isSameDeptOrOrg(context);
   const workflowRaw = String(context.workflowType || '').toUpperCase();
+  const isApprovalWorkflow =
+    workflowRaw === 'APPROVAL_REQUIRED' || workflowRaw === 'APPROVAL_BASED';
   const currentStatusRaw = String(context.currentStatus || '').toLowerCase();
   const approverIdsRaw = context.approvalRequiredUserIds;
   const approverIds = Array.isArray(approverIdsRaw)
@@ -109,18 +136,24 @@ export const isStatusActionAvailable = (action, context) => {
         .map((v) => Number(v))
         .filter((v) => Number.isFinite(v) && v > 0)
     : [];
-  const currentUserIdNum =
-    context.currentUserId != null ? Number(context.currentUserId) : null;
-  const isConfiguredApprover =
-    currentUserIdNum != null && approverIds.length > 0
-      ? approverIds.includes(currentUserIdNum)
-      : false;
-  const hasActedOnApproval =
-    context.currentUserHasActedOnApproval === true;
   const approvalsMetaRaw = context.approvalsMeta;
   const approvalsMeta = Array.isArray(approvalsMetaRaw)
     ? approvalsMetaRaw
     : [];
+  const metaApproverIds = approvalsMeta
+    .map((m) => (m && m.user_id ? Number(m.user_id) : null))
+    .filter((v) => Number.isFinite(v) && v > 0);
+  const effectiveApproverIds = Array.from(
+    new Set([...approverIds, ...metaApproverIds]),
+  );
+  const currentUserIdNum =
+    context.currentUserId != null ? Number(context.currentUserId) : null;
+  const isConfiguredApprover =
+    currentUserIdNum != null && effectiveApproverIds.length > 0
+      ? effectiveApproverIds.includes(currentUserIdNum)
+      : false;
+  const hasActedOnApproval =
+    context.currentUserHasActedOnApproval === true;
   const currentApprovalMeta =
     currentUserIdNum != null
       ? approvalsMeta.find(
@@ -131,8 +164,8 @@ export const isStatusActionAvailable = (action, context) => {
     ? String(currentApprovalMeta.decision || 'pending').toLowerCase()
     : 'pending';
   const allApprovalsCompleted =
-    approverIds.length > 0 &&
-    approverIds.every((idVal) => {
+    effectiveApproverIds.length > 0 &&
+    effectiveApproverIds.every((idVal) => {
       const meta = approvalsMeta.find(
         (m) => m && Number(m.user_id) === Number(idVal),
       );
@@ -140,60 +173,62 @@ export const isStatusActionAvailable = (action, context) => {
       const decision = String(meta.decision || 'pending').toLowerCase();
       return decision === 'approved' || decision === 'rejected';
     });
+  const createdByUid =
+    context.createdByUserId != null
+      ? Number(context.createdByUserId)
+      : (context.task?.created_by_id != null
+          ? Number(context.task.created_by_id)
+          : (context.task?.created_by?.id != null
+              ? Number(context.task.created_by?.id)
+              : null));
+  const currentUid =
+    context.currentUserId != null ? Number(context.currentUserId) : null;
+  const isCreator =
+    currentUid != null &&
+    createdByUid != null &&
+    currentUid === createdByUid;
+  const reporterIds = Array.isArray(context.reportedByIds)
+    ? context.reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0)
+    : (context.reportedById != null ? [Number(context.reportedById)] : []);
+  const isReporter =
+    currentUid != null &&
+    reporterIds.includes(currentUid);
+  const isManagement = isCreator || isReporter || isAdminRole;
+
   switch (action) {
     case 'START':
-      return isAssignee && sameDeptOrOrg;
+      return isAssignee || isSuperAdmin;
     case 'PAUSE':
     case 'BLOCK':
-    case 'REOPEN':
+      return (isAssignee || isSuperAdmin) && currentStatusRaw === 'in_progress';
     case 'REOPEN_IN_PROGRESS':
-      return isAssignee && perms.canUpdate && sameDeptOrOrg;
+      return (isAssignee || isSuperAdmin) && (['blocked', 'rejected', 'paused', 'on_hold', 'hold'].includes(currentStatusRaw));
+    case 'REOPEN':
+      // Only the Task Creator (or Super Admin) can reopen completed, closed, or cancelled tasks
+      return (isCreator || isSuperAdmin) && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');
     case 'COMPLETE':
-      return isAssignee && sameDeptOrOrg;
-    case 'CLOSE': {
-      // Preserve creator/reporter closure after completion or approval; other changes require assignment.
-      const isCreator =
-        context.currentUserId != null &&
-        context.createdByUserId != null &&
-        Number(context.currentUserId) === Number(context.createdByUserId);
-      // Multi-manager support: resolve all reporting managers from reportedByIds array or legacy reportedById
-      const reporterIds = Array.isArray(context.reportedByIds)
-        ? context.reportedByIds.map(Number).filter((v) => Number.isFinite(v) && v > 0)
-        : (context.reportedById != null ? [Number(context.reportedById)] : []);
-      const isReporter =
-        context.currentUserId != null &&
-        reporterIds.includes(Number(context.currentUserId));
-      const isCreatorOrReporter = isCreator || isReporter;
-
-      if (
-        currentStatusRaw === 'approved' ||
-        (currentStatusRaw === 'completed' && workflowRaw !== 'APPROVAL_REQUIRED')
-      ) {
-        return isCreatorOrReporter && sameDeptOrOrg;
+      if (isApprovalWorkflow) {
+        // In approval workflow, only an APPROVED task moves to COMPLETED by Assignee (or Super Admin)
+        return (isAssignee || isSuperAdmin) && currentStatusRaw === 'approved';
       }
-
-      if (workflowRaw === 'APPROVAL_REQUIRED') {
-        if (allApprovalsCompleted) {
-          return isCreatorOrReporter && sameDeptOrOrg;
-        }
-        return perms.canApprove === true && isCreatorOrReporter && sameDeptOrOrg;
-      }
-
-      return (
-        isAssignee &&
-        (perms.canUpdate || perms.canComplete) &&
-        sameDeptOrOrg
-      );
-    }
+      return (isAssignee || isSuperAdmin) && currentStatusRaw === 'in_progress';
+    case 'CLOSE':
+      // Only COMPLETED tasks can be formally closed by the Task Creator (or Super Admin)
+      return (isCreator || isSuperAdmin) && currentStatusRaw === 'completed';
+    case 'CANCEL':
+      return isManagement && !['completed', 'closed', 'cancelled'].includes(currentStatusRaw) && sameDeptOrOrg;
     case 'SUBMIT_APPROVAL':
-      return isAssignee && (perms.canUpdate || perms.canView) && !isAdminRole;
+      return (isAssignee || isSuperAdmin) && isApprovalWorkflow && (currentStatusRaw === 'in_progress' || currentStatusRaw === 'in progress');
     case 'APPROVE':
     case 'REJECT':
-      if (currentStatusRaw === 'approved' || currentStatusRaw === 'closed') {
+      if (currentStatusRaw !== 'pending_approval') {
         return false;
       }
-      if (approverIds.length === 0) return false;
-      if (!isConfiguredApprover) return false;
+      if (effectiveApproverIds.length > 0) {
+        if (!isConfiguredApprover && !isSuperAdmin) return false;
+      } else {
+        if (!isManagement) return false;
+      }
       if (hasActedOnApproval) return false;
       if (currentDecision === 'approved' || currentDecision === 'rejected') {
         return false;
@@ -208,6 +243,19 @@ export const isQuickActionAvailable = (key, context) => {
   const perms = context.permissions || {};
   const sameDeptOrOrg = isSameDeptOrOrg(context);
   const statusRaw = String(context.currentStatus || '').toLowerCase();
+  const isAssignee = context.isAssignee === true;
+  const role = String(context.userRole || '').toLowerCase();
+  const isSuperAdmin = role === 'super_admin';
+  const isAdminRole = isSuperAdmin || role === 'admin';
+  const currentUid = context.currentUserId != null ? Number(context.currentUserId) : null;
+  const createdByUid =
+    context.createdByUserId != null
+      ? Number(context.createdByUserId)
+      : (context.task?.created_by_id != null
+          ? Number(context.task.created_by_id)
+          : null);
+  const isCreator = currentUid != null && createdByUid != null && currentUid === createdByUid;
+
   const canReassignForStatus = (() => {
     if (!statusRaw) return false;
     if (
@@ -229,6 +277,11 @@ export const isQuickActionAvailable = (key, context) => {
       baseAllowed = perms.canAssign && sameDeptOrOrg && canReassignForStatus;
       break;
     case 'CHANGE_DUE_DATE':
+      // Only the assignee can request a deadline extension; the assigner/creator reviews it.
+      baseAllowed =
+        isAssignee &&
+        !['completed', 'closed', 'cancelled'].includes(statusRaw);
+      break;
     case 'CHANGE_PRIORITY':
     case 'MOVE_PROJECT':
       baseAllowed = perms.canUpdate && sameDeptOrOrg;
