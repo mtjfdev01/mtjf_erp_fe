@@ -39,6 +39,12 @@ export const STATUS_BUTTON_CONFIG = {
   BLOCKED: [
     { label: 'Unblock Task (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
   ],
+  PAUSED: [
+    { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+  ],
+  ON_HOLD: [
+    { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+  ],
 };
 
 export const STATUS_TRANSITION_MAP = {
@@ -196,7 +202,7 @@ export const isStatusActionAvailable = (action, context) => {
     case 'BLOCK':
       return (isAssignee || isSuperAdmin) && currentStatusRaw === 'in_progress';
     case 'REOPEN_IN_PROGRESS':
-      return (isAssignee || isSuperAdmin) && (currentStatusRaw === 'blocked' || currentStatusRaw === 'rejected');
+      return (isAssignee || isSuperAdmin) && (['blocked', 'rejected', 'paused', 'on_hold', 'hold'].includes(currentStatusRaw));
     case 'REOPEN':
       // Only the Task Creator (or Super Admin) can reopen completed, closed, or cancelled tasks
       return (isCreator || isSuperAdmin) && (currentStatusRaw === 'completed' || currentStatusRaw === 'closed' || currentStatusRaw === 'cancelled');

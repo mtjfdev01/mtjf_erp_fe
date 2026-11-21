@@ -65,13 +65,54 @@ const APPROVAL_STEP_DEFS = [
   { key: 'closed', label: 'Closed' },
 ];
 
-const getStepIndex = (statusLowerVal, isApprovalWorkflow) => {
+const getCancelledStepIndex = (task, isApprovalWorkflow) => {
+  if (!task) return 0;
+  if (Array.isArray(task.activities) && task.activities.length > 0) {
+    const cancelActivity = [...task.activities].reverse().find((a) => {
+      const toStatus = String(
+        a.metadata?.to_status || a.details?.to_status || a.to_status || a.status || ''
+      ).toLowerCase();
+      const actType = String(a.activity_type || a.action || a.event || '').toLowerCase();
+      return toStatus === 'cancelled' || actType.includes('cancel');
+    });
+    if (cancelActivity) {
+      const fromStatus = String(
+        cancelActivity.metadata?.from_status ||
+        cancelActivity.details?.from_status ||
+        cancelActivity.from_status ||
+        ''
+      ).toLowerCase();
+      if (fromStatus && fromStatus !== 'cancelled') {
+        return getStepIndex(fromStatus, isApprovalWorkflow, null);
+      }
+    }
+  }
   if (isApprovalWorkflow) {
-    switch (statusLowerVal) {
+    if (task.completed_date || task.status === 'completed') return 4;
+    if (task.approved_date || task.approved_by) return 3;
+    if (task.submitted_for_approval_at) return 2;
+    if (Number(task.progress) > 0 || task.start_date) return 1;
+    return 0;
+  } else {
+    if (task.completed_date || task.status === 'completed') return 2;
+    if (Number(task.progress) > 0 || task.start_date) return 1;
+    return 0;
+  }
+};
+
+const getStepIndex = (statusLowerVal, isApprovalWorkflow, task = null) => {
+  const normStatus = String(statusLowerVal || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+  if (isApprovalWorkflow) {
+    switch (normStatus) {
       case 'in_progress':
+      case 'inprogress':
       case 'blocked':
+      case 'paused':
+      case 'on_hold':
+      case 'hold':
         return 1;
       case 'pending_approval':
+      case 'under_review':
       case 'rejected':
         return 2;
       case 'approved':
@@ -80,21 +121,179 @@ const getStepIndex = (statusLowerVal, isApprovalWorkflow) => {
         return 4;
       case 'closed':
         return 5;
+      case 'cancelled':
+      case 'canceled':
+        return getCancelledStepIndex(task, true);
       default:
         return 0;
     }
   } else {
-    switch (statusLowerVal) {
+    switch (normStatus) {
       case 'in_progress':
+      case 'inprogress':
       case 'blocked':
+      case 'paused':
+      case 'on_hold':
+      case 'hold':
+      case 'rejected':
         return 1;
       case 'completed':
         return 2;
       case 'closed':
         return 3;
+      case 'cancelled':
+      case 'canceled':
+        return getCancelledStepIndex(task, false);
       default:
         return 0;
     }
+  }
+};
+
+const getDynamicStepState = (step, idx, activeStepIdx, statusLowerVal) => {
+  const isCurrentActive = idx === activeStepIdx;
+  const isDone = idx < activeStepIdx;
+
+  if (!isCurrentActive) {
+    return {
+      isActive: false,
+      isDone,
+      label: step.label,
+      originalStepLabel: step.label,
+      modifierClass: isDone ? 'tv2-step--done' : '',
+      icon: null,
+      statusType: isDone ? 'completed' : 'pending',
+    };
+  }
+
+  const normStatus = String(statusLowerVal || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+
+  // Active step: dynamically determine label and visual styling based on actual task status
+  switch (normStatus) {
+    case 'blocked':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Blocked',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--blocked',
+        icon: null,
+        statusType: 'blocked',
+      };
+    case 'paused':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Paused',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--paused',
+        icon: null,
+        statusType: 'paused',
+      };
+    case 'on_hold':
+    case 'hold':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'On Hold',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--paused',
+        icon: null,
+        statusType: 'paused',
+      };
+    case 'rejected':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Rejected',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--rejected',
+        icon: null,
+        statusType: 'rejected',
+      };
+    case 'cancelled':
+    case 'canceled':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Cancelled',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--cancelled',
+        icon: null,
+        statusType: 'cancelled',
+      };
+    case 'draft':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Draft',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--draft',
+        icon: null,
+        statusType: 'draft',
+      };
+    case 'in_progress':
+    case 'inprogress':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'In progress',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active',
+        icon: null,
+        statusType: 'in_progress',
+      };
+    case 'pending_approval':
+    case 'under_review':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Pending Approval',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active',
+        icon: null,
+        statusType: 'pending_approval',
+      };
+    case 'approved':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Approved',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--approved',
+        icon: null,
+        statusType: 'approved',
+      };
+    case 'completed':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Completed',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--completed',
+        icon: null,
+        statusType: 'completed',
+      };
+    case 'closed':
+      return {
+        isActive: true,
+        isDone: true,
+        label: 'Closed',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--closed tv2-step--done',
+        icon: null,
+        statusType: 'closed',
+      };
+    default:
+      return {
+        isActive: true,
+        isDone: false,
+        label: step.label,
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active',
+        icon: null,
+        statusType: 'active',
+      };
   }
 };
 
@@ -1599,7 +1798,7 @@ const ViewTask = ({
 
   // ---- Derived values for the new layout ----
   const stepDefinitions = isApprovalWorkflow ? APPROVAL_STEP_DEFS : STANDARD_STEP_DEFS;
-  const stepIdx = getStepIndex(statusLower, isApprovalWorkflow);
+  const stepIdx = getStepIndex(statusLower, isApprovalWorkflow, task);
   const showExtraStatusChip = ['pending_approval', 'approved', 'rejected', 'cancelled'].includes(statusLower);
   const showStartWork = canChangeStatusInline && stepIdx === 0;
   const canRequestNewDate = availableQuickActions.includes('CHANGE_DUE_DATE');
@@ -1709,6 +1908,27 @@ const ViewTask = ({
                   <div className="tv2-header-title">
                     <h1 className="tv2-title">{task.title || 'Task Title'}</h1>
                     <div className="tv2-chips">
+                      <span className={`tv2-chip tv2-chip--status tv2-chip--status-${statusLower}`}>
+                        {statusLower === 'blocked'
+                          ? '🚫 Blocked'
+                          : ['paused', 'on_hold', 'hold'].includes(statusLower)
+                          ? '⏸ Paused'
+                          : statusLower === 'rejected'
+                          ? '✕ Rejected'
+                          : statusLower === 'cancelled'
+                          ? '⊘ Cancelled'
+                          : statusLower === 'pending_approval'
+                          ? '⏳ Pending Approval'
+                          : statusLower === 'approved'
+                          ? '✓ Approved'
+                          : statusLower === 'completed'
+                          ? '✓ Completed'
+                          : statusLower === 'closed'
+                          ? '✓ Closed'
+                          : statusLower === 'in_progress'
+                          ? '● In Progress'
+                          : '● Assigned'}
+                      </span>
                       <span className={`tv2-chip tv2-chip--priority-${String(task.priority || 'medium').toLowerCase()}`}>
                         {capitalize(task.priority || 'medium')} priority
                       </span>
@@ -1771,10 +1991,58 @@ const ViewTask = ({
                 </div>
 
                 <div className="tv2-header-bar">
-                  <ol className="tv2-stepper" aria-label="Task status">
+                  {statusLower === 'blocked' && (
+                    <div className="tv2-alert tv2-alert--danger" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #ea580c', background: '#fff7ed', color: '#9a3412' }}>
+                      <div className="tv2-alert-big" style={{ color: '#ea580c' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#9a3412' }}>Task is Blocked</span>
+                        <span className="tv2-alert-sub" style={{ color: '#c2410c' }}>
+                          {task.blocked_reason || task.reason || 'Work on this task is currently blocked. Click Unblock Task when ready to resume.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {['paused', 'on_hold', 'hold'].includes(statusLower) && (
+                    <div className="tv2-alert tv2-alert--warning" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #d97706', background: '#fefce8', color: '#854d0e' }}>
+                      <div className="tv2-alert-big" style={{ color: '#ca8a04' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#854d0e' }}>Task is Paused</span>
+                        <span className="tv2-alert-sub" style={{ color: '#a16207' }}>
+                          {task.reason || 'Work on this task is paused. Click Resume Work when ready to proceed.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {statusLower === 'rejected' && (
+                    <div className="tv2-alert tv2-alert--danger" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #dc2626', background: '#fef2f2', color: '#991b1b' }}>
+                      <div className="tv2-alert-big" style={{ color: '#dc2626' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#991b1b' }}>Deliverables Rejected</span>
+                        <span className="tv2-alert-sub" style={{ color: '#b91c1c' }}>
+                          {task.reject_reason || task.reason || (Array.isArray(approvalState?.rejected_note) && approvalState.rejected_note[approvalState.rejected_note.length - 1]?.note) || 'Task deliverables were rejected and require revisions before proceeding.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {statusLower === 'cancelled' && (
+                    <div className="tv2-alert" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #64748b', background: '#f8fafc', color: '#334155' }}>
+                      <div className="tv2-alert-big" style={{ color: '#64748b' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#334155' }}>Task Cancelled</span>
+                        <span className="tv2-alert-sub" style={{ color: '#64748b' }}>
+                          {task.cancellation_reason || task.reason || 'This task has been cancelled and is no longer active.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <ol className="tv2-stepper" aria-label="Task workflow progress">
                     {stepDefinitions.map((step, idx) => {
-                      const isActive = idx === stepIdx;
-                      const isDone = idx < stepIdx;
+                      const stepState = getDynamicStepState(step, idx, stepIdx, statusLower);
+                      const { isActive, label, modifierClass, icon } = stepState;
                       const clickable =
                         canChangeStatusInline &&
                         !isActive &&
@@ -1782,7 +2050,7 @@ const ViewTask = ({
                       return (
                         <li
                           key={step.key}
-                          className={`tv2-step${isActive ? ' tv2-step--active' : ''}${isDone ? ' tv2-step--done' : ''}`}
+                          className={`tv2-step ${modifierClass}`.trim()}
                         >
                           <button
                             type="button"
@@ -1790,10 +2058,12 @@ const ViewTask = ({
                             data-clickable={clickable ? 'true' : 'false'}
                             disabled={!clickable || statusActionLoading}
                             aria-current={isActive ? 'step' : undefined}
+                            title={stepState.originalStepLabel ? `Workflow: ${stepState.originalStepLabel} · Current Status: ${label}` : undefined}
                             onClick={() => clickable && handleInlineStatusChange(step.key)}
                           >
                             <span className="tv2-step-num">{idx + 1}</span>
-                            {step.label}
+                            {icon && <span className="tv2-step-icon" aria-hidden="true">{icon}</span>}
+                            <span className="tv2-step-label">{label}</span>
                           </button>
                         </li>
                       );
