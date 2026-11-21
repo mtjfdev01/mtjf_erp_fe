@@ -1729,6 +1729,30 @@ const ViewTask = ({
     );
   }, [task, assignedUsers, escalationActivity]);
 
+  const blockedReason = useMemo(() => {
+    if (task?.blocked_reason) return task.blocked_reason;
+    if (task?.reason && statusLower === 'blocked') return task.reason;
+    if (Array.isArray(task?.activities)) {
+      const act = [...task.activities].reverse().find((a) => {
+        const toSt = String(
+          a.details?.to_status ||
+          a.metadata?.to_status ||
+          a.to_status ||
+          a.details?.status ||
+          a.metadata?.status ||
+          ''
+        ).toLowerCase();
+        const actType = String(a.activity_type || a.action || a.event || '').toLowerCase();
+        return (toSt === 'blocked' || actType.includes('block')) &&
+          (a.details?.reason || a.details?.notes || a.metadata?.reason || a.metadata?.notes);
+      });
+      if (act) {
+        return act.details?.reason || act.details?.notes || act.metadata?.reason || act.metadata?.notes;
+      }
+    }
+    return null;
+  }, [task, statusLower]);
+
   const backDeptForLoading = user?.department || (task && task.department);
 
   if (!task && !loading) {
@@ -1992,48 +2016,194 @@ const ViewTask = ({
 
                 <div className="tv2-header-bar">
                   {statusLower === 'blocked' && (
-                    <div className="tv2-alert tv2-alert--danger" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #ea580c', background: '#fff7ed', color: '#9a3412' }}>
-                      <div className="tv2-alert-big" style={{ color: '#ea580c' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                    <div
+                      className="tv2-alert tv2-alert--danger"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #ea580c',
+                        background: '#fff7ed',
+                        color: '#9a3412',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#ea580c' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
                       <div className="tv2-alert-text">
-                        <span className="tv2-alert-label" style={{ color: '#9a3412' }}>Task is Blocked</span>
-                        <span className="tv2-alert-sub" style={{ color: '#c2410c' }}>
-                          {task.blocked_reason || task.reason || 'Work on this task is currently blocked. Click Unblock Task when ready to resume.'}
+                        <span className="tv2-alert-label" style={{ color: '#9a3412', fontWeight: 700 }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee
+                            ? `Task Blocked by ${primaryAssigneeName || 'Assignee'}`
+                            : 'Task is Blocked'}
+                        </span>
+                        <span className="tv2-alert-sub" style={{ color: '#c2410c', marginTop: '2px', display: 'block' }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee ? (
+                            <>
+                              <span>
+                                {primaryAssigneeName
+                                  ? `${primaryAssigneeName} has marked this task as blocked.`
+                                  : 'The assignee has marked this task as blocked.'}
+                              </span>
+                              {blockedReason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {blockedReason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                Please coordinate with the assignee or provide required assistance so work can resume.
+                              </span>
+                            </>
+                          ) : isCurrentUserAssignee ? (
+                            <>
+                              <span>
+                                Work on this task is currently blocked.
+                              </span>
+                              {blockedReason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {blockedReason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px' }}>
+                                Click <strong>"Unblock Task (In Progress)"</strong> below when you are ready to resume work.
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span>
+                                {primaryAssigneeName
+                                  ? `${primaryAssigneeName} has marked this task as blocked.`
+                                  : 'This task is currently marked as blocked by the assignee.'}
+                              </span>
+                              {blockedReason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {blockedReason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                {isSuperAdmin
+                                  ? 'Click "Unblock Task (In Progress)" below or coordinate with the assignee to resume work.'
+                                  : 'Work on this task is paused until the blocker is resolved.'}
+                              </span>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
                   )}
 
                   {['paused', 'on_hold', 'hold'].includes(statusLower) && (
-                    <div className="tv2-alert tv2-alert--warning" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #d97706', background: '#fefce8', color: '#854d0e' }}>
-                      <div className="tv2-alert-big" style={{ color: '#ca8a04' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                    <div
+                      className="tv2-alert tv2-alert--warning"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #d97706',
+                        background: '#fefce8',
+                        color: '#854d0e',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#ca8a04' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
                       <div className="tv2-alert-text">
-                        <span className="tv2-alert-label" style={{ color: '#854d0e' }}>Task is Paused</span>
-                        <span className="tv2-alert-sub" style={{ color: '#a16207' }}>
-                          {task.reason || 'Work on this task is paused. Click Resume Work when ready to proceed.'}
+                        <span className="tv2-alert-label" style={{ color: '#854d0e', fontWeight: 700 }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee
+                            ? `Task Paused by ${primaryAssigneeName || 'Assignee'}`
+                            : 'Task is Paused'}
+                        </span>
+                        <span className="tv2-alert-sub" style={{ color: '#a16207', marginTop: '2px', display: 'block' }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee ? (
+                            <>
+                              <span>
+                                {primaryAssigneeName
+                                  ? `${primaryAssigneeName} has paused work on this task.`
+                                  : 'The assignee has paused work on this task.'}
+                              </span>
+                              {task.reason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {task.reason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                Work will resume once the assignee continues progress.
+                              </span>
+                            </>
+                          ) : isCurrentUserAssignee ? (
+                            <>
+                              <span>Work on this task is paused.</span>
+                              {task.reason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {task.reason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px' }}>
+                                Click <strong>"Resume Work (In Progress)"</strong> when ready to proceed.
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Work on this task is paused.</span>
+                              {task.reason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {task.reason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                Work will resume once progress continues.
+                              </span>
+                            </>
+                          )}
                         </span>
                       </div>
                     </div>
                   )}
 
                   {statusLower === 'rejected' && (
-                    <div className="tv2-alert tv2-alert--danger" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #dc2626', background: '#fef2f2', color: '#991b1b' }}>
-                      <div className="tv2-alert-big" style={{ color: '#dc2626' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                    <div
+                      className="tv2-alert tv2-alert--danger"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #dc2626',
+                        background: '#fef2f2',
+                        color: '#991b1b',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#dc2626' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
                       <div className="tv2-alert-text">
-                        <span className="tv2-alert-label" style={{ color: '#991b1b' }}>Deliverables Rejected</span>
-                        <span className="tv2-alert-sub" style={{ color: '#b91c1c' }}>
-                          {task.reject_reason || task.reason || (Array.isArray(approvalState?.rejected_note) && approvalState.rejected_note[approvalState.rejected_note.length - 1]?.note) || 'Task deliverables were rejected and require revisions before proceeding.'}
+                        <span className="tv2-alert-label" style={{ color: '#991b1b', fontWeight: 700 }}>Deliverables Rejected</span>
+                        <span className="tv2-alert-sub" style={{ color: '#b91c1c', marginTop: '2px', display: 'block' }}>
+                          {task.reject_reason ||
+                            task.reason ||
+                            (Array.isArray(approvalState?.rejected_note) &&
+                              approvalState.rejected_note[approvalState.rejected_note.length - 1]?.note) ||
+                            'Task deliverables were rejected and require revisions before proceeding.'}
                         </span>
                       </div>
                     </div>
                   )}
 
                   {statusLower === 'cancelled' && (
-                    <div className="tv2-alert" role="alert" style={{ marginBottom: '12px', borderLeft: '4px solid #64748b', background: '#f8fafc', color: '#334155' }}>
-                      <div className="tv2-alert-big" style={{ color: '#64748b' }}><FaExclamationTriangle aria-hidden="true" /></div>
+                    <div
+                      className="tv2-alert"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #64748b',
+                        background: '#f8fafc',
+                        color: '#334155',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#64748b' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
                       <div className="tv2-alert-text">
-                        <span className="tv2-alert-label" style={{ color: '#334155' }}>Task Cancelled</span>
-                        <span className="tv2-alert-sub" style={{ color: '#64748b' }}>
-                          {task.cancellation_reason || task.reason || 'This task has been cancelled and is no longer active.'}
+                        <span className="tv2-alert-label" style={{ color: '#334155', fontWeight: 700 }}>Task Cancelled</span>
+                        <span className="tv2-alert-sub" style={{ color: '#64748b', marginTop: '2px', display: 'block' }}>
+                          {task.cancellation_reason ||
+                            task.reason ||
+                            'This task has been cancelled and is no longer active.'}
                         </span>
                       </div>
                     </div>
