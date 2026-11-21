@@ -282,29 +282,35 @@ const InstructionRegister = () => {
     }
   };
 
-  const handleConvertToTask = async () => {
+  const handleConvertToTask = async (customPayload) => {
     let conversionSucceeded = false;
+    const payloadToSend = customPayload || convertData;
+    let responseData = null;
 
     try {
       if (currentConvertVisitorId) {
-        await axios.post(`/visitors/${currentConvertVisitorId}/convert-to-task`, convertData);
+        const res = await axios.post(`/visitors/${currentConvertVisitorId}/convert-to-task`, payloadToSend);
         conversionSucceeded = true;
+        responseData = res?.data?.data || res?.data;
         toast.success('Record converted to task successfully');
       } else if (currentConvertProjectSheetId) {
-        await axios.post(`/project-command-sheets/${currentConvertProjectSheetId}/convert-to-task`, convertData);
+        const res = await axios.post(`/project-command-sheets/${currentConvertProjectSheetId}/convert-to-task`, payloadToSend);
         conversionSucceeded = true;
+        responseData = res?.data?.data || res?.data;
         toast.success('Project command sheet converted to task successfully');
       } else {
-        await axios.post(`/ceo-notes/${currentConvertNoteId}/convert-to-task`, convertData);
+        const res = await axios.post(`/ceo-notes/${currentConvertNoteId}/convert-to-task`, payloadToSend);
         conversionSucceeded = true;
+        responseData = res?.data?.data || res?.data;
         toast.success('Note converted to task successfully');
       }
     } catch (error) {
       console.error('Error converting:', error);
       toast.error('Failed to convert');
+      throw error;
     }
 
-    if (!conversionSucceeded) return;
+    if (!conversionSucceeded) return null;
 
     setConvertModalOpen(false);
     try {
@@ -312,6 +318,7 @@ const InstructionRegister = () => {
     } catch (refreshError) {
       console.error('Error refreshing list after conversion:', refreshError);
     }
+    return responseData;
   };
 
   const openConvertModal = (note) => {
