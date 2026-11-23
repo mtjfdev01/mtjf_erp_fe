@@ -89,6 +89,8 @@
   --navbar-badge-ring: #ffffff;
 
   /* Sidebar */
+  --sidebar-width: 268px;
+  --sidebar-width-collapsed: 68px;
   --sidebar-gradient-start: #e3edfa;
   --sidebar-gradient-end: #f5faff;
   --sidebar-border: #dbeafe;
@@ -187,9 +189,21 @@
 
 html,
 body {
+  max-width: 100%;
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
   transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Single document scroller — avoid nested overflow-x:hidden (forces overflow-y:auto) */
+html {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+body {
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 input,

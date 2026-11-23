@@ -9,6 +9,7 @@ import './index.css';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import Modal from '../../../common/Modal';
+import TruncatedText from '../../../common/TruncatedText';
 import DonorAuditHistory from '../shared/DonorAuditHistory';
 import DonorPipelinePanel from '../shared/DonorPipelinePanel';
 import CapacityAssessmentCard from '../shared/CapacityAssessmentCard';
@@ -404,7 +405,13 @@ const ViewDonor = ({
                   <li>
                     <FiMail />
                     <span className="donor-crm-contact-list__value">
-                      {donor.email || 'Not provided'}
+                      <TruncatedText
+                        value={donor.email}
+                        field="email"
+                        mode="view"
+                        label="Email"
+                        empty="Not provided"
+                      />
                     </span>
                     {donor.email ? (
                       <button
@@ -421,7 +428,13 @@ const ViewDonor = ({
                   <li>
                     <FiPhone />
                     <span className="donor-crm-contact-list__value">
-                      {donor.phone || 'Not provided'}
+                      <TruncatedText
+                        value={donor.phone}
+                        field="phone"
+                        mode="view"
+                        label="Phone"
+                        empty="Not provided"
+                      />
                     </span>
                     {donor.phone ? (
                       <button
@@ -438,7 +451,13 @@ const ViewDonor = ({
                   <li>
                     <FiMapPin />
                     <span className="donor-crm-contact-list__value">
-                      {addressText || 'Not provided'}
+                      <TruncatedText
+                        value={addressText}
+                        field="address"
+                        mode="view"
+                        label="Address"
+                        empty="Not provided"
+                      />
                     </span>
                     {addressText ? (
                       <button

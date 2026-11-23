@@ -18,6 +18,15 @@ const Sidebar = () => {
     setActiveItem(location.pathname);
   }, [location.pathname]);
 
+  // Keep page content offset in sync with sidebar width (avoids horizontal page scroll).
+  useEffect(() => {
+    document.body.classList.toggle('sidebar-is-collapsed', collapsed);
+    document.body.classList.toggle('sidebar-is-expanded', !collapsed);
+    return () => {
+      document.body.classList.remove('sidebar-is-collapsed', 'sidebar-is-expanded');
+    };
+  }, [collapsed]);
+
   const handleNavigate = () => {
     setMobileOpen(false);
   };

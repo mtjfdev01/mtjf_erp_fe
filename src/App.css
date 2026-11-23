@@ -2,39 +2,68 @@
   box-sizing: border-box;
 }
 
+html {
+  max-width: 100%;
+  /*
+    Only the document should scroll vertically. Nested overflow-x:hidden
+    computes overflow-y to auto and creates a second desktop scrollbar.
+  */
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
 #root {
   margin: 0;
   padding: 0;
+  max-width: 100%;
+  /* clip does not create a scroll container (unlike hidden) */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* App Layout */
 .app-container {
   min-height: 100vh;
+  max-width: 100%;
   background: var(--color-bg-secondary);
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
+/*
+  Fixed sidebar is out of document flow. Offset content with padding on the
+  layout wrapper (not margin on main) so width never exceeds the viewport.
+*/
 .app-layout {
-  display: flex;
+  display: block;
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  padding-left: var(--sidebar-width, 268px);
+  box-sizing: border-box;
+  overflow-x: clip;
+  overflow-y: visible;
+  transition: padding-left 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+body.sidebar-is-collapsed .app-layout {
+  padding-left: var(--sidebar-width-collapsed, 68px);
 }
 
 .app-main {
-  flex: 1;
-  min-width: 0;
+  display: block;
+  width: 100%;
   max-width: 100%;
-  margin-left: 22%;
+  min-width: 0;
+  margin-left: 0;
   padding: 0;
-  /* padding-top: var(--spacing-lg); */
   padding-right: var(--spacing-sm);
   padding-left: var(--spacing-sm);
   background: var(--color-bg-secondary);
   min-height: 100vh;
-  transition: margin-left 0.3s ease;
-}
-
-/* When sidebar is collapsed */
-.sidebar--collapsed + .app-main {
-  margin-left: 64px;
+  box-sizing: border-box;
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 /* Mobile Hamburger Icon */
@@ -48,15 +77,18 @@
     display: block;
   }
 
+  .app-layout,
+  body.sidebar-is-collapsed .app-layout {
+    padding-left: 0;
+  }
+
   .app-main {
     margin-left: 0;
+    width: 100%;
+    max-width: 100%;
     padding: var(--spacing-md);
     padding-bottom: 0;
     padding-top: 4rem; /* Space for hamburger icon */
-  }
-  
-  .sidebar--collapsed + .app-main {
-    margin-left: 0;
   }
 }
 

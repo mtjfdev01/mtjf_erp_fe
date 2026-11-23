@@ -1,3 +1,74 @@
+/* Children participate in the parent filters row as separate columns */
 .team-filter {
   display: contents;
+}
+
+/*
+  Align "Team member / Report" + "Specific person" with Search/Status:
+  SearchableDropdown normally has extra margin and taller padding.
+*/
+.team-filter .dropdown-filter-container,
+.team-filter .searchable-dropdown {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  margin: 0;
+  margin-bottom: 0;
+}
+
+.team-filter .dropdown-filter-label,
+.team-filter .searchable-dropdown__label {
+  display: block;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.team-filter .dropdown-filter-input-wrapper,
+.team-filter .searchable-dropdown__input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 42px;
+}
+
+.team-filter .dropdown-filter-select,
+.team-filter .searchable-dropdown__input {
+  width: 100%;
+  min-height: 42px;
+  height: 42px;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.25;
+  border: 1px solid var(--color-border, #e5e7eb);
+  border-radius: 6px;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text);
+}
+
+.team-filter .dropdown-filter-select {
+  padding-right: 35px;
+  appearance: none;
+  cursor: pointer;
+}
+
+.team-filter .searchable-dropdown__input {
+  padding-right: 2.5rem;
+}
+
+.team-filter .searchable-dropdown__clear {
+  right: 0.65rem;
+  font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .team-filter .dropdown-filter-container,
+  .team-filter .searchable-dropdown {
+    min-width: 100%;
+  }
 }

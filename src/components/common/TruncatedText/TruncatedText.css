@@ -1,0 +1,37 @@
+.trunc-text {
+  display: inline;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.trunc-text--empty {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.trunc-text--truncated {
+  cursor: default;
+}
+
+.trunc-text--button {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted rgba(21, 89, 183, 0.45);
+  text-underline-offset: 2px;
+  max-width: 100%;
+}
+
+.trunc-text--button:hover,
+.trunc-text--button:focus-visible {
+  color: #1559b7;
+  text-decoration-color: #1559b7;
+  outline: none;
+}

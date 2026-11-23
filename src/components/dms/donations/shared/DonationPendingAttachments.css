@@ -226,17 +226,79 @@
 }
 
 @media (max-width: 640px) {
+  .donation-pending-attachments {
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .donation-pending-attachments__form {
+    gap: 0.65rem;
+    padding: 0.65rem;
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
   .donation-pending-attachments__row {
     flex-direction: column;
     align-items: stretch;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    gap: 0.65rem;
+    /* flex-grow on fields + column direction was stretching huge gaps */
+    flex: 0 0 auto;
+    height: auto;
+    min-height: 0;
   }
 
+  .donation-pending-attachments__field,
+  .donation-pending-attachments__field--file,
+  .donation-pending-attachments__field--name,
   .donation-pending-attachments__field--action {
+    flex: 0 0 auto;
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
+  .donation-pending-attachments__file-input,
+  .donation-pending-attachments__name-input {
+    max-width: 100%;
+  }
+
+  .donation-pending-attachments__file-input {
+    /* Native file control overflows narrow viewports without this */
+    font-size: 0.85rem;
+  }
+
+  .donation-pending-attachments__add-btn,
   .donation-pending-attachments__field--action .secondary_btn,
   .donation-pending-attachments__field--action button {
     width: 100%;
+  }
+
+  .donation-pending-attachments__item {
+    align-items: flex-start;
+  }
+
+  .donation-pending-attachments__item-main {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .donation-pending-attachments__item-main span {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .donation-attachments-list__item {
+    flex-wrap: wrap;
+    align-items: flex-start;
   }
 }

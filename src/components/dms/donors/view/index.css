@@ -610,12 +610,23 @@
 
 .donor-profile-donations-embed {
   min-width: 0;
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
+  /* Let the page scroll; nested overflow:auto caused a second desktop scrollbar */
+  overflow: visible;
   background: #fff;
   border: 1px solid #e8eef5;
   border-radius: 14px;
   padding: 0.75rem 0.85rem 1rem;
+}
+
+/* Add/Edit forms should hug content — flex:1 was leaving a huge empty white panel */
+.donor-profile-donations-embed:has(form.form),
+.donor-profile-donations-embed:has(form) {
+  flex: 0 1 auto;
+  height: auto;
+  min-height: 0;
+  align-self: stretch;
+  overflow: visible;
 }
 
 .donor-profile-donations-embed .page-header,
@@ -625,6 +636,14 @@
 
 .donor-profile-donations-embed__content {
   padding: 0;
+}
+
+.donor-profile-donations-embed .form,
+.donor-profile-donations-embed .form-section,
+.donor-profile-donations-embed .form-actions {
+  flex: 0 0 auto;
+  min-height: 0;
+  height: auto;
 }
 
 .donor-crm-card {

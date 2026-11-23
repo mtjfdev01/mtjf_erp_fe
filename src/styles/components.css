@@ -112,7 +112,11 @@
   display: flex;
   justify-content: flex-end;
   margin-top: var(--spacing-lg);
+  margin-bottom: 0;
   gap: var(--spacing-md);
+  flex: 0 0 auto;
+  min-height: 0;
+  height: auto;
 }
 
 /* Form Styles */
@@ -129,6 +133,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-md);
+  flex: 0 0 auto;
+  min-height: 0;
+  height: auto;
 }
 
 .form-group {
@@ -244,10 +251,20 @@
     margin-top: 2.5rem;
     max-width: 100vw;
     overflow-x: hidden;
+    min-height: 0;
+    height: auto;
   }
   .form-content {
-    padding: 0;
-    margin: 0;
+    padding: 0.75rem;
+    margin: 0 auto 1rem;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    /* Prevent tall empty panels below short forms (e.g. Add Donation) */
+    min-height: 0 !important;
+    height: auto !important;
+    flex: 0 0 auto;
+    align-self: flex-start;
   }
   .form-grid,
   .form-grid-2,
@@ -261,6 +278,18 @@
   
   .form-actions {
     flex-direction: column;
+    margin-top: 0.75rem;
+    padding-bottom: 0;
+  }
+
+  .form-actions .primary_btn {
+    margin-top: 0.35rem;
+    margin-bottom: 0;
+  }
+
+  .form-section {
+    margin-bottom: var(--spacing-md);
+    padding-bottom: var(--spacing-sm);
   }
 }
 

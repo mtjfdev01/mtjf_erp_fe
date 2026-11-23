@@ -16,9 +16,9 @@ import HybridDropdown from '../../../common/HybridDropdown';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { DownloadCSV } from '../../../common/download';
 import DataImport from '../../../common/DataImport';
-import { FiEye, FiEdit, FiTrash2, FiUser, FiKey, FiPlusCircle } from 'react-icons/fi';
-import { BsFillBuildingsFill } from "react-icons/bs";
+import { FiEye, FiEdit, FiTrash2, FiKey, FiPlusCircle } from 'react-icons/fi';
 import FormInput from '../../../common/FormInput';
+import TruncatedText from '../../../common/TruncatedText';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
 import useListRowSelection from '../../../../hooks/useListRowSelection';
 import DonorBulkActionsModal from './DonorBulkActionsModal';
@@ -692,16 +692,8 @@ const DonorsList = () => {
     { value: '<=', label: 'Less than or equal' },
   ];
 
-  const getDonorTypeIcon = (type) => {
-    return type === 'csr' ? <BsFillBuildingsFill /> : <FiUser />;
-  };
-
   const getDonorTypeLabel = (type) => {
     return type === 'csr' ? 'Legacy POC' : 'Individual';
-  };
-
-  const getDonorTypeClass = (type) => {
-    return type === 'csr' ? 'donor-type--csr' : 'donor-type--individual';
   };
 
   if (loading && donors.length === 0) {
@@ -980,20 +972,19 @@ const DonorsList = () => {
                       aria-label="Select all donors on this page"
                     />
                   </th>
-                  <th>Type</th>
                   <th>Name</th>
                   <th>Pipeline</th>
                   <th>Email</th>
                   <th>Phone</th>
                   <th>City</th>
-                  <th>Registration Date</th>
+                  <th>Reg. Date</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {donors.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="no-data">
+                    <td colSpan="8" className="no-data">
                       No donors found
                     </td>
                   </tr>
@@ -1009,19 +1000,13 @@ const DonorsList = () => {
                         />
                       </td>
                       <td>
-                        <div className={`donor-type ${getDonorTypeClass(donor.donor_type)}`}>
-                          {getDonorTypeIcon(donor.donor_type)}
-                          <span>{getDonorTypeLabel(donor.donor_type)}</span>
-                        </div>
-                      </td>
-                      <td>
                         <div className="donor-info">
                           <Link
                             to={`${donorsBasePath}/view/${donor.id}`}
                             className="donor-name"
                             style={{ color: 'inherit', textDecoration: 'inherit' }}
                           >
-                            {donor.name}
+                            <TruncatedText value={donor.name} field="name" mode="list" empty="—" />
                             {donor._pending_sync && (
                               <span
                                 style={{
@@ -1048,9 +1033,15 @@ const DonorsList = () => {
                           donor.effective_pipeline_stage || donor.pipeline_stage,
                         )}
                       </td>
-                      <td>{donor.email}</td>
-                      <td>{donor.phone}</td>
-                      <td>{donor.city}</td>
+                      <td>
+                        <TruncatedText value={donor.email} field="email" mode="list" empty="—" />
+                      </td>
+                      <td>
+                        <TruncatedText value={donor.phone} field="phone" mode="list" empty="—" />
+                      </td>
+                      <td>
+                        <TruncatedText value={donor.city} field="city" mode="list" empty="—" />
+                      </td>
                       <td>{new Date(donor.created_at).toLocaleDateString()}</td>
                       <td>
                         <ActionMenu actions={getDonorActions(donor)} />

@@ -772,14 +772,14 @@ const fundRaisingDepartmentItems = (isUser = false) => [
     defaultExpanded: false,
     subItems: [
       {
-        label: 'Individual Donors – Online',
+        label: 'Online Donors',
         path: '/dms/online_donors/list',
         type: 'list',
         module: 'online_donors',
         icon: FiUsers,
       },
       {
-        label: 'Individual Donors – Offline',
+        label: 'Offline Donors',
         path: '/dms/offline_donors/list',
         type: 'list',
         module: 'offline_donors',

@@ -1,58 +1,44 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { FiMoreVertical } from 'react-icons/fi';
+import { FaEllipsisVertical } from 'react-icons/fa6';
 import './ActionMenu.css';
 
 const ActionMenu = ({ actions, trigger }) => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const onPointerDown = (event) => {
+      if (rootRef.current && !rootRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') setIsOpen(false);
+    };
+
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [isOpen]);
+
+  const close = () => setIsOpen(false);
 
   const handleActionClick = (action) => {
-    if (action.onClick) {
-      action.onClick();
-    }
-    setIsModalOpen(false);
+    if (action.onClick) action.onClick();
+    close();
   };
 
-  const renderDesktopAction = (action, index) => {
-    if (!action.visible) return null;
+  const visibleActions = Array.isArray(actions)
+    ? actions.filter((action) => action && action.visible !== false)
+    : [];
 
-    const className = `action-button ${action.disabled ? 'action-disabled' : ''}`;
-    const style = { color: action.color };
-
-    if (action.to && !action.disabled) {
-      return (
-        <Link
-          key={index}
-          to={action.to}
-          state={action.state}
-          className={className}
-          style={{ ...style, textDecoration: 'inherit' }}
-          title={action.label}
-          onClick={() => setIsModalOpen(false)}
-        >
-          {action.icon}
-        </Link>
-      );
-    }
-
-    return (
-      <button
-        key={index}
-        type="button"
-        className={className}
-        style={style}
-        onClick={() => !action.disabled && handleActionClick(action)}
-        title={action.label}
-        disabled={action.disabled}
-      >
-        {action.icon}
-      </button>
-    );
-  };
-
-  const renderMobileAction = (action, index) => {
-    if (!action.visible) return null;
-
+  const renderAction = (action, index) => {
     const className = `action-menu-item ${action.disabled ? 'action-disabled' : ''}`;
 
     if (action.to && !action.disabled) {
@@ -63,7 +49,7 @@ const ActionMenu = ({ actions, trigger }) => {
           state={action.state}
           className={className}
           style={{ textDecoration: 'inherit', color: 'inherit' }}
-          onClick={() => setIsModalOpen(false)}
+          onClick={close}
         >
           <span className="action-icon" style={{ color: action.color }}>
             {action.icon}
@@ -90,32 +76,30 @@ const ActionMenu = ({ actions, trigger }) => {
   };
 
   return (
-    <div className="action-menu">
-      <div className="action-buttons desktop-view">
-        {Array.isArray(actions) && actions.map(renderDesktopAction)}
-      </div>
+    <div className="action-menu" ref={rootRef}>
+      <button
+        type="button"
+        className={`action-menu-trigger${isOpen ? ' action-menu-trigger--open' : ''}`}
+        onClick={() => setIsOpen((prev) => !prev)}
+        aria-haspopup="menu"
+        aria-expanded={isOpen}
+        title="Actions"
+      >
+        {trigger || <FaEllipsisVertical />}
+      </button>
 
-      <div className="mobile-view">
-        <button
-          type="button"
-          className="action-menu-trigger"
-          onClick={() => setIsModalOpen(true)}
-        >
-          {trigger || <FiMoreVertical />}
-        </button>
-
-        {isModalOpen && (
-          <>
-            <div
-              className="action-menu-backdrop"
-              onClick={() => setIsModalOpen(false)}
-            />
-            <div className="action-menu-modal">
-              {Array.isArray(actions) && actions.map(renderMobileAction)}
-            </div>
-          </>
-        )}
-      </div>
+      {isOpen && (
+        <>
+          <div className="action-menu-backdrop" onClick={close} aria-hidden="true" />
+          <div className="action-menu-modal" role="menu">
+            {visibleActions.length > 0 ? (
+              visibleActions.map(renderAction)
+            ) : (
+              <div className="action-menu-empty">No actions</div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

@@ -4,9 +4,9 @@
 
 /* Sidebar Container */
 .sidebar {
-  width: 268px;
-  min-width: 268px;
-  max-width: 268px;
+  width: var(--sidebar-width, 268px);
+  min-width: var(--sidebar-width, 268px);
+  max-width: var(--sidebar-width, 268px);
   height: calc(100vh - 64px); /* Subtract navbar height */
   background: #ffffff;
   border-right: 1px solid #e2e8f0;
@@ -23,9 +23,9 @@
 }
 
 .sidebar--collapsed {
-  width: 68px;
-  min-width: 68px;
-  max-width: 68px;
+  width: var(--sidebar-width-collapsed, 68px);
+  min-width: var(--sidebar-width-collapsed, 68px);
+  max-width: var(--sidebar-width-collapsed, 68px);
 }
 
 /* Sidebar Content */
@@ -531,6 +531,11 @@ a.sidebar-sub-item:focus {
 
 .mobile-hamburger:hover {
   background: #0f3f82;
+}
+
+/* Hidden on desktop so it cannot participate in layout / overflow */
+.sidebar-overlay {
+  display: none;
 }
 
 @media (max-width: 768px) {

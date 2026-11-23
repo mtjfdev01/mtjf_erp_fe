@@ -27,6 +27,7 @@ import ActionMenu from '../../../../common/ActionMenu';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
 import MultiSelect from '../../../../common/MultiSelect';
 import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
+import TruncatedText from '../../../../common/TruncatedText';
 import { useAuth } from '../../../../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { canReconcileDonations } from '../../../../../utils/permissions';
@@ -1419,10 +1420,22 @@ const OnlineDonationsList = ({
                           className="donor-name"
                           style={{ color: 'inherit', textDecoration: 'inherit' }}
                         >
-                          {donation?.donor?.name?.slice(0, 15) + '...' || 'Anonymous'}
+                          <TruncatedText
+                            value={donation?.donor?.name}
+                            field="name"
+                            mode="list"
+                            empty="Anonymous"
+                          />
                         </Link>
                         {donation.item_name && (
-                          <div className="donor-item hide-on-mobile">{donation.item_name?.slice(0, 15) + '...'}</div>
+                          <div className="donor-item hide-on-mobile">
+                            <TruncatedText
+                              value={donation.item_name}
+                              field="text"
+                              mode="list"
+                              empty=""
+                            />
+                          </div>
                         )}
                       </div>
                     </td>
@@ -1433,7 +1446,12 @@ const OnlineDonationsList = ({
                             to={`/dms/csr-donors/view/${donation.organization_id}`}
                             style={{ color: 'inherit', textDecoration: 'inherit' }}
                           >
-                            {donation.organization.name}
+                            <TruncatedText
+                              value={donation.organization.name}
+                              field="name"
+                              mode="list"
+                              empty="—"
+                            />
                           </Link>
                         ) : donation.organization_id ? (
                           `Company #${donation.organization_id}`
@@ -1472,8 +1490,15 @@ const OnlineDonationsList = ({
                         {donation.donation_method?.toUpperCase() || 'N/A'}
                       </span>
                     </td>
-                    <td className="hide-on-mobile">{donation?.donor?.email?.slice(0, 15) + '...' || '-'}</td>
-                    {/* <td className="hide-on-mobile">{donation?.donor?.phone?.slice(0, 15) + '...' || '-'}</td> */}
+                    <td className="hide-on-mobile">
+                      <TruncatedText
+                        value={donation?.donor?.email}
+                        field="email"
+                        mode="list"
+                        empty="-"
+                      />
+                    </td>
+                    {/* <td className="hide-on-mobile"><TruncatedText value={donation?.donor?.phone} field="phone" mode="list" empty="-" /></td> */}
                     <td>
                       <div
                         style={{

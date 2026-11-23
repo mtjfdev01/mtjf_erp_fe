@@ -17,6 +17,7 @@ import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import FormInput from '../../../../common/FormInput';
 import FormSelect from '../../../../common/FormSelect';
+import TruncatedText from '../../../../common/TruncatedText';
 import DonationAuditHistory from '../../shared/DonationAuditHistory';
 import DonationAllotmentPanel from '../../shared/DonationAllotmentPanel';
 import DonationReceiptModal from '../../shared/DonationReceiptModal';
@@ -1309,8 +1310,14 @@ const ViewOnlineDonation = () => {
                 {resolveDonationReferrer(donation)?.email && (
                   <div className="view-item">
                     <span className="view-item-label">Referrer Email</span>
-                    <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
-                      {resolveDonationReferrer(donation).email}
+                    <span className="view-item-value">
+                      <TruncatedText
+                        value={resolveDonationReferrer(donation).email}
+                        field="email"
+                        mode="view"
+                        label="Referrer Email"
+                        empty="-"
+                      />
                     </span>
                   </div>
                 )}
@@ -1448,13 +1455,27 @@ const ViewOnlineDonation = () => {
                   </div>
                   <div className="view-item">
                     <span className="view-item-label">Email</span>
-                    <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
-                      {donation.organization?.email || '-'}
+                    <span className="view-item-value">
+                      <TruncatedText
+                        value={donation.organization?.email}
+                        field="email"
+                        mode="view"
+                        label="Email"
+                        empty="-"
+                      />
                     </span>
                   </div>
                   <div className="view-item">
                     <span className="view-item-label">Phone</span>
-                    <span className="view-item-value">{donation.organization?.phone || '-'}</span>
+                    <span className="view-item-value">
+                      <TruncatedText
+                        value={donation.organization?.phone}
+                        field="phone"
+                        mode="view"
+                        label="Phone"
+                        empty="-"
+                      />
+                    </span>
                   </div>
                   <div className="view-item">
                     <span className="view-item-label">Registration #</span>
@@ -1471,14 +1492,26 @@ const ViewOnlineDonation = () => {
                   <div className="view-item">
                     <span className="view-item-label">City</span>
                     <span className="view-item-value">
-                      {donation.organization?.city || donation?.city || '-'}
+                      <TruncatedText
+                        value={donation.organization?.city || donation?.city}
+                        field="city"
+                        mode="view"
+                        label="City"
+                        empty="-"
+                      />
                     </span>
                   </div>
                   {(donation.organization?.address || donation?.address) && (
                     <div className="view-item view-item--full">
                       <span className="view-item-label">Address</span>
                       <span className="view-item-value">
-                        {donation.organization?.address || donation?.address}
+                        <TruncatedText
+                          value={donation.organization?.address || donation?.address}
+                          field="address"
+                          mode="view"
+                          label="Address"
+                          empty="-"
+                        />
                       </span>
                     </div>
                   )}
@@ -1512,13 +1545,27 @@ const ViewOnlineDonation = () => {
                     </div>
                     <div className="view-item">
                       <span className="view-item-label">Email</span>
-                      <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
-                        {donation.csr_poc.email || '-'}
+                      <span className="view-item-value">
+                        <TruncatedText
+                          value={donation.csr_poc.email}
+                          field="email"
+                          mode="view"
+                          label="Email"
+                          empty="-"
+                        />
                       </span>
                     </div>
                     <div className="view-item">
                       <span className="view-item-label">Phone</span>
-                      <span className="view-item-value">{donation.csr_poc.phone || '-'}</span>
+                      <span className="view-item-value">
+                        <TruncatedText
+                          value={donation.csr_poc.phone}
+                          field="phone"
+                          mode="view"
+                          label="Phone"
+                          empty="-"
+                        />
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -1540,22 +1587,47 @@ const ViewOnlineDonation = () => {
                         }}
                         style={{ color: '#2563eb', textDecoration: 'underline' }}
                       >
-                        {donation.donor.name || 'Anonymous'}
+                        <TruncatedText
+                          value={donation.donor.name}
+                          field="name"
+                          mode="list"
+                          empty="Anonymous"
+                        />
                       </a>
                     ) : (
-                      donation?.donor?.name || 'Anonymous'
+                      <TruncatedText
+                        value={donation?.donor?.name}
+                        field="name"
+                        mode="view"
+                        label="Name"
+                        empty="Anonymous"
+                      />
                     )}
                   </span>
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">Email</span>
-                  <span className="view-item-value" style={{ wordBreak: 'break-word' }}>
-                    {donation?.donor?.email || '-'}
+                  <span className="view-item-value">
+                    <TruncatedText
+                      value={donation?.donor?.email}
+                      field="email"
+                      mode="view"
+                      label="Email"
+                      empty="-"
+                    />
                   </span>
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">Phone</span>
-                  <span className="view-item-value">{donation?.donor?.phone || '-'}</span>
+                  <span className="view-item-value">
+                    <TruncatedText
+                      value={donation?.donor?.phone}
+                      field="phone"
+                      mode="view"
+                      label="Phone"
+                      empty="-"
+                    />
+                  </span>
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">Country</span>
@@ -1563,7 +1635,15 @@ const ViewOnlineDonation = () => {
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">City</span>
-                  <span className="view-item-value">{donation?.donor?.city || '-'}</span>
+                  <span className="view-item-value">
+                    <TruncatedText
+                      value={donation?.donor?.city}
+                      field="city"
+                      mode="view"
+                      label="City"
+                      empty="-"
+                    />
+                  </span>
                 </div>
                 <div className="view-item">
                   <span className="view-item-label">Referred By</span>
@@ -1574,7 +1654,15 @@ const ViewOnlineDonation = () => {
                 {donation.address && (
                   <div className="view-item view-item--full">
                     <span className="view-item-label">Address</span>
-                    <span className="view-item-value">{donation?.donor?.address}</span>
+                    <span className="view-item-value">
+                      <TruncatedText
+                        value={donation?.donor?.address}
+                        field="address"
+                        mode="view"
+                        label="Address"
+                        empty="-"
+                      />
+                    </span>
                   </div>
                 )}
               </div>
