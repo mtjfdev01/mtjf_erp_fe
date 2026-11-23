@@ -19,6 +19,9 @@ import DataImport from '../../../common/DataImport';
 import { FiEye, FiEdit, FiTrash2, FiKey, FiPlusCircle } from 'react-icons/fi';
 import FormInput from '../../../common/FormInput';
 import TruncatedText from '../../../common/TruncatedText';
+import ActionsColumnHeader from '../../../common/table/ActionsColumnHeader';
+import ContactColumnHeader from '../../../common/table/ContactColumnHeader';
+import ContactIconsCell from '../../../common/table/ContactIconsCell';
 import useOfflineDataRefresh from '../../../../hooks/useOfflineDataRefresh';
 import useListRowSelection from '../../../../hooks/useListRowSelection';
 import DonorBulkActionsModal from './DonorBulkActionsModal';
@@ -973,18 +976,19 @@ const DonorsList = () => {
                     />
                   </th>
                   <th>Name</th>
-                  <th>Pipeline</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>City</th>
-                  <th>Reg. Date</th>
-                  <th>Actions</th>
+                  <th className="hide-on-mobile">Pipeline</th>
+                  <th className="hide-on-mobile">Email</th>
+                  <th className="hide-on-mobile">Phone</th>
+                  <ContactColumnHeader />
+                  <th className="hide-on-mobile">City</th>
+                  <th className="hide-on-mobile">Reg. Date</th>
+                  <ActionsColumnHeader />
                 </tr>
               </thead>
               <tbody>
                 {donors.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="no-data">
+                    <td colSpan="9" className="no-data">
                       No donors found
                     </td>
                   </tr>
@@ -1028,22 +1032,27 @@ const DonorsList = () => {
                           )}
                         </div>
                       </td>
-                      <td>
+                      <td className="hide-on-mobile">
                         {formatPipelineStage(
                           donor.effective_pipeline_stage || donor.pipeline_stage,
                         )}
                       </td>
-                      <td>
+                      <td className="hide-on-mobile">
                         <TruncatedText value={donor.email} field="email" mode="list" empty="—" />
                       </td>
-                      <td>
+                      <td className="hide-on-mobile">
                         <TruncatedText value={donor.phone} field="phone" mode="list" empty="—" />
                       </td>
-                      <td>
+                      <td className="table-contact-col">
+                        <ContactIconsCell email={donor.email} phone={donor.phone} />
+                      </td>
+                      <td className="hide-on-mobile">
                         <TruncatedText value={donor.city} field="city" mode="list" empty="—" />
                       </td>
-                      <td>{new Date(donor.created_at).toLocaleDateString()}</td>
-                      <td>
+                      <td className="hide-on-mobile">
+                        {new Date(donor.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="table-actions">
                         <ActionMenu actions={getDonorActions(donor)} />
                       </td>
                     </tr>

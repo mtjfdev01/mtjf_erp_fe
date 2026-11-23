@@ -1389,3 +1389,51 @@
     animation: none !important;
   }
 }
+
+/* Mobile: edge-to-edge Donor Details cards */
+@media (max-width: 768px) {
+  .list-wrapper:has(.donor-profile-page) {
+    margin-left: calc(-1 * var(--spacing-md));
+    margin-right: calc(-1 * var(--spacing-md));
+    width: calc(100% + 2 * var(--spacing-md));
+    max-width: none;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    box-sizing: border-box;
+  }
+
+  .list-wrapper:has(.donor-profile-page) .page-header-content {
+    padding-left: 0.85rem;
+    padding-right: 0.85rem;
+  }
+
+  .donor-profile-page {
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 1.25rem;
+  }
+
+  .donor-crm-layout {
+    gap: 0.65rem;
+  }
+
+  .donor-crm-card {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+  }
+
+  .donor-crm-aside,
+  .donor-crm-main {
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .list-wrapper:has(.donor-profile-page) {
+    margin-left: calc(-1 * var(--spacing-sm));
+    margin-right: calc(-1 * var(--spacing-sm));
+    width: calc(100% + 2 * var(--spacing-sm));
+  }
+}

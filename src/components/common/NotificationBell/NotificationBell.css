@@ -39,6 +39,13 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
+/* Mobile: hide notification bell entirely */
+@media (max-width: 768px) {
+  .notification-bell-container {
+    display: none !important;
+  }
+}
+
 .notification-dropdown {
   position: absolute;
   top: 100%;

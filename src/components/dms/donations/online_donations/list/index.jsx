@@ -28,6 +28,9 @@ import ConfirmationModal from '../../../../common/ConfirmationModal';
 import MultiSelect from '../../../../common/MultiSelect';
 import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
 import TruncatedText from '../../../../common/TruncatedText';
+import ActionsColumnHeader from '../../../../common/table/ActionsColumnHeader';
+import ContactColumnHeader from '../../../../common/table/ContactColumnHeader';
+import ContactIconsCell from '../../../../common/table/ContactIconsCell';
 import { useAuth } from '../../../../../context/AuthContext';
 import { toast } from 'react-toastify';
 import { canReconcileDonations } from '../../../../../utils/permissions';
@@ -1365,7 +1368,7 @@ const OnlineDonationsList = ({
             </div>
           )}
           <div className="table-container"> 
-            <table className="data-table">
+            <table className="data-table donations-list-table">
               <thead>
                 <tr>
                   <th className="table-select-col">
@@ -1378,25 +1381,27 @@ const OnlineDonationsList = ({
                       aria-label="Select all donations on this page"
                     />
                   </th>
-                  <th>Donor </th>
-                  {isCsrDonationsRoute ? <th>CSR Donor</th> : null}
-                  <th>Amount</th>
+                  <th className="table-donor-col">Donor</th>
+                  {isCsrDonationsRoute ? (
+                    <th className="hide-on-mobile">CSR Donor</th>
+                  ) : null}
+                  <th className="hide-on-mobile">Amount</th>
                   {/* <th>Type</th> */}
-                  <th>Project</th>
-                  <th>Method</th>
+                  <th className="hide-on-mobile">Project</th>
+                  <th className="hide-on-mobile">Method</th>
                   <th className="hide-on-mobile">Email</th>
-                  {/* <th className="hide-on-mobile">Phone</th> */}
-                  <th>Status</th>
-                  <th>Date</th>
-                  <th>Time</th>
-                  <th className="table-actions">Actions</th>
+                  <ContactColumnHeader />
+                  <th className="table-status-col">Status</th>
+                  <th className="hide-on-mobile">Date</th>
+                  <th className="hide-on-mobile">Time</th>
+                  <ActionsColumnHeader />
                 </tr>
               </thead>
               <tbody>
                 {donations.length === 0 ? (
                   <tr>
                     <td colSpan={
-                      isCsrDonationsRoute ? 11 : 10
+                      isCsrDonationsRoute ? 12 : 11
                     } className="no-data">
                       No donations found
                     </td>
@@ -1412,7 +1417,7 @@ const OnlineDonationsList = ({
                         aria-label={`Select donation ${donation.id}`}
                       />
                     </td>
-                    <td>
+                    <td className="table-donor-col">
                       <div className="donor-info">
                         <Link
                           to={donationViewPath(donationRoutes, donation.id)}
@@ -1440,7 +1445,7 @@ const OnlineDonationsList = ({
                       </div>
                     </td>
                     {isCsrDonationsRoute ? (
-                      <td>
+                      <td className="hide-on-mobile">
                         {donation.organization?.name ? (
                           <Link
                             to={`/dms/csr-donors/view/${donation.organization_id}`}
@@ -1460,7 +1465,7 @@ const OnlineDonationsList = ({
                         )}
                       </td>
                     ) : null}
-                    <td>
+                    <td className="hide-on-mobile">
                       <div className="amount-info">
                         <div className="amount-value">
                           {formatAmount(donation.amount, donation.currency)}
@@ -1480,12 +1485,12 @@ const OnlineDonationsList = ({
                          donation.donation_type || 'General'}
                       </span>
                     </td> */}
-                    <td>
+                    <td className="hide-on-mobile">
                       <span className="donation-project">
                         {donation.project_name || 'N/A'}
                       </span>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       <span className="donation-method">
                         {donation.donation_method?.toUpperCase() || 'N/A'}
                       </span>
@@ -1498,20 +1503,18 @@ const OnlineDonationsList = ({
                         empty="-"
                       />
                     </td>
-                    {/* <td className="hide-on-mobile"><TruncatedText value={donation?.donor?.phone} field="phone" mode="list" empty="-" /></td> */}
-                    <td>
-                      <div
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          whiteSpace: 'nowrap',
-                        }}
-                      >
+                    <td className="table-contact-col">
+                      <ContactIconsCell
+                        email={donation?.donor?.email}
+                        phone={donation?.donor?.phone}
+                      />
+                    </td>
+                    <td className="table-status-col">
+                      <div className="donation-status-cell">
                         {getStatusBadge(donation.status)}
                         {showReconcileActionsCol &&
                         !isTerminalFailedStatus(donation.status) ? (
-                          <>
+                          <span className="donation-status-cell__reconcile hide-on-mobile">
                             <button
                               type="button"
                               className="primary_btn"
@@ -1568,12 +1571,14 @@ const OnlineDonationsList = ({
                                 <FiXCircle />
                               </button>
                             ) : null}
-                          </>
+                          </span>
                         ) : null}
                       </div>
                     </td>
-                    <td>{formatDate(donation.date || donation.created_at)}</td>
-                    <td>{getTime(donation.created_at)}</td>
+                    <td className="hide-on-mobile">
+                      {formatDate(donation.date || donation.created_at)}
+                    </td>
+                    <td className="hide-on-mobile">{getTime(donation.created_at)}</td>
                     <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(donation)} />
                     </td>

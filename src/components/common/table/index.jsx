@@ -1,4 +1,5 @@
 import React from 'react';
+import ActionsColumnHeader from './ActionsColumnHeader';
 
 /**
  * Table Component
@@ -78,9 +79,7 @@ const Table = ({
                 {column.label}
               </th>
             ))}
-            {showActions && renderActions && (
-              <th className="table-actions">Actions</th>
-            )}
+            {showActions && renderActions && <ActionsColumnHeader />}
           </tr>
         </thead>
         <tbody>
