@@ -1265,9 +1265,10 @@ const TaskReports = () => {
     const cancelled = breakdown.cancelled || 0;
     const blocked = breakdown.blocked || 0;
 
-    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'rejected', 'cancelled', 'blocked']);
+    const pending = sumBy(['draft', 'open', 'in_progress', 'pending_approval', 'approved', 'rejected', 'cancelled', 'blocked']);
     const ended = closed;
-    const completedTasks = completed + closed + approved;
+    // Do not count pending_approval or approved tasks as completed in KPIs
+    const completedTasks = completed + closed;
     const completionRate =
       typeof taskStats?.completion_rate === 'number'
         ? taskStats.completion_rate
@@ -1281,7 +1282,7 @@ const TaskReports = () => {
       }
     }
 
-    const progressCompleted = closed + completed + approved;
+    const progressCompleted = closed + completed;
     const progressInProgress = inProgress + pendingApproval;
     const progressNotStarted = open + draft;
     const active = open + inProgress + pendingApproval;

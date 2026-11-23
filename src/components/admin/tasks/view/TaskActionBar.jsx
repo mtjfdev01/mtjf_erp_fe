@@ -89,71 +89,100 @@ const TaskActionBar = ({
   );
 
   const availableButtons = useMemo(() => {
-    // Don't show any buttons while approval data is loading ONLY if it's an approval workflow
-    if (approvalLoading && normalizedWorkflow === 'APPROVAL_REQUIRED') {
+    const isApprovalWorkflow =
+      normalizedWorkflow === 'APPROVAL_REQUIRED' ||
+      normalizedWorkflow === 'APPROVAL_BASED';
+
+    // Don't show approval buttons while approval data is loading ONLY if it's pending approval
+    if (approvalLoading && isApprovalWorkflow && normalizedStatus === 'PENDING_APPROVAL') {
       return [];
     }
     const rawRole = String(userRole || '').toLowerCase();
     const isAdminRole = rawRole === 'super_admin' || rawRole === 'admin';
     const isAssigneeUser = isAssignee === true;
-    const approverIds = Array.isArray(approvalRequiredUserIds)
+    const taskApproverIds = Array.isArray(approvalRequiredUserIds)
       ? approvalRequiredUserIds.map((v) => Number(v)).filter((v) => Number.isFinite(v) && v > 0)
       : [];
+    const metaApproverIds = Array.isArray(approvalsMeta)
+      ? approvalsMeta.map((m) => Number(m?.user_id)).filter((v) => Number.isFinite(v) && v > 0)
+      : [];
+    const approverIds = Array.from(new Set([...taskApproverIds, ...metaApproverIds]));
     const isConfiguredApprover = currentUserId != null && approverIds.includes(Number(currentUserId));
 
-    let baseButtons = STATUS_BUTTON_CONFIG[normalizedStatus] || [];
+    let baseButtons = [];
 
-    if (normalizedStatus === 'COMPLETED') {
-      if (normalizedWorkflow === 'APPROVAL_REQUIRED') {
-        if (isAssigneeUser && !isAdminRole) {
-          baseButtons = [
-            {
-              label: 'Submit for Approval',
-              action: 'SUBMIT_APPROVAL',
-              color: 'primary',
-            },
-          ];
-        } else {
-          baseButtons = [];
-        }
+    if (['DRAFT', 'OPEN', 'ASSIGNED'].includes(normalizedStatus)) {
+      baseButtons = [
+        { label: 'Start Task (In Progress)', action: 'START', color: 'primary' },
+      ];
+    } else if (normalizedStatus === 'IN_PROGRESS') {
+      if (isApprovalWorkflow) {
+        baseButtons = [
+          // { label: 'Submit for Approval', action: 'SUBMIT_APPROVAL', color: 'primary' },
+          { label: 'Block Task', action: 'BLOCK', color: 'danger' },
+        ];
       } else {
-        // For standard workflow, creator or any configured reporting manager can close a completed task
-        const isCreator = Number(currentUserId) === Number(createdByUserId);
-        const isReporter =
-          currentUserId != null &&
-          effectiveReporterIds.includes(Number(currentUserId));
-        if (isCreator || isReporter) {
-          baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
-        } else {
-          baseButtons = [];
-        }
+        baseButtons = [
+          { label: 'Complete Task', action: 'COMPLETE', color: 'success' },
+          { label: 'Block Task', action: 'BLOCK', color: 'danger' },
+        ];
       }
+    } else if (normalizedStatus === 'PENDING_APPROVAL') {
+      baseButtons = [
+        { label: 'Approve', action: 'APPROVE', color: 'success' },
+        { label: 'Reject', action: 'REJECT', color: 'danger' },
+      ];
     } else if (normalizedStatus === 'APPROVED') {
-      const isCreator = Number(currentUserId) === Number(createdByUserId);
-      // For approval workflow, creator or any configured reporting manager can close an approved task
-      const isReporter =
-        currentUserId != null &&
-        effectiveReporterIds.includes(Number(currentUserId));
-      if (isCreator || isReporter) {
-        baseButtons = [{ label: 'Close Task', action: 'CLOSE', color: 'danger' }];
-      } else {
-        baseButtons = [];
-      }
-    } else if (
-      normalizedStatus === 'REJECTED' &&
-      normalizedWorkflow === 'APPROVAL_REQUIRED'
-    ) {
-      baseButtons = STATUS_BUTTON_CONFIG.PENDING_APPROVAL || [];
+      // Approved task moves to Completed
+      baseButtons = [
+        { label: 'Mark Completed', action: 'COMPLETE', color: 'success' },
+      ];
+    } else if (normalizedStatus === 'REJECTED') {
+      // Return rejected task to In Progress
+      baseButtons = [
+        { label: 'Resume Work (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+      ];
+    } else if (normalizedStatus === 'COMPLETED') {
+      baseButtons = [
+        { label: 'Close Task', action: 'CLOSE', color: 'danger' },
+        { label: 'Reopen Task', action: 'REOPEN', color: 'secondary' },
+      ];
+    } else if (normalizedStatus === 'CLOSED') {
+      baseButtons = [
+        { label: 'Reopen Task', action: 'REOPEN', color: 'primary' },
+      ];
+    } else if (normalizedStatus === 'BLOCKED') {
+      baseButtons = [
+        { label: 'Unblock Task (In Progress)', action: 'REOPEN_IN_PROGRESS', color: 'primary' },
+      ];
     }
 
-    if (normalizedStatus === 'PENDING_APPROVAL' && !canApprove && !isConfiguredApprover) {
-      return [];
+    if (normalizedStatus === 'PENDING_APPROVAL') {
+      const isCreator = currentUserId != null && createdByUserId != null && Number(currentUserId) === Number(createdByUserId);
+      const isReporter = currentUserId != null && effectiveReporterIds.includes(Number(currentUserId));
+      const canActOnApproval = isConfiguredApprover || isAdminRole || (approverIds.length === 0 && (isCreator || isReporter));
+      if (!canActOnApproval) {
+        return [];
+      }
     }
 
     return baseButtons.filter((btn) =>
       isStatusActionAvailable(btn.action, availabilityContext),
     );
-  }, [normalizedStatus, normalizedWorkflow, canApprove, availabilityContext, approvalLoading]);
+  }, [
+    normalizedStatus,
+    normalizedWorkflow,
+    canApprove,
+    availabilityContext,
+    approvalLoading,
+    currentUserId,
+    createdByUserId,
+    effectiveReporterIds,
+    approvalRequiredUserIds,
+    approvalsMeta,
+    userRole,
+    isAssignee,
+  ]);
 
   const visibleQuickActions = useMemo(
     () => {

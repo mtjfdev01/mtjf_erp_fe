@@ -48,7 +48,7 @@ const QUICK_ACTION_ICON_MAP = {
   GENERATE_REPORT: FiFileText,
 };
 
-// Stepper shown in the header. Only open / in_progress / completed can be set inline.
+// Stepper shown in the header
 const STANDARD_STEP_DEFS = [
   { key: 'open', label: 'Assigned' },
   { key: 'in_progress', label: 'In progress' },
@@ -59,28 +59,241 @@ const STANDARD_STEP_DEFS = [
 const APPROVAL_STEP_DEFS = [
   { key: 'open', label: 'Assigned' },
   { key: 'in_progress', label: 'In progress' },
-  { key: 'completed', label: 'Completed' },
   { key: 'pending_approval', label: 'Pending Approval' },
   { key: 'approved', label: 'Approved' },
+  { key: 'completed', label: 'Completed' },
   { key: 'closed', label: 'Closed' },
 ];
 
-const getStepIndex = (statusLowerVal, isApprovalWorkflow) => {
-  switch (statusLowerVal) {
-    case 'in_progress':
-      return 1;
-    case 'completed':
-      return 2;
-    case 'pending_approval':
-      return isApprovalWorkflow ? 3 : 2;
-    case 'approved':
-      return isApprovalWorkflow ? 4 : 2;
+const getCancelledStepIndex = (task, isApprovalWorkflow) => {
+  if (!task) return 0;
+  if (Array.isArray(task.activities) && task.activities.length > 0) {
+    const cancelActivity = [...task.activities].reverse().find((a) => {
+      const toStatus = String(
+        a.metadata?.to_status || a.details?.to_status || a.to_status || a.status || ''
+      ).toLowerCase();
+      const actType = String(a.activity_type || a.action || a.event || '').toLowerCase();
+      return toStatus === 'cancelled' || actType.includes('cancel');
+    });
+    if (cancelActivity) {
+      const fromStatus = String(
+        cancelActivity.metadata?.from_status ||
+        cancelActivity.details?.from_status ||
+        cancelActivity.from_status ||
+        ''
+      ).toLowerCase();
+      if (fromStatus && fromStatus !== 'cancelled') {
+        return getStepIndex(fromStatus, isApprovalWorkflow, null);
+      }
+    }
+  }
+  if (isApprovalWorkflow) {
+    if (task.completed_date || task.status === 'completed') return 4;
+    if (task.approved_date || task.approved_by) return 3;
+    if (task.submitted_for_approval_at) return 2;
+    if (Number(task.progress) > 0 || task.start_date) return 1;
+    return 0;
+  } else {
+    if (task.completed_date || task.status === 'completed') return 2;
+    if (Number(task.progress) > 0 || task.start_date) return 1;
+    return 0;
+  }
+};
+
+const getStepIndex = (statusLowerVal, isApprovalWorkflow, task = null) => {
+  const normStatus = String(statusLowerVal || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+  if (isApprovalWorkflow) {
+    switch (normStatus) {
+      case 'in_progress':
+      case 'inprogress':
+      case 'blocked':
+      case 'paused':
+      case 'on_hold':
+      case 'hold':
+        return 1;
+      case 'pending_approval':
+      case 'under_review':
+      case 'rejected':
+        return 2;
+      case 'approved':
+        return 3;
+      case 'completed':
+        return 4;
+      case 'closed':
+        return 5;
+      case 'cancelled':
+      case 'canceled':
+        return getCancelledStepIndex(task, true);
+      default:
+        return 0;
+    }
+  } else {
+    switch (normStatus) {
+      case 'in_progress':
+      case 'inprogress':
+      case 'blocked':
+      case 'paused':
+      case 'on_hold':
+      case 'hold':
+      case 'rejected':
+        return 1;
+      case 'completed':
+        return 2;
+      case 'closed':
+        return 3;
+      case 'cancelled':
+      case 'canceled':
+        return getCancelledStepIndex(task, false);
+      default:
+        return 0;
+    }
+  }
+};
+
+const getDynamicStepState = (step, idx, activeStepIdx, statusLowerVal) => {
+  const isCurrentActive = idx === activeStepIdx;
+  const isDone = idx < activeStepIdx;
+
+  if (!isCurrentActive) {
+    return {
+      isActive: false,
+      isDone,
+      label: step.label,
+      originalStepLabel: step.label,
+      modifierClass: isDone ? 'tv2-step--done' : '',
+      icon: null,
+      statusType: isDone ? 'completed' : 'pending',
+    };
+  }
+
+  const normStatus = String(statusLowerVal || '').toLowerCase().trim().replace(/[\s-]+/g, '_');
+
+  // Active step: dynamically determine label and visual styling based on actual task status
+  switch (normStatus) {
+    case 'blocked':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Blocked',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--blocked',
+        icon: null,
+        statusType: 'blocked',
+      };
+    case 'paused':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Paused',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--paused',
+        icon: null,
+        statusType: 'paused',
+      };
+    case 'on_hold':
+    case 'hold':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'On Hold',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--paused',
+        icon: null,
+        statusType: 'paused',
+      };
     case 'rejected':
-      return isApprovalWorkflow ? 3 : 2;
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Rejected',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--rejected',
+        icon: null,
+        statusType: 'rejected',
+      };
+    case 'cancelled':
+    case 'canceled':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Cancelled',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--cancelled',
+        icon: null,
+        statusType: 'cancelled',
+      };
+    case 'draft':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Draft',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--draft',
+        icon: null,
+        statusType: 'draft',
+      };
+    case 'in_progress':
+    case 'inprogress':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'In progress',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active',
+        icon: null,
+        statusType: 'in_progress',
+      };
+    case 'pending_approval':
+    case 'under_review':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Pending Approval',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active',
+        icon: null,
+        statusType: 'pending_approval',
+      };
+    case 'approved':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Approved',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--approved',
+        icon: null,
+        statusType: 'approved',
+      };
+    case 'completed':
+      return {
+        isActive: true,
+        isDone: false,
+        label: 'Completed',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--completed',
+        icon: null,
+        statusType: 'completed',
+      };
     case 'closed':
-      return isApprovalWorkflow ? 5 : 3;
+      return {
+        isActive: true,
+        isDone: true,
+        label: 'Closed',
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active tv2-step--closed tv2-step--done',
+        icon: null,
+        statusType: 'closed',
+      };
     default:
-      return 0;
+      return {
+        isActive: true,
+        isDone: false,
+        label: step.label,
+        originalStepLabel: step.label,
+        modifierClass: 'tv2-step--active',
+        icon: null,
+        statusType: 'active',
+      };
   }
 };
 
@@ -581,6 +794,13 @@ const ViewTask = ({
   const [quickActionsDropdownOpen, setQuickActionsDropdownOpen] = useState(false);
   const [quickActionOpen, setQuickActionOpen] = useState(false);
   const [quickActionKey, setQuickActionKey] = useState(null);
+  const [extensionReviewLoading, setExtensionReviewLoading] = useState(false);
+  const [reviewExtensionModal, setReviewExtensionModal] = useState({
+    isOpen: false,
+    extension: null,
+    decision: 'approved',
+    note: '',
+  });
   const [currentUserHasActedOnApproval, setCurrentUserHasActedOnApproval] =
     useState(false);
 
@@ -754,14 +974,27 @@ const ViewTask = ({
 
   const isCurrentUserAssignee = useMemo(() => {
     if (!user || !task) return false;
+    const currentUid = Number(user.id || user.user_id || 0);
+    if (!currentUid) return false;
+
     const assignedIds = Array.isArray(task.assigned_user_ids)
-      ? task.assigned_user_ids
+      ? task.assigned_user_ids.map(Number)
+      : Array.isArray(task.assigned_users)
+      ? task.assigned_users.map((u) => Number(typeof u === 'object' ? u.id : u))
+      : task.assigned_user_id
+      ? [Number(task.assigned_user_id)]
+      : task.assignee_id
+      ? [Number(task.assignee_id)]
       : [];
+
     const metaIds = Array.isArray(task.assigned_users_meta)
-      ? task.assigned_users_meta.map((m) => Number(m?.user_id)).filter((n) => Number.isInteger(n) && n > 0)
+      ? task.assigned_users_meta
+          .map((m) => Number(m?.user_id || m?.id))
+          .filter((n) => Number.isInteger(n) && n > 0)
       : [];
-    const allIds = [...assignedIds, ...metaIds].map((v) => Number(v)).filter((n) => Number.isInteger(n) && n > 0);
-    return allIds.includes(Number(user.id));
+
+    const allIds = [...assignedIds, ...metaIds].filter((n) => Number.isInteger(n) && n > 0);
+    return allIds.includes(currentUid);
   }, [user, task]);
 
   const canEditTaskByCurrentUser =
@@ -791,8 +1024,20 @@ const ViewTask = ({
 
   const isCurrentUserCreator = useMemo(() => {
     if (!user || !task) return false;
-    return Number(task.created_by_id) === Number(user.id);
+    const taskCreatorId = Number(task.created_by_id ?? task.created_by?.id ?? task.createdBy);
+    const uid = Number(user.id || user.user_id);
+    return taskCreatorId > 0 && taskCreatorId === uid;
   }, [user, task]);
+
+  const isSuperAdmin = useMemo(
+    () => String(user?.role || '').toLowerCase() === 'super_admin',
+    [user?.role],
+  );
+
+  const isAdmin = useMemo(
+    () => isSuperAdmin || String(user?.role || '').toLowerCase() === 'admin',
+    [isSuperAdmin, user?.role],
+  );
 
   const canDeleteAttachment = (attachment) => {
     if (!hasAttachmentDeletePermission) return false;
@@ -862,7 +1107,6 @@ const ViewTask = ({
     const isAssignee =
       Array.isArray(task.assigned_user_ids) &&
       task.assigned_user_ids.some(id => Number(id) === Number(user?.id));
-    const isSuperAdmin = String(user?.role || '').toLowerCase() === 'super_admin';
     const canInteract = taskPerms?.canView === true || isSuperAdmin;
 
     // Creators can see all MOVs, but can interact only when also assigned.
@@ -870,7 +1114,7 @@ const ViewTask = ({
 
     // Other users can interact only with their assigned MOVs.
     return isAssignee && canInteract;
-  }, [task, user, taskPerms]);
+  }, [task, user, taskPerms, isSuperAdmin]);
 
   const canChangeStatusInline = useMemo(() => {
     if (!task || !user || !isCurrentUserAssignee) return false;
@@ -1135,21 +1379,65 @@ const ViewTask = ({
   const inlineStatusOptions = useMemo(() => {
     const currentStatus = String(task?.status || '').toLowerCase();
     if (currentStatus === 'closed') {
-      return [
-        { value: 'closed', label: 'Closed' },
-      ];
+      return [{ value: 'closed', label: 'Closed' }];
     }
-    if (currentStatus === 'approved') {
-      return [
-        { value: 'approved', label: 'Approved' },
-      ];
+    if (isApprovalWorkflow) {
+      if (['open', 'draft', 'assigned'].includes(currentStatus)) {
+        return [
+          { value: 'open', label: 'Assigned' },
+          { value: 'in_progress', label: 'In Progress' },
+        ];
+      }
+      if (currentStatus === 'in_progress') {
+        return [
+          { value: 'in_progress', label: 'In Progress' },
+          { value: 'pending_approval', label: 'Submit for Approval' },
+        ];
+      }
+      if (currentStatus === 'approved') {
+        const canComplete = isCurrentUserAssignee || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
+        return canComplete
+          ? [
+              { value: 'approved', label: 'Approved' },
+              { value: 'completed', label: 'Mark Completed' },
+            ]
+          : [{ value: 'approved', label: 'Approved' }];
+      }
+      if (currentStatus === 'completed') {
+        const canClose = isCurrentUserCreator || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
+        return canClose
+          ? [
+              { value: 'completed', label: 'Completed' },
+              { value: 'closed', label: 'Close Task' },
+            ]
+          : [{ value: 'completed', label: 'Completed' }];
+      }
+      return [{ value: currentStatus, label: currentStatus }];
+    } else {
+      if (['open', 'draft', 'assigned'].includes(currentStatus)) {
+        return [
+          { value: 'open', label: 'Assigned' },
+          { value: 'in_progress', label: 'In Progress' },
+        ];
+      }
+      if (currentStatus === 'in_progress') {
+        return [
+          { value: 'in_progress', label: 'In Progress' },
+          { value: 'completed', label: 'Mark Completed' },
+        ];
+      }
+      if (currentStatus === 'completed') {
+        const canClose = isCurrentUserCreator || String(user?.role || '').toLowerCase() === 'super_admin' || String(user?.role || '').toLowerCase() === 'admin';
+        return canClose
+          ? [
+              { value: 'completed', label: 'Completed' },
+              { value: 'closed', label: 'Close Task' },
+            ]
+          : [{ value: 'completed', label: 'Completed' }];
+      }
+      return [{ value: currentStatus, label: currentStatus }];
     }
-    return [
-      { value: 'open', label: 'Open' },
-      { value: 'in_progress', label: 'In Progress' },
-      { value: 'completed', label: 'Completed' },
-    ];
-  }, [task?.status]);
+  }, [task?.status, isApprovalWorkflow, isCurrentUserCreator, user?.role]);
 
   const availableQuickActions = useMemo(() => {
     if (!task || approvalLoading) return [];
@@ -1163,7 +1451,7 @@ const ViewTask = ({
       workflowType: String(task?.workflow_type || '').toUpperCase(),
       currentStatus: String(task?.status || '').toLowerCase(),
       currentUserId: user?.id,
-      createdByUserId: task?.created_by_id,
+      createdByUserId: task?.created_by_id ?? task?.created_by?.id ?? task?.createdBy,
       reportedById: task?.reported_to_id,
       // Array of all reporting manager IDs for multi-manager action authorization
       reportedByIds: task?.reported_to_ids || task?.reported_to,
@@ -1186,6 +1474,71 @@ const ViewTask = ({
     approvalState?.approvals_meta,
     currentUserHasActedOnApproval,
   ]);
+
+  const pendingExtension = useMemo(() => {
+    if (!task || !Array.isArray(task.due_date_extensions)) return null;
+    return task.due_date_extensions.find((e) => e && e.status === 'pending') || null;
+  }, [task?.due_date_extensions]);
+
+  const canReviewExtension = useMemo(() => {
+    if (!user || !task) return false;
+    return isCurrentUserCreator || isAdmin;
+  }, [user, task, isCurrentUserCreator, isAdmin]);
+
+  const showPendingExtensionBanner = useMemo(() => {
+    if (!pendingExtension) return false;
+    // Show ONLY to the Task Creator (Assigner), Administrator, or the Assignee themselves.
+    // The assignee's reporting manager and third parties MUST NOT see this.
+    return isCurrentUserCreator || isAdmin || isCurrentUserAssignee;
+  }, [pendingExtension, isCurrentUserCreator, isAdmin, isCurrentUserAssignee]);
+
+  const handleOpenReviewExtensionModal = (extension, decision) => {
+    setReviewExtensionModal({
+      isOpen: true,
+      extension: extension || pendingExtension,
+      decision,
+      note: '',
+    });
+  };
+
+  const handleConfirmReviewExtension = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!task || !reviewExtensionModal.extension) return;
+
+    const { extension, decision, note } = reviewExtensionModal;
+    if (decision === 'rejected' && (!note || note.trim().length < 5)) {
+      toast.error('A mandatory rejection reason (at least 5 characters) is required.');
+      return;
+    }
+
+    setExtensionReviewLoading(true);
+    try {
+      await axiosInstance.post(`/tasks/${task.id}/review-extension`, {
+        extension_id: extension.id,
+        decision,
+        note: note ? note.trim() : undefined,
+      });
+      toast.success(
+        decision === 'approved'
+          ? 'Deadline extension approved and new due date applied'
+          : 'Deadline extension rejected'
+      );
+      setReviewExtensionModal({ isOpen: false, extension: null, decision: 'approved', note: '' });
+      const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
+      if (refreshed.data?.data) {
+        setTask(refreshed.data.data);
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to review extension request');
+    } finally {
+      setExtensionReviewLoading(false);
+    }
+  };
+
+  const handleReviewExtension = async (extensionId, decision) => {
+    const ext = (task?.due_date_extensions || []).find((e) => e && e.id === extensionId) || pendingExtension;
+    handleOpenReviewExtensionModal(ext, decision);
+  };
 
   const dueInfo = getDueInfo(task?.due_date, task?.status);
 
@@ -1376,6 +1729,30 @@ const ViewTask = ({
     );
   }, [task, assignedUsers, escalationActivity]);
 
+  const blockedReason = useMemo(() => {
+    if (task?.blocked_reason) return task.blocked_reason;
+    if (task?.reason && statusLower === 'blocked') return task.reason;
+    if (Array.isArray(task?.activities)) {
+      const act = [...task.activities].reverse().find((a) => {
+        const toSt = String(
+          a.details?.to_status ||
+          a.metadata?.to_status ||
+          a.to_status ||
+          a.details?.status ||
+          a.metadata?.status ||
+          ''
+        ).toLowerCase();
+        const actType = String(a.activity_type || a.action || a.event || '').toLowerCase();
+        return (toSt === 'blocked' || actType.includes('block')) &&
+          (a.details?.reason || a.details?.notes || a.metadata?.reason || a.metadata?.notes);
+      });
+      if (act) {
+        return act.details?.reason || act.details?.notes || act.metadata?.reason || act.metadata?.notes;
+      }
+    }
+    return null;
+  }, [task, statusLower]);
+
   const backDeptForLoading = user?.department || (task && task.department);
 
   if (!task && !loading) {
@@ -1445,7 +1822,7 @@ const ViewTask = ({
 
   // ---- Derived values for the new layout ----
   const stepDefinitions = isApprovalWorkflow ? APPROVAL_STEP_DEFS : STANDARD_STEP_DEFS;
-  const stepIdx = getStepIndex(statusLower, isApprovalWorkflow);
+  const stepIdx = getStepIndex(statusLower, isApprovalWorkflow, task);
   const showExtraStatusChip = ['pending_approval', 'approved', 'rejected', 'cancelled'].includes(statusLower);
   const showStartWork = canChangeStatusInline && stepIdx === 0;
   const canRequestNewDate = availableQuickActions.includes('CHANGE_DUE_DATE');
@@ -1555,6 +1932,27 @@ const ViewTask = ({
                   <div className="tv2-header-title">
                     <h1 className="tv2-title">{task.title || 'Task Title'}</h1>
                     <div className="tv2-chips">
+                      <span className={`tv2-chip tv2-chip--status tv2-chip--status-${statusLower}`}>
+                        {statusLower === 'blocked'
+                          ? '🚫 Blocked'
+                          : ['paused', 'on_hold', 'hold'].includes(statusLower)
+                          ? '⏸ Paused'
+                          : statusLower === 'rejected'
+                          ? '✕ Rejected'
+                          : statusLower === 'cancelled'
+                          ? '⊘ Cancelled'
+                          : statusLower === 'pending_approval'
+                          ? '⏳ Pending Approval'
+                          : statusLower === 'approved'
+                          ? '✓ Approved'
+                          : statusLower === 'completed'
+                          ? '✓ Completed'
+                          : statusLower === 'closed'
+                          ? '✓ Closed'
+                          : statusLower === 'in_progress'
+                          ? '● In Progress'
+                          : '● Assigned'}
+                      </span>
                       <span className={`tv2-chip tv2-chip--priority-${String(task.priority || 'medium').toLowerCase()}`}>
                         {capitalize(task.priority || 'medium')} priority
                       </span>
@@ -1602,13 +2000,219 @@ const ViewTask = ({
                       </div>
                     </div>
                   ) : null}
+
+                  {statusLower === 'in_progress' && Array.isArray(approvalState?.rejected_note) && approvalState.rejected_note.length > 0 && (
+                    <div className="tv2-alert tv2-alert--warning" role="status" style={{ borderLeft: '4px solid #e11d48', background: '#fff1f2', color: '#9f1239' }}>
+                      <div className="tv2-alert-big"><FaExclamationTriangle aria-hidden="true" /></div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label">Deliverables Rejected / Revisions Requested</span>
+                        <span className="tv2-alert-sub">
+                          {approvalState.rejected_note[approvalState.rejected_note.length - 1]?.note || approvalState.rejected_note[approvalState.rejected_note.length - 1]?.reason}
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="tv2-header-bar">
-                  <ol className="tv2-stepper" aria-label="Task status">
+                  {statusLower === 'blocked' && (
+                    <div
+                      className="tv2-alert tv2-alert--danger"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #ea580c',
+                        background: '#fff7ed',
+                        color: '#9a3412',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#ea580c' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#9a3412', fontWeight: 700 }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee
+                            ? `Task Blocked by ${primaryAssigneeName || 'Assignee'}`
+                            : 'Task is Blocked'}
+                        </span>
+                        <span className="tv2-alert-sub" style={{ color: '#c2410c', marginTop: '2px', display: 'block' }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee ? (
+                            <>
+                              <span>
+                                {primaryAssigneeName
+                                  ? `${primaryAssigneeName} has marked this task as blocked.`
+                                  : 'The assignee has marked this task as blocked.'}
+                              </span>
+                              {blockedReason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {blockedReason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                Please coordinate with the assignee or provide required assistance so work can resume.
+                              </span>
+                            </>
+                          ) : isCurrentUserAssignee ? (
+                            <>
+                              <span>
+                                Work on this task is currently blocked.
+                              </span>
+                              {blockedReason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {blockedReason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px' }}>
+                                Click <strong>"Unblock Task (In Progress)"</strong> below when you are ready to resume work.
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span>
+                                {primaryAssigneeName
+                                  ? `${primaryAssigneeName} has marked this task as blocked.`
+                                  : 'This task is currently marked as blocked by the assignee.'}
+                              </span>
+                              {blockedReason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {blockedReason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                {isSuperAdmin
+                                  ? 'Click "Unblock Task (In Progress)" below or coordinate with the assignee to resume work.'
+                                  : 'Work on this task is paused until the blocker is resolved.'}
+                              </span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {['paused', 'on_hold', 'hold'].includes(statusLower) && (
+                    <div
+                      className="tv2-alert tv2-alert--warning"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #d97706',
+                        background: '#fefce8',
+                        color: '#854d0e',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#ca8a04' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#854d0e', fontWeight: 700 }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee
+                            ? `Task Paused by ${primaryAssigneeName || 'Assignee'}`
+                            : 'Task is Paused'}
+                        </span>
+                        <span className="tv2-alert-sub" style={{ color: '#a16207', marginTop: '2px', display: 'block' }}>
+                          {isCurrentUserCreator && !isCurrentUserAssignee ? (
+                            <>
+                              <span>
+                                {primaryAssigneeName
+                                  ? `${primaryAssigneeName} has paused work on this task.`
+                                  : 'The assignee has paused work on this task.'}
+                              </span>
+                              {task.reason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {task.reason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                Work will resume once the assignee continues progress.
+                              </span>
+                            </>
+                          ) : isCurrentUserAssignee ? (
+                            <>
+                              <span>Work on this task is paused.</span>
+                              {task.reason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {task.reason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px' }}>
+                                Click <strong>"Resume Work (In Progress)"</strong> when ready to proceed.
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              <span>Work on this task is paused.</span>
+                              {task.reason && (
+                                <span style={{ display: 'block', marginTop: '3px' }}>
+                                  <strong>Reason:</strong> {task.reason}
+                                </span>
+                              )}
+                              <span style={{ display: 'block', marginTop: '3px', fontSize: '11px', opacity: 0.9 }}>
+                                Work will resume once progress continues.
+                              </span>
+                            </>
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {statusLower === 'rejected' && (
+                    <div
+                      className="tv2-alert tv2-alert--danger"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #dc2626',
+                        background: '#fef2f2',
+                        color: '#991b1b',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#dc2626' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#991b1b', fontWeight: 700 }}>Deliverables Rejected</span>
+                        <span className="tv2-alert-sub" style={{ color: '#b91c1c', marginTop: '2px', display: 'block' }}>
+                          {task.reject_reason ||
+                            task.reason ||
+                            (Array.isArray(approvalState?.rejected_note) &&
+                              approvalState.rejected_note[approvalState.rejected_note.length - 1]?.note) ||
+                            'Task deliverables were rejected and require revisions before proceeding.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {statusLower === 'cancelled' && (
+                    <div
+                      className="tv2-alert"
+                      role="alert"
+                      style={{
+                        marginBottom: '12px',
+                        borderLeft: '4px solid #64748b',
+                        background: '#f8fafc',
+                        color: '#334155',
+                      }}
+                    >
+                      <div className="tv2-alert-big" style={{ color: '#64748b' }}>
+                        <FaExclamationTriangle aria-hidden="true" />
+                      </div>
+                      <div className="tv2-alert-text">
+                        <span className="tv2-alert-label" style={{ color: '#334155', fontWeight: 700 }}>Task Cancelled</span>
+                        <span className="tv2-alert-sub" style={{ color: '#64748b', marginTop: '2px', display: 'block' }}>
+                          {task.cancellation_reason ||
+                            task.reason ||
+                            'This task has been cancelled and is no longer active.'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <ol className="tv2-stepper" aria-label="Task workflow progress">
                     {stepDefinitions.map((step, idx) => {
-                      const isActive = idx === stepIdx;
-                      const isDone = idx < stepIdx;
+                      const stepState = getDynamicStepState(step, idx, stepIdx, statusLower);
+                      const { isActive, label, modifierClass, icon } = stepState;
                       const clickable =
                         canChangeStatusInline &&
                         !isActive &&
@@ -1616,7 +2220,7 @@ const ViewTask = ({
                       return (
                         <li
                           key={step.key}
-                          className={`tv2-step${isActive ? ' tv2-step--active' : ''}${isDone ? ' tv2-step--done' : ''}`}
+                          className={`tv2-step ${modifierClass}`.trim()}
                         >
                           <button
                             type="button"
@@ -1624,10 +2228,12 @@ const ViewTask = ({
                             data-clickable={clickable ? 'true' : 'false'}
                             disabled={!clickable || statusActionLoading}
                             aria-current={isActive ? 'step' : undefined}
+                            title={stepState.originalStepLabel ? `Workflow: ${stepState.originalStepLabel} · Current Status: ${label}` : undefined}
                             onClick={() => clickable && handleInlineStatusChange(step.key)}
                           >
                             <span className="tv2-step-num">{idx + 1}</span>
-                            {step.label}
+                            {icon && <span className="tv2-step-icon" aria-hidden="true">{icon}</span>}
+                            <span className="tv2-step-label">{label}</span>
                           </button>
                         </li>
                       );
@@ -1635,26 +2241,6 @@ const ViewTask = ({
                   </ol>
 
                   <div className="tv2-actions">
-                    {/* {canRequestNewDate && (
-                      <button
-                        type="button"
-                        className="tv2-btn tv2-btn--ghost"
-                        onClick={() => handleQuickAction('CHANGE_DUE_DATE')}
-                      >
-                        Request new date
-                      </button>
-                    )} */}
-                    {showStartWork && (
-                      <button
-                        type="button"
-                        className="tv2-btn tv2-btn--light"
-                        disabled={statusActionLoading}
-                        onClick={() => handleInlineStatusChange('in_progress')}
-                      >
-                        <span aria-hidden="true">▸</span> Start work
-                      </button>
-                    )}
-
                     <TaskActionBar
                       taskId={task.id}
                       currentStatus={task.status}
@@ -1665,7 +2251,7 @@ const ViewTask = ({
                       userRole={user?.role}
                       isAssignee={isCurrentUserAssignee}
                       currentUserId={user?.id}
-                      createdByUserId={task.created_by_id}
+                      createdByUserId={task?.created_by_id ?? task?.created_by?.id ?? task?.createdBy}
                       reportedById={task.reported_to_id}
                       reportedByIds={
                         // Pass array of all reporting manager IDs for multi-manager action controls
@@ -1708,6 +2294,126 @@ const ViewTask = ({
               {/* ================================ BODY ================================ */}
               <div className="tv2-body">
                 <div className="tv2-main">
+                  {/* ---- Pending Extension Request Banner ---- */}
+                  {showPendingExtensionBanner && (
+                    <div
+                      style={{
+                        marginBottom: '20px',
+                        padding: '16px 20px',
+                        background: '#fffbeb',
+                        border: '1px solid #fde68a',
+                        borderRadius: '10px',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          flexWrap: 'wrap',
+                          gap: '12px',
+                          marginBottom: '8px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '18px' }}>⏳</span>
+                          <strong style={{ color: '#92400e', fontSize: '15px' }}>
+                            Deadline Extension Requested
+                          </strong>
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            color: '#b45309',
+                            background: '#fef3c7',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          Pending Review
+                        </span>
+                      </div>
+
+                      <p style={{ margin: '4px 0 10px 0', fontSize: '13px', color: '#78350f' }}>
+                        <strong>
+                          {pendingExtension.requested_by
+                            ? getUserDisplayName(pendingExtension.requested_by)
+                            : 'Assignee'}
+                        </strong>{' '}
+                        has requested to extend the task deadline from{' '}
+                        <strong style={{ textDecoration: 'line-through' }}>
+                          {formatDateOnly(pendingExtension.current_due_date || task.due_date)}
+                        </strong>{' '}
+                        to{' '}
+                        <strong style={{ color: '#b45309', fontSize: '14px' }}>
+                          {formatDateOnly(pendingExtension.proposed_due_date)}
+                        </strong>
+                        .
+                      </p>
+
+                      <div
+                        style={{
+                          background: '#ffffff',
+                          border: '1px solid #fef3c7',
+                          padding: '10px 14px',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          color: '#451a03',
+                          marginBottom: canReviewExtension ? '14px' : '0',
+                        }}
+                      >
+                        <strong>Reason for Extension:</strong> {pendingExtension.reason}
+                      </div>
+
+                      {!canReviewExtension && isCurrentUserAssignee && (
+                        <div style={{ fontSize: '13px', color: '#b45309', fontWeight: 500, background: '#fef3c7', padding: '8px 12px', borderRadius: '6px' }}>
+                          ⏳ Your extension request has been submitted and is currently awaiting review by the Task Creator.
+                        </div>
+                      )}
+
+                      {canReviewExtension && (
+                        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                          <button
+                            type="button"
+                            disabled={extensionReviewLoading}
+                            style={{
+                              backgroundColor: '#16a34a',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '8px 18px',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
+                              fontSize: '13px',
+                            }}
+                            onClick={() => handleOpenReviewExtensionModal(pendingExtension, 'approved')}
+                          >
+                            Approve Extension
+                          </button>
+                          <button
+                            type="button"
+                            disabled={extensionReviewLoading}
+                            style={{
+                              backgroundColor: '#dc2626',
+                              color: '#ffffff',
+                              border: 'none',
+                              padding: '8px 18px',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
+                              fontSize: '13px',
+                            }}
+                            onClick={() => handleOpenReviewExtensionModal(pendingExtension, 'rejected')}
+                          >
+                            Reject Extension
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* ---- Brief ---- */}
                   {activeTab === 'overview' && (
                     <section>
@@ -1772,7 +2478,11 @@ const ViewTask = ({
                           currentUser={user}
                           progressActivities={task.activities || []}
                           taskStatus={task.status}
-                          onShowMovCompletionPrompt={() => setShowMovCompletionPrompt(true)}
+                          onShowMovCompletionPrompt={() => {
+                            if (isCurrentUserAssignee || isSuperAdmin) {
+                              setShowMovCompletionPrompt(true);
+                            }
+                          }}
                           onUpdate={(progress, notes, updatedTask) => {
                             if (updatedTask) {
                               setTask(updatedTask);
@@ -1795,8 +2505,35 @@ const ViewTask = ({
                       )}
                       {movChecklistLines.length > 0 && (
                         <p className="tv2-done-note">
-                          “Mark complete” unlocks when every condition is ticked.
+                          {isApprovalWorkflow
+                            ? '“Submit for Approval” unlocks when every condition is ticked.'
+                            : '“Mark complete” unlocks when every condition is ticked.'}
                         </p>
+                      )}
+                      {isApprovalWorkflow && statusLower === 'in_progress' && isCurrentUserAssignee && (
+                        <div style={{ marginTop: '12px' }}>
+                          <button
+                            type="button"
+                            className="tv2-btn tv2-btn--primary"
+                            style={{
+                              background: '#0d9488',
+                              color: '#ffffff',
+                              padding: '8px 16px',
+                              borderRadius: '8px',
+                              fontWeight: 600,
+                              fontSize: '13px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              cursor: 'pointer',
+                              border: 'none',
+                            }}
+                            onClick={() => handleStatusActionClick('SUBMIT_APPROVAL')}
+                            disabled={statusActionLoading}
+                          >
+                            <span>Submit for Approval</span>
+                          </button>
+                        </div>
                       )}
                     </section>
                   )}
@@ -1970,6 +2707,18 @@ const ViewTask = ({
                           </li>
                         ))}
                       </ul>
+                      {Array.isArray(approvalState?.rejected_note) && approvalState.rejected_note.length > 0 && (
+                        <div style={{ marginTop: '10px', padding: '8px', background: '#fff1f2', border: '1px solid #fecdd3', borderRadius: '6px', fontSize: '12px', color: '#9f1239' }}>
+                          <strong>Rejection Feedback:</strong>
+                          <ul style={{ margin: '4px 0 0 0', paddingLeft: '16px' }}>
+                            {approvalState.rejected_note.map((rn, idx) => (
+                              <li key={idx}>
+                                {rn.note || rn.reason} {rn.decided_at && <span style={{ opacity: 0.7, fontSize: '10px' }}>({new Date(rn.decided_at).toLocaleString()})</span>}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </section>
                   )}
 
@@ -1989,6 +2738,91 @@ const ViewTask = ({
                           );
                         })}
                       </ul>
+                    </section>
+                  )}
+
+                  {showExtras && Array.isArray(task.due_date_extensions) && task.due_date_extensions.length > 0 && (
+                    <section className="tv2-card" style={{ marginBottom: '20px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <span className="tv2-label" style={{ marginBottom: 0 }}>Deadline Extension History</span>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>
+                          {task.due_date_extensions.length} {task.due_date_extensions.length === 1 ? 'request' : 'requests'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {task.due_date_extensions.map((ext) => {
+                          const isAppr = ext.status === 'approved';
+                          const isRej = ext.status === 'rejected';
+                          const isPend = ext.status === 'pending';
+                          return (
+                            <div
+                              key={ext.id}
+                              style={{
+                                padding: '12px 14px',
+                                borderRadius: '8px',
+                                border: `1px solid ${isAppr ? '#bbf7d0' : isRej ? '#fecaca' : '#fde68a'}`,
+                                background: isAppr ? '#f0fdf4' : isRej ? '#fef2f2' : '#fffbeb',
+                                fontSize: '13px',
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px', flexWrap: 'wrap', gap: '6px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                  <span
+                                    style={{
+                                      display: 'inline-block',
+                                      padding: '2px 8px',
+                                      borderRadius: '4px',
+                                      fontWeight: 700,
+                                      fontSize: '11px',
+                                      textTransform: 'uppercase',
+                                      color: isAppr ? '#15803d' : isRej ? '#b91c1c' : '#b45309',
+                                      background: isAppr ? '#dcfce7' : isRej ? '#fee2e2' : '#fef3c7',
+                                    }}
+                                  >
+                                    {ext.status}
+                                  </span>
+                                  <span style={{ color: '#475569' }}>
+                                    Requested by <strong>{getUserDisplayName(ext.requested_by)}</strong>
+                                  </span>
+                                </div>
+                                <span style={{ fontSize: '11px', color: '#64748b' }}>
+                                  {ext.created_at ? new Date(ext.created_at).toLocaleString() : ''}
+                                </span>
+                              </div>
+
+                              <div style={{ margin: '4px 0 8px 0', color: '#334155' }}>
+                                <span style={{ color: '#64748b' }}>Proposed Due Date: </span>
+                                <strong style={{ color: '#0f172a' }}>{formatDateOnly(ext.proposed_due_date)}</strong>
+                                {ext.current_due_date && (
+                                  <span style={{ color: '#94a3b8', marginLeft: '6px' }}>
+                                    (Current was: {formatDateOnly(ext.current_due_date)})
+                                  </span>
+                                )}
+                              </div>
+
+                              <div style={{ background: 'rgba(255,255,255,0.85)', padding: '6px 10px', borderRadius: '4px', marginBottom: ext.reviewed_at ? '6px' : '0' }}>
+                                <strong style={{ color: '#475569' }}>Reason: </strong>
+                                <span style={{ color: '#1e293b' }}>{ext.reason}</span>
+                              </div>
+
+                              {ext.reviewed_at && (
+                                <div style={{ borderTop: '1px dashed rgba(0,0,0,0.1)', paddingTop: '6px', marginTop: '4px', fontSize: '12px', color: '#475569' }}>
+                                  <div>
+                                    <strong>{isAppr ? 'Approved' : 'Rejected'} by: </strong>
+                                    {getUserDisplayName(ext.reviewed_by)} on {new Date(ext.reviewed_at).toLocaleString()}
+                                  </div>
+                                  {ext.review_note && (
+                                    <div style={{ marginTop: '2px', color: isRej ? '#991b1b' : '#166534' }}>
+                                      <strong>{isRej ? 'Rejection Reason: ' : 'Note: '}</strong>
+                                      {ext.review_note}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </section>
                   )}
 
@@ -2176,8 +3010,50 @@ const ViewTask = ({
                       <dd className={task.start_date ? '' : 'is-muted'}>
                         {task.start_date ? formatDateOnly(task.start_date) : 'Not set'}
                       </dd>
-                      <dt>Due Date</dt>
-                      <dd className={overdueAfterToday ? 'is-danger' : ''}>{formatDateOnly(task.due_date)}</dd>
+                      {task.original_due_date && formatDateOnly(task.original_due_date) !== formatDateOnly(task.due_date) && (
+                        <>
+                          <dt>Original Due Date</dt>
+                          <dd style={{ textDecoration: 'line-through', color: '#64748b' }}>
+                            {formatDateOnly(task.original_due_date)}
+                          </dd>
+                        </>
+                      )}
+                      <dt>
+                        Due Date
+                        {task.original_due_date && formatDateOnly(task.original_due_date) !== formatDateOnly(task.due_date) && (
+                          <span style={{ fontSize: '11px', color: '#0284c7', marginLeft: '4px' }}>(Extended)</span>
+                        )}
+                      </dt>
+                      <dd className={overdueAfterToday ? 'is-danger' : ''}>
+                        {formatDateOnly(task.due_date)}
+                        {isCurrentUserAssignee && !isCurrentUserCreator && !pendingExtension && !['completed', 'closed', 'cancelled'].includes(statusLower) && (
+                          <button
+                            type="button"
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: '#0284c7',
+                              fontSize: '11px',
+                              cursor: 'pointer',
+                              padding: '0 0 0 8px',
+                              textDecoration: 'underline',
+                              fontWeight: 500,
+                            }}
+                            onClick={() => {
+                              setQuickActionKey('CHANGE_DUE_DATE');
+                              setQuickActionOpen(true);
+                            }}
+                          >
+                            Request Extension
+                          </button>
+                        )}
+                      </dd>
+                      {isApprovalWorkflow && task.approval_due_date && (
+                        <>
+                          <dt>Approval Due Date</dt>
+                          <dd>{formatDateOnly(task.approval_due_date)}</dd>
+                        </>
+                      )}
                       <dt>Created Date</dt>
                       <dd>{formatDateOnly(task.created_at)}</dd>
                       <dt>Updated Date</dt>
@@ -2268,11 +3144,13 @@ const ViewTask = ({
               <div className="status-modal-backdrop" role="dialog" aria-modal="true">
                 <div className="status-modal">
                   <div className="status-modal-header">
-                    <h3 className="status-modal-title">All MOV Items Completed</h3>
+                    <h3 className="status-modal-title">All Deliverables / MOVs Completed</h3>
                   </div>
                   <div className="status-modal-body">
                     <p className="status-modal-text">
-                      All MOV items are completed. Do you want to change the task status to Completed?
+                      {isApprovalWorkflow
+                        ? 'All verification points (MOVs) are completed. Do you want to submit this task for formal approval?'
+                        : 'All verification points (MOVs) are completed. Do you want to mark this task as Completed?'}
                     </p>
                   </div>
                   <div className="status-modal-footer">
@@ -2281,29 +3159,34 @@ const ViewTask = ({
                       className="task-status-modal-cancel"
                       onClick={() => setShowMovCompletionPrompt(false)}
                     >
-                      No
+                      No, Keep In Progress
                     </button>
                     <PrimaryButton
                       style={{ color: '#ffffff' }}
                       type="button"
                       onClick={async () => {
-                        // Change task status to Completed
                         try {
-                          const payload = { status: 'completed', notes: 'All MOV items completed' };
+                          const targetStatus = isApprovalWorkflow ? 'pending_approval' : 'completed';
+                          const transitionNote = isApprovalWorkflow
+                            ? 'All deliverables/MOVs completed. Submitted for approval.'
+                            : 'All deliverables/MOVs completed.';
+                          const payload = {
+                            status: targetStatus,
+                            notes: transitionNote,
+                            reason: transitionNote,
+                          };
                           await axiosInstance.post(`/tasks/${task.id}/status-transition`, payload);
                           const refreshed = await axiosInstance.get(`/tasks/${task.id}`);
                           const updatedTask = refreshed.data?.data || null;
                           if (updatedTask) {
                             setTask(updatedTask);
                           }
-                          toast.success('Task marked as Completed');
+                          toast.success(
+                            isApprovalWorkflow
+                              ? 'Task submitted for approval'
+                              : 'Task marked as Completed',
+                          );
                           setShowMovCompletionPrompt(false);
-
-                          // If task is approval-based, show Submit for Approval modal
-                          if (String(task.workflow_type).toLowerCase() === 'approval_required') {
-                            setStatusModalAction('SUBMIT_APPROVAL');
-                            setStatusModalOpen(true);
-                          }
                         } catch (e) {
                           const msg = e.response?.data?.message || 'Failed to update status.';
                           setError(msg);
@@ -2311,9 +3194,169 @@ const ViewTask = ({
                         }
                       }}
                     >
-                      Yes
+                      {isApprovalWorkflow ? 'Submit for Approval' : 'Mark Completed'}
                     </PrimaryButton>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ---- Extension Review Decision Modal ---- */}
+            {reviewExtensionModal.isOpen && (
+              <div className="status-modal-backdrop" role="dialog" aria-modal="true">
+                <div className="status-modal" style={{ maxWidth: '500px' }}>
+                  <div
+                    className="status-modal-header"
+                    style={{
+                      background: reviewExtensionModal.decision === 'approved' ? '#f0fdf4' : '#fef2f2',
+                      borderBottom: `1px solid ${reviewExtensionModal.decision === 'approved' ? '#bbf7d0' : '#fecaca'}`,
+                    }}
+                  >
+                    <h3
+                      className="status-modal-title"
+                      style={{
+                        color: reviewExtensionModal.decision === 'approved' ? '#166534' : '#991b1b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      {reviewExtensionModal.decision === 'approved'
+                        ? '✓ Approve Deadline Extension'
+                        : '✕ Reject Deadline Extension'}
+                    </h3>
+                  </div>
+                  <form onSubmit={handleConfirmReviewExtension}>
+                    <div className="status-modal-body" style={{ padding: '20px' }}>
+                      <div
+                        style={{
+                          background: '#f8fafc',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '8px',
+                          padding: '12px 16px',
+                          marginBottom: '16px',
+                          fontSize: '13px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Requested by:</span>
+                          <strong>{getUserDisplayName(reviewExtensionModal.extension?.requested_by) || 'Assignee'}</strong>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ color: '#64748b' }}>Current Due Date:</span>
+                          <span style={{ textDecoration: 'line-through', color: '#64748b' }}>
+                            {formatDateOnly(reviewExtensionModal.extension?.current_due_date || task.due_date)}
+                          </span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                          <span style={{ color: '#64748b' }}>Proposed New Date:</span>
+                          <strong style={{ color: '#0284c7' }}>
+                            {formatDateOnly(reviewExtensionModal.extension?.proposed_due_date)}
+                          </strong>
+                        </div>
+                        <div style={{ borderTop: '1px solid #e2e8f0', paddingTop: '8px', marginTop: '4px' }}>
+                          <span style={{ color: '#64748b', display: 'block', marginBottom: '2px' }}>Reason:</span>
+                          <div
+                            style={{
+                              color: '#1e293b',
+                              fontStyle: 'italic',
+                              background: '#ffffff',
+                              padding: '6px 10px',
+                              borderRadius: '4px',
+                              border: '1px solid #cbd5e1',
+                            }}
+                          >
+                            "{reviewExtensionModal.extension?.reason}"
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label
+                          className="form-label"
+                          style={{ fontWeight: 600, fontSize: '13px', color: '#334155' }}
+                        >
+                          {reviewExtensionModal.decision === 'approved'
+                            ? 'Approval instructions / note (optional)'
+                            : 'Reason for rejection *'}
+                        </label>
+                        <textarea
+                          className="form-textarea"
+                          rows={3}
+                          value={reviewExtensionModal.note}
+                          onChange={(e) =>
+                            setReviewExtensionModal((prev) => ({ ...prev, note: e.target.value }))
+                          }
+                          placeholder={
+                            reviewExtensionModal.decision === 'approved'
+                              ? 'Add any comments or instructions for the assignee...'
+                              : 'Provide the mandatory reason why this extension cannot be granted...'
+                          }
+                          required={reviewExtensionModal.decision === 'rejected'}
+                          style={{
+                            width: '100%',
+                            borderRadius: '6px',
+                            padding: '8px 12px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '13px',
+                          }}
+                        />
+                        {reviewExtensionModal.decision === 'rejected' && (
+                          <small style={{ color: '#dc2626', fontSize: '11px', display: 'block', marginTop: '4px' }}>
+                            The rejection reason will be permanently recorded in the task history and communicated to the assignee.
+                          </small>
+                        )}
+                      </div>
+                    </div>
+
+                    <div
+                      className="status-modal-footer"
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        gap: '10px',
+                        padding: '12px 20px',
+                        borderTop: '1px solid #e2e8f0',
+                      }}
+                    >
+                      <button
+                        type="button"
+                        className="task-status-modal-cancel"
+                        onClick={() =>
+                          setReviewExtensionModal({
+                            isOpen: false,
+                            extension: null,
+                            decision: 'approved',
+                            note: '',
+                          })
+                        }
+                        disabled={extensionReviewLoading}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="submit"
+                        disabled={extensionReviewLoading}
+                        style={{
+                          backgroundColor:
+                            reviewExtensionModal.decision === 'approved' ? '#16a34a' : '#dc2626',
+                          color: '#ffffff',
+                          border: 'none',
+                          padding: '8px 20px',
+                          borderRadius: '6px',
+                          fontWeight: 600,
+                          cursor: extensionReviewLoading ? 'not-allowed' : 'pointer',
+                          fontSize: '13px',
+                        }}
+                      >
+                        {extensionReviewLoading
+                          ? 'Submitting...'
+                          : reviewExtensionModal.decision === 'approved'
+                            ? 'Confirm Approval'
+                            : 'Confirm Rejection'}
+                      </button>
+                    </div>
+                  </form>
                 </div>
               </div>
             )}
@@ -2321,9 +3364,13 @@ const ViewTask = ({
             <QuickActionModal
               isOpen={quickActionOpen}
               taskId={task.id}
+              task={task}
               actionKey={quickActionKey}
               userDepartment={user?.department}
               taskRouteBase={taskRouteBase}
+              isAssignee={isCurrentUserAssignee}
+              isCreator={isCurrentUserCreator}
+              isAdmin={isAdmin}
               onClose={() => {
                 setQuickActionOpen(false);
                 setQuickActionKey(null);

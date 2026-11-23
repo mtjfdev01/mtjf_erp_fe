@@ -209,15 +209,18 @@ const CeoNoteView = () => {
     }
   };
 
-  const handleConvertToTask = async () => {
+  const handleConvertToTask = async (customPayload) => {
+    const payloadToSend = customPayload || convertData;
     try {
-      await axios.post(`/ceo-notes/${id}/convert-to-task`, convertData);
+      const res = await axios.post(`/ceo-notes/${id}/convert-to-task`, payloadToSend);
       toast.success('Note converted to task successfully');
       setConvertModalOpen(false);
       fetchNote();
+      return res?.data?.data || res?.data;
     } catch (error) {
       console.error('Error converting to task:', error);
       toast.error('Failed to convert note to task');
+      throw error;
     }
   };
 
