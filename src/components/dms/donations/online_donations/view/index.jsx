@@ -1133,7 +1133,7 @@ const ViewOnlineDonation = () => {
           {resolveDonationReferrer(donation) && (
             <div className="view-section">
               <h3 className="view-section-title">Referral</h3>
-              <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <div className="view-grid">
                 <div className="view-item">
                   <span className="view-item-label">Referred By</span>
                   <span className="view-item-value">
@@ -1249,7 +1249,7 @@ const ViewOnlineDonation = () => {
             <>
               <div className="view-section">
                 <h3 className="view-section-title">CSR Donor</h3>
-                <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                <div className="view-grid">
                   <div className="view-item">
                     <span className="view-item-label">Company</span>
                     <span className="view-item-value">
@@ -1337,7 +1337,7 @@ const ViewOnlineDonation = () => {
               {donation?.csr_poc_id && donation?.csr_poc ? (
                 <div className="view-section">
                   <h3 className="view-section-title">POC Information</h3>
-                  <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+                  <div className="view-grid">
                     <div className="view-item">
                       <span className="view-item-label">Name</span>
                       <span className="view-item-value">
@@ -1390,7 +1390,7 @@ const ViewOnlineDonation = () => {
           ) : (
             <div className="view-section">
               <h3 className="view-section-title">Donor Information</h3>
-              <div className="view-grid" style={{ gridTemplateColumns: 'repeat(3, minmax(0, 1fr))' }}>
+              <div className="view-grid">
                 <div className="view-item">
                   <span className="view-item-label">Name</span>
                   <span className="view-item-value">

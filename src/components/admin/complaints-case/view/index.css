@@ -135,7 +135,8 @@
 
 @media (max-width: 768px) {
   .cc-view-grid,
-  .cc-form-grid {
+  .cc-form-grid,
+  .cc-summary-grid {
     grid-template-columns: 1fr;
   }
 

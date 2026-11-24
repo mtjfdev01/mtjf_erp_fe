@@ -81,10 +81,11 @@
 }
 
 @media (max-width: 768px) {
+  .task-view-grid,
+  .task-view-grid-2,
   .task-view-grid--info {
     grid-template-columns: 1fr;
     gap: 1.25rem;
-   
   }
 }
 

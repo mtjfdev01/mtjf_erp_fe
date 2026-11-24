@@ -172,6 +172,12 @@
   }
 }
 
+@media (max-width: 768px) {
+  .rd-sub-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 520px) {
   .rd-sub-kpis {
     grid-template-columns: 1fr;

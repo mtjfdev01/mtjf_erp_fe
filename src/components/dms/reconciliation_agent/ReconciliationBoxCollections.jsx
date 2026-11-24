@@ -491,7 +491,7 @@ export default function ReconciliationBoxCollections({
               </div>
 
               {/* 3 Stats Overview Box */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '8px' }}>
+              <div className="ra-run-stats-grid">
                 <div style={{ padding: '10px', borderRadius: '10px', background: '#F8FAFC', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   <span style={{ color: '#64748B', fontSize: '12px' }}>From boxes</span>
                   <span style={{ fontWeight: 700 }}>PKR {currentItem.analysis.collected.toLocaleString('en-US')}</span>

@@ -326,4 +326,18 @@
     padding-bottom: 24px;
     margin: 0 auto 40px auto;
   }
+
+  .cup-metrics-grid,
+  .cup-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .cup-header-main,
+  .cup-header-actions {
+    width: 100%;
+  }
+
+  .cup-header-actions {
+    flex-wrap: wrap;
+  }
 }

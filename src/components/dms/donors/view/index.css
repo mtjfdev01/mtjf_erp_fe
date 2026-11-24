@@ -1373,6 +1373,18 @@
   }
 }
 
+@media (max-width: 768px) {
+  .donor-crm-layout--info-expanded .donor-crm-contact-list,
+  .donor-crm-layout--info-expanded .donor-crm-summary-list {
+    grid-template-columns: 1fr;
+  }
+
+  .donor-crm-layout--info-expanded .donor-crm-contact-list li,
+  .donor-crm-layout--info-expanded .donor-crm-summary-row {
+    width: 100%;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .donor-crm-layout,
   .donor-crm-aside,
