@@ -123,6 +123,20 @@
   background: #fff;
 }
 
+.donation-pending-attachments__item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.donation-pending-attachments__upload-btn {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  min-height: 32px;
+  white-space: nowrap;
+}
+
 .donation-pending-attachments__item-main {
   display: flex;
   align-items: center;
@@ -284,6 +298,17 @@
 
   .donation-pending-attachments__item {
     align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .donation-pending-attachments__item-actions {
+    width: 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .donation-pending-attachments__upload-btn {
+    flex: 1 1 auto;
   }
 
   .donation-pending-attachments__item-main {

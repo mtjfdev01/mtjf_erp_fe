@@ -2,8 +2,6 @@ import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import {
   FiMail,
-  FiCheckCircle,
-  FiXCircle,
   FiRefreshCw,
   FiSend,
 } from 'react-icons/fi';
@@ -27,7 +25,6 @@ import DonationPendingAttachments, {
 import '../../shared/DonationPendingAttachments.css';
 import { formatAuditActor } from '../../../../common/audit/auditHistoryLabels';
 import { useAuth } from '../../../../../context/AuthContext';
-import { canReconcileDonations } from '../../../../../utils/permissions';
 import { isLocalId } from '../../../../../offline/handlers';
 import { toast } from 'react-toastify';
 import {
@@ -76,22 +73,8 @@ const ViewOnlineDonation = () => {
   );
   const listBackPath = resolveDonationListBackPath(location, donationRoutes);
   const pageTitle = `View ${donationRoutes.pageLabel}`;
-  const { hasAnyPermission, permissions } = useAuth();
+  const { hasAnyPermission } = useAuth();
   const [donation, setDonation] = useState(null);
-  const canReconcile = useMemo(
-    () =>
-      canReconcileDonations(permissions, {
-        channel: donationRoutes.channel,
-        donation_method: donation?.donation_method,
-        donation_source: donation?.donation_source,
-      }),
-    [
-      permissions,
-      donationRoutes.channel,
-      donation?.donation_method,
-      donation?.donation_source,
-    ],
-  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [totalDonationAmount, setTotalDonationAmount] = useState(0);
@@ -101,8 +84,6 @@ const ViewOnlineDonation = () => {
   const [sendingLinkWhatsApp, setSendingLinkWhatsApp] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
   const [messageStatus, setMessageStatus] = useState({ type: '', message: '' });
-  const [markingCompleted, setMarkingCompleted] = useState(false);
-  const [markingFailed, setMarkingFailed] = useState(false);
   const [note, setNote] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [noteStatus, setNoteStatus] = useState({ type: '', message: '' });
@@ -185,15 +166,6 @@ const ViewOnlineDonation = () => {
   const canSendComm = (path) => hasAnyPermission(['super_admin', path]);
   const donationStatus = String(donation?.status || '').toLowerCase();
   const isDonationCompleted = donationStatus === 'completed';
-  const isDonationFailed = donationStatus === 'failed';
-  const isInKindDonation =
-    String(donation?.donation_method || '').toLowerCase() === 'in_kind';
-  const canApproveInKind = hasAnyPermission([
-    'super_admin',
-    'fund_raising_manager',
-    'fund_raising.in_kind_donations.completing',
-    'fund_raising.in_kind_donations.reconciler',
-  ]);
 
   // Links for unpaid / non-completed; thanks + receipt only after completion
   const showPaymentLinkActions = !isDonationCompleted;
@@ -213,14 +185,6 @@ const ViewOnlineDonation = () => {
   const canSendReceiptEmail = canSendComm(COMM_PERMS.donationReceiptsSend);
   const showReceiptSection =
     isDonationCompleted && (canViewReceipt || canSendReceiptEmail);
-  const showMarkCompleted = isInKindDonation
-    ? !isDonationCompleted && (canApproveInKind || canReconcile)
-    : !isDonationCompleted && canReconcile;
-  const showMarkFailed =
-    !isDonationFailed && !isDonationCompleted && canReconcile;
-  const showStatusActions = showMarkCompleted || showMarkFailed;
-  const showApproveRejectInDetails =
-    (isInKindDonation && canApproveInKind) || canReconcile;
   const isPendingOffline = isLocalId(id);
 
   useEffect(() => {
@@ -627,84 +591,6 @@ const ViewOnlineDonation = () => {
       console.error('Error sending link WhatsApp:', err);
     } finally {
       setSendingLinkWhatsApp(false);
-    }
-  };
-
-  const markAsCompleted = async () => {
-    if (!id) return;
-    
-    setMarkingCompleted(true);
-    setMessageStatus({ type: '', message: '' });
-    
-    try {
-      const response = isLocalId(id)
-        ? await axiosInstance.patch(`/donations/${id}`, { status: 'completed' })
-        : await axiosInstance.post(`/donations/status-action`, {
-            donation_id: parseInt(id, 10),
-            status: 'completed',
-          });
-      
-      if (response.data.success) {
-        setMessageStatus({
-          type: 'success',
-          message: response.data.message || 'Donation approved and marked completed.',
-        });
-        await fetchDonation();
-        setAuditRefreshKey((k) => k + 1);
-        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
-      } else {
-        setMessageStatus({
-          type: 'error',
-          message: response.data.message || 'Failed to approve donation',
-        });
-      }
-    } catch (err) {
-      setMessageStatus({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to approve donation. Please try again.',
-      });
-      console.error('Error marking donation as completed:', err);
-    } finally {
-      setMarkingCompleted(false);
-    }
-  };
-
-  const markAsFailed = async () => {
-    if (!id) return;
-    
-    setMarkingFailed(true);
-    setMessageStatus({ type: '', message: '' });
-    
-    try {
-      const response = isLocalId(id)
-        ? await axiosInstance.patch(`/donations/${id}`, { status: 'failed' })
-        : await axiosInstance.post(`/donations/status-action`, {
-            donation_id: parseInt(id, 10),
-            status: 'failed',
-          });
-      
-      if (response.data.success) {
-        setMessageStatus({
-          type: 'success',
-          message: response.data.message || 'Donation rejected.',
-        });
-        await fetchDonation();
-        setAuditRefreshKey((k) => k + 1);
-        setTimeout(() => setMessageStatus({ type: '', message: '' }), 5000);
-      } else {
-        setMessageStatus({
-          type: 'error',
-          message: response.data.message || 'Failed to reject donation',
-        });
-      }
-    } catch (err) {
-      setMessageStatus({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to reject donation. Please try again.',
-      });
-      console.error('Error marking donation as failed:', err);
-    } finally {
-      setMarkingFailed(false);
     }
   };
 
@@ -1221,59 +1107,6 @@ const ViewOnlineDonation = () => {
                   {donation.created_by ? formatAuditActor(donation.created_by) : '—'}
                 </span>
               </div>
-              {showApproveRejectInDetails && !isDonationCompleted && !isDonationFailed && (
-                <div className="view-item view-item--full donation-review-item">
-                  <span className="view-item-label">Review</span>
-                  <span className="view-item-value donation-review-actions">
-                    {showMarkCompleted && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
-                        onClick={markAsCompleted}
-                        disabled={markingCompleted || markingFailed}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FiCheckCircle />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {markingCompleted ? 'Approving…' : 'Approve'}
-                        </span>
-                      </button>
-                    )}
-                    {showMarkFailed && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--failed donation-comm-btn--inline"
-                        onClick={markAsFailed}
-                        disabled={markingCompleted || markingFailed}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FiXCircle />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {markingFailed ? 'Rejecting…' : 'Reject'}
-                        </span>
-                      </button>
-                    )}
-                  </span>
-                </div>
-              )}
-              {showApproveRejectInDetails && isDonationCompleted && (
-                <div className="view-item view-item--full donation-review-item">
-                  <span className="view-item-label">Review</span>
-                  <span className="view-item-value donation-review-actions">
-                    <span className="status-badge status-completed">Approved</span>
-                  </span>
-                </div>
-              )}
-              {showApproveRejectInDetails && isDonationFailed && (
-                <div className="view-item view-item--full donation-review-item">
-                  <span className="view-item-label">Review</span>
-                  <span className="view-item-value donation-review-actions">
-                    <span className="status-badge status-failed">Rejected</span>
-                  </span>
-                </div>
-              )}
               { donation?.donation_method && donation.donation_method == "cheque" &&( 
               <div className="view-item">
                 <span className="view-item-label">Cheque Number</span>
@@ -1371,17 +1204,9 @@ const ViewOnlineDonation = () => {
                   disabled={savingAttachments}
                   title="Add attachment"
                   fileInputId="donation-view-pending-attachment-file"
+                  onUpload={uploadViewAttachments}
+                  uploading={savingAttachments}
                 />
-                <div style={{ marginTop: '0.75rem' }}>
-                  <button
-                    type="button"
-                    className="primary_btn"
-                    onClick={uploadViewAttachments}
-                    disabled={savingAttachments}
-                  >
-                    {savingAttachments ? 'Uploading...' : 'Upload attachments'}
-                  </button>
-                </div>
               </div>
             )}
           </div>
@@ -1401,19 +1226,17 @@ const ViewOnlineDonation = () => {
               </div>
             )}
 
-            <FormInput
-              name="note"
-              type="text"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Add an internal note for this donation..."
-              // rows={4}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
+            <div className="donation-note-inline">
+              <FormInput
+                name="note"
+                type="text"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder="Add an internal note for this donation..."
+              />
               <button
                 type="button"
-                className="primary_btn"
+                className="primary_btn donation-note-inline__btn"
                 onClick={saveNote}
                 disabled={savingNote}
               >
@@ -1421,13 +1244,6 @@ const ViewOnlineDonation = () => {
               </button>
             </div>
           </div>
-
-          {!isPendingOffline && (
-            <div className="view-section">
-              <h3 className="view-section-title">Change history</h3>
-              <DonationAuditHistory donationId={id} refreshKey={auditRefreshKey} />
-            </div>
-          )}
 
           {(donation?.organization_id || donation?.organization) ? (
             <>
@@ -1783,19 +1599,7 @@ const ViewOnlineDonation = () => {
           </div> */}
           {/* Communication & Actions */}
           {!isPendingOffline && (
-          <div className="view-section donation-view-actions-panel donation-comm-panel">
-            <div className="donation-comm-panel__header">
-              <div className="donation-comm-panel__header-icon" aria-hidden>
-                <FiSend />
-              </div>
-              <div className="donation-comm-panel__header-text">
-                <h3 className="donation-comm-panel__title">Communication & Actions</h3>
-                <p className="donation-comm-panel__subtitle">
-                  Send messages, generate receipt and update status for this donation.
-                </p>
-              </div>
-            </div>
-
+          <div className="view-section donation-view-actions-panel donation-comm-panel donation-comm-panel--compact">
             {messageStatus.message && (
               <div
                 className={`status-message donation-view-status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
@@ -1804,154 +1608,105 @@ const ViewOnlineDonation = () => {
               </div>
             )}
 
-            <div className="donation-comm-grid">
-              {showEmailComm && (
-                <div className="donation-comm-col">
-                  <h4 className="donation-comm-col__title">Email</h4>
-                  <div className="donation-comm-col__actions">
-                    {canEmailPaymentLink && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--email"
-                        onClick={sendLinkEmail}
-                        disabled={sendingLinkEmail || !donation?.donor?.email}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FiMail />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {sendingLinkEmail ? 'Sending…' : 'Payment Link'}
-                        </span>
-                      </button>
-                    )}
-                    {canEmailThanks && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--email"
-                        onClick={sendThanksEmail}
-                        disabled={sendingThanksEmail || !donation?.donor?.email}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FiMail />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {sendingThanksEmail ? 'Sending…' : 'Thanks Email'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
+            <div className="donation-comm-toolbar">
+              <h3 className="donation-comm-panel__title donation-comm-panel__title--inline">
+                <FiSend aria-hidden className="donation-comm-panel__title-icon" />
+                Communication
+              </h3>
+              {canEmailPaymentLink && (
+                <button
+                  type="button"
+                  className="donation-comm-btn donation-comm-btn--email"
+                  onClick={sendLinkEmail}
+                  disabled={sendingLinkEmail || !donation?.donor?.email}
+                  title="Email payment link"
+                >
+                  <span className="donation-comm-btn__icon">
+                    <FiMail />
+                  </span>
+                  <span className="donation-comm-btn__label">
+                    {sendingLinkEmail ? 'Sending…' : 'Email link'}
+                  </span>
+                </button>
               )}
-
-              {showWhatsAppComm && (
-                <div className="donation-comm-col">
-                  <h4 className="donation-comm-col__title">WhatsApp</h4>
-                  <div className="donation-comm-col__actions">
-                    {canWhatsAppPaymentLink && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--whatsapp"
-                        onClick={sendLinkWhatsApp}
-                        disabled={sendingLinkWhatsApp || !donation?.donor?.phone}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FaWhatsapp />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {sendingLinkWhatsApp ? 'Sending…' : 'Payment Link'}
-                        </span>
-                      </button>
-                    )}
-                    {canWhatsAppThanks && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--whatsapp"
-                        onClick={sendThanksWhatsApp}
-                        disabled={sendingThanksWhatsApp || !donation?.donor?.phone}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FaWhatsapp />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {sendingThanksWhatsApp ? 'Sending…' : 'Thanks WhatsApp'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
+              {canEmailThanks && (
+                <button
+                  type="button"
+                  className="donation-comm-btn donation-comm-btn--email"
+                  onClick={sendThanksEmail}
+                  disabled={sendingThanksEmail || !donation?.donor?.email}
+                  title="Thanks email"
+                >
+                  <span className="donation-comm-btn__icon">
+                    <FiMail />
+                  </span>
+                  <span className="donation-comm-btn__label">
+                    {sendingThanksEmail ? 'Sending…' : 'Thanks email'}
+                  </span>
+                </button>
               )}
-
+              {canWhatsAppPaymentLink && (
+                <button
+                  type="button"
+                  className="donation-comm-btn donation-comm-btn--whatsapp"
+                  onClick={sendLinkWhatsApp}
+                  disabled={sendingLinkWhatsApp || !donation?.donor?.phone}
+                  title="WhatsApp payment link"
+                >
+                  <span className="donation-comm-btn__icon">
+                    <FaWhatsapp />
+                  </span>
+                  <span className="donation-comm-btn__label">
+                    {sendingLinkWhatsApp ? 'Sending…' : 'WA link'}
+                  </span>
+                </button>
+              )}
+              {canWhatsAppThanks && (
+                <button
+                  type="button"
+                  className="donation-comm-btn donation-comm-btn--whatsapp"
+                  onClick={sendThanksWhatsApp}
+                  disabled={sendingThanksWhatsApp || !donation?.donor?.phone}
+                  title="Thanks WhatsApp"
+                >
+                  <span className="donation-comm-btn__icon">
+                    <FaWhatsapp />
+                  </span>
+                  <span className="donation-comm-btn__label">
+                    {sendingThanksWhatsApp ? 'Sending…' : 'WA thanks'}
+                  </span>
+                </button>
+              )}
               {showReceiptSection && (
-                <div className="donation-comm-col">
-                  <h4 className="donation-comm-col__title">Receipt</h4>
-                  <div className="donation-comm-col__actions">
-                    <button
-                      type="button"
-                      className="donation-comm-btn donation-comm-btn--receipt donation-comm-btn--wide"
-                      onClick={() => setShowReceiptModal(true)}
-                    >
-                      <span className="donation-comm-btn__icon">
-                        <HiOutlineDocumentText />
-                      </span>
-                      <span className="donation-comm-btn__label">Generate Receipt</span>
-                    </button>
-                  </div>
-                </div>
+                <button
+                  type="button"
+                  className="donation-comm-btn donation-comm-btn--receipt"
+                  onClick={() => setShowReceiptModal(true)}
+                  title="Generate receipt"
+                >
+                  <span className="donation-comm-btn__icon">
+                    <HiOutlineDocumentText />
+                  </span>
+                  <span className="donation-comm-btn__label">Receipt</span>
+                </button>
               )}
-
-              {(showStatusActions || supportsProviderStatus) && (
-              <div className="donation-comm-col">
-                <h4 className="donation-comm-col__title">Status</h4>
-                {showStatusActions && (
-                <div className="donation-comm-col__actions">
-                  {showMarkCompleted && (
-                    <button
-                      type="button"
-                      className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
-                      onClick={markAsCompleted}
-                      disabled={markingCompleted}
-                    >
-                      <span className="donation-comm-btn__icon">
-                        <FiCheckCircle />
-                      </span>
-                        <span className="donation-comm-btn__label">
-                          {markingCompleted
-                            ? 'Approving…'
-                            : 'Approve'}
-                        </span>
-                    </button>
-                  )}
-                  {showMarkFailed && (
-                    <button
-                      type="button"
-                      className="donation-comm-btn donation-comm-btn--failed donation-comm-btn--inline"
-                      onClick={markAsFailed}
-                      disabled={markingFailed || markingCompleted}
-                    >
-                      <span className="donation-comm-btn__icon">
-                        <FiXCircle />
-                      </span>
-                      <span className="donation-comm-btn__label">
-                        {markingFailed ? 'Rejecting…' : 'Reject'}
-                      </span>
-                    </button>
-                  )}
-                </div>
-                )}
-                {supportsProviderStatus && (
-                  <button
-                    type="button"
-                    className="donation-comm-provider-btn"
-                    onClick={fetchProviderStatus}
-                    disabled={fetchingProviderStatus}
-                  >
+              {supportsProviderStatus && (
+                <button
+                  type="button"
+                  className="donation-comm-btn donation-comm-btn--provider"
+                  onClick={fetchProviderStatus}
+                  disabled={fetchingProviderStatus}
+                  title={`Get status from ${donation?.donation_method?.toUpperCase() || 'provider'}`}
+                >
+                  <span className="donation-comm-btn__icon">
                     <FiRefreshCw className={fetchingProviderStatus ? 'donation-comm-spin' : ''} />
+                  </span>
+                  <span className="donation-comm-btn__label">
                     {fetchingProviderStatus
                       ? 'Checking…'
-                      : `Get Status from ${donation?.donation_method?.toUpperCase()}`}
-                  </button>
-                )}
-              </div>
+                      : donation?.donation_method?.toUpperCase() || 'Status'}
+                  </span>
+                </button>
               )}
             </div>
 
@@ -1961,7 +1716,6 @@ const ViewOnlineDonation = () => {
               </p>
             )}
 
-            {/* Provider Status Response */}
             {providerStatusData && (
               <div className="donation-view-provider-panel">
                 <h4 className="donation-view-provider-title">
@@ -2016,65 +1770,11 @@ const ViewOnlineDonation = () => {
             />
           </div>
           )}
-          {isPendingOffline && (
-            <div className="view-section donation-view-actions-panel donation-comm-panel">
-              <div className="donation-comm-panel__header">
-                <div className="donation-comm-panel__header-icon" aria-hidden>
-                  <FiSend />
-                </div>
-                <div className="donation-comm-panel__header-text">
-                  <h3 className="donation-comm-panel__title">Communication & Actions</h3>
-                  <p className="donation-comm-panel__subtitle">
-                    Update status for this offline donation.
-                  </p>
-                </div>
-              </div>
-              {messageStatus.message && (
-                <div
-                  className={`status-message donation-view-status-message ${messageStatus.type === 'success' ? 'status-message--success' : 'status-message--error'}`}
-                >
-                  {messageStatus.message}
-                </div>
-              )}
-              <div className="donation-comm-grid donation-comm-grid--offline">
-                {(showStatusActions) && (
-                <div className="donation-comm-col">
-                  <h4 className="donation-comm-col__title">Status</h4>
-                  <div className="donation-comm-col__actions">
-                    {showMarkCompleted && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--completed donation-comm-btn--inline"
-                        onClick={markAsCompleted}
-                        disabled={markingCompleted || markingFailed}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FiCheckCircle />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {markingCompleted ? 'Approving…' : 'Approve'}
-                        </span>
-                      </button>
-                    )}
-                    {showMarkFailed && (
-                      <button
-                        type="button"
-                        className="donation-comm-btn donation-comm-btn--failed donation-comm-btn--inline"
-                        onClick={markAsFailed}
-                        disabled={markingFailed || markingCompleted}
-                      >
-                        <span className="donation-comm-btn__icon">
-                          <FiXCircle />
-                        </span>
-                        <span className="donation-comm-btn__label">
-                          {markingFailed ? 'Rejecting…' : 'Reject'}
-                        </span>
-                      </button>
-                    )}
-                  </div>
-                </div>
-                )}
-              </div>
+
+          {!isPendingOffline && (
+            <div className="view-section">
+              <h3 className="view-section-title">Change history</h3>
+              <DonationAuditHistory donationId={id} refreshKey={auditRefreshKey} />
             </div>
           )}
         </div>

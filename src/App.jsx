@@ -164,6 +164,7 @@ import DonationBoxCollectionMonitor from './components/dms/donation_box/collecti
 import ViewDonationBox from './components/dms/donation_box/view';
 import CollectionUnitProfile from './components/dms/donation_box/profile';
 import EditDonationBox from './components/dms/donation_box/edit';
+import RelocateDonationBox from './components/dms/donation_box/relocate';
 import AgentScreen from './components/dms/agent';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
@@ -539,6 +540,9 @@ const App = () => {
                                 <Route path="/dms/donation_box/edit/:id" element={<EditDonationBox />} />
                                 <Route path="/dms/donation-box/edit/:id" element={<EditDonationBox />} />
                                 <Route path="/dms/donation-boxes/edit/:id" element={<EditDonationBox />} />
+                                <Route path="/dms/donation_box/relocate/:id" element={<RelocateDonationBox />} />
+                                <Route path="/dms/donation-box/relocate/:id" element={<RelocateDonationBox />} />
+                                <Route path="/dms/donation-boxes/relocate/:id" element={<RelocateDonationBox />} />
                                 <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/add/:id" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />

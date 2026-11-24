@@ -20,7 +20,7 @@ import useListRowSelection from '../../../../../hooks/useListRowSelection';
 import { useMultipleEntityOptions } from '../../../../../hooks/useEntityOptions';
 import { NotificationRefreshPresets } from '../../../../../utils/notifications/events';
 
-import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiDollarSign, FiFileText, FiDownload, FiTrendingUp } from 'react-icons/fi';
 import PageHeader from '../../../../common/PageHeader';
 import Navbar from '../../../../Navbar';
 import ActionMenu from '../../../../common/ActionMenu';
@@ -31,9 +31,6 @@ import TruncatedText from '../../../../common/TruncatedText';
 import ActionsColumnHeader from '../../../../common/table/ActionsColumnHeader';
 import ContactColumnHeader from '../../../../common/table/ContactColumnHeader';
 import ContactIconsCell from '../../../../common/table/ContactIconsCell';
-import { useAuth } from '../../../../../context/AuthContext';
-import { toast } from 'react-toastify';
-import { canReconcileDonations } from '../../../../../utils/permissions';
 import {
   getDonationListRoutes,
   donationViewPath,
@@ -51,7 +48,6 @@ const OnlineDonationsList = ({
 } = {}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasAnyPermission, permissions } = useAuth();
   const [searchParams] = useSearchParams();
   const { donorId: routeDonorId, csrDonorId: routeCsrDonorId } = useParams();
   // Dedicated donor/CSR donations page, or legacy query params, or profile embed
@@ -81,16 +77,6 @@ const OnlineDonationsList = ({
   const isCsrDonationsRoute = isCsrDonationsHubRoute || isCsrDonorScopedRoute;
   const isInKindDonationsRoute =
     !embedded && location.pathname.startsWith('/dms/in-kind-donations');
-  const canApproveInKind = useMemo(
-    () =>
-      hasAnyPermission([
-        'super_admin',
-        'fund_raising_manager',
-        'fund_raising.in_kind_donations.completing',
-        'fund_raising.in_kind_donations.reconciler',
-      ]),
-    [hasAnyPermission],
-  );
   const isOfflineRoute =
     embeddedChannel === 'offline' ||
     (!embeddedChannel && location.pathname.includes('/donations/offline_donations'));
@@ -120,15 +106,6 @@ const OnlineDonationsList = ({
       isInKindDonationsRoute,
     ],
   );
-  const canReconcile = useMemo(
-    () =>
-      canReconcileDonations(permissions, { channel: donationRoutes.channel }),
-    [permissions, donationRoutes.channel],
-  );
-  /** Reconciler (any channel) or in-kind Completing: show review actions column */
-  const showReconcileActionsCol =
-    canReconcile || (isInKindDonationsRoute && canApproveInKind);
-  const canRejectOnList = canReconcile;
   const donationsBasePath = donationRoutes.basePath;
   const listReturnPath = `${location.pathname}${location.search}`;
   
@@ -137,8 +114,6 @@ const OnlineDonationsList = ({
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [donationToDelete, setDonationToDelete] = useState(null);
-  const [approvingDonationId, setApprovingDonationId] = useState(null);
-  const [rejectingDonationId, setRejectingDonationId] = useState(null);
   const [selectedDonor, setSelectedDonor] = useState(null);
   const [selectedCsrDonorFilter, setSelectedCsrDonorFilter] = useState(null);
   const [csrDonorLabel, setCsrDonorLabel] = useState('');
@@ -746,67 +721,6 @@ const OnlineDonationsList = ({
     return <span className={`status-badge ${statusInfo.class}`}>{statusInfo.text}</span>;
   };
 
-  const isTerminalSuccessStatus = (status) =>
-    ['completed', 'paid', 'success'].includes(String(status || '').toLowerCase());
-
-  const isTerminalFailedStatus = (status) =>
-    ['failed', 'cancelled'].includes(String(status || '').toLowerCase());
-
-  const applyDonationStatus = async (donation, nextStatus) => {
-    if (!donation?.id) return false;
-    const response = await axiosInstance.post(`/donations/status-action`, {
-      donation_id: Number(donation.id),
-      status: nextStatus,
-    });
-    if (!response.data?.success) {
-      throw new Error(response.data?.message || 'Failed to update status');
-    }
-    setDonations((prev) =>
-      prev.map((row) =>
-        row.id === donation.id ? { ...row, status: nextStatus } : row,
-      ),
-    );
-    return true;
-  };
-
-  const handleApproveDonation = async (donation) => {
-    if (!donation?.id) return;
-    if (!canReconcile && !(isInKindDonationsRoute && canApproveInKind)) return;
-    if (isTerminalSuccessStatus(donation.status)) return;
-
-    setApprovingDonationId(donation.id);
-    try {
-      await applyDonationStatus(donation, 'completed');
-      toast.success('Donation approved and marked completed');
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || err.message || 'Failed to approve donation',
-      );
-    } finally {
-      setApprovingDonationId(null);
-    }
-  };
-
-  const handleRejectDonation = async (donation) => {
-    if (!donation?.id || !canRejectOnList) return;
-    if (isTerminalFailedStatus(donation.status)) return;
-    if (!window.confirm('Reject this donation? Status will be set to Failed.')) {
-      return;
-    }
-
-    setRejectingDonationId(donation.id);
-    try {
-      await applyDonationStatus(donation, 'failed');
-      toast.success('Donation rejected');
-    } catch (err) {
-      toast.error(
-        err.response?.data?.message || err.message || 'Failed to reject donation',
-      );
-    } finally {
-      setRejectingDonationId(null);
-    }
-  };
-
   const getActionMenuItems = (donation) => [
     {
       icon: <FiEye />,
@@ -1388,12 +1302,10 @@ const OnlineDonationsList = ({
                   <th className="hide-on-mobile">Amount</th>
                   {/* <th>Type</th> */}
                   <th className="hide-on-mobile">Project</th>
-                  <th className="hide-on-mobile">Method</th>
-                  <th className="hide-on-mobile">Email</th>
-                  <ContactColumnHeader />
                   <th className="table-status-col">Status</th>
                   <th className="hide-on-mobile">Date</th>
                   <th className="hide-on-mobile">Time</th>
+                  <ContactColumnHeader />
                   <ActionsColumnHeader />
                 </tr>
               </thead>
@@ -1401,7 +1313,7 @@ const OnlineDonationsList = ({
                 {donations.length === 0 ? (
                   <tr>
                     <td colSpan={
-                      isCsrDonationsRoute ? 12 : 11
+                      isCsrDonationsRoute ? 10 : 9
                     } className="no-data">
                       No donations found
                     </td>
@@ -1490,95 +1402,19 @@ const OnlineDonationsList = ({
                         {donation.project_name || 'N/A'}
                       </span>
                     </td>
-                    <td className="hide-on-mobile">
-                      <span className="donation-method">
-                        {donation.donation_method?.toUpperCase() || 'N/A'}
-                      </span>
+                    <td className="table-status-col">
+                      {getStatusBadge(donation.status)}
                     </td>
                     <td className="hide-on-mobile">
-                      <TruncatedText
-                        value={donation?.donor?.email}
-                        field="email"
-                        mode="list"
-                        empty="-"
-                      />
+                      {formatDate(donation.date || donation.created_at)}
                     </td>
+                    <td className="hide-on-mobile">{getTime(donation.created_at)}</td>
                     <td className="table-contact-col">
                       <ContactIconsCell
                         email={donation?.donor?.email}
                         phone={donation?.donor?.phone}
                       />
                     </td>
-                    <td className="table-status-col">
-                      <div className="donation-status-cell">
-                        {getStatusBadge(donation.status)}
-                        {showReconcileActionsCol &&
-                        !isTerminalFailedStatus(donation.status) ? (
-                          <span className="donation-status-cell__reconcile hide-on-mobile">
-                            <button
-                              type="button"
-                              className="primary_btn"
-                              title="Approve"
-                              aria-label="Approve"
-                              style={{
-                                padding: '4px 6px',
-                                fontSize: '15px',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                lineHeight: 1,
-                                opacity: isTerminalSuccessStatus(donation.status)
-                                  ? 0.55
-                                  : 1,
-                              }}
-                              disabled={
-                                approvingDonationId === donation.id ||
-                                rejectingDonationId === donation.id ||
-                                isTerminalSuccessStatus(donation.status)
-                              }
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleApproveDonation(donation);
-                              }}
-                            >
-                              <FiCheckCircle />
-                            </button>
-                            {canRejectOnList ? (
-                              <button
-                                type="button"
-                                className="secondary_btn"
-                                title="Reject"
-                                aria-label="Reject"
-                                style={{
-                                  padding: '4px 6px',
-                                  fontSize: '15px',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  lineHeight: 1,
-                                  color: '#b91c1c',
-                                  borderColor: '#fecaca',
-                                }}
-                                disabled={
-                                  approvingDonationId === donation.id ||
-                                  rejectingDonationId === donation.id
-                                }
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRejectDonation(donation);
-                                }}
-                              >
-                                <FiXCircle />
-                              </button>
-                            ) : null}
-                          </span>
-                        ) : null}
-                      </div>
-                    </td>
-                    <td className="hide-on-mobile">
-                      {formatDate(donation.date || donation.created_at)}
-                    </td>
-                    <td className="hide-on-mobile">{getTime(donation.created_at)}</td>
                     <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(donation)} />
                     </td>

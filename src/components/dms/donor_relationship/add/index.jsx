@@ -283,8 +283,8 @@ const AddDonorInteraction = ({
   };
 
   const renderFormContent = () => (
-    <div className="form-section" style={{ margin: 0, padding: 0 }}>
-      <p className="reconciliation-notes" style={{ marginBottom: '16px' }}>
+    <div className="dr-interaction-form">
+      <p className="dr-interaction-form__intro">
         {isPocMode
           ? `Record interaction or follow-up for ${selectedPoc?.name || 'this contact person'}.`
           : isCsrMode
@@ -292,49 +292,33 @@ const AddDonorInteraction = ({
             : 'Record what you did and how the donor responded. You can only add interactions for donors assigned to you.'}
       </p>
 
-      <div className="form-grid-2">
+      <div className="dr-interaction-form__meta form-grid-2">
         {isPocMode ? (
-          <div className="form-group" style={{ gridColumn: 'span 2' }}>
-            <label style={{ display: 'block', marginBottom: '6px', fontSize: '13px', fontWeight: 600, color: '#334155' }}>
-              Person of Contact (POC)
-            </label>
-            <div style={{
-              padding: '10px 14px',
-              background: '#f8fafc',
-              border: '1px solid #cbd5e1',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '8px',
-            }}>
+          <div className="form-group dr-interaction-form__poc" style={{ gridColumn: '1 / -1' }}>
+            <label className="dr-interaction-form__field-label">Person of Contact (POC)</label>
+            <div className="dr-interaction-form__poc-card">
               <div>
-                <div style={{ fontWeight: 600, color: '#0284c7', fontSize: '14px' }}>
+                <div className="dr-interaction-form__poc-name">
                   {selectedPoc?.name || `POC #${preselectedCsrPocId}`}
-                  <span style={{
-                    fontSize: '11px',
-                    padding: '2px 8px',
-                    background: '#e0f2fe',
-                    color: '#0369a1',
-                    borderRadius: '12px',
-                    marginLeft: '8px',
-                    fontWeight: 600,
-                  }}>
+                  <span className="dr-interaction-form__poc-type">
                     {selectedPoc?.type || 'Donation Boxes'}
                   </span>
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                <div className="dr-interaction-form__poc-meta">
                   {[
                     selectedPoc?.phone,
-                    selectedPoc?.donation_box?.name || selectedPoc?.donation_box?.shop_name ? `Unit: ${selectedPoc.donation_box.name || selectedPoc.donation_box.shop_name}` : null,
-                    selectedPoc?.donation_box?.box_id_no ? `Box #${selectedPoc.donation_box.box_id_no}` : null,
-                  ].filter(Boolean).join(' • ')}
+                    selectedPoc?.donation_box?.name || selectedPoc?.donation_box?.shop_name
+                      ? `Unit: ${selectedPoc.donation_box.name || selectedPoc.donation_box.shop_name}`
+                      : null,
+                    selectedPoc?.donation_box?.box_id_no
+                      ? `Box #${selectedPoc.donation_box.box_id_no}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' • ')}
                 </div>
               </div>
-              <span style={{ fontSize: '12px', color: '#10b981', fontWeight: 600, background: '#ecfdf5', padding: '3px 8px', borderRadius: '4px' }}>
-                ✓ POC Linked
-              </span>
+              <span className="dr-interaction-form__poc-linked">Linked</span>
             </div>
           </div>
         ) : isCsrMode ? (
@@ -347,11 +331,13 @@ const AddDonorInteraction = ({
               disabled
             />
             <div className="form-group">
-              <label htmlFor="csr_poc_id">POC (optional)</label>
+              <label className="dr-interaction-form__field-label" htmlFor="csr_poc_id">
+                POC (optional)
+              </label>
               <select
                 id="csr_poc_id"
                 name="csr_poc_id"
-                className="form-control"
+                className="form-input"
                 value={form.csr_poc_id || ''}
                 onChange={handleChange}
               >
@@ -368,41 +354,41 @@ const AddDonorInteraction = ({
             </div>
           </>
         ) : (
-          <SearchableDropdown
-            label="Donor"
-            name="donor_id"
-            placeholder={
-              loadingDonors
-                ? 'Loading assigned donors…'
-                : 'Search donors by name, email, or phone...'
-            }
-            onSearch={searchAssignedDonors}
-            staticOptions={donors}
-            onSelect={handleDonorSelect}
-            onClear={handleDonorClear}
-            value={selectedDonor}
-            displayKey="name"
-            debounceDelay={300}
-            minSearchLength={1}
-            allowResearch={true}
-            required
-            noResultsText={
-              loadingDonors
-                ? 'Loading…'
-                : 'No assigned donors match your search'
-            }
-            renderOption={(donor) => (
-              <>
-                <div style={{ fontWeight: '500', marginBottom: '4px' }}>
-                  {donorDisplayName(donor)}
-                </div>
-                <div style={{ fontSize: '12px', color: '#666' }}>
-                  {[donor.email, donor.phone].filter(Boolean).join(' • ') ||
-                    'No contact info'}
-                </div>
-              </>
-            )}
-          />
+          <div style={{ gridColumn: '1 / -1' }}>
+            <SearchableDropdown
+              label="Donor"
+              name="donor_id"
+              placeholder={
+                loadingDonors
+                  ? 'Loading assigned donors…'
+                  : 'Search donors by name, email, or phone...'
+              }
+              onSearch={searchAssignedDonors}
+              staticOptions={donors}
+              onSelect={handleDonorSelect}
+              onClear={handleDonorClear}
+              value={selectedDonor}
+              displayKey="name"
+              debounceDelay={300}
+              minSearchLength={1}
+              allowResearch={true}
+              required
+              noResultsText={
+                loadingDonors ? 'Loading…' : 'No assigned donors match your search'
+              }
+              renderOption={(donor) => (
+                <>
+                  <div style={{ fontWeight: '500', marginBottom: '4px' }}>
+                    {donorDisplayName(donor)}
+                  </div>
+                  <div style={{ fontSize: '12px', color: '#666' }}>
+                    {[donor.email, donor.phone].filter(Boolean).join(' • ') ||
+                      'No contact info'}
+                  </div>
+                </>
+              )}
+            />
+          </div>
         )}
 
         <FormSelect
@@ -434,7 +420,7 @@ const AddDonorInteraction = ({
 
         <FormSelect
           name="donor_response_type"
-          label="Donor response type"
+          label={isPocMode ? 'Contact response type' : isCsrMode ? 'CSR response type' : 'Donor response type'}
           value={form.donor_response_type}
           onChange={handleChange}
           options={RESPONSE_TYPE_OPTIONS}
@@ -449,46 +435,41 @@ const AddDonorInteraction = ({
         />
       </div>
 
-      <FormTextarea
-        name="user_action_text"
-        label="What did you do?"
-        value={form.user_action_text}
-        onChange={handleChange}
-        rows={3}
-        required
-      />
+      <div className="dr-interaction-form__notes">
+        <h4 className="dr-interaction-form__notes-title">Notes</h4>
+        <FormTextarea
+          name="user_action_text"
+          label="What did you do?"
+          value={form.user_action_text}
+          onChange={handleChange}
+          rows={3}
+          required
+          placeholder="Briefly describe the interaction…"
+        />
+        <FormTextarea
+          name="donor_response_text"
+          label={isPocMode ? 'Contact response' : isCsrMode ? 'CSR response' : 'Donor response'}
+          value={form.donor_response_text}
+          onChange={handleChange}
+          rows={3}
+          placeholder="What did they say or how did they respond?"
+        />
+        <FormTextarea
+          name="next_action_text"
+          label="Next step"
+          value={form.next_action_text}
+          onChange={handleChange}
+          rows={2}
+          placeholder="Optional next action…"
+        />
+      </div>
 
-      <FormTextarea
-        name="donor_response_text"
-        label="Donor response"
-        value={form.donor_response_text}
-        onChange={handleChange}
-        rows={3}
-      />
-
-      <FormTextarea
-        name="next_action_text"
-        label="Next step"
-        value={form.next_action_text}
-        onChange={handleChange}
-        rows={2}
-      />
-
-      <div className="form-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '20px', paddingTop: '16px', borderTop: '1px solid #f1f5f9' }}>
+      <div className="dr-interaction-form__actions">
         {(isModal || !embedded) && (
           <button
             type="button"
             onClick={handleClose}
-            className="btn btn-secondary"
-            style={{
-              padding: '8px 18px',
-              borderRadius: '6px',
-              border: '1px solid #cbd5e1',
-              background: '#fff',
-              color: '#475569',
-              fontWeight: 500,
-              cursor: 'pointer',
-            }}
+            className="dr-interaction-form__cancel"
           >
             Cancel
           </button>
@@ -505,36 +486,21 @@ const AddDonorInteraction = ({
     <div
       className="donor-relationship-modal donor-relationship-modal--add-interaction"
       onClick={(e) => e.stopPropagation()}
-      style={{
-        width: 'min(760px, 95vw)',
-        maxHeight: '90vh',
-        overflowY: 'auto',
-        background: '#ffffff',
-        borderRadius: '12px',
-        padding: '24px',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-      }}
     >
-      <div
-        className="donor-relationship-modal__header"
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-          paddingBottom: '12px',
-          borderBottom: '1px solid #e2e8f0',
-        }}
-      >
+      <div className="donor-relationship-modal__header">
         <div>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>
-            Add Donor Interaction
-          </h3>
-          <p style={{ margin: '4px 0 0', fontSize: '12px', color: '#64748b' }}>
+          <h3>
             {isPocMode
-              ? 'Log a call, visit, or follow-up note for this contact person.'
+              ? 'Add Contact Interaction'
               : isCsrMode
-                ? 'Record what you did and how the CSR donor responded.'
+                ? 'Add CSR Interaction'
+                : 'Add Donor Interaction'}
+          </h3>
+          <p className="donor-relationship-modal__subtitle">
+            {isPocMode
+              ? 'Log a call, visit, or follow-up note for this collection-unit contact (POC).'
+              : isCsrMode
+                ? 'Record what you did and how the CSR contact responded.'
                 : 'Record what you did and how the donor responded.'}
           </p>
         </div>
@@ -543,26 +509,18 @@ const AddDonorInteraction = ({
           className="donor-relationship-modal__close"
           onClick={handleClose}
           aria-label="Close"
-          style={{
-            cursor: 'pointer',
-            background: 'none',
-            border: 'none',
-            fontSize: '24px',
-            color: '#64748b',
-            lineHeight: 1,
-          }}
         >
           &times;
         </button>
       </div>
 
       {error && (
-        <div className="reconciliation-summary reconciliation-summary--error" style={{ marginBottom: '14px' }}>
+        <div className="reconciliation-summary reconciliation-summary--error dr-interaction-form__error">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="form" style={{ margin: 0, padding: 0, border: 'none', boxShadow: 'none' }}>
+      <form onSubmit={handleSubmit} className="form dr-interaction-form-shell">
         {renderFormContent()}
       </form>
     </div>

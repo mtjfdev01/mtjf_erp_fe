@@ -238,16 +238,24 @@ const DonorCommunication = ({
     return Array.from(set);
   }, [interactions]);
 
+  const isBoxPocMode = !!csrPocId && !csrDonorId && !donorId;
   const panelTitle =
     journeyTitle ||
-    (csrPocId ? 'POC Relationship Journey' : 'Donor Relationship Journey');
+    (isBoxPocMode
+      ? 'Contact Relationship Journey'
+      : csrPocId
+        ? 'POC Relationship Journey'
+        : 'Donor Relationship Journey');
   const panelSubtitle =
     journeySubtitle ||
-    (csrDonorId && csrPocId
-      ? 'Interactions and follow-ups for this point of contact.'
-      : csrDonorId
-        ? 'All interactions and follow-ups across every POC for this CSR donor.'
-        : 'All interactions, follow-ups and responses.');
+    (isBoxPocMode
+      ? 'Interactions and follow-ups for this collection-unit contact.'
+      : csrDonorId && csrPocId
+        ? 'Interactions and follow-ups for this point of contact.'
+        : csrDonorId
+          ? 'All interactions and follow-ups across every POC for this CSR donor.'
+          : 'All interactions, follow-ups and responses.');
+  const responseLabel = isBoxPocMode || csrPocId ? 'Contact Response' : 'Donor Response';
 
   const openFollowups = useMemo(
     () =>
@@ -455,7 +463,7 @@ const DonorCommunication = ({
                             </div>
                           </div>
                           <div className={`donor-journey-shuttle donor-journey-shuttle--response-${tone}`}>
-                            <div className="donor-journey-shuttle__title">Donor Response</div>
+                            <div className="donor-journey-shuttle__title">{responseLabel}</div>
                             <div className="donor-journey-shuttle__text">
                               {item.donor_response_text || (
                                 <span className="donor-journey-dialogue__empty">No response recorded</span>

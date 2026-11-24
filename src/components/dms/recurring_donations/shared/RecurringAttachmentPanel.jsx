@@ -118,17 +118,9 @@ export default function RecurringAttachmentPanel({
             disabled={saving}
             title={compact ? 'Add attachment' : 'Add attachment'}
             fileInputId={`recurring-attachment-file-${entityId}`}
+            onUpload={uploadAttachments}
+            uploading={saving}
           />
-          <div style={{ marginTop: '0.75rem' }}>
-            <button
-              type="button"
-              className="primary_btn"
-              onClick={uploadAttachments}
-              disabled={saving}
-            >
-              {saving ? 'Uploading...' : 'Upload attachments'}
-            </button>
-          </div>
         </div>
       )}
     </div>

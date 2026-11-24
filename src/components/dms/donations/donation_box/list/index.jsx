@@ -28,6 +28,9 @@ import useFiltersPanel from '../../../../../hooks/useFiltersPanel';
 
 import { FiEye, FiTrash2, FiCalendar, FiBox } from 'react-icons/fi';
 import OfflinePendingBadge from '../../../../common/OfflinePendingBadge';
+import ActionsColumnHeader from '../../../../common/table/ActionsColumnHeader';
+import ContactColumnHeader from '../../../../common/table/ContactColumnHeader';
+import ContactIconsCell from '../../../../common/table/ContactIconsCell';
 
 const EMPTY_FILTERS = {
   search: '',
@@ -617,24 +620,24 @@ const DonationBoxDonationsList = () => {
           </div>
 
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table donation-box-collections-list-table">
               <thead>
                 <tr>
-                  <th>ID</th>
-                  {!donationBoxId && <th> Box</th>}
-                  {!donationBoxId && <th>Shop</th>}
-                  {/* {!donationBoxId && <th>Location</th>} */}
-                  <th>Collection Amount</th>
-                  <th>Collection Date</th>
-                  <th>Collected By</th>
-                  <th>Notes</th>
-                  <th className="table-actions">Actions</th>
+                  <th className="hide-on-mobile">ID</th>
+                  {!donationBoxId && <th className="hide-on-mobile">Box</th>}
+                  {!donationBoxId && <th className="table-donor-col">Shop</th>}
+                  <th className="table-amount-col">Collection Amount</th>
+                  <th className="hide-on-mobile">Collection Date</th>
+                  <th className="hide-on-mobile">Collected By</th>
+                  <th className="hide-on-mobile">Notes</th>
+                  <ContactColumnHeader />
+                  <ActionsColumnHeader />
                 </tr>
               </thead>
               <tbody>
                 {donations.map(donation => (
                   <tr key={donation.id}>
-                    <td>
+                    <td className="hide-on-mobile">
                       <Link
                         to={`/dms/donation-box-donations/view/${donation.id}`}
                         state={{ donation }}
@@ -644,7 +647,7 @@ const DonationBoxDonationsList = () => {
                       </Link>
                     </td>
                     {!donationBoxId && (
-                      <td>
+                      <td className="hide-on-mobile">
                         <div className="box-info">
                           {donation.donation_box?.id ? (
                             <Link
@@ -674,61 +677,53 @@ const DonationBoxDonationsList = () => {
                       </td>
                     )}
                     {!donationBoxId && (
-                      <td>
+                      <td className="table-donor-col">
                         <div className="shop-info">
                           <div style={{ fontWeight: '600', color: '#333' }}>
-                            {donation.donation_box?.shop_name || '-'}
+                            {donation.donation_box?.shop_name || donation.donation_box?.name || '-'}
                           </div>
                           {donation.donation_box?.shopkeeper && (
-                            <div style={{ fontSize: '0.85em', color: '#666', marginTop: '3px' }}>
+                            <div className="hide-on-mobile" style={{ fontSize: '0.85em', color: '#666', marginTop: '3px' }}>
                               {donation.donation_box.shopkeeper}
                             </div>
                           )}
                         </div>
                       </td>
                     )}
-                    {/* {!donationBoxId && (
-                      <td>
-                        <div className="location-info">
-                          {donation.donation_box ? (
-                            <>
-                              <div style={{ color: '#333' }}>
-                                {donation.donation_box?.route?.cities?.find(city => city.id === donation.donation_box.city_id)?.name}
-                              </div>
-                              <div style={{ fontSize: '0.85em', color: '#666', marginTop: '3px' }}>
-                                {donation.donation_box?.route?.region?.name}
-                              </div>
-                            </>
-                          ) : '-'}
-                        </div>
-                      </td>
-                    )} */}
-                    <td>
+                    <td className="table-amount-col">
                       <div style={{ 
                         fontWeight: '700', 
                         color: '#15803d',
                         fontSize: '1.05em'
                       }}>
-                        {/* <FiDollarSign style={{ display: 'inline', marginRight: '3px' }} /> */}
                         {formatAmount(donation.collection_amount)}
                         <OfflinePendingBadge show={donation._pending_sync} />
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                         <FiCalendar style={{ color: '#6b7280' }} />
                         {formatDate(donation.collection_date)}
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       <div style={{ fontWeight: '600', color: '#333' }}>
                         {donation.collected_by?.first_name + ' ' + donation.collected_by?.last_name || 'N/A'}
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       <div style={{ fontSize: '0.85em', color: '#6b7280', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={donation.notes || ''}>
                         {donation.notes || '—'}
                       </div>
+                    </td>
+                    <td className="table-contact-col">
+                      <ContactIconsCell
+                        phone={
+                          donation.donation_box?.poc?.phone ||
+                          donation.donation_box?.cell_no
+                        }
+                        email={donation.donation_box?.poc?.email}
+                      />
                     </td>
                     <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(donation)} />

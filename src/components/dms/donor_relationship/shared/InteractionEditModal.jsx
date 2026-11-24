@@ -85,99 +85,110 @@ const InteractionEditModal = ({ open, interaction, onClose, onSaved }) => {
 
   return (
     <div className="donor-relationship-modal-overlay">
-      <div className="donor-relationship-modal">
+      <div className="donor-relationship-modal donor-relationship-modal--add-interaction">
         <div className="donor-relationship-modal__header">
-          <h3>Edit interaction</h3>
+          <div>
+            <h3>Edit interaction</h3>
+            <p className="donor-relationship-modal__subtitle">
+              Update what you logged for this interaction.
+            </p>
+          </div>
           <button type="button" className="donor-relationship-modal__close" onClick={onClose}>
             &times;
           </button>
         </div>
 
-        {error && <div className="error-message">{error}</div>}
+        {error && <div className="error-message dr-interaction-form__error">{error}</div>}
 
-        <form onSubmit={handleSubmit} className="form">
-          <div className="form-grid-2">
-            <FormSelect
-              name="activity_type"
-              label="Activity type"
-              value={form.activity_type}
-              onChange={handleChange}
-              options={ACTIVITY_TYPE_OPTIONS}
-              required
-            />
-
-            {form.activity_type === 'custom' && (
-              <FormInput
-                name="custom_activity_title"
-                label="Custom activity title"
-                value={form.custom_activity_title}
+        <form onSubmit={handleSubmit} className="form dr-interaction-form-shell">
+          <div className="dr-interaction-form">
+            <div className="dr-interaction-form__meta form-grid-2">
+              <FormSelect
+                name="activity_type"
+                label="Activity type"
+                value={form.activity_type}
                 onChange={handleChange}
+                options={ACTIVITY_TYPE_OPTIONS}
                 required
               />
-            )}
 
-            <FormSelect
-              name="status"
-              label="Status"
-              value={form.status}
-              onChange={handleChange}
-              options={INTERACTION_STATUS_OPTIONS}
-            />
+              {form.activity_type === 'custom' && (
+                <FormInput
+                  name="custom_activity_title"
+                  label="Custom activity title"
+                  value={form.custom_activity_title}
+                  onChange={handleChange}
+                  required
+                />
+              )}
 
-            <FormSelect
-              name="donor_response_type"
-              label="Donor response type"
-              value={form.donor_response_type}
-              onChange={handleChange}
-              options={RESPONSE_TYPE_OPTIONS}
-            />
+              <FormSelect
+                name="status"
+                label="Status"
+                value={form.status}
+                onChange={handleChange}
+                options={INTERACTION_STATUS_OPTIONS}
+              />
 
-            <FormInput
-              name="activity_datetime"
-              label="Activity date & time"
-              type="datetime-local"
-              value={form.activity_datetime}
-              onChange={handleChange}
-            />
+              <FormSelect
+                name="donor_response_type"
+                label="Donor response type"
+                value={form.donor_response_type}
+                onChange={handleChange}
+                options={RESPONSE_TYPE_OPTIONS}
+              />
 
-            <FormInput
-              name="next_followup_datetime"
-              label="Follow-up date & time"
-              type="datetime-local"
-              value={form.next_followup_datetime}
-              onChange={handleChange}
-            />
-          </div>
+              <FormInput
+                name="activity_datetime"
+                label="Activity date & time"
+                type="datetime-local"
+                value={form.activity_datetime}
+                onChange={handleChange}
+              />
 
-          <FormTextarea
-            name="user_action_text"
-            label="What did you do?"
-            value={form.user_action_text}
-            onChange={handleChange}
-            rows={3}
-            required
-          />
+              <FormInput
+                name="next_followup_datetime"
+                label="Follow-up date & time"
+                type="datetime-local"
+                value={form.next_followup_datetime}
+                onChange={handleChange}
+              />
+            </div>
 
-          <FormTextarea
-            name="donor_response_text"
-            label="Donor response"
-            value={form.donor_response_text}
-            onChange={handleChange}
-            rows={3}
-          />
+            <div className="dr-interaction-form__notes">
+              <h4 className="dr-interaction-form__notes-title">Notes</h4>
+              <FormTextarea
+                name="user_action_text"
+                label="What did you do?"
+                value={form.user_action_text}
+                onChange={handleChange}
+                rows={3}
+                required
+              />
+              <FormTextarea
+                name="donor_response_text"
+                label="Donor response"
+                value={form.donor_response_text}
+                onChange={handleChange}
+                rows={3}
+              />
+              <FormTextarea
+                name="next_action_text"
+                label="Next step"
+                value={form.next_action_text}
+                onChange={handleChange}
+                rows={2}
+              />
+            </div>
 
-          <FormTextarea
-            name="next_action_text"
-            label="Next step"
-            value={form.next_action_text}
-            onChange={handleChange}
-            rows={2}
-          />
-
-          <div className="form-actions">
-            <PrimaryButton type="submit" loading={submitting} loadingText="Saving…">
-              Save changes
-            </PrimaryButton>
+            <div className="dr-interaction-form__actions">
+              <button type="button" className="dr-interaction-form__cancel" onClick={onClose}>
+                Cancel
+              </button>
+              <PrimaryButton type="submit" loading={submitting} loadingText="Saving…">
+                Save changes
+              </PrimaryButton>
+            </div>
           </div>
         </form>
       </div>

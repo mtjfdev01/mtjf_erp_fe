@@ -979,9 +979,9 @@ const DonorsList = () => {
                   <th className="hide-on-mobile">Pipeline</th>
                   <th className="hide-on-mobile">Email</th>
                   <th className="hide-on-mobile">Phone</th>
-                  <ContactColumnHeader />
                   <th className="hide-on-mobile">City</th>
                   <th className="hide-on-mobile">Reg. Date</th>
+                  <ContactColumnHeader />
                   <ActionsColumnHeader />
                 </tr>
               </thead>
@@ -1043,14 +1043,14 @@ const DonorsList = () => {
                       <td className="hide-on-mobile">
                         <TruncatedText value={donor.phone} field="phone" mode="list" empty="—" />
                       </td>
-                      <td className="table-contact-col">
-                        <ContactIconsCell email={donor.email} phone={donor.phone} />
-                      </td>
                       <td className="hide-on-mobile">
                         <TruncatedText value={donor.city} field="city" mode="list" empty="—" />
                       </td>
                       <td className="hide-on-mobile">
                         {new Date(donor.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="table-contact-col">
+                        <ContactIconsCell email={donor.email} phone={donor.phone} />
                       </td>
                       <td className="table-actions">
                         <ActionMenu actions={getDonorActions(donor)} />

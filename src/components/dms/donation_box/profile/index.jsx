@@ -373,7 +373,14 @@ const CollectionUnitProfile = () => {
                   className="cup-btn cup-btn--secondary"
                   onClick={() => navigate(`/dms/donation_box/edit/${targetBoxId}`)}
                 >
-                  <FiEdit2 /> Edit Unit / POC
+                  <FiEdit2 /> Update Unit
+                </button>
+                <button
+                  type="button"
+                  className="cup-btn cup-btn--secondary"
+                  onClick={() => navigate(`/dms/donation_box/relocate/${targetBoxId}`)}
+                >
+                  Relocate Unit
                 </button>
               </>
             )}

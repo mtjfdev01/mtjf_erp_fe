@@ -15,17 +15,26 @@ const FormTextarea = ({
   rows = 4,
   maxLength,
 }) => {
+  const inputId = name ? `form-textarea-${name}` : undefined;
+
   return (
-    <div className={`form-group ${className}`}>
-      <label className="form-label">
-        {label}
-        {required && <span className="required-mark">*</span>}
-      </label>
+    <div className={`form-group form-textarea-group ${className}`.trim()}>
+      {label ? (
+        <label className="form-textarea-label" htmlFor={inputId}>
+          <span className="form-textarea-label__text">{label}</span>
+          {required ? (
+            <span className="required-mark" aria-hidden="true">
+              *
+            </span>
+          ) : null}
+        </label>
+      ) : null}
       <textarea
+        id={inputId}
         name={name}
         value={value}
         onChange={onChange}
-        className={`form-input ${error ? 'form-input--error' : ''}`}
+        className={`form-input form-textarea ${error ? 'form-input--error' : ''}`}
         placeholder={placeholder}
         disabled={disabled || isEdit}
         required={required}
@@ -37,4 +46,4 @@ const FormTextarea = ({
   );
 };
 
-export default FormTextarea; 
+export default FormTextarea;

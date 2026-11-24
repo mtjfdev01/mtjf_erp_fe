@@ -26,7 +26,10 @@ import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
 import { COLLECTION_UNIT_TYPES, DEFAULT_COLLECTION_UNIT_TYPE } from '../../../../config/collectionUnits';
 
-import { FiEye, FiEdit2, FiTrash2, FiPlusCircle, FiUser } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiPlusCircle, FiUser, FiMapPin } from 'react-icons/fi';
+import ActionsColumnHeader from '../../../common/table/ActionsColumnHeader';
+import ContactColumnHeader from '../../../common/table/ContactColumnHeader';
+import ContactIconsCell from '../../../common/table/ContactIconsCell';
 
 const EMPTY_FILTERS = {
   type: DEFAULT_COLLECTION_UNIT_TYPE,
@@ -383,9 +386,16 @@ const DonationBoxList = () => {
     },
     {
       icon: <FiEdit2 />,
-      label: 'Update / Relocate',
+      label: 'Update',
       color: '#2196F3',
       to: `/dms/donation_box/edit/${donationBox.id}`,
+      visible: canUpdateBox
+    },
+    {
+      icon: <FiMapPin />,
+      label: 'Relocate',
+      color: '#7c3aed',
+      to: `/dms/donation_box/relocate/${donationBox.id}`,
       visible: canUpdateBox
     },
     {
@@ -647,24 +657,25 @@ const DonationBoxList = () => {
           )}
 
           <div className="table-container">
-            <table className="data-table">
+            <table className="data-table collection-units-list-table">
               <thead>
                 <tr>
-                  <th>Unit ID</th>
-                  <th>Unit Type</th>
-                  <th>Name</th>
-                  <th>Location</th>
-                  <th>Size</th>
+                  <th className="hide-on-mobile">Unit ID</th>
+                  <th className="hide-on-mobile">Unit Type</th>
+                  <th className="table-donor-col">Name</th>
+                  <th className="hide-on-mobile">Location</th>
+                  <th className="hide-on-mobile">Size</th>
                   <th className="hide-on-mobile">Last Collection</th>
-                  <th>Status</th>
-                  <th>Active Since</th>
-                  <th className="table-actions">Actions</th>
+                  <th className="table-status-col">Status</th>
+                  <th className="hide-on-mobile">Active Since</th>
+                  <ContactColumnHeader />
+                  <ActionsColumnHeader />
                 </tr>
               </thead>
               <tbody>
                 {donationBoxes.map(box => (
                   <tr key={box.id}>
-                    <td>
+                    <td className="hide-on-mobile">
                       <div className="box-info">
                         <Link
                           to={`/dms/donation_box/view/${box.id}`}
@@ -678,12 +689,12 @@ const DonationBoxList = () => {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>
                         {box.type || DEFAULT_COLLECTION_UNIT_TYPE}
                       </span>
                     </td>
-                    <td>
+                    <td className="table-donor-col">
                       <div className="shop-info">
                         <div className="shop-name" style={{ fontWeight: 600 }}>{box.name || box.shop_name}</div>
                         {box.shopkeeper && (
@@ -701,7 +712,7 @@ const DonationBoxList = () => {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       <div className="location-info">
                         <div className="location-main">{getLocationLabel(box)}</div>
                         {box.landmark_marketplace && (
@@ -709,7 +720,7 @@ const DonationBoxList = () => {
                         )}
                       </div>
                     </td>
-                    <td>
+                    <td className="hide-on-mobile">
                       {box.type === 'Donation Boxes' || !box.type ? (
                         getBoxTypeBadge(box.box_type)
                       ) : (
@@ -717,8 +728,14 @@ const DonationBoxList = () => {
                       )}
                     </td>
                     <td className="hide-on-mobile">{box.last_collection_date ? formatDate(box.last_collection_date) : '-'}</td>
-                    <td>{getStatusBadge(box.status)}</td>
-                    <td>{formatDate(box.active_since || box.created_at)}</td>
+                    <td className="table-status-col">{getStatusBadge(box.status)}</td>
+                    <td className="hide-on-mobile">{formatDate(box.active_since || box.created_at)}</td>
+                    <td className="table-contact-col">
+                      <ContactIconsCell
+                        phone={box.poc?.phone || box.cell_no}
+                        email={box.poc?.email}
+                      />
+                    </td>
                     <td className="table-actions">
                       <ActionMenu actions={getActionMenuItems(box)} />
                     </td>

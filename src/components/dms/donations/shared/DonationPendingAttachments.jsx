@@ -25,6 +25,11 @@ const DonationPendingAttachments = forwardRef(function DonationPendingAttachment
     disabled = false,
     title = 'Attachments',
     fileInputId = 'donation-pending-attachment-file',
+    /** Optional upload control shown on the last pending item when documents are queued */
+    onUpload = null,
+    uploading = false,
+    uploadLabel = 'Upload attachments',
+    uploadingLabel = 'Uploading...',
   },
   ref,
 ) {
@@ -91,6 +96,9 @@ const DonationPendingAttachments = forwardRef(function DonationPendingAttachment
     onChange?.(items.filter((item) => item.id !== id));
   };
 
+  const showUpload = typeof onUpload === 'function' && items.length > 0;
+  const lastItemId = items.length > 0 ? items[items.length - 1].id : null;
+
   return (
     <div className="donation-pending-attachments">
       <h3 className="form-section-heading">{title}</h3>
@@ -156,23 +164,38 @@ const DonationPendingAttachments = forwardRef(function DonationPendingAttachment
 
       {items.length > 0 && (
         <ul className="donation-pending-attachments__list">
-          {items.map((item) => (
-            <li key={item.id} className="donation-pending-attachments__item">
-              <div className="donation-pending-attachments__item-main">
-                <strong>{item.name}</strong>
-                <span>{item.file?.name}</span>
-              </div>
-              <button
-                type="button"
-                className="donation-pending-attachments__remove"
-                onClick={() => handleRemove(item.id)}
-                disabled={disabled}
-                title="Remove"
-              >
-                <FiTrash2 />
-              </button>
-            </li>
-          ))}
+          {items.map((item) => {
+            const isLast = item.id === lastItemId;
+            return (
+              <li key={item.id} className="donation-pending-attachments__item">
+                <div className="donation-pending-attachments__item-main">
+                  <strong>{item.name}</strong>
+                  <span>{item.file?.name}</span>
+                </div>
+                <div className="donation-pending-attachments__item-actions">
+                  {showUpload && isLast ? (
+                    <button
+                      type="button"
+                      className="primary_btn donation-pending-attachments__upload-btn"
+                      onClick={onUpload}
+                      disabled={disabled || uploading}
+                    >
+                      {uploading ? uploadingLabel : uploadLabel}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="donation-pending-attachments__remove"
+                    onClick={() => handleRemove(item.id)}
+                    disabled={disabled}
+                    title="Remove"
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

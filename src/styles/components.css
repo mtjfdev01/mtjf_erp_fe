@@ -670,15 +670,19 @@
   }
 
   /* Default lists: show early columns; keep Actions + Contact + Status */
-  .data-table:not(.donations-list-table) th:nth-child(n+5):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child),
-  .data-table:not(.donations-list-table) td:nth-child(n+5):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child) {
+  .data-table:not(.donations-list-table):not(.collection-units-list-table):not(.donation-box-collections-list-table) th:nth-child(n+5):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child),
+  .data-table:not(.donations-list-table):not(.collection-units-list-table):not(.donation-box-collections-list-table) td:nth-child(n+5):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child) {
     display: none;
   }
 
-  /* Donations mobile: Donor + Contact + Status + Actions only */
+  /* Compact mobile lists: keep named cols; honor hide-on-mobile */
   .donations-list-table th.hide-on-mobile,
   .donations-list-table td.hide-on-mobile,
-  .donations-list-table .table-select-col {
+  .donations-list-table .table-select-col,
+  .collection-units-list-table th.hide-on-mobile,
+  .collection-units-list-table td.hide-on-mobile,
+  .donation-box-collections-list-table th.hide-on-mobile,
+  .donation-box-collections-list-table td.hide-on-mobile {
     display: none !important;
   }
 
@@ -689,7 +693,23 @@
   .donations-list-table th.table-status-col,
   .donations-list-table td.table-status-col,
   .donations-list-table th.table-actions,
-  .donations-list-table td.table-actions {
+  .donations-list-table td.table-actions,
+  .collection-units-list-table th.table-donor-col,
+  .collection-units-list-table td.table-donor-col,
+  .collection-units-list-table th.table-contact-col,
+  .collection-units-list-table td.table-contact-col,
+  .collection-units-list-table th.table-status-col,
+  .collection-units-list-table td.table-status-col,
+  .collection-units-list-table th.table-actions,
+  .collection-units-list-table td.table-actions,
+  .donation-box-collections-list-table th.table-donor-col,
+  .donation-box-collections-list-table td.table-donor-col,
+  .donation-box-collections-list-table th.table-amount-col,
+  .donation-box-collections-list-table td.table-amount-col,
+  .donation-box-collections-list-table th.table-contact-col,
+  .donation-box-collections-list-table td.table-contact-col,
+  .donation-box-collections-list-table th.table-actions,
+  .donation-box-collections-list-table td.table-actions {
     display: table-cell !important;
   }
 
@@ -787,8 +807,8 @@
   }
 
   /* Show only first columns + Contact + Status + Actions on very small screens */
-  .data-table:not(.donations-list-table) th:nth-child(n+4):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child),
-  .data-table:not(.donations-list-table) td:nth-child(n+4):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child) {
+  .data-table:not(.donations-list-table):not(.collection-units-list-table):not(.donation-box-collections-list-table) th:nth-child(n+4):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child),
+  .data-table:not(.donations-list-table):not(.collection-units-list-table):not(.donation-box-collections-list-table) td:nth-child(n+4):not(.table-actions):not(.table-contact-col):not(.table-status-col):not(:last-child) {
     display: none;
   }
 }
