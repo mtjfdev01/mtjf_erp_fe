@@ -121,20 +121,25 @@ const ViewDonor = ({
     navigate(`${donorsBasePath}/list`);
   };
 
+  const openMainTab = (tab) => {
+    setInfoExpanded(false);
+    setMainTab(tab);
+  };
+
   const handleEdit = () => {
-    setMainTab('edit');
+    openMainTab('edit');
   };
 
   const handleViewDonations = () => {
-    setMainTab('donations');
+    openMainTab('donations');
   };
 
   const handleAddDonation = () => {
-    setMainTab('add-donation');
+    openMainTab('add-donation');
   };
 
   const handleLogInteraction = () => {
-    setMainTab('add-note');
+    openMainTab('add-note');
   };
 
   const handleSendEmail = () => {
@@ -803,7 +808,7 @@ const ViewDonor = ({
                   role="tab"
                   aria-selected={mainTab === 'overview'}
                   className={`donor-profile-tabs__btn${mainTab === 'overview' ? ' is-active' : ''}`}
-                  onClick={() => setMainTab('overview')}
+                  onClick={() => openMainTab('overview')}
                 >
                   Overview
                 </button>
@@ -812,7 +817,7 @@ const ViewDonor = ({
                   role="tab"
                   aria-selected={mainTab === 'donations'}
                   className={`donor-profile-tabs__btn${mainTab === 'donations' ? ' is-active' : ''}`}
-                  onClick={() => setMainTab('donations')}
+                  onClick={() => openMainTab('donations')}
                 >
                   Donations
                 </button>
@@ -885,7 +890,7 @@ const ViewDonor = ({
                   onCancel={() => setMainTab('overview')}
                   onSaved={() => {
                     setMainTab('overview');
-                    loadDonor();
+                    fetchDonor();
                   }}
                 />
               ) : (
@@ -996,7 +1001,7 @@ const ViewDonor = ({
                 <DonorCommunication
                   donorId={id}
                   donor={donor}
-                  onAddInteraction={() => setMainTab('add-note')}
+                  onAddInteraction={() => openMainTab('add-note')}
                 />
               ) : (
                 <div className="donor-journey-panel">

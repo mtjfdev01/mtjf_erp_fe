@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
@@ -83,8 +84,8 @@ const InteractionEditModal = ({ open, interaction, onClose, onSaved }) => {
     }
   };
 
-  return (
-    <div className="donor-relationship-modal-overlay">
+  return createPortal(
+    <div className="donor-relationship-modal-overlay" style={{ zIndex: 1100 }}>
       <div className="donor-relationship-modal donor-relationship-modal--add-interaction">
         <div className="donor-relationship-modal__header">
           <div>
@@ -192,7 +193,8 @@ const InteractionEditModal = ({ open, interaction, onClose, onSaved }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

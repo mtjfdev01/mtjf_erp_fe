@@ -6,7 +6,8 @@ import PageHeader from '../../../../common/PageHeader'
 import { RefreshButton } from '../../../../common/filters';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
 import FormSelect from '../../../../common/FormSelect';
-import { FiPlus, FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import EditRegion from '../edit';
 
 const RegionsList = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const RegionsList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [regionToDelete, setRegionToDelete] = useState(null);
   const [countryFilter, setCountryFilter] = useState('');
 
@@ -116,10 +118,15 @@ const RegionsList = () => {
                     <td>{row.code || '—'}</td>
                     <td>{row.country ? row.country.name : getCountryName(row.country_id)}</td>
                     <td>{row.is_active ? 'Yes' : 'No'}</td>
-                    <td>
-                      <button type="button" className="icon-btn danger" onClick={() => handleDeleteClick(row)} title="Delete">
-                        <FiTrash2 />
-                      </button>
+                    <td className="geo-list-actions-cell">
+                      <div className="geo-list-actions">
+                        <button type="button" className="icon-btn icon-btn--edit" onClick={() => setEditId(row.id)} title="Edit" aria-label="Edit">
+                          <FiEdit2 />
+                        </button>
+                        <button type="button" className="icon-btn icon-btn--danger" onClick={() => handleDeleteClick(row)} title="Delete" aria-label="Delete">
+                          <FiTrash2 />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -129,6 +136,12 @@ const RegionsList = () => {
           </>
         )}
       </div>
+      <EditRegion
+        isOpen={!!editId}
+        id={editId}
+        onClose={() => setEditId(null)}
+        onSuccess={fetchRegions}
+      />
       <ConfirmationModal
         isOpen={showDeleteModal}
         title="Delete Region"

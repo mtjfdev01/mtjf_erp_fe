@@ -1425,14 +1425,14 @@ const OnlineDonationsList = ({
             </table>
           </div>
           
-          <div className="list-header" style={{ 
+          {/* <div className="list-header" style={{ 
             display: 'flex', 
             justifyContent: 'space-between', 
             alignItems: 'center',
             marginTop: '20px',
             padding: '15px 0'
-          }}>
-            <div className="total-amount-display" style={{
+          }}> */}
+            {/* <div className="total-amount-display" style={{
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
@@ -1442,7 +1442,7 @@ const OnlineDonationsList = ({
               border: '1px solid #e9ecef'
             }}>
 
-            </div>
+            </div> */}
             
             {/* <DownloadCSV
               data={prepareCSVData()}
@@ -1452,7 +1452,7 @@ const OnlineDonationsList = ({
               onDownloadStart={() => console.log('Downloading donations CSV...')}
               onDownloadComplete={() => console.log('Download complete!')}
             /> */}
-          </div>
+          {/* </div> */}
           
           {totalItems > 0 && (
             <Pagination

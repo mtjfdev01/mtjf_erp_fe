@@ -6,7 +6,8 @@ import PageHeader from '../../../../common/PageHeader'
 import { RefreshButton } from '../../../../common/filters';
 import ConfirmationModal from '../../../../common/ConfirmationModal';
 import FormSelect from '../../../../common/FormSelect';
-import { FiTrash2 } from 'react-icons/fi';
+import { FiEdit2, FiTrash2 } from 'react-icons/fi';
+import EditRoute from '../edit';
 
 const RoutesList = () => {
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const RoutesList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [editId, setEditId] = useState(null);
   const [routeToDelete, setRouteToDelete] = useState(null);
   const [countryFilter, setCountryFilter] = useState('');
   const [regionFilter, setRegionFilter] = useState('');
@@ -150,10 +152,15 @@ const RoutesList = () => {
                     <td>{getCountryName(row)}</td>
                     <td style={{ maxWidth: '200px' }}>{getCitiesDisplay(row)}</td>
                     <td>{row.is_active ? 'Yes' : 'No'}</td>
-                    <td>
-                      <button type="button" className="icon-btn danger" onClick={() => handleDeleteClick(row)} title="Delete">
-                        <FiTrash2 />
-                      </button>
+                    <td className="geo-list-actions-cell">
+                      <div className="geo-list-actions">
+                        <button type="button" className="icon-btn icon-btn--edit" onClick={() => setEditId(row.id)} title="Edit" aria-label="Edit">
+                          <FiEdit2 />
+                        </button>
+                        <button type="button" className="icon-btn icon-btn--danger" onClick={() => handleDeleteClick(row)} title="Delete" aria-label="Delete">
+                          <FiTrash2 />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -163,6 +170,12 @@ const RoutesList = () => {
           </>
         )}
       </div>
+      <EditRoute
+        isOpen={!!editId}
+        id={editId}
+        onClose={() => setEditId(null)}
+        onSuccess={fetchRoutes}
+      />
       <ConfirmationModal
         isOpen={showDeleteModal}
         title="Delete Route"

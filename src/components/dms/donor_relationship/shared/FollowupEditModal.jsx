@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormTextarea from '../../../common/FormTextarea';
@@ -63,8 +64,8 @@ const FollowupEditModal = ({ open, followup, onClose, onSaved }) => {
     }
   };
 
-  return (
-    <div className="donor-relationship-modal-overlay">
+  return createPortal(
+    <div className="donor-relationship-modal-overlay" style={{ zIndex: 1100 }}>
       <div className="donor-relationship-modal">
         <div className="donor-relationship-modal__header">
           <h3>Edit follow-up</h3>
@@ -108,7 +109,8 @@ const FollowupEditModal = ({ open, followup, onClose, onSaved }) => {
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 

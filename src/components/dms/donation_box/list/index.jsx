@@ -433,8 +433,8 @@ const DonationBoxList = () => {
   ];
 
   const unitTypeOptions = [
-    ...COLLECTION_UNIT_TYPES.map(t => ({ value: t, label: t })),
     { value: 'all', label: 'All Units' },
+    ...COLLECTION_UNIT_TYPES.map((t) => ({ value: t, label: t })),
   ];
 
   const boxTypeOptions = [
@@ -661,7 +661,6 @@ const DonationBoxList = () => {
               <thead>
                 <tr>
                   <th className="hide-on-mobile">Unit ID</th>
-                  <th className="hide-on-mobile">Unit Type</th>
                   <th className="table-donor-col">Name</th>
                   <th className="hide-on-mobile">Location</th>
                   <th className="hide-on-mobile">Size</th>
@@ -688,11 +687,6 @@ const DonationBoxList = () => {
                           <div className="box-key hide-on-mobile">Route: {box.route.name}</div>
                         )}
                       </div>
-                    </td>
-                    <td className="hide-on-mobile">
-                      <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#e0f2fe', color: '#0369a1', fontWeight: 600 }}>
-                        {box.type || DEFAULT_COLLECTION_UNIT_TYPE}
-                      </span>
                     </td>
                     <td className="table-donor-col">
                       <div className="shop-info">

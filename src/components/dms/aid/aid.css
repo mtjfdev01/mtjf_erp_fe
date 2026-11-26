@@ -2230,6 +2230,12 @@
     max-height: 80px !important;
   }
 
+  body.aid-printing .aid-print-single-page .aid-zakat-capture--thumb .aid-zakat-capture__img {
+    transform: rotate(90deg);
+    max-width: 72px !important;
+    max-height: 96px !important;
+  }
+
   body.aid-printing .aid-print-target .aid-zakat-form__table-wrap {
     overflow: visible !important;
   }
@@ -6536,6 +6542,14 @@ a.aid-contact-chip:hover {
   max-height: 8rem;
   object-fit: contain;
   display: block;
+}
+
+/* SecuGen captures portrait — rotate 90° right for horizontal view */
+.aid-zakat-capture--thumb .aid-zakat-capture__img {
+  transform: rotate(90deg);
+  max-width: 7.25rem;
+  max-height: 9.5rem;
+  transform-origin: center center;
 }
 
 .aid-zakat-capture__empty {

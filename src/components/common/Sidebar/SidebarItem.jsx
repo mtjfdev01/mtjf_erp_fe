@@ -3,6 +3,32 @@ import { Link } from 'react-router-dom';
 import { IoIosArrowDown } from 'react-icons/io';
 import './Sidebar.css';
 
+/**
+ * Detail / action segments that belong to a `…/list` menu item
+ * (e.g. /donors/list → /donors/view/1). Nested list namespaces like
+ * /applications/drafts or /applications/entry must NOT light up
+ * /applications/list.
+ */
+const LIST_DETAIL_SEGMENTS = new Set([
+  'view',
+  'edit',
+  'add',
+  'update',
+  'create',
+  'new',
+  'detail',
+  'form',
+  'print',
+  'preview',
+  'register',
+  'profile',
+  'relocate',
+  'record',
+  'poc',
+  // aid audit detail: /dms/aid/audit/applications/:id
+  'applications',
+]);
+
 /** Match list routes and their view/edit/add children without colliding on shared prefixes. */
 export const isSidebarPathActive = (activeItem, path) => {
   if (!activeItem || !path) return false;
@@ -11,7 +37,14 @@ export const isSidebarPathActive = (activeItem, path) => {
   if (activeItem.startsWith(`${normalized}/`)) return true;
   if (normalized.endsWith('/list')) {
     const base = normalized.slice(0, -'/list'.length);
-    if (base && activeItem.startsWith(`${base}/`)) return true;
+    if (!base || !activeItem.startsWith(`${base}/`)) return false;
+    const rest = activeItem.slice(base.length + 1);
+    const firstSegment = rest.split('/').filter(Boolean)[0];
+    if (!firstSegment) return false;
+    // /applications/list must not match /applications/drafts/… or /applications/entry/…
+    if (LIST_DETAIL_SEGMENTS.has(firstSegment)) return true;
+    if (/^\d+$/.test(firstSegment)) return true;
+    return false;
   }
   return false;
 };

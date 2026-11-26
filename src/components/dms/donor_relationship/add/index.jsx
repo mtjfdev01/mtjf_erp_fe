@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import Navbar from '../../../Navbar';
@@ -526,16 +527,19 @@ const AddDonorInteraction = ({
     </div>
   );
 
+  // Portal overlays to document.body so parent transform/overflow (e.g. collapsed
+  // donor-crm-main) cannot clip or shrink position:fixed dialogs.
   // 1. Explicit Modal or Embedded mode (always in a popup dialog)
   if (isModal || embedded) {
-    return (
+    return createPortal(
       <div
         className="donor-relationship-modal-overlay"
         style={{ zIndex: 1100 }}
         onClick={handleClose}
       >
         {modalMarkup}
-      </div>
+      </div>,
+      document.body,
     );
   }
 
@@ -543,18 +547,21 @@ const AddDonorInteraction = ({
   return (
     <>
       <Navbar />
-      <div
-        className="donor-relationship-modal-overlay"
-        style={{
-          zIndex: 1050,
-          marginTop: 'calc(var(--navbar-height, 64px) + 10px)',
-          background: 'rgba(15, 23, 42, 0.45)',
-          backdropFilter: 'blur(3px)',
-        }}
-        onClick={handleClose}
-      >
-        {modalMarkup}
-      </div>
+      {createPortal(
+        <div
+          className="donor-relationship-modal-overlay"
+          style={{
+            zIndex: 1050,
+            marginTop: 'calc(var(--navbar-height, 64px) + 10px)',
+            background: 'rgba(15, 23, 42, 0.45)',
+            backdropFilter: 'blur(3px)',
+          }}
+          onClick={handleClose}
+        >
+          {modalMarkup}
+        </div>,
+        document.body,
+      )}
     </>
   );
 };
