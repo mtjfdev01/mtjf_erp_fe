@@ -254,10 +254,22 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
-  // Operational Queries: own module flag, or anyone who can view donation boxes
-  if (department === 'fund_raising' && module === 'operational_queries') {
-    const mod = permissions.fund_raising?.operational_queries;
-    if (mod?.view === true || mod?.list_view === true) return true;
+  // Operational Queries: top-level section (or legacy under fund_raising);
+  // also visible to anyone who can view/update donation boxes.
+  if (
+    (department === 'operational_queries' || department === 'fund_raising') &&
+    module === 'operational_queries'
+  ) {
+    if (
+      permissions.fund_raising_manager === true ||
+      permissions.fund_raising?.manager === true
+    ) {
+      return true;
+    }
+    const own =
+      permissions.operational_queries?.operational_queries ||
+      permissions.fund_raising?.operational_queries;
+    if (own?.view === true || own?.list_view === true) return true;
     const box = permissions.fund_raising?.donation_box;
     return box?.view === true || box?.list_view === true || box?.update === true;
   }

@@ -888,13 +888,6 @@ const fundRaisingDepartmentItems = (isUser = false) => [
         icon: FiUsers,
       },
       {
-        label: 'Operational Queries',
-        path: '/dms/operational-queries/list',
-        type: 'list',
-        module: 'operational_queries',
-        icon: FiClipboard,
-      },
-      {
         label: 'Box Collections',
         path: '/dms/donation-box-donations/list',
         type: 'list',
@@ -1245,6 +1238,17 @@ const todosItems = () => [
   },
 ];
 
+/** Independent Operational Queries section (outside CRD). */
+const operationalQueriesItems = () => [
+  {
+    label: 'Operational Queries',
+    path: '/dms/operational-queries/list',
+    type: 'list',
+    module: 'operational_queries',
+    icon: FiClipboard,
+  },
+];
+
 // All department items for permission-based access
 const allDepartmentItems = (isUser = false) => [
   {
@@ -1264,6 +1268,12 @@ const allDepartmentItems = (isUser = false) => [
     label: 'My To-Dos',
     icon: FiCheckSquare,
     items: todosItems()
+  },
+  {
+    id: 'operational_queries',
+    label: 'Operational Queries',
+    icon: FiClipboard,
+    items: operationalQueriesItems()
   },
   // {
   //   id: 'store',
@@ -1360,6 +1370,12 @@ ceo_office: (isUser = false) => ({
     label: 'My To-Dos',
     icon: FiCheckSquare,
     items: todosItems()
+  }),
+  operational_queries: () => ({
+    id: 'operational_queries',
+    label: 'Operational Queries',
+    icon: FiClipboard,
+    items: operationalQueriesItems()
   }),
   program: (isUser = false) => ({
     id: 'program',
@@ -1558,6 +1574,7 @@ export const getSidebarConfig = (user, permissions = null) => {
       departmentConfigs.admin(false),
       departmentConfigs.fund_raising(false),
       departmentConfigs.todos(),
+      departmentConfigs.operational_queries(),
       departmentConfigs.ceo_office(false),
     ];
     sections.push(buildSuperAdminTaskingGroup());

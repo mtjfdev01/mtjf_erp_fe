@@ -12,7 +12,10 @@
   border-right: 1px solid #e2e8f0;
   display: flex;
   flex-direction: column;
-  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease;
+  transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s ease;
   box-shadow: 1px 0 3px rgba(15, 23, 42, 0.03);
   position: fixed;
   left: 0;
@@ -20,6 +23,49 @@
   z-index: 1000;
   font-family: inherit;
   box-sizing: border-box;
+}
+
+.sidebar--resizing {
+  transition: none;
+  user-select: none;
+}
+
+/* Drag handle — stretch width while expanded (desktop) */
+.sidebar-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 8px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 5;
+  touch-action: none;
+}
+
+.sidebar-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.sidebar-resize-handle:hover::after,
+.sidebar--resizing .sidebar-resize-handle::after {
+  background: #93c5fd;
+}
+
+body.sidebar-is-resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.sidebar-is-resizing .app-layout {
+  transition: none;
 }
 
 .sidebar--collapsed {
@@ -587,6 +633,10 @@ a.sidebar-sub-item:focus {
   }
 
   .sidebar-toggle {
+    display: none;
+  }
+
+  .sidebar-resize-handle {
     display: none;
   }
 }

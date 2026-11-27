@@ -12,19 +12,29 @@ export const toAssignableAidUser = (user) => {
   return { ...user, name: formatAidUserLabel(user) };
 };
 
+const formatDepartmentLabel = (department) => {
+  const raw = String(department || '').trim();
+  if (!raw) return '';
+  if (raw === 'program') return 'Program';
+  if (raw === 'health') return 'Health';
+  return raw.replace(/_/g, ' ');
+};
+
 const AidUserAssignField = ({
   label = 'Assign to user',
   value,
   onChange,
   hint,
+  placeholder = 'Search program or health users…',
+  departments = 'program,health',
 }) => (
   <div className="aid-assign-field">
     {hint ? <p className="aid-section-hint">{hint}</p> : null}
     <SearchableDropdown
       label={label}
-      placeholder="Search program users…"
+      placeholder={placeholder}
       apiEndpoint="/users/options"
-      apiParams={{ department: 'program' }}
+      apiParams={{ department: departments }}
       value={value}
       displayKey="name"
       onSelect={(user) => onChange(toAssignableAidUser(user))}
@@ -47,7 +57,11 @@ const AidUserAssignField = ({
           }}
         >
           <div style={{ fontWeight: 500 }}>{formatAidUserLabel(user)}</div>
-          <div style={{ fontSize: 12, color: '#666' }}>{user.email}</div>
+          <div style={{ fontSize: 12, color: '#666' }}>
+            {[user.email, formatDepartmentLabel(user.department)]
+              .filter(Boolean)
+              .join(' · ')}
+          </div>
         </div>
       )}
     />

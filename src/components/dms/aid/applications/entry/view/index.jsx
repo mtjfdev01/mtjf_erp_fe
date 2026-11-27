@@ -242,7 +242,7 @@ const AidEntryApplicationView = () => {
   const approveDraft = async () => {
     if (!canApproveDraft || !app?.id) return;
     if (!assignUser?.id) {
-      setError('Select a program department user to assign before approving.');
+      setError('Select a program or health user to assign before approving.');
       setShowApprovePanel(true);
       return;
     }
@@ -502,10 +502,10 @@ const AidEntryApplicationView = () => {
                 : 'Consider draft'}
             </h3>
             <AidUserAssignField
-              label="Assign to program user"
+              label="Assign to program or health user"
               value={assignUser}
               onChange={setAssignUser}
-              hint="Required — pick a user from the program department who will own this case."
+              hint="Required — pick a Program or Health user who will own this case."
             />
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
               <button

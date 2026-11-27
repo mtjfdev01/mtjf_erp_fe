@@ -35,7 +35,7 @@ const emptyFilters = {
 
 /**
  * Drafts board — applications saved as draft.
- * Approve requires assigning a program-department user.
+ * Approve requires assigning a Program or Health department user.
  */
 const AidDraftsList = () => {
   const navigate = useNavigate();
@@ -147,7 +147,7 @@ const AidDraftsList = () => {
   const confirmApprove = async () => {
     if (!canApprove || !approveRowId) return;
     if (!assignUser?.id) {
-      setError('Select a program department user to assign before approving.');
+      setError('Select a program or health user to assign before approving.');
       return;
     }
     try {
@@ -241,10 +241,10 @@ const AidDraftsList = () => {
                   : ''}
               </h3>
               <AidUserAssignField
-                label="Assign to program user"
+                label="Assign to program or health user"
                 value={assignUser}
                 onChange={setAssignUser}
-                hint="Required — pick a user from the program department who will own this case."
+                hint="Required — pick a Program or Health user who will own this case."
               />
               <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                 <button
