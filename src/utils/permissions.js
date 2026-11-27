@@ -254,6 +254,14 @@ export const canViewModule = (permissions, department, module) => {
     return false;
   }
 
+  // Operational Queries: own module flag, or anyone who can view donation boxes
+  if (department === 'fund_raising' && module === 'operational_queries') {
+    const mod = permissions.fund_raising?.operational_queries;
+    if (mod?.view === true || mod?.list_view === true) return true;
+    const box = permissions.fund_raising?.donation_box;
+    return box?.view === true || box?.list_view === true || box?.update === true;
+  }
+
   // My To-Dos: independent `todos` section; accept new + legacy fund_raising.dms_todos
   if (department === 'todos' && module === 'dms_todos') {
     if (

@@ -26,7 +26,7 @@ import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
 import { COLLECTION_UNIT_TYPES, DEFAULT_COLLECTION_UNIT_TYPE } from '../../../../config/collectionUnits';
 
-import { FiEye, FiEdit2, FiTrash2, FiPlusCircle, FiUser, FiMapPin } from 'react-icons/fi';
+import { FiEye, FiEdit2, FiTrash2, FiPlusCircle, FiUser, FiMapPin, FiClock } from 'react-icons/fi';
 import ActionsColumnHeader from '../../../common/table/ActionsColumnHeader';
 import ContactColumnHeader from '../../../common/table/ContactColumnHeader';
 import ContactIconsCell from '../../../common/table/ContactIconsCell';
@@ -397,6 +397,13 @@ const DonationBoxList = () => {
       color: '#7c3aed',
       to: `/dms/donation_box/relocate/${donationBox.id}`,
       visible: canUpdateBox
+    },
+    {
+      icon: <FiClock />,
+      label: 'History & Tracking',
+      color: '#0f766e',
+      to: `/dms/donation_box/history/${donationBox.id}`,
+      visible: true
     },
     {
       icon: <FiPlusCircle />,

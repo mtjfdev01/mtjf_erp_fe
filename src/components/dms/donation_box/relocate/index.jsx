@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import axiosInstance from '../../../../utils/axios';
 import FormInput from '../../../common/FormInput';
 import FormSelect from '../../../common/FormSelect';
+import SearchableDropdown from '../../../common/SearchableDropdown';
 import SearchableMultiSelect from '../../../common/SearchableMultiSelect';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
@@ -29,6 +30,7 @@ const EMPTY_RELOCATE_FORM = {
   active_since: '',
   relocation_note: '',
   assigned_user_ids: [],
+  poc_id: '',
 };
 
 const RelocateDonationBox = () => {
@@ -43,6 +45,7 @@ const RelocateDonationBox = () => {
 
   const [relocateForm, setRelocateForm] = useState(() => ({ ...EMPTY_RELOCATE_FORM }));
   const [assignedUsers, setAssignedUsers] = useState([]);
+  const [selectedPoc, setSelectedPoc] = useState(null);
   const [relocating, setRelocating] = useState(false);
   const [relocateLocation, setRelocateLocation] = useState(null);
 
@@ -116,8 +119,10 @@ const RelocateDonationBox = () => {
       active_since: toDateInputValue(box.active_since || box.created_at),
       relocation_note: '',
       assigned_user_ids: assigned.map((u) => u?.id).filter((uid) => uid != null),
+      poc_id: '',
     });
     setAssignedUsers(assigned);
+    setSelectedPoc(null);
     setRelocateLocation(getDonationBoxMapLocation(box));
 
     if (regionId) {
@@ -192,6 +197,48 @@ const RelocateDonationBox = () => {
     setRelocateForm((prev) => ({ ...prev, assigned_user_ids: [] }));
   };
 
+  const searchExistingPocs = async (term) => {
+    try {
+      const boxType = donationBox?.type === 'Mosques' ? 'Mosques' : 'Donation Boxes';
+      const response = await axiosInstance.get('/csr-pocs', {
+        params: {
+          search: term,
+          type: boxType,
+          pageSize: 25,
+          page: 1,
+          is_active: true,
+        },
+      });
+      return response.data?.data || [];
+    } catch (err) {
+      console.error('POC search failed:', err);
+      return [];
+    }
+  };
+
+  const handlePocSelect = (poc) => {
+    if (!poc) return;
+    setSelectedPoc(poc);
+    setRelocateForm((prev) => ({
+      ...prev,
+      poc_id: poc.id,
+      shopkeeper: poc.name || prev.shopkeeper,
+      cell_no: poc.phone || prev.cell_no,
+      shop_name:
+        prev.shop_name ||
+        poc.donation_box?.shop_name ||
+        poc.donation_box?.name ||
+        prev.shop_name,
+    }));
+    if (error) setError('');
+    if (success) setSuccess('');
+  };
+
+  const handlePocClear = () => {
+    setSelectedPoc(null);
+    setRelocateForm((prev) => ({ ...prev, poc_id: '' }));
+  };
+
   const handleRelocate = async (e) => {
     e.preventDefault();
     if (!relocateForm.shop_name?.trim()) {
@@ -214,6 +261,7 @@ const RelocateDonationBox = () => {
         active_since: relocateForm.active_since || undefined,
         relocation_note: relocateForm.relocation_note?.trim() || undefined,
         assigned_user_ids: relocateForm.assigned_user_ids,
+        ...(relocateForm.poc_id ? { poc_id: Number(relocateForm.poc_id) } : {}),
       };
 
       if (location) {
@@ -296,13 +344,22 @@ const RelocateDonationBox = () => {
                 Existing values are loaded below. Change only what needs to move.
               </p>
             </div>
-            <Link
-              to={`/dms/donation_box/edit/${id}`}
-              className="secondary_btn"
-              style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
-            >
-              Update settings
-            </Link>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <Link
+                to={`/dms/donation_box/history/${id}`}
+                className="secondary_btn"
+                style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+              >
+                Unit history
+              </Link>
+              <Link
+                to={`/dms/donation_box/edit/${id}`}
+                className="secondary_btn"
+                style={{ textDecoration: 'none', whiteSpace: 'nowrap' }}
+              >
+                Update settings
+              </Link>
+            </div>
           </div>
           <div className="view-grid">
             <div className="view-item">
@@ -344,10 +401,48 @@ const RelocateDonationBox = () => {
           <div className="form-section">
             <h3 className="form-section-heading">Relocate to new shop</h3>
             <p className="form-section-hint" style={{ marginBottom: '16px', color: '#6b7280' }}>
-              Assign this same physical box to a new shop. A full audit record is kept and your
-              reporting manager will receive an in-app notification and email.
+              Assign this same physical box to a new shop. Search an existing POC to reuse their
+              contact history, or enter a new shopkeeper to create a new POC. Placement history is
+              tracked separately for the unit and the POC.
             </p>
             <div className="form-grid-2">
+              <div style={{ gridColumn: '1 / -1' }}>
+                <SearchableDropdown
+                  label="Existing POC (optional)"
+                  placeholder="Search by name, phone, or shop..."
+                  onSearch={searchExistingPocs}
+                  onSelect={handlePocSelect}
+                  onClear={handlePocClear}
+                  value={selectedPoc}
+                  displayKey="name"
+                  debounceDelay={300}
+                  minSearchLength={1}
+                  allowResearch
+                  renderOption={(poc) => (
+                    <div style={{ padding: '4px 0' }}>
+                      <div style={{ fontWeight: 600 }}>{poc.name}</div>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        {[poc.phone, poc.donation_box?.shop_name || poc.donation_box?.name]
+                          .filter(Boolean)
+                          .join(' · ') || 'No shop linked'}
+                        {poc.donation_box_id ? ` · Box #${poc.donation_box_id}` : ''}
+                      </div>
+                    </div>
+                  )}
+                />
+                <p style={{ margin: '6px 0 0', fontSize: '12px', color: '#64748b' }}>
+                  Leave empty to create a new POC from the shopkeeper details below.
+                  {selectedPoc?.id ? (
+                    <>
+                      {' '}
+                      <Link to={`/dms/csr-pocs/history/${selectedPoc.id}`}>
+                        View this POC&apos;s history
+                      </Link>
+                    </>
+                  ) : null}
+                </p>
+              </div>
+
               <FormSelect
                 label="Region"
                 name="region"

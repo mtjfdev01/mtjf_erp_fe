@@ -6,6 +6,7 @@ import FormSelect from '../../../common/FormSelect';
 import Navbar from '../../../Navbar';
 import PageHeader from '../../../common/PageHeader';
 import DonationBoxAuditHistory from '../shared/DonationBoxAuditHistory';
+import StatusChangeRequestModal from '../../operational_queries/shared/StatusChangeRequestModal';
 import { COLLECTION_UNIT_TYPES, DEFAULT_COLLECTION_UNIT_TYPE } from '../../../../config/collectionUnits';
 import {
   DEFAULT_COLLECTION_RADIUS_METERS,
@@ -28,6 +29,9 @@ const EditDonationBox = () => {
   const [auditRefreshKey, setAuditRefreshKey] = useState(0);
   const [donationBox, setDonationBox] = useState(null);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [submittingStatusQuery, setSubmittingStatusQuery] = useState(false);
+  const [pendingNonStatusPayload, setPendingNonStatusPayload] = useState(null);
 
   const [settingsForm, setSettingsForm] = useState({
     type: DEFAULT_COLLECTION_UNIT_TYPE,
@@ -99,50 +103,69 @@ const EditDonationBox = () => {
     if (success) setSuccess('');
   };
 
+  const buildSettingsPayload = (includeStatus) => {
+    const hasCoords =
+      donationBox?.registration_latitude != null &&
+      donationBox?.registration_longitude != null;
+    const locationRadiusMeters = radiusFormToMeters(
+      settingsForm.location_radius_value,
+      settingsForm.location_radius_unit,
+    );
+    const radiusError = hasCoords
+      ? validateCollectionRadiusMeters(locationRadiusMeters)
+      : null;
+    if (radiusError) {
+      throw new Error(radiusError);
+    }
+
+    const unitName = settingsForm.name?.trim() || donationBox?.shop_name || '';
+    const isDonationBox = settingsForm.type === 'Donation Boxes';
+    const payload = {
+      type: settingsForm.type || DEFAULT_COLLECTION_UNIT_TYPE,
+      name: unitName,
+      shop_name: unitName,
+      key_no: isDonationBox ? (settingsForm.key_no || null) : null,
+      box_type: isDonationBox ? settingsForm.box_type : 'custom',
+      frequency: settingsForm.collection_frequency,
+      landmark_marketplace: settingsForm.landmark_marketplace?.trim() || null,
+      require_collection_location: hasCoords,
+      ...(hasCoords ? { location_radius_meters: locationRadiusMeters } : {}),
+    };
+
+    if (includeStatus) {
+      if (settingsForm.status === 'removed' && !settingsForm.removal_date) {
+        throw new Error('Removal date is required when status is Removed.');
+      }
+      payload.status = settingsForm.status;
+      payload.removal_date =
+        settingsForm.status === 'removed' ? settingsForm.removal_date : null;
+    }
+
+    return payload;
+  };
+
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSavingSettings(true);
     setError('');
     setSuccess('');
     try {
-      const hasCoords =
-        donationBox?.registration_latitude != null &&
-        donationBox?.registration_longitude != null;
-      const locationRadiusMeters = radiusFormToMeters(
-        settingsForm.location_radius_value,
-        settingsForm.location_radius_unit,
-      );
-      const radiusError = hasCoords
-        ? validateCollectionRadiusMeters(locationRadiusMeters)
-        : null;
-      if (radiusError) {
-        setError(radiusError);
+      const currentStatus = donationBox?.status || 'active';
+      const statusChanged = settingsForm.status !== currentStatus;
+
+      if (statusChanged) {
+        if (settingsForm.status === 'removed' && !settingsForm.removal_date) {
+          throw new Error('Removal date is required when status is Removed.');
+        }
+        // Save non-status fields immediately; status waits for operational query approval.
+        const nonStatusPayload = buildSettingsPayload(false);
+        setPendingNonStatusPayload(nonStatusPayload);
+        setStatusModalOpen(true);
         setSavingSettings(false);
         return;
       }
 
-      if (settingsForm.status === 'removed' && !settingsForm.removal_date) {
-        setError('Removal date is required when status is Removed.');
-        setSavingSettings(false);
-        return;
-      }
-
-      const unitName = settingsForm.name?.trim() || donationBox?.shop_name || '';
-      const isDonationBox = settingsForm.type === 'Donation Boxes';
-      const payload = {
-        type: settingsForm.type || DEFAULT_COLLECTION_UNIT_TYPE,
-        name: unitName,
-        shop_name: unitName,
-        key_no: isDonationBox ? (settingsForm.key_no || null) : null,
-        box_type: isDonationBox ? settingsForm.box_type : 'custom',
-        status: settingsForm.status,
-        removal_date:
-          settingsForm.status === 'removed' ? settingsForm.removal_date : null,
-        frequency: settingsForm.collection_frequency,
-        landmark_marketplace: settingsForm.landmark_marketplace?.trim() || null,
-        require_collection_location: hasCoords,
-        ...(hasCoords ? { location_radius_meters: locationRadiusMeters } : {}),
-      };
+      const payload = buildSettingsPayload(true);
       const response = await axiosInstance.patch(`/donation-box/${id}`, payload);
       if (!response.data?.success) {
         throw new Error(response.data?.message || 'Failed to update donation box');
@@ -154,6 +177,59 @@ const EditDonationBox = () => {
       setError(err.response?.data?.message || err.message || 'Failed to update donation box');
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const handleStatusQuerySubmit = async ({ reason, approver_id, removal_date }) => {
+    setSubmittingStatusQuery(true);
+    setError('');
+    setSuccess('');
+    try {
+      if (pendingNonStatusPayload) {
+        const settingsRes = await axiosInstance.patch(
+          `/donation-box/${id}`,
+          pendingNonStatusPayload,
+        );
+        if (!settingsRes.data?.success) {
+          throw new Error(
+            settingsRes.data?.message || 'Failed to update box settings',
+          );
+        }
+      }
+
+      const queryRes = await axiosInstance.post('/operational-queries', {
+        subject_type: 'donation_box',
+        subject_id: Number(id),
+        action: 'change_status',
+        reason,
+        approver_id,
+        payload: {
+          status: settingsForm.status,
+          removal_date:
+            settingsForm.status === 'removed'
+              ? removal_date || settingsForm.removal_date
+              : null,
+        },
+      });
+      if (!queryRes.data?.success) {
+        throw new Error(queryRes.data?.message || 'Failed to submit status change request');
+      }
+
+      setStatusModalOpen(false);
+      setPendingNonStatusPayload(null);
+      setSuccess(
+        `Settings saved. Status change submitted for approval (Query #${queryRes.data.data?.id}).`,
+      );
+      setAuditRefreshKey((k) => k + 1);
+      await fetchDonationBox();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          err.message ||
+          'Failed to submit status change request',
+      );
+    } finally {
+      setSubmittingStatusQuery(false);
     }
   };
 
@@ -346,6 +422,10 @@ const EditDonationBox = () => {
                 options={statusOptions}
                 required
               />
+              <p style={{ margin: '-4px 0 8px', fontSize: 12, color: '#64748b', gridColumn: '1 / -1' }}>
+                Changing status creates an Operational Query. It applies only after the
+                selected person approves it — current status stays until then.
+              </p>
 
               {settingsForm.status === 'removed' && (
                 <FormInput
@@ -419,6 +499,22 @@ const EditDonationBox = () => {
           <DonationBoxAuditHistory donationBoxId={id} refreshKey={auditRefreshKey} />
         </div>
       </div>
+
+      <StatusChangeRequestModal
+        open={statusModalOpen}
+        currentStatus={donationBox?.status}
+        nextStatus={settingsForm.status}
+        removalDate={settingsForm.removal_date}
+        onRemovalDateChange={(value) =>
+          setSettingsForm((prev) => ({ ...prev, removal_date: value }))
+        }
+        onClose={() => {
+          setStatusModalOpen(false);
+          setPendingNonStatusPayload(null);
+        }}
+        onSubmit={handleStatusQuerySubmit}
+        submitting={submittingStatusQuery}
+      />
     </>
   );
 };

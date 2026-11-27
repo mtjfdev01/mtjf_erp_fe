@@ -19,6 +19,7 @@ import {
   FiActivity,
   FiExternalLink,
   FiBriefcase,
+  FiClock,
 } from 'react-icons/fi';
 import { FaWhatsapp } from 'react-icons/fa';
 import './collectionUnitProfile.css';
@@ -382,7 +383,23 @@ const CollectionUnitProfile = () => {
                 >
                   Relocate Unit
                 </button>
+                <button
+                  type="button"
+                  className="cup-btn cup-btn--secondary"
+                  onClick={() => navigate(`/dms/donation_box/history/${targetBoxId}`)}
+                >
+                  <FiClock /> Unit History
+                </button>
               </>
+            )}
+            {poc?.id && (
+              <button
+                type="button"
+                className="cup-btn cup-btn--secondary"
+                onClick={() => navigate(`/dms/csr-pocs/history/${poc.id}`)}
+              >
+                <FiClock /> POC History
+              </button>
             )}
             {targetOrgId && (
               <>

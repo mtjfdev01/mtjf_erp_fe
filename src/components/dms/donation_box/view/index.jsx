@@ -419,6 +419,27 @@ const ViewDonationBox = () => {
             </button>
             <button
               type="button"
+              onClick={() => navigate(`/dms/donation_box/history/${id}`)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 24px',
+                backgroundColor: '#0f766e',
+                color: 'white',
+                border: 'none',
+                borderRadius: '6px',
+                fontSize: '16px',
+                fontWeight: '600',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+              }}
+            >
+              History & Tracking
+            </button>
+            <button
+              type="button"
               onClick={() => navigate(`/dms/donation-box-donations/add/${id}`)}
               style={{
                 display: 'inline-flex',

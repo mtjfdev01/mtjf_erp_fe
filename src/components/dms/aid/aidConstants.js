@@ -587,6 +587,7 @@ export const AID_HEALTH_SUPPORT_NEEDED = [
     label: 'Follow-up visits',
     labelUr: 'فالو اپ وزٹ',
   },
+  { value: 'ambulance', label: 'Ambulance', labelUr: 'ایمبولینس' },
 ];
 
 export const AID_HEALTH_PREFERRED_FACILITY = [

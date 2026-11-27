@@ -165,6 +165,12 @@ import ViewDonationBox from './components/dms/donation_box/view';
 import CollectionUnitProfile from './components/dms/donation_box/profile';
 import EditDonationBox from './components/dms/donation_box/edit';
 import RelocateDonationBox from './components/dms/donation_box/relocate';
+import {
+  CollectionUnitHistory,
+  PocHistory,
+} from './components/dms/donation_box/history';
+import OperationalQueriesList from './components/dms/operational_queries/list';
+import OperationalQueryView from './components/dms/operational_queries/view';
 import AgentScreen from './components/dms/agent';
 import AddDonationBoxDonation from './components/dms/donations/donation_box/add';
 import DonationBoxDonationsList from './components/dms/donations/donation_box/list';
@@ -543,6 +549,12 @@ const App = () => {
                                 <Route path="/dms/donation_box/relocate/:id" element={<RelocateDonationBox />} />
                                 <Route path="/dms/donation-box/relocate/:id" element={<RelocateDonationBox />} />
                                 <Route path="/dms/donation-boxes/relocate/:id" element={<RelocateDonationBox />} />
+                                <Route path="/dms/donation_box/history/:id" element={<CollectionUnitHistory />} />
+                                <Route path="/dms/donation-box/history/:id" element={<CollectionUnitHistory />} />
+                                <Route path="/dms/donation-boxes/history/:id" element={<CollectionUnitHistory />} />
+                                <Route path="/dms/csr-pocs/history/:id" element={<PocHistory />} />
+                                <Route path="/dms/poc/history/:id" element={<PocHistory />} />
+                                <Route path="/dms/pocs/history/:id" element={<PocHistory />} />
                                 <Route path="/dms/donation-box-donations/add" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/add/:id" element={<AddDonationBoxDonation />} />
                                 <Route path="/dms/donation-box-donations/list" element={<DonationBoxDonationsList />} />
@@ -620,6 +632,10 @@ const App = () => {
                                 <Route path="/dms/csr-donors/view/:id" element={<ViewOrganization />} />
                                 <Route path="/dms/csr-donors/edit/:id" element={<EditOrganization />} />
                                 <Route path="/dms/csr-pocs/list" element={<CsrPocsList />} />
+                                <Route path="/dms/collection-unit-pocs/list" element={<CsrPocsList />} />
+                                <Route path="/dms/donation_box/pocs/list" element={<CsrPocsList />} />
+                                <Route path="/dms/operational-queries/list" element={<OperationalQueriesList />} />
+                                <Route path="/dms/operational-queries/view/:id" element={<OperationalQueryView />} />
                                 <Route path="/dms/organizations/list" element={<OrganizationsList />} />
                                 <Route path="/dms/organizations/add" element={<AddOrganization />} />
                                 <Route path="/dms/organizations/view/:id" element={<ViewOrganization />} />

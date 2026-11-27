@@ -799,13 +799,6 @@ const fundRaisingDepartmentItems = (isUser = false) => [
         module: 'organizations',
         icon: FiBriefcase,
       },
-      {
-        label: 'Corporate Contacts',
-        path: '/dms/csr-pocs/list',
-        type: 'list',
-        module: 'csr_pocs',
-        icon: FiUsers,
-      },
     ],
   },
   {
@@ -886,6 +879,20 @@ const fundRaisingDepartmentItems = (isUser = false) => [
         type: 'list',
         module: 'donation_box',
         icon: FiBox,
+      },
+      {
+        label: 'Collection Unit POCs',
+        path: '/dms/collection-unit-pocs/list',
+        type: 'list',
+        module: 'csr_pocs',
+        icon: FiUsers,
+      },
+      {
+        label: 'Operational Queries',
+        path: '/dms/operational-queries/list',
+        type: 'list',
+        module: 'operational_queries',
+        icon: FiClipboard,
       },
       {
         label: 'Box Collections',
