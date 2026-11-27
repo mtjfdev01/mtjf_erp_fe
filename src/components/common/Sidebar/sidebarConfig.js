@@ -1242,7 +1242,7 @@ const todosItems = () => [
 const allDepartmentItems = (isUser = false) => [
   {
     id: 'program',
-    label: 'Cahrity Module',
+    label: 'Charity Module',
     icon: FiLayers,
     items: programDepartmentItems(isUser)
   },
