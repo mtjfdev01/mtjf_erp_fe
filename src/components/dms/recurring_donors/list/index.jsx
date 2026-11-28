@@ -14,6 +14,9 @@ import {
   CollapsibleFilters,
   SearchButton,
   ClearButton,
+  TeamFilter,
+  defaultTeamFilterState,
+  appendTeamFilterParams,
 } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import { useAuth } from '../../../../context/AuthContext';
@@ -66,6 +69,7 @@ const EMPTY_FILTERS = {
   date: '',
   start_date: '',
   end_date: '',
+  ...defaultTeamFilterState(),
 };
 
 /**
@@ -160,7 +164,11 @@ const RecurringDonorsList = () => {
       setLoading(true);
       setError('');
       const filters = { ...appliedFilters };
-      Object.keys(filters).forEach((k) => !filters[k] && delete filters[k]);
+      Object.keys(filters).forEach((k) => {
+        const v = filters[k];
+        if (!v || (Array.isArray(v) && v.length === 0)) delete filters[k];
+      });
+      appendTeamFilterParams(filters, appliedFilters);
 
       const response = await axiosInstance.post('/recurring-donations/search', {
         pagination: {
@@ -451,6 +459,10 @@ const RecurringDonorsList = () => {
               startKey="start_date"
               endKey="end_date"
               label="Date Range"
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
+            <TeamFilter
               filters={tempFilters}
               onFilterChange={handleFilterChange}
             />

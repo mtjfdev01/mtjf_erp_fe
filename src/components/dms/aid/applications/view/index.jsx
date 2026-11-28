@@ -467,6 +467,16 @@ const AidApplicationView = () => {
     ['manager_review', 'verification_completed'].includes(status);
   const showVerify =
     canInvestigate && ['submitted', 'under_review'].includes(status);
+  /**
+   * Program manager: skip field investigation (checklist / GPS not required)
+   * and send straight to MEAL with a recommendation.
+   */
+  const showVerificationNotRequired =
+    !isCeoRejected &&
+    isProgramDeptManager &&
+    ['submitted', 'under_review', 'verification_completed', 'manager_review'].includes(
+      status,
+    );
   const managerCanEditRecommendation =
     !isCeoRejected &&
     isProgramDeptManager &&
@@ -1829,7 +1839,11 @@ const AidApplicationView = () => {
           </div>
         </div>
 
-        {(showReject || showMealForward || showCeo || showDelivery) && (
+        {(showReject ||
+          showVerificationNotRequired ||
+          showMealForward ||
+          showCeo ||
+          showDelivery) && (
           <div
             id="aid-ceo-decision"
             className={`aid-cta-strip${showCeo || showMealForward ? ' aid-ceo-panel' : ''}`}
@@ -1843,6 +1857,46 @@ const AidApplicationView = () => {
               >
                 Reject
               </button>
+            )}
+            {showVerificationNotRequired && (
+              <>
+                <p className="aid-section-hint" style={{ marginTop: 0 }}>
+                  Skip field investigation when a site visit / checklist is not
+                  needed. Requires a Program manager recommendation, then sends
+                  the case to MEAL.
+                </p>
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  disabled={
+                    busy ||
+                    !recommendationComplete ||
+                    !leakageOverrideOk
+                  }
+                  onClick={() =>
+                    run(async () => {
+                      await axiosInstance.post(
+                        `/aid/applications/${id}/verification-not-required`,
+                        {
+                          recommendation: buildRecommendationBody(),
+                          verification_notes:
+                            verifyNotes ||
+                            recommendation.remarks ||
+                            undefined,
+                          leakage_override_reason: needsLeakageOverride
+                            ? leakageOverride.trim()
+                            : undefined,
+                        },
+                      );
+                      toast.success(
+                        'Verification not required — forwarded for MEAL approval',
+                      );
+                    })
+                  }
+                >
+                  Verification Not Required
+                </button>
+              </>
             )}
             {showMealForward && (
               <>

@@ -17,6 +17,10 @@ const formatDepartmentLabel = (department) => {
   if (!raw) return '';
   if (raw === 'program') return 'Program';
   if (raw === 'health') return 'Health';
+  if (raw === 'meal') return 'MEAL';
+  if (raw === 'executive_office') return 'Executive Office';
+  if (raw === 'ceo') return 'CEO';
+  if (raw === 'admin') return 'Admin';
   return raw.replace(/_/g, ' ');
 };
 

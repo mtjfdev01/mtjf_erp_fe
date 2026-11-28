@@ -15,6 +15,9 @@ import {
   SearchButton,
   ClearButton,
   ReferredByFilter,
+  TeamFilter,
+  defaultTeamFilterState,
+  appendTeamFilterParams,
 } from '../../../common/filters';
 import useFiltersPanel from '../../../../hooks/useFiltersPanel';
 import useListAutoRefresh from '../../../../hooks/useListAutoRefresh';
@@ -70,6 +73,7 @@ const EMPTY_FILTERS = {
   end_date: '',
   referrer_user_ids: [],
   referrer_any: '',
+  ...defaultTeamFilterState(),
 };
 
 const formatReferrer = (row) => {
@@ -172,6 +176,7 @@ const RecurringDonationsList = () => {
       if (String(filters.referrer_any || '').toLowerCase() === 'true') {
         delete filters.referrer_user_ids;
       }
+      appendTeamFilterParams(filters, appliedFilters);
 
       const response = await axiosInstance.post('/recurring-donations/search', {
         pagination: {
@@ -483,6 +488,10 @@ const RecurringDonationsList = () => {
               onFilterChange={handleFilterChange}
             />
             <ReferredByFilter
+              filters={tempFilters}
+              onFilterChange={handleFilterChange}
+            />
+            <TeamFilter
               filters={tempFilters}
               onFilterChange={handleFilterChange}
             />

@@ -33,6 +33,9 @@ const emptyFilters = {
   district: '',
 };
 
+/** Fixed CEO assignee — never shown in the consider UI. */
+const CEO_USER_ID = 43;
+
 /**
  * Drafts board — applications saved as draft.
  * Approve requires assigning a Program or Health department user.
@@ -66,6 +69,9 @@ const AidDraftsList = () => {
   const [approvingId, setApprovingId] = useState(null);
   const [approveRowId, setApproveRowId] = useState(null);
   const [assignUser, setAssignUser] = useState(null);
+  const [skipForwardUser, setSkipForwardUser] = useState(null);
+  const [skipForwardTo, setSkipForwardTo] = useState('manager');
+  const [considerMode, setConsiderMode] = useState('assign');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -136,12 +142,18 @@ const AidDraftsList = () => {
   const openApprove = (rowId) => {
     setApproveRowId(rowId);
     setAssignUser(null);
+    setSkipForwardUser(null);
+    setSkipForwardTo('manager');
+    setConsiderMode('assign');
     setError('');
   };
 
   const cancelApprove = () => {
     setApproveRowId(null);
     setAssignUser(null);
+    setSkipForwardUser(null);
+    setSkipForwardTo('manager');
+    setConsiderMode('assign');
   };
 
   const confirmApprove = async () => {
@@ -157,13 +169,43 @@ const AidDraftsList = () => {
         `/aid/applications/${approveRowId}/approve-draft`,
         { assigned_to_user_id: Number(assignUser.id) },
       );
-      setApproveRowId(null);
-      setAssignUser(null);
+      cancelApprove();
       dispatchListDataChanged('aid');
       await fetchRows();
     } catch (err) {
       setError(
         err.response?.data?.message || 'Failed to approve draft application',
+      );
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const confirmSkipVerification = async () => {
+    if (!canApprove || !approveRowId) return;
+    const assigneeId =
+      skipForwardTo === 'ceo' ? CEO_USER_ID : Number(skipForwardUser?.id);
+    if (!assigneeId) {
+      setError('Select the manager to forward this case to.');
+      return;
+    }
+    try {
+      setApprovingId(approveRowId);
+      setError('');
+      await axiosInstance.post(
+        `/aid/applications/${approveRowId}/consider-skip-verification`,
+        {
+          assigned_to_user_id: assigneeId,
+          forward_to: skipForwardTo,
+        },
+      );
+      cancelApprove();
+      dispatchListDataChanged('aid');
+      await fetchRows();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          'Failed to consider with skip verification',
       );
     } finally {
       setApprovingId(null);
@@ -228,44 +270,122 @@ const AidDraftsList = () => {
           {error && <div className="error-message">{error}</div>}
 
           <p className="aid-section-hint" style={{ marginBottom: 12 }}>
-            New applications are saved as drafts here. Consider assigns a
-            program user and sends the case to Verification Process.
+            New applications are saved as drafts. Use Consider to assign for
+            verification, or skip verification and forward to Approvals.
           </p>
 
           {approveRowId && canApprove ? (
-            <div className="aid-panel" style={{ marginBottom: 16, padding: 16 }}>
-              <h3 style={{ marginTop: 0 }}>
-                Consider draft
-                {approveRow?.application_no
-                  ? ` — ${approveRow.application_no}`
-                  : ''}
-              </h3>
-              <AidUserAssignField
-                label="Assign to program or health user"
-                value={assignUser}
-                onChange={setAssignUser}
-                hint="Required — pick a Program or Health user who will own this case."
-              />
-              <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                <button
-                  type="button"
-                  className="primary-btn"
-                  disabled={approvingId === approveRowId || !assignUser?.id}
-                  onClick={confirmApprove}
-                >
-                  {approvingId === approveRowId
-                    ? 'Considering…'
-                    : 'Consider & assign'}
-                </button>
-                <button
-                  type="button"
-                  className="secondary-btn"
-                  disabled={!!approvingId}
-                  onClick={cancelApprove}
-                >
-                  Cancel
-                </button>
+            <div className="aid-panel aid-consider-panel">
+              <div className="aid-consider-panel__head">
+                <h3>
+                  Consider draft
+                  {approveRow?.application_no
+                    ? ` — ${approveRow.application_no}`
+                    : ''}
+                </h3>
+                <div className="aid-tabs aid-tabs--compact" role="tablist">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={considerMode === 'assign'}
+                    className={`aid-tab ${considerMode === 'assign' ? 'aid-tab--active' : ''}`}
+                    onClick={() => setConsiderMode('assign')}
+                  >
+                    Assign &amp; verify
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={considerMode === 'skip'}
+                    className={`aid-tab ${considerMode === 'skip' ? 'aid-tab--active' : ''}`}
+                    onClick={() => setConsiderMode('skip')}
+                  >
+                    Skip verification
+                  </button>
+                </div>
               </div>
+
+              {considerMode === 'assign' ? (
+                <div className="aid-assign-row aid-consider-row">
+                  <AidUserAssignField
+                    label="Investigator"
+                    value={assignUser}
+                    onChange={setAssignUser}
+                    placeholder="Search program / health…"
+                  />
+                  <div className="aid-assign-actions">
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      disabled={
+                        approvingId === approveRowId || !assignUser?.id
+                      }
+                      onClick={confirmApprove}
+                    >
+                      {approvingId === approveRowId
+                        ? 'Considering…'
+                        : 'Consider & assign'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      disabled={!!approvingId}
+                      onClick={cancelApprove}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="aid-assign-row aid-consider-row">
+                  <div className="aid-consider-forward">
+                    <FormSelect
+                      label="Forward to"
+                      value={skipForwardTo}
+                      onChange={(e) => {
+                        setSkipForwardTo(e.target.value);
+                        setSkipForwardUser(null);
+                      }}
+                      options={[
+                        { value: 'manager', label: 'Manager' },
+                        { value: 'ceo', label: 'CEO' },
+                      ]}
+                    />
+                  </div>
+                  {skipForwardTo === 'manager' ? (
+                    <AidUserAssignField
+                      label="Manager"
+                      value={skipForwardUser}
+                      onChange={setSkipForwardUser}
+                      departments="program,health,meal,admin,executive_office"
+                      placeholder="Search manager…"
+                    />
+                  ) : null}
+                  <div className="aid-assign-actions">
+                    <button
+                      type="button"
+                      className="primary-btn"
+                      disabled={
+                        approvingId === approveRowId ||
+                        (skipForwardTo === 'manager' && !skipForwardUser?.id)
+                      }
+                      onClick={confirmSkipVerification}
+                    >
+                      {approvingId === approveRowId
+                        ? 'Considering…'
+                        : 'Consider & skip'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      disabled={!!approvingId}
+                      onClick={cancelApprove}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : null}
 

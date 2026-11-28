@@ -190,6 +190,7 @@ function nodeKind(action) {
       return 'forward';
     case 'verification_completed':
     case 'verified':
+    case 'verification_not_required':
     case 'draft_approved':
     case 'ceo_decided':
       return 'success';

@@ -10,6 +10,7 @@ export const AID_AUDIT_ACTION_LABELS = {
   rejected: 'Rejected',
   verified: 'Investigation verified',
   verification_completed: 'Verification completed',
+  verification_not_required: 'Verification not required',
   manager_forwarded: 'Forwarded to MEAL',
   meal_forwarded: 'Submitted for CEO (MEAL)',
   ceo_decided: 'CEO decision',

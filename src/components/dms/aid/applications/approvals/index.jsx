@@ -433,9 +433,11 @@ const AidApprovalsList = () => {
           {error && <div className="error-message">{error}</div>}
 
           <div className="aid-list-banner">
-            Applications that completed investigation and are{' '}
-            <strong>not rejected</strong>. Flow: Manager → MEAL Approval → CEO.
-            Use the hourglass / View action to open the case.
+            Applications ready for approval (field verification completed{' '}
+            <em>or</em> skipped at consideration) and{' '}
+            <strong>not rejected</strong>. Flow: Manager / MEAL → CEO. Cases
+            marked <strong>Verification skipped</strong> were forwarded
+            directly from Data Entry. Use the hourglass to open the case.
           </div>
 
           <CollapsibleFilters open={filtersOpen}>
@@ -537,6 +539,14 @@ const AidApprovalsList = () => {
                   rows.map((row) => {
                     const needsCeo = canCeo && row.status === CEO_PENDING;
                     const needsMeal = canMeal && row.status === MEAL_PENDING;
+                    const skippedVerification =
+                      !!row?.investigation_recommendation
+                        ?.verification_not_required ||
+                      !!row?.verification_checklist
+                        ?._verification_not_required;
+                    const skipForward =
+                      row?.investigation_recommendation?.forward_to ||
+                      row?.verification_checklist?._forward_to;
                     return (
                       <tr
                         key={row.id}
@@ -551,6 +561,26 @@ const AidApprovalsList = () => {
                           <div style={{ fontSize: 12, color: '#64748b' }}>
                             {row.title || '—'}
                           </div>
+                          {skippedVerification ? (
+                            <span
+                              className="aid-status-pill aid-status-pill--warn"
+                              style={{ marginTop: 4 }}
+                              title={
+                                skipForward === 'ceo'
+                                  ? 'Skipped field verification — forwarded to CEO'
+                                  : skipForward === 'manager'
+                                    ? 'Skipped field verification — forwarded to manager / MEAL'
+                                    : 'Skipped field verification at consideration'
+                              }
+                            >
+                              Verification skipped
+                              {skipForward === 'ceo'
+                                ? ' → CEO'
+                                : skipForward === 'manager'
+                                  ? ' → Manager'
+                                  : ''}
+                            </span>
+                          ) : null}
                         </td>
                         <td>{row.beneficiary?.full_name || '—'}</td>
                         <td>{formatAidRequestType(row.requested_aid_type)}</td>

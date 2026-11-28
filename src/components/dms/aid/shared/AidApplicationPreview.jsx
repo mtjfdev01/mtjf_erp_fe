@@ -1040,6 +1040,37 @@ const AidApplicationPreview = ({
             </div>
           </header>
 
+          {app?.investigation_recommendation?.verification_not_required ||
+          app?.verification_checklist?._verification_not_required ? (
+            <p className="aid-preview__empty-note" style={{ marginBottom: '0.75rem' }}>
+              {app?.verification_checklist?._skipped_at_consideration ||
+              app?.investigation_recommendation?.skipped_at_consideration ? (
+                <>
+                  <strong>Verification &amp; field process skipped</strong> at
+                  consideration
+                  {app?.investigation_recommendation?.forward_to ||
+                  app?.verification_checklist?._forward_to
+                    ? ` — forwarded to ${
+                        String(
+                          app?.investigation_recommendation?.forward_to ||
+                            app?.verification_checklist?._forward_to,
+                        ).toUpperCase()
+                      }`
+                    : ''}
+                  {app.verification_notes ? ` — ${app.verification_notes}` : ''}.
+                </>
+              ) : (
+                <>
+                  Field verification was marked <strong>not required</strong>
+                  {app.verification_notes
+                    ? ` — ${app.verification_notes}`
+                    : ''}
+                  .
+                </>
+              )}
+            </p>
+          ) : null}
+
           <SectionBar
             title="Verification checklist"
             right="Declared claims and investigator status"
@@ -1049,15 +1080,17 @@ const AidApplicationPreview = ({
               <table className="aid-preview__invest-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '22%' }}>Item</th>
+                    <th style={{ width: '20%' }}>Item</th>
                     <th>Declared</th>
                     <th style={{ width: '12%' }}>Status</th>
-                    <th style={{ width: '22%' }}>Found / note</th>
+                    <th style={{ width: '18%' }}>Found / note</th>
+                    <th style={{ width: '16%' }}>GPS coordinates</th>
                   </tr>
                 </thead>
                 <tbody>
                   {claimItems.map((item) => {
                     const entry = entryFor(item.key);
+                    const gps = String(entry.gps_coordinates || '').trim();
                     return (
                       <tr key={item.key}>
                         <td>
@@ -1073,6 +1106,20 @@ const AidApplicationPreview = ({
                           </span>
                         </td>
                         <td>{dash(entry.note)}</td>
+                        <td className="aid-preview__gps-cell">
+                          {gps ? (
+                            <a
+                              className="aid-preview__gps-link"
+                              href={`https://www.google.com/maps?q=${encodeURIComponent(gps)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {gps}
+                            </a>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
@@ -1094,19 +1141,22 @@ const AidApplicationPreview = ({
               <table className="aid-preview__invest-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '28%' }}>Process check</th>
-                    <th style={{ width: '14%' }}>Status</th>
+                    <th style={{ width: '24%' }}>Process check</th>
+                    <th style={{ width: '12%' }}>Status</th>
                     <th>Found / note</th>
+                    <th style={{ width: '22%' }}>GPS coordinates</th>
                   </tr>
                 </thead>
                 <tbody>
                   {processItems.map((item) => {
                     const entry = entryFor(item.key);
+                    const gps = String(entry.gps_coordinates || '').trim();
                     return (
                       <tr key={item.key}>
                         <td>
                           {item.label || item.key}
                           {item.required ? ' *' : ''}
+                          {item.key === 'site_visit' ? ' (GPS required)' : ''}
                         </td>
                         <td>
                           <span
@@ -1116,6 +1166,20 @@ const AidApplicationPreview = ({
                           </span>
                         </td>
                         <td>{dash(entry.note)}</td>
+                        <td className="aid-preview__gps-cell">
+                          {gps ? (
+                            <a
+                              className="aid-preview__gps-link"
+                              href={`https://www.google.com/maps?q=${encodeURIComponent(gps)}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              {gps}
+                            </a>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
                       </tr>
                     );
                   })}

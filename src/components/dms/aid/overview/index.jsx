@@ -329,7 +329,8 @@ const AidWelfareOverview = () => {
               <h3>Pipeline</h3>
               <span>
                 {data?.filters?.range_label || 'All time'} · registration →
-                disbursement
+                disbursement · Verified includes field visit or skip at
+                consideration
               </span>
             </div>
             <div className="aid-wo-funnel">
@@ -370,6 +371,10 @@ const AidWelfareOverview = () => {
               </span>
               <span className="is-warn">
                 Returned {data?.pipeline?.returned ?? 0}
+              </span>
+              <span className="is-warn">
+                Verification skipped{' '}
+                {data?.pipeline?.verification_skipped ?? 0}
               </span>
             </div>
           </section>

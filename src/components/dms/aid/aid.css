@@ -4412,6 +4412,78 @@ a.aid-contact-chip:hover {
   padding-bottom: 0.15rem;
 }
 
+.aid-consider-panel {
+  margin-bottom: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.aid-consider-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.65rem;
+}
+
+.aid-consider-panel__head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.aid-tabs--compact {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.15rem;
+  background: #f1f5f9;
+  border-radius: 0.55rem;
+}
+
+.aid-tabs--compact .aid-tab {
+  margin: 0;
+  padding: 0.35rem 0.75rem;
+  border: none;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.aid-tabs--compact .aid-tab:hover {
+  color: #0f172a;
+}
+
+.aid-tabs--compact .aid-tab--active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+.aid-consider-row {
+  margin: 0;
+}
+
+.aid-consider-row .aid-assign-field {
+  flex: 1 1 220px;
+  max-width: none;
+  min-width: 180px;
+}
+
+.aid-consider-forward {
+  flex: 0 0 140px;
+  min-width: 120px;
+}
+
+.aid-consider-forward .form-group,
+.aid-consider-forward .form-field {
+  margin-bottom: 0;
+}
+
+.aid-consider-panel .aid-section-hint {
+  display: none;
+}
+
 .aid-span-2 {
   grid-column: 1 / -1;
 }
@@ -8928,6 +9000,22 @@ a.aid-contact-chip:hover {
   font-weight: 700;
   color: #334155;
   white-space: nowrap;
+}
+
+.aid-preview__gps-cell {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.7rem;
+  word-break: break-all;
+}
+
+.aid-preview__gps-link {
+  color: #0f766e;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.aid-preview__gps-link:hover {
+  color: #115e59;
 }
 
 .aid-preview__status {
